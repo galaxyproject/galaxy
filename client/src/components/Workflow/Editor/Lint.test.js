@@ -137,7 +137,7 @@ describe("Lint", () => {
     });
 
     it("should fire refactor event to extract untyped parameter and remove unlabeled workflows", async () => {
-        await wrapper.find(".refactor-button").trigger("click");
+        await wrapper.find("[data-description='auto fix lint issues']").trigger("click");
         expect(wrapper.emitted().onRefactor.length).toBe(1);
         const actions = wrapper.emitted().onRefactor[0][0];
         expect(actions.length).toBe(2);
@@ -148,7 +148,7 @@ describe("Lint", () => {
 
     it("should include connect input action when input disconnected", async () => {
         stepStore.removeStep(0);
-        await wrapper.find(".refactor-button").trigger("click");
+        await wrapper.find("[data-description='auto fix lint issues']").trigger("click");
         expect(wrapper.emitted().onRefactor.length).toBe(1);
         const actions = wrapper.emitted().onRefactor[0][0];
         expect(actions.length).toBe(3);

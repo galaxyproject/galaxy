@@ -25,8 +25,10 @@ export interface Activity {
     tooltip: string;
     // indicate wether the activity should be visible by default
     visible?: boolean;
-    // show number
-    indicator?: number;
+    /** Activity indicator; a number or an icon */
+    indicator?: number | IconDefinition;
+    /** Variant for the activity indicator */
+    indicatorVariant?: ActivityVariant;
     // if activity should cause a click event
     click?: true;
     variant?: ActivityVariant;

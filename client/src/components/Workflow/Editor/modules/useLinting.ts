@@ -22,8 +22,10 @@ export interface LintData {
     checkReadme: Ref<boolean>;
     checkLicense: Ref<boolean>;
     checkCreator: Ref<boolean>;
-    resolvedIssues: Ref<number>;
-    totalIssues: Ref<number>;
+    resolvedPriorityIssues: Ref<number>;
+    totalPriorityIssues: Ref<number>;
+    resolvedAttributeIssues: Ref<number>;
+    totalAttributeIssues: Ref<number>;
     untypedParameters: Ref<UntypedParameters | undefined>;
     untypedParameterWarnings: Ref<LintState[]>;
     disconnectedInputs: Ref<LintState[]>;
@@ -84,63 +86,88 @@ export function useLintData(
             name: "annotation",
             exists: true,
             resolved: checkAnnotation.value,
+            priority: "low",
         },
         {
             name: "annotationLength",
             exists: checkAnnotation.value && !checkAnnotationLength.value,
             resolved: false,
+            priority: "low",
         },
         {
             name: "readme",
             exists: true,
             resolved: checkReadme.value,
+            priority: "low",
         },
         {
             name: "creator",
             exists: true,
             resolved: checkCreator.value,
+            priority: "low",
         },
         {
             name: "license",
             exists: true,
             resolved: checkLicense.value,
+            priority: "low",
         },
         {
             name: "untypedParameters",
             exists: Object.keys(steps.value).length > 0,
             resolved: untypedParameterWarnings.value.length === 0,
+            priority: "high",
         },
         {
             name: "disconnectedInputs",
             exists: Object.keys(steps.value).length > 0,
             resolved: disconnectedInputs.value.length === 0,
+            priority: "high",
         },
         {
             name: "missingMetadata",
             exists: hasInputSteps.value,
             resolved: missingMetadata.value.length === 0,
+            priority: "high",
         },
         {
             name: "duplicateLabels",
             exists: hasActiveOutputs.value,
             resolved: duplicateLabels.value.length === 0,
+            priority: "high",
         },
         {
             name: "unlabeledOutputs",
             exists: hasActiveOutputs.value,
             resolved: unlabeledOutputs.value.length === 0,
+            priority: "high",
         },
         {
             name: "noOutputs",
             exists: !hasActiveOutputs.value,
             resolved: false,
+            priority: "high",
         },
     ]);
 
-    const totalIssues = computed(() => lintingSections.value.filter((section) => section.exists).length);
+    const totalPriorityIssues = computed(
+        () => lintingSections.value.filter((section) => section.exists && section.priority === "high").length,
+    );
 
-    const resolvedIssues = computed(
-        () => lintingSections.value.filter((section) => section.exists && section.resolved).length,
+    const resolvedPriorityIssues = computed(
+        () =>
+            lintingSections.value.filter((section) => section.exists && section.resolved && section.priority === "high")
+                .length,
+    );
+
+    const totalAttributeIssues = computed(
+        () => lintingSections.value.filter((section) => section.exists && section.priority === "low").length,
+    );
+
+    const resolvedAttributeIssues = computed(
+        () =>
+            lintingSections.value.filter((section) => section.exists && section.resolved && section.priority === "low")
+                .length,
     );
 
     return {
@@ -149,8 +176,10 @@ export function useLintData(
         checkReadme,
         checkLicense,
         checkCreator,
-        resolvedIssues,
-        totalIssues,
+        resolvedPriorityIssues,
+        totalPriorityIssues,
+        resolvedAttributeIssues,
+        totalAttributeIssues,
         untypedParameters,
         untypedParameterWarnings,
         disconnectedInputs,

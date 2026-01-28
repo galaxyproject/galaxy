@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { faCheck, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -24,6 +22,7 @@ import {
 } from "./modules/linting";
 import type { LintData } from "./modules/useLinting";
 
+import LintSectionSeparator from "./LintSectionSeparator.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import LintSection from "@/components/Workflow/Editor/LintSection.vue";
@@ -48,14 +47,25 @@ const {
     checkReadme,
     checkLicense,
     checkCreator,
-    resolvedIssues,
-    totalIssues,
+    resolvedPriorityIssues,
+    totalPriorityIssues,
+    resolvedAttributeIssues,
+    totalAttributeIssues,
     unlabeledOutputs,
     untypedParameterWarnings,
     disconnectedInputs,
     duplicateLabels,
     missingMetadata,
 } = props.lintData;
+
+/** Renders the celebratory reaction when all critical and non-critical best practice issues are resolved. */
+const showSuccessReaction = computed(
+    () =>
+        resolvedPriorityIssues.value === totalPriorityIssues.value &&
+        totalPriorityIssues.value > 0 &&
+        resolvedAttributeIssues.value === totalAttributeIssues.value &&
+        totalAttributeIssues.value > 0,
+);
 
 const showRefactor = computed(
     () => untypedParameterWarnings.value.length || disconnectedInputs.value.length || unlabeledOutputs.value.length,
@@ -179,29 +189,24 @@ async function onRefactor() {
 </script>
 <template>
     <ActivityPanel title="Best Practices Review">
-        <template v-if="showRefactor" v-slot:header>
-            <GLink class="refactor-button" @click="onRefactor"> Try to automatically fix issues. </GLink>
-        </template>
-        <template v-slot:header-buttons>
-            <div class="text-nowrap">
-                <FontAwesomeIcon
-                    v-if="resolvedIssues === totalIssues"
-                    :icon="faCheck"
-                    class="text-success"
-                    title="All best practices issues resolved!" />
-                <FontAwesomeIcon
-                    v-else
-                    :icon="faExclamationTriangle"
-                    class="text-warning"
-                    :title="`${resolvedIssues} out of ${totalIssues} best practice issues resolved`" />
-                {{ resolvedIssues }} / {{ totalIssues }}
-            </div>
+        <template v-slot:header>
+            <LintSectionSeparator
+                section-type="critical"
+                :resolved-issues="resolvedPriorityIssues"
+                :total-issues="totalPriorityIssues" />
         </template>
         <div
             class="success-reaction"
-            :class="{ 'success-reaction--show': resolvedIssues === totalIssues && totalIssues > 0 }">
+            :class="{
+                'success-reaction--show': showSuccessReaction,
+            }">
             🎉
         </div>
+
+        <GLink v-if="showRefactor" class="mb-2" data-description="auto fix lint issues" @click="onRefactor">
+            Try to automatically fix issues.
+        </GLink>
+
         <LintSection
             v-if="Object.keys(props.steps).length"
             data-description="linting formal inputs"
@@ -261,9 +266,10 @@ async function onRefactor() {
             success-message="This workflow has labeled outputs."
             warning-message="This workflow has no labeled outputs, please select and label at least one output." />
 
-        <!-- TODO: Ideally we want to use the same thing as the `.tool-panel-divider from 
-         https://github.com/bgruening/galaxy/commit/4b65bde448a1cc7d2f612ad0658f98b0fc64a0bc -->
-        <div class="best-practices-lint-separator mb-2">Attributes Best Practices</div>
+        <LintSectionSeparator
+            section-type="attributes"
+            :resolved-issues="resolvedAttributeIssues"
+            :total-issues="totalAttributeIssues" />
 
         <LintSection
             data-description="linting has annotation"
@@ -305,22 +311,6 @@ async function onRefactor() {
 </template>
 
 <style scoped lang="scss">
-.best-practices-lint-separator {
-    align-items: center;
-    display: flex;
-    gap: 0.5rem;
-    font-weight: 600;
-    padding: 0.375rem 0.75rem;
-
-    &::before,
-    &::after {
-        border-bottom: 1px solid currentColor;
-        content: "";
-        flex: 1;
-        opacity: 0.35;
-    }
-}
-
 .success-reaction {
     position: absolute;
     top: 0;
