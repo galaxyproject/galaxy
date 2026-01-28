@@ -80,7 +80,7 @@ async function onKeyDown(evt: KeyboardEvent) {
         <div ref="scrollContainer" class="d-flex h-100 w-auto overflow-auto">
             <VirtualList
                 v-if="props.selectedHistories.length"
-                :estimate-size="props.selectedHistories.length"
+                :estimate-size="240"
                 :data-key="'id'"
                 :data-component="MultipleViewItem"
                 :data-sources="props.selectedHistories"
