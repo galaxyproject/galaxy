@@ -51,11 +51,19 @@ class GTNSearchRequest(BaseModel):
 class GTNSearchResponse(BaseModel):
     """Structured response from GTN training agent."""
 
-    tutorials: list[dict[str, Any]] = Field(default_factory=list, description="List of matching tutorials")
+    tutorials: list[dict[str, Any]] = Field(
+        default_factory=list, description="List of matching tutorials"
+    )
     summary: str = Field(..., description="Natural language summary of findings")
-    learning_path: Optional[str] = Field(None, description="Suggested learning progression")
-    prerequisites: list[str] = Field(default_factory=list, description="Recommended prerequisites")
-    total_time: Optional[str] = Field(None, description="Estimated total time for suggested tutorials")
+    learning_path: Optional[str] = Field(
+        None, description="Suggested learning progression"
+    )
+    prerequisites: list[str] = Field(
+        default_factory=list, description="Recommended prerequisites"
+    )
+    total_time: Optional[str] = Field(
+        None, description="Estimated total time for suggested tutorials"
+    )
 
 
 class GTNTrainingAgent(BaseGalaxyAgent):
@@ -170,7 +178,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     return "GTN database not available"
 
                 try:
-                    content = self.gtn_db.get_tutorial_content(topic, tutorial, max_length)
+                    content = self.gtn_db.get_tutorial_content(
+                        topic, tutorial, max_length
+                    )
                     return content or f"Tutorial {topic}/{tutorial} not found"
                 except (AttributeError, KeyError, TypeError) as e:
                     log.warning(f"Failed to get tutorial content: {e}")
@@ -239,7 +249,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             return query
 
         # Filter out conversation_history which can cause response truncation
-        filtered_context = {k: v for k, v in context.items() if k != "conversation_history" and v}
+        filtered_context = {
+            k: v for k, v in context.items() if k != "conversation_history" and v
+        }
 
         if not filtered_context:
             return query
@@ -253,7 +265,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "gtn_training.md"
         return prompt_path.read_text()
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def process(
+        self, query: str, context: Optional[dict[str, Any]] = None
+    ) -> AgentResponse:
         """
         Process a training-related query.
 
@@ -276,6 +290,19 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
             # Run the agent to process the query with retry logic
             result = await self._run_with_retry(query)
+
+            # Extract token usage if available
+            usage_info = {}
+            if hasattr(result, "usage"):
+                try:
+                    usage = result.usage()
+                    usage_info = {
+                        "input_tokens": getattr(usage, "input_tokens", 0),
+                        "output_tokens": getattr(usage, "output_tokens", 0),
+                        "total_tokens": getattr(usage, "total_tokens", 0),
+                    }
+                except Exception:
+                    pass  # Usage not available
 
             # Handle different response formats based on model capabilities
             if self._supports_structured_output():
@@ -307,7 +334,11 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 # Format the response
                 content = self._format_gtn_response(response_data)
                 suggestions = self._create_suggestions(response_data)
-                confidence = ConfidenceLevel.HIGH if response_data.tutorials else ConfidenceLevel.MEDIUM
+                confidence = (
+                    ConfidenceLevel.HIGH
+                    if response_data.tutorials
+                    else ConfidenceLevel.MEDIUM
+                )
 
                 return AgentResponse(
                     content=content,
@@ -318,16 +349,21 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                         "tutorial_count": len(response_data.tutorials),
                         "has_learning_path": bool(response_data.learning_path),
                         "total_time": response_data.total_time,
+                        "model": self._get_model_name(),
                         "method": (
                             "structured_with_fallback"
-                            if not hasattr(result, "output") or not result.output.tutorials
+                            if not hasattr(result, "output")
+                            or not result.output.tutorials
                             else "structured"
                         ),
+                        **usage_info,
                     },
                 )
             else:
                 # Handle simple text output from DeepSeek
-                response_text = str(result.data) if hasattr(result, "data") else str(result)
+                response_text = (
+                    str(result.data) if hasattr(result, "data") else str(result)
+                )
                 parsed_result = self._parse_simple_response(response_text)
 
                 return AgentResponse(
@@ -337,7 +373,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     suggestions=parsed_result.get("suggestions", []),
                     metadata={
                         "method": "simple_text",
+                        "model": self._get_model_name(),
                         "tutorial_count": parsed_result.get("tutorial_count", 0),
+                        **usage_info,
                     },
                 )
 
@@ -387,7 +425,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         # Add learning path if suggested
         if response_data.learning_path:
-            parts.append(f"\n**Suggested Learning Path:**\n{response_data.learning_path}")
+            parts.append(
+                f"\n**Suggested Learning Path:**\n{response_data.learning_path}"
+            )
 
         # Add prerequisites
         if response_data.prerequisites:
@@ -401,7 +441,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         return "\n".join(parts)
 
-    def _create_suggestions(self, response_data: GTNSearchResponse) -> list[ActionSuggestion]:
+    def _create_suggestions(
+        self, response_data: GTNSearchResponse
+    ) -> list[ActionSuggestion]:
         """Create action suggestions based on found tutorials."""
         suggestions = []
 
@@ -471,7 +513,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         tutorials = re.search(r"TUTORIALS:\s*([^\n]+)", response_text, re.IGNORECASE)
         topics = re.search(r"TOPICS:\s*([^\n]+)", response_text, re.IGNORECASE)
         summary = re.search(r"SUMMARY:\s*([^\n]+)", response_text, re.IGNORECASE)
-        confidence_match = re.search(r"CONFIDENCE:\s*(\w+)", response_text, re.IGNORECASE)
+        confidence_match = re.search(
+            r"CONFIDENCE:\s*(\w+)", response_text, re.IGNORECASE
+        )
 
         # Parse confidence level
         confidence_level = ConfidenceLevel.MEDIUM
@@ -510,7 +554,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 ActionSuggestion(
                     action_type=ActionType.VIEW_EXTERNAL,
                     description="Visit Galaxy Training Network",
-                    parameters={"url": "https://training.galaxyproject.org/training-material/"},
+                    parameters={
+                        "url": "https://training.galaxyproject.org/training-material/"
+                    },
                     confidence=confidence_level,
                     priority=1,
                 )
@@ -519,7 +565,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         return {
             "content": "\n".join(content_parts),
             "confidence": confidence_level,
-            "tutorial_count": len(tutorials.group(1).split(",")) if tutorials and tutorials.group(1).strip() else 0,
+            "tutorial_count": len(tutorials.group(1).split(","))
+            if tutorials and tutorials.group(1).strip()
+            else 0,
             "suggestions": suggestions,
         }
 
@@ -542,7 +590,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 ActionSuggestion(
                     action_type=ActionType.VIEW_EXTERNAL,
                     description="Visit Galaxy Training Network",
-                    parameters={"url": "https://training.galaxyproject.org/training-material/"},
+                    parameters={
+                        "url": "https://training.galaxyproject.org/training-material/"
+                    },
                     confidence=ConfidenceLevel.HIGH,
                     priority=1,
                 )
