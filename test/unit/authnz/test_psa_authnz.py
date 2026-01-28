@@ -400,7 +400,9 @@ def test_sync_user_profile_updates_when_account_interface_disabled():
 
     sync_user_profile(strategy=strategy, details=details, user=user)
 
-    manager.update_email.assert_called_once_with(trans, user, "new@example.com", commit=False, send_activation_email=False)
+    manager.update_email.assert_called_once_with(
+        trans, user, "new@example.com", commit=False, send_activation_email=False
+    )
     manager.update_username.assert_called_once_with(trans, user, "newname", commit=False)
     assert json.loads(user.preferences["profile_updates"]) == ["email", "username"]
     assert session.commit.call_count == 2
