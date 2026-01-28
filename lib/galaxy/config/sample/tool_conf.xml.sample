@@ -56,6 +56,7 @@
     <tool file="${model_tools_path}/convert_sample_sheet.xml" />
     <tool file="${model_tools_path}/extract_dataset.xml" />
     <tool file="${model_tools_path}/duplicate_file_to_collection.xml" />
+    <tool file="${model_tools_path}/split_paired_and_unpaired.xml" />
   </section>
   <section id="expression_tools" name="Expression Tools">
     <tool file="expression_tools/parse_values_from_file.xml"/>
