@@ -71,7 +71,7 @@ const totalDatasets = ref(0);
 const visibleColumns = ref<string[]>(["name", "tags", "history_id", "extension", "update_time"]);
 const bulkDeleteOrRestoreLoading = ref(false);
 
-const { datasetTableActions } = useDatasetTableActions();
+const { datasetTableActions } = useDatasetTableActions(() => load(true));
 
 const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const fields = computed(() => allFields.filter((field) => visibleColumns.value.includes(field.key)));

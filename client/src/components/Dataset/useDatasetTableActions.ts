@@ -8,7 +8,7 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 
-export function useDatasetTableActions() {
+export function useDatasetTableActions(refreshList: () => Promise<void>) {
     const historyStore = useHistoryStore();
     const { currentHistoryId } = storeToRefs(historyStore);
 
@@ -40,7 +40,7 @@ export function useDatasetTableActions() {
             await copyDataset(dataset_id, currentHistoryId.value);
 
             historyStore.loadCurrentHistory();
-
+            await refreshList();
             Toast.success(`Dataset "${item.name}" copied to current history.`);
         } catch (error) {
             Toast.error("Failed to copy dataset");
@@ -63,6 +63,7 @@ export function useDatasetTableActions() {
 
                 Toast.success(`Dataset "${item.name}" ${purge ? "purged" : "deleted"}.`);
                 historyStore.loadCurrentHistory();
+                await refreshList();
             } catch (error) {
                 Toast.error(`Failed to ${purge ? "purge" : "delete"} dataset.`);
             }
