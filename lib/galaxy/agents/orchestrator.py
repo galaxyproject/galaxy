@@ -106,12 +106,12 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
             # Combine responses
             combined_content = self._combine_responses(responses, plan.reasoning)
 
-            return AgentResponse(
+            return self._build_response(
                 content=combined_content,
                 confidence=ConfidenceLevel.HIGH,
-                agent_type=self.agent_type,
-                suggestions=[],
-                metadata={
+                method="orchestrated",
+                query=query,
+                agent_data={
                     "agents_used": plan.agents,
                     "execution_type": "sequential" if plan.sequential else "parallel",
                     "reasoning": plan.reasoning,

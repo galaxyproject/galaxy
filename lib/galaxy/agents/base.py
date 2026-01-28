@@ -74,6 +74,7 @@ __all__ = [
     "ConfidenceLevel",
     "extract_result_content",
     "extract_structured_output",
+    "extract_usage_info",
     "GalaxyAgentDependencies",
     "normalize_llm_text",
     "SimpleGalaxyAgent",
@@ -90,6 +91,25 @@ def extract_result_content(result: Any) -> str:
     elif hasattr(result, "data"):
         return str(result.data)
     return str(result)
+
+
+def extract_usage_info(result: Any) -> dict[str, int]:
+    """Extract token usage info from a pydantic-ai result.
+
+    Returns a dict with input_tokens, output_tokens, total_tokens.
+    Returns empty dict if usage info not available.
+    """
+    if not hasattr(result, "usage"):
+        return {}
+    try:
+        usage = result.usage()
+        return {
+            "input_tokens": getattr(usage, "input_tokens", 0),
+            "output_tokens": getattr(usage, "output_tokens", 0),
+            "total_tokens": getattr(usage, "total_tokens", 0),
+        }
+    except Exception:
+        return {}
 
 
 def extract_structured_output(result: Any, expected_type: type, logger: Optional[logging.Logger] = None) -> Any:
@@ -388,16 +408,13 @@ class BaseGalaxyAgent(ABC):
         # Default implementation - subclasses can override
         content = extract_result_content(result)
 
-        return AgentResponse(
+        return self._build_response(
             content=content,
-            confidence="medium",
-            agent_type=self.agent_type,
-            suggestions=[],
-            metadata={
-                "model": getattr(self.agent, "model_name", "unknown"),
-                "query_length": len(query),
-                "has_context": bool(context),
-            },
+            confidence=ConfidenceLevel.MEDIUM,
+            method="default",
+            result=result,
+            query=query,
+            agent_data={"has_context": bool(context)} if context else None,
         )
 
     def _get_fallback_response(self, query: str, error_msg: str) -> AgentResponse:
@@ -423,28 +440,98 @@ class BaseGalaxyAgent(ABC):
         else:
             content = f"I'm having trouble processing your request right now. {self._get_fallback_content()}"
 
-        return AgentResponse(
+        return self._build_response(
             content=content,
-            confidence="low",
-            agent_type=self.agent_type,
+            confidence=ConfidenceLevel.LOW,
+            method="fallback",
+            query=query,
             suggestions=[
                 ActionSuggestion(
                     action_type=ActionType.CONTACT_SUPPORT,
                     description="Contact Galaxy support for assistance",
-                    confidence="high",
+                    confidence=ConfidenceLevel.HIGH,
                     priority=1,
                 )
             ],
-            metadata={
-                "fallback": True,
-                "error": error_msg,
-                "service_unavailable": is_service_error,
-            },
+            fallback=True,
+            error=error_msg,
+            agent_data={"service_unavailable": is_service_error},
         )
 
     def _get_fallback_content(self) -> str:
         """Get fallback content specific to this agent type."""
         return "Please try again later or contact support if the issue persists."
+
+    def _build_metadata(
+        self,
+        method: str,
+        result: Any = None,
+        query: Optional[str] = None,
+        agent_data: Optional[dict[str, Any]] = None,
+        fallback: bool = False,
+        error: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """
+        Build metadata dict for agent responses.
+
+        All agents should include model name, method, and token usage in their
+        responses. This helper keeps that consistent.
+
+        agent_data gets added both flat (backwards compat) and under 'agent_data' key.
+        """
+        metadata: dict[str, Any] = {
+            "model": self._get_model_name(),
+            "method": method,
+        }
+
+        # Token usage (if result available)
+        if result:
+            usage = extract_usage_info(result)
+            if usage:
+                metadata.update(usage)  # input_tokens, output_tokens, total_tokens
+
+        # Query context
+        if query is not None:
+            metadata["query_length"] = len(query)
+
+        # Fallback/error info
+        if fallback:
+            metadata["fallback"] = True
+        if error:
+            metadata["error"] = error
+
+        # Agent-specific data: add at top level for backwards compatibility
+        # and also namespace under 'agent_data' for structured access
+        if agent_data:
+            metadata.update(agent_data)  # Flat for backwards compatibility
+            metadata["agent_data"] = agent_data  # Namespaced for future use
+
+        return metadata
+
+    def _build_response(
+        self,
+        content: str,
+        confidence: Union[str, ConfidenceLevel],
+        method: str,
+        result: Any = None,
+        query: Optional[str] = None,
+        suggestions: Optional[list[ActionSuggestion]] = None,
+        agent_data: Optional[dict[str, Any]] = None,
+        fallback: bool = False,
+        error: Optional[str] = None,
+    ) -> AgentResponse:
+        """
+        Build an AgentResponse with metadata filled in.
+
+        Convenience wrapper around _build_metadata + AgentResponse construction.
+        """
+        return AgentResponse(
+            content=content,
+            confidence=confidence,
+            agent_type=self.agent_type,
+            suggestions=suggestions or [],
+            metadata=self._build_metadata(method, result, query, agent_data, fallback, error),
+        )
 
     def _supports_structured_output(self) -> bool:
         """Check if current model supports structured output (tool calling/JSON mode).
@@ -709,14 +796,14 @@ class SimpleGalaxyAgent(BaseGalaxyAgent):
         # Try to extract confidence from the response
         confidence = self._extract_confidence(content)
 
-        return AgentResponse(
+        return self._build_response(
             content=content,
             confidence=confidence,
-            agent_type=self.agent_type,
+            method="simple",
+            result=result,
+            query=query,
             suggestions=self._extract_suggestions(content),
-            metadata={
-                "model": self._get_model_name(),
-                "query_length": len(query),
+            agent_data={
                 "has_context": bool(context),
                 "response_length": len(content),
             },

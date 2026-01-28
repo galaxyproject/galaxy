@@ -7307,6 +7307,8 @@ export interface components {
              * @description Main response content
              */
             content: string;
+            /** @description Handoff information if response was delegated */
+            handoff?: components["schemas"]["HandoffInfo"] | null;
             /**
              * Metadata
              * @description Additional metadata
@@ -8234,6 +8236,13 @@ export interface components {
         /** ChatResponse */
         ChatResponse: {
             /**
+             * Agent Response
+             * @description Full agent response with metadata and suggestions.
+             */
+            agent_response?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Error Code
              * @description The error code, if any, for the chat query.
              */
@@ -8243,6 +8252,11 @@ export interface components {
              * @description The error message, if any, for the chat query.
              */
             error_message: string | null;
+            /**
+             * Exchange ID
+             * @description The ID of the chat exchange for continuing conversations.
+             */
+            exchange_id?: number | null;
             /**
              * Response
              * @description The response to the chat query.
@@ -14785,6 +14799,27 @@ export interface components {
              * @default 0
              */
             waiting: number;
+        };
+        /**
+         * HandoffInfo
+         * @description Information about agent-to-agent handoffs.
+         */
+        HandoffInfo: {
+            /**
+             * Reason
+             * @description Reason for the handoff
+             */
+            reason?: string | null;
+            /**
+             * Source Agent
+             * @description Agent that initiated the handoff
+             */
+            source_agent: string;
+            /**
+             * Target Agent
+             * @description Agent that received the handoff
+             */
+            target_agent: string;
         };
         /**
          * HashFunctionNameEnum

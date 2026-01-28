@@ -14,6 +14,7 @@ from typing import (
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
+from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
     ActionType,
@@ -227,27 +228,28 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 if analysis_result is None:
                     # Model returned text instead of structured output
                     content = extract_result_content(result)
-                    return AgentResponse(
+                    return self._build_response(
                         content=content,
-                        confidence="medium",
-                        agent_type=self.agent_type,
-                        suggestions=[],
-                        metadata={"method": "text_fallback"},
+                        confidence=ConfidenceLevel.MEDIUM,
+                        method="text_fallback",
+                        result=result,
+                        query=query,
                     )
 
                 content = self._format_analysis_response(analysis_result)
                 suggestions = self._create_suggestions(analysis_result)
 
-                return AgentResponse(
+                return self._build_response(
                     content=content,
                     confidence=analysis_result.confidence,
-                    agent_type=self.agent_type,
+                    method="structured",
+                    result=result,
+                    query=query,
                     suggestions=suggestions,
-                    metadata={
+                    agent_data={
                         "error_category": analysis_result.error_category,
                         "requires_admin": analysis_result.requires_admin,
                         "has_alternatives": bool(analysis_result.alternative_approaches),
-                        "method": "structured",
                     },
                 )
             else:
@@ -255,15 +257,14 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 response_text = extract_result_content(result)
                 parsed_result = self._parse_simple_response(response_text)
 
-                return AgentResponse(
+                return self._build_response(
                     content=parsed_result.get("content", response_text),
-                    confidence=parsed_result.get("confidence", "medium"),
-                    agent_type=self.agent_type,
+                    confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
+                    method="simple_text",
+                    result=result,
+                    query=query,
                     suggestions=parsed_result.get("suggestions", []),
-                    metadata={
-                        "method": "simple_text",
-                        "error_category": parsed_result.get("error_category", "unknown"),
-                    },
+                    agent_data={"error_category": parsed_result.get("error_category", "unknown")},
                 )
 
         except OSError as e:

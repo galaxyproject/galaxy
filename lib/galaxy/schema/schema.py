@@ -3905,6 +3905,16 @@ class ChatResponse(BaseModel):
         title="Error Message",
         description="The error message, if any, for the chat query.",
     )
+    agent_response: Optional[dict[str, Any]] = Field(
+        default=None,
+        title="Agent Response",
+        description="Full agent response with metadata and suggestions.",
+    )
+    exchange_id: Optional[int] = Field(
+        default=None,
+        title="Exchange ID",
+        description="The ID of the chat exchange for continuing conversations.",
+    )
 
 
 class GenerateTourResponse(Model):

@@ -14,6 +14,22 @@ from pydantic import (
 )
 
 
+class TokenUsage(BaseModel):
+    """Token usage information from LLM calls."""
+
+    input_tokens: int = Field(default=0, description="Number of input tokens")
+    output_tokens: int = Field(default=0, description="Number of output tokens")
+    total_tokens: int = Field(default=0, description="Total tokens used")
+
+
+class HandoffInfo(BaseModel):
+    """Information about agent-to-agent handoffs."""
+
+    source_agent: str = Field(description="Agent that initiated the handoff")
+    target_agent: str = Field(description="Agent that received the handoff")
+    reason: Optional[str] = Field(default=None, description="Reason for the handoff")
+
+
 class ConfidenceLevel(str, Enum):
     """Confidence levels for agent responses."""
 
@@ -52,6 +68,7 @@ class AgentResponse(BaseModel):
     suggestions: list[ActionSuggestion] = Field(default_factory=list, description="Actionable suggestions")
     metadata: dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
     reasoning: Optional[str] = Field(default=None, description="Explanation of the agent's reasoning")
+    handoff: Optional[HandoffInfo] = Field(default=None, description="Handoff information if response was delegated")
 
 
 class AgentQueryRequest(BaseModel):
