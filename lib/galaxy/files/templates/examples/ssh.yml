@@ -20,7 +20,7 @@
       validators:
         - type: length
           min: 1
-          message: "Path must not be empty"
+          message: "SSH host must not be empty"
     user:
       label: SSH User
       type: string
@@ -38,7 +38,7 @@
     writable:
       label: Writable?
       type: boolean
-      help: Is this an path where have permission to write to / do you want to write to this repository?
+      help: Allow Galaxy to write data to this file source. Requires that user is allowed to write to this path on the host.
     port:
       label: SSH Port
       type: integer
