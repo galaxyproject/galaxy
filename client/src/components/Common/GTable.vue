@@ -9,6 +9,7 @@ import { useUid } from "@/composables/utils/uid";
 import type {
     FieldAlignment,
     RowClickEvent,
+    RowIcon,
     RowSelectEvent,
     TableAction,
     TableEmptyState,
@@ -133,16 +134,23 @@ interface Props {
     sortDesc?: boolean;
 
     /**
-     * Additional CSS classes for the table element
-     * @default ""
-     */
-    tableClass?: string | string[];
-
-    /**
      * Whether to show select all checkbox in header
      * @default false
      */
     showSelectAll?: boolean;
+
+    /**
+     * Row status icon getter - renders icon inline with first data column
+     * Return undefined to skip icon for a row
+     * @default undefined
+     */
+    statusIcon?: (item: T, index: number) => RowIcon | undefined;
+
+    /**
+     * Additional CSS classes for the table element
+     * @default ""
+     */
+    tableClass?: string | string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -166,6 +174,7 @@ const props = withDefaults(defineProps<Props>(), {
     sortBy: "",
     sortDesc: false,
     striped: true,
+    statusIcon: undefined,
     tableClass: "",
 });
 
@@ -299,6 +308,31 @@ function isRowSelected(index: number) {
 }
 
 /**
+ * Get status icon for a row
+ */
+function getStatusIcon(item: T, index: number): RowIcon | undefined {
+    return props.statusIcon?.(item, index);
+}
+
+/**
+ * Get icon props for FontAwesomeIcon component
+ * Computes icon attributes once per call
+ */
+function getIconProps(item: T, index: number) {
+    const icon = getStatusIcon(item, index);
+    if (!icon) {
+        return {};
+    }
+    return {
+        icon: icon.icon,
+        class: [icon.class],
+        title: icon.title,
+        spin: icon.spin,
+        size: icon.size,
+    };
+}
+
+/**
  * Helper functions for generating consistent element IDs
  */
 const getFieldId = (tableId: string, fieldKey: string) => `g-table-field-${fieldKey}-${tableId}`;
@@ -392,7 +426,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 
                             <!-- Data columns -->
                             <td
-                                v-for="field in props.fields"
+                                v-for="(field, fieldIndex) in props.fields"
                                 :id="getCellId(props.id, field.key, index)"
                                 :key="field.key"
                                 :class="[
@@ -401,6 +435,14 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     getAlignmentClass(field.align),
                                     { 'hide-on-small': field.hideOnSmall },
                                 ]">
+                                <template v-if="fieldIndex === 0 && statusIcon">
+                                    <FontAwesomeIcon
+                                        v-if="getStatusIcon(item, index)"
+                                        v-b-tooltip.hover.noninteractive
+                                        v-bind="getIconProps(item, index)"
+                                        fixed-width />
+                                </template>
+
                                 <slot :name="`cell(${field.key})`" :value="item[field.key]" :item="item" :index="index">
                                     <span>{{ getCellValue(item, field) }}</span>
                                 </slot>
