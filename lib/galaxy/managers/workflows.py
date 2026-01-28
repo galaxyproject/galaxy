@@ -14,12 +14,6 @@ from typing import (
 )
 
 import yaml
-from gxformat2 import (
-    from_galaxy_native,
-    ImporterGalaxyInterface,
-    ImportOptions,
-    python_to_workflow,
-)
 from gxformat2.abstract import from_dict
 from gxformat2.cytoscape import to_cytoscape
 from gxformat2.yaml import ordered_dump
@@ -111,6 +105,10 @@ from galaxy.util.search import (
     RawTextTerm,
 )
 from galaxy.work.context import WorkRequestContext
+from galaxy.workflow.format2 import (
+    convert_from_format2,
+    convert_to_format2,
+)
 from galaxy.workflow.modules import (
     module_factory,
     ToolModule,
@@ -618,10 +616,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow_class, as_dict, object_id = artifact_class(trans, as_dict, allow_in_directory=allow_in_directory)
         assert workflow_class == "GalaxyWorkflow"
         # Format 2 Galaxy workflow.
-        galaxy_interface = Format2ConverterGalaxyInterface()
-        import_options = ImportOptions()
-        import_options.deduplicate_subworkflows = True
-        as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None, import_options=import_options)
+        as_dict = convert_from_format2(as_dict, None)
         raw_description = RawWorkflowDescription(as_dict)
         created_workflow = self.build_workflow_from_raw_description(trans, raw_description, WorkflowCreateOptions())
         return created_workflow.workflow
@@ -648,15 +643,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow_class, as_dict, object_id = artifact_class(trans, as_dict)
         if workflow_class == "GalaxyWorkflow" or "yaml_content" in as_dict:
             # Format 2 Galaxy workflow.
-            galaxy_interface = Format2ConverterGalaxyInterface()
-            import_options = ImportOptions()
-            import_options.deduplicate_subworkflows = True
-            try:
-                as_dict = python_to_workflow(
-                    as_dict, galaxy_interface, workflow_directory=workflow_directory, import_options=import_options
-                )
-            except yaml.scanner.ScannerError as e:
-                raise exceptions.MalformedContents(str(e))
+            as_dict = convert_from_format2(as_dict, workflow_directory)
         return RawWorkflowDescription(as_dict, workflow_path)
 
     def build_workflow_from_raw_description(
@@ -955,8 +942,8 @@ class WorkflowContentsManager(UsesAnnotations):
         reference instead of embedding the full subworkflow content.
         """
 
-        def to_format_2(wf_dict, **kwds):
-            return from_galaxy_native(wf_dict, None, **kwds)
+        def to_format_2(wf_dict, json_wrapper: bool):
+            return convert_to_format2(wf_dict, json_wrapper=json_wrapper)
 
         if version == "":
             version = None
@@ -988,7 +975,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 workflow=workflow,
                 preserve_external_subworkflow_links=preserve_external_subworkflow_links,
             )
-            wf_dict = to_format_2(wf_dict)
+            wf_dict = to_format_2(wf_dict, json_wrapper=False)
         elif style == "format2_wrapped_yaml":
             wf_dict = self._workflow_to_dict_export(
                 trans,
@@ -1049,7 +1036,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 ordered_dump(abstract_dict, f)
             else:
                 wf_dict = self._workflow_to_dict_export(trans, stored_workflow, workflow=workflow)
-                wf_dict = from_galaxy_native(wf_dict, None, json_wrapper=True)
+                wf_dict = convert_to_format2(wf_dict, json_wrapper=True)
                 f.write(wf_dict["yaml_content"])
 
     def _workflow_to_dict_run(self, trans: ProvidesUserContext, stored, workflow, history=None):
@@ -2468,13 +2455,6 @@ class RawWorkflowDescription:
     def __init__(self, as_dict, workflow_path=None):
         self.as_dict = as_dict
         self.workflow_path = workflow_path
-
-
-class Format2ConverterGalaxyInterface(ImporterGalaxyInterface):
-    def import_workflow(self, workflow, **kwds):
-        raise NotImplementedError(
-            "Direct format 2 import of nested workflows is not yet implemented, use bioblend client."
-        )
 
 
 def _get_stored_workflow(session, workflow_uuid, workflow_id, by_stored_id):
