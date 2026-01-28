@@ -454,4 +454,6 @@ When uncertain, suggest the user check Galaxy documentation or the Galaxy Traini
 
     def _get_fallback_content(self) -> str:
         """Get fallback content for router failures."""
-        return "I'm having trouble processing your request. Please try again or check the Galaxy documentation for help."
+        return (
+            "I'm having trouble processing your request. Please try again or check the Galaxy documentation for help."
+        )
