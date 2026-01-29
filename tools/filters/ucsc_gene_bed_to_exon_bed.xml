@@ -1,0 +1,78 @@
+<tool id="gene2exon1" name="Gene BED To Exon/Intron/Codon BED" version="1.0.0">
+<description>expander</description>
+  <command interpreter="python">ucsc_gene_bed_to_exon_bed.py --input=$input1 --output=$out_file1 --region=$region --exons</command>
+  <inputs>
+    <param name="region" type="select">
+      <label>Extract</label>
+      <option value="transcribed">Coding Exons + UTR Exons</option>
+      <option value="coding">Coding Exons only</option>
+      <option value="utr5">5'-UTR Exons</option>
+      <option value="utr3">3'-UTR Exons</option>
+      <option value="intron">Introns</option>
+      <option value="codon">Codons</option>
+    </param>
+    <param name="input1" type="data" format="bed" label="from" help="this history item must contain a 12 field BED (see below)"/>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="bed"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="3.bed" /> 
+      <param name="region" value="transcribed" />
+      <output name="out_file1" file="cf-gene2exon.dat"/>
+    </test>
+  </tests>
+<help>
+
+.. class:: warningmark
+
+This tool works only on a BED file that contains at least 12 fields (see **Example** and **About formats** below).  The output will be empty if applied to a BED file with 3 or 6 fields.
+
+------
+
+**What it does**
+
+BED format can be used to represent a single gene in just one line, which contains the information about exons, coding sequence location (CDS), and positions of untranslated regions (UTRs).  This tool *unpacks* this information by converting a single line describing a gene into a collection of lines representing individual exons, introns, UTRs, etc. 
+
+-------
+
+**Example**
+
+Extracting **Coding Exons + UTR Exons** from the following two BED lines::
+
+    chr7 127475281 127491632 NM_000230 0 + 127486022 127488767 0 3 29,172,3225,    0,10713,13126
+    chr7 127486011 127488900 D49487    0 + 127486022 127488767 0 2 155,490,        0,2399
+
+will return::
+
+    chr7 127475281 127475310 NM_000230 0 +
+    chr7 127485994 127486166 NM_000230 0 +
+    chr7 127488407 127491632 NM_000230 0 +
+    chr7 127486011 127486166 D49487    0 +
+    chr7 127488410 127488900 D49487    0 +
+
+------
+
+.. class:: infomark
+
+**About formats**
+
+**BED format** Browser Extensible Data format was designed at UCSC for displaying data tracks in the Genome Browser. It has three required fields and additional optional ones. In the specific case of this tool the following fields must be present::
+
+    1. chrom - The name of the chromosome (e.g. chr1, chrY_random).
+    2. chromStart - The starting position in the chromosome. (The first base in a chromosome is numbered 0.)
+    3. chromEnd - The ending position in the chromosome, plus 1 (i.e., a half-open interval).
+    4. name - The name of the BED line.
+    5. score - A score between 0 and 1000.
+    6. strand - Defines the strand - either '+' or '-'.
+    7. thickStart - The starting position where the feature is drawn thickly at the Genome Browser.
+    8. thickEnd - The ending position where the feature is drawn thickly at the Genome Browser.
+    9. reserved - This should always be set to zero.
+   10. blockCount - The number of blocks (exons) in the BED line.
+   11. blockSizes - A comma-separated list of the block sizes. The number of items in this list should correspond to blockCount.
+   12. blockStarts - A comma-separated list of block starts. All of the blockStart positions should be calculated relative to chromStart. The number of items in this list should correspond to blockCount.
+
+
+</help>
+</tool>

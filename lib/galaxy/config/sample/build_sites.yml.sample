@@ -1,0 +1,22 @@
+# Build sites define the builds (dbkeys) available at sites used by display
+# applications and the URL to those sites.
+
+# The `display` attributes on the `ucsc` and `gbrowse` sites replace the
+# `ucsc_display_sites` and `gbrowse_display_sites` options in galaxy.ini.
+# Because these are used by "old-style" display applications, their types
+# cannot change if you want the old-style display links for these sites to
+# work.
+- type: ucsc
+  file: tool-data/shared/ucsc/ucsc_build_sites.txt
+  display: [main,test,archaea,ucla]
+- type: gbrowse
+  file: tool-data/shared/gbrowse/gbrowse_build_sites.txt
+  display: [modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225]
+- type: ensembl
+  file: tool-data/shared/ensembl/ensembl_sites.txt
+- type: ensembl_data_url
+  file: tool-data/shared/ensembl/ensembl_sites_data_URL.txt
+- type: igv
+  file: tool-data/shared/igv/igv_build_sites.txt
+- type: rviewer
+  file: tool-data/shared/rviewer/rviewer_build_sites.txt

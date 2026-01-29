@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<tool_dependency>
+    <package name="failure" version="1.0.0">
+        <install version="1.0">
+            <actions>
+                <action type="shell_command">false</action>
+                <action type="set_environment">
+                    <environment_variable name="TEST_SUCCEEDED" action="prepend_to">true</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme></readme>
+    </package>
+</tool_dependency>

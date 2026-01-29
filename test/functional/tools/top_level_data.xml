@@ -1,0 +1,34 @@
+<tool id="top_level_data" name="top_level_data" version="0.1.0">
+    <command><![CDATA[
+cat '${f1}' >> '$out1' &&
+echo '${library.f2}' >> '$out2' ## cannot use just f2 here
+    ]]></command>
+    <inputs>
+        <conditional name="library">
+            <param name="type" type="select" label="Parameter Settings">
+                <option value="no">Use defaults</option>
+                <option value="yes">Full parameter list</option>
+            </param>
+            <when value="yes">
+                <param name="f1" type="data" format="txt" label="Data 1" />
+                <param name="f2" type="text" label="Text 1" />
+            </when>
+            <when value="no">
+                <param name="f1" type="data" format="txt" label="Data 1" />
+                <param name="f2" type="text" label="Text 1" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="out1" format="txt" />
+        <data name="out2" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="f1" value="simple_line.txt" />
+            <param name="f2" value="This is a line of text." />
+            <output name="out1" file="simple_line.txt" />
+            <output name="out2" file="simple_line.txt" />
+        </test>
+    </tests>
+</tool>

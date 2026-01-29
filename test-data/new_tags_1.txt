@@ -1,0 +1,2 @@
+forward	orientation:forward	alias:r1	alias:f	#forward	group:sample1
+reverse	orientation:reverse	alias:r2	alias:r	#reverse	group:sample2

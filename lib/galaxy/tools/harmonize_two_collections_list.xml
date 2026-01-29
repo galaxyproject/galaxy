@@ -1,0 +1,244 @@
+<tool id="__HARMONIZELISTS__"
+      name="Harmonize two collections"
+      version="1.0.0"
+      tool_type="harmonize_list">
+    <description></description>
+    <type class="HarmonizeTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_0335</edam_operation>
+    </edam_operations>
+    <inputs>
+        <param type="data_collection" collection_type="list,list:paired" name="input1" label="Input Collection with good order" />
+        <param type="data_collection" collection_type="list,list:paired" name="input2" label="Input Collection to order" />
+    </inputs>
+    <outputs>
+        <collection name="output1" format_source="input1" type_source="input1" label="${input1.name} (harmonized with ${input2.name})" />
+        <collection name="output2" format_source="input2" type_source="input2" label="${input2.name} (harmonized with ${input1.name})" />
+    </outputs>
+    <tests>
+        <test>
+            <!-- test that we can reorder a collection-->
+            <param name="input1">
+                <collection type="list">
+                    <element name="element_1" value="simple_line_alternative.txt" />
+                    <element name="element_2" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="input2">
+                <collection type="list">
+                    <element name="element_2" value="simple_line_alternative.txt" />
+                    <element name="element_1" value="simple_line.txt" />
+                </collection>
+            </param>
+            <output_collection name="output1" type="list" count="2">
+                <element name="element_1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                </element>
+                <element name="element_2">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="output2" type="list" count="2">
+                <element name="element_1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+                <element name="element_2">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+        <!-- test that we can filter collection1-->
+        <test>
+            <param name="input1">
+                <collection type="list">
+                    <element name="element_1" value="simple_line_alternative.txt" />
+                    <element name="element_2" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="input2">
+                <collection type="list">
+                    <element name="element_1" value="simple_line.txt" />
+                </collection>
+            </param>
+            <output_collection name="output1" type="list" count="1">
+                <element name="element_1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="output2" type="list" count="1">
+                <element name="element_1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+        <!-- test that we can filter collection2-->
+        <test>
+            <param name="input1">
+                <collection type="list">
+                    <element name="element_2" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="input2">
+                <collection type="list">
+                    <element name="element_2" value="simple_line_alternative.txt" />
+                    <element name="element_1" value="simple_line.txt" />
+                </collection>
+            </param>
+            <output_collection name="output1" type="list" count="1">
+                <element name="element_2">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="output2" type="list" count="1">
+                <element name="element_2">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+        <!-- test that we can filter both collections-->
+        <test>
+            <param name="input1">
+                <collection type="list">
+                    <element name="element_1" value="simple_line_alternative.txt" />
+                    <element name="element_2" value="simple_line.txt" />
+                    <element name="element_3" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="input2">
+                <collection type="list">
+                    <element name="element_0" value="simple_line_alternative.txt" />
+                    <element name="element_2" value="simple_line_alternative.txt" />
+                    <element name="element_1" value="simple_line.txt" />
+                </collection>
+            </param>
+            <output_collection name="output1" type="list" count="2">
+                <element name="element_1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                </element>
+                <element name="element_2">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="output2" type="list" count="2">
+                <element name="element_1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+                <element name="element_2">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+        <!-- test that we can end with 2 empty collections -->
+        <test>
+            <param name="input1">
+                <collection type="list">
+                    <element name="element_1" value="simple_line_alternative.txt" />
+                    <element name="element_2" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="input2">
+                <collection type="list">
+                    <element name="element_21" value="simple_line_alternative.txt" />
+                    <element name="element_11" value="simple_line.txt" />
+                </collection>
+            </param>
+            <output_collection name="output1" type="list" count="0"/>
+            <output_collection name="output2" type="list" count="0"/>
+        </test>
+        <!-- test that collection types get propagated to outputs correctly -->
+        <test>
+            <param name="input1">
+                <collection type="list">
+                    <element name="element_1" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="input2">
+                <collection type="list:paired">
+                    <element name="element_1">
+                        <collection type="paired">
+                            <element name="forward" value="1.fastqsanger" ftype="fastqsanger" />
+                            <element name="reverse" value="1.fastqsanger" ftype="fastqsanger" />
+                         </collection>
+                    </element>
+                </collection>
+            </param>
+            <output_collection name="output1" type="list" count="1">
+                <element name="element_1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="output2" type="list:paired" count="1">
+                <element name="element_1">
+                    <element name="forward" file="1.fastqsanger" ftype="fastqsanger" />
+                    <element name="reverse" file="1.fastqsanger" ftype="fastqsanger" />
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+========
+Synopsis
+========
+
+Harmonize 2 collections: Inputs are 2 collections. Outputs are 2 collections with:
+- Same identifiers (identifiers which are specific to one or the other are removed)
+- Identifiers are in the same order
+
+=======
+Example
+=======
+
+If the inputs are::
+
+ Collection1: [Horse123] 
+              [Donkey543] 
+              [Mule176]
+
+ Collection2: [Horse] 
+              [Mule176] 
+              [Donkey543]
+The tool will output::
+
+ Collection1: [Donkey543] 
+              [Mule176]
+
+ Collection2: [Donkey543] 
+              [Mule176]
+
+-------
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+
+     ]]></help>
+</tool>

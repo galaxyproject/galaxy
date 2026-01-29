@@ -1,0 +1,1199 @@
+
+.. to_doc
+
+18.09
+===============================
+
+.. announce_start
+
+Enhancements
+-------------------------------
+
+.. feature
+
+* Allow selecting subset of collection by group tag
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 5457`_
+* Copy data from a cloud-based storage to a Galaxy history
+  `Pull Request 5835`_
+* Upload data to a cloud-based storage
+  `Pull Request 6078`_
+* New datatype: SBML
+  (thanks to `@cmonjeau <https://github.com/cmonjeau>`__).
+  `Pull Request 6201`_
+* Enable automatic reload of dynamic job rules on change
+  `Pull Request 6215`_
+* Added daa (diamond alignment) datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 6313`_
+* Allows DatasetMatcher to use multiple filters
+  (thanks to `@ebolyen <https://github.com/ebolyen>`__).
+  `Pull Request 6443`_
+* Adding 4 new GROMACS datatypes: cpt, xtc, top, and gro
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 6655`_
+* Implement runtime parameters for subworkflows.
+  `Pull Request 6664`_
+* Expose workflow versions
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6683`_
+* Add Loom datatype and remove rdata.seurat
+  `Pull Request 6723`_
+
+.. enhancement
+
+* Add a ``FilterEmptyDatasetsTool`` and allow filtering tools to apply to
+  arbitrary collection structures
+  (thanks to `@Mataivic <https://github.com/Mataivic>`__).
+  `Pull Request 5640`_
+* Minor enhancements for cgroup metrics
+  `Pull Request 5993`_
+* Optimize ``safe_walk`` to call ``realpath`` a lot less for typical calls
+  `Pull Request 5995`_
+* Documentation and typo fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6013`_
+* Add hostname metric
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 6021`_
+* Pause jobs with invalid inputs
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6036`_
+* Replace sharing mako with vue component
+  `Pull Request 6048`_
+* Rules - test case for apply rules tutorial.
+  `Pull Request 6066`_
+* Add resume job api
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6072`_
+* Add blib datatype for Mass Spectrometry spectral library
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 6092`_
+* Remove duplicate visualization list entries from masthead
+  `Pull Request 6110`_
+* Make cache_directory configurable in mulled Singularity resolvers.
+  `Pull Request 6122`_
+* Sharing.vue bootstrapping and a bugfix
+  `Pull Request 6132`_
+* Use ``from_work_dir`` in ``CONVERTER_fasta_to_fai``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6135`_
+* Make workflow editor ``toolTitle`` link include the tools description
+  (thanks to `@scrathat <https://github.com/scrathat>`__).
+  `Pull Request 6142`_
+* Small fixes and small refactorings toward reuse in CWL branch (retry)
+  `Pull Request 6148`_
+* Add impersonate to main user grid when it's enabled
+  `Pull Request 6176`_
+* Common dataset selector
+  `Pull Request 6195`_
+* Permit numeric values of GRT instance ID in config
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 6200`_
+* Add the newick extension for the Newick datatype,
+  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
+  `Pull Request 6206`_
+* Some more upload/sniff tests.
+  `Pull Request 6212`_
+* Test ``element_identifier`` usage with single data parameters, in repeat/cond.
+  `Pull Request 6213`_
+* Charts filename download fix
+  `Pull Request 6216`_
+* Wrap inputs in labels
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 6221`_
+* Workflow submit text links
+  `Pull Request 6240`_
+* Password encoding improvements
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6242`_
+* Align input element update mechanism
+  `Pull Request 6248`_
+* Fix collection mapping to allow subcollection mapping over multi-data
+  inputs.
+  `Pull Request 6255`_
+* Use Mercurial CLI instead of API for ``archive_repository_revision()``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6273`_
+* Consolidate use of ``get_repo_for_repository()`` and ``clone_repository()``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6277`_
+* Index select2 field values
+  `Pull Request 6286`_
+* Job success message revision
+  `Pull Request 6288`_
+* To clear workflow tool search field press ESC or click the X button
+  (thanks to `@scrathat <https://github.com/scrathat>`__).
+  `Pull Request 6290`_
+* Upload collections directly for tests.
+  `Pull Request 6294`_
+* Add specific datatype for CuffDiff SQLite database.
+  `Pull Request 6302`_
+* Fix default job script by moving env setup
+  (thanks to `@rhpvorderman <https://github.com/rhpvorderman>`__).
+  `Pull Request 6305`_
+* More use of Mercurial CLI instead of API
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6307`_
+* Lists-as-tuples collection operations
+  `Pull Request 6312`_
+* Replace unmaintained pycrypto dependency with pycryptodome
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6324`_
+* Add py34-first_startup to Travis and default tox tests
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6325`_
+* Visualization static staging
+  `Pull Request 6344`_
+* Add period to the list of allowed characters in user names
+  (thanks to `@moskalenko <https://github.com/moskalenko>`__).
+  `Pull Request 6365`_
+* Optimizations for dynamic output file collection.
+  `Pull Request 6367`_
+* More correct, more efficient collection operations.
+  `Pull Request 6370`_
+* Add gafa.sqlite datatype
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6372`_
+* Create client build hash on toplevel concurrent watch in addition to
+  individual builds.
+  `Pull Request 6381`_
+* Change a file read to use ``with`` statement
+  (thanks to `@qiagu <https://github.com/qiagu>`__).
+  `Pull Request 6388`_
+* Client library upgrades.
+  `Pull Request 6400`_
+* Allow resource selection for data managers
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6402`_
+* Update dev dependencies
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6403`_
+* Add py34-unit (allowed to fail) job to Travis
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6406`_
+* Allow supplying name of pasted data
+  (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).
+  `Pull Request 6415`_
+* Fixes for uploading empty files to Galaxy.
+  `Pull Request 6418`_
+* Remove installation of python-lzo system dependencies
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6425`_
+* Citation style work
+  `Pull Request 6427`_
+* Run workflows from published workflows menu
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6428`_
+* Fix a few tool_deps test errors
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 6436`_
+* Replace the administration header in admin menu with version
+  `Pull Request 6440`_
+* Add zoom support to workflow editor.
+  `Pull Request 6441`_
+* Intermine Enhancements
+  `Pull Request 6444`_
+* Changing menu tabs without hard refresh
+  (thanks to `@almahmoud <https://github.com/almahmoud>`__).
+  `Pull Request 6447`_
+* Let data managers also use conda python.
+  (thanks to `@rhpvorderman <https://github.com/rhpvorderman>`__).
+  `Pull Request 6466`_
+* Make upload tool python3 compatible
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6467`_
+* Allow including paths in inputs json files.
+  `Pull Request 6468`_
+* Update cliff and other related dependencies
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6469`_
+* Fix bug noticed in sentry
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 6474`_
+* Rulebuilder: Special case auto URL schema detection for SRA inputs.
+  `Pull Request 6476`_
+* GRT: fix the upload logging init
+  `Pull Request 6478`_
+* Add more information to the dataset template
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 6480`_
+* Use bootstrap vue classes for workflow import form
+  `Pull Request 6489`_
+* Small improvement to the tool xsd docs regarding ``discovered_dataset``
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 6490`_
+* Implement ``group:`` tags (toward multi-factor analysis with group tagging)
+  `Pull Request 6491`_
+* Allow setting tags on targets & contents in data fetch API.
+  `Pull Request 6499`_
+* Integrate tagging into the rule builder.
+  `Pull Request 6500`_
+* Cache ``chrom_info`` generation when mapping over collections.
+  `Pull Request 6515`_
+* More optimized HID generation - in one commit instead of two.
+  `Pull Request 6516`_
+* Improvements to Cloud Storage Manager
+  `Pull Request 6519`_
+* Handle pasted content in fetch API.
+  `Pull Request 6523`_
+* Use cached database identity to avoid many DB requests when creating jobs.
+  `Pull Request 6524`_
+* Removal of unreachable ``exit()``
+  `Pull Request 6529`_
+* Optimizations for history copying.
+  `Pull Request 6531`_
+* Notify if newer tool version is available
+  `Pull Request 6533`_
+* Convert tool parameter XML attribute 'hidden' into the correct boolean
+  Python type
+  (thanks to `@andreyto <https://github.com/andreyto>`__).
+  `Pull Request 6539`_
+* Test case for nested collection input to flatten in a workflow.
+  `Pull Request 6541`_
+* Allow Consuming Tags in the Apply Rules Tool
+  `Pull Request 6545`_
+* Integration test for the interaction of nested object stores and jobs.
+  `Pull Request 6546`_
+* Configure object store for datasets in job handler instead of web thread.
+  `Pull Request 6550`_
+* Allow configuring object stores on a per-job-destination basis.
+  `Pull Request 6552`_
+* Unified dataset permission API.
+  `Pull Request 6568`_
+* Add tagging rule to history level rule builder, copy HDAs when building
+  collection
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6572`_
+* Add API endpoint to fetch a history's workflow invocations.
+  `Pull Request 6580`_
+* Improve robustness of tour Selenium test.
+  `Pull Request 6582`_
+* Smarter Test Histories (Part I)
+  `Pull Request 6586`_
+* Add download option to workflow editor menu
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 6596`_
+* Add trr datatype
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 6597`_
+* Refresh an expired OIDC ID token
+  `Pull Request 6606`_
+* Handle driver shutdown, show all tests in pytest
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6608`_
+* Add dcd datatype for molecular dynamics
+  (thanks to `@chrisbarnettster <https://github.com/chrisbarnettster>`__).
+  `Pull Request 6613`_
+* Py3 testing cleanups
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6616`_
+* Integration test for job recovery.
+  `Pull Request 6620`_
+* Update all dependencies
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6628`_
+* Update some run_tests.sh docs for recent changes.
+  `Pull Request 6629`_
+* Remove ``check_python_dependencies`` job from Travis
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6630`_
+* Testing framework improvements
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6632`_
+* Optimize tool execution permission checking
+  `Pull Request 6635`_
+* Document config for sniffing compressed files, enable by default
+  `Pull Request 6641`_
+* Small Optimizations to Adding Datasets to History
+  `Pull Request 6644`_
+* Add Seurat datatype: rdata.seurat
+  (thanks to `@mblue9 <https://github.com/mblue9>`__).
+  `Pull Request 6648`_
+* Allow group tag selection also for multiple="true" inputs
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6661`_
+* Various link and documentation fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6662`_
+* Upgraded genomespaceclient to newer version
+  (thanks to `@gvlproject <https://github.com/gvlproject>`__).
+  `Pull Request 6668`_
+* Workflow replacement parameters polish.
+  `Pull Request 6678`_
+* Keep newly broken tool in toolbox
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6681`_
+* Add self help to error reporting interface
+  `Pull Request 6711`_
+* Undo auto-propagation of group tags.
+  `Pull Request 6750`_
+* Client build startup changes
+  `Pull Request 6753`_
+* Add graph dot datatype and enable it in visualisations
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 6760`_
+* Remove upgrade cruft related to datatypes.
+  `Pull Request 6761`_
+* Allow starting Galaxy under gunicorn when using galaxy.ini
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6805`_
+* Allow testing tags in input collections.
+  `Pull Request 6823`_
+
+.. small_enhancement
+
+* Remove duplicate metric sending
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 6011`_
+* This strips the graphite-specific middleware
+  `Pull Request 6018`_
+* Make ``interactor._{get,post,put,...}`` less repetitive
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6070`_
+* Workflow and remote-user related refactoring and a bug fix
+  `Pull Request 6076`_
+* Drop unused files
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6150`_
+* History import safari fix, overhaul
+  `Pull Request 6153`_
+* Strip legacy history structure view
+  `Pull Request 6241`_
+* Fix typo (UnitializedTree -> UninitializedTree)
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6315`_
+* Rewrite admin data types as vue component
+  (thanks to `@scrathat <https://github.com/scrathat>`__).
+  `Pull Request 6383`_
+* Some style cleanup.
+  `Pull Request 6386`_
+* py3 compat
+  (thanks to `@caleb-easterly <https://github.com/caleb-easterly>`__).
+  `Pull Request 6434`_
+* Python3: Encode return values of JSON encoder
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6439`_
+* Python3: Drop ``json_fix``, doesn't seem to be necessary and fixes workflow
+  unit tests
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6446`_
+* py3: fixes ``test_DatasetManager.py:DatasetManagerTestCase``
+  (thanks to `@caleb-easterly <https://github.com/caleb-easterly>`__).
+  `Pull Request 6452`_
+* Fix test_toolbox for python 3
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6463`_
+* Remove redundant/duplicate endpoint to edit user info
+  `Pull Request 6501`_
+* Remove the deprecated AOL openid backend.
+  `Pull Request 6505`_
+* Fix all py3 api tests
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6561`_
+* Setup py3 test job
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6565`_
+* Remove backbone version of thumbnail element
+  `Pull Request 6587`_
+* Migrate API tests in test_jobs.py to use test_history context.
+  `Pull Request 6593`_
+* Modernize data manager testing and strip twill
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6595`_
+* Enable and fix framework py3 tests
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6605`_
+* Order data parameters before unlinked multiplication
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6609`_
+* Fix remaining selenium py3 test failures
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6610`_
+* Raise an exception if a history with decoded id does not exist.
+  `Pull Request 6611`_
+* Test tools shipped with Galaxy
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6627`_
+* Tweak conda_* setting in test driver
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6633`_
+* Move tests to pytest setup
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6638`_
+* Upgrade CloudBridge to v1.0.1
+  `Pull Request 6660`_
+* Increase robustness and accuracy of job search / cache use
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6669`_
+* Fix remaining selenium py3 errors
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6803`_
+* Drop gulp plugin staging task from default tasks
+  `Pull Request 6808`_
+
+
+Fixes
+-------------------------------
+
+.. major_bug
+
+
+.. bug
+
+* Fix bowtie2 link
+  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+  `Pull Request 6009`_
+* Fix some imports
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6014`_
+* Fix ``JobWrapper.get_destination_configuration()`` so that it actually checks
+  the ``JobDestination`` params
+  `Pull Request 6087`_
+* Fixed small typo
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 6094`_
+* History click-to-rename bugfix
+  `Pull Request 6159`_
+* Remove defunct sharing column link
+  `Pull Request 6177`_
+* cutWrapper: fix wrong path in error message
+  (thanks to `@abretaud <https://github.com/abretaud>`__).
+  `Pull Request 6211`_
+* Fix ``optional="True"`` inputs
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6222`_
+* Two minor aliases for (exterior) backwards compatibility, minor badge tweaks
+  `Pull Request 6226`_
+* Fix broken collection_type_source tool and test.
+  `Pull Request 6227`_
+* Add ``io_details`` and ``link_details`` in api tools doc
+  (thanks to `@ValentinChCloud <https://github.com/ValentinChCloud>`__).
+  `Pull Request 6228`_
+* Fix file type error in RuleCollectionBuilder.
+  `Pull Request 6231`_
+* Fix non-strict tabular relabel operation
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6234`_
+* Hack paster args to not duplicate pid file stuff for RUN_ALL.
+  (thanks to `@lparsons <https://github.com/lparsons>`__).
+  `Pull Request 6239`_
+* Backport of Workflow Execution Text Fixup
+  `Pull Request 6243`_
+* Hyperlink DOIs against preferred resolver
+  (thanks to `@katrinleinweber <https://github.com/katrinleinweber>`__).
+  `Pull Request 6244`_
+* Check context for textable mode of select fields
+  `Pull Request 6251`_
+* Mapping over ``from_param`` fixes
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6253`_
+* Fix history shared with me 'view' link
+  `Pull Request 6257`_
+* History view 'import' button display based on ownership.
+  `Pull Request 6260`_
+* Various fixes for the run scripts
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6262`_
+* Fix dataset sizes in GRT export script
+  (thanks to `@atyryshkina <https://github.com/atyryshkina>`__).
+  `Pull Request 6263`_
+* Allow invalid optional param values for tools profile versions < 18.09
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6264`_
+* Python3 fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6265`_
+* Fixes for phenotype association tools
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6269`_
+* Fix link to workflow list
+  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+  `Pull Request 6270`_
+* Fix help text for renaming operation in workflows
+  `Pull Request 6274`_
+* Various fixes for mapping over collections
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6278`_
+* Fix tool search overlay selector
+  (thanks to `@scrathat <https://github.com/scrathat>`__).
+  `Pull Request 6279`_
+* Fix delete "Collection Only" option in history menu.
+  `Pull Request 6281`_
+* telescope export: change to a more defensive approach
+  `Pull Request 6285`_
+* Only update options if provided in parameter definition
+  `Pull Request 6289`_
+* Update tabular.py
+  (thanks to `@hrhotz <https://github.com/hrhotz>`__).
+  `Pull Request 6292`_
+* Strip a spurious Slurm warning from job stderr
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6293`_
+* Fix ``GALAXY_RUN_ALL=1 ./run.sh --daemon``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6295`_
+* Add the canonical URL to grt config
+  `Pull Request 6301`_
+* Stop listening to history changes after job submission
+  `Pull Request 6303`_
+* Increase sleep if encountering (DB locking) exception
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6304`_
+* Fix undefined ``success_message``
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6316`_
+* Allow ``#if $datasets #end if`` pattern for file lists
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6317`_
+* Fix target update for rule collection builder after input selection
+  (thanks to `@scrathat <https://github.com/scrathat>`__).
+  `Pull Request 6326`_
+* Added missing level ``fatal_oom`` to galaxy.xsd
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 6341`_
+* Update description for installing pbs-python
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6345`_
+* Prevent throwing an exception if a dataset doesn't exist (and never will) due
+  to a job error
+  (thanks to `@dpryan79 <https://github.com/dpryan79>`__).
+  `Pull Request 6349`_
+* Fix the ``--log-file`` option in the job handlers
+  (thanks to `@dpryan79 <https://github.com/dpryan79>`__).
+  `Pull Request 6351`_
+* grt - wrap every write in try-except
+  `Pull Request 6354`_
+* Fix 'share with another user'
+  `Pull Request 6358`_
+* Add fasta datatype to msa viewer
+  `Pull Request 6361`_
+* Fix small bug in logging output name in job finish.
+  `Pull Request 6366`_
+* Fix for rendering multiple dependent dynamic select lists
+  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
+  `Pull Request 6374`_
+* Specify standard HTTPTransport for Sentry
+  `Pull Request 6375`_
+* Comma-separate tool names in missing tools error message
+  `Pull Request 6378`_
+* Revert "Remove bam to bai converter"
+  `Pull Request 6385`_
+* Fix ``data_column`` cast error when multiple is false
+  (thanks to `@qiagu <https://github.com/qiagu>`__).
+  `Pull Request 6389`_
+* Optimize setting large numbers of HIDs for collection outputs.
+  `Pull Request 6394`_
+* Fixing ``<conditional>`` XML example
+  (thanks to `@almahmoud <https://github.com/almahmoud>`__).
+  `Pull Request 6399`_
+* Fix positioning for tool search box.
+  `Pull Request 6416`_
+* Removing binary as input for python compatibility
+  (thanks to `@eslerm <https://github.com/eslerm>`__).
+  `Pull Request 6417`_
+* GCC2018 python3 unit-test fixes
+  (thanks to `@ycgong <https://github.com/ycgong>`__).
+  `Pull Request 6419`_
+* Python 3 porting
+  (thanks to `@caleb-easterly <https://github.com/caleb-easterly>`__).
+  `Pull Request 6420`_
+* Fix panel drag resize.
+  `Pull Request 6421`_
+* Fix message fadeout by relying on hiding the message instead
+  `Pull Request 6424`_
+* Python 3 fixes from GCC-BOSC-2018
+  (thanks to `@johnbradley <https://github.com/johnbradley>`__).
+  `Pull Request 6429`_
+* Unit testing with Python 3
+  (thanks to `@NicHerndon <https://github.com/NicHerndon>`__).
+  `Pull Request 6430`_
+* Do not encode a rendered Mako template
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6431`_
+* Decode potential encoded id
+  `Pull Request 6433`_
+* Fixes test/unit/jobs/test_job_output_checker.py; strange default?
+  (thanks to `@caleb-easterly <https://github.com/caleb-easterly>`__).
+  `Pull Request 6438`_
+* py3 compat: fixes test_vcf, test_sniff_compressed*
+  (thanks to `@caleb-easterly <https://github.com/caleb-easterly>`__).
+  `Pull Request 6442`_
+* Fix TS: resolve missing closing div and three extra closing divs
+  `Pull Request 6445`_
+* Fix all remaining unit tests under Python 3
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6450`_
+* Fix droptarget:drop trigger (drag/drop in the multiview)
+  `Pull Request 6451`_
+* py3: Fix the dynamic tool destination unit test
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6453`_
+* py3: replace e.message with str(e)
+  (thanks to `@caleb-easterly <https://github.com/caleb-easterly>`__).
+  `Pull Request 6454`_
+* Various Python 3 fixes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6455`_
+* GIE static url
+  (thanks to `@thobalose <https://github.com/thobalose>`__).
+  `Pull Request 6460`_
+* Update common_startup_functions.sh
+  (thanks to `@nagoue <https://github.com/nagoue>`__).
+  `Pull Request 6481`_
+* Fix for show params server error
+  `Pull Request 6486`_
+* Fix ``ftp_upload_purge`` in galaxy.yml
+  (thanks to `@phac-nml <https://github.com/phac-nml>`__).
+  `Pull Request 6494`_
+* Fix resume from history panel
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6498`_
+* Fix bam to bigwig error detection.
+  (thanks to `@pvanheus <https://github.com/pvanheus>`__).
+  `Pull Request 6502`_
+* Fix and docs for advanced container options in job_conf.xml.
+  `Pull Request 6503`_
+* Return a json blob containing redirect URI in OIDC login controller
+  `Pull Request 6517`_
+* Fix warning in ``CONVERTER_bam_to_bigwig_0`` and ``CONVERTER_sam_to_bigwig_0``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6528`_
+* Fix dataset copy tags
+  `Pull Request 6532`_
+* Fix ``to_dict`` with ``io_details=True`` for tools with collection outputs.
+  `Pull Request 6538`_
+* Fix "filter empty" rule in Python rule handling framework.
+  `Pull Request 6542`_
+* Fixes for API installation bugs.
+  `Pull Request 6544`_
+* Redirect unidentified routes in admin panel
+  `Pull Request 6551`_
+* Remove the sharing of toolbox in GRT
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 6553`_
+* Restore ``log_destination = stdout`` configuration option.
+  `Pull Request 6555`_
+* Many Selenium tests fixes for recent dev changes.
+  `Pull Request 6557`_
+* More Selenium test fixes.
+  `Pull Request 6562`_
+* Misc Admin TS Panel Fixes
+  `Pull Request 6564`_
+* Use subworkflow index when setting auto-label
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6570`_
+* Fix workflow run link for extracted workflows
+  `Pull Request 6571`_
+* Typo and wording fixes for dependency resolvers docs
+  `Pull Request 6575`_
+* Use object store to check for existence of extra_files_path
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6588`_
+* Update UCSC genome-test server URLs
+  `Pull Request 6591`_
+* Resolve overlap of workflow parameter container with gear-icon in editor
+  header
+  `Pull Request 6592`_
+* Respect unavailable display peek
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6594`_
+* Fix Location of Plugin Static Content In Documentation for 18.05
+  (thanks to `@phac-nml <https://github.com/phac-nml>`__).
+  `Pull Request 6602`_
+* Fix cron/build_chrom_db.py and update UCSC builds
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6623`_
+* Fix for workflow extraction cleanup routine.
+  `Pull Request 6636`_
+* Row ids that are all numeric become ints...
+  (thanks to `@bwlang <https://github.com/bwlang>`__).
+  `Pull Request 6639`_
+* Allow running ``scripts/galaxy-main`` without Galaxy on ``sys.path``
+  `Pull Request 6642`_
+* Fix color of workflow panel background
+  `Pull Request 6643`_
+* Pages - fixes for encoded ids in the database
+  `Pull Request 6647`_
+* Strip API keys option from admin panel left side
+  `Pull Request 6651`_
+* Fix ``get_fileobj()`` call in ``Eland.set_meta()``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6659`_
+* Update bx-python to 0.8.2
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6670`_
+* Serialize select field options, fixes beta install
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6677`_
+* Fix wf-editor when loading subworkflow with parenthesis in label
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6680`_
+* Add missing route for API endpoint.
+  `Pull Request 6703`_
+* Catch additional permutations of Slurm cgroup creation warnings
+  `Pull Request 6705`_
+* Unquote the ``tool_version`` in the tools API
+  `Pull Request 6707`_
+* Fix active highlight
+  `Pull Request 6725`_
+* Badge default fix
+  `Pull Request 6726`_
+* Remove html tags and newlines from the help text
+  `Pull Request 6728`_
+* Fix missing tests for data source sniffing.
+  `Pull Request 6733`_
+* Decode tool id and version in the client, not in the API
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6737`_
+* Fix and test anonymous error reports
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6742`_
+* Fix favicon.ico for uWSGI deployments
+  `Pull Request 6743`_
+* Dispose of dataset tooltip when the delete is being called
+  `Pull Request 6744`_
+* Generic tooltip hide for onclick faIconButtons
+  `Pull Request 6745`_
+* Fix page editor height for flex panels.
+  `Pull Request 6747`_
+* Use mapped-over ``collectionType`` when inferring ``collectionType`` through
+  ``format_source``
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6749`_
+* Catch any failures encountered while pausing/stopping jobs whose inputs are
+  terminal and non-ok
+  `Pull Request 6755`_
+* Don't attempt ``len(None)``, ensure stdout/stderr are strings in
+  ``Job(Like).set_streams()``.
+  `Pull Request 6765`_
+* Increase the maximum number of stderr lines that will be scanned for slurm
+  warnings
+  `Pull Request 6766`_
+* Backport of: Resilience of success message handling
+  `Pull Request 6768`_
+* Use ``UserRoleAssociation`` to get private roles
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6771`_
+* Update name of ``Workflow`` when updating ``StoredWorkflow`` name
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6774`_
+* All extracted datasets should be visible
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6780`_
+* Fix ``__encode_invocation`` signature
+  `Pull Request 6782`_
+* Strip all control characters from rules
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6785`_
+* Fix bam upload resulting in 'auto' datatype
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6789`_
+* Flex-related style fixes
+  `Pull Request 6791`_
+* Allow making all datasets within history public, when sharing
+  `Pull Request 6793`_
+* Drop unused peek method
+  `Pull Request 6796`_
+* Fix element identifier for non multiple true mapover in conditionals
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6798`_
+* Provide a useful exception message for object store exceptions
+  `Pull Request 6799`_
+* Cast rule.length to int when parsing rules
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6802`_
+* Don't delete referenced Datasets when purging users
+  `Pull Request 6809`_
+* Do not rule out numbers that are accessed with shift modifier
+  `Pull Request 6810`_
+* Upgrade concurrently for 'null' return fix
+  `Pull Request 6828`_
+* Update conda channel priority: conda-forge > bioconda
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6830`_
+* Register job monitor thread as postfork function
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6836`_
+* Unified panel style bottom padding fix
+  `Pull Request 6839`_
+* Fix slurm cli on secure shell
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6845`_
+* update paramiko dep
+  `Pull Request 6859`_
+* Fix ``LocalShell`` doctest
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6863`_
+* Keep xlsx files compressed
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6867`_
+* Do not traceback when uploading a TS repo with no changes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6875`_
+* Create composite file archives in new_file_path instead of TMP
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6885`_
+* Fix pretty printing of shed_tool_conf.xml file
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6904`_
+* Fix ``make config-validate``
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6908`_
+* Fix stopping DRMAA jobs
+  `Pull Request 6912`_
+* Fix toolshed error in display_tool if tool is invalid
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6932`_
+
+.. github_links
+.. _Pull Request 5457: https://github.com/galaxyproject/galaxy/pull/5457
+.. _Pull Request 5640: https://github.com/galaxyproject/galaxy/pull/5640
+.. _Pull Request 5835: https://github.com/galaxyproject/galaxy/pull/5835
+.. _Pull Request 5982: https://github.com/galaxyproject/galaxy/pull/5982
+.. _Pull Request 5993: https://github.com/galaxyproject/galaxy/pull/5993
+.. _Pull Request 5995: https://github.com/galaxyproject/galaxy/pull/5995
+.. _Pull Request 6004: https://github.com/galaxyproject/galaxy/pull/6004
+.. _Pull Request 6009: https://github.com/galaxyproject/galaxy/pull/6009
+.. _Pull Request 6011: https://github.com/galaxyproject/galaxy/pull/6011
+.. _Pull Request 6013: https://github.com/galaxyproject/galaxy/pull/6013
+.. _Pull Request 6014: https://github.com/galaxyproject/galaxy/pull/6014
+.. _Pull Request 6018: https://github.com/galaxyproject/galaxy/pull/6018
+.. _Pull Request 6021: https://github.com/galaxyproject/galaxy/pull/6021
+.. _Pull Request 6036: https://github.com/galaxyproject/galaxy/pull/6036
+.. _Pull Request 6048: https://github.com/galaxyproject/galaxy/pull/6048
+.. _Pull Request 6066: https://github.com/galaxyproject/galaxy/pull/6066
+.. _Pull Request 6070: https://github.com/galaxyproject/galaxy/pull/6070
+.. _Pull Request 6072: https://github.com/galaxyproject/galaxy/pull/6072
+.. _Pull Request 6076: https://github.com/galaxyproject/galaxy/pull/6076
+.. _Pull Request 6078: https://github.com/galaxyproject/galaxy/pull/6078
+.. _Pull Request 6087: https://github.com/galaxyproject/galaxy/pull/6087
+.. _Pull Request 6092: https://github.com/galaxyproject/galaxy/pull/6092
+.. _Pull Request 6094: https://github.com/galaxyproject/galaxy/pull/6094
+.. _Pull Request 6110: https://github.com/galaxyproject/galaxy/pull/6110
+.. _Pull Request 6122: https://github.com/galaxyproject/galaxy/pull/6122
+.. _Pull Request 6132: https://github.com/galaxyproject/galaxy/pull/6132
+.. _Pull Request 6135: https://github.com/galaxyproject/galaxy/pull/6135
+.. _Pull Request 6142: https://github.com/galaxyproject/galaxy/pull/6142
+.. _Pull Request 6148: https://github.com/galaxyproject/galaxy/pull/6148
+.. _Pull Request 6150: https://github.com/galaxyproject/galaxy/pull/6150
+.. _Pull Request 6153: https://github.com/galaxyproject/galaxy/pull/6153
+.. _Pull Request 6159: https://github.com/galaxyproject/galaxy/pull/6159
+.. _Pull Request 6171: https://github.com/galaxyproject/galaxy/pull/6171
+.. _Pull Request 6176: https://github.com/galaxyproject/galaxy/pull/6176
+.. _Pull Request 6177: https://github.com/galaxyproject/galaxy/pull/6177
+.. _Pull Request 6195: https://github.com/galaxyproject/galaxy/pull/6195
+.. _Pull Request 6200: https://github.com/galaxyproject/galaxy/pull/6200
+.. _Pull Request 6201: https://github.com/galaxyproject/galaxy/pull/6201
+.. _Pull Request 6206: https://github.com/galaxyproject/galaxy/pull/6206
+.. _Pull Request 6211: https://github.com/galaxyproject/galaxy/pull/6211
+.. _Pull Request 6212: https://github.com/galaxyproject/galaxy/pull/6212
+.. _Pull Request 6213: https://github.com/galaxyproject/galaxy/pull/6213
+.. _Pull Request 6215: https://github.com/galaxyproject/galaxy/pull/6215
+.. _Pull Request 6216: https://github.com/galaxyproject/galaxy/pull/6216
+.. _Pull Request 6221: https://github.com/galaxyproject/galaxy/pull/6221
+.. _Pull Request 6222: https://github.com/galaxyproject/galaxy/pull/6222
+.. _Pull Request 6226: https://github.com/galaxyproject/galaxy/pull/6226
+.. _Pull Request 6227: https://github.com/galaxyproject/galaxy/pull/6227
+.. _Pull Request 6228: https://github.com/galaxyproject/galaxy/pull/6228
+.. _Pull Request 6231: https://github.com/galaxyproject/galaxy/pull/6231
+.. _Pull Request 6234: https://github.com/galaxyproject/galaxy/pull/6234
+.. _Pull Request 6237: https://github.com/galaxyproject/galaxy/pull/6237
+.. _Pull Request 6239: https://github.com/galaxyproject/galaxy/pull/6239
+.. _Pull Request 6240: https://github.com/galaxyproject/galaxy/pull/6240
+.. _Pull Request 6241: https://github.com/galaxyproject/galaxy/pull/6241
+.. _Pull Request 6242: https://github.com/galaxyproject/galaxy/pull/6242
+.. _Pull Request 6243: https://github.com/galaxyproject/galaxy/pull/6243
+.. _Pull Request 6244: https://github.com/galaxyproject/galaxy/pull/6244
+.. _Pull Request 6248: https://github.com/galaxyproject/galaxy/pull/6248
+.. _Pull Request 6251: https://github.com/galaxyproject/galaxy/pull/6251
+.. _Pull Request 6252: https://github.com/galaxyproject/galaxy/pull/6252
+.. _Pull Request 6253: https://github.com/galaxyproject/galaxy/pull/6253
+.. _Pull Request 6255: https://github.com/galaxyproject/galaxy/pull/6255
+.. _Pull Request 6257: https://github.com/galaxyproject/galaxy/pull/6257
+.. _Pull Request 6260: https://github.com/galaxyproject/galaxy/pull/6260
+.. _Pull Request 6262: https://github.com/galaxyproject/galaxy/pull/6262
+.. _Pull Request 6263: https://github.com/galaxyproject/galaxy/pull/6263
+.. _Pull Request 6264: https://github.com/galaxyproject/galaxy/pull/6264
+.. _Pull Request 6265: https://github.com/galaxyproject/galaxy/pull/6265
+.. _Pull Request 6269: https://github.com/galaxyproject/galaxy/pull/6269
+.. _Pull Request 6270: https://github.com/galaxyproject/galaxy/pull/6270
+.. _Pull Request 6273: https://github.com/galaxyproject/galaxy/pull/6273
+.. _Pull Request 6274: https://github.com/galaxyproject/galaxy/pull/6274
+.. _Pull Request 6277: https://github.com/galaxyproject/galaxy/pull/6277
+.. _Pull Request 6278: https://github.com/galaxyproject/galaxy/pull/6278
+.. _Pull Request 6279: https://github.com/galaxyproject/galaxy/pull/6279
+.. _Pull Request 6281: https://github.com/galaxyproject/galaxy/pull/6281
+.. _Pull Request 6285: https://github.com/galaxyproject/galaxy/pull/6285
+.. _Pull Request 6286: https://github.com/galaxyproject/galaxy/pull/6286
+.. _Pull Request 6288: https://github.com/galaxyproject/galaxy/pull/6288
+.. _Pull Request 6289: https://github.com/galaxyproject/galaxy/pull/6289
+.. _Pull Request 6290: https://github.com/galaxyproject/galaxy/pull/6290
+.. _Pull Request 6292: https://github.com/galaxyproject/galaxy/pull/6292
+.. _Pull Request 6293: https://github.com/galaxyproject/galaxy/pull/6293
+.. _Pull Request 6294: https://github.com/galaxyproject/galaxy/pull/6294
+.. _Pull Request 6295: https://github.com/galaxyproject/galaxy/pull/6295
+.. _Pull Request 6300: https://github.com/galaxyproject/galaxy/pull/6300
+.. _Pull Request 6301: https://github.com/galaxyproject/galaxy/pull/6301
+.. _Pull Request 6302: https://github.com/galaxyproject/galaxy/pull/6302
+.. _Pull Request 6303: https://github.com/galaxyproject/galaxy/pull/6303
+.. _Pull Request 6304: https://github.com/galaxyproject/galaxy/pull/6304
+.. _Pull Request 6305: https://github.com/galaxyproject/galaxy/pull/6305
+.. _Pull Request 6307: https://github.com/galaxyproject/galaxy/pull/6307
+.. _Pull Request 6312: https://github.com/galaxyproject/galaxy/pull/6312
+.. _Pull Request 6313: https://github.com/galaxyproject/galaxy/pull/6313
+.. _Pull Request 6315: https://github.com/galaxyproject/galaxy/pull/6315
+.. _Pull Request 6316: https://github.com/galaxyproject/galaxy/pull/6316
+.. _Pull Request 6317: https://github.com/galaxyproject/galaxy/pull/6317
+.. _Pull Request 6324: https://github.com/galaxyproject/galaxy/pull/6324
+.. _Pull Request 6325: https://github.com/galaxyproject/galaxy/pull/6325
+.. _Pull Request 6326: https://github.com/galaxyproject/galaxy/pull/6326
+.. _Pull Request 6341: https://github.com/galaxyproject/galaxy/pull/6341
+.. _Pull Request 6344: https://github.com/galaxyproject/galaxy/pull/6344
+.. _Pull Request 6345: https://github.com/galaxyproject/galaxy/pull/6345
+.. _Pull Request 6349: https://github.com/galaxyproject/galaxy/pull/6349
+.. _Pull Request 6351: https://github.com/galaxyproject/galaxy/pull/6351
+.. _Pull Request 6354: https://github.com/galaxyproject/galaxy/pull/6354
+.. _Pull Request 6358: https://github.com/galaxyproject/galaxy/pull/6358
+.. _Pull Request 6361: https://github.com/galaxyproject/galaxy/pull/6361
+.. _Pull Request 6365: https://github.com/galaxyproject/galaxy/pull/6365
+.. _Pull Request 6366: https://github.com/galaxyproject/galaxy/pull/6366
+.. _Pull Request 6367: https://github.com/galaxyproject/galaxy/pull/6367
+.. _Pull Request 6370: https://github.com/galaxyproject/galaxy/pull/6370
+.. _Pull Request 6371: https://github.com/galaxyproject/galaxy/pull/6371
+.. _Pull Request 6372: https://github.com/galaxyproject/galaxy/pull/6372
+.. _Pull Request 6374: https://github.com/galaxyproject/galaxy/pull/6374
+.. _Pull Request 6375: https://github.com/galaxyproject/galaxy/pull/6375
+.. _Pull Request 6377: https://github.com/galaxyproject/galaxy/pull/6377
+.. _Pull Request 6378: https://github.com/galaxyproject/galaxy/pull/6378
+.. _Pull Request 6381: https://github.com/galaxyproject/galaxy/pull/6381
+.. _Pull Request 6383: https://github.com/galaxyproject/galaxy/pull/6383
+.. _Pull Request 6385: https://github.com/galaxyproject/galaxy/pull/6385
+.. _Pull Request 6386: https://github.com/galaxyproject/galaxy/pull/6386
+.. _Pull Request 6388: https://github.com/galaxyproject/galaxy/pull/6388
+.. _Pull Request 6389: https://github.com/galaxyproject/galaxy/pull/6389
+.. _Pull Request 6394: https://github.com/galaxyproject/galaxy/pull/6394
+.. _Pull Request 6399: https://github.com/galaxyproject/galaxy/pull/6399
+.. _Pull Request 6400: https://github.com/galaxyproject/galaxy/pull/6400
+.. _Pull Request 6402: https://github.com/galaxyproject/galaxy/pull/6402
+.. _Pull Request 6403: https://github.com/galaxyproject/galaxy/pull/6403
+.. _Pull Request 6406: https://github.com/galaxyproject/galaxy/pull/6406
+.. _Pull Request 6415: https://github.com/galaxyproject/galaxy/pull/6415
+.. _Pull Request 6416: https://github.com/galaxyproject/galaxy/pull/6416
+.. _Pull Request 6417: https://github.com/galaxyproject/galaxy/pull/6417
+.. _Pull Request 6418: https://github.com/galaxyproject/galaxy/pull/6418
+.. _Pull Request 6419: https://github.com/galaxyproject/galaxy/pull/6419
+.. _Pull Request 6420: https://github.com/galaxyproject/galaxy/pull/6420
+.. _Pull Request 6421: https://github.com/galaxyproject/galaxy/pull/6421
+.. _Pull Request 6424: https://github.com/galaxyproject/galaxy/pull/6424
+.. _Pull Request 6425: https://github.com/galaxyproject/galaxy/pull/6425
+.. _Pull Request 6427: https://github.com/galaxyproject/galaxy/pull/6427
+.. _Pull Request 6428: https://github.com/galaxyproject/galaxy/pull/6428
+.. _Pull Request 6429: https://github.com/galaxyproject/galaxy/pull/6429
+.. _Pull Request 6430: https://github.com/galaxyproject/galaxy/pull/6430
+.. _Pull Request 6431: https://github.com/galaxyproject/galaxy/pull/6431
+.. _Pull Request 6433: https://github.com/galaxyproject/galaxy/pull/6433
+.. _Pull Request 6434: https://github.com/galaxyproject/galaxy/pull/6434
+.. _Pull Request 6436: https://github.com/galaxyproject/galaxy/pull/6436
+.. _Pull Request 6438: https://github.com/galaxyproject/galaxy/pull/6438
+.. _Pull Request 6439: https://github.com/galaxyproject/galaxy/pull/6439
+.. _Pull Request 6440: https://github.com/galaxyproject/galaxy/pull/6440
+.. _Pull Request 6441: https://github.com/galaxyproject/galaxy/pull/6441
+.. _Pull Request 6442: https://github.com/galaxyproject/galaxy/pull/6442
+.. _Pull Request 6443: https://github.com/galaxyproject/galaxy/pull/6443
+.. _Pull Request 6444: https://github.com/galaxyproject/galaxy/pull/6444
+.. _Pull Request 6445: https://github.com/galaxyproject/galaxy/pull/6445
+.. _Pull Request 6446: https://github.com/galaxyproject/galaxy/pull/6446
+.. _Pull Request 6447: https://github.com/galaxyproject/galaxy/pull/6447
+.. _Pull Request 6449: https://github.com/galaxyproject/galaxy/pull/6449
+.. _Pull Request 6450: https://github.com/galaxyproject/galaxy/pull/6450
+.. _Pull Request 6451: https://github.com/galaxyproject/galaxy/pull/6451
+.. _Pull Request 6452: https://github.com/galaxyproject/galaxy/pull/6452
+.. _Pull Request 6453: https://github.com/galaxyproject/galaxy/pull/6453
+.. _Pull Request 6454: https://github.com/galaxyproject/galaxy/pull/6454
+.. _Pull Request 6455: https://github.com/galaxyproject/galaxy/pull/6455
+.. _Pull Request 6460: https://github.com/galaxyproject/galaxy/pull/6460
+.. _Pull Request 6463: https://github.com/galaxyproject/galaxy/pull/6463
+.. _Pull Request 6466: https://github.com/galaxyproject/galaxy/pull/6466
+.. _Pull Request 6467: https://github.com/galaxyproject/galaxy/pull/6467
+.. _Pull Request 6468: https://github.com/galaxyproject/galaxy/pull/6468
+.. _Pull Request 6469: https://github.com/galaxyproject/galaxy/pull/6469
+.. _Pull Request 6474: https://github.com/galaxyproject/galaxy/pull/6474
+.. _Pull Request 6476: https://github.com/galaxyproject/galaxy/pull/6476
+.. _Pull Request 6478: https://github.com/galaxyproject/galaxy/pull/6478
+.. _Pull Request 6480: https://github.com/galaxyproject/galaxy/pull/6480
+.. _Pull Request 6481: https://github.com/galaxyproject/galaxy/pull/6481
+.. _Pull Request 6486: https://github.com/galaxyproject/galaxy/pull/6486
+.. _Pull Request 6489: https://github.com/galaxyproject/galaxy/pull/6489
+.. _Pull Request 6490: https://github.com/galaxyproject/galaxy/pull/6490
+.. _Pull Request 6491: https://github.com/galaxyproject/galaxy/pull/6491
+.. _Pull Request 6494: https://github.com/galaxyproject/galaxy/pull/6494
+.. _Pull Request 6496: https://github.com/galaxyproject/galaxy/pull/6496
+.. _Pull Request 6498: https://github.com/galaxyproject/galaxy/pull/6498
+.. _Pull Request 6499: https://github.com/galaxyproject/galaxy/pull/6499
+.. _Pull Request 6500: https://github.com/galaxyproject/galaxy/pull/6500
+.. _Pull Request 6501: https://github.com/galaxyproject/galaxy/pull/6501
+.. _Pull Request 6502: https://github.com/galaxyproject/galaxy/pull/6502
+.. _Pull Request 6503: https://github.com/galaxyproject/galaxy/pull/6503
+.. _Pull Request 6505: https://github.com/galaxyproject/galaxy/pull/6505
+.. _Pull Request 6515: https://github.com/galaxyproject/galaxy/pull/6515
+.. _Pull Request 6516: https://github.com/galaxyproject/galaxy/pull/6516
+.. _Pull Request 6517: https://github.com/galaxyproject/galaxy/pull/6517
+.. _Pull Request 6519: https://github.com/galaxyproject/galaxy/pull/6519
+.. _Pull Request 6520: https://github.com/galaxyproject/galaxy/pull/6520
+.. _Pull Request 6521: https://github.com/galaxyproject/galaxy/pull/6521
+.. _Pull Request 6523: https://github.com/galaxyproject/galaxy/pull/6523
+.. _Pull Request 6524: https://github.com/galaxyproject/galaxy/pull/6524
+.. _Pull Request 6528: https://github.com/galaxyproject/galaxy/pull/6528
+.. _Pull Request 6529: https://github.com/galaxyproject/galaxy/pull/6529
+.. _Pull Request 6531: https://github.com/galaxyproject/galaxy/pull/6531
+.. _Pull Request 6532: https://github.com/galaxyproject/galaxy/pull/6532
+.. _Pull Request 6533: https://github.com/galaxyproject/galaxy/pull/6533
+.. _Pull Request 6538: https://github.com/galaxyproject/galaxy/pull/6538
+.. _Pull Request 6539: https://github.com/galaxyproject/galaxy/pull/6539
+.. _Pull Request 6541: https://github.com/galaxyproject/galaxy/pull/6541
+.. _Pull Request 6542: https://github.com/galaxyproject/galaxy/pull/6542
+.. _Pull Request 6544: https://github.com/galaxyproject/galaxy/pull/6544
+.. _Pull Request 6545: https://github.com/galaxyproject/galaxy/pull/6545
+.. _Pull Request 6546: https://github.com/galaxyproject/galaxy/pull/6546
+.. _Pull Request 6550: https://github.com/galaxyproject/galaxy/pull/6550
+.. _Pull Request 6551: https://github.com/galaxyproject/galaxy/pull/6551
+.. _Pull Request 6552: https://github.com/galaxyproject/galaxy/pull/6552
+.. _Pull Request 6553: https://github.com/galaxyproject/galaxy/pull/6553
+.. _Pull Request 6554: https://github.com/galaxyproject/galaxy/pull/6554
+.. _Pull Request 6555: https://github.com/galaxyproject/galaxy/pull/6555
+.. _Pull Request 6557: https://github.com/galaxyproject/galaxy/pull/6557
+.. _Pull Request 6561: https://github.com/galaxyproject/galaxy/pull/6561
+.. _Pull Request 6562: https://github.com/galaxyproject/galaxy/pull/6562
+.. _Pull Request 6564: https://github.com/galaxyproject/galaxy/pull/6564
+.. _Pull Request 6565: https://github.com/galaxyproject/galaxy/pull/6565
+.. _Pull Request 6567: https://github.com/galaxyproject/galaxy/pull/6567
+.. _Pull Request 6568: https://github.com/galaxyproject/galaxy/pull/6568
+.. _Pull Request 6570: https://github.com/galaxyproject/galaxy/pull/6570
+.. _Pull Request 6571: https://github.com/galaxyproject/galaxy/pull/6571
+.. _Pull Request 6572: https://github.com/galaxyproject/galaxy/pull/6572
+.. _Pull Request 6575: https://github.com/galaxyproject/galaxy/pull/6575
+.. _Pull Request 6578: https://github.com/galaxyproject/galaxy/pull/6578
+.. _Pull Request 6580: https://github.com/galaxyproject/galaxy/pull/6580
+.. _Pull Request 6582: https://github.com/galaxyproject/galaxy/pull/6582
+.. _Pull Request 6586: https://github.com/galaxyproject/galaxy/pull/6586
+.. _Pull Request 6587: https://github.com/galaxyproject/galaxy/pull/6587
+.. _Pull Request 6588: https://github.com/galaxyproject/galaxy/pull/6588
+.. _Pull Request 6591: https://github.com/galaxyproject/galaxy/pull/6591
+.. _Pull Request 6592: https://github.com/galaxyproject/galaxy/pull/6592
+.. _Pull Request 6593: https://github.com/galaxyproject/galaxy/pull/6593
+.. _Pull Request 6594: https://github.com/galaxyproject/galaxy/pull/6594
+.. _Pull Request 6595: https://github.com/galaxyproject/galaxy/pull/6595
+.. _Pull Request 6596: https://github.com/galaxyproject/galaxy/pull/6596
+.. _Pull Request 6597: https://github.com/galaxyproject/galaxy/pull/6597
+.. _Pull Request 6602: https://github.com/galaxyproject/galaxy/pull/6602
+.. _Pull Request 6605: https://github.com/galaxyproject/galaxy/pull/6605
+.. _Pull Request 6606: https://github.com/galaxyproject/galaxy/pull/6606
+.. _Pull Request 6608: https://github.com/galaxyproject/galaxy/pull/6608
+.. _Pull Request 6609: https://github.com/galaxyproject/galaxy/pull/6609
+.. _Pull Request 6610: https://github.com/galaxyproject/galaxy/pull/6610
+.. _Pull Request 6611: https://github.com/galaxyproject/galaxy/pull/6611
+.. _Pull Request 6613: https://github.com/galaxyproject/galaxy/pull/6613
+.. _Pull Request 6616: https://github.com/galaxyproject/galaxy/pull/6616
+.. _Pull Request 6620: https://github.com/galaxyproject/galaxy/pull/6620
+.. _Pull Request 6622: https://github.com/galaxyproject/galaxy/pull/6622
+.. _Pull Request 6623: https://github.com/galaxyproject/galaxy/pull/6623
+.. _Pull Request 6627: https://github.com/galaxyproject/galaxy/pull/6627
+.. _Pull Request 6628: https://github.com/galaxyproject/galaxy/pull/6628
+.. _Pull Request 6629: https://github.com/galaxyproject/galaxy/pull/6629
+.. _Pull Request 6630: https://github.com/galaxyproject/galaxy/pull/6630
+.. _Pull Request 6631: https://github.com/galaxyproject/galaxy/pull/6631
+.. _Pull Request 6632: https://github.com/galaxyproject/galaxy/pull/6632
+.. _Pull Request 6633: https://github.com/galaxyproject/galaxy/pull/6633
+.. _Pull Request 6635: https://github.com/galaxyproject/galaxy/pull/6635
+.. _Pull Request 6636: https://github.com/galaxyproject/galaxy/pull/6636
+.. _Pull Request 6638: https://github.com/galaxyproject/galaxy/pull/6638
+.. _Pull Request 6639: https://github.com/galaxyproject/galaxy/pull/6639
+.. _Pull Request 6641: https://github.com/galaxyproject/galaxy/pull/6641
+.. _Pull Request 6642: https://github.com/galaxyproject/galaxy/pull/6642
+.. _Pull Request 6643: https://github.com/galaxyproject/galaxy/pull/6643
+.. _Pull Request 6644: https://github.com/galaxyproject/galaxy/pull/6644
+.. _Pull Request 6647: https://github.com/galaxyproject/galaxy/pull/6647
+.. _Pull Request 6648: https://github.com/galaxyproject/galaxy/pull/6648
+.. _Pull Request 6651: https://github.com/galaxyproject/galaxy/pull/6651
+.. _Pull Request 6655: https://github.com/galaxyproject/galaxy/pull/6655
+.. _Pull Request 6656: https://github.com/galaxyproject/galaxy/pull/6656
+.. _Pull Request 6659: https://github.com/galaxyproject/galaxy/pull/6659
+.. _Pull Request 6660: https://github.com/galaxyproject/galaxy/pull/6660
+.. _Pull Request 6661: https://github.com/galaxyproject/galaxy/pull/6661
+.. _Pull Request 6662: https://github.com/galaxyproject/galaxy/pull/6662
+.. _Pull Request 6664: https://github.com/galaxyproject/galaxy/pull/6664
+.. _Pull Request 6668: https://github.com/galaxyproject/galaxy/pull/6668
+.. _Pull Request 6669: https://github.com/galaxyproject/galaxy/pull/6669
+.. _Pull Request 6670: https://github.com/galaxyproject/galaxy/pull/6670
+.. _Pull Request 6672: https://github.com/galaxyproject/galaxy/pull/6672
+.. _Pull Request 6676: https://github.com/galaxyproject/galaxy/pull/6676
+.. _Pull Request 6677: https://github.com/galaxyproject/galaxy/pull/6677
+.. _Pull Request 6678: https://github.com/galaxyproject/galaxy/pull/6678
+.. _Pull Request 6680: https://github.com/galaxyproject/galaxy/pull/6680
+.. _Pull Request 6681: https://github.com/galaxyproject/galaxy/pull/6681
+.. _Pull Request 6683: https://github.com/galaxyproject/galaxy/pull/6683
+.. _Pull Request 6687: https://github.com/galaxyproject/galaxy/pull/6687
+.. _Pull Request 6692: https://github.com/galaxyproject/galaxy/pull/6692
+.. _Pull Request 6695: https://github.com/galaxyproject/galaxy/pull/6695
+.. _Pull Request 6703: https://github.com/galaxyproject/galaxy/pull/6703
+.. _Pull Request 6705: https://github.com/galaxyproject/galaxy/pull/6705
+.. _Pull Request 6707: https://github.com/galaxyproject/galaxy/pull/6707
+.. _Pull Request 6711: https://github.com/galaxyproject/galaxy/pull/6711
+.. _Pull Request 6723: https://github.com/galaxyproject/galaxy/pull/6723
+.. _Pull Request 6725: https://github.com/galaxyproject/galaxy/pull/6725
+.. _Pull Request 6726: https://github.com/galaxyproject/galaxy/pull/6726
+.. _Pull Request 6728: https://github.com/galaxyproject/galaxy/pull/6728
+.. _Pull Request 6730: https://github.com/galaxyproject/galaxy/pull/6730
+.. _Pull Request 6733: https://github.com/galaxyproject/galaxy/pull/6733
+.. _Pull Request 6737: https://github.com/galaxyproject/galaxy/pull/6737
+.. _Pull Request 6739: https://github.com/galaxyproject/galaxy/pull/6739
+.. _Pull Request 6741: https://github.com/galaxyproject/galaxy/pull/6741
+.. _Pull Request 6742: https://github.com/galaxyproject/galaxy/pull/6742
+.. _Pull Request 6743: https://github.com/galaxyproject/galaxy/pull/6743
+.. _Pull Request 6744: https://github.com/galaxyproject/galaxy/pull/6744
+.. _Pull Request 6745: https://github.com/galaxyproject/galaxy/pull/6745
+.. _Pull Request 6747: https://github.com/galaxyproject/galaxy/pull/6747
+.. _Pull Request 6748: https://github.com/galaxyproject/galaxy/pull/6748
+.. _Pull Request 6749: https://github.com/galaxyproject/galaxy/pull/6749
+.. _Pull Request 6750: https://github.com/galaxyproject/galaxy/pull/6750
+.. _Pull Request 6753: https://github.com/galaxyproject/galaxy/pull/6753
+.. _Pull Request 6755: https://github.com/galaxyproject/galaxy/pull/6755
+.. _Pull Request 6760: https://github.com/galaxyproject/galaxy/pull/6760
+.. _Pull Request 6761: https://github.com/galaxyproject/galaxy/pull/6761
+.. _Pull Request 6765: https://github.com/galaxyproject/galaxy/pull/6765
+.. _Pull Request 6766: https://github.com/galaxyproject/galaxy/pull/6766
+.. _Pull Request 6768: https://github.com/galaxyproject/galaxy/pull/6768
+.. _Pull Request 6771: https://github.com/galaxyproject/galaxy/pull/6771
+.. _Pull Request 6774: https://github.com/galaxyproject/galaxy/pull/6774
+.. _Pull Request 6780: https://github.com/galaxyproject/galaxy/pull/6780
+.. _Pull Request 6782: https://github.com/galaxyproject/galaxy/pull/6782
+.. _Pull Request 6785: https://github.com/galaxyproject/galaxy/pull/6785
+.. _Pull Request 6789: https://github.com/galaxyproject/galaxy/pull/6789
+.. _Pull Request 6791: https://github.com/galaxyproject/galaxy/pull/6791
+.. _Pull Request 6793: https://github.com/galaxyproject/galaxy/pull/6793
+.. _Pull Request 6796: https://github.com/galaxyproject/galaxy/pull/6796
+.. _Pull Request 6798: https://github.com/galaxyproject/galaxy/pull/6798
+.. _Pull Request 6799: https://github.com/galaxyproject/galaxy/pull/6799
+.. _Pull Request 6802: https://github.com/galaxyproject/galaxy/pull/6802
+.. _Pull Request 6803: https://github.com/galaxyproject/galaxy/pull/6803
+.. _Pull Request 6805: https://github.com/galaxyproject/galaxy/pull/6805
+.. _Pull Request 6808: https://github.com/galaxyproject/galaxy/pull/6808
+.. _Pull Request 6809: https://github.com/galaxyproject/galaxy/pull/6809
+.. _Pull Request 6810: https://github.com/galaxyproject/galaxy/pull/6810
+.. _Pull Request 6823: https://github.com/galaxyproject/galaxy/pull/6823
+.. _Pull Request 6828: https://github.com/galaxyproject/galaxy/pull/6828
+.. _Pull Request 6830: https://github.com/galaxyproject/galaxy/pull/6830
+.. _Pull Request 6836: https://github.com/galaxyproject/galaxy/pull/6836
+.. _Pull Request 6839: https://github.com/galaxyproject/galaxy/pull/6839
+.. _Pull Request 6845: https://github.com/galaxyproject/galaxy/pull/6845
+.. _Pull Request 6859: https://github.com/galaxyproject/galaxy/pull/6859
+.. _Pull Request 6863: https://github.com/galaxyproject/galaxy/pull/6863
+.. _Pull Request 6867: https://github.com/galaxyproject/galaxy/pull/6867
+.. _Pull Request 6875: https://github.com/galaxyproject/galaxy/pull/6875
+.. _Pull Request 6885: https://github.com/galaxyproject/galaxy/pull/6885
+.. _Pull Request 6904: https://github.com/galaxyproject/galaxy/pull/6904
+.. _Pull Request 6908: https://github.com/galaxyproject/galaxy/pull/6908
+.. _Pull Request 6912: https://github.com/galaxyproject/galaxy/pull/6912
+.. _Pull Request 6932: https://github.com/galaxyproject/galaxy/pull/6932
+

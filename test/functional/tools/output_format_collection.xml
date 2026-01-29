@@ -1,0 +1,35 @@
+<tool id="output_format_collection" name="output_format_collection" version="1.0.0">
+    <command><![CDATA[
+echo "test" > 1 &&
+echo "test" > 2
+    ]]></command>
+    <inputs>
+        <param name="input_collection" type="data_collection" format="data" />
+    </inputs>
+    <outputs>
+        <!-- Access by element name (for paired data) -->
+        <data name="format_source_1_output" format_source="input_collection['forward']" from_work_dir="1" />
+        <!-- Access by element index (for any collection) -->
+        <data name="format_source_2_output" format_source="input_collection[0]" from_work_dir="2" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input_collection">
+                <collection type="paired">
+                    <element name="forward" value="simple_line.txt" />
+                    <element name="reverse" value="simple_line_alternative.txt" />
+                </collection>
+            </param>
+            <output name="format_source_1_output" ftype="txt">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+            <output name="format_source_2_output" ftype="txt">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

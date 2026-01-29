@@ -1,0 +1,22 @@
+# job config that fails submission if job resource parameters are requested
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  dynamic:
+    rules_module: integration.job_resource_rules
+
+execution:
+  default: initial_destination
+  environments:
+    initial_destination:
+      runner: dynamic
+      type: python
+      function: local_or_exception
+    local:
+      runner: local
+
+tools:
+  - class: local
+    environment: local
+    resources: upload

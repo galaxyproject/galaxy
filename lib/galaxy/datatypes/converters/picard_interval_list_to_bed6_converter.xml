@@ -1,0 +1,23 @@
+<tool id="CONVERTER_picard_interval_list_to_bed6" name="Convert Picard Interval List to BED6" version="1.0.1" profile="16.04">
+    <description>converter</description>
+    <requirements>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+    <command><![CDATA[
+        python '$__tool_directory__/picard_interval_list_to_bed6_converter.py' '$input' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="picard_interval_list" label="Picard Interval List file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="bed6"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="picard_CollectHsMetrics.baits" ftype="picard_interval_list"/>
+            <output name="output" file="picard_CollectHsMetrics.bed" ftype="bed6"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -1,0 +1,51 @@
+- doc: | 
+    Test to verify a tool that takes in a paired or list of paired is sent the most
+    specific list possible during workflow execution (the list of paired datasets). This should
+    not trigger subcollection mapping.
+  job:
+    input:
+      type: collection
+      collection_type: list:paired
+  outputs:
+    out:
+      asserts:
+      - that: has_text
+        text: "collection_type<paired>"
+
+- doc: |
+    Once again with mapping, should reduce the result into a flat list.
+  job:
+    input:
+      type: collection
+      collection_type: list:list:paired
+  outputs:
+    out:
+      class: Collection
+      collection_type: list
+      elements:
+        test_level_2:
+          asserts:
+            - that: has_text
+              text: "identifier is test_level_1"
+            - that: has_line
+              line: "collection_type<paired>"
+
+- doc: |
+    Once again with double mapping, should reduce the result into a nested list (list:list).
+  job:
+    input:
+      type: collection
+      collection_type: list:list:list:paired
+  outputs:
+    out:
+      class: Collection
+      collection_type: list:list
+      elements:
+        test_level_3:
+          elements:
+            test_level_2:
+              asserts:
+                - that: has_text
+                  text: "identifier is test_level_1"
+                - that: has_line
+                  line: "collection_type<paired>"

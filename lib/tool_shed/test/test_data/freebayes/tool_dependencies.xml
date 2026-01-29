@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<tool_dependency>
+    <package name="freebayes" version="0.9.4_9696d0ce8a962f7bb61c4791be5ce44312b81cf8">
+        <install version="1.0">
+            <actions>
+                <action type="shell_command">echo "Success."</action>
+                <action type="set_environment">
+                    <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>
+FreeBayes requires g++ and the standard C and C++ development libraries.
+Additionally, cmake is required for building the BamTools API.
+        </readme>
+    </package>
+    <package name="samtools" version="0.1.18">
+        <install version="1.0">
+            <actions>
+                <action type="shell_command">echo "Success."</action>
+                <action type="set_environment">
+                    <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>
+Compiling SAMtools requires the ncurses and zlib development libraries.
+        </readme>
+    </package>
+</tool_dependency>

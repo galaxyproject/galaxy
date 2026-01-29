@@ -1,0 +1,19 @@
+<tool id="lped2pbedconvert" name="Convert lped to plink pbed" version="0.02" profile="16.04">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <requirements>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+    <command>
+        python '$__tool_directory__/lped_to_pbed_converter.py' '$input1.extra_files_path/$input1.metadata.base_name'
+        '$output1' '$output1.files_path' 'plink'
+    </command>
+    <inputs>
+        <param format="lped" name="input1" type="data" label="Choose linkage pedigree file"/>
+    </inputs>
+    <outputs>
+        <data format="pbed" name="output1" metadata_source="input1"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

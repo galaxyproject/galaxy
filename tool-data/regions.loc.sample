@@ -1,0 +1,24 @@
+#This is a sample file distributed with Galaxy that is used by some
+#ENCODE tools.  The regions.loc file has this format (white space 
+#characters are TAB characters):
+#
+#<build>	<uid>	<region_description>	<file_path>
+#
+#So, for example, if you had ENCODE Regions for build hg16 stored in 
+#/depot/data2/galaxy/regions/encode_regions_coords_hg16.bed, then the
+#regions.loc entry would look like this:
+#
+#hg16	encode_hg16	ENCODE Regions	/depot/data2/galaxy/regions/encode_regions_coords_hg16.bed
+#
+#and your /depot/data2/galaxy/regions/ directory would 
+#contain all of your regions files (e.g.):
+#
+#-rw-r--r--   1 dan  g2cache 1367 2006-03-14 13:55 encode_regions_coords_hg16.bed
+#-rw-r--r--   1 dan  g2cache 1367 2006-03-14 13:53 encode_regions_coords_hg17.bed
+#...etc...
+#
+#Your regions.loc file should include an entry per line for each region 
+#file you have stored.  For example:
+#
+#hg16	encode_hg16	ENCODE Regions	/depot/data2/galaxy/regions/encode_regions_coords_hg16.bed 
+#hg17	encode_hg17	ENCODE Regions	/depot/data2/galaxy/regions/encode_regions_coords_hg17.bed

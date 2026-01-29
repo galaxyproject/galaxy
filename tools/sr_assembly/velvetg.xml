@@ -1,0 +1,301 @@
+<tool id="velvetg" name="velvetg" version="1.0.0">
+  <description>Velvet sequence assembler for very short reads</description>
+  <version_command>velvetg 2&gt;&amp;1 | grep "Version" | sed -e 's/Version //'</version_command>
+  <command interpreter="python">
+    velvetg_wrapper.py 
+           '$input.extra_files_path'
+           #if $generate_amos.afg  == "yes":
+               -amos_file $generate_amos.afg
+           #end if
+           #if $unused_reads.generate_unused  == "yes":
+               -unused_reads $unused_reads.generate_unused
+           #end if
+           $read_trkg
+           #if $coverage.cutoff == "auto":
+               -cov_cutoff auto
+           #elif $coverage.cutoff == "value":
+               -cov_cutoff $coverage.cov_cutoff
+           #end if
+           #if $expected.coverage == "auto":
+               -exp_cov auto
+           #elif $expected.coverage == "value":
+               -exp_cov $expected.exp_cov
+           #end if
+           #if $contig_lgth.use_contig_lgth == "yes":
+               -min_contig_lgth $contig_lgth.min_contig_lgth
+           #end if
+           #if $reads.paired == "yes":
+               #if int($reads.ins_length) > 0:
+                   -ins_length $reads.ins_length
+               #end if
+               #if $reads.options.advanced == "yes":
+                   #if int($reads.options.ins_length_sd) > 0:
+                       -ins_length_sd $reads.options.ins_length_sd
+                   #end if
+                   #if int($reads.options.ins_length2) > 0:
+                       -ins_length2 $reads.options.ins_length2
+                   #end if
+                   #if int($reads.options.ins_length2_sd) > 0:
+                       -ins_length2_sd $reads.options.ins_length2_sd
+                   #end if
+                   #if int($reads.options.ins_length_long) > 0:
+                       -ins_length_long $reads.options.ins_length_long
+                   #end if
+                   #if int($reads.options.ins_length_long_sd) > 0:
+                       -ins_length_long_sd $reads.options.ins_length_long_sd
+                   #end if
+                   #if int($reads.options.max_branch_length) > 0:
+                       -max_branch_length $reads.options.max_branch_length
+                   #end if
+                   #if int($reads.options.max_divergence) > 0:
+                       -max_divergence $reads.options.max_divergence
+                   #end if
+                   #if int($reads.options.max_gap_count) > 0:
+                       -max_gap_count $reads.options.max_gap_count
+                   #end if
+                   #if int($reads.options.min_pair_count) > 0:
+                       -min_pair_count $reads.options.min_pair_count
+                   #end if
+                   #if int($reads.options.max_coverage) > 0:
+                       -max_coverage $reads.options.max_coverage
+                   #end if
+                   #if int($reads.options.long_mult_cutoff) > 0:
+                       -long_mult_cutoff $reads.options.long_mult_cutoff
+                   #end if
+                   $reads.options.scaffolding
+               #end if
+           #end if
+  </command>
+  <inputs>
+    <param name="input" type="data" format="velvet" label="Velvet Dataset" help="Prepared by velveth."/>
+    <conditional name="generate_amos">
+      <param name="afg" type="select" label="Generate a AMOS.afg file">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </param>
+      <when value="no"/>
+      <when value="yes"/>
+    </conditional>
+
+    <conditional name="unused_reads">
+      <param name="generate_unused" type="select" label="Generate a UnusedReads fasta file">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </param>
+      <when value="no"/>
+      <when value="yes"/>
+    </conditional>
+
+    <conditional name="last_graph">
+      <param name="generate_graph" type="select" label="Generate velvet LastGraph file">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </param>
+      <when value="no"/>
+      <when value="yes"/>
+    </conditional>
+
+    <param name="read_trkg" type="boolean" checked="false" truevalue="-read_trkg yes" falsevalue="-read_trkg no" label="Tracking of short read positions in assembly" help="Generates Graph2 dataset" />
+
+    <conditional name="coverage">
+      <param name="cutoff" type="select" label="Coverage cutoff" help="">
+        <option value="none">None</option>
+        <option value="auto">Automatically Determined</option> 
+        <option value="value">Specify Cutoff Value</option>
+      </param>
+      <when value="none"/>
+      <when value="auto"/>
+      <when value="value">
+        <param name="cov_cutoff" value = "10.0" label="Remove nodes with coverage below" type="float" />
+      </when>
+    </conditional>
+
+    <conditional name="expected">
+      <param name="coverage" type="select" label="Expected Coverage of Unique Regions" help="">
+        <option value="none">None</option>
+        <option value="auto">Automatically Determined</option> 
+        <option value="value">Specify Expected Value</option>
+      </param>
+      <when value="none"/>
+      <when value="auto"/>
+      <when value="value">
+        <param name="exp_cov" value = "10.0" label="Remove nodes with coverage below" type="float" />
+      </when>
+    </conditional>
+
+    <conditional name="contig_lgth">
+      <param name="use_contig_lgth" type="select" label=" Set minimum contig length" help="minimum contig length exported to contigs.fa file (default: hash length * 2).">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </param>
+      <when value="no"/>
+      <when value="yes">
+        <param name="min_contig_lgth" value = "42" label="minimum contig length" type="integer" help="minimum contig length exported to contigs.fa file (default: hash length * 2)"/>
+      </when>
+    </conditional>
+
+    <conditional name="reads">
+      <param name="paired" type="select" label="Using Paired Reads">
+        <option value="no">No</option>
+        <option value="yes" selected="${input.metadata.paired_end_reads}">Yes</option>
+      </param>
+      <when value="no"/>
+      <when value="yes">
+        <param name="ins_length" value = "-1" label="Insert Length in Paired-End Read dataset (ignored when -1)" type="integer" help="Expected distance between two paired end reads"/>
+        <conditional name="options">
+          <param name="advanced" type="select" label="Velvet Advanced Options">
+            <option value="no">Use Defaults</option>
+            <option value="yes">Set Advanced Option Values</option>
+          </param>
+          <when value="no"/>
+          <when value="yes">
+            <param name="ins_length_sd" value = "-1" label="Estimate of Standard Deviation of Paired-End Read dataset(ignored when -1)" type="integer" help="Estimate of standard deviation of Paired-End Read dataset (default: 10% of corresponding length)"/>
+            <param name="ins_length2" value = "-1" label="Insert Length in 2nd Paired-End Short Read dataset (ignored when -1)" type="integer" help="Expected distance between two paired end reads in the second short-read dataset"/>
+            <param name="ins_length2_sd" value = "-1" label="Estimate of Standard Deviation of 2nd Paired-End Read dataset (ignored when -1)" type="integer" help="Estimate of standard deviation of 2nd Paired-End Read dataset (default: 10% of corresponding length)"/>
+            <param name="ins_length_long" value = "-1" label="Insert Length in Long Paired-End Read dataset (ignored when -1)" type="integer" help="Expected distance between two long paired-end reads"/>
+            <param name="ins_length_long_sd" value = "-1" label="Estimate of Standard Deviation of 2nd Paired-End Read dataset (ignored when -1)" type="integer" help="Estimate of standard deviation of Long Paired-End Read dataset (default: 10% of corresponding length)"/>
+            <param name="max_branch_length" value = "-1" label="Maximum branch length (ignored when -1)" type="integer" help="maximum length in base pair of bubble (default: 100)"/>
+            <param name="max_divergence" value = "-1." label="Maximum max_divergence (between .0 and 1., ignored when -1.)" type="float" help="maximum divergence rate between two branches in a bubble (default: .2)"/>
+            <param name="max_gap_count" value = "-1" label="Maximum gap count (ignored when -1)" type="integer" help="maximum number of gaps allowed in the alignment of the two branches of a bubble (default: 3)"/>
+            <param name="min_pair_count" value = "-1" label="Minimum read-pair count (ignored when -1)" type="integer" help="minimum number of paired end connections to justify the scaffolding of two long contigs (default: 10)"/>
+            <param name="max_coverage" value = "-1." label="Maximum coverage exclusion(ignored when -1.)" type="float" help="Exclude data that has coverage more than this maximum coverage value"/>
+            <param name="long_mult_cutoff" value = "-1" label="Minimum number of long reads required to merge contigs (ignored when -1)" type="integer" help="minimum number of long reads required to merge contigs (default: 2)"/>
+            <param name="scaffolding" type="boolean" checked="true" truevalue="-scaffolding yes" falsevalue="-scaffolding no" label="Use Scaffolding" help="Scaffold contigs that it cannot quite be connected (This results in sequences of Ns in the contigs)"/>
+
+          </when>
+        </conditional>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="txt" name="Graph2" label="${tool.name} on ${on_string}: Graph2" from_work_dir="Graph2">
+      <filter>read_trkg is True</filter>
+    </data>
+    <data format="txt" name="LastGraph" label="${tool.name} on ${on_string}: LastGraph" from_work_dir="LastGraph">
+      <filter>last_graph['generate_graph'] == "yes"</filter>
+    </data>
+    <data format="afg" name="velvet_asm" label="${tool.name} on ${on_string}: AMOS.afg" from_work_dir="velvet_asm.afg">
+      <filter>generate_amos['afg'] == "yes"</filter>
+    </data>
+    <data format="fasta" name="unused_reads_fasta" label="${tool.name} on ${on_string}: Unused Reads" from_work_dir="UnusedReads.fa">
+      <filter>unused_reads['generate_unused'] == "yes"</filter>
+    </data>
+    <data format="tabular" name="stats" label="${tool.name} on ${on_string}: Stats" from_work_dir="stats.txt" />
+    <data format="fasta" name="contigs" label="${tool.name} on ${on_string}: Contigs" from_work_dir="contigs.fa" />
+  </outputs>
+  <requirements>
+    <requirement type="package">velvet</requirement>
+  </requirements>
+  <tests>
+    <test>
+      <param name="input" value="velveth_test1/output.html" ftype="velvet" >
+        <composite_data value="velveth_test1/Sequences"/>
+        <composite_data value="velveth_test1/Roadmaps"/>
+        <composite_data value="velveth_test1/Log"/>
+      </param>
+      <param name="afg" value="yes" />
+      <param name="generate_unused" value="yes" />
+      <param name="generate_graph" value="no" />
+      <param name="read_trkg" value="-read_trkg no" />
+      <param name="cutoff" value="auto" />
+      <param name="coverage" value="auto" />
+      <param name="use_contig_lgth" value="no" />
+      <param name="paired" value="no" />
+      <!--
+      <output name="LastGraph" file="velvetg_test1/lastgraph.txt" compare="diff"/>
+      -->
+      <output name="velvet_asm" file="velvetg_test1/amos.afg" compare="diff"/>
+      <output name="unused_reads_fasta" file="velvetg_test1/unusedreads.fa" compare="diff"/>
+      <output name="stats" file="velvetg_test1/stats.csv" compare="diff"/>
+      <output name="contigs" file="velvetg_test1/contigs.fa" compare="diff"/>
+    </test>
+  </tests>
+  <help>
+**Velvet Overview**
+
+Velvet_ is a de novo genomic assembler specially designed for short read sequencing technologies, such as Solexa or 454, developed by Daniel Zerbino and Ewan Birney at the European Bioinformatics Institute (EMBL-EBI), near Cambridge, in the United Kingdom.
+
+Velvet currently takes in short read sequences, removes errors then produces high quality unique contigs. It then uses paired-end read and long read information, when available, to retrieve the repeated areas between contigs.
+
+Read the Velvet `documentation`__ for details on using the Velvet Assembler. 
+
+.. _Velvet: http://www.ebi.ac.uk/~zerbino/velvet/
+
+.. __: http://www.ebi.ac.uk/~zerbino/velvet/Manual.pdf
+
+------
+
+**Input formats**
+
+Velvet can input sequence files in the following formats: fasta fastq fasta.gz fastq.gz eland gerald
+
+The input files are prepared for the velvet assembler using **velveth**.
+
+------
+
+**Outputs**
+
+**Contigs**
+
+The *contigs.fa* file.  
+This fasta file contains the sequences of the contigs longer than 2k, where k is the word-length used in velveth. If you have specified a min contig length threshold, then the contigs shorter than that value are omitted.
+Note that the length and coverage information provided in the header of each contig should therefore be understood in k-mers and in k-mer coverage (cf. 5.1) respectively.
+The N's in the sequence correspond to gaps between scaffolded contigs. The number of N's corresponds to the estimated length of the gap. For reasons of compatibility with the archives, any gap shorter than 10bp is represented by a sequence of 10 N's.
+
+**Stats**
+
+The *stats.txt* file.  
+This file is a simple tabbed-delimited description of the nodes. The column names are pretty much self-explanatory. Note however that node lengths are given in k-mers. To obtain the length in nucleotides of each node you simply need to add k - 1, where k is the word-length used in velveth.
+The in and out columns correspond to the number of arcs on the 5' and 3' ends of the contig respectively.
+The coverages in columns short1 cov, short1 Ocov, short2 cov, and short2 Ocov are provided in k-mer coverage (5.1).
+Also, the difference between # cov and # Ocov is the way these values are computed. In the first count, slightly divergent sequences are added to the coverage tally. However, in the second, stricter count, only the sequences which map perfectly onto the consensus sequence are taken into account.
+
+**LastGraph**
+
+The *LastGraph* file.  
+This file describes in its entirety the graph produced by Velvet. 
+
+**AMOS.afg**
+
+The *velvet_asm.afg* file.  
+This file is mainly designed to be read by the open-source AMOS genome assembly package. Nonetheless, a number of programs are available to transform this kind of file into other assembly file formats (namely ACE, TIGR, Arachne and Celera). See http://amos.sourceforge.net/ for more information.
+The file describes all the contigs contained in the contigs.fa file (cf 4.2.1).
+
+------
+
+**Velvet parameter list**
+
+This is a list of implemented Velvetg options::
+
+  Standard options:
+        -cov_cutoff  floating-point|auto : removal of low coverage nodes AFTER tour bus or allow the system to infer it
+                (default: no removal)
+        -ins_length  integer             : expected distance between two paired end reads (default: no read pairing)
+        -read_trkg  yes|no               : tracking of short read positions in assembly (default: no tracking)
+        -min_contig_lgth  integer        : minimum contig length exported to contigs.fa file (default: hash length * 2)
+        -amos_file  yes|no               : export assembly to AMOS file (default: no export)
+        -exp_cov  floating point|auto    : expected coverage of unique regions or allow the system to infer it
+                (default: no long or paired-end read resolution)
+   
+  Advanced options:
+        -ins_length2  integer            : expected distance between two paired-end reads in the second short-read dataset (default: no read pairing)
+        -ins_length_long  integer        : expected distance between two long paired-end reads (default: no read pairing)
+        -ins_length*_sd  integer         : est. standard deviation of respective dataset (default: 10% of corresponding length)
+                [replace '*' by nothing, '2' or '_long' as necessary]
+        -scaffolding  yes|no             : scaffolding of contigs used paired end information (default: on)
+        -max_branch_length  integer      : maximum length in base pair of bubble (default: 100)
+        -max_divergence  floating-point  : maximum divergence rate between two branches in a bubble (default: 0.2)
+        -max_gap_count  integer          : maximum number of gaps allowed in the alignment of the two branches of a bubble (default: 3)
+        -min_pair_count  integer         : minimum number of paired end connections to justify the scaffolding of two long contigs (default: 10)
+        -max_coverage  floating point    : removal of high coverage nodes AFTER tour bus (default: no removal)
+        -long_mult_cutoff  int           : minimum number of long reads required to merge contigs (default: 2)
+        -unused_reads  yes|no            : export unused reads in UnusedReads.fa file (default: no)
+   
+  Output:
+        directory/contigs.fa             : fasta file of contigs longer than twice hash length
+        directory/stats.txt              : stats file (tab-spaced) useful for determining appropriate coverage cutoff
+        directory/LastGraph              : special formatted file with all the information on the final graph
+        directory/velvet_asm.afg         : (if requested) AMOS compatible assembly file
+
+  </help>
+</tool>

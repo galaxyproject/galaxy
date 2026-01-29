@@ -1,0 +1,59 @@
+<tool id="Sff_extractor" name="SFF converter" version="1.0.1">
+    <description></description>
+    <requirements>
+        <requirement type="package" version="2.7">python</requirement>
+    </requirements>
+    <command>
+#if   str($fastq_output) == "fastq_false"  #python  '$__tool_directory__/sff_extract.py' $clip --seq_file='$out_file3' --qual_file='$out_file4' --xml_file='$out_file2' '$input'
+#elif str($fastq_output) == "fastq_true"   #python '$__tool_directory__/sff_extract.py' $clip --fastq --seq_file='$out_file1' --xml_file='$out_file2' '$input'
+#end if#
+    </command>
+    <inputs>
+        <param format="sff" name="input" type="data" label="Extract from this dataset"/>
+        <param name="clip" type="select" label="Completely remove ends with low qual and/or adaptor sequence">
+            <option value="">No</option>
+            <option value="--clip">Yes</option>
+        </param>
+        <param name="fastq_output" type="boolean" truevalue="fastq_true" falsevalue="fastq_false" checked="False" label="Do you want FASTQ file instead of FASTA + FASTA quality file?" />
+    </inputs>
+    <outputs>
+        <data format="fastqsanger" name="out_file1" >
+            <filter>fastq_output is True</filter>
+        </data>
+        <data format="xml" name="out_file2">
+        </data>  
+        <data format="fasta" name="out_file3">
+            <filter>fastq_output is False</filter>
+        </data>
+        <data format="qual" name="out_file4">
+            <filter>fastq_output is False</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="2.sff"/>
+            <param name="clip" value=""/>
+            <param name="fastq_output" value="false"/>
+            <output name="out_file2" file="sff_converter_xml_1.dat"/>
+            <output name="out_file3" file="sff_converter_fasta.dat"/>
+            <output name="out_file4" file="sff_converter_qual.dat"/>
+        </test>
+        <test>
+            <param name="input" value="2.sff"/>
+            <param name="clip" value=""/>
+            <param name="fastq_output" value="true"/>
+            <output name="out_file1" file="sff_converter_fastq.dat"/>
+            <output name="out_file2" file="sff_converter_xml_2.dat"/>
+        </test>
+    </tests>
+    <help>
+
+**What it does**
+
+This tool extracts data from the 454 Sequencer SFF format and creates three files containing the: 
+Sequences (FASTA),
+Qualities (QUAL) and 
+Clippings (XML)
+
+    </help>
+</tool>

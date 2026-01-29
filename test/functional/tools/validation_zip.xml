@@ -1,0 +1,62 @@
+<tool id="validation_zip" name="Validation (zip)" version="1.0">
+    <command><![CDATA[
+cat '$input' > '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="zip" />
+    </inputs>
+    <outputs>
+        <data name="output" format="zip" />
+    </outputs>
+    <tests>
+        <test>
+            <!-- Important: must set ftype to `zip` explicitly, otherwise the
+                 archive is automatically extracted and the first element in
+                 the archive is used
+            -->
+            <param name="input" value="testdir1.zip" ftype="zip"/>
+            <output name="output">
+                <assert_contents>
+                    <!-- Test 0: Empty tag, checks for presence of member -->
+                    <has_archive_member path="testdir1/file1"></has_archive_member>
+
+                    <!-- Test 1: explicit filename matching with sub-assertions-->
+                    <has_archive_member path="testdir1/file1">
+                        <has_line_matching expression="hello" />
+                    </has_archive_member>
+                    <has_archive_member path="testdir1/file2">
+                        <has_line_matching expression="world" />
+                    </has_archive_member>
+                    <has_archive_member path="testdir1/dir1/file3">
+                        <has_line_matching expression="subdirfile" />
+                    </has_archive_member>
+
+                    <!-- Test 2: regex filename matching with sub-assertions-->
+                    <has_archive_member path=".*file1">
+                        <has_line_matching expression="hello" />
+                    </has_archive_member>
+                    <has_archive_member path=".*file2">
+                        <has_line_matching expression="world" />
+                    </has_archive_member>
+                    <has_archive_member path=".*dir1/file3">
+                        <has_line_matching expression="subdirfile" />
+                    </has_archive_member>
+                    <has_archive_member path=".*file3">
+                        <has_line_matching expression="subdirfile" />
+                    </has_archive_member>
+                    <has_archive_member path=".*dir1.*file.*">
+                        <has_line_matching expression="subdirfile" />
+                    </has_archive_member>
+
+                    <!-- Test 3: multiple sub-assertions -->
+                    <has_archive_member path="testdir1/file1">
+                        <has_text text="hello" />
+                        <not_has_text text="goodbye" />
+                        <has_text_matching expression="hello" />
+                        <has_line_matching expression="hello" />
+                    </has_archive_member>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

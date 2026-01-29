@@ -1,0 +1,7 @@
+- type: webdav
+  id: test1
+  doc: Test WebDAV server.
+  url: http://127.0.0.1:7083
+  login: alice
+  password: secret1234  
+  use_temp_files: false

@@ -1,0 +1,194 @@
+
+===========================================================
+May 2017 Galaxy Release (v 17.05)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+
+**Tag your data with propagating hashtags**
+  Large Galaxy histories used to be messy. Hashtags make it easy to track dataset (and collection) relationships.
+  These two movies (both under a minute) explain how to use this
+  `with datasets <https://vimeo.com/216884518>`__ and `with collections <https://vimeo.com/216895965>`__.
+
+  Learn more about Galaxy histories in our updated `tutorial <https://galaxyproject.org/tutorials/histories/>`__
+
+**Drag & Drop datasets into tool inputs**
+  Interface now allows dragging datasets from history panel into the content selectors of the tool form.
+  Implemented in `Pull Request 3871`_.
+
+**Upload directly to a collection**
+  You can now bypass the history manipulation and upload your data straight into a collection for convenience.
+
+  Learn more about collections and how to use them in a new `tutorial <https://galaxyproject.org/tutorials/collections/>`__.
+
+We extend special thanks to the 64 `New Contributors`_ to Galaxy in the past year.
+
+Get Galaxy
+==========
+
+The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_17.05 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git checkout release_17.05 && git pull --ff-only origin release_17.05
+
+See the community `hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Additionaly there are `New Configuration Options`_  and `New Datatypes`_ sections.
+
+Release Notes
+===========================================================
+
+.. include:: 17.05.rst
+   :start-after: announce_start
+
+New Contributors
+================
+
+We thank these new contributors that helped with the Galaxy codebase since 16.04:
+
+* Evgeny Anatskiy
+* Abdulrahman Azab
+* balto
+* Bérénice Batut
+* Marius van den Beek
+* Maria Bernard
+* Jean-Frédéric Berthelot
+* Léo Biscassi
+* Clemens Blank
+* Jorrit Boekel
+* Christian Y. Brenninkmeijer
+* Freek de Bruijn
+* Matt Chambers
+* Peter Cock
+* Matthias Desmet
+* Shane Dowling
+* Ignacio Eguinoa
+* Mark Einon
+* fescudie
+* Anne Fouilloux
+* Jean-Frédéric
+* Maximilian Friedersdorff
+* Ben Fulton
+* Carrie Ganote
+* Ryan Golhar
+* Peter van Heusden
+* Saskia Hiltemann
+* Hans-Rudolf Hotz
+* Manabu Ishii
+* Xiaoqian Jiang
+* Iyad Kandalaft
+* Edward Kirton
+* Jasper Koehorst
+* Anup Kumar
+* Delphine Lariviere
+* Yvan Le Bras
+* Gildas Le Corguillé
+* Alexander Lenail
+* Pierre Lindenbaum
+* Mikael Loaec
+* Thoba Lose
+* Zipho Mashologu
+* Hervé Ménager
+* Pablo Moreno
+* Takao Nakaguchi
+* Balthazar Pavot
+* Matt Ralston
+* ramezrawas
+* Athos Ribeiro
+* Devon Ryan
+* Michael Sauria
+* Varun Shankar
+* Timur Shtatland
+* Sourav Singh
+* Eteri Sokhoyan
+* Nick Stoler
+* Scott Szakonyi
+* Jesse c j van Dam
+* Ashok Varadharajan
+* Jeremy Volkening
+* Pavan Videm
+* Junzhou Wang
+* Joachim Wolff
+* Thomas Wollmann
+* Jay Young
+
+New Configuration Options
+=========================
+
+Below are the newly added options you can configure in ``galaxy.ini``.
+To see the whole sample file visit our GitHub `repository <https://github.com/galaxyproject/galaxy/blob/release_17.05/config/galaxy.ini.sample>`__.
+
+.. code-block:: shell
+
+    # Set to True to enable monitoring of the tool_data and shed_tool_data_path
+    # directories. If changes in tool data table files are found, the tool data
+    # tables for that data manager are automatically reloaded.
+    # Watchdog ( https://pypi.python.org/pypi/watchdog ) must be installed and
+    # available to Galaxy to use this option. Other options include 'auto'
+    # which will attempt to use the watchdog library if it is available but won't
+    # fail to load Galaxy if it is not and 'polling' which will use a less
+    # efficient monitoring scheme that may work in wider range of scenarios
+    # than the watchdog default.
+    #watch_tool_data_dir = False
+
+    # To run interactive environment containers in Docker Swarm mode (on an
+    # existing swarm), set this option to True and set `docker_connect_port` in the
+    # IE plugin config (ini) file(s) of any IE plugins you have enabled and ensure
+    # that you are not using any `docker run`-specific options in your plugins'
+    # `command_inject` options (swarm mode services run using `docker service
+    # create`, which has a different and more limited set of options). This option
+    # can be overridden on a per-plugin basis by using the `swarm_mode` option in
+    # the plugin's ini config file.
+    #interactive_environment_swarm_mode = False
+
+    # Galaxy can run a "swarm manager" service that will monitor utilization of the
+    # swarm and provision/deprovision worker nodes as necessary. The service has
+    # its own configuration file.
+    #swarm_manager_config_file = config/swarm_manager_conf.yml
+
+    # Log to graphite
+    # Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
+    # Enabling the following options will cause galaxy to log request timing and
+    # other statistics to the configured graphite instance. The graphite_prefix is
+    # useful if you are running multiple Galaxy instances and want to segment
+    # statistics between them within the same aggregator.
+    #graphite_host=
+    #graphite_port=2003
+    #graphite_prefix=galaxy
+
+    # Enable the new container interface for Interactive Environments
+    #enable_beta_containers_interface = False
+
+New Datatypes
+=============
+
+Below are the newly added datatypes and sniffers you can configure in ``datatypes_conf.xml``.
+To see the whole sample file visit our GitHub `repository <https://github.com/galaxyproject/galaxy/blob/release_17.05/config/datatypes_conf.xml.sample>`__.
+
+.. code-block:: xml
+
+    <datatype extension="d3_hierarchy" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
+    <datatype extension="mzdata" type="galaxy.datatypes.proteomics:MzData" mimetype="application/xml" display_in_upload="true" />
+    <datatype extension="percin" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="percout" type="galaxy.datatypes.xml:GenericXml" subclass="true" />
+    <datatype extension="hardklor" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="kronik" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="ptalign" type="galaxy.datatypes.text:PlantTribesMultipleSequenceAlignment" />
+    <datatype extension="ptortho" type="galaxy.datatypes.text:PlantTribesOrtho" />
+    <datatype extension="ptorthocs" type="galaxy.datatypes.text:PlantTribesOrthoCodingSequence" />
+    <datatype extension="pttree" type="galaxy.datatypes.text:PlantTribesPhylogeneticTree" />
+    <sniffer type="galaxy.datatypes.proteomics:MzData"/>
+
+
+.. include:: _thanks.rst

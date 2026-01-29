@@ -1,0 +1,186 @@
+<tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.4">
+  <description>using coordinates from assembled/unassembled genomes</description>
+  <requirements>
+      <requirement type="package" version="357">ucsc-fatotwobit</requirement>
+  </requirements>
+  <command>
+      python '$__tool_directory__/extract_genomic_dna.py' '${input}' '${out_file1}' -o ${out_format} -d '${dbkey}'
+
+      #if str( $interpret_features ) == "yes":
+        -I
+      #end if
+
+      ## Columns to use in input file.
+      #if isinstance( $input.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__):
+        -1 "1,4,5,7" --gff
+      #else:
+        -1 "${input.metadata.chromCol},${input.metadata.startCol},${input.metadata.endCol},${input.metadata.strandCol},${input.metadata.nameCol}"
+      #end if
+
+      #if $seq_source.index_source == "cached":
+        ## Genomic data from cache.
+        -g '${GALAXY_DATA_INDEX_DIR}'
+      #else:
+        ## Genomic data from history.
+        -F '${seq_source.ref_file}'
+      #end if
+  </command>
+  <inputs>
+      <param format="interval,gff" name="input" type="data" label="Fetch sequences for intervals in"/>
+      <param name="interpret_features" type="select" label="Interpret features when possible" help="Only meaningful for GFF, GTF datasets.">
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+      </param>
+      <conditional name="seq_source">
+          <param name="index_source" type="select" label="Source for Genomic Data" help="If 'Locally cached' is selected, it will use a genomic reference file that matches the input file's dbkey. First it looks whether there are corresponding *.nib files in alignseq.loc. If that is not available, it searches for a corresponding *.2bit in twobit.loc.">
+              <option value="cached">Locally cached</option>
+              <option value="history">History</option>
+          </param>
+          <when value="cached">
+          </when>
+          <when value="history">
+              <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+          </when>
+      </conditional>
+      <param name="out_format" type="select" label="Output data type">
+          <option value="fasta">FASTA</option>
+          <option value="interval">Interval</option>
+      </param>
+  </inputs>
+  <outputs>
+      <data format_source="input" name="out_file1" metadata_source="input">
+          <change_format>
+              <when input="out_format" value="fasta" format="fasta" />
+          </change_format>
+      </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
+      <param name="interpret_features" value="yes"/>
+      <param name="index_source" value="cached"/>
+      <param name="out_format" value="fasta"/>
+      <output name="out_file1">
+	<assert_contents>
+	  <!-- First few lines... -->
+	  <has_text text=">hg17_chr1_147962192_147962580_- CCDS989.1_cds_0_0_chr1_147962193_r" />
+	  <has_text text="ACTTGATCCTGCTCCCTCGGTGTCTGCATTGACTCCTCATGCTGGGACTG" />
+	  <has_text text="GACCCGTCAACCCCCCTGCTCGCTGCTCACGTACCTTCATCACTTTTAGT" />
+	  <has_text text="GATGATGCAACTTTCGAGGAATGGTTCCCCCAAGGGCGGCCCCCAAAAGT" />
+	  <!-- Last few lines... -->
+	  <has_text text="GCTGTGGCACAGAACATGGACTCTGTGTTTAAGGAGCTCTTGGGAAAGAC" />
+	  <has_text text="CTCTGTCCGCCAGGGCCTTGGGCCAGCATCTACCACCTCTCCCAGTCCTG" />
+	  <has_text text="GGCCCCGAAGCCCAAAGGCCCCGCCCAGCAGCCGCCTGGGCAGGAACAAA" />
+	  <has_text text="GGCTTCTCCCGGGGCCCTGGGGCCCCAGCCTCACCCTCAGCTTCCCACCC" />
+	  <has_text text="CCAGGGCCTAGACACGACCCCCAAGCCACACTGA" />
+	</assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="input" value="droPer1.bed" dbkey="droPer1" ftype="bed" />
+      <param name="interpret_features" value="yes"/>
+      <param name="index_source" value="cached"/>
+      <param name="out_format" value="fasta"/>
+      <output name="out_file1" file="extract_genomic_dna_out2.fasta" />
+    </test>
+    <test>
+      <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
+      <param name="interpret_features" value="yes"/>
+      <param name="index_source" value="cached"/>
+      <param name="out_format" value="interval"/>
+      <output name="out_file1" file="extract_genomic_dna_out3.interval" />
+    </test>
+    <!-- Test GFF file support. -->
+    <test>
+      <param name="input" value="gff_filter_by_attribute_out1.gff" dbkey="mm9" ftype="gff" />
+      <param name="interpret_features" value="no"/>
+      <param name="index_source" value="cached"/>
+      <param name="out_format" value="interval"/>
+      <output name="out_file1" file="extract_genomic_dna_out4.gff" />
+    </test>
+    <test>
+      <param name="input" value="gff_filter_by_attribute_out1.gff" dbkey="mm9" ftype="gff" />
+      <param name="interpret_features" value="no"/>
+      <param name="out_format" value="fasta"/>
+      <param name="index_source" value="cached"/>
+      <output name="out_file1" file="extract_genomic_dna_out5.fasta" />
+    </test>
+    <!-- Test custom sequences support and GFF feature interpretation. -->
+    <test>
+      <param name="input" value="cufflinks_out1.gtf" dbkey="mm9" ftype="gff" />
+      <param name="interpret_features" value="no"/>
+      <param name="index_source" value="history"/>
+      <param name="ref_file" value="tophat_in1.fasta"/>
+      <param name="out_format" value="fasta"/>
+      <output name="out_file1" file="extract_genomic_dna_out6.fasta" />
+    </test>
+    <test>
+      <param name="input" value="cufflinks_out1.gtf" dbkey="mm9" ftype="gff" />
+      <param name="interpret_features" value="yes"/>
+      <param name="index_source" value="history"/>
+      <param name="ref_file" value="tophat_in1.fasta"/>
+      <param name="out_format" value="fasta"/>
+      <output name="out_file1" file="extract_genomic_dna_out7.fasta" />
+    </test>
+  </tests>
+  <help>
+.. class:: warningmark
+
+This tool requires interval or gff (special tabular formatted data).  If your data is not TAB delimited, first use *Text Manipulation-&gt;Convert*.
+
+.. class:: warningmark
+
+Make sure that the genome build is specified for the dataset from which you are extracting sequences (click the pencil icon in the history item if it is not specified).
+
+.. class:: warningmark
+
+All of the following will cause a line from the input dataset to be skipped and a warning generated.  The number of warnings and skipped lines is documented in the resulting history item.
+ - Any lines that do not contain at least 3 columns, a chromosome and numerical start and end coordinates.
+ - Sequences that fall outside of the range of a line's start and end coordinates.
+ - Chromosome, start or end coordinates that are invalid for the specified build.
+ - Any lines whose data columns are not separated by a **TAB** character ( other white-space characters are invalid ).
+
+.. class:: infomark
+
+ **Extract genomic DNA using coordinates from ASSEMBLED genomes and UNassembled genomes** previously were achieved by two separate tools.
+
+-----
+
+**What it does**
+
+This tool uses coordinate, strand, and build information to fetch genomic DNAs in FASTA or interval format.
+
+If strand is not defined, the default value is "+".
+
+-----
+
+**Example**
+
+If the input dataset is::
+
+    chr7  127475281  127475310  NM_000230  0  +
+    chr7  127485994  127486166  NM_000230  0  +
+    chr7  127486011  127486166  D49487     0  +
+
+Extracting sequences with **FASTA** output data type returns::
+
+    &gt;hg17_chr7_127475281_127475310_+ NM_000230
+    GTAGGAATCGCAGCGCCAGCGGTTGCAAG
+    &gt;hg17_chr7_127485994_127486166_+ NM_000230
+    GCCCAAGAAGCCCATCCTGGGAAGGAAAATGCATTGGGGAACCCTGTGCG
+    GATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATC
+    CAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAG
+    GATCAATGACATTTCACACACG
+    &gt;hg17_chr7_127486011_127486166_+ D49487
+    TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGG
+    CCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGA
+    CACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCAC
+    ACACG
+
+Extracting sequences with **Interval** output data type returns::
+
+    chr7    127475281       127475310       NM_000230       0       +       GTAGGAATCGCAGCGCCAGCGGTTGCAAG
+    chr7    127485994       127486166       NM_000230       0       +       GCCCAAGAAGCCCATCCTGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG
+    chr7    127486011       127486166       D49487  0       +       TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG
+  </help>
+</tool>

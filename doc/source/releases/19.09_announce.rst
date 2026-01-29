@@ -1,0 +1,141 @@
+
+===========================================================
+September 2019 Galaxy Release (v 19.09)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+==========
+
+**Interactive Tools**
+  A new type of Galaxy tool has been implemented that allows interactive experiences like
+  Galaxy Interactive Environments (via a proxy and Docker containers) but using plugins defined with
+  Galaxy's XML tool syntax. Dan Blankenberg's slides on these new features from Galaxy
+  Community Conference 2019 can be found `here <https://static.sched.com/hosted_files/gcc2019/c1/S8A-4__Dan_Blankenberg_Tools.pdf>`__.
+  More information can be found in the original pull request, including interactive tool
+  versions of all of Galaxy's bundled interactive environments `Pull Request 7494`_.
+
+**Workflow Invocation Reports**
+  Workflows may now define Markdown templates with Galaxy-specific embedded syntax extensions
+  that can tie together workflow inputs, outputs, jobs, and metadata into rich reports.
+  More information on the motivation for these reports can be found in `these slides <https://bit.ly/gxreports19>`__,
+  implementation details and GUI enhancements are described in the original pull request
+  (`#8030 <https://github.com/galaxyproject/galaxy/pull/8030>`__), and details on the final
+  syntax selected for embedded Galaxy objects can be found in the pull request that was ultimately
+  merged (`#8543 <https://github.com/galaxyproject/galaxy/pull/8543>`__).
+
+**New Toolshed Client Interface**
+  The march toward replacing templated backend-generated HTML with modern, reactive
+  components continued in Galaxy 19.09. Galaxy's tool panel, job properties tables,
+  job management controls, and "Pages" infrastructure were all replaced with VueJS
+  components (with huge help from `@scrathat <https://github.com/scrathat>`__
+  and `@inkuzmin <https://github.com/inkuzmin>`__). Most notably, Galaxy's interface
+  to the Tool Shed was also rewritten in VueJS and is now completely API driven.
+  This project drove numerous enhancements to the Tool Shed API, including vastly improved
+  search functionality. This interface has been completely re-imagined and feels much
+  more interactive.
+
+Also check out the `19.09 user release notes <https://docs.galaxyproject.org/en/release_19.09/releases/19.09_announce_user.html>`__.
+
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_19.09 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_19.09 && git pull --ff-only origin release_19.09
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Tool configuration file handling changes
+========================================
+
+Shed tool configuration file
+-----------------------------
+
+There have been a few changes to the way that Galaxy loads tool panel configuration files (e.g. ``tool_conf.xml`` and ``shed_tool_conf.xml``) that deployers should be aware of before upgrading.
+
+A new configuration option named ``shed_tool_config_file`` has been added, with a default value of ``config/shed_tool_conf.xml``, and that path has been removed from the default value of the ``tool_config_file`` option.  This new option makes it possible for Galaxy to create the shed tool configuration file (e.g. ``shed_tool_conf.xml``) file on demand and moves us one step closer to a Galaxy installation that does not need to be run from the root of its source directory.
+
+If you make no changes to your configuration, you should not encounter any problems. However, if you are using a non-default path to your primary shed tool config file, you should modify these options to remove the path of your primary ``shed_tool_conf.xml`` from ``tool_config_file`` and set it in ``shed_tool_config_file``. Although Galaxy will continue to operate properly if you do not make this change, failure to do so will result in a second shed tool panel config file being created and loaded at startup time.
+
+Although an unusual configuration, if you have multiple shed tool config files, you can still load them in ``tool_config_file``, just be sure that one of them is set in ``shed_tool_config_file``.
+
+Note that Galaxy will fail to start if any of the files specified in ``tool_conf_file`` cannot be read at startup, whereas it will only fail to start if the file specified in ``shed_tool_config_file`` cannot be created (if it does not already exist).
+
+Migrated tools configuration file
+---------------------------------
+
+Galaxy contains a (now unused) system for automatically installing tools from the Tool Shed that had been migrated out of the Galaxy source code after the creation of the Tool Shed. Older deployments that used this system may have tools in the migrated tools config file, ``config/migrated_tools_conf.xml.sample`` (by default). As of this release, an empty ``migrated_tools_conf.xml`` file is not created by default for new installations, but will still be read if it is found at the default path. The path can be changed with the ``migrated_tools_config`` option, and you can force Galaxy to fail startup if the file is missing by adding it to the ``tool_config_file`` option.
+
+Configuration file path defaults
+--------------------------------
+
+**Deprecated paths will no longer be searched**
+The default location for Galaxy's configuration files has been in the ``config/`` directory for many years, prior to which the default was the root of the Galaxy directory.
+As of this release, Galaxy will no longer look in the current directory for configuration files, so you will need to specify the path to ``galaxy.yml`` e.g. with
+``uwsgi --yaml /path/to/galaxy.yml``, ``GALAXY_CONFIG_FILE=/path/to/galaxy.yml run.sh``, or similar means, if it is not in the default location.
+
+**Default paths to additional configuration files**
+As of this release, all other configuration files (e.g. ``datatypes_conf.xml``, ``job_conf.xml``) are searched for in the same directory as ``galaxy.yml``.
+Prior to this release, the default was in the ``config/`` directory of the current working directory at startup (which has always been, and for the time being continues to be, the root of the Galaxy source).
+This means that you do not need to individually configure the paths to these files in ``galaxy.yml`` if you are storing them in non-default locations.
+
+MySQL Support Drop
+==================
+
+The MySQL database server is no longer officially supported and all deployers are urged to use PostgreSQL.
+
+Deprecation Notice
+==================
+
+API
+---
+
+The following Galaxy API endpoints (related to the Toolshed) are considered deprecated and staged for removal in the next release:
+
+* **api/toolshed/** { category | repository | search | show | status | tool_json }
+* **api/toolshed_repositories/** { check_for_updates | exported_workflows | get_latest_installable_revision | import_workflow | import_workflows | install | repair_repository_revision | shed_category | shed_repository | shed_search | status }
+
+Python
+------
+
+TL;DR Galaxy can be deployed on both Python 2 and 3, with Python 3 expected to be the increasingly encouraged way of deployment.
+
+Python 2 will `not be maintained <https://www.python.org/doc/sunset-python-2/>`__ past 2020 which means Galaxy 19.09 is
+the last release that officially supports Python 2.
+
+Over the past years the Galaxy team has made a substantial effort,
+spearheaded by `@nsoranzo <https://github.com/nsoranzo>`__ and `@mvdbeek <https://github.com/mvdbeek>`__,
+to make Galaxy compatible with Python 3. Thanks to this endeavor the `Galaxy Test server <https://test.galaxyproject.org>`__
+has been running on Python 3 since April of this year and **Galaxy itself now fully supports Python 3**.
+
+**Galaxy Tools**, that properly declare their Python dependency (using e.g. ``<requirement type="package" version="2.7">python</requirement>``), will continue to work as expected with Python 2
+being provided by Conda. However tools that naively rely on the implicit presence of Python 2 on the PATH may fail on Python3 deployments.
+Another corner case are tools that use Python2-specific Cheetah templating syntax in their XML. We have implemented various mitigation
+approaches on the Galaxy side, but some old tools using this syntax will not function correctly.
+
+*In our testing these problems should affect only a very limited number of tools and the vast majority should
+work on Python 3 without a change.*
+
+GenomeSpace
+-----------
+The GenomeSpace project has `ended <http://www.genomespace.org/news/the-genomespace-project-is-ending>`__ on November 15, 2019 due to expiration of its NHGRI funding.
+Therefore the GenomeSpace Importer and Exporter Galaxy tools are hereby deprecated and will be removed in 20.01.
+
+Release Notes
+=============
+
+.. include:: 19.09.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

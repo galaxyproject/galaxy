@@ -1,0 +1,37 @@
+<tool id="paths_as_file" name="paths_as_file" version="0.1.0">
+    <configfiles>
+        <configfile name="check_paths_file"><![CDATA[
+import sys
+paths_file = sys.argv[1]
+sep = sys.argv[2]
+if sep == "NEWLINE":
+    sep = "\n"
+with open(paths_file, "r") as f:
+    paths = f.read()
+assert paths == sep.join(sys.argv[3:])
+]]></configfile>
+    </configfiles>
+    <command detect_errors="exit_code"><![CDATA[
+      python $check_paths_file $inputs.paths_as_file NEWLINE #for $f in $inputs# ${f} #end for#
+      &&
+      python $check_paths_file $inputs.paths_as_file(sep=',') ',' #for $f in $inputs# ${f} #end for#
+      &&
+      printf 'All Done' > $out1
+    ]]></command>
+    <inputs>
+        <param name="inputs" type="data" format="txt" multiple="true" label="Data 1" />
+    </inputs>
+    <outputs>
+        <data format="txt" name="out1" />
+    </outputs>
+    <tests>
+    <test>
+      <param name="inputs" value="simple_line.txt,simple_line_alternative.txt" />
+      <output name="out1">
+          <assert_contents>
+              <has_line line="All Done" />
+          </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

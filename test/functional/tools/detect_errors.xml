@@ -1,0 +1,139 @@
+<tool id="detect_errors" name="detect_errors" version="1.0.0">
+    <stdio>
+       <exit_code range="3:5" level="warning" description="Low disk space" />
+       <exit_code range="6:"  level="fatal"   description="Bad input dataset" />
+       <exit_code range="2"   level="fatal_oom"   description="Out of Memory" />
+       <regex match="message" source="stdout" level="log" description="some program message of interest"/>
+       <regex match="low space" source="both" level="warning" description="Low space on device" />
+       <regex match="error" source="stderr" level="fatal" description="Unknown error encountered" />
+       <regex match="out of memory" source="stdout" level="fatal_oom" description="Out of memory error occurred" />
+       <regex match="[CG]{12}" description="Fatal error - CG island 12 nts long found" />
+       <regex match="^Branch A" level="warning" description="Branch A was taken in execution" />
+    </stdio>
+    <command><![CDATA[
+#if str($stdoutmsg) != ""
+    echo '$stdoutmsg' &&
+#end if
+#if str($stderrmsg) != ""
+    >2& echo '$stderrmsg' && 
+#end if
+sh -c 'exit $exit_code'
+    ]]>
+    </command>
+    <inputs>
+        <param name="stdoutmsg" type="text" value="" label="messages to stdout" />
+        <param name="stderrmsg" type="text" value="" label="messages to stderr" />
+        <param name="exit_code" type="integer" value="0" label="exit code"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" />
+    </outputs>
+    <tests>
+        <!-- exit code + regex tests -->
+        <!-- successful run (warning exit code + log and warning messages) -->
+        <test expect_exit_code="3" expect_failure="false">
+            <param name="stdoutmsg" value="message: everything is fine" />
+            <param name="stderrmsg" value="low space" />
+            <param name="exit_code" value="3" />
+            <assert_stdout>
+                <has_line line="Log: some program message of interest"/>
+                <has_line line="Warning: Low space on device"/>
+            </assert_stdout>
+            <assert_stderr>
+                <has_line line="Warning: Exit code 3 (Low disk space)"/>
+            </assert_stderr>
+        </test>
+        <!-- unccessful run (fatal exit code + warning in output messages are detected) -->
+        <test expect_exit_code="23" expect_failure="true">
+            <param name="stdoutmsg" value="Branch A seems to be of iterest .. maybe its related to the error?" />
+            <param name="exit_code" value="23" />
+            <assert_stdout>
+                <has_line line="Warning: Branch A was taken in execution"/>
+            </assert_stdout>
+            <assert_stderr>
+                <has_line line="Fatal error: Exit code 23 (Bad input dataset)"/>
+            </assert_stderr>
+        </test>
+        <!-- unccessful run (fatal exit code + fatal_oom message is detected) -->
+        <test expect_exit_code="6" expect_failure="true">
+            <param name="stdoutmsg" value="out of memory" />
+            <param name="exit_code" value="6" />
+            <assert_stdout>
+                <has_line line="Out of memory error: Out of memory error occurred"/>
+            </assert_stdout>
+            <assert_stderr>
+                <has_line line="Fatal error: Exit code 6 (Bad input dataset)"/>
+            </assert_stderr>
+        </test>
+        <!-- unccessful run (good exit code + fatal message) -->
+        <test expect_exit_code="0" expect_failure="true">
+            <param name="stdoutmsg" value="CGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCGCG" />
+            <param name="exit_code" value="0" />
+            <assert_stdout>
+                <has_line line="Fatal error: Fatal error - CG island 12 nts long found"/>
+            </assert_stdout>
+        </test>
+        <!-- unccessful run (fatal oom exit code + fatal_oom message is detected .. latter is expected to be undetected) -->
+        <test expect_exit_code="2" expect_failure="true">
+            <param name="stdoutmsg" value="out of memory" />
+            <param name="exit_code" value="2" />
+            <assert_stdout>
+                <not_has_text text="Out of memory error: Out of memory error occurred"/>
+                <has_line line="out of memory"/>
+            </assert_stdout>
+            <assert_stderr>
+                <has_line line="Out of memory error: Exit code 2 (Out of Memory)"/>
+            </assert_stderr>
+        </test>
+
+        <!-- exit code tests -->
+        <!-- successful run -->
+        <test expect_exit_code="0" expect_failure="false">
+            <param name="stdoutmsg" value="everything is fine" />
+            <param name="exit_code" value="0" />
+            <assert_stdout>
+                <has_line line="everything is fine"/>
+            </assert_stdout>
+        </test>
+        <!-- exit code without meaning -->
+        <test expect_exit_code="1" expect_failure="false">
+            <param name="stdoutmsg" value="everything is fine" />
+            <param name="exit_code" value="1" />
+            <assert_stdout>
+                <has_line line="everything is fine" />
+            </assert_stdout>
+        </test>
+        <!-- exit code indicating warning -->
+        <test expect_exit_code="4" expect_failure="false">
+            <param name="stdoutmsg" value="everything is fine" />
+            <param name="exit_code" value="4" />
+            <assert_stdout>
+                <has_line line="everything is fine" />
+            </assert_stdout>
+        </test>
+        <!-- exit code indicating error -->
+        <test expect_exit_code="42" expect_failure="true">
+            <param name="stdoutmsg" value="everything just seems fine so far... but it isn't" />
+            <param name="exit_code" value="42" />
+            <assert_stdout>
+                <has_line line="everything just seems fine so far... but it isn__sq__t" />
+            </assert_stdout>
+            <assert_stderr>
+                <has_line line="Fatal error: Exit code 42 (Bad input dataset)" />
+            </assert_stderr>
+        </test>
+        <!-- exit code indicating oom_error -->
+        <test expect_exit_code="2" expect_failure="true">
+            <param name="stdoutmsg" value="everything just seems fine so far... but it isn't" />
+            <param name="exit_code" value="2" />
+            <assert_stdout>
+                <has_line line="everything just seems fine so far... but it isn__sq__t" />
+            </assert_stdout>
+            <assert_stderr>
+                <has_line line="Out of memory error: Exit code 2 (Out of Memory)" />
+            </assert_stderr>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

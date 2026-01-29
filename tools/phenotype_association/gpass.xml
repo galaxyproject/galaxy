@@ -1,0 +1,114 @@
+<tool id="hgv_gpass" name="GPASS" version="1.0.0">
+    <description>significant single-SNP associations in case-control studies</description>
+    <requirements>
+        <requirement type="package">gpass</requirement>
+    </requirements>
+
+    <command>
+perl '$__tool_directory__/gpass.pl' '${input1.extra_files_path}/${input1.metadata.base_name}.map' '${input1.extra_files_path}/${input1.metadata.base_name}.ped' '$output' $fdr
+    </command>
+
+    <inputs>
+        <param name="input1" type="data" format="lped" label="Dataset"/>
+        <param name="fdr" type="float" value="0.05" label="FDR"/>
+    </inputs>
+
+    <outputs>
+        <data name="output" format="tabular" />
+    </outputs>
+
+
+  <!-- we need to be able to set the seed for the random number generator
+  <tests>
+    <test>
+      <param name='input1' value='gpass_and_beam_input' ftype='lped' >
+        <metadata name='base_name' value='gpass_and_beam_input' />
+        <composite_data value='gpass_and_beam_input.ped' />
+        <composite_data value='gpass_and_beam_input.map' />
+        <edit_attributes type='name' value='gpass_and_beam_input' />
+      </param>
+      <param name="fdr" value="0.05" />
+      <output name="output" file="gpass_output.txt" />
+    </test>
+  </tests>
+  -->
+
+    <help>
+**Dataset formats**
+
+The input dataset must be in lped_ format, and the output is tabular_.
+(`Dataset missing?`_)
+
+.. _lped: ${static_path}/formatHelp.html#lped
+.. _tabular: ${static_path}/formatHelp.html#tab
+.. _Dataset missing?: ${static_path}/formatHelp.html
+
+-----
+
+**What it does**
+
+GPASS (Genome-wide Poisson Approximation for Statistical Significance)
+detects significant single-SNP associations in case-control studies at a user-specified FDR.  Unlike previous methods, this tool can accurately approximate the genome-wide significance and FDR of SNP associations, while adjusting for millions of multiple comparisons, within seconds or minutes.
+
+The program has two main functionalities:
+
+1. Detect significant single-SNP associations at a user-specified false
+   discovery rate (FDR).
+
+   *Note*: a "typical" definition of FDR could be
+            FDR = E(# of false positive SNPs / # of significant SNPs)
+
+   This definition however is very inappropriate for association mapping, since SNPs are
+   highly correlated.  Our FDR is
+   defined differently to account for SNP correlations, and thus will obtain
+   a proper FDR in terms of "proportion of false positive loci".
+
+2. Approximate the significance of a list of candidate SNPs, adjusting for
+   multiple comparisons. If you have isolated a few SNPs of interest and want
+   to know their significance in a GWAS, you can supply the GWAS data and let
+   the program specifically test those SNPs.
+
+
+*Also note*: the number of SNPs in a study cannot be both too small and at the same
+time too clustered in a local region. A few hundreds of SNPs, or tens of SNPs
+spread in different regions, will be fine. The sample size cannot be too small
+either; around 100 or more individuals (case + control combined) will be fine.
+Otherwise use permutation.
+
+-----
+
+**Example**
+
+- input map file::
+
+    1  rs0  0  738547
+    1  rs1  0  5597094
+    1  rs2  0  9424115
+    etc.
+
+- input ped file::
+
+    1 1 0 0 1  1  G G  A A  A A  A A  A A  A G  A A  G G  G G  A A  G G  G G  G G  A A  A A  A G  A A  G G  A G  A G  A A  G G  A A  G G  A A  G G  A G  A A  G G  A A  G G  A A  A G  A G  G G  A G  G G  G G  A A  A G  A A  G G  G G  G G  G G  A G  A A  A A  A A  A A
+    1 1 0 0 1  1  G G  A G  G G  A A  A A  A G  A A  G G  G G  G G  A A  G G  A G  A G  G G  G G  A G  G G  A G  A A  G G  A G  G G  A A  G G  G G  A G  A G  G G  A G  A A  A A  G G  G G  A G  A G  G G  A G  A A  A A  A G  G G  A G  G G  A G  G G  G G  A A  G G  A G
+    etc.
+
+- output dataset, showing significant SNPs and their p-values and FDR::
+
+    #ID   chr   position   Statistics  adj-Pvalue  FDR
+    rs35  chr1  136606952  4.890849    0.991562    0.682138
+    rs36  chr1  137748344  4.931934    0.991562    0.795827
+    rs44  chr2  14423047   7.712832    0.665086    0.218776
+    etc.
+
+-----
+
+**Reference**
+
+Zhang Y, Liu JS. (2010)
+Fast and accurate significance approximation for genome-wide association studies.
+Submitted.
+    </help>
+    <citations>
+        <citation type="doi">10.1198/jasa.2011.ap10657</citation>
+    </citations>
+</tool>

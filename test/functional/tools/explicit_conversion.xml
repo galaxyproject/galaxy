@@ -1,0 +1,23 @@
+<tool id="explicit_conversion" name="explicit_conversion">
+  <command>
+    cut -f 1 '${input1_table}' > '$output1'
+  </command>
+  <inputs>
+    <param type="data" format="fasta" name="input1" label="Input 1">
+      <conversion name="input1_table" type="tabular" />
+    </param>
+  </inputs>
+  <outputs>
+    <data name="output1" format="tabular" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="1.fasta" ftype="fasta" />
+      <output name="output1">
+        <assert_contents>
+          <has_line line="hg17" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

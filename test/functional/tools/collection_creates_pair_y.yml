@@ -1,0 +1,18 @@
+id: collection_creates_pair_y
+name: collection_creates_pair_y
+class: GalaxyTool
+version: 1.0
+command:
+  >
+    sed 'n;d' '$input1' > '$paired_output.forward';
+    sed -n 'g;n;p' '$input1' > '$paired_output.reverse';
+inputs:
+- name: input1
+  type: data
+  label: Input
+  help: Input to be split.
+outputs:
+  paired_output:
+    type: collection
+    collection_type: paired
+    label: Split Pair

@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:gxdocs="http://galaxyproject.org/xml/1.0" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:element name="display">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">Defines a Galaxy External Display Application (GEDA).</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="dynamic_links" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Defines a set of dynamically generated links.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="dynamic_param" minOccurs="0" maxOccurs="unbounded">
+                                <xs:annotation>
+                                    <xs:documentation xml:lang="en">A parameter that is created dynamically from the values of this dynamic link entry.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="name" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:documentation xml:lang="en">Name of parameter.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="value" type="xs:string">
+                                        <xs:annotation>
+                                            <xs:documentation xml:lang="en">Field of dynamic entry to use for parameter value.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="split" type="PermissiveBoolean" default="false">
+                                        <xs:annotation>
+                                            <xs:documentation xml:lang="en">Should this string parameter value be split into a list of strings.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="separator" type="xs:string" default=",">
+                                        <xs:annotation>
+                                            <xs:documentation xml:lang="en">Use this separator when splitting parameter value into a list.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="filter" type="xs:string" minOccurs="0" maxOccurs="unbounded">
+                                <xs:annotation>
+                                    <xs:documentation xml:lang="en"><![CDATA[A Cheetah template that will cause this link to not be displayed when evaluated as ```False```]]></xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="url" type="xs:string" minOccurs="1" maxOccurs="1">
+                                <xs:annotation>
+                                    <xs:documentation xml:lang="en"><![CDATA[A Cheetah template that evaluates into the URL to which the User is sent.]]></xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="param" type="ParamType" minOccurs="0" maxOccurs="unbounded" />
+                        </xs:sequence>
+                        <xs:attribute name="from_data_table" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="en">Load dynamic content from named tool data table.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="from_file" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="en">Load dynamic content from named file.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="site_type" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="en">Load dynamic content from name site_type.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="skip_startswith" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="en"><![CDATA[Skip any entries that begin with this string when loading from a file, e.g. set to ```#```]]></xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="separator" type="xs:string" default="\t">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="en"><![CDATA[Split each line into fields using this string when loading from a file, e.g. set to ```\t```]]></xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="id" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="en">Field of dynamic entry to use for internal link ID.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="name" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="en">Field of dynamic entry to use for link text displayed to user.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="link" minOccurs="0" maxOccurs="unbounded">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Defines a GEDA link.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="url" type="xs:string" minOccurs="1" maxOccurs="1">
+                                <xs:annotation>
+                                    <xs:documentation xml:lang="en"><![CDATA[A Cheetah template that evaluates into the URL to which the User is sent.]]></xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="param" type="ParamType" minOccurs="0" maxOccurs="unbounded" />
+                        </xs:sequence>
+                        <xs:attribute name="id" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="en">ID internally used to identify link for this GEDA.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="name" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation xml:lang="en">Link text displayed to user.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="id" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation xml:lang="en">ID used to identify this GEDA.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="version" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation xml:lang="en">Version of this GEDA.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="name" type="xs:string">
+                <xs:annotation>
+                    <xs:documentation xml:lang="en">Text displayed to user that identifies this GEDA.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+        </xs:complexType>
+    </xs:element>
+    <xs:simpleType name="PermissiveBoolean">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">A Permissive Boolean value.</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="0" />
+            <xs:enumeration value="1" />
+            <xs:enumeration value="true" />
+            <xs:enumeration value="false" />
+            <xs:enumeration value="True" />
+            <xs:enumeration value="False" />
+            <xs:enumeration value="yes" />
+            <xs:enumeration value="no" />
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="ParamTypeType">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">Sets the type of the parameter to be created.</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="data" />
+            <xs:enumeration value="template" />
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="ParamType">
+        <xs:annotation>
+            <xs:documentation xml:lang="en"><![CDATA[Specifies the parameter configuration.
+
+### Examples
+
+A data param for a BAM file:
+
+```xml
+ <param type="data" name="bam_file" url="galaxy_${DATASET_HASH}.bam" />
+```
+
+A data param for a BAI metadata element for a BAM file:
+
+```xml
+ <param type="data" name="bai_file" url="galaxy_${DATASET_HASH}.bam.bai" metadata="bam_index" />
+```
+
+A data param that uses format conversion to create a 'bedstrict' file from e.g. a generic 'interval' datatype:
+
+```xml
+ <param type="data" name="bed_file" url="galaxy_${DATASET_HASH}.bed" format="bedstrict"/>
+```
+
+A template parameter that generates an initial position from a BED file, this content is used internally, but cannot be loaded by URL due to the viewable=False setting:
+
+```xml
+<param type="template" name="position" strip="True" viewable="False">
+#set chrom, start, end = $bed_file.datatype.get_estimated_display_viewport( $bed_file )
+#if $chrom is not None:
+${chrom}:${start}-${int( end ) + 1}
+#else:
+:-
+#end if
+</param>
+```
+
+A data param that provides a BGZIP file (from an initial VCF file), with a Tabix index built ontop of the BGZIP file, followed by a custom track definition created using Cheetah templating and made accessible (viewable) to the external resource over a URL:
+
+```xml
+<param type="data" name="bgzip_file" url="galaxy_${DATASET_HASH}.vcf.gz" format="vcf_bgzip" />
+<param type="data" name="tabix_file" dataset="bgzip_file" url="galaxy_${DATASET_HASH}.vcf.gz.tbi" format="tabix" />
+<param type="template" name="track" viewable="True">track type="vcfTabix" name="${bgzip_file.name.replace( '\\', '\\\\' ).replace( '"', '\\"' )}" bigDataUrl="${bgzip_file.url}" db="${bgzip_file.dbkey}"</param>
+```]]></xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="type" type="ParamTypeType" />
+                <xs:attribute name="name" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Name of parameter that is used in Cheetah templates.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="url" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Name used in url for display purposes defaults to value of name. Is a Cheetah template.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="mimetype" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Manually declare the mimetype set when serving the content of this parameter.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="guess_mimetype" type="PermissiveBoolean" default="false">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Try to guess the mimetype based upon the value of url.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="allow_extra_files_access" type="PermissiveBoolean" default="false">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Enable access to non-primary files of composite datatypes.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="viewable" type="PermissiveBoolean">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Is this parameter viewable by access over URL. Defaults to true for data and false for template parameter types.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="strip" type="PermissiveBoolean" default="false">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Strip surrounding whitespace from parameter content. Particularly useful for multi-line template types that use e.g. control statements.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="strip_https" type="PermissiveBoolean" default="false">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Some external applications are not able to consume HTTPS-based content. If the Galaxy server is under HTTPS and this is true, the URL provided for the parameter content will be forced to http.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="force_url_param" type="PermissiveBoolean" default="false">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Force the action snippet for this parameter's URL to be "param".</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="force_conversion" type="PermissiveBoolean" default="false">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Force this data parameter to be converted to first available path as listed in format attribute.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="format" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Comma separated list of potential formats for conversion.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="metadata" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Provide named metadata element to as content instead of dataset.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="dataset" type="xs:string">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">'dataset' is default name assigned to dataset to be displayed</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+                <xs:attribute name="allow_cors" type="PermissiveBoolean" default="false">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Automatically enable CORS for origin of request.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+</xs:schema>

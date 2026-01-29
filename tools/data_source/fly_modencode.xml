@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<tool name="modENCODE fly" id="modENCODEfly" tool_type="data_source" version="1.0.1"  profile="20.09">
+    <description>server</description>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
+    <command><![CDATA[
+python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
+    ]]></command>
+    <inputs action="http://gbrowse.modencode.org/fgb2/gbrowse/fly" check_values="false" target="_top">
+        <display>go to modENCODE fly server $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=modENCODEfly" />
+    </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="dbkey" remote_name="dbkey" missing="dm3" >
+            <value_translation>
+                <value galaxy_value="dm3" remote_value="fly" />
+            </value_translation>
+        </request_param>
+        <request_param galaxy_name="URL" remote_name="URL" missing="">
+            <append_param separator="&amp;" first_separator="?" join="=">
+                <value name="d" missing="" />
+                <value name="dbkey" missing="dm3" />
+                <value name="q" missing="" />
+                <value name="s" missing="" />
+                <value name="t" missing="" />
+            </append_param>
+        </request_param>
+        <request_param galaxy_name="URL_method" remote_name="URL_method" missing="post" />
+        <request_param galaxy_name="data_type" remote_name="data_type" missing="auto" />
+    </request_param_translation>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="txt" label="${tool.name} on $getVar( 'q', 'unknown position' )"/>
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>

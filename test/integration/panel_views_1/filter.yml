@@ -1,0 +1,5 @@
+name: Filtering Tools
+type: activity
+items:
+- type: section
+  id: filter

@@ -1,0 +1,54 @@
+<tool id="identifier_in_conditional" name="identifier_in_conditional" version="1.0.0">
+    <command><![CDATA[
+## note access to input1 is supposed to work
+## - qualified ($outer_cond.input1)
+## - and unqualified ($input1)
+## both are tested here but the latter should be avoided
+#if str($outer_cond.multi_input) == 'true':
+    #for $input in $outer_cond.input1#
+        echo '$input.element_identifier' >> 'output1';
+    #end for#
+#else
+    echo '$input1.element_identifier' >> 'output1';
+#end if
+    ]]></command>
+    <inputs>
+        <conditional name="outer_cond">
+            <param name="multi_input" type="boolean" checked="true" />
+            <when value="true">
+                <param name="input1" type="data" multiple="true" label="multi input" />
+            </when>
+            <when value="false">
+                <param name="input1" type="data" multiple="false" label="single input" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular" from_work_dir="output1" />
+    </outputs>
+    <tests>
+        <test>
+            <conditional name="outer_cond">
+                <param name="multi_input" value="true"/>
+                <param name="input1" value="1.tabular,2.tabular"/>
+            </conditional>
+            <output name="output1">
+                <assert_contents>
+                    <has_text text="1.tabular"/>
+                    <has_text text="2.tabular"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <conditional name="outer_cond">
+                <param name="multi_input" value="false"/>
+                <param name="input1" value="1.tabular"/>
+            </conditional>
+            <output name="output1">
+                <assert_contents>
+                    <has_text text="1.tabular"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

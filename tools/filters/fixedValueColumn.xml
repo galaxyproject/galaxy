@@ -1,0 +1,65 @@
+<tool id="addValue" name="Add column" version="1.0.0" profile="16.04">
+  <description>to an existing dataset</description>
+  <edam_operations>
+    <edam_operation>operation_3096</edam_operation>
+  </edam_operations>
+  <requirements>
+    <requirement type="package" version="5.26">perl</requirement>
+  </requirements>
+  <command>
+perl '$__tool_directory__/fixedValueColumn.pl' '$input' '$out_file1' '$exp' $iterate
+  </command>
+  <inputs>
+    <param name="exp" type="text" value="1" label="Add this value"/>
+    <param name="input" type="data" format="tabular" label="to Dataset" help="Dataset missing? See TIP below" />
+    <param name="iterate" type="select" label="Iterate?">
+      <option value="no">NO</option>
+      <option value="yes">YES</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format_source="input" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="exp" value="1"/>
+      <param name="input" value="1.bed" ftype="bed"/>
+      <param name="iterate" value="no"/>
+      <output name="out_file1" file="eq-addvalue.dat" ftype="bed"/>
+    </test>
+  </tests>
+  <help>
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
+
+-----
+
+**What it does**
+
+You can enter any value and it will be added as a new column to your dataset
+
+-----
+
+**Example**
+
+If your original data looks like this::
+
+    chr1 10  100 geneA
+    chr2 200 300 geneB
+    chr2 400 500 geneC
+
+Typing **+** in the text box will generate::
+
+    chr1 10  100 geneA +
+    chr2 200 300 geneB +
+    chr2 400 500 geneC +
+
+
+You can also add line numbers by selecting **Iterate: YES**. In this case if you enter **1** in the text box you will get::
+
+    chr1 10  100 geneA 1
+    chr2 200 300 geneB 2
+    chr2 400 500 geneC 3
+  </help>
+</tool>

@@ -1,0 +1,3 @@
+# Table used for listing simple iCn3D Structure Viewer servers
+#<unique_id>	<display_name>	<url>
+ncbi_icn3d	NCBI	https://www.ncbi.nlm.nih.gov/Structure/icn3d/full.html?type=%(icn3d_file_type)s&url=%(icn3d_file_url_qp)s

@@ -1,0 +1,26 @@
+#This is a sample file distributed with Galaxy that is used by some
+#tools.  The twobit.loc file has this format (white space characters 
+#are TAB characters):
+#
+#<Build>	<FullPathToFile>
+#
+#So, for example, if you had droPer1 twobit files stored in 
+#/depot/data2/galaxy/droPer1/, then the twobit.loc entry 
+#would look like this:
+#
+#droPer1	/depot/data2/galaxy/droPer1/droPer1.2bit
+#
+#and your /depot/data2/galaxy/droPer1/ directory would 
+#contain all of your twobit files (e.g.):
+#
+#-rw-rw-r--   1 nate   galaxy 48972650 2007-05-04 11:27 droPer1.2bit
+#...etc...
+#
+#Your twobit.loc file should include an entry per line for each twobit 
+#file you have stored.  For example:
+#
+#droPer1	/depot/data2/galaxy/droPer1/droPer1.2bit
+#apiMel2	/depot/data2/galaxy/apiMel2/apiMel2.2bit
+#droAna1	/depot/data2/galaxy/droAna1/droAna1.2bit
+#droAna2	/depot/data2/galaxy/droAna2/droAna2.2bit
+#...etc...

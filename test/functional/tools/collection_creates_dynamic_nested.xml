@@ -1,0 +1,70 @@
+<tool id="collection_creates_dynamic_nested" name="collection_creates_dynamic_nested" version="0.1.0" profile="16.04">
+  <command><![CDATA[
+    echo "A" > oe1_ie1.fq ;
+    echo "B" > oe1_ie2.fq ;
+    echo "C" > oe2_ie1.fq ;
+    echo "D" > oe2_ie2.fq ;
+    echo "E" > oe3_ie1.fq ;
+    echo "F" > oe3_ie2.fq ;
+    sleep '$sleep_time';
+    exit $fail_bool
+  ]]></command>
+  <inputs>
+    <param name="foo" type="text" label="Dummy Parameter" />
+    <param name="sleep_time" type="integer" label="Sleep Time" value="0" />
+    <param name="fail_bool" type="boolean" label="Fail tool run?" truevalue="1" falsevalue="0"/>
+  </inputs>
+  <outputs>
+    <collection name="list_output" type="list:list" label="Duplicate List">
+      <!-- Use named regex group to grab pattern
+           <identifier_0>_<identifier_1>.fq. Here identifier_0 is the list
+           identifier of the outer list and identifier_1 is the list identifier
+           of the inner list (for instance oe1_ie2.fq in above example).
+      -->
+      <discover_datasets pattern="(?P&lt;identifier_0&gt;[^_]+)_(?P&lt;identifier_1&gt;[^_]+)\.fq" ext="fastqsanger" visible="true" />
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="foo" value="bar" />
+      <output_collection name="list_output" type="list:list">
+        <element name="oe1">
+          <element name="ie1">
+            <assert_contents>
+              <has_text_matching expression="^A\n$" />
+            </assert_contents>
+          </element>
+          <element name="ie2">
+            <assert_contents>
+              <has_text_matching expression="^B\n$" />
+            </assert_contents>
+          </element>
+        </element>
+        <element name="oe2">
+          <element name="ie1">
+            <assert_contents>
+              <has_text_matching expression="^C\n$" />
+            </assert_contents>
+          </element>
+          <element name="ie2">
+            <assert_contents>
+              <has_text_matching expression="^D\n$" />
+            </assert_contents>
+          </element>
+        </element>
+        <element name="oe3">
+          <element name="ie1">
+            <assert_contents>
+              <has_text_matching expression="^E\n$" />
+            </assert_contents>
+          </element>
+          <element name="ie2">
+            <assert_contents>
+              <has_text_matching expression="^F\n$" />
+            </assert_contents>
+          </element>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

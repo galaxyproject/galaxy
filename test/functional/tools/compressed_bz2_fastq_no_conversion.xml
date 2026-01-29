@@ -1,0 +1,19 @@
+<tool id="compressed_bz2_fastq_cat" name="Confirm fastq.bz2 is not uncompressed">
+    <command>
+        cat '$input1' > '$out_file1'
+    </command>
+    <inputs>
+        <param name="input1" type="data" format="fastq.bz2" label="Concatenate Dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="fastq.bz2"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="1.fastqsanger.bz2"/>
+            <output name="out_file1" file="1.fastqsanger.bz2" ftype="fastq.bz2"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

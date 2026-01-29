@@ -1,0 +1,129 @@
+<tool id="velveth" name="velveth" version="1.0.0">
+  <description>Prepare a dataset for the Velvet velvetg Assembler</description>
+  <version_command>velveth 2&gt;&amp;1 | grep "Version" | sed -e 's/Version //'</version_command>
+  <command interpreter="python">
+    velveth_wrapper.py 
+           '$out_file1' '$out_file1.extra_files_path'
+           $hash_length
+           $strand_specific
+           #for $i in $inputs
+                ${i.file_format}
+                ${i.read_type}
+                ${i.input}
+           #end for
+  </command>
+  <inputs>
+    <param label="Hash Length" name="hash_length" type="select" help="k-mer length in base pairs of the words being hashed.">
+      <option value="11">11</option>
+      <option value="13">13</option>
+      <option value="15">15</option>
+      <option value="17">17</option>
+      <option value="19">19</option>
+      <option value="21" selected="yes">21</option>
+      <option value="23">23</option>
+      <option value="25">25</option>
+      <option value="27">27</option>
+      <option value="29">29</option>
+    </param>
+    <param name="strand_specific" type="boolean" checked="false" truevalue="-strand_specific" falsevalue="" label="Use strand specific transcriptome sequencing" help="If you are using a strand specific transcriptome sequencing protocol, you may wish to use this option for better results."/>
+    <repeat name="inputs" title="Input Files">
+      <param label="file format" name="file_format" type="select">
+        <option value="-fasta" selected="yes">fasta</option>
+        <option value="-fastq">fastq</option>
+        <option value="-eland">eland</option>
+        <option value="-gerald">gerald</option>
+      </param>
+      <param label="read type" name="read_type" type="select">
+        <option value="-short" selected="yes">short reads</option>
+        <option value="-shortPaired">shortPaired reads</option>
+        <option value="-short2">short2 reads</option>
+        <option value="-shortPaired2">shortPaired2 reads</option>
+        <option value="-long">long reads</option>
+        <option value="-longPaired">longPaired reads</option>
+      </param>
+
+      <param name="input" type="data" format="fasta,fastq,eland,gerald" label="Dataset"/>
+    </repeat>
+  </inputs>
+  <outputs>
+    <data format="velvet" name="out_file1" />
+  </outputs>
+  <requirements>
+    <requirement type="package">velvet</requirement>
+  </requirements>
+  <tests>
+    <test>
+      <param name="hash_length" value="21" />
+      <param name="read_type" value="-shortPaired" />
+      <!-- <repeat name="inputs"> -->
+      <param name="file_format" value="fasta" />
+      <param name="read_type" value="shortPaired reads" />
+      <param name="input" value="velvet_test_reads.fa" ftype="fasta" />
+      <!-- </repeat> -->
+      <param name="strand_specific" value="" />
+      <output name="out_file1" file="velveth_test1/output.html" lines_diff="4">
+        <extra_files type="file" name='Sequences' value="velveth_test1/Sequences" compare="diff" />
+        <extra_files type="file" name='Roadmaps' value="velveth_test1/Roadmaps" compare="diff" />
+      </output>
+    </test>
+  </tests>
+  <help>
+**Velvet Overview**
+
+Velvet_ is a de novo genomic assembler specially designed for short read sequencing technologies, such as Solexa or 454, developed by Daniel Zerbino and Ewan Birney at the European Bioinformatics Institute (EMBL-EBI), near Cambridge, in the United Kingdom.
+
+Velvet currently takes in short read sequences, removes errors then produces high quality unique contigs. It then uses paired-end read and long read information, when available, to retrieve the repeated areas between contigs.
+
+Read the Velvet `documentation`__ for details on using the Velvet Assembler.
+
+.. _Velvet: http://www.ebi.ac.uk/~zerbino/velvet/
+
+.. __: http://www.ebi.ac.uk/~zerbino/velvet/Manual.pdf
+
+------
+
+**Velveth**
+
+Velveth takes in a number of sequence files, produces a hashtable, then outputs two files in an output directory (creating it if necessary), Sequences and Roadmaps, which are necessary to velvetg.
+
+------
+
+**Hash Length**
+
+The hash length, also known as k-mer length, corresponds to the length, in base pairs, of the words being hashed. 
+
+The hash length is the length of the k-mers being entered in the hash table. Firstly, you must observe three technical constraints::
+
+# it must be an odd number, to avoid palindromes. If you put in an even number, Velvet will just decrement it and proceed.
+# it must be below or equal to MAXKMERHASH length (cf. 2.3.3, by default 31bp), because it is stored on 64 bits
+# it must be strictly inferior to read length, otherwise you simply will not observe any overlaps between reads, for obvious reasons.
+
+Now you still have quite a lot of possibilities. As is often the case, it's a trade- off between specificity and sensitivity. Longer kmers bring you more specificity (i.e. less spurious overlaps) but lowers coverage (cf. below). . . so there's a sweet spot to be found with time and experience.
+We like to think in terms of "k-mer coverage", i.e. how many times has a k-mer been seen among the reads. The relation between k-mer coverage Ck and standard (nucleotide-wise) coverage C is Ck = C # (L - k + 1)/L where k is your hash length, and L you read length.
+Experience shows that this kmer coverage should be above 10 to start getting decent results. If Ck is above 20, you might be "wasting" coverage. Experience also shows that empirical tests with different values for k are not that costly to run!
+
+**Input Files**
+
+Velvet works mainly with fasta and fastq formats. For paired-end reads, the assumption is that each read is next to its mate
+read. In other words, if the reads are indexed from 0, then reads 0 and 1 are paired, 2 and 3, 4 and 5, etc.
+
+Supported file formats are::
+
+  fasta
+  fastq 
+  fasta.gz 
+  fastq.gz 
+  eland
+  gerald
+
+Read categories are::
+
+  short (default)
+  shortPaired
+  short2 (same as short, but for a separate insert-size library)
+  shortPaired2 (see above)
+  long (for Sanger, 454 or even reference sequences)
+  longPaired
+
+  </help>
+</tool>

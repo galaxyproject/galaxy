@@ -1,0 +1,25 @@
+@startuml
+'!include plantuml_options.txt
+queue       TaskQueue   as queue
+participant     "queue_jobs Task" as task
+participant     "JobSubmitter.queue_jobs" as queue_jobs
+participant     "JobSubmitter.dereference" as dereference
+participant     "materialize Task" as materialize_task
+participant     "Tool.handle_input_async" as handle_input
+participant     "expand_meta_parameters_async" as expand
+participant     "ToolAction.execute" as tool_action
+
+queue -> task : <Launch Task>
+task -> queue_jobs : QueueJobs pydantic model
+queue_jobs -> dereference : RequestInternalToolState
+dereference -> queue_jobs : RequestInternalDereferencedToolState
+queue_jobs -> materialize_task : HDA (with state deferred)
+materialize_task -> queue_jobs : return when state is okay
+queue_jobs -> handle_input : RequestInternalDereferencedToolState
+handle_input -> expand : RequestInternalDereferencedToolState
+expand -> handle_input : JobInternalToolState[]
+loop over expanded job tool states
+    handle_input -> tool_action :
+    tool_action -> handle_input : A Galaxy Job
+end
+@enduml

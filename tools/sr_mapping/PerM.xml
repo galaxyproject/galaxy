@@ -1,0 +1,369 @@
+<tool id="PerM" name="Map with PerM" version="1.1.2">
+  <description>for SOLiD and Illumina</description>
+  <!-- works with PerM version 0.2.6 -->
+  <requirements>
+      <requirement type="package">perm</requirement>
+  </requirements>
+  <command>
+    echo -n "PerM "; PerM 2>&amp;1 | grep "Version";
+    PerM
+      #if $s.sourceOfRef.refSource == "history"
+        $s.sourceOfRef.ref
+      #else
+        #if $s.space == "color"
+          "${s.sourceOfRef.index.fields.path}"
+        #elif $s.space == "base"
+          "${s.sourceOfRef.index.fields.path}"
+        #end if
+      #end if
+      #if $s.mate.singleOrPairs == "single":
+        $s.mate.reads
+      #else:
+        -1 $s.mate.reads1 -2 $s.mate.reads2
+        -U $s.mate.upperbound
+        -L $s.mate.lowerbound
+        $s.mate.excludeAmbiguousPairs
+      #end if
+      #if $s.space == "color":
+        --readFormat "csfastq"
+      #else:
+        --readFormat "fastq"
+      #end if
+      #if $int($str($valAlign)) &gt;= 0
+        -v $valAlign
+      #end if
+      #if $align.options == "full":
+        --seed $align.seed
+        -$align.alignments
+        #if $str($align.delimiter) != "None"
+          --delimiter $align.delimiter
+        #end if
+        -T $align.sTrimL
+        $align.includeReadsWN
+        $align.statsOnly
+        $align.ignoreQS
+      #end if
+      #if $str($bUnmappedRead) == "true" and $s.space == "color"
+        -u $unmappedReadOutCS
+      #elif $str($bUnmappedRead) == "true" and $s.space == "base"
+        -u $unmappedReadOut
+      #end if
+      -o $output
+      --outputFormat sam
+      --noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
+  </command>
+  <inputs>
+    <conditional name="s">
+      <param name="space" label="Is your data color space (SOLiD) or base space (Illumina)?" type="select">
+        <option value="color">Color space</option>
+        <option value="base">Base space</option>
+      </param>
+      <when value="color">
+        <conditional name="sourceOfRef">
+          <param name="refSource" label="Will you provide your own reference file from the history or use a built-in index?" type="select">
+            <option value="indexed">Built-in index</option>
+            <option value="history">Fasta file from history</option>
+          </param>
+          <when value="indexed">
+            <param name="index" type="select" label="Select a reference genome (with seed and read length)" help="if your genome of interest is not listed - contact Galaxy team">
+              <options from_data_table="perm_color_indexes"/>
+            </param>
+          </when>
+          <when value="history">
+            <param name="ref" format="fasta" type="data" label="Reference" />
+          </when>
+        </conditional>
+        <conditional name="mate">
+          <param name="singleOrPairs" label="Mate-paired?" type="select">
+            <option value="single">Single-end</option>
+            <option value="paired">Mate pairs</option>
+          </param>
+          <when value="single">
+            <param format="fastqcssanger" name="reads" type="data" label="Reads" />
+          </when>
+          <when value="paired">
+            <param name="reads1" format="fastqcssanger" label="Forward FASTQ file" type="data" />
+            <param name="reads2" format="fastqcssanger" label="Reverse FASTQ file" type="data" />
+            <param label="Upperbound of pairs separation (-U)" name="upperbound" type="integer" value="100000" />
+            <param label="Lowerbound of pairs separation (-L)" name="lowerbound" type="integer" value="0" />
+            <param label="Exclude ambiguous pairs (-e)" name="excludeAmbiguousPairs" type="boolean" checked="false" truevalue="-e" falsevalue="" />
+          </when>
+        </conditional>
+      </when>
+      <when value="base">
+        <conditional name="sourceOfRef">
+          <param name="refSource" label="Will you provide your own reference file from the history or use a built-in index?" type="select">
+            <option value="indexed">Built-in index</option>
+            <option value="history">Fasta file from history</option>
+          </param>
+          <when value="indexed">
+            <param name="index" type="select" label="Select a reference genome with seed and read length" help="if your genome of interest is not listed - contact Galaxy team">
+              <options from_data_table="perm_base_indexes"/>
+            </param>
+          </when>
+          <when value="history">
+            <param name="ref" format="fasta" type="data" label="Reference" />
+          </when>
+        </conditional>
+        <conditional name="mate">
+          <param name="singleOrPairs" label="Mate-paired?" type="select">
+            <option value="single">Single-end</option>
+            <option value="paired">Mate pairs</option>
+          </param>
+          <when value="single">
+            <param format="fastqsanger" name="reads" type="data" label="Reads" />
+          </when>
+          <when value="paired">
+            <param name="reads1" format="fastqsanger" label="Forward FASTQ file" type="data" />
+            <param name="reads2" format="fastqsanger" label="Reverse FASTQ file" type="data" />
+            <param label="Upperbound of pairs separation (-U)" name="upperbound" type="integer" value="100000" />
+            <param label="Lowerbound of pairs separation (-L)" name="lowerbound" type="integer" value="0" />
+            <param label="Exclude ambiguous pairs (-e)" name="excludeAmbiguousPairs" type="boolean" checked="false" truevalue="-e" falsevalue="" />
+          </when>
+        </conditional>
+      </when>
+    </conditional>
+    <param label="Maximum number of mismatches permitted in one end of full read (-v)" name="valAlign" type="integer" value="2" />
+    <conditional name="align">
+      <param help="Use default setting or specify full parameters list" label="PerM settings to use" name="options" type="select">
+        <option value="preSet">Commonly used</option>
+        <option value="full">Full parameter list</option>
+      </param>
+      <when value="preSet"/>
+      <when value="full">
+        <param label="Whether or not to report all valid alignments per read (-A/-B/-E)" name="alignments" type="select">
+          <option value="A">Report all valid alignments</option>
+          <option value="B">Report the best alignments in terms of number of mismatches</option>
+          <option value="E">Report only uniquely mapped reads</option>
+        </param>
+        <param label="Choose the seed full sensitive to different number of mismatches (--seed)" name="seed" type="select" >
+          <option value="F2">2 mismatches</option>
+          <option value="S11">1 SNP + 1 color error</option>
+          <option value="F3">3 mismatches</option>
+          <option value="F4">4 mismatches</option>
+        </param>
+        <param label="Choose the delimiter to identify read name (--delimiter)" name="delimiter" type="select">
+          <option value="None">Tab/Space/Comma</option>
+          <option value=":">Colon</option>
+          <option value="_">Underscore</option>
+        </param>
+        <param name="sTrimL" type="integer" value="50" label="Use the first n bases of each read for alignment (-T)" />
+        <param name="includeReadsWN" type="boolean" checked="true" truevalue="--includeReadsWN" falsevalue="" label="Include reads with 'N' or '.' by encoding '.' as 3, 'N' as 'A' (--includeReadsWN)" /> 
+        <param name="statsOnly" type="boolean" checked="false" truevalue="--statsOnly" falsevalue="" label="Output mapping stats only. Don't output alignments (--statsOnly)" />
+        <param name="ignoreQS" type="boolean" checked="false" truevalue="--ignoreQS" falsevalue="" label="Ignore quality scores (--ignoreQS)" />
+      </when>
+    </conditional> <!-- options -->
+    <param name="bUnmappedRead" type="select" label="Output the unmapped reads (-u)">
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="sam" name="output" label="${tool.name} on ${on_string}: mapped reads" />
+    <data format="fastqsanger" name="unmappedReadOut" label="${tool.name} on ${on_string}: unmapped reads">
+      <filter>bUnmappedRead == "true" and s["space"] == "base"</filter>
+    </data>
+    <data format="fastqcssanger" name="unmappedReadOutCS" label="${tool.name} on ${on_string}: unmapped reads">
+      <filter>bUnmappedRead == "true" and s["space"] == "color"</filter>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <!--
+      PerM command:
+      PerM /afs/bx.psu.edu/depot/data/genome/phiX/perm_index/phiX_base_F3_50.index -1 test-data/perm_in1.fastqsanger -2 test-data/perm_in2.fastqsanger -U 100000 -L 0 -e +readFormat fastq -v 0 +seed F3 -A -T 50 +includeReadsWN -o perm_out1.sam +outputFormat sam +noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
+      You need to replace the + with 2 dashes.
+      -->
+      <param name="space" value="base" />
+      <param name="refSource" value="indexed" />
+      <param name="index" value="phiX_F3_50" />
+      <param name="singleOrPairs" value="paired" />
+      <param name="reads1" value="perm_in1.fastqsanger" ftype="fastqsanger" />
+      <param name="reads2" value="perm_in2.fastqsanger" ftype="fastqsanger" />
+      <param name="upperbound" value="100000" />
+      <param name="lowerbound" value="0" />
+      <param name="excludeAmbiguousPairs" value="true" />
+      <param name="valAlign" value="0" />
+      <param name="options" value="full" />
+      <param name="alignments" value="A" />
+      <param name="seed" value="F3" />
+      <param name="delimiter" value="None" />
+      <param name="sTrimL" value="50" />
+      <param name="includeReadsWN" value="true" />
+      <param name="statsOnly" value="false" />
+      <param name="ignoreQS" value="false" />
+      <param name="bUnmappedRead" value="false" />
+      <output name="output" file="perm_out1.sam" ftype="sam" />
+    </test>
+    <test>
+      <!--
+      PerM command:
+      PerM test-data/chr_m.fasta test-data/perm_in3.fastqsanger +readFormat fastq -v 2 -u perm_out3.fastqsanger -o perm_out2.sam +outputFormat sam +noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
+      You need to replace the + with 2 dashes.
+      -->
+      <param name="space" value="base" />
+      <param name="refSource" value="history" />
+      <param name="ref" value="chr_m.fasta" ftype="fasta" />
+      <param name="singleOrPairs" value="single" />
+      <param name="reads" value="perm_in3.fastqsanger" ftype="fastqsanger" />
+      <param name="valAlign" value="2" />
+      <param name="options" value="preSet" />
+      <param name="bUnmappedRead" value="true" />
+      <output name="output" file="perm_out2.sam" ftype="sam" />
+      <output name="unmappedReadOut" file="perm_out3.fastqsanger" ftype="fastqsanger" />
+    </test>
+    <test>
+      <!--
+      PerM command:
+      PerM test-data/phiX.fasta test-data/perm_in4.fastqcssanger +readFormat csfastq -v 1 -o perm_out4.sam +outputFormat sam +noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
+      You need to replace the + with 2 dashes.
+      -->
+      <param name="space" value="color" />
+      <param name="refSource" value="history" />
+      <param name="ref" value="phiX.fasta" ftype="fasta" />
+      <param name="singleOrPairs" value="single" />
+      <param name="reads" value="perm_in4.fastqcssanger" ftype="fastqcssanger" />
+      <param name="valAlign" value="1" />
+      <param name="options" value="preSet" />
+      <param name="bUnmappedRead" value="false" />
+      <output name="output" file="perm_out4.sam" ftype="sam" />
+    </test>
+    <test>
+      <!--
+      PerM command:
+      PerM /afs/bx.psu.edu/depot/data/genome/equCab2/perm_index/equCab2_chrM_color_F2_50.index -1 test-data/perm_in5.fastqcssanger -2 test-data/perm_in6.fastqcssanger -U 90000 -L 10000 +readFormat csfastq -v 3 +seed F2-o perm_out5.sam +outputFormat sam +noSamHeader | tr '\r' '\n' | tr -cd "[:print:]\t\n " | grep "Reads\|Sub0\|Pairs\|single" | sed 's/.*Reads:,//' | sed 's/\/.*dat,_ Sub0/Sub0/'
+      You need to replace the + with 2 dashes.
+      -->
+      <param name="space" value="color" />
+      <param name="refSource" value="indexed" />
+      <param name="index" value="equCab2_chrM_F2_50" />
+      <param name="singleOrPairs" value="paired" />
+      <param name="reads1" value="perm_in5.fastqcssanger" ftype="fastqcssanger" />
+      <param name="reads2" value="perm_in6.fastqcssanger" ftype="fastqcssanger" />
+      <param name="upperbound" value="90000" />
+      <param name="lowerbound" value="10000" />
+      <param name="excludeAmbiguousPairs" value="false" />
+      <param name="valAlign" value="3" />
+      <param name="options" value="preSet" />
+      <param name="bUnmappedRead" value="false" />
+      <output name="output" file="perm_out5.sam" ftype="sam" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+PerM is a short read aligner designed to be ultrafast with long SOLiD reads to the whole genome or transcriptions. PerM can be fully sensitive to alignments with up to four mismatches and highly sensitive to a higher number of mismatches.
+
+**Development team**
+
+PerM is developed by Ting Chen's group, Center of Excellence in Genomic Sciences at the University of Southern California. If you have any questions, please email yanghoch at usc.edu or check the `project page`__.
+
+ .. __: http://code.google.com/p/perm/
+
+**Citation**
+
+PerM: Efficient mapping of short sequencing reads with periodic full sensitive spaced seeds. Bioinformatics, 2009, 25 (19): 2514-2521.
+
+**Input**
+
+The input files are read files and a reference. Users can use the pre-indexed reference in Galaxy or upload their own reference.
+
+The uploaded reference file should be in the fasta format. Multiple sequences like transcriptions should be concatenated together separated by a header line that starts with the ">" character.
+
+Reads files must be in either fastqsanger or fastqcssanger format to use in PerM. However, there are several possible starting formats that can be converted to one of those two: fastq (any type), color-space fastq, fasta, csfasta, or csfasta+qualsolid. 
+
+An uploaded base-space fastq file MUST be checked/transformed with FASTQGroomer tools in Galaxy to be converted to the fastqsanger format (this is true even if the original file is in Sanger format).
+
+Uploaded fasta and csfasta without quality score files can be transformed to fastqsanger by the FASTQGroomer, with pseudo quality scores added.
+
+An uploaded csfasta + qual pair can also be transformed into fastqcssanger by solid2fastq.
+
+**Outputs**
+
+The output mapping result is in SAM format, and has the following columns::
+
+    Column  Description
+  --------  --------------------------------------------------------
+   1 QNAME  Query (pair) NAME
+   2 FLAG   bitwise FLAG
+   3 RNAME  Reference sequence NAME
+   4 POS    1-based leftmost POSition/coordinate of clipped sequence
+   5 MAPQ   MAPping Quality (Phred-scaled)
+   6 CIGAR  extended CIGAR string
+   7 MRNM   Mate Reference sequence NaMe ('=' if same as RNAME)
+   8 MPOS   1-based Mate POSition
+   9 ISIZE  Inferred insert SIZE
+  10 SEQ    query SEQuence on the same strand as the reference
+  11 QUAL   query QUALity (ASCII-33 gives the Phred base quality)
+  12 OPT    variable OPTional fields in the format TAG:VTYPE:VALUE
+  12.1 NM   Number of mismatches (SOLiD-specific)
+  12.2 CS   Reads in color space (SOLiD-specific)
+  12.3 CQ   Bases quality in color spacehidden="true" (SOLiD-specific)
+
+The flags are as follows::
+
+    Flag  Description
+  ------  -------------------------------------
+  0x0001  the read is paired in sequencing
+  0x0002  the read is mapped in a proper pair
+  0x0004  the query sequence itself is unmapped
+  0x0008  the mate is unmapped
+  0x0010  strand of the query (1 for reverse)
+  0x0020  strand of the mate
+  0x0040  the read is the first read in a pair
+  0x0080  the read is the second read in a pair
+  0x0100  the alignment is not primary
+
+Here is some sample output::
+
+  Qname	FLAG	Rname	POS	MAPQ	CIAGR	MRNM	MPOS	ISIZE	SEQ	QUAL	NM	CS	CQ
+  491_28_332_F3   16      ref-1   282734  255     35M     *       0       0       AGTCAAACTCCGAATGCCAATGACTTATCCTTAGG    #%%%%%%%!!%%%!!%%%%%%%%!!%%%%%%%%%%      NM:i:3  CS:Z:C0230202330012130103100230121001212        CQ:Z:###################################
+  491_28_332_F3   16      ref-1   269436  255     35M     *       0       0       AGTCAAACTCCGAATGCCAATGACTTATCCTTAGG    #%%%%%%%!!%%%!!%%%%%%%%!!%%%%%%%%%%      NM:i:3  CS:Z:C0230202330012130103100230121001212        CQ:Z:###################################
+
+The user can check a checkbox for optional output containing the unmmaped reads in fastqsanger or fastqcssanger. The default is to produce it.
+
+**PerM parameter list**
+
+Below is a list of PerM command line options for PerM. Not all of these are relevant to Galaxy's implementation, but are included for completeness.
+
+The command for single-end::
+
+  PerM [ref_or_index] [read] [options]
+
+The command for paired-end::
+
+  PerM [ref_or_index] -1 [read1] -2 [read1] [options]
+
+The command-line options::
+
+  -A                Output all alignments within the given mismatch threshold, end-to-end.
+  -B                Output best alignments in terms of mismatches in the given mismatch threshold. [Default]
+  -E                Output only the uniquely mapped reads in the given mismatch threshold.
+  -m                Create the reference index, without reusing the saved index.
+  -s PATH           Save the reference index to accelerate the mapping in the future. If PATH is not specified, the default path will be used.
+  -v INT            Where INT is the number of mismatches allowed in one end. [Default=2]
+  -T INT            Where INT is the length to truncate read length to, so 30 means use only first 30 bases (signals). Leave blank if the full read is meant to be used.
+  -o PATH           Where PATH is for output the mapping of one read set. PerM's output are in .mapping or .sam format, determined by the ext name of PATH. Ex: -o out.sam will output in SAM format; -o out.mapping will output in .mapping format.
+  -d PATH           Where PATH is the directory for multiple read sets.
+  -u PATH           Print the fastq file of those unmapped reads to the file in PATH.
+  --noSamHeader     Print no SAM header so it is convenient to concatenate multiple SAM output files.
+  --includeReadsWN  Encodes N or "." with A or 3, respectively.
+  --statsOnly       Output the mapping statistics in stdout only, without saving alignments to files.
+  --ignoreQS        Ignore the quality scores in fastq or QUAL files.
+  --seed {F2 | S11 | F3 | F4}    Specify the seed pattern, which has a specific full sensitivity. Check the algorithm page (link below) for seed patterns to balance the sensitivity and running time.
+  --readFormat {fasta | fastq | csfasta | csfastq}    Read in reads in the specified format, instead of guessing according to the extension name.
+  --delimiter CHAR  Which is a character used as the delimiter to separate the read id, and the additional info in the line with ">" in fasta or csfasta.
+
+Paired reads options::
+
+  -e        Exclude ambiguous paired.
+  -L INT    Mate-paired separate lower bound.
+  -U INT    Mate-paired separate upper bound.
+  -1 PATH   The forward reads file path.
+  -2 PATH   The reversed reads file path.
+
+See the PerM `algorithm page`__ for information on algorithms and seeds.
+
+ .. __: http://code.google.com/p/perm/wiki/Algorithms
+  </help>
+</tool>

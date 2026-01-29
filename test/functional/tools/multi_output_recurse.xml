@@ -1,0 +1,99 @@
+<tool id="multi_output_recurse" name="multi_output_recurse" version="0.1.0" profile="21.09">
+  <command><![CDATA[
+    echo "Hello" > '$report';
+    mkdir subdir1;
+    echo "This" > subdir1/this.txt;
+    echo "That" > subdir1/that.txt;
+    mkdir subdir2;
+    echo "1" > subdir2/CUSTOM_1.txt;
+    echo "2" > subdir2/CUSTOM_2.txt;
+    mkdir subdir3;
+    echo "Foo" > subdir3/Foo;
+    mkdir subdir3/nested1;
+    echo "Bar" > subdir3/nested1/bar.txt;
+    echo "Hello" > subdir3/nested1/hello;
+    echo "1" > sample1.report.txt;
+    echo "2" > sample2.report.txt;
+    ]]></command>
+  <inputs>
+    <param type="boolean" name="match_relative"/>
+  </inputs>
+  <outputs>
+    <data auto_format="true" name="report">
+      <filter>not bool(match_relative)</filter>
+      <discover_datasets pattern="__designation__" directory="." visible="true" recurse="true"/>
+    </data>
+    <data auto_format="true" name="report_optional">
+      <filter>not bool(match_relative)</filter>
+      <discover_datasets pattern="__designation__" directory="i_do_not_exist" visible="true" recurse="true"/>
+    </data>
+    <data auto_format="true" name="report_match_relative_path">
+      <filter>bool(match_relative)</filter>
+      <discover_datasets pattern="__designation__" directory="." visible="true" recurse="true" match_relative_path="true"/>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <output name="report">
+        <assert_contents>
+          <has_line line="Hello"/>
+        </assert_contents>
+        <discovered_dataset designation="this.txt">
+          <assert_contents>
+            <has_line line="This"/>
+          </assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="that.txt">
+          <assert_contents>
+            <has_line line="That"/>
+          </assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="CUSTOM_1.txt">
+          <assert_contents>
+            <has_line line="1"/>
+          </assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="CUSTOM_2.txt">
+          <assert_contents>
+            <has_line line="2"/>
+          </assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="Foo">
+          <assert_contents>
+            <has_line line="Foo"/>
+          </assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="bar.txt">
+          <assert_contents>
+            <has_line line="Bar"/>
+          </assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="hello">
+          <assert_contents>
+            <has_line line="Hello"/>
+          </assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="sample1.report.txt">
+          <assert_contents>
+            <has_line line="1"/>
+          </assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="sample2.report.txt">
+          <assert_contents>
+            <has_line line="2"/>
+          </assert_contents>
+        </discovered_dataset>
+      </output>
+    </test>
+    <test>
+      <param name="match_relative" value="true"/>
+      <output name="report_match_relative_path">
+        <discovered_dataset designation="subdir3/nested1/bar.txt">
+          <assert_contents>
+            <has_line line="Bar"/>
+          </assert_contents>
+        </discovered_dataset>
+      </output>
+    </test>
+  </tests>
+</tool>

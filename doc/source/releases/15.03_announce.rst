@@ -1,0 +1,11 @@
+===========================================================
+March 2015 Galaxy Release (v 15.03)
+===========================================================
+
+.. include:: _header.rst
+
+Please see the `Galaxy wiki`_ for announcement and release notes.
+
+.. _Galaxy wiki: https://galaxyproject.org/news/2015-03-galaxy-release/
+
+.. include:: _thanks.rst

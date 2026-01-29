@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!-- 
+    Slimmed down resubmission_job_conf.xml for testing resubmission created from
+    dynamic destination.
+-->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="1"/>
+        <plugin id="failure_runner" type="runner" load="integration.resubmission_runners:FailsJobRunner" workers="1">
+        </plugin>
+        <plugin id="dynamic" type="runner">
+            <param id="rules_module">integration.resubmission_rules</param>
+        </plugin>
+    </plugins>
+
+    <destinations default="initial_destination">
+        <destination id="initial_destination" runner="dynamic">
+            <param id="type">python</param>
+            <param id="function">dynamic_resubmit_once</param>
+        </destination>
+
+        <!-- Upload destination. -->
+        <destination id="local" runner="local">
+        </destination>
+
+    </destinations>
+
+    <tools>
+        <tool class="local" destination="local" />
+    </tools>
+
+</job_conf>

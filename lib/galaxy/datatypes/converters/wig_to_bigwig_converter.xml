@@ -1,0 +1,26 @@
+<tool id="CONVERTER_wig_to_bigwig" name="Convert Wiggle to BigWig" version="1.0.1" hidden="true">
+    <!-- Used internally to generate track indexes -->
+    <requirements>
+        <requirement type="package" version="357">ucsc-wigtobigwig</requirement>
+    </requirements>
+    <command>
+<![CDATA[
+        grep -v "^track" '$input' | wigToBigWig -clip stdin '$chromInfo' '$output'
+        2>&1 || echo "Error running Wiggle to BigWig converter." >&2
+]]>
+    </command>
+    <inputs>
+        <param format="wig" name="input" type="data" label="Choose wiggle"/>
+    </inputs>
+    <outputs>
+        <data format="bigwig" name="output"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="wig" value="aggregate_binned_scores_3.wig" dbkey="hg17"/>
+            <output name="output" ftype="bigwig" value="aggregate_binned_scores_3.bigwig"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

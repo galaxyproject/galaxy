@@ -1,0 +1,18 @@
+<tool id="mulled_example_multi_versionless" name="mulled_example_multi_versionless" version="0.1.0">
+    <command><![CDATA[
+bedtools --version > '$out_file1' &&
+echo 'Moo' >> '$out_file1' &&
+samtools >> '$out_file1' 2>&1 &&
+echo 'Cow' >> '$out_file1'
+    ]]></command>
+    <requirements>
+        <requirement type="package">samtools</requirement>
+        <requirement type="package">bedtools</requirement>
+    </requirements>
+    <inputs>
+        <param name="input1" type="data" optional="true" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+</tool>

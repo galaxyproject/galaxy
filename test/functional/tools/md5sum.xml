@@ -1,0 +1,17 @@
+<tool id="md5sum" name="md5sum" version="1.0.0">
+    <command>
+        cp '$input.file_name' '$output'
+    </command>
+    <inputs>
+        <param name="input" type="data" format="txt" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="simple_line.txt" />
+            <output name="output" md5="ac94233685713ce99d1e712b0023c381" />
+        </test>
+    </tests>
+</tool>

@@ -1,0 +1,33 @@
+<tool id="cheetah_casting" name="cheetah_casting" version="1.0.0">
+    <command>
+        #set $int_val_inc = int($inttest) + 1
+        #set $int_flot_val_inc = int($floattest) + 1
+        #set $float_val_inc = float($floattest) + 1
+        #set $text_val = $texttest.strip()
+        echo $int_val_inc >> '$out_file1';
+        echo $int_flot_val_inc >> '$out_file1';
+        echo $float_val_inc >> '$out_file1';
+        echo $text_val >> '#out_file1'
+    </command>
+    <inputs>
+        <param name="inttest" value="1" type="integer" />
+        <param name="floattest" value="1.0" type="float" />
+        <param name="texttest" type="text" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="inttest" value="1" />
+            <param name="floattest" value="2.5" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="2" />
+                    <has_line line="3" />
+                    <has_line line="3.5" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

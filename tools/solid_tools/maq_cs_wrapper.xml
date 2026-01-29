@@ -1,0 +1,113 @@
+<tool id="maq_cs_wrapper" name="MAQ for SOLiD" version="1.0.0">
+    <description> </description>
+    <command>
+python '$__tool_directory__/maq_cs_wrapper.py'
+'$output1'
+'$output2'
+'$ref'
+'$library_type.f3_reads'
+'$library_type.f3_qual'
+$library_type.is_paired
+#if $library_type.is_paired == "yes":
+    '$library_type.r3_reads'
+    '$library_type.r3_qual'
+#else:
+    "None"
+    "None"
+#end if
+$min_mapqual
+$max_mismatch
+'$output3'
+    </command>
+
+    <inputs>
+        <param name="ref" type="data" format="fasta" label="Target Genome"/>
+        <conditional name="library_type">
+          <param name="is_paired" type="select" label="Is the library mate-paired?" multiple="false">
+             <option value="no">No</option>
+             <option value="yes">Yes</option>
+         </param>
+         <when value="no">
+           <param name="f3_reads" type="data" format="csfasta" label="F3 reads file"/>
+           <param name="f3_qual" type="data" format="qualsolid" label="F3 quality file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" />
+          </when>
+          <when value="yes">
+           <param name="f3_reads" type="data" format="csfasta" label="F3 reads file"/>
+           <param name="f3_qual" type="data" format="qualsolid" label="F3 quality file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" />
+           <param name="r3_reads" type="data" format="csfasta" label="R3 reads file"/>
+           <param name="r3_qual" type="data" format="qualsolid" label="R3 quality file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" />
+          </when>
+      </conditional>
+      <param name="min_mapqual" type="integer" value="0" label="Minimum mapping quality allowed for a read to be used" help="Reads below the specified mapping quality will not be considered in coverage and SNP analysis."/>
+      <param name="max_mismatch" type="integer" value="7" label="Maximum number of mismatches allowed for a read to be used" help="Reads above the specified threshold will not be considered in coverage and SNP analysis."/>
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular" metadata_source="ref" />
+        <data name="output2" format="tabular" metadata_source="ref" />
+        <data name="output3" format="customtrack" metadata_source="ref" />
+    </outputs>
+    <!--  "ToolTestCase does not deal with multiple outputs properly yet."
+    <tests>
+        <test>
+            <param name="ref" value="phiX_mod.fasta" />
+            <param name="is_paired" value="no" />
+            <param name="f3_reads" value="phiX_solid.csfasta" />
+            <param name="f3_qual" value="phiX_solid.qualsolid" />
+            <param name="min_mapqual" value="0" />
+            <param name="max_mismatch" value="7" />
+            <output name="output1" file="phiX_solid_maq.map" />
+            <output name="output2" file="phiX_solid_maq.pileup" />
+            <output name="output3" file="phiX_solid_maq.ctrack" />
+        </test>
+    </tests>
+    -->
+<help>
+.. class:: infomark
+
+**What it does**
+
+This tool maps SOLiD color-space reads against the target genome using MAQ. It produces three output datasets:
+
+
+**ALIGNMENT INFO** : contains the read alignment information,
+
+**PILEUP** : contains the coverage and SNP statistics for every nucleotide of the target genome,
+
+**CUSTOM TRACK** : contains the coverage and SNP statistics as custom tracks displayable in the UCSC browser.
+
+-----
+
+**The ALIGNMENT INFO dataset will contain the following fields:**
+
+* column 1  = read name
+* column 2  = chromosome
+* column 3  = position
+* column 4  = strand
+* column 5  = insert size from the outer coorniates of a pair
+* column 6  = paired flag
+* column 7  = mapping quality
+* column 8  = single-end mapping quality
+* column 9  = alternative mapping quality
+* column 10 = number of mismatches of the best hit
+* column 11 = sum of qualities of mismatched bases of the best hit
+* column 12 = number of 0-mismatch hits of the first 24bp
+* column 13 = number of 1-mismatch hits of the first 24bp on the reference
+* column 14 = length of the read
+* column 15 = read sequence
+* column 16 = read quality
+
+
+**The PILEUP dataset will contain the following fields:**
+
+* column 1  = chromosome
+* column 2  = position
+* column 3  = reference nucleotide
+* column 4  = coverage (number of reads that cover this position)
+* column 5  = number of SNPs
+* column 6  = number of As
+* column 7  = number of Ts
+* column 8  = number of Gs
+* column 9  = number of Cs
+  </help>
+  <code file="maq_cs_wrapper_code.py"/>
+</tool>

@@ -1,0 +1,526 @@
+<script setup lang="ts">
+import { faExclamation, faSpinner, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BBadge, BNav, BNavItem } from "bootstrap-vue";
+import { computed, onUnmounted, ref, watch } from "vue";
+
+import { type InvocationStep, isWorkflowInvocationElementView } from "@/api/invocations";
+import { useInvocationStore } from "@/stores/invocationStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import {
+    errorCount as jobStatesSummaryErrorCount,
+    isTerminal,
+    jobCount as jobStatesSummaryJobCount,
+    numTerminal,
+    okCount as jobStatesSummaryOkCount,
+    runningCount as jobStatesSummaryRunningCount,
+} from "./util";
+
+import GButton from "../BaseComponents/GButton.vue";
+import ProgressBar from "../ProgressBar.vue";
+import WorkflowInvocationSteps from "../Workflow/Invocation/Graph/WorkflowInvocationSteps.vue";
+import InvocationReport from "../Workflow/InvocationReport.vue";
+import WorkflowAnnotation from "../Workflow/WorkflowAnnotation.vue";
+import WorkflowNavigationTitle from "../Workflow/WorkflowNavigationTitle.vue";
+import TabsDisabledAlert from "./TabsDisabledAlert.vue";
+import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
+import WorkflowInvocationFeedback from "./WorkflowInvocationFeedback.vue";
+import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
+import WorkflowInvocationMetrics from "./WorkflowInvocationMetrics.vue";
+import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
+import WorkflowInvocationShare from "./WorkflowInvocationShare.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+interface Props {
+    invocationId: string;
+    tab?: "steps" | "inputs" | "outputs" | "report" | "export" | "metrics" | "debug";
+    isSubworkflow?: boolean;
+    isFullPage?: boolean;
+    success?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    tab: undefined,
+    isSubworkflow: false,
+});
+
+const emit = defineEmits<{
+    (e: "invocation-cancelled"): void;
+}>();
+
+const invocationStore = useInvocationStore();
+
+const stepStatesInterval = ref<any>(undefined);
+const jobStatesInterval = ref<any>(undefined);
+const invocationLoaded = ref(false);
+const errorMessage = ref<string | null>(null);
+const cancellingInvocation = ref(false);
+const isPolling = ref(false);
+
+const uniqueMessages = computed(() => {
+    const messages = invocation.value?.messages || [];
+    const uniqueMessagesSet = new Set(messages.map((message) => JSON.stringify(message)));
+    return Array.from(uniqueMessagesSet).map((message) => JSON.parse(message)) as typeof messages;
+});
+
+const workflowStore = useWorkflowStore();
+const tabsDisabled = computed(
+    () =>
+        !invocationStateSuccess.value ||
+        !invocation.value ||
+        !workflowStore.getStoredWorkflowByInstanceId(invocation.value.workflow_id),
+);
+
+/** Tooltip message for the a tab when it is disabled */
+const disabledTabTooltip = computed(() => {
+    const state = invocationState.value;
+    if (state != "scheduled") {
+        return `This workflow is not currently scheduled. The current state is ${state}. Disabled tabs are available if the workflow is fully scheduled and all jobs have completed.`;
+    } else if (stateCounts.value && stateCounts.value.runningCount != 0) {
+        return `The workflow invocation still contains ${stateCounts.value.runningCount} running job(s). Once these jobs have completed any disabled tabs will become available.`;
+    } else {
+        return "Steps for this workflow are still running. Any disabled tabs will be available once complete.";
+    }
+});
+
+/** We are on the default "Overview" tab if the tab prop is not set or is not one of the expected tab values */
+const onOverviewTab = computed(() => {
+    return !props.tab || !["steps", "inputs", "outputs", "report", "export", "metrics", "debug"].includes(props.tab);
+});
+
+const invocation = computed(() => {
+    const storedInvocation = invocationStore.getInvocationById(props.invocationId);
+    if (invocationLoaded.value && isWorkflowInvocationElementView(storedInvocation)) {
+        return storedInvocation;
+    } else {
+        return null;
+    }
+});
+const invocationState = computed(() => invocation.value?.state || "new");
+const invocationAndJobTerminal = computed(() => invocationSchedulingTerminal.value && jobStatesTerminal.value);
+const invocationSchedulingTerminal = computed(() => {
+    return (
+        invocationState.value == "scheduled" ||
+        invocationState.value == "cancelled" ||
+        invocationState.value == "failed"
+    );
+});
+const jobStatesTerminal = computed(() => {
+    // If the job states summary is null, we haven't fetched it yet
+    // If the `populated_state` for the summary is `new`, we haven't finished scheduling all jobs
+    if (jobStatesSummary.value === null || jobStatesSummary.value.populated_state === "new") {
+        return false;
+    }
+
+    if (invocationSchedulingTerminal.value && jobCount.value === 0) {
+        // no jobs for this invocation (think it has just subworkflows/inputs)
+        return true;
+    }
+    return isTerminal(jobStatesSummary.value);
+});
+const jobStatesSummary = computed(() => invocationStore.getInvocationJobsSummaryById(props.invocationId));
+
+/** The job summary for each step in the invocation */
+const stepsJobsSummary = computed(() => {
+    return invocationStore.getInvocationStepJobsSummaryById(props.invocationId);
+});
+
+const invocationStateSuccess = computed(() => {
+    return (
+        invocationState.value == "scheduled" && stateCounts.value?.runningCount === 0 && invocationAndJobTerminal.value
+    );
+});
+
+const canSubmitFeedback = computed(
+    () =>
+        invocationAndJobTerminal.value &&
+        (invocationState.value === "failed" || Boolean(stateCounts.value?.errorCount)),
+);
+
+type StepStateType = { [state: string]: number };
+
+const stepStates = computed<StepStateType>(() => {
+    const stepStates: StepStateType = {};
+    const steps: InvocationStep[] = invocation.value?.steps || [];
+    for (const step of steps) {
+        if (!step) {
+            continue;
+        }
+        // the API defined state here allowing null and undefined is odd...
+        const stepState: string = step.state || "unknown";
+        if (!stepStates[stepState]) {
+            stepStates[stepState] = 1;
+        } else {
+            stepStates[stepState] += 1;
+        }
+    }
+    return stepStates;
+});
+
+const stepCount = computed<number>(() => {
+    return invocation.value?.steps.length || 0;
+});
+
+const stepStatesStr = computed<string>(() => {
+    return `${stepStates.value?.scheduled || 0} of ${stepCount.value} steps successfully scheduled.`;
+});
+
+const stateCounts = computed<{
+    okCount: number;
+    errorCount: number;
+    runningCount: number;
+    newCount: number;
+} | null>(() => {
+    if (jobStatesSummary.value === null) {
+        return null;
+    }
+    const okCount = jobStatesSummaryOkCount(jobStatesSummary.value);
+    const errorCount = jobStatesSummaryErrorCount(jobStatesSummary.value);
+    const runningCount = jobStatesSummaryRunningCount(jobStatesSummary.value);
+    const newCount = jobCount.value - okCount - runningCount - errorCount;
+    return { okCount, errorCount, runningCount, newCount };
+});
+
+const jobCount = computed<number>(() => {
+    return jobStatesSummaryJobCount(jobStatesSummary.value);
+});
+
+const jobStatesStr = computed(() => {
+    if (jobStatesSummary.value === null) {
+        return "No jobs summary available yet.";
+    }
+
+    let jobStr = `${numTerminal(jobStatesSummary.value) || 0} of ${jobCount.value} jobs complete`;
+    if (!invocationSchedulingTerminal.value) {
+        jobStr += " (total number of jobs will change until all steps fully scheduled)";
+    }
+    return `${jobStr}.`;
+});
+
+watch(
+    () => props.invocationId,
+    async (id) => {
+        // Prevent the page from reloading when you switch tabs. We set the boolean as soon as we know that
+        // the invocation exists in the store, and with this, when we change tabs there isn't a refresh every time.
+        const storedInvocation = invocationStore.getInvocationById(id);
+        if (storedInvocation && isWorkflowInvocationElementView(storedInvocation)) {
+            invocationLoaded.value = true;
+        } else {
+            invocationLoaded.value = false;
+        }
+
+        try {
+            await invocationStore.fetchInvocationById({ id });
+            invocationLoaded.value = true;
+            // Only start polling if there is a valid invocation
+            if (invocation.value) {
+                await pollStepStatesUntilTerminal();
+                await pollJobStatesUntilTerminal();
+            }
+        } catch (e) {
+            errorMessage.value = errorMessageAsString(e);
+        }
+    },
+    { immediate: true },
+);
+
+watch(
+    () => invocationSchedulingTerminal.value,
+    async (newVal, oldVal) => {
+        if (oldVal && !newVal) {
+            // If the invocation was terminal and now is not, start polling again
+            await pollStepStatesUntilTerminal();
+        }
+    },
+);
+
+onUnmounted(() => {
+    clearTimeout(stepStatesInterval.value);
+    clearTimeout(jobStatesInterval.value);
+});
+
+async function pollStepStatesUntilTerminal() {
+    if (!invocationSchedulingTerminal.value) {
+        await invocationStore.fetchInvocationById({ id: props.invocationId });
+        stepStatesInterval.value = setTimeout(pollStepStatesUntilTerminal, 3000);
+    }
+}
+async function pollJobStatesUntilTerminal() {
+    if (!jobStatesTerminal.value && invocation.value) {
+        isPolling.value = true;
+        await invocationStore.fetchInvocationJobsSummaryForId({ id: props.invocationId });
+        await invocationStore.fetchInvocationStepJobsSummaryForId({ id: props.invocationId });
+        jobStatesInterval.value = setTimeout(pollJobStatesUntilTerminal, 3000);
+    } else {
+        isPolling.value = false;
+    }
+}
+function onError(e: any) {
+    console.error(e);
+}
+async function onCancel() {
+    try {
+        cancellingInvocation.value = true;
+        await invocationStore.cancelWorkflowScheduling(props.invocationId);
+    } catch (e) {
+        onError(e);
+    } finally {
+        emit("invocation-cancelled");
+        cancellingInvocation.value = false;
+    }
+}
+</script>
+
+<template>
+    <div v-if="invocation" class="d-flex flex-column w-100" data-description="workflow invocation state">
+        <WorkflowNavigationTitle
+            v-if="props.isFullPage"
+            :invocation="invocation"
+            :workflow-id="invocation.workflow_id"
+            :success="props.success">
+            <template v-slot:workflow-title-actions>
+                <GButton
+                    v-if="!invocationAndJobTerminal"
+                    title="Cancel scheduling of workflow invocation"
+                    tooltip
+                    data-description="header cancel invocation button"
+                    size="small"
+                    transparent
+                    color="blue"
+                    :disabled="cancellingInvocation || invocationState == 'cancelling'"
+                    @click="onCancel">
+                    <FontAwesomeIcon :icon="faSquare" fixed-width />
+                    Cancel
+                </GButton>
+                <WorkflowInvocationShare
+                    :invocation-id="invocation.id"
+                    :workflow-id="invocation.workflow_id"
+                    :history-id="invocation.history_id" />
+            </template>
+        </WorkflowNavigationTitle>
+
+        <WorkflowAnnotation
+            v-if="props.isFullPage"
+            :workflow-id="invocation.workflow_id"
+            :invocation-create-time="invocation.create_time"
+            :history-id="invocation.history_id">
+            <template v-slot:middle-content>
+                <div class="progress-bars mx-1">
+                    <ProgressBar
+                        v-if="!stepCount"
+                        note="Loading step state summary..."
+                        :loading="true"
+                        class="steps-progress" />
+                    <ProgressBar
+                        v-else-if="invocationState == 'cancelled'"
+                        note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
+                        :error-count="1"
+                        class="steps-progress" />
+                    <ProgressBar
+                        v-else-if="invocationState == 'failed'"
+                        note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
+                        :error-count="1"
+                        class="steps-progress" />
+                    <ProgressBar
+                        v-else
+                        :note="stepStatesStr"
+                        :total="stepCount"
+                        :ok-count="stepStates.scheduled"
+                        :loading="!invocationSchedulingTerminal"
+                        class="steps-progress" />
+                    <ProgressBar
+                        v-if="stateCounts"
+                        :note="jobStatesStr"
+                        :total="jobCount"
+                        :ok-count="stateCounts.okCount"
+                        :running-count="stateCounts.runningCount"
+                        :new-count="stateCounts.newCount"
+                        :error-count="stateCounts.errorCount"
+                        :loading="!invocationAndJobTerminal"
+                        class="jobs-progress" />
+                </div>
+            </template>
+        </WorkflowAnnotation>
+
+        <BNav v-if="props.isFullPage" pills class="mb-2 p-2 bg-light border-bottom">
+            <BNavItem title="Overview" :active="onOverviewTab" :to="`/workflows/invocations/${props.invocationId}`">
+                Overview
+            </BNavItem>
+            <BNavItem
+                title="Steps"
+                :active="props.tab === 'steps'"
+                :to="`/workflows/invocations/${props.invocationId}/steps`">
+                Steps
+            </BNavItem>
+            <BNavItem
+                title="Inputs"
+                :active="props.tab === 'inputs'"
+                :to="`/workflows/invocations/${props.invocationId}/inputs`">
+                Inputs
+            </BNavItem>
+            <BNavItem
+                title="Outputs"
+                :active="props.tab === 'outputs'"
+                :to="`/workflows/invocations/${props.invocationId}/outputs`">
+                Outputs
+            </BNavItem>
+            <BNavItem
+                :title="!tabsDisabled ? 'Report' : disabledTabTooltip"
+                class="invocation-report-tab"
+                :active="!tabsDisabled && props.tab === 'report'"
+                :to="`/workflows/invocations/${props.invocationId}/report`"
+                :disabled="tabsDisabled">
+                Report
+            </BNavItem>
+            <BNavItem
+                :title="!tabsDisabled ? 'Export' : disabledTabTooltip"
+                class="invocation-export-tab"
+                :active="!tabsDisabled && props.tab === 'export'"
+                :to="`/workflows/invocations/${props.invocationId}/export`"
+                :disabled="tabsDisabled">
+                Export
+            </BNavItem>
+            <BNavItem
+                title="Metrics"
+                :active="props.tab === 'metrics'"
+                :to="`/workflows/invocations/${props.invocationId}/metrics`">
+                Metrics
+            </BNavItem>
+            <BNavItem
+                v-if="canSubmitFeedback && stepsJobsSummary"
+                title="Debug"
+                class="invocation-debug-tab"
+                :active="props.tab === 'debug'"
+                :to="`/workflows/invocations/${props.invocationId}/debug`">
+                Debug
+            </BNavItem>
+
+            <div class="ml-auto d-flex align-items-center">
+                <BBadge
+                    v-if="tabsDisabled"
+                    v-b-tooltip.hover.noninteractive
+                    class="mr-1"
+                    :title="disabledTabTooltip"
+                    variant="primary">
+                    <FontAwesomeIcon :icon="faExclamation" />
+                </BBadge>
+                <BBadge
+                    v-if="isPolling"
+                    v-b-tooltip.hover.noninteractive
+                    class="mr-1"
+                    title="Polling for updates"
+                    variant="link">
+                    <FontAwesomeIcon :icon="faSpinner" spin />
+                </BBadge>
+                <GButton
+                    v-if="!props.isFullPage && !invocationAndJobTerminal"
+                    tooltip
+                    class="my-1"
+                    title="Cancel scheduling of workflow invocation"
+                    data-description="cancel invocation button"
+                    size="small"
+                    @click="onCancel">
+                    <FontAwesomeIcon :icon="faTimes" fixed-width />
+                    Cancel Workflow
+                </GButton>
+            </div>
+        </BNav>
+
+        <div class="mt-1 d-flex flex-column overflow-auto">
+            <div v-if="onOverviewTab">
+                <WorkflowInvocationOverview
+                    class="invocation-overview"
+                    :invocation="invocation"
+                    :steps-jobs-summary="stepsJobsSummary || undefined"
+                    :is-full-page="props.isFullPage"
+                    :invocation-and-job-terminal="invocationAndJobTerminal"
+                    :is-subworkflow="isSubworkflow"
+                    :invocation-messages="uniqueMessages" />
+            </div>
+            <div v-if="props.tab === 'steps'">
+                <BAlert v-if="isSubworkflow" variant="info" show>
+                    <span v-localize>Subworkflow steps are not available.</span>
+                </BAlert>
+                <WorkflowInvocationSteps
+                    v-else-if="invocation && stepsJobsSummary"
+                    :invocation="invocation"
+                    :steps-jobs-summary="stepsJobsSummary"
+                    :is-full-page="props.isFullPage" />
+            </div>
+            <WorkflowInvocationInputOutputTabs
+                :invocation="invocation"
+                :terminal="invocationAndJobTerminal"
+                :tab="props.tab" />
+            <div v-if="props.tab === 'report'">
+                <BAlert v-if="isSubworkflow" variant="info" show>
+                    <span v-localize>Report is not available for subworkflow.</span>
+                </BAlert>
+                <TabsDisabledAlert
+                    v-else-if="tabsDisabled"
+                    :invocation-id="props.invocationId"
+                    :tooltip="disabledTabTooltip" />
+                <InvocationReport v-else :invocation-id="invocation.id" />
+            </div>
+            <div v-if="props.tab === 'export'">
+                <TabsDisabledAlert
+                    v-if="tabsDisabled"
+                    :invocation-id="props.invocationId"
+                    :tooltip="disabledTabTooltip" />
+                <div v-else>
+                    <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
+                </div>
+            </div>
+            <div v-if="props.tab === 'metrics'">
+                <WorkflowInvocationMetrics :invocation-id="invocation.id" :not-terminal="!invocationAndJobTerminal" />
+            </div>
+            <div v-if="props.tab === 'debug'">
+                <BAlert v-if="!canSubmitFeedback || !stepsJobsSummary" variant="info" show>
+                    <span v-localize>Debug information is not available.</span>
+                </BAlert>
+                <WorkflowInvocationFeedback
+                    v-else
+                    :invocation-id="invocation.id"
+                    :steps-jobs-summary="stepsJobsSummary"
+                    :invocation="invocation"
+                    :invocation-messages="uniqueMessages" />
+            </div>
+        </div>
+    </div>
+    <BAlert v-else-if="errorMessage" variant="danger" show>
+        {{ errorMessage }}
+    </BAlert>
+    <BAlert v-else-if="!invocationLoaded" variant="info" show>
+        <LoadingSpan message="Loading invocation" />
+    </BAlert>
+    <BAlert v-else variant="info" show>
+        <span v-localize>Invocation not found.</span>
+    </BAlert>
+</template>
+
+<style lang="scss">
+// To show the tooltip on the disabled report tab badge
+.invocation-report-tab,
+.invocation-export-tab {
+    .nav-link.disabled {
+        background-color: #e9edf0;
+    }
+}
+</style>
+
+<style scoped lang="scss">
+.progress-bars {
+    // progress bar shrinks to fit divs on either side
+    flex-grow: 1;
+    flex-shrink: 1;
+    max-width: 50%;
+
+    .steps-progress,
+    .jobs-progress {
+        // truncate text in progress bars
+        white-space: nowrap;
+        overflow: hidden;
+    }
+}
+</style>

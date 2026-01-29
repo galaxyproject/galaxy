@@ -1,0 +1,107 @@
+<tool id="interactive_tool_ilastik" tool_type="interactive" name="Ilastik" version="@VERSION@" profile="23.0">
+    <description>interactive learning and segmentation toolkit</description>
+    <macros>
+        <token name="@VERSION@">1.4.0</token>
+    </macros>
+    <requirements>
+        <container type="docker">quay.io/galaxy/ilastik:@VERSION@</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Ilastik" requires_domain="True">
+            <port>5800</port>
+        </entry_point>
+    </entry_points>
+    <command detect_errors="exit_code">
+    <![CDATA[
+        ## Check inputs have no duplicated element_identifier:
+        #set labels = [input.element_identifier for input in $infiles]
+        #set duplicates = [label for label in labels if labels.count(label) > 1]
+        #if len(duplicates) > 0:
+            #set unique_duplicates = list(set(duplicates))
+            echo "Cannot run ilastik because these identifiers are present more than once:" &&
+            #for label in $unique_duplicates:
+                echo $label &&
+            #end for
+            exit 1 &&
+        #end if
+        export HOME=\$PWD &&
+        ## Create a directory where the app user has access
+        mkdir -p ./output &&
+        chown 1000:1000 ./output/ &&
+        ## Make a copy of the existing project if exists
+        #if str($input_type.existing) == "existing":
+            cp '$input_type.project' ./output/MyProject.ilp &&
+        #end if
+
+        ## Link input images to current working directory
+        #for input in $infiles:
+            ln -s '$input' ./'$input.element_identifier'.tif &&
+        #end for
+        ## Write the bash script to run:
+        #if str($input_type.existing) == "new":
+            echo "ilastik --new_project \$HOME/output/MyProject.ilp --workflow '$input_type.Workflow'" > ./ilastik_with_args &&
+        #else:
+            echo "ilastik --project \$HOME/output/MyProject.ilp" > ./ilastik_with_args &&
+        #end if
+        ## Copy it to /bin/ so it will be used by the container:
+        chmod +x ./ilastik_with_args &&
+        cp ./ilastik_with_args '/bin/' &&
+        /init
+    ]]>
+    </command>
+    <inputs>
+        <conditional name="input_type">
+            <param name="existing" type="select" label="Which project you want to work on?">
+                <option value="new">Start a new project</option>
+                <option value="existing">Modify an existing project</option>
+            </param>
+            <when value="new">
+                <param name="Workflow" type="select" label="Type of Workflow" >
+                    <option value="PixelClassificationWorkflow">Pixel Classification</option>
+                    <option value="AutocontextTwoStage">Autocontext (2-stage)</option>
+                    <option value="ObjectClassificationWorkflowPixel">Pixel Classification + Object Classification</option>
+                    <option value="ObjectClassificationWorkflowPrediction">Object Classification [Inputs: Raw Data, Pixel Prediction Map]</option>
+                    <option value="ObjectClassificationWorkflowBinary">Object Classification [Inputs: Raw Data, Segmentation]</option>
+                    <option value="ConservationTrackingWorkflowFromBinary">Tracking [Inputs: Raw Data, Segmentation Image]</option>
+                    <option value="ConservationTrackingWorkflowFromPrediction">Tracking [Inputs: Raw Data, Pixel Prediction Map]</option>
+                    <option value="AnimalConservationTrackingWorkflowFromBinary">Animal Tracking [Inputs: Raw Data, Segmentation Image]</option>
+                    <option value="AnimalConservationTrackingWorkflowFromPrediction">Animal Tracking [Inputs: Raw Data, Pixel Prediction Map]</option>
+                    <option value="StructuredTrackingWorkflowFromBinary">Tracking with Learning [Inputs: Raw Data, Segmentation Image]</option>
+                    <option value="StructuredTrackingWorkflowFromPrediction">Tracking with Learning [Inputs: Raw Data, Pixel Prediction Map]</option>
+                    <option value="EdgeTrainingWithMulticutWorkflow">Bounary-based Segmentation with Multicut</option>
+                    <option value="CountingWorkflow">Cell Density Counting</option>
+                    <option value="DataConversionWorkflow">Data Conversion</option>
+                    <option value="neuralNetwork.RemoteWorkflow">Neural Network Classification (Remote)</option>
+                    <option value="neuralNetwork.LocalWorkflow">Neural Network Classification (Local)</option>
+                </param>
+            </when>
+            <when value="existing">
+                <param argument="--project" type="data" format="h5" label="Existing ilastik project" />
+            </when>
+        </conditional>
+        <param name="infiles" type="data" format="tiff" multiple="true" label="Input files in TIFF format"/>
+    </inputs>
+    
+    <outputs>
+        <data name="ilastik_project" format="h5" label="Ilastik project file" from_work_dir="output/MyProject.ilp"/>
+    </outputs>
+    
+    <tests>
+    </tests>
+    
+    <help><![CDATA[
+        Leverage machine learning algorithms to easily segment, classify, track and count your cells or other experimental data. Most operations are interactive, even on large datasets: you just draw the labels and immediately see the result. No machine learning expertise required.
+
+        This tool has been designed uniquely to make/modify a project.
+        
+        - It requires that input images have unique identifiers.
+        - When you have trained your project, save it and quit the application. The project called 'MyProject.ilp' will be imported into your history.
+        - If you want to modify a project, make sure you use at least the same images (with the same identifiers) as the first time (but you can add more).
+
+        Please, check the documentation at https://www.ilastik.org/documentation/.
+]]>
+    </help>
+    <citations>
+        <citation type="doi">10.1038/s41592-019-0582-9</citation>
+    </citations>
+</tool>

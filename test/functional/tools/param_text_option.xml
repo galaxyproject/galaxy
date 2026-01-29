@@ -1,0 +1,31 @@
+<tool id="param_text_option" name="param_text_option" version="1.0.0">
+    <command><![CDATA[
+echo "$text_param"  > $out_file1;
+    ]]></command>
+    <inputs>
+        <param name="text_param" type="text" value="foo 1">
+            <option value="foo 1">Foo 1</option>
+            <option value="foo 2">Foo 2</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="foo 1" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="text_param" value="foo 3" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="foo 3" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

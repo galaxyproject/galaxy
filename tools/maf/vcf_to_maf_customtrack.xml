@@ -1,0 +1,131 @@
+<tool id="vcf_to_maf_customtrack1" name="VCF to MAF Custom Track" version="1.0.1" profile="18.01">
+  <description>for display at UCSC</description>
+  <requirements>
+    <requirement type="package" version="1.1.4">galaxy_sequence_utils</requirement>
+    <requirement type="package" version="0.8.6">bx-python</requirement>
+  </requirements>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
+  <command>
+python '$__tool_directory__/vcf_to_maf_customtrack.py' '$out_file1'
+#if $vcf_source_type.vcf_file
+    '${vcf_source_type.vcf_file[0].vcf_input.dbkey}'
+#else
+    '?'
+#end if
+${vcf_source_type.vcf_source} -n '$track_name'
+#for $vcf_repeat in $vcf_source_type.vcf_file
+    '${vcf_repeat.vcf_input}'
+    #if $vcf_source_type.vcf_source == '-p'
+        '${vcf_repeat.population_name}'
+    #end if
+#end for
+-g
+  </command>
+  <inputs>
+    <param name="track_name" type="text" value="Galaxy Custom Track" label="Custom Track Name" />
+    <conditional name="vcf_source_type">
+      <param name="vcf_source" type="select" label="VCF Source Source Type">
+        <option value="-p" selected="true">Per Population (file)</option>
+        <option value="-s">Per Sample</option>
+      </param>
+      <when value="-p">
+        <repeat name="vcf_file" title="VCF population file" min="1">
+          <param format="tabular" name="vcf_input" type="data" label="VCF file"/>
+          <param name="population_name" type="text" label="Name for this population" value=""/>
+        </repeat>
+      </when>
+      <when value="-s">
+        <repeat name="vcf_file" title="VCF sample file" min="1">
+          <param format="tabular" name="vcf_input" type="data" label="VCF file"/>
+          <!-- add column count validator >= 8? -->
+        </repeat>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="mafcustomtrack" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="track_name" value="Galaxy Custom Track"/>
+      <param name="vcf_source" value="-p"/>
+      <param name="vcf_input" value="vcf_to_maf_in.vcf" ftype="tabular"/>
+      <param name="population_name" value=""/>
+      <output name="out_file1" file="vcf_to_maf_population_out.mafcustomtrack"/>
+    </test>
+    <test>
+      <param name="track_name" value="Galaxy Custom Track"/>
+      <param name="vcf_source" value="-s"/>
+      <param name="vcf_input" value="vcf_to_maf_in.vcf" ftype="tabular"/>
+      <output name="out_file1" file="vcf_to_maf_sample_out.mafcustomtrack"/>
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+This tool converts a Variant Call Format (VCF) file into a Multiple Alignment Format (MAF) custom track file suitable for display at genome browsers.
+
+This file should be used for display purposes only (e.g as a UCSC Custom Track). Performing an analysis using the output created by this tool as input is not recommended; the source VCF file should be used when performing an analysis.
+
+*Unknown nucleotides* are represented as '*' as required to allow the display to draw properly; these include e.g. reference bases which appear before a deletion and are not available without querying the original reference sequence.
+
+**Example**
+
+Starting with a VCF::
+
+  ##fileformat=VCFv3.3
+  ##fileDate=20090805
+  ##source=myImputationProgramV3.1
+  ##reference=1000GenomesPilot-NCBI36
+  ##phasing=partial
+  ##INFO=NS,1,Integer,"Number of Samples With Data"
+  ##INFO=DP,1,Integer,"Total Depth"
+  ##INFO=AF,-1,Float,"Allele Frequency"
+  ##INFO=AA,1,String,"Ancestral Allele"
+  ##INFO=DB,0,Flag,"dbSNP membership, build 129"
+  ##INFO=H2,0,Flag,"HapMap2 membership"
+  ##FILTER=q10,"Quality below 10"
+  ##FILTER=s50,"Less than 50% of samples have data"
+  ##FORMAT=GT,1,String,"Genotype"
+  ##FORMAT=GQ,1,Integer,"Genotype Quality"
+  ##FORMAT=DP,1,Integer,"Read Depth"
+  ##FORMAT=HQ,2,Integer,"Haplotype Quality"
+  #CHROM  POS ID  REF ALT QUAL    FILTER  INFO    FORMAT  NA00001 NA00002 NA00003
+  20  14370   rs6054257   G   A   29  0   NS=3;DP=14;AF=0.5;DB;H2 GT:GQ:DP:HQ 0|0:48:1:51,51  1|0:48:8:51,51  1/1:43:5:-1,-1
+  20  17330   .   T   A   3   q10 NS=3;DP=11;AF=0.017 GT:GQ:DP:HQ 0|0:49:3:58,50  0|1:3:5:65,3    0/0:41:3:-1,-1
+  20  1110696 rs6040355   A   G,T 67  0   NS=2;DP=10;AF=0.333,0.667;AA=T;DB   GT:GQ:DP:HQ 1|2:21:6:23,27  2|1:2:0:18,2    2/2:35:4:-1,-1
+  20  1230237 .   T   .   47  0   NS=3;DP=13;AA=T GT:GQ:DP:HQ 0|0:54:7:56,60  0|0:48:4:51,51  0/0:61:2:-1,-1
+  20  1234567 microsat1   G   D4,IGA  50  0   NS=3;DP=9;AA=G  GT:GQ:DP    0/1:35:4    0/2:17:2    1/1:40:3
+
+Under the following conditions: **VCF Source type:** *Per Population (file)*, **Name for this population:** *CHB+JPT*
+Results in the following MAF custom track::
+
+  track name="Galaxy Custom Track" visibility=pack
+  ##maf version=1
+  a score=0
+  s hg18.chr20  14369 1 + 14370 G
+  s CHB+JPT_1.1     0 1 +     1 A
+
+  a score=0
+  s hg18.chr20  17329 1 + 17330 T
+  s CHB+JPT_1.2     0 1 +     1 A
+
+  a score=0
+  s hg18.chr20  1110695 1 + 1110696 A
+  s CHB+JPT_1.3       0 1 +       1 G
+  s CHB+JPT_2.3       0 1 +       1 T
+
+  a score=0
+  s hg18.chr20  1230236 1 + 1230237 T
+  s CHB+JPT_1.4       0 1 +       1 .
+
+  a score=0
+  s hg18.chr20  1234565 5 + 1234572 *G--***
+  s CHB+JPT_1.5       0 1 +       1 *------
+  s CHB+JPT_2.5       0 7 +       7 *GGA***
+    </help>
+    <expand macro="citations" />
+</tool>
+

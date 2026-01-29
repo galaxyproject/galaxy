@@ -1,0 +1,22 @@
+<tool id="CONVERTER_fasta_to_2bit" name="Convert FASTA to 2bit" version="1.0.1">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <requirements>
+        <requirement type="package" version="357">ucsc-fatotwobit</requirement>
+    </requirements>
+    <command>faToTwoBit '$input' '$output'</command>
+    <inputs>
+        <param name="input" type="data" format="fasta" label="Fasta file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="twobit"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="fasta" value="chr_m.fasta"/>
+            <output name="output" ftype="twobit" value="chr_m.twobit"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

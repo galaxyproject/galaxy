@@ -1,0 +1,80 @@
+<tool id="help_features_rst" name="help_features_rst" version="1.0.0">
+    <command>
+        cp '$input.file_name' '$output'
+    </command>
+    <inputs>
+        <param name="input" type="data" format="txt" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <help><![CDATA[
+Header
+-------
+
+SubHeader
+---------
+
+SubSubHeader
+~~~~~~~~~~
+
+Some text here....
+
+----
+
+.. class:: warningmark
+
+'''TIP''' This tool requires *txt* format.
+
+----
+
+.. class:: infomark
+
+Here is some extra info....
+
+----
+
+Example Table from RST Docs....
+
+
+.. list-table:: Title of the table.
+   :widths: 25 25 50
+   :header-rows: 1
+
+   * - Heading row 1, column 1
+     - Heading row 1, column 2
+     - Heading row 1, column 3
+   * - Row 1, column 1
+     -
+     - Row 1, column 3
+   * - Row 2, column 1
+     - Row 2, column 2
+     - Row 2, column 3
+
+----
+
+**negative example**
+
+.. code-block::
+   :caption: Doesn't work in Galaxy
+
+       Code with captions doesn't seem to work.
+
+
+----
+
+.. code-block::
+
+       The output of this line has no spaces at the beginning.
+
+----
+
+Static path images...
+
+.. image:: ${static_path}/images/tools/collection_ops/zip.svg
+  :width: 500
+  :alt: Zipping operation
+
+
+    ]]></help>
+</tool>

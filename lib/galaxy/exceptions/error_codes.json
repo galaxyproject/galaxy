@@ -1,0 +1,222 @@
+[
+    {
+        "name": "UNKNOWN",
+        "code": 0,
+        "message": "Unknown error occurred while processing request."
+    },
+    {
+        "name": "ACCEPTED_RETRY_LATER",
+        "code": 202001,
+        "message": "Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry."
+    },
+    {
+        "name": "NO_CONTENT_GENERIC",
+        "code": 204001,
+        "message": "Galaxy has no content to associate with this request."
+    },
+    {
+        "name": "USER_CANNOT_RUN_AS",
+        "code": 400001,
+        "message": "User does not have permissions to run jobs as another user."
+    },
+    {
+        "name": "USER_INVALID_RUN_AS",
+        "code": 400002,
+        "message": "Invalid run_as request - run_as user does not exist."
+    },
+    {
+        "name": "USER_INVALID_JSON",
+        "code": 400003,
+        "message": "Your request did not appear to be valid JSON, please consult the API documentation."
+    },
+    {
+        "name": "USER_OBJECT_ATTRIBUTE_INVALID",
+        "code": 400004,
+        "message": "Attempted to create or update object with invalid attribute value."
+    },
+    {
+        "name": "USER_OBJECT_ATTRIBUTE_MISSING",
+        "code": 400005,
+        "message": "Attempted to create or update object without required attribute."
+    },
+    {
+        "name": "USER_SLUG_DUPLICATE",
+        "code": 400006,
+        "message": "Slug must be unique per user."
+    },
+    {
+        "name": "USER_REQUEST_MISSING_PARAMETER",
+        "code": 400007,
+        "message": "Request is missing parameter required to complete desired action."
+    },
+    {
+        "name": "USER_REQUEST_INVALID_PARAMETER",
+        "code": 400008,
+        "message": "Request contained invalid parameter, action could not be completed."
+    },
+    {
+        "name": "MALFORMED_ID",
+        "code": 400009,
+        "message": "The id of the resource is malformed."
+    },
+    {
+        "name": "UNKNOWN_CONTENTS_TYPE",
+        "code": 400010,
+        "message": "The request contains unknown type of contents."
+    },
+    {
+        "name": "USER_IDENTIFIER_DUPLICATE",
+        "code": 400011,
+        "message": "Request contained a duplicated identifier that must be unique."
+    },
+    {
+        "name": "USER_TOOL_META_PARAMETER_PROBLEM",
+        "code": 400012,
+        "message": "Supplied incorrect or incompatible tool meta parameters."
+    },
+    {
+        "name": "MALFORMED_CONTENTS",
+        "code": 400013,
+        "message": "The contents of the request are malformed."
+    },
+    {
+        "name": "USER_TOOL_MISSING_PROBLEM",
+        "code": 400014,
+        "message": "Tool could not be found."
+    },
+    {
+        "name": "TOOL_INPUTS_NOT_READY",
+        "code": 400015,
+        "message": "Tool inputs not yet ready, try again later."
+    },
+    {
+        "name": "REAL_USER_REQUIRED",
+        "code": 400016,
+        "message": "Only real users can make this request."
+    },
+    {
+        "name": "TOOL_INPUTS_NOT_OK",
+        "code": 400017,
+        "message": "Tool inputs not in required OK state."
+    },
+    {
+        "name": "USER_AUTHENTICATION_FAILED",
+        "code": 401001,
+        "message": "Authentication failed, invalid credentials supplied."
+    },
+    {
+        "name": "USER_NO_API_KEY",
+        "code": 403001,
+        "message": "Authentication required for this request"
+    },
+    {
+        "name": "USER_CANNOT_ACCESS_ITEM",
+        "code": 403002,
+        "message": "User cannot access specified item."
+    },
+    {
+        "name": "USER_DOES_NOT_OWN_ITEM",
+        "code": 403003,
+        "message": "User does not own specified item."
+    },
+    {
+        "name": "ITEM_IS_IMMUTABLE",
+        "code": 403003,
+        "message": "The specified item is immutable."
+    },
+    {
+        "name": "CONFIG_DOES_NOT_ALLOW",
+        "code": 403004,
+        "message": "The configuration of this Galaxy instance does not allow that operation"
+    },
+    {
+        "name": "INSUFFICIENT_PERMISSIONS",
+        "code": 403005,
+        "message": "You don't have proper permissions to perform the requested operation"
+    },
+    {
+        "name": "ADMIN_REQUIRED",
+        "code": 403006,
+        "message": "Action requires admin account."
+    },
+    {
+        "name": "USER_ACTIVATION_REQUIRED",
+        "code": 403007,
+        "message": "Action requires account activation."
+    },
+    {
+        "name": "ITEM_IS_CLAIMED",
+        "code": 403008,
+        "message": "This item has already been claimed and cannot be re-claimed."
+    },
+    {
+        "name": "USER_REQUIRED",
+        "code": 403008,
+        "message": "Action requires user authentication."
+    },
+    {
+        "name": "USER_OBJECT_NOT_FOUND",
+        "code": 404001,
+        "message": "No such object found."
+    },
+    {
+        "name": "CONFLICT",
+        "code": 409001,
+        "message": "Database conflict prevented fulfilling the request."
+    },
+    {
+        "name": "MUST_CLAIM",
+        "code": 409010,
+        "message": "Private request must be claimed before use"
+    },
+    {
+        "name": "DEPRECATED_API_CALL",
+        "code": 410001,
+        "message": "This API method or call signature has been deprecated and is no longer available"
+    },
+    {
+        "name": "INTERNAL_SERVER_ERROR",
+        "code": 500001,
+        "message": "Internal server error."
+    },
+    {
+        "name": "INCONSISTENT_DATABASE",
+        "code": 500002,
+        "message": "Inconsistent database prevented fulfilling the request."
+    },
+    {
+        "name": "CONFIG_ERROR",
+        "code": 500003,
+        "message": "Error in a configuration file."
+    },
+    {
+        "name": "TOOL_EXECUTION_ERROR",
+        "code": 500004,
+        "message": "Tool execution failed due to an internal server error."
+    },
+    {
+        "name": "INVALID_FILE_FORMAT",
+        "code": 500005,
+        "message": "File format not supported for this operation."
+    },
+    {
+        "name": "REFERENCE_DATA_ERROR",
+        "code": 500006,
+        "message": "Reference data required for program execution failed to load."
+    },
+    {
+        "name": "INCONSISTENT_APPLICATION_STATE",
+        "code": 500007,
+        "message": "Inconsistent application state (likely not dbms related) prevented fulfilling the request."
+    },
+    {
+        "name": "NOT_IMPLEMENTED",
+        "code": 501001,
+        "message": "Method is not implemented."
+    },
+    {
+        "name": "SERVER_NOT_CONFIGURED_FOR_REQUEST",
+        "code": 501002,
+        "message": "Server not configured for the request. The Galaxy admin may be able to resolve the problem by installing additional dependencies or setting up new infrastructure."
+    }
+]

@@ -1,0 +1,180 @@
+<tool id="hgv_sift" name="SIFT" version="1.0.0">
+  <description>predictions of functional sites</description>
+
+  <command interpreter="bash">
+    sift_variants_wrapper.sh "$input" "$output" "${input.metadata.dbkey}" "${GALAXY_DATA_INDEX_DIR}/sift_db.loc" "$chrom_col" "$pos_col" "$base" "$allele_col" "$strand_source.strand_col" "$comment_source.comment_col" "$output_opts"
+  </command>
+
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Dataset">
+      <validator type="unspecified_build"/>
+      <validator type="dataset_metadata_in_data_table" table_name="sift_db" metadata_name="dbkey" metadata_column="0" message="Data is currently not available for the specified build."/>
+    </param>
+    <param name="chrom_col"  type="data_column" data_ref="input" label="Column with chromosome"/>
+    <param name="pos_col"    type="data_column" data_ref="input" numerical="true" label="Column with position"/>
+    <param name="base" type="select" label="Position coordinates are">
+      <option value="1" selected="true">one-based</option>
+      <option value="0">zero-based</option>
+    </param>
+    <param name="allele_col" type="data_column" data_ref="input" label="Column with allele"/>
+    <conditional name="strand_source">
+      <param name="strand_choice" type="select" label="Strand info">
+        <option value="data_column" selected="true">a column in the dataset</option>
+        <option value="all_pos">all on sense/forward/+ strand</option>
+        <option value="all_neg">all on antisense/reverse/- strand</option>
+      </param>
+      <when value="data_column">
+        <param name="strand_col" type="data_column" data_ref="input" label="Column with strand"/>
+      </when>
+      <when value="all_pos">
+        <param name="strand_col" type="hidden" value="+"/>
+      </when>
+      <when value="all_neg">
+        <param name="strand_col" type="hidden" value="-"/>
+      </when>
+    </conditional>
+    <conditional name="comment_source">
+      <param name="comment_choice" type="select" label="Include comment column">
+        <option value="no" selected="true">no</option>
+        <option value="yes">yes</option>
+      </param>
+      <when value="no">
+        <param name="comment_col" type="hidden" value="-"/>
+      </when>
+      <when value="yes">
+        <param name="comment_col" type="data_column" data_ref="input" label="Column with comment"/>
+      </when>
+    </conditional>
+    <param name="output_opts" type="select" multiple="true" display="checkboxes" label="Include the following additional fields in the output">
+      <option value="A">Ensembl Gene ID</option>
+      <option value="B">Gene Name</option>
+      <option value="C">Gene Description</option>
+      <option value="D">Ensembl Protein Family ID</option>
+      <option value="E">Ensembl Protein Family Description</option>
+      <option value="F">Ensembl Transcript Status (Known / Novel)</option>
+      <option value="G">Protein Family Size</option>
+      <option value="H">Ka/Ks (Human-mouse)</option>
+      <option value="I">Ka/Ks (Human-macaque)</option>
+      <option value="J">OMIM Disease</option>
+      <option value="K">Allele Frequencies (All Hapmap Populations - weighted average)</option>
+      <option value="L">Allele Frequencies (CEU Hapmap population)</option>
+    </param>
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output" />
+  </outputs>
+
+  <requirements>
+    <requirement type="binary">awk</requirement>
+    <requirement type="binary">rm</requirement>
+    <requirement type="binary">sed</requirement>
+  </requirements>
+
+  <tests>
+    <test>
+      <param name="input" value="sift_variants.tab" ftype="tabular" dbkey="hg18"/>
+      <param name="chrom_col" value="1"/>
+      <param name="pos_col" value="3"/>
+      <param name="base" value="1"/>
+      <param name="allele_col" value="5"/>
+      <param name="strand_choice" value="data_column"/>
+      <param name="strand_col" value="4"/>
+      <param name="output_opts" value="A"/>
+      <output name="output" file="sift_variants_result.tab"/>
+    </test>
+  </tests>
+
+  <help>
+.. class:: warningmark
+
+This currently works only for builds hg18 or hg19.
+
+-----
+
+**Dataset formats**
+
+The input and output datasets are tabular_. 
+(`Dataset missing?`_)
+
+.. _tabular: ${static_path}/formatHelp.html#tab
+.. _Dataset missing?: ${static_path}/formatHelp.html
+
+-----
+
+**What it does**
+
+SIFT predicts whether an amino-acid substitution affects protein function,
+based on sequence homology and the physical properties of amino acids.
+SIFT can be applied to naturally occurring non-synonymous polymorphisms
+and laboratory-induced missense mutations.  This tool uses SQLite databases
+containing pre-computed SIFT scores and annotations for all possible nucleotide
+substitutions at each position in the human exome.  Allele frequency data
+are from the HapMap frequency database, and additional transcript and 
+gene-level data are from Ensembl BioMart.
+
+The input dataset must contain columns for the chromosome, position, and
+alleles.  The alleles must be two nucleotides separated by '/',
+usually the reference allele and the allele of interest.
+The strand must either be in another column or all the same.
+The output contains a standard set of columns plus the additional ones that
+have been selected from the list above.
+
+Website: http://sift.jcvi.org/
+
+-----
+
+**Example**
+
+- input file::
+
+    chr3   81780820   +  T/C
+    chr2   230341630  +  G/A
+    chr2   43881517   +  A/T
+    chr2   43857514   +  T/C
+    chr6   88375602   +  G/A
+    chr22  29307353   -  T/A
+    chr10  115912482  -  G/T
+    chr10  115900918  -  C/T
+    chr16  69875502   +  G/T
+    etc.
+
+- output file::
+
+    #Chrom  Position   Strand  Allele  Codons   Transcript ID    Protein ID       Substitution  Region    dbSNP ID      SNP Type       Prediction  Score  Median Info  Num seqs at position  User Comment
+    chr3    81780820   +       T/C     AGA-gGA  ENST00000264326  ENSP00000264326  R190G         EXON CDS  rs2229519:C   Nonsynonymous  DAMAGING    0.04   3.06         149
+    chr2    230341630  +       G/T     -        ENST00000389045  ENSP00000373697  NA            EXON CDS  rs1803846:A   Unknown        Not scored  NA     NA           NA
+    chr2    43881517   +       A/T     ATA-tTA  ENST00000260605  ENSP00000260605  I230L         EXON CDS  rs11556157:T  Nonsynonymous  TOLERATED   0.47   3.19         7
+    chr2    43857514   +       T/C     TTT-TcT  ENST00000260605  ENSP00000260605  F33S          EXON CDS  rs2288709:C   Nonsynonymous  TOLERATED   0.61   3.33         6
+    chr6    88375602   +       G/A     GTT-aTT  ENST00000257789  ENSP00000257789  V217I         EXON CDS  rs2307389:A   Nonsynonymous  TOLERATED   0.75   3.17         13
+    chr22   29307353   +       T/A     ACC-tCC  ENST00000335214  ENSP00000334612  T264S         EXON CDS  rs42942:A     Nonsynonymous  TOLERATED   0.4    3.14         23
+    chr10   115912482  +       C/A     CGA-CtA  ENST00000369285  ENSP00000358291  R179L         EXON CDS  rs12782946:T  Nonsynonymous  TOLERATED   0.06   4.32         2
+    chr10   115900918  +       G/A     CAA-tAA  ENST00000369287  ENSP00000358293  Q271*         EXON CDS  rs7095762:T   Nonsynonymous  N/A         N/A    N/A          N/A
+    chr16   69875502   +       G/T     ACA-AaA  ENST00000338099  ENSP00000337512  T608K         EXON CDS  rs3096381:T   Nonsynonymous  TOLERATED   0.12   3.41         3
+    etc.
+
+-----
+
+**References**
+
+Ng PC, Henikoff S. (2001) Predicting deleterious amino acid substitutions.
+Genome Res. 11(5):863-74.
+
+Ng PC, Henikoff S. (2002) Accounting for human polymorphisms predicted to affect protein function.
+Genome Res. 12(3):436-46.
+
+Ng PC, Henikoff S. (2003) SIFT: Predicting amino acid changes that affect protein function.
+Nucleic Acids Res. 31(13):3812-4.
+
+Kumar P, Henikoff S, Ng PC. (2009) Predicting the effects of coding non-synonymous variants
+on protein function using the SIFT algorithm.
+Nat Protoc. 4(7):1073-81. Epub 2009 Jun 25.
+
+  </help>
+  <citations>
+    <citation type="doi">10.1101/gr.176601</citation>
+    <citation type="doi">10.1101/gr.212802</citation>
+    <citation type="doi">10.1093/nar/gkg509</citation>
+    <citation type="doi">10.1038/nprot.2009.86</citation>
+  </citations>
+</tool>

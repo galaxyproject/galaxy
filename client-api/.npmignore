@@ -1,0 +1,34 @@
+# Development files
+node_modules/
+coverage/
+.vscode/
+.idea/
+.git/
+.github/
+.DS_Store
+
+# Source and test files (only dist is published)
+src/examples/
+src/**/*.test.ts
+vitest.config.ts
+tsconfig.json
+tsconfig.*.json
+tsup.config.ts
+
+# CI/CD
+*.yml
+*.yaml
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Not ignoring src directory since we're including it for source maps and debugging

@@ -1,0 +1,176 @@
+"""Entry point for the usage of Cheetah templating within Galaxy."""
+
+import sys
+import traceback
+from typing import (
+    Optional,
+    Union,
+)
+
+from Cheetah.Compiler import Compiler
+from Cheetah.NameMapper import NotFound
+from Cheetah.Parser import ParseError
+from Cheetah.Template import Template
+from packaging.version import Version
+
+from galaxy.util.tree_dict import TreeDict
+from . import unicodify
+
+try:
+    from lib2to3.refactor import RefactoringTool
+except ImportError:
+    # Either Python 3.13 or Debian(<=12)/Ubuntu(<=24.10) without the
+    # python3-lib2to3 package
+    import fissix
+    from fissix import (
+        fixes as fissix_fixes,
+        pgen2 as fissix_pgen2,
+        refactor as fissix_refactor,
+    )
+
+    sys.modules["lib2to3"] = fissix
+    sys.modules["lib2to3.fixes"] = fissix_fixes
+    sys.modules["lib2to3.pgen2"] = fissix_pgen2
+    sys.modules["lib2to3.refactor"] = fissix_refactor
+
+    from lib2to3.refactor import RefactoringTool
+
+from past.translation import myfixes
+
+# Skip libpasteurize fixers, which make sure code is py2 and py3 compatible.
+# This is not needed, we only translate code on py3.
+myfixes = [f for f in myfixes if not f.startswith("libpasteurize")]
+refactoring_tool = RefactoringTool(myfixes, {"print_function": True})
+
+
+class InputNotFoundSyntaxError(SyntaxError):
+    pass
+
+
+class FixedModuleCodeCompiler(Compiler):
+    module_code = None
+
+    def getModuleCode(self):
+        self._moduleDef = self.module_code
+        return self._moduleDef
+
+
+def create_compiler_class(module_code):
+    class CustomCompilerClass(FixedModuleCodeCompiler):
+        pass
+
+    CustomCompilerClass.module_code = module_code
+    return CustomCompilerClass
+
+
+def fill_template(
+    template_text,
+    context=None,
+    retry=10,
+    compiler_class=Compiler,
+    first_exception=None,
+    futurized=False,
+    python_template_version: Optional[Union[str, Version]] = "3",
+    **kwargs,
+):
+    """Fill a cheetah template out for specified context.
+
+    If template_text is None, an exception will be thrown, if context
+    is None (the default) - keyword arguments to this function will be used
+    as the context.
+    """
+    if template_text is None:
+        raise TypeError("Template text specified as None to fill_template.")
+    if not context:
+        context = kwargs
+    if python_template_version is None:
+        python_template_version = Version("3")
+    elif isinstance(python_template_version, str):
+        python_template_version = Version(python_template_version)
+    try:
+        klass = Template.compile(source=template_text, compilerClass=compiler_class)
+    except ParseError as e:
+        # Might happen on invalid syntax within a cheetah statement, like `#if $smxsize <> 128.0`
+        if first_exception is None:
+            first_exception = e
+        if python_template_version.release[0] < 3 and retry > 0:
+            module_code = Template.compile(
+                source=template_text, compilerClass=compiler_class, returnAClass=False
+            ).decode("utf-8")
+            module_code = futurize_preprocessor(module_code)
+            compiler_class = create_compiler_class(module_code)
+            return fill_template(
+                template_text=template_text,
+                context=context,
+                retry=retry - 1,
+                compiler_class=compiler_class,
+                first_exception=first_exception,
+                python_template_version=python_template_version,
+            )
+        raise first_exception or e
+    t = klass(searchList=[context])
+    try:
+        return unicodify(t, log_exception=False)
+    except (NotFound, InputNotFoundSyntaxError) as e:
+        if first_exception is None:
+            first_exception = e
+        if not isinstance(context, TreeDict):
+            masked_input = None
+            if "input" in context and callable(context["input"]):
+                masked_input = context.pop("input", None)
+            context = TreeDict(context)
+            if "input" not in context and masked_input:
+                context["input"] = masked_input
+        tb = e.__traceback__
+        if retry > 0:
+            if python_template_version.release[0] < 3:
+                last_stack = traceback.extract_tb(tb)[-1]
+                if last_stack.name == "<listcomp>" and last_stack.lineno:
+                    # On python 3 list, dict and set comprehensions as well as generator expressions
+                    # have their own local scope, which prevents accessing frame variables in cheetah.
+                    # We can work around this by replacing `$var` with `var`, but we only do this for
+                    # list comprehensions, as this has never worked for dict or set comprehensions or
+                    # generator expressions in Cheetah.
+                    var_not_found = e.args[0].split("'")[1]
+                    replace_str = f'VFFSL(SL,"{var_not_found}",True)'
+                    lineno = last_stack.lineno - 1
+                    module_code = t._CHEETAH_generatedModuleCode.splitlines()
+                    module_code[lineno] = module_code[lineno].replace(replace_str, var_not_found)
+                    module_code = "\n".join(module_code)
+                    compiler_class = create_compiler_class(module_code)
+            return fill_template(
+                template_text=template_text,
+                context=context,
+                retry=retry - 1,
+                compiler_class=compiler_class,
+                first_exception=first_exception,
+                python_template_version=python_template_version,
+            )
+        raise first_exception or e
+    except Exception as e:
+        if first_exception is None:
+            first_exception = e
+        if python_template_version.release[0] < 3 and not futurized:
+            # Possibly an error caused by attempting to run python 2
+            # template code on python 3. Run the generated module code
+            # through futurize and hope for the best.
+            module_code = t._CHEETAH_generatedModuleCode
+            module_code = futurize_preprocessor(module_code)
+            compiler_class = create_compiler_class(module_code)
+            return fill_template(
+                template_text=template_text,
+                context=context,
+                retry=retry,
+                compiler_class=compiler_class,
+                first_exception=first_exception,
+                futurized=True,
+                python_template_version=python_template_version,
+            )
+        raise first_exception or e
+
+
+def futurize_preprocessor(source):
+    source = str(refactoring_tool.refactor_string(source, name="auto_translate_cheetah"))
+    # libfuturize.fixes.fix_unicode_keep_u' breaks from Cheetah.compat import unicode
+    source = source.replace("from Cheetah.compat import str", "from Cheetah.compat import unicode")
+    return source

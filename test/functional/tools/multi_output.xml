@@ -1,0 +1,27 @@
+<tool id="multi_output" name="Multi_Output" version="0.1.0">
+  <command>
+    echo "Hello" > $report;
+    echo "World Contents" > 'primary_${report.id}_world_visible_?'
+  </command>
+  <inputs>
+    <param name="input" type="integer" value="7" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="report" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="7" />
+      <output name="report">
+        <assert_contents>
+          <has_line line="Hello" />
+        </assert_contents>
+        <discovered_dataset designation="world">
+          <assert_contents>
+            <has_line line="World Contents" />
+          </assert_contents>
+        </discovered_dataset>
+      </output>
+    </test>
+  </tests>
+</tool>

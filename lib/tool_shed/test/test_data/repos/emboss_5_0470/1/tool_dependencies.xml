@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<tool_dependency>
+    <package name="emboss" version="5.0.0">
+        <!-- These tools require the EMBOSS 5.0.0 binaries. -->
+        <repository name="package_emboss_5_0_0_0470" owner="user1" />
+    </package>
+</tool_dependency>

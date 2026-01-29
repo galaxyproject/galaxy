@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jxb:bindings 
+	xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
+	xmlns:jxb="http://java.sun.com/xml/ns/jaxb"
+	jxb:version="2.1"
+	>
+
+<jxb:bindings schemaLocation="galaxy.xsd">
+ 
+
+    <jxb:bindings node="/xs:schema/xs:complexType[@name='Param']/xs:complexContent/xs:extension/xs:attribute[@name='label']">
+            <jxb:property name="LabelAttribute"/>
+    </jxb:bindings>
+
+    <jxb:bindings node="/xs:schema/xs:complexType[@name='ParamOption']/xs:simpleContent/xs:extension/xs:attribute[@name='value']">
+            <jxb:property name="ValueAttribute"/>
+    </jxb:bindings>
+
+
+</jxb:bindings>
+</jxb:bindings>

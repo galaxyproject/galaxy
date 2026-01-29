@@ -1,0 +1,39 @@
+<tool id="identifier_in_actions" name="identifier_in_actions" version="1.0.0">
+    <command><![CDATA[
+        cp '$input' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" multiple="false" />
+        <param name="the_conditional" type="boolean" checked="true" />
+    </inputs>
+    <outputs>
+        <data format="tabular" name="output">
+            <actions>
+                <action name="column_names" type="metadata" default="First,${input.element_identifier}" />
+            </actions>
+        </data>
+        <data format="tabular" name="output_conditional_metadata">
+            <actions>
+                <conditional name="the_conditional">
+                    <when value="true">
+                        <action name="column_names" type="metadata" default="True,${input.element_identifier}" />
+                    </when>
+                    <when value="false">
+                        <action name="column_names" type="metadata" default="False,${input.element_identifier}" />
+                    </when>
+                </conditional>
+            </actions>
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="2.tabular" />
+            <output name="output">
+                <metadata name="column_names" value="First,2.tabular"/>
+            </output>
+            <output name="output_conditional_metadata">
+                <metadata name="column_names" value="True,2.tabular" />
+            </output>
+        </test>
+    </tests>
+</tool>

@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<tool_dependency>
+    <package name="bwa" version="0.5.9">
+        <repository name="package_bwa_0_5_9_0460" owner="user1" />
+    </package>
+</tool_dependency>

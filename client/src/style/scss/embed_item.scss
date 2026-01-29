@@ -1,0 +1,91 @@
+.embedded-item {
+    margin: 0em auto;
+    width: 90%;
+    -moz-border-radius: 0.5em;
+    -webkit-border-radius: 0.5em;
+    border-radius: 0.5em;
+
+    .expanded-content {
+        display: none;
+        background-color: white;
+    }
+
+    .item-content {
+        max-height: 45em;
+        overflow: auto;
+    }
+
+    & > .title {
+        vertical-align: top;
+        text-align: center;
+        font-weight: bold;
+        padding-bottom: 5px;
+    }
+
+    &.placeholder .content {
+        padding: 0.5em 0.5em;
+        font-style: italic;
+        text-align: center;
+    }
+
+    p {
+        background: inherit;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+
+    table.annotated-item {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    table.annotated-item td,
+    th {
+        padding: 0;
+    }
+
+    table.annotated-item .annotation {
+        padding-left: 2em;
+        width: 40%;
+    }
+
+    table.annotated-item td.annotation {
+        vertical-align: text-top;
+        padding-top: 1em;
+    }
+}
+
+.embedded-item.display {
+    padding: 5px 10px 10px 10px;
+}
+
+.embedded-item.history {
+    background-color: #c1c9e5;
+}
+
+.embedded-item.dataset {
+    background-color: #cfc;
+    .item-content {
+        padding: 5px;
+    }
+}
+
+.embedded-item.workflow {
+    background-color: #fbddb3;
+    .item-content {
+        padding: 5px;
+    }
+}
+
+.embedded-item.visualization {
+    background-color: #bbbbbb;
+    .item-content {
+        overflow: hidden;
+        height: 100%;
+        iframe {
+            min-height: 320px;
+            //TODO: hack to fix small gap after iframe
+            margin-bottom: -4px;
+        }
+    }
+}

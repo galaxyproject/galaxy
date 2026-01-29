@@ -1,0 +1,103 @@
+<tool id="fastq_gen_conv" name="FASTQ Groomer" version="1.0.0">
+  <description>converts any FASTQ to Sanger</description>
+  <command>
+python '$__tool_directory__/fastq_gen_conv.py'
+     --input='$input'
+     --origType=$origTypeChoice.origType
+     #if $origTypeChoice.origType == "sanger":
+      --allOrNot=$origTypeChoice.howManyBlocks.allOrNot
+      #if $origTypeChoice.howManyBlocks.allOrNot == "not":
+       --blocks=$origTypeChoice.howManyBlocks.blocks
+      #else:
+       --blocks="None"
+      #end if
+     #else:
+      --allOrNot="None"
+      --blocks="None"
+     #end if
+     --output='$output'
+  </command>
+  <inputs>
+    <param name="input" type="data" format="fastq" label="Groom this dataset" />
+    <conditional name="origTypeChoice">
+      <param name="origType" type="select" label="How do you think quality values are scaled?" help="See below for explanation">
+        <option value="solexa">Solexa/Illumina 1.0</option>
+        <option value="illumina">Illumina 1.3+</option>
+        <option value="sanger">Sanger (validation only)</option>
+      </param>
+      <when value="solexa" />
+      <when value="illumina" />
+      <when value="sanger">
+        <conditional name="howManyBlocks">
+          <param name="allOrNot" type="select" label="Since your fastq is already in Sanger format you can check it for consistency">
+            <option value="all">Check all (may take a while)</option>
+            <option selected="true" value="not">Check selected number of blocks</option>
+          </param>
+          <when value="all" />
+          <when value="not">
+            <param name="blocks" type="integer" value="1000" label="How many blocks (four lines each) do you want to check?" />
+          </when>
+        </conditional>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data name="output" format="fastqsanger"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="fastq_gen_conv_in1.fastq" ftype="fastq" />
+      <param name="origType" value="solexa" />
+      <output name="output" ftype="fastqsanger" file="fastq_gen_conv_out1.fastqsanger" />
+    </test>
+    <test>
+      <param name="input" value="fastq_gen_conv_in2.fastq" ftype="fastq" />
+      <param name="origType" value="sanger" />
+      <param name="allOrNot" value="not" />
+      <param name="blocks" value="3" />
+      <output name="output" ftype="fastqsanger" file="fastq_gen_conv_out2.fastqsanger" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+Galaxy pipeline for mapping of Illumina data requires data to be in fastq format with quality values conforming to so called "Sanger" format. Unfortunately there are many other types of fastq. Thus the main objective of this tool is to "groom" multiple types of fastq into Sanger-conforming fastq that can be used in downstream application such as mapping.
+
+.. class:: infomark
+
+**TIP**: If the input dataset is already in Sanger format the tool does not perform conversion. However validation (described below) is still performed.
+
+-----
+
+**Types of fastq datasets**
+
+A good description of fastq datasets can be found `here`__, while a description of Galaxy's fastq "logic" can be found `here`__. Because ranges of quality values within different types of fastq datasets overlap it very difficult to detect them automatically. This tool supports conversion of two commonly found types (Solexa/Illumina 1.0 and Illumina 1.3+) into fastq Sanger.
+
+ .. __: http://en.wikipedia.org/wiki/FASTQ_format
+ .. __: https://wiki.galaxyproject.org/Learn/Datatypes#Fastq
+
+.. class:: warningmark
+
+**NOTE** that there is also a type of fastq format where quality values are represented by a list of space-delimited integers (e.g., 40 40 20 15 -5 20 ...). This tool **does not** handle such fastq. If you have such a dataset, it needs to be converted into ASCII-type fastq (where quality values are encoded by characters) by "Numeric-to-ASCII" utility before it can accepted by this tool.
+
+-----
+
+**Validation**
+
+In addition to converting quality values to Sanger format the tool also checks the input dataset for consistency. Specifically, it performs these four checks:
+
+- skips empty lines
+- checks that blocks are properly formed by making sure that:
+
+  #. there are four lines per block
+  #. the first line starts with "@"
+  #. the third line starts with "+"
+  #. lengths of second line (sequences) and the fourth line (quality string) are identical
+
+- checks that quality values are within range for the chosen fastq format (e.g., the format provided by the user in **How do you think quality values are scaled?** drop down.
+
+To see exactly what the tool does you can take a look at its source code `here`__.
+
+ .. __: http://bitbucket.org/galaxy/galaxy-central/src/tip/tools/next_gen_conversion/fastq_gen_conv.py
+  </help>
+</tool>

@@ -1,0 +1,107 @@
+.library_style_container {
+  width: 95%;
+  margin: auto;
+  margin-top: 1em;
+  overflow: auto !important; }
+  .library_style_container .fa {
+    font-size: 12px; }
+  .library_style_container .fa-globe,
+  .library_style_container .fa-shield,
+  .library_style_container .fa-key,
+  .library_style_container .fa-ban {
+    font-size: initial;
+    margin-left: 0.6em; }
+  .library_style_container .libraryRow {
+    background-color: #f8f9fa; }
+  .library_style_container .datasetHighlighted {
+    background-color: #f9f9f9; }
+  .library_style_container .libraryItemDeleted-True {
+    font-style: italic; }
+  .library_style_container div.libraryItemBody {
+    padding: 4px 4px 2px 4px; }
+  .library_style_container li.folderRow,
+  .library_style_container li.datasetRow {
+    border-top: solid 1px #bdc6d0; }
+  .library_style_container li.folderRow:hover,
+  .library_style_container li.datasetRow:hover {
+    background-color: #f9f9f9; }
+  .library_style_container td.right-center {
+    vertical-align: middle !important;
+    text-align: right; }
+  .library_style_container .library-genome-select {
+    max-width: 350px; }
+  .library_style_container .library-extension-select {
+    max-width: 140px; }
+  .library_style_container .library_table td {
+    border-top: 1px solid #5f6990 !important; }
+  .library_style_container .library_table th {
+    border-bottom: 2px solid #5f6990 !important; }
+  .library_style_container .library_table a {
+    color: #0a143d; }
+    .library_style_container .library_table a:hover {
+      color: maroon; }
+  .library_style_container tr.light td {
+    background-color: white;
+    color: black; }
+  .library_style_container tr.light:hover td {
+    background-color: #f5e8cc; }
+  .library_style_container tr.dark td {
+    background-color: #d6b161;
+    color: white; }
+  .library_style_container tr.dark:hover td {
+    background-color: #ebd4a4;
+    color: white; }
+  .library_style_container a.dark {
+    color: white; }
+  .library_style_container .dataset_table tr,
+  .library_style_container .dataset_table th,
+  .library_style_container .dataset_table td {
+    border: none; }
+  .library_style_container .dataset_table .dataset-first-column {
+    width: 30%; }
+  .library_style_container th.button_heading {
+    width: 2em; }
+  .library_style_container .bigdrop.select2-container .select2-results {
+    max-height: 300px; }
+  .library_style_container .bigdrop .select2-results {
+    max-height: 300px; }
+  .library_style_container .select2-container-multi {
+    width: 100%; }
+  .library_style_container .roles-selection {
+    width: 66%; }
+  .library_style_container #libraries_element button,
+  .library_style_container #folder_items_element button {
+    margin-left: 0.5em; }
+  .library_style_container .import-type-switch {
+    text-decoration: underline; }
+  .library_style_container .libimport-select-none,
+  .library_style_container .libimport-select-all {
+    margin-left: 0.5em; }
+  .library_style_container td,
+  .library_style_container thead {
+    vertical-align: middle; }
+  .library_style_container .mid {
+    vertical-align: middle;
+    text-align: center; }
+
+.modal-content .library_selected_history_content ul {
+  list-style-type: none; }
+
+.modal-content .library-collection-type-select,
+.modal-content .library-collection-history-select {
+  margin-left: auto;
+  margin-right: auto;
+  width: 200px;
+  min-width: 200px; }
+
+.modal-content .library-modal-item {
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 1.5em; }
+
+.libraryTitle th {
+  text-align: left; }
+
+.libraryTitle .rowTitle {
+  padding: 2px; }

@@ -1,0 +1,97 @@
+<tool id="axt_to_lav_1" name="AXT to LAV" version="1.0.0">
+  <description>Converts an AXT formatted file to LAV format</description>
+  <edam_operations>
+    <edam_operation>operation_3434</edam_operation>
+  </edam_operations>
+  <command interpreter="python">axt_to_lav.py /galaxy/data/$dbkey_1/seq/%s.nib:$dbkey_1:${GALAXY_DATA_INDEX_DIR}/shared/ucsc/chrom/${dbkey_1}.len /galaxy/data/$dbkey_2/seq/%s.nib:$dbkey_2:${GALAXY_DATA_INDEX_DIR}/shared/ucsc/chrom/${dbkey_2}.len $align_input $lav_file $seq_file1 $seq_file2</command>
+  <inputs>
+    <param name="align_input" type="data" format="axt" label="Alignment File" optional="False"/>
+    <param name="dbkey_1" type="genomebuild" label="Genome"/>
+    <param name="dbkey_2" type="genomebuild" label="Genome"/>
+  </inputs>
+  <outputs>
+    <data name="lav_file" format="lav"/>
+    <data name="seq_file1" format="fasta" parent="lav_file"/>
+    <data name="seq_file2" format="fasta" parent="lav_file"/>
+  </outputs>
+  <help>
+
+.. class:: warningmark
+
+**IMPORTANT**: AXT formatted alignments will be phased out from Galaxy in the coming weeks. They will be replaced with pairwise MAF alignments, which are already available. To try pairwise MAF alignments use "Extract Pairwise MAF blocks" tool in *Fetch Sequences and Alignments* section.
+
+--------
+
+
+**Syntax**
+
+This tool converts an AXT formatted file to the LAV format.
+
+- **AXT format** The alignments are produced from Blastz, an alignment tool available from Webb Miller's lab at Penn State University. The lav format Blastz output, which does not include the sequence, was converted to AXT format with lavToAxt. Each alignment block in an AXT file contains three lines: a summary line and 2 sequence lines. Blocks are separated from one another by blank lines.
+
+- **LAV format** LAV is an alignment format developed by Webb Miller's group. It is the primary output format for BLASTZ.
+
+- **FASTA format** a text-based format for representing both nucleic and protein sequences, in which base pairs or proteins are represented using a single-letter code.
+
+  - This format contains an one line header. It starts with a ">" symbol. The first word on this line is the name of the sequence. The rest of the line is a description of the sequence.
+  - The remaining lines contain the sequence itself.
+  - Blank lines in a FASTA file are ignored, and so are spaces or other gap symbols (dashes, underscores, periods) in a sequence.
+  - Fasta files containing multiple sequences are just the same, with one sequence listed right after another. This format is accepted for many multiple sequence alignment programs.
+
+-----
+
+**Example**
+
+- AXT format::
+
+    0 chr19 3001012 3001075 chr11 70568380 70568443 - 3500
+    TCAGCTCATAAATCACCTCCTGCCACAAGCCTGGCCTGGTCCCAGGAGAGTGTCCAGGCTCAGA
+    TCTGTTCATAAACCACCTGCCATGACAAGCCTGGCCTGTTCCCAAGACAATGTCCAGGCTCAGA
+
+    1 chr19 3008279 3008357 chr11 70573976 70574054 - 3900
+    CACAATCTTCACATTGAGATCCTGAGTTGCTGATCAGAATGGAAGGCTGAGCTAAGATGAGCGACGAGGCAATGTCACA
+    CACAGTCTTCACATTGAGGTACCAAGTTGTGGATCAGAATGGAAAGCTAGGCTATGATGAGGGACAGTGCGCTGTCACA
+
+- Convert the above file to LAV format::
+
+    #:lav
+    s {
+      &quot;/galaxy/data/hg16/seq/chr19.nib&quot; 1 63811651 0 1
+      &quot;/galaxy/data/mm5/seq/chr11.nib-&quot; 1 121648857 0 1
+    }
+    h {
+      &quot;> hg16.chr19&quot;
+      &quot;> mm5.chr11 (reverse complement)&quot;
+    }
+    a {
+      s 3500
+      b 3001012 70568380
+      e 3001075 70568443
+      l 3001012 70568380 3001075 70568443 81
+    }
+    a {
+      s 3900
+      b 3008279 70573976
+      e 3008357 70574054
+      l 3008279 70573976 3008357 70574054 78
+    }
+    #:eof
+
+- With two files in the FASTA format::
+
+    &gt;hg16.chr19_-_3001011_3001075
+    TCAGCTCATAAATCACCTCCTGCCACAAGCCTGGCCTGGTCCCAGGAGAGTGTCCAGGCTCAGA
+
+    &gt;hg16.chr19_-_3008278_3008357
+    CACAATCTTCACATTGAGATCCTGAGTTGCTGATCAGAATGGAAGGCTGAGCTAAGATGAGCGACGAGGCAATGTCACA
+
+ **and**::
+
+    &gt;mm5.chr11_-_70568379_70568443
+    TCTGTTCATAAACCACCTGCCATGACAAGCCTGGCCTGTTCCCAAGACAATGTCCAGGCTCAGA
+
+    &gt;mm5.chr11_-_70573975_70574054
+    CACAGTCTTCACATTGAGGTACCAAGTTGTGGATCAGAATGGAAAGCTAGGCTATGATGAGGGACAGTGCGCTGTCACA
+  </help>
+  <code file="axt_to_lav_code.py"/>
+</tool>

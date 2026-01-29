@@ -1,0 +1,21 @@
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+  pulsar_embed:
+    load: galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner
+
+execution:
+  default: pulsar_embed
+  environments:
+    local:
+      runner: local
+    pulsar_embed:
+      runner: pulsar_embed
+      singularity_enabled: true
+      singularity_required: true
+      # Since tests run in /tmp/ , we apparently need to forbid the default mounting of /tmp
+      singularity_run_extra_arguments: '--no-mount tmp'
+
+tools:
+- class: local
+  environment: local

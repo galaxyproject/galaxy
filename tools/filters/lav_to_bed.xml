@@ -1,0 +1,68 @@
+<tool id="lav_to_bed1" name="LAV to BED" version="1.0.0">
+  <description>Converts a LAV formatted file to BED format</description>
+  <command interpreter="python">lav_to_bed.py $lav_file $bed_file1 $bed_file2</command>
+  <inputs>
+    <param name="lav_file" type="data" format="lav" label="LAV File" optional="False"/>
+  </inputs>
+  <outputs>
+    <data name="bed_file1" format="bed"/>
+    <data name="bed_file2" format="bed"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="lav_file" value="2.lav" ftype="lav" />
+      <output name="bed_file2" file="lav_to_bed_out_1.bed" />
+      <output name="bed_file2" file="lav_to_bed_out_2.bed" />
+    </test>
+  </tests>
+  <help>
+
+**Syntax**
+
+This tool converts a LAV formatted file to the BED format.
+
+- **LAV format** LAV is an alignment format developed by Webb Miller's group at Penn State University. It is the primary output format for BLASTZ.
+
+- **BED format** Browser Extensible Data format was designed at UCSC for displaying data tracks in the Genome Browser.
+
+-----
+
+**Example**
+
+- Convert LAV format::
+
+    #:lav
+    s {
+      &quot;/galaxy/data/hg16/seq/chr19.nib&quot; 1 63811651 0 1
+      &quot;/galaxy/data/mm5/seq/chr11.nib&quot; 1 121648857 0 1
+    }
+    h {
+      &quot;> hg16.chr19&quot;
+      &quot;> mm5.chr11 (reverse complement)&quot;
+    }
+    a {
+      s 3500
+      b 3001012 70568380
+      e 3001075 70568443
+      l 3001012 70568380 3001075 70568443 81
+    }
+    a {
+      s 3900
+      b 3008279 70573976
+      e 3008357 70574054
+      l 3008279 70573976 3008357 70574054 78
+    }
+    #:eof
+
+- To two BED formatted files::
+
+    chr19	3001011	3001075	hg16_0	0	+
+    chr19	3008278	3008357	hg16_1	0	+
+
+ **and**::
+
+    chr11	70568379	70568443	mm5_0	0	+
+    chr11	70573975	70574054	mm5_1	0	+
+  </help>
+  <code file="lav_to_bed_code.py"/>
+</tool>

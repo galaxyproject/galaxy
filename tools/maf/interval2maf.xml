@@ -1,0 +1,292 @@
+<!-- this tool is deprecated in favour of the tools-iuc one
+     https://github.com/galaxyproject/tools-iuc/tree/master/tools/interval2maf -->
+<tool id="Interval2Maf1" name="Extract MAF blocks" version="1.0.1">
+  <description>given a set of genomic intervals</description>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
+  <command>
+python '$__tool_directory__/interval2maf.py' --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol}
+#if $maf_source_type.maf_source == "user"
+    --mafFile='$maf_source_type.mafFile' --mafIndex='$maf_source_type.mafFile.metadata.maf_index'
+#else
+    --mafType='$maf_source_type.mafType'
+#end if
+--interval_file='$input1' --output_file='$out_file1' --mafIndexFile='${GALAXY_DATA_INDEX_DIR}/maf_index.loc' --species=$maf_source_type.species --split_blocks_by_species=$split_blocks_by_species_selector.split_blocks_by_species
+#if $split_blocks_by_species_selector.split_blocks_by_species == "split_blocks_by_species"
+    --remove_all_gap_columns=$split_blocks_by_species_selector.remove_all_gap_columns
+#end if
+  </command>
+  <inputs>
+    <param format="interval" name="input1" type="data" label="Choose intervals">
+      <validator type="unspecified_build" />
+    </param>
+    <conditional name="maf_source_type">
+      <param name="maf_source" type="select" label="MAF Source">
+        <option value="cached" selected="true">Locally Cached Alignments</option>
+        <option value="user">Alignments in Your History</option>
+      </param>
+      <when value="user">
+        <param format="maf" name="mafFile" label="Choose alignments" type="data">
+          <options>
+            <filter type="data_meta" ref="input1" key="dbkey" />
+          </options>
+          <validator type="dataset_ok_validator" />
+        </param>
+        <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
+          <options>
+            <filter type="data_meta" ref="mafFile" key="species" />
+          </options>
+        </param>
+      </when>
+      <when value="cached">
+        <param name="mafType" type="select" label="Choose alignments">
+          <options from_data_table="indexed_maf_files">
+            <!--
+            <column name="name" index="0"/>
+            <column name="value" index="1"/>
+            <column name="dbkey" index="2"/>
+            <column name="species" index="3"/>
+            -->
+            <filter type="data_meta" ref="input1" key="dbkey" column="dbkey" multiple="True" separator=","/>
+            <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
+          </options>
+        </param>
+        <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
+          <options from_data_table="indexed_maf_files">
+            <column name="uid" index="1"/>
+            <column name="value" index="3"/>
+            <column name="name" index="3"/>
+            <filter type="param_value" ref="mafType" column="uid"/>
+            <filter type="multiple_splitter" column="name" separator=","/>
+          </options>
+        </param>
+      </when>
+    </conditional>
+    <conditional name="split_blocks_by_species_selector">
+      <param name="split_blocks_by_species" type="select" label="Split blocks by species" help="Not usually applicable. See help below for more information.">
+        <option value="split_blocks_by_species">Split by species</option>
+        <option value="dont_split_blocks_by_species" selected="true">Do not split</option>
+      </param>
+      <when value="dont_split_blocks_by_species">
+        <!-- do nothing here -->
+      </when>
+      <when value="split_blocks_by_species">
+        <param name="remove_all_gap_columns" type="select" label="Collapse empty alignment columns">
+          <option value="remove_all_gap_columns" selected="true">Collapse empty columns</option>
+          <option value="do_not_remove_all_gap_columns">Do not collapse</option>
+        </param>
+      </when>
+    </conditional>
+   </inputs>
+   <outputs>
+     <data format="maf" name="out_file1"/>
+   </outputs>
+   <tests>
+     <test>
+       <param name="input1" value="1.bed"/>
+       <param name="maf_source" value="cached"/>
+       <param name="mafType" value="ENCODE_TBA_hg17"/>
+       <param name="species" value="hg17,panTro1,baboon,marmoset,galago,rn3,mm6,rabbit,cow,canFam1,rfbat,shrew,armadillo,tenrec,monDom1,tetNig1,fr1,rheMac1,galGal2,xenTro1,danRer2,elephant,platypus,hedgehog,colobus_monkey,dusky_titi,owl_monkey,mouse_lemur"/>
+       <param name="split_blocks_by_species" value="dont_split_blocks_by_species"/>
+       <output name="out_file1" file="fsa_interval2maf.dat" />
+     </test>
+     <test>
+       <param name="input1" value="1.bed"/>
+       <param name="maf_source" value="user"/>
+       <param name="mafFile" value="fsa_interval2maf.dat"/>
+       <param name="species" value="hg17,panTro1,baboon,marmoset,galago,rn3,mm6,rabbit,cow,canFam1,rfbat,shrew,armadillo,tenrec,monDom1,tetNig1,fr1,rheMac1,galGal2,xenTro1,danRer2,elephant,platypus,hedgehog,colobus_monkey,dusky_titi,owl_monkey,mouse_lemur"/>
+       <param name="split_blocks_by_species" value="dont_split_blocks_by_species"/>
+       <output name="out_file1" file="fsa_interval2maf.dat" />
+     </test>
+     <test>
+       <param name="input1" value="1.bed" dbkey="hg18" ftype="bed"/>
+       <param name="maf_source" value="cached"/>
+       <param name="mafType" value="28_WAY_MULTIZ_hg18"/>
+       <param name="species" value="hg18,panTro2,mm8"/>
+       <param name="split_blocks_by_species" value="dont_split_blocks_by_species"/>
+       <output name="out_file1" file="interval2maf_3from28way.maf" />
+     </test>
+   </tests>
+   <help>
+**What it does**
+
+This tool takes genomic coordinates, superimposes them on multiple alignments (in MAF format) stored on the Galaxy site or from your history, and excises alignment blocks corresponding to each set of coordinates. Alignment blocks that extend past START and/or END positions of an interval are trimmed. Note that a single genomic interval may correspond to two or more alignment blocks.
+
+-----
+
+**Example**
+
+Here a single interval is superimposed on three MAF blocks. Blocks 1 and 3 are trimmed because they extend beyond boundaries of the interval:
+
+.. image:: ${static_path}/images/maf_icons/interval2maf.png
+
+-------
+
+**Split blocks by species**
+
+This option examines each MAF block for multiple occurrences of a species in a single block. When this occurs, a block is split into multiple blocks where every combination of one sequence per species per block is represented.
+
+The interface for this option has two inputs:
+
+ * **MAF file to split**. Choose multiple alignments from history to be split by species.
+ * **Collapse empty alignment columns**. Should alignment columns containing only gaps in the new blocks be removed.
+
+**Example 1**: **Collapse empty alignment columns is Yes**:
+
+For the following alignment::
+
+  ##maf version=1
+  a score=2047408.0
+  s species1.chr1 147984545 85 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species1.chr1 147984545 83 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTT--GTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species1.chr1 147984645 79 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTT------AG
+  s species1.chr1 147984645 79 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTC---GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTC---AG
+  s species2.chr1 129723125 85 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species2.chr1 129723125 83 - 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCT--GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTC------AG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+the tool will create **a single** history item containing 12 alignment blocks (notice that no columns contain only gaps)::
+
+  ##maf version=1
+  a score=2047408.0
+  s species1.chr1 147984545 85 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species2.chr1 129723125 85 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984545 83 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTT--GTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species2.chr1 129723125 85 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984645 79 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTT------AG
+  s species2.chr1 129723125 85 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984645 79 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTC---GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTC---AG
+  s species2.chr1 129723125 85 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984545 85 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species2.chr1 129723125 83 - 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCT--GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984545 83 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTT-GTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species2.chr1 129723125 83 - 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCT-GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC--GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984645 79 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTT------AG
+  s species2.chr1 129723125 83 - 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCT--GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984645 79 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTC-GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTC---AG
+  s species2.chr1 129723125 83 - 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC-GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984545 85 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTC------AG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984545 83 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTT--GTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTC------AG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984645 79 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTAG
+  s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGCAG
+
+  a score=2047408.0
+  s species1.chr1 147984645 79 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTC---GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCAG
+  s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTC---AG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC---AG
+
+**Example 2**: **Collapse empty alignment columns is No**:
+
+For the following alignment::
+
+  ##maf version=1
+  a score=2047408.0
+  s species1.chr1 147984545 85 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species1.chr1 147984545 83 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTT--GTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species1.chr1 147984645 79 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTT------AG
+  s species1.chr1 147984645 79 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTC---GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTC---AG
+  s species2.chr1 129723125 85 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species2.chr1 129723125 83 - 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCT--GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTC------AG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+the tool will create **a single** history item containing 12 alignment blocks (notice that some columns contain only gaps)::
+
+  ##maf version=1
+  a score=2047408.0
+  s species1.chr1 147984545 85 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species2.chr1 129723125 85 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984545 83 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTT--GTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species2.chr1 129723125 85 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984645 79 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTT------AG
+  s species2.chr1 129723125 85 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984645 79 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTC---GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTC---AG
+  s species2.chr1 129723125 85 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984545 85 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species2.chr1 129723125 83 - 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCT--GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984545 83 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTT--GTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species2.chr1 129723125 83 - 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCT--GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984645 79 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTT------AG
+  s species2.chr1 129723125 83 - 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCT--GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984645 79 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTC---GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTC---AG
+  s species2.chr1 129723125 83 - 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCT--GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTCGTCCTCAG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984545 85 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTC------AG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984545 83 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTT--GTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTCCTCAG
+  s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTC------AG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984645 79 + 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTT------AG
+  s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTC------AG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+
+  a score=2047408.0
+  s species1.chr1 147984645 79 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTC---GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTC---AG
+  s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTC------AG
+  s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
+    </help>
+    <expand macro="citations" />
+</tool>

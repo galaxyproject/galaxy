@@ -1,0 +1,44 @@
+<tool id="special_params" name="special_params" version="1.0.0">
+    <command><![CDATA[
+echo '$__root_dir__' > out_root_dir &&
+echo '$__datatypes_config__' > out_datatypes_config &&
+echo '$__admin_users__' > out_admin_users &&
+echo '$__user_email__' > out_user_email
+    ]]></command>
+    <inputs>
+    </inputs>
+    <outputs>
+        <data name="out_root_dir" format="txt" from_work_dir="out_root_dir" />
+        <data name="out_datatypes_config" format="txt" from_work_dir="out_datatypes_config" />
+        <data name="out_admin_users" format="txt" from_work_dir="out_admin_users" />
+        <data name="out_user_email" format="txt" from_work_dir="out_user_email" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="out_root_dir">
+                <!-- Is an absolute path. -->
+                <assert_contents>
+                    <has_line_matching expression="^\/.*$" />
+                </assert_contents>
+            </output>
+            <output name="out_datatypes_config">
+                <!-- Is an absolute path. -->
+                <assert_contents>
+                    <has_line_matching expression="^\/.*$" />
+                </assert_contents>
+            </output>
+            <output name="out_admin_users">
+                <!-- Has at least on e-mail address. -->
+                <assert_contents>
+                    <has_text text="@" />
+                </assert_contents>
+            </output>
+            <output name="out_user_email">
+                <!-- Looks like an e-mail address. -->
+                <assert_contents>
+                    <has_line_matching expression="[^@]+@[^@]+\.[^@]+" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

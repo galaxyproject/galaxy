@@ -1,0 +1,28 @@
+MTD	mzTab-version	1.0 rc5
+MTD	mzTab-mode	Summary
+MTD	mzTab-type	Identification
+MTD	mzTab-ID	Cytidine
+MTD	description	LC-MS/MS Reference Standard
+MTD	sample_processing[1]	[MS, MS:1000544, Conversion to mzML, ]|[MS, MS:1000035, Peak picking, ]|[MS, MS:1001994, Top Hat baseline reduction, ]|[MS, MS:1000782, Savitzky-Golay smoothing, ]|[MS, MS:1000594, Low intensity data point removal, ]
+MTD	instrument[1]-name	[MS, MS:1000483, Thermo Fisher Scientific instrument model, LTQ Orbitrap Velos]
+MTD	instrument[1]-source	[MS, MS:1000008, Ionization Type, ESI]
+MTD	instrument[1]-analyzer[1]	[MS, MS:1000443, Mass Analyzer Type, Orbitrap]
+MTD	instrument[1]-detector	[MS, MS:1000453, Detector, Dynode Detector]
+MTD	software[1]	[MS, MS:1002205, ProteoWizard msconvert, ]
+MTD	software[1]-setting[1]	Peak Picking MS1
+MTD	software[1]	[MS, MS:1001457, data processing software, MassCascade-KNIME]
+MTD	smallmolecule_search_engine_score[1]	[MS, MS:1001153, search engine specific score,]
+MTD	contact[1]-name	Stephan Beisken
+MTD	contact[1]-affiliation	European Bioinformatics Institute (EMBL-EBI)
+MTD	contact[1]-email	beiken@ebi.ac.uk
+MTD	uri[1]	http://www.ebi.ac.uk/metabolights/MTBLS38
+MTD	fixed_mod[1]	[MS, MS:1002453, No fixed modifications searched, ]
+MTD	variable_mod[1]	[ , , CHEMMOD:2M+H, ]
+MTD	variable_mod[2]	[ , , CHEMMOD:M-C5H8O4, ]
+MTD	ms_run[1]-format	[MS, MS:1000584, Proteomics Standards Inititative mzML file format, mzML file]
+MTD	ms_run[1]-location	ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/MTBLS38/cytidine.mzML
+MTD	ms_run[1]-id_format	[MS, MS:1000767, Native spectrum identifier format, ]
+MTD	ms_run[1]-fragmentation_method	[MS, MS:1000133, Collision-induced dissociation, ]
+
+SMH	identifier	chemical_formula	smiles	inchi_key	description	exp_mass_to_charge	calc_mass_to_charge	charge	retention_time	taxid	species	database	database_version	spectra_ref	search_engine	best_search_engine_score[1]	modifications
+SML	CHEBI:17562	C9H13N3O5	Nc1ccn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)n1	UHDGCWIWMRVCDJ-XVFCMESISA-N	Cytidine	244.0928	null	1	193.25	null	null	ChEBI	109	null	[MS, MS:1001083, ms-ms search, MassBank]	977	CHEMMOD:2M+H,CHEMMOD:M-C5H8O4

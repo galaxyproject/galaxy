@@ -1,0 +1,99 @@
+# Each element in this file corresponds to a destination for an error
+# report.
+
+# If you supply the parameter ``user_submission``, and set it to True,
+# this error plugin will only be activated when the user uses the bug
+# report submission interface. Otherwise, it will be triggered without
+# any user interaction (e.g. historical behaviour of sentry plugin)
+
+# If your plugin is ``user_submission=True``, then supplying
+# ``verbose=True`` will cause the plugin to display a message to the end
+# user. E.g. the email plugin simply states "Your error report has been
+# sent", or the JSON plugin informs the user "Wrote error report to ..."
+
+# The plugins below are listed with their default values of
+# verbose/user_submission, but those are not necessary to provide.
+
+# The default Email bug reporter. By default, the standard
+# configuration is taken from your galaxy.yml
+- type: email
+  verbose: true
+  user_submission: true
+
+# Example JSON bug reporter implementation. This just writes the bug
+# report as a JSON file to a specified directory and serves as an
+# example for others to extend.
+# - type: json
+#   verbose: true
+#   user_submission: true
+#   directory: /tmp/reports/
+
+# Submit error reports to sentry. If a sentry_dsn is configured in your
+# galaxy.yml, then Galaxy will submit the job error to Sentry.
+# - type: sentry
+#   user_submission: false
+
+# InfluxDB error reporting backend. You will need to `pip install
+# influxdb` in the galaxy virtualenv yourself. This sends well tagged
+# errors InfluxDB allowing you to notice relationships between tool errors and
+# other infrastructure issues.
+# - type: influxdb
+#   # All arguments prefixed with `influxdb_` are per https://influxdb-python.readthedocs.io/en/latest/api-documentation.html#influxdbclient
+#   influxdb_host: 127.0.0.1
+#   influxdb_port: 8086
+#   influxdb_database: galaxy
+#   influxdb_timeout: 2
+
+# Github error reporting backend. You will need to `pip install pygithub` in
+# the galaxy virtualenv. This will create a new issue if none exists, and
+# comment on existing, open issues. The issues are labelled based on tool ID /
+# version and include all of the information the normal emailed bug reports
+# include. If you use a private Github Enterprise deployment, you can set
+# github_base_url='https://...' and github_api_url='https://api.....' as shown below.
+# The 'github_default_repo_only' flag restores the previous behaviour. When this is set
+# to true it will automatically only submit to the default git repository.
+# - type: github
+#   verbose: false
+#   user_submission: true
+#   github_oauth_token: 00000000000
+#   github_base_url: https://github.com
+#   github_api_url: https://api.github.com
+#   github_default_repo_owner: galaxyproject
+#   github_default_repo_name: galaxy
+#   github_default_repo_only: true
+
+# GitLab error reporting backend. You will need to `pip install python-gitlab`
+# in the galaxy virtualenv. This will create a new issue if none exists, and
+# comment on existing, open issues. The issues are labelled based on tool ID /
+# version and include all of the information the normal emailed bug reports
+# include. If you use a private GitLab deployment, you can set
+# gitlab_base_url='https://...'. It supports creating an issue on the git
+# repository of the tool by querying the ToolShed where the tool comes from
+# (if applicable). Set verbose to true if you want the message to be displayed
+# to the user. The 'gitlab_default_repo_only' flags ensures all errors are
+# submitted to the default repository only. The 'gitlab_new_issue_on_closed' flag
+# ensures that, when set to true, if an issue is closed it will create a new issue.
+# The 'gitlab_labels' flag allows to submit an array of labels that are added to
+# each issues.
+# - type: gitlab
+#   verbose: false
+#   user_submission: true
+#   gitlab_base_url: https://gitlab.com
+#   gitlab_private_token: 00000000000
+#   gitlab_default_repo_owner: galaxyproject
+#   gitlab_default_repo_name: galaxy
+#   gitlab_default_repo_only: true
+#   gitlab_allow_proxy: false
+#   gitlab_new_issue_on_closed: true
+#   gitlab_labels:
+#     - Label1
+#     - Label2
+
+# Slack error reporting backend. You'll need to create an "app" which is added
+# to your workspace, and configure it for a Webhook URL with a specific channel.
+# Then upon activation it will send a new message for each error report to your slack.
+# See https://api.slack.com/messaging/webhooks for more information.
+# - type: slack
+#   verbose: false
+#   user_submission: true
+#   webhook_url: "https://hooks.slack.com/services/..."

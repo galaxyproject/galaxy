@@ -1,0 +1,17 @@
+class: GalaxyWorkflow
+inputs: {}
+outputs:
+  out1:
+    outputSource: create_2/out_file1
+  out2:
+    outputSource: create_2/out_file2
+steps:
+  create_2:
+    tool_id: create_2
+    state:
+      sleep_time: 0
+    outputs:
+      out_file1:
+        rename: "${replaceme} name"
+      out_file2:
+        rename: "${replaceme} name 2"

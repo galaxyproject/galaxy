@@ -1,0 +1,125 @@
+tools:
+  test:
+    rules:
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 1 KB
+        upper_bound: Infinity
+        destination:
+          priority:
+            low: Destination1_low
+            med: Destination1_med
+            high: Destination1_high
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 0
+        upper_bound: 1 KB
+        fail_message: File size too small
+        destination: fail
+      - rule_type: num_input_datasets
+        nice_value: 0
+        lower_bound: 0
+        upper_bound: 5
+        destination:
+          priority:
+            low: Destination2_low
+            med: Destination2_med
+            high: Destination2_high
+      - rule_type: num_input_datasets
+        nice_value: 0
+        lower_bound: 5
+        upper_bound: Infinity
+        destination:
+          priority:
+            low: Destination3_low
+            med: Destination3_med
+            high: Destination3_high
+
+  test_overlap:
+    rules:
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 1 KB
+        upper_bound: Infinity
+        destination:
+          priority:
+            low: Destination2_low
+            med: Destination2_med
+            high: Destination2_high
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 0
+        upper_bound: 4 KB
+        destination:
+          priority:
+            low: Destination3_low
+            med: Destination3_med
+            high: Destination3_high
+      - rule_type: num_input_datasets
+        nice_value: -20
+        lower_bound: 0
+        upper_bound: 5
+        destination:
+          priority:
+            low: Destination4_low
+            med: Destination4_med
+            high: Destination4_high
+      - rule_type: num_input_datasets
+        nice_value: -20
+        lower_bound: 5
+        upper_bound: Infinity
+        destination:
+          priority:
+            low: Destination5_low
+            med: Destination5_med
+            high: Destination5_high
+
+  test_db:
+    rules:
+      - rule_type: records
+        nice_value: 0
+        lower_bound: 1 KB
+        upper_bound: Infinity
+        fail_message: File size too small
+        destination: fail
+      - rule_type: records
+        nice_value: 0
+        lower_bound: 0
+        upper_bound: 1 KB
+        destination:
+          priority:
+            low: Destination4_low
+            med: Destination4_med
+            high: Destination4_high
+
+  test_db_high:
+    rules:
+      - rule_type: records
+        nice_value: 0
+        lower_bound: 0
+        upper_bound: Infinity
+        destination:
+          priority:
+            low: Destination5_low
+            med: Destination5_med
+            high: Destination5_high
+
+  test_arguments:
+    rules:
+      - rule_type: arguments
+        nice_value: 0
+        arguments:
+          careful: true
+        destination:
+          priority:
+            med: Destination6_med
+
+default_destination:
+  priority:
+    low: cluster_default_low
+    med: cluster_default_med
+    high: cluster_default_high
+users:
+  user@email.com:
+    priority: high
+verbose: True

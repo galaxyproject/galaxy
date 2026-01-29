@@ -1,0 +1,65 @@
+<tool id="random_lines1" name="Select random lines" version="2.0.2">
+  <description>from a file</description>
+  <command>
+python '$__tool_directory__/random_lines_two_pass.py' '${input}' '${out_file1}' '${num_lines}'
+#if str( $seed_source.seed_source_selector ) == "set_seed":
+    --seed '${seed_source.seed}'
+#end if
+  </command>
+  <inputs>
+    <param name="num_lines" type="integer" value="1" label="Randomly select" help="lines"/>
+    <param name="input" type="data" format="txt" label="from"/>
+    <conditional name="seed_source">
+      <param name="seed_source_selector" type="select" label="Set a random seed">
+        <option value="no_seed" selected="True">Don't set seed</option>
+        <option value="set_seed">Set seed</option>
+      </param>
+      <when value="no_seed">
+        <!-- Do nothing here -->
+      </when>
+      <when value="set_seed">
+        <param name="seed" type="text" label="Random seed" />
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="input" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="num_lines" value="65"/>
+      <param name="input" value="1.bed"/>
+      <param name="seed_source_selector" value="no_seed"/>
+      <output name="out_file1" file="1.bed"/>
+    </test>
+    <test>
+      <param name="num_lines" value="1"/>
+      <param name="input" value="1.bed"/>
+      <param name="seed_source_selector" value="set_seed"/>
+      <param name="seed" value="asdf"/>
+      <output name="out_file1" file="1_bed_random_lines_1_seed_asdf_out.bed"/>
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+This tool selects N random lines from a file, with no repeats, and preserving ordering.
+
+-----
+
+**Example**
+
+Input File::
+
+    chr7  56632  56652   D17003_CTCF_R6  310  +
+    chr7  56736  56756   D17003_CTCF_R7  354  +
+    chr7  56761  56781   D17003_CTCF_R4  220  +
+    chr7  56772  56792   D17003_CTCF_R7  372  +
+    chr7  56775  56795   D17003_CTCF_R4  207  +
+
+Selecting 2 random lines might return this::
+
+    chr7  56736  56756   D17003_CTCF_R7  354  +
+    chr7  56775  56795   D17003_CTCF_R4  207  +
+    </help>
+</tool>

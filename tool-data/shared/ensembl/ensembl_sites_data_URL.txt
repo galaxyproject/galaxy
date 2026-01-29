@@ -1,0 +1,8 @@
+#These builds are displayed using the method described in:
+#http://aug2007.archive.ensembl.org/Homo_sapiens/helpview?se=1;kw=urlsource
+ensembl_March_2008	March 2008	http://mar2008.archive.ensembl.org/	bosTau3,tetNig1	Bos_taurus,Tetraodon_nigroviridis
+ensembl_February_2007	February 2007	http://feb2007.archive.ensembl.org/	monDom4,danRer4	Monodelphis_domestica,Danio_rerio
+ensembl_July_2008	July 2008	http://jul2008.archive.ensembl.org/	panTro2	Pan_troglodytes
+ensembl_April_2006	April 2006	http://apr2006.archive.ensembl.org/	galGal2,bosTau2,canFam1,mm7,rheMac1,danRer3,apiMel2,sacCer1	Gallus_gallus,Bos_taurus,Canis_familiaris,Mus_musculus,Macaca_mulatta,Danio_rerio,Apis_mellifera,Saccharomyces_cerevisiae
+ensembl_November_2005	November 2005	http://nov2005.archive.ensembl.org/	hg17,panTro1,bosTau1,mm6,xenTro1,anoGam1,dm2	Homo_sapiens,Pan_troglodytes,Bos_taurus,Mus_musculus,Xenopus_tropicalis,Anopheles_gambiae,Drosophila_melanogaster
+ensembl_August_2007	August 2007	http://aug2007.archive.ensembl.org/	mm8,ce4	Mus_musculus,Caenorhabditis_elegans

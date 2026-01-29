@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<tool name="metabolicMine" id="metabolicmine" tool_type="data_source" version="1.0.0" profile="20.09">
+    <description>server</description>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
+    <command><![CDATA[
+python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
+    ]]></command>
+    <inputs action="http://www.metabolicmine.org/beta/begin.do" check_values="false" method="get">
+        <display>go to metabolicMine server $GALAXY_URL</display>
+    </inputs>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>

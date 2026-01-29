@@ -1,0 +1,17 @@
+<tool id="output_auto_format" name="output_auto_format" version="1.0.0">
+    <command><![CDATA[
+cp '$input' out
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="data" label="An input dataset" help=""/>
+    </inputs>
+    <outputs>
+        <data name="output" auto_format="true" label="Auto Output" from_work_dir="out" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="simple_line.txt" ftype="txt" />
+            <output name="output" file="simple_line.txt" ftype="txt" />
+        </test>
+    </tests>
+</tool>

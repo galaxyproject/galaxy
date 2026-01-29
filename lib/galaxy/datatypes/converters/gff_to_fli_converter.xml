@@ -1,0 +1,19 @@
+<tool id="CONVERTER_gff_to_fli_0" name="Convert GFF to Feature Location Index" version="1.0.0" profile="16.04">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <command>python '$__tool_directory__/interval_to_fli.py' -F $input1.extension '$input1' '$output1'</command>
+    <inputs>
+        <param format="gff" name="input1" type="data" label="Choose GFF file"/>
+    </inputs>
+    <outputs>
+        <data format="fli" name="output1"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
+            <output name="output1" ftype="fli" value="fli_filter_by_feature_count_out2.fli"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

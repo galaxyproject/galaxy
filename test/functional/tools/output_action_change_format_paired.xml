@@ -1,0 +1,32 @@
+<tool id="output_action_change_format_paired" name="output_action_change_paired" version="1.0.0">
+    <command>
+        printf "1\t2\n" > out1;
+    </command>
+    <inputs>
+        <param type="data_collection" name="input" format="data" collection_type="paired" />
+    </inputs>
+    <outputs>
+        <data name="out1" from_work_dir="out1">
+            <actions>
+                <action type="format">
+                    <option type="from_param" name="input" param_attribute="forward.ext" />
+                </action>
+            </actions>
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input">
+                <collection type="paired">
+                    <element name="forward" value="simple_line.txt" ftype="txt" />
+                    <element name="reverse" value="simple_line.txt" ftype="txt" />
+                </collection>
+            </param>
+            <output name="out1" ftype="txt">
+                <assert_contents>
+                    <has_line line="1&#009;2" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

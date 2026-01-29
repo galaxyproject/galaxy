@@ -1,0 +1,16 @@
+<tool id="cat_collection" name="Concatenate dataset collection (for test workflows)" version="1.0.0">
+    <description>tail-to-head</description>
+    <command>
+cat #for $q in $input1# '$q' #end for# >'$out_file1'
+    </command>
+    <inputs>
+        <param name="input1" type="data_collection" collection_type="list,paired" label="Concatenate Dataset" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="input" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

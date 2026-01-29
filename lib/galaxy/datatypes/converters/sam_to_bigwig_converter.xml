@@ -1,0 +1,31 @@
+<tool id="CONVERTER_sam_to_bigwig_0" name="Convert SAM to BigWig" version="1.0.3" hidden="true">
+    <requirements>
+        <requirement type="package" version="445">ucsc-bedgraphtobigwig</requirement>
+        <requirement type="package" version="1.17">samtools</requirement>
+        <requirement type="package" version="2.31.0">bedtools</requirement>
+    </requirements>
+    <command detect_errors="aggressive"><![CDATA[
+samtools view -bh '$input' | bedtools genomecov -bg -split -ibam stdin
+
+## Streaming the bedgraph file to wigToBigWig is fast but very memory intensive; hence, this
+## should only be used on systems with large RAM.
+## | wigToBigWig stdin '$chromInfo' '$output'
+
+## This can be used anywhere.
+> temp.bg && bedGraphToBigWig temp.bg '$chromInfo' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="sam" label="Choose BAM file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="bigwig"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="sam" value="bfast_out1.sam" dbkey="hg17"/>
+            <output name="output" ftype="bigwig" value="bfast_out1.bigwig"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

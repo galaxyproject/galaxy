@@ -1,0 +1,15 @@
+<tool id="exit_code_from_file" name="exit_code_from_file" version="1.0.0">
+    <command detect_errors="exit_code">
+sh -c "exit \$(cat '$input')"
+    </command>
+    <inputs>
+        <param name="input" type="data" label="Exit code file" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

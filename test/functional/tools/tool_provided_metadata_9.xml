@@ -1,0 +1,35 @@
+<tool id="tool_provided_metadata_9" name="tool_provided_metadata_9" profile="17.09" version="1.0.0">
+    <!-- Demonstrate overriding the location of the tool provided metadata file to
+         be something other than galaxy.json. -->
+    <command><![CDATA[
+echo 'This is a line of text.' > '$out1' &&
+cp '$c1' not_galaxy.json
+    ]]></command>
+    <configfiles>
+        <configfile name="c1">{"out1": {
+  "name": "my dynamic name",
+  "ext": "txt",
+  "info": "my dynamic info",
+  "dbkey": "cust1",
+  "created_from_basename": "my name.txt"
+}}
+</configfile>
+    </configfiles>
+    <inputs>
+    </inputs>
+    <outputs provided_metadata_file="not_galaxy.json">
+        <data name="out1" format="auto" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="out1" file="simple_line.txt" ftype="txt">
+                <metadata name="name" value="my dynamic name" />
+                <metadata name="info" value="my dynamic info" />
+                <metadata name="dbkey" value="cust1" />
+                <metadata name="created_from_basename" value="my name.txt" />
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

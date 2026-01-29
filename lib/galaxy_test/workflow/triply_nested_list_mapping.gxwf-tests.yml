@@ -1,0 +1,32 @@
+- doc: | 
+    Test that a basic list:list:list parameter is consumed directly by the tool
+    and not mapped over.
+  job:
+    input:
+      type: collection
+      collection_type: list:list:list
+  outputs:
+    out:
+      asserts:
+      - that: has_text
+        text: "identifier is test_level_2"
+      - that: has_text
+        text: "collection_type<list:list>"
+
+- doc: | 
+    Test that mapping over a list:list:list input parameter.
+  job:
+    input:
+      type: collection
+      collection_type: list:list:list:list
+  outputs:
+    out:
+      class: Collection
+      collection_type: list
+      elements:
+        test_level_3:
+          asserts:
+          - that: has_text
+            text: "identifier is test_level_2"
+          - that: has_text
+            text: "collection_type<list:list>"

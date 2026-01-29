@@ -1,0 +1,64 @@
+<tool id="master2pgSnp" name="MasterVar to pgSnp" version="1.0.0">
+    <description>Convert from MasterVar to pgSnp format</description>
+    <command>
+perl '$__tool_directory__/master2pg.pl' $indel '$input1' > '$out_file1'
+    </command>
+    <inputs>
+        <param name="input1" type="data" format="tabular" label="Complete Genomics MasterVar dataset" />
+        <param name="indel" type="select" label="Convert indels">
+            <option value="" selected="true">no</option>
+            <option value="indel">yes</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="interval" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="masterVarTest.txt" ftype="tabular" />
+            <param name="indel" value="" />
+            <output name="out_file1" file="masterVar_output.txt" />
+        </test>
+    </tests>
+    <help>
+**Dataset formats**
+
+The input dataset is in the MasterVar_ format provided by the Complete Genomics 
+analysis process (Galaxy considers this to be tabular_, but it must have the 
+columns specified for MasterVar).
+The output dataset is in pgSnp_ format.  (`Dataset missing?`_)
+
+.. _Dataset missing?: ./static/formatHelp.html
+.. _pgSnp: ./static/formatHelp.html#pgSnp
+.. _MasterVar: ./static/formatHelp.html#mastervar
+.. _tabular: ./static/formatHelp.html#tab
+
+-----
+
+**What it does**
+
+This converts a Complete Genomics MasterVar file to pgSnp format, 
+so it can be viewed in browsers or used with the phenotype association and 
+interval operations tools.
+Positions homozygous for the reference are skipped.
+
+-----
+
+**Examples**
+
+- input MasterVar file::
+
+   934     2       chr1    41980   41981   hom     snp     A       G       G       76      97                      dbsnp.86:rs806721       425     1       1       1       2       -170                            ERVL-E-int:ERVL:47.4    2       1.17    N
+   935     2       chr1    41981   42198   hom     ref     =       =       =                                                                                       -170                                            1.17    N
+   1102    2       chr1    53205   53206   het-ref snp     G       C       G       93      127                     dbsnp.100:rs2854676     477     7       30      0       37      -127                                    2       1.17    N
+   etc.
+
+- output::
+
+   chr1    41980   41981   G       1       1       76
+   chr1    51672   51673   C       1       1       53
+   chr1    52237   52238   G       1       7       63
+   chr1    53205   53206   C/G     2       7,30    93,127
+   etc.
+    </help>
+</tool>

@@ -1,0 +1,43 @@
+<tool id="section" name="section" version="1.0.0">
+    <command><![CDATA[
+echo $int.inttest > '$out_file1' &&
+echo $float.floattest >> '$out_file1'
+    ]]></command>
+    <inputs>
+        <section name="int" title="Integer Section" expanded="true">
+            <param name="inttest" value="1" type="integer" />
+        </section>
+        <section name="float" title="Float Section" expanded="false">
+            <param name="floattest" value="1.0" type="float" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="inttest" value="12456" />
+            <param name="floattest" value="6.789" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="12456" />
+                    <has_line line="6.789" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <section name="int">
+                <param name="inttest" value="12456" />
+            </section>
+            <section name="float">
+                <param name="floattest" value="6.789" />
+            </section>
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="12456" />
+                    <has_line line="6.789" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

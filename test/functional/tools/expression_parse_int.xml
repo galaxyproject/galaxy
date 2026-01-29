@@ -1,0 +1,18 @@
+<tool name="expression_parse_int" id="expression_parse_int"
+	  version="0.1.0" tool_type="expression">
+    <description>Parse Int</description>
+    <expression type="ecma5.1">
+        {return {'output': parseInt($job.input1)};}
+    </expression>
+    <inputs>
+        <param type="text" label="Text to parse." name="input1" />
+    </inputs>
+    <outputs>
+        <output type="integer" name="out1" from="output" />
+    </outputs>
+    <tests>
+    </tests>
+    <help><![CDATA[
+Parse an integer from text.
+    ]]></help>
+</tool>

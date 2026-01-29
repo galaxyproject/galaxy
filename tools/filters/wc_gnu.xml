@@ -1,0 +1,81 @@
+<tool id="wc_gnu" name="Line/Word/Character count" version="1.0.0">
+    <description>of a dataset</description>
+    <command>
+        #set $word_to_arg = { 'characters':'m', 'words':'w', 'lines':'l' }
+        #set $arg_order = [ 'lines', 'words', 'characters' ]
+        #if not isinstance( $options.value, list ):
+            #set global $args = [ $options.value ]
+        #else:
+            #set global $args = $options.value
+        #end if
+        #if $include_header.value
+            echo "#${ "\t".join( [ i for i in $arg_order if i in $args ] ) }" &gt; $out_file1
+            &amp;&amp;
+        #end if
+
+        ##Handle compressed (fastq) input
+        #if $input1.is_of_type("fastq.gz"):
+            zcat '$input1' |
+        #else if $input1.is_of_type("fastq.bz2"):
+            bzcat '$input1' |
+        #else:
+            cat '$input1' |
+        #end if
+        wc
+        #for $option in $args:
+           -${ word_to_arg[ str(option) ] }
+        #end for
+        | awk '{ print ${ '"\\t"'.join( [ "$%i" % ( i+1 ) for i in range( len( $args ) ) ] ) } }'
+        &gt;&gt; $out_file1
+    </command>
+    <inputs>
+        <param format="txt" name="input1" type="data" label="Text file"/>
+        <param name="options" type="select" multiple="True" display="checkboxes" label="Desired values">
+            <!-- <option value="bytes" selected="True">Byte count</option> -->
+            <option value="lines" selected="True">Line count</option>
+            <option value="words" selected="True">Word count</option>
+            <option value="characters" selected="True">Character count</option>
+            <validator type="no_options" message="You must pick at least one attribute to count." />
+        </param>
+        <param name="include_header" type="boolean" label="Include Output header" checked="True"/>
+    </inputs>
+    <outputs>
+        <data format="tabular" name="out_file1"/>
+    </outputs>
+    <tests>
+        <test>
+          <param name="input1" value="1.bed"/>
+          <param name="options" value="lines,words,characters"/>
+          <param name="include_header" value="True"/>
+          <output name="out_file1" file="wc_gnu_out_1.tabular"/>
+        </test>
+        <test>
+          <param name="input1" value="1.bed"/>
+          <param name="options" value="lines,words,characters"/>
+          <param name="include_header" value="False"/>
+          <output name="out_file1" file="wc_gnu_out_2.tabular"/>
+        </test>
+    </tests>
+    <help>
+
+**What it does**
+
+This tool outputs counts of specified attributes (lines, words, characters) of a dataset. 
+
+-----
+
+**Example Output**
+
+::
+
+  #lines  words  characters
+  7499	  41376	 624971
+
+------
+
+**Citation**
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+    </help>
+</tool>

@@ -1,0 +1,5 @@
+include *.rst *.txt LICENSE */py.typed
+recursive-include lib/galaxy/web/framework/templates *.mako
+recursive-include lib/galaxy/web/framework/static *
+recursive-include lib/galaxy/tools/bundled *
+recursive-include lib/galaxy/web/proxy/js *

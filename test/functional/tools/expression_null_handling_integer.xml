@@ -1,0 +1,22 @@
+<tool name="expression_null_handling_integer" id="expression_null_handling_integer"
+	  version="0.1.0" tool_type="expression">
+    <expression type="ecma5.1">
+        {return {'int_out': $job.int_input};}
+    </expression>
+    <inputs>
+        <param type="integer" label="Integer input." name="int_input" optional="true" />
+    </inputs>
+    <outputs>
+        <output type="integer" name="int_out" from="int_out" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="int_input" value_json="7" />
+            <output name="int_out" value_json="7" />
+        </test>
+        <test>
+            <param name="int_input" value_json="null" />
+            <output name="int_out" value_json="null" />
+        </test>
+    </tests>
+</tool>

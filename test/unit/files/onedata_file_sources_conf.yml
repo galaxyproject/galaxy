@@ -1,0 +1,5 @@
+- type: onedata
+  id: test1
+  doc: Test access to a OneData host
+  provider_host: ${user.preferences['onedata|provider_host']}
+  access_token: ${user.preferences['onedata|access_token']}

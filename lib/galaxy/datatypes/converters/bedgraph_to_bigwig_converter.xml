@@ -1,0 +1,21 @@
+<tool id="CONVERTER_bedgraph_to_bigwig" name="Convert BedGraph to BigWig" version="1.0.1" hidden="true">
+    <!-- Used internally to generate track indexes -->
+    <requirements>
+        <requirement type="package" version="357">ucsc-wigtobigwig</requirement>
+    </requirements>
+    <command>grep -v "^track" '$input' | wigToBigWig -clip stdin '$chromInfo' '$output'</command>
+    <inputs>
+        <param format="bedgraph" name="input" type="data" label="Choose wiggle"/>
+    </inputs>
+    <outputs>
+        <data format="bigwig" name="output"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="bedgraph" value="1.bedgraph" dbkey="hg17"/>
+            <output name="output" ftype="bigwig" value="1.bedgrpah_to_bigwig.bigwig"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

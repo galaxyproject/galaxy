@@ -1,0 +1,22 @@
+<tool id="__IMPORT_HISTORY__" name="Import History" version="0.1" tool_type="import_history" profile="16.04">
+  <type class="ImportHistoryTool" module="galaxy.tools"/>
+  <action module="galaxy.tools.actions.history_imp_exp" class="ImportHistoryToolAction"/>
+  <!-- eliminated requirements again, now requires galaxy.files to resolve URIs -->
+  <command>#from base64 import b64encode#
+python '$__tool_directory__/unpack_tar_gz_archive.py'
+'${ b64encode(str($__ARCHIVE_SOURCE__).encode('utf-8')).decode('utf-8')}'
+'${ b64encode(str($__DEST_DIR__).encode('utf-8')).decode('utf-8')}'
+--$__ARCHIVE_TYPE__ --file-sources '$file_sources' --encoded</command>
+  <inputs>
+    <param name="__ARCHIVE_SOURCE__" type="text">
+      <sanitizer sanitize="False"/>
+    </param>
+    <param name="__ARCHIVE_TYPE__" type="text"/>
+    <param name="__DEST_DIR__" type="text">
+      <sanitizer sanitize="False"/>
+    </param>
+  </inputs>
+  <configfiles>
+    <file_sources name="file_sources" />
+  </configfiles>
+</tool>

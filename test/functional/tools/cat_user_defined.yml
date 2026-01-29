@@ -1,0 +1,21 @@
+class: GalaxyUserTool
+id: cat_user_defined
+version: "0.1"
+name: cat_user_defined
+description: concatenates a file
+container: busybox
+shell_command: cat '$(inputs.input1.path)' > output.txt
+inputs:
+  - name: input1
+    type: data
+    format: txt
+outputs:
+  - name: output1
+    type: data
+    format: txt
+    from_work_dir: output.txt
+tests:
+  - inputs:
+      input1: simple_line.txt
+    outputs:
+      output1: simple_line.txt

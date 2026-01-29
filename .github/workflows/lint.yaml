@@ -1,0 +1,60 @@
+name: Python linting
+on:
+  push:
+    paths:
+      - '**.py'
+      - '.github/workflows/lint.yaml'
+      - lib/galaxy/dependencies/**
+      - mypy.ini
+  pull_request:
+    paths:
+      - '**.py'
+      - '.github/workflows/lint.yaml'
+      - lib/galaxy/dependencies/**
+      - mypy.ini
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.13']
+    env:
+      LINT_PATH: 'lib/galaxy/dependencies/pinned-lint-requirements.txt'
+      TYPE_PATH: 'lib/galaxy/dependencies/pinned-typecheck-requirements.txt'
+      CORE_PATH: 'lib/galaxy/dependencies/pinned-requirements.txt'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: |
+            ${{ env.LINT_PATH }}
+            ${{ env.TYPE_PATH }}
+            ${{ env.CORE_PATH }}
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
+      - name: Cache tox env
+        uses: actions/cache@v4
+        with:
+          path: .tox
+          key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles(env.LINT_PATH, env.TYPE_PATH, env.CORE_PATH) }}-lint
+      - name: Install tox
+        run: pip install tox
+      - name: Run linting
+        run: tox -e lint
+      - name: Run docstring linting
+        run: tox -e lint_docstring_include_list
+      - name: Run mypy checks
+        run: tox -e mypy
+      - name: Run format checks
+        run: tox -e format

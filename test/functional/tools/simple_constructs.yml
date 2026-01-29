@@ -1,0 +1,140 @@
+id: simple_constructs_y
+name: simple_constructs_y
+class: GalaxyTool
+version: 1.0
+description: Simple constructs
+edam_operations:
+  - operation_0004
+  - operation_0336
+edam_topics:
+  - topic_0003
+  - topic_3372
+command:
+  >
+    echo "$booltest"  >> $out_file1;
+    echo "$inttest"   >> $out_file1;
+    echo "$floattest" >> $out_file1;
+    cat "$simp_file"   >> $out_file1;
+    echo "$drop_select"  >> $out_file1;
+    echo "$radio_select" >> $out_file1;
+    echo "$check_select" >> $out_file1;
+    cat "$more_files[0].nestinput"   >> $out_file1;
+    echo "$p1.p1val"  >> $out_file1;
+inputs:
+- name: booltest
+  type: boolean
+  truevalue: booltrue
+  falsevalue: boolfalse
+  checked: false
+- name: inttest
+  type: integer
+  value: 1
+- name: floattest
+  type: float
+  value: 1.0
+- name: simp_file
+  type: data
+- name: drop_select
+  type: select
+  options:
+    - value: a_drop
+      selected: true
+      label: A Drop
+    - value: b_drop
+      label: B Drop
+    - value: c_drop
+      label: C Drop
+- name: radio_select
+  type: select
+  display: radio
+  options:
+    - value: a_radio
+      label: A Radio
+      selected: true
+    - value: b_radio
+      label: B Radio
+    - value: c_radio
+      label: C Radio
+- name: check_select
+  display: checkboxes
+  type: select
+  multiple: true
+  options:
+    - value: a_check
+      selected: true
+      label: A Check
+    - value: b_check
+      label: B Check
+    - value: c_check
+      label: C Check
+- name: more_files
+  label: "More Files"
+  type: repeat
+  blocks:
+    - type: data
+      name: nestinput
+- name: p1
+  type: conditional
+  test_parameter:
+    type: boolean
+    name: p1use
+  when:
+    true:
+      - name: p1val
+        type: text
+        value: p1used
+    false:
+      - name: p1val
+        type: text
+        value: p1notused
+
+outputs:
+  out_file1:
+    format: txt
+tests:
+- inputs:
+    booltest: true
+    inttest: 12456
+    floattest: 6.789
+    simp_file: simple_line.txt
+    nestinput: simple_line_alternative.txt
+    p1use: true
+  outputs:
+    out_file1:
+      asserts:
+        - that: has_line
+          line: booltrue
+        - that: has_line
+          line: '12456'
+        - that: has_line
+          line: '6.789'
+        - that: has_line
+          line: "This is a line of text."
+        - that: has_line
+          line: "This is a different line of text."
+        - that: has_line
+          line: p1used
+        - that: has_line
+          line: a_drop
+        - that: has_line
+          line: a_check
+        - that: has_line
+          line: a_radio
+- inputs:
+    simp_file: simple_line.txt
+    nestinput: simple_line_alternative.txt
+    check_select: "a_check,b_check"
+  outputs:
+    out_file1:
+      asserts:
+        has_line:
+          line: "a_check,b_check"
+- inputs:
+    simp_file: simple_line.txt
+    nestinput: simple_line_alternative.txt
+    p1use: false
+  outputs:
+    out_file1:
+      asserts:
+        has_line:
+          line: p1notused

@@ -1,0 +1,44 @@
+# This is a sample file distributed with Galaxy that is used to define a
+# list of protein BLAST databases, using three columns tab separated:
+#
+# <unique_id>{tab}<database_caption>{tab}<base_name_path>
+#
+# The captions typically contain spaces and might end with the build date.
+# It is important that the actual database name does not have a space in
+# it, and that there are only two tabs on each line.
+#
+# You can download the NCBI provided protein databases like NR from here:
+# ftp://ftp.ncbi.nlm.nih.gov/blast/db/
+#
+# For simplicity, many Galaxy servers are configured to offer just a live
+# version of each NCBI BLAST database (updated with the NCBI provided
+# Perl scripts or similar). In this case, we recommend using the case
+# sensistive base-name of the NCBI BLAST databases as the unique id.
+# Consistent naming is important for sharing workflows between Galaxy
+# servers.
+#
+# For example, consider the NCBI "non-redundant" protein BLAST database
+# where you have downloaded and decompressed the files under /data/blastdb/
+# meaning at the command line BLAST+ would be run with something like
+# which would look at the files /data/blastdb/nr.p*:
+#
+# $ blastp -db /data/blastdb/nr -query ...
+#
+# In this case use nr (lower case to match the NCBI file naming) as the
+# unique id in the first column of blastdb_p.loc, giving an entry like
+# this:
+#
+# nr{tab}NCBI non-redundant (nr){tab}/data/blastdb/nr
+#
+# Alternatively, rather than a "live" mirror of the NCBI databases which
+# are updated automatically, for full reproducibility the Galaxy Team
+# recommend saving date-stamped copies of the databases. In this case
+# your blastdb_p.loc file should include an entry per line for each
+# version you have stored. For example:
+#
+# nr_05Jun2010{tab}NCBI NR (non redundant) 05 Jun 2010{tab}/data/blastdb/05Jun2010/nr
+# nr_15Aug2010{tab}NCBI NR (non redundant) 15 Aug 2010{tab}/data/blastdb/15Aug2010/nr
+# ...etc...
+#
+# See also blastdb.loc which is for any nucleotide BLAST database, and
+# blastdb_d.loc which is for any protein domains databases (like CDD).

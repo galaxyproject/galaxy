@@ -1,0 +1,13 @@
+<display id="igb_bam" version="0.0.0" name="display in IGB">
+    <link id="View" name="View">
+        <url>http://bioviz.org/galaxy.html?version=${bam_file.dbkey}&amp;feature_url_0=${bam_file.url}&amp;sym_name_0=${niceName}&amp;sym_method_0=${bam_file.url}&amp;query_url=${bam_file.url}&amp;server_url=galaxy</url>
+        <param type="data" name="bam_file_for_name" viewable="False"/>
+        <param type="template" name="niceName" viewable="False" strip="True">
+            #import re
+            #set nm=$bam_file_for_name.name
+            ${re.sub('\W',"_",nm)}
+        </param>
+        <param type="data" name="bai_file" url="${niceName}.bam.bai" metadata="bam_index" />
+        <param type="data" name="bam_file" url="${niceName}.bam" />
+    </link>
+</display>

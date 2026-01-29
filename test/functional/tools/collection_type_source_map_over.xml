@@ -1,0 +1,16 @@
+<tool id="collection_type_source_map_over" name="collection_type_source_map_over" version="0.1.0">
+  <command>
+    mkdir output;
+    #for $key in $input_collect.keys()#
+    cat "$input_collect[$key]" >> output/"$key";
+    #end for#
+  </command>
+  <inputs>
+    <param name="input_collect" type="data_collection" collection_type="list,paired" label="Input Collect" help="Input collection..." />
+  </inputs>
+  <outputs>
+    <collection name="list_output" type_source="input_collect" label="Duplicate List">
+      <discover_datasets pattern="__name__" directory="output" visible="true" />
+    </collection>
+  </outputs>
+</tool>

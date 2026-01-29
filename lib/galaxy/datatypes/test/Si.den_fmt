@@ -1,0 +1,13 @@
+ BEGIN header
+  
+           Real Lattice(A)               Lattice parameters(A)    Cell Angles
+     5.4754511     0.0000000     0.0000000     a =    5.475451  alpha =   90.000000
+     0.0000000     5.4754511    -0.0000000     b =    5.475451  beta  =   90.000000
+     0.0000000    -0.0000000     5.4754511     c =    5.475451  gamma =   90.000000
+  
+   1                            ! nspins
+   1     1     1                ! fine FFT grid along <a,b,c>
+ END header: data is "<a b c> charge" in units of electrons/grid_point * number 
+ of grid_points
+  
+     1     1     1          220.238914

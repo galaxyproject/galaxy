@@ -1,0 +1,185 @@
+preferences:
+    # the key you can refer to
+    apollo_url_01:
+        # description that is displayed to the user
+        description: The URL to your personal Apollo instance
+        inputs:
+            # the content can be accessed by apollo_url_01.apollo_url
+            - name: apollo_url
+              label: Apollo URL
+              # type of input field that will be displayed to the user
+              # can be string or password
+              type: text
+              # by defaul all inputs are required
+              required: True
+            - name: apollo_text
+              label: Apollo Text
+              # type of input field that will be displayed to the user
+              # can be string or password
+              type: text
+              # by defaul all inputs are required
+              required: True
+
+    openstack_account:
+        description: Your own Open Stack account
+        inputs:
+            - name: username
+              label: Username
+              type: text
+              required: False
+            - name: url
+              label: Open Stack URL
+              type: text
+              required: True
+
+    webhook_overlay_search:
+        description: Configuration option for your search results
+        inputs:
+            - name: max_search_results
+              label: Maximum number of search results
+              type: text
+              required: False
+
+    localization:
+        description: Localization
+        inputs:
+            - name: locale
+              label: Prefered language
+              type: select
+              required: False
+              options:
+                  - [Navigator default, auto]
+                  - [中文, zh]
+                  - [English, en]
+                  - [Español, es]
+                  - [Français, fr]
+                  - [日本語, ja]
+
+    # Used in file_sources_conf.yml
+    dropbox:
+        description: Your Dropbox account
+        inputs:
+            - name: access_token
+              label: Dropbox access token
+              type: password
+              required: False
+
+    # Used in file_sources_conf.yml
+    owncloud:
+        description: Your External OwnCloud account
+        inputs:
+            - name: url
+              label: Server Domain (e.g. https://myowncloud.org)
+              type: text
+              required: False
+            - name: root
+              label: Server Path (should end with /remote.php/webdav, e.g. /a/sub/path/remote.php/webdav)
+              type: text
+              required: False
+            - name: username
+              label: Username
+              type: text
+              required: False
+            - name: password
+              label: Password
+              type:  password
+              # for storing the password in a vault (instead of plaintext in the DB)
+              # store: vault
+              required: False
+
+    invenio:
+        description: Your Invenio RDM Integration Settings
+        inputs:
+            - name: token
+              label: Personal Token used to create draft records and to upload files
+              type: secret
+              store: vault # Requires setting up vault_config_file in your galaxy.yml
+              required: False
+            - name: public_name
+              label: Creator name to associate with new records (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used. You can always change this by editing your record directly.
+              type: text
+              required: False
+
+    zenodo:
+        description: Your Zenodo Integration Settings
+        inputs:
+            - name: token
+              label: Personal Access Token used to create draft records and to upload files. You can manage your tokens at https://zenodo.org/account/settings/applications/
+              type: secret
+              store: vault # Requires setting up vault_config_file in your galaxy.yml
+              required: False
+            - name: public_name
+              label: Creator name to associate with new records (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used. You can always change this by editing your record directly.
+              type: text
+              required: False
+
+    zenodo_sandbox:
+        description: Your Zenodo Sandbox Integration Settings (TESTING ONLY)
+        inputs:
+            - name: token
+              label: Personal Access Token used to create draft records and to upload files. You can manage your tokens at https://sandbox.zenodo.org/account/settings/applications/
+              type: secret
+              store: vault # Requires setting up vault_config_file in your galaxy.yml
+              required: False
+            - name: public_name
+              label: Creator name to associate with new records (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used. You can always change this by editing your record directly.
+              type: text
+              required: False
+    
+    dataverse:
+        description: Your Dataverse Integration Settings
+        inputs:
+            - name: token
+              label: API Token used to create draft records and to upload files. You can manage your tokens at https://YOUR_INSTANCE/dataverseuser.xhtml?selectTab=apiTokenTab (Replace YOUR_INSTANCE with your Dataverse instance URL)
+              type: secret
+              # store: vault # Requires setting up vault_config_file in your galaxy.yml
+              required: False
+            - name: public_name
+              label: Creator name to associate with new datasets (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used. You can always change this by editing your dataset directly.
+              type: text
+              required: False
+
+    dataverse_sandbox:
+        description: Your Dataverse Integration Settings (TESTING ONLY)
+        inputs:
+            - name: token
+              label: API Token used to create draft records and to upload files. You can manage your tokens at https://demo.dataverse.org/dataverseuser.xhtml?selectTab=apiTokenTab (Replace demo.dataverse.org with your Dataverse instance URL)
+              type: secret
+              # store: vault # Requires setting up vault_config_file in your galaxy.yml
+              required: False
+            - name: public_name
+              label: Creator name to associate with new datasets (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used. You can always change this by editing your dataset directly.
+              type: text
+              required: False
+
+    # Used in file_sources_conf.yml
+    onedata:
+        description: Your Onedata account
+        inputs:
+            - name: onezone_domain
+              label: Domain of the Onezone service (e.g. datahub.egi.eu). The minimal supported Onezone version is 21.02.4.
+              type: text
+              required: False
+            - name: access_token
+              label: Your access token, suitable for REST API access in a Oneprovider service
+              type: password
+              required: False
+            - name: disable_tls_certificate_validation
+              label: Allow connection to Onedata servers that do not present trusted SSL certificates. SHOULD NOT be used unless you really know what you are doing.
+              type: boolean
+              required: False
+              value: False
+
+    # Used in file_sources_conf.yml
+    elabftw:
+        description: Your eLabFTW Integration Settings
+        inputs:
+            - name: api_key
+              label: API key
+              type: secret
+              store: vault  # Requires setting up vault_config_file in your galaxy.yml
+              required: True
+            - name: endpoint
+              label: URL of the eLabFTW instance you want to access
+              type: text
+              required: True

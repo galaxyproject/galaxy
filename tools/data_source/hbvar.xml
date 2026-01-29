@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<tool name="HbVar" id="hbvar" tool_type="data_source" version="2.0.0" profile="20.09">
+    <description>Human Hemoglobin Variants and Thalassemias</description>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
+    <command><![CDATA[
+python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
+    ]]></command>
+    <inputs action="http://globin.bx.psu.edu/cgi-bin/hbvar/query_vars3" check_values="false" method="get" target="_top">
+        <display>go to HbVar database $GALAXY_URL $tool_id</display>
+    </inputs>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="auto" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>
+

@@ -1,0 +1,31 @@
+<tool id="CONVERTER_fasta_to_bowtie_color_index" name="Convert FASTA to Bowtie color space Index" version="1.2.3">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <requirements>
+        <!-- Bowtie >= 1.3.0 removed support for colorspace -->
+        <requirement type="package" version="1.2.3">bowtie</requirement>
+    </requirements>
+    <command>
+<![CDATA[
+        mkdir '${output.files_path}'
+        && bowtie-build --quiet
+        --color
+        -f
+        '$input' '${output.files_path}/${output.metadata.base_name}'
+]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="fasta" label="Fasta file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="bowtie_color_index"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="fasta" value="chr_m.fasta"/>
+            <output name="output" ftype="bowtie_color_index" value="chr_m.bowtie_color_index"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

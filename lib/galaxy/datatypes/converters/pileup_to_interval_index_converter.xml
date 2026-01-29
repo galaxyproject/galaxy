@@ -1,0 +1,24 @@
+<tool id="CONVERTER_pileup_to_interval_index_0" name="Convert Pileup to Interval Index" version="1.0.1" hidden="true" profile="16.04">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <requirements>
+        <requirement type="package" version="0.8.8">bx-python</requirement>
+    </requirements>
+    <command>
+        python '$__tool_directory__/pileup_to_interval_index_converter.py'
+        '$input' '$output'
+    </command>
+    <inputs>
+        <param format="pileup" name="input" type="data" label="Choose Pileup file"/>
+    </inputs>
+    <outputs>
+        <data format="interval_index" name="output"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="pileup" value="1.pileup"/>
+            <output name="output" ftype="interval_index" value="1.interval_index"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

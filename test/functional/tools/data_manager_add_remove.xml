@@ -1,0 +1,18 @@
+<tool id="data_manager_add_remove_test" name="Test Data Manager add and remove" tool_type="manage_data" version="0.0.1">
+    <configfiles>
+        <configfile name="static_test_data">{"data_tables": {"testbeta": { "add": [{"value": "newvalue", "path": "newvalue.txt"}, {"value": "newvalue2", "path": "newvalue2.txt"}], "remove": [{"value": "newvalue", "path": "newvalue.txt"}]}}}</configfile>
+    </configfiles>
+    <command detect_errors="exit_code">
+        mkdir $out_file.files_path ;
+        echo "A new value" > '$out_file.files_path/newvalue.txt';
+        cp '$static_test_data' '$out_file';
+        exit $exit_code
+    </command>
+    <inputs>
+        <param type="text" name="ignored_value" value="" label="Ignored" />
+        <param type="integer" name="exit_code" value="0" label="Exit Code" />
+    </inputs>
+    <outputs>
+        <data name="out_file" format="data_manager_json"/>
+    </outputs>
+</tool>

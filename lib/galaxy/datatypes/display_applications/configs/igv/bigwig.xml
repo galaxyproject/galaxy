@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<display id="igv_bigwig" version="1.0.0" name="display with IGV">
+    
+    <!-- Load links from file: one line to one link -->
+    <dynamic_links site_type="igv" skip_startswith="#" id="0" name="1">
+        
+        <!-- Define parameters by column from file, allow splitting on builds -->
+        <dynamic_param name="site_id" value="0"/>
+        <dynamic_param name="site_name" value="1"/>
+        <dynamic_param name="site_link" value="2"/>
+        <dynamic_param name="site_dbkeys" value="3" split="True" separator=","/>
+        <dynamic_param name="site_organisms" value="4" split="True" separator=","/>
+        
+        <!-- Filter out some of the links based upon matching site_dbkeys to dataset dbkey -->
+<!--        <filter>${dataset.dbkey in $site_dbkeys}</filter> -->
+        
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>${redirect_url}</url>
+        
+        <param type="data" name="bigwig_file" url="galaxy_${DATASET_HASH}.bw" format="bigwig"/>
+
+        <param type="template" name="jnlp" url="galaxy_${DATASET_HASH}.jnlp" viewable="True" mimetype="application/x-java-jnlp-file">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;jnlp
+  spec="1.0+"
+  codebase="${site_link}"&gt;
+  &lt;information&gt;
+    &lt;title&gt;IGV 1.5&lt;/title&gt;
+    &lt;vendor&gt;The Broad Institute&lt;/vendor&gt;
+    &lt;homepage href="http://www.broadinstitute.org/igv"/&gt;
+    &lt;description&gt;IGV Software&lt;/description&gt;
+    &lt;description kind="short"&gt;IGV&lt;/description&gt;
+  &lt;/information&gt;
+  &lt;security&gt;
+      &lt;all-permissions/&gt;
+  &lt;/security&gt;
+  &lt;resources&gt;
+  
+&lt;j2se version="1.5+" initial-heap-size="256m" max-heap-size="1100m"/&gt;    
+	&lt;jar href="igv.jar" download="eager" main="true"/&gt;
+    &lt;jar href="batik-codec.jar" download="eager"/&gt; 
+    &lt;property name="apple.laf.useScreenMenuBar" value="true"/&gt;
+    &lt;property name="com.apple.mrj.application.growbox.intrudes" value="false"/&gt;
+    &lt;property name="com.apple.mrj.application.live-resize" value="true"/&gt;
+    &lt;property name="com.apple.macos.smallTabs" value="true"/&gt;
+  &lt;/resources&gt;
+	
+    &lt;resources os="Mac" arch="i386"&gt;
+        &lt;property name="apple.awt.graphics.UseQuartz" value="false"/&gt;
+        &lt;nativelib href="hdfnative-macintel.jar"/&gt; 
+    &lt;/resources&gt;
+
+    &lt;resources os="Mac" arch="ppc"&gt;
+        &lt;property name="apple.awt.graphics.UseQuartz" value="false"/&gt;
+        &lt;nativelib href="hdfnative-macppc.jar"/&gt; 
+    &lt;/resources&gt;
+    
+    &lt;resources os="Mac" arch="PowerPC"&gt;
+        &lt;property name="apple.awt.graphics.UseQuartz" value="false"/&gt;
+        &lt;nativelib href="hdfnative-macppc.jar"/&gt; 
+    &lt;/resources&gt;
+
+    &lt;resources os="Windows"&gt;
+        &lt;property name="sun.java2d.noddraw" value="true"/&gt;
+        &lt;nativelib href="hdfnative-win.jar"/&gt; 
+    &lt;/resources&gt;
+
+    &lt;resources os="Linux"&gt;
+        &lt;nativelib href="hdfnative-linux64.jar"/&gt; 
+    &lt;/resources&gt;
+
+  &lt;application-desc main-class="org.broad.igv.ui.IGVMainFrame"&gt;
+     &lt;argument&gt;${bigwig_file.url}&lt;/argument&gt;
+  &lt;/application-desc&gt;
+&lt;/jnlp&gt;
+		</param>
+        <param type="template" name="redirect_url" strip="True">
+            #if $site_id.startswith( 'local_' )
+                ${site_link}?file=${bigwig_file.qp}&amp;merge=true&amp;name=${qp( $bigwig_file.name )}
+            #elif $site_id.startswith( 'web_link_' ):
+                ${site_link}?sessionURL=${bigwig_file.qp}&amp;merge=true&amp;name=${qp( $bigwig_file.name )}
+            #else:
+                ${jnlp.url}
+            #end if
+        </param>
+    </dynamic_links>
+    
+    
+</display>
+<!-- Ann Black-Ziegelbein based on Dan Blankenberg -->

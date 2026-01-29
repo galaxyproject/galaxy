@@ -1,0 +1,13 @@
+<tool id="joiner2" name="Relational join 2" version="1.0.0">
+  <description>two datasets a specific column of which has the same value</description>
+  <command>sort -k $col1 $input1 > $input1.tmp; sort -k $col2 $input2 > $input2.tmp; join -1 $col1 -2 $col2 $input1.tmp $input2.tmp | tr " " "\t" > $out_file1; rm -rf $input1.tmp $input2.tmp </command>
+  <inputs>
+    <param name="input1" label="Combine dataset" format="tabular" type="data" />
+    <param name="col1" label="using column" type="data_column" data_ref="input1" />
+    <param name="input2" label="with dataset"	format="tabular" type="data"/>
+    <param name="col2" label="and column" type="data_column" data_ref="input2" />
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input1" />
+  </outputs>
+</tool>

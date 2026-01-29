@@ -1,0 +1,16 @@
+<tool id="__EXPORT_HISTORY_TO_URI__" name="Export History to URI" version="0.1" tool_type="export_history">
+  <type class="ExportHistoryTool" module="galaxy.tools"/>
+  <action module="galaxy.tools.actions.history_imp_exp" class="ExportHistoryToolAction"/>
+  <command>python '$export_history' --file-sources '$file_sources' $__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__ '$__EXPORT_TO_URI__'</command>
+  <inputs>
+    <param name="__HISTORY_TO_EXPORT__" type="hidden"/>
+    <param name="compress" type="boolean"/>
+    <param name="__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__" type="hidden"/>
+    <param name="directory_uri" type="directory_uri" />
+    <param name="file_name" type="text" optional="true" />
+  </inputs>
+  <configfiles>
+    <configfile name="export_history">from galaxy.tools.imp_exp.export_history import main; main()</configfile>
+    <file_sources name="file_sources" />
+  </configfiles>
+</tool>

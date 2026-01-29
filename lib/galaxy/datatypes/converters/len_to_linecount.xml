@@ -1,0 +1,26 @@
+<tool id="CONVERTER_len_to_linecount" name="Convert Len file to Linecount" version="1.0.1" profile="16.04">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <requirements>
+        <requirement type="package" version="5.0.1">gawk</requirement>
+    </requirements>
+    <command>
+<![CDATA[
+        wc -l '$input' | awk '{print $1}' > '$output'
+]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="len" label="Fasta file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="linecount"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="len" value="chr_m.len"/>
+            <output name="output" ftype="linecount" value="chr_m.linecount"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

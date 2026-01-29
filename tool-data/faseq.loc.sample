@@ -1,0 +1,26 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use genome fasta sequence files.  The faseq.loc file has this format 
+#(white space characters are TAB characters):
+#
+# <GenomeBuild> <dir>
+#
+# In the dir, each file is fasta format and contains only one sequence. So,
+#for example, if you had hg18 fasta sequences stored in /depot/data2/galaxy/faseq/hg18,
+#then your faseq.loc entry would look like this:
+#
+#hg18	/depot/data2/galaxy/faseq/hg18
+#
+#and your /depot/data2/galaxy/faseq/hg18 directory would contain all of 
+#your fasta sequence files (e.g.):
+#
+#-rw-r--r--  1 wychung galaxy 138082251 2008-04-16 11:57 chr10.fa
+#-rw-r--r--  1 wychung galaxy    115564 2008-04-16 11:57 chr10_random.fa
+#-rw-r--r--  1 wychung galaxy 137141451 2008-04-16 11:58 chr11.fa
+#...etc...
+#Your faseq.loc file should include an entry per line for each set of fasta 
+#sequence files you have stored.  For example:
+#
+#hg18	/depot/data2/galaxy/faseq/hg18
+#mm9	/depot/data2/galaxy/faseq/mm9
+#Arabidopsis	/depot/data2/galaxy/faseq/Arabidopsis
+#...etc...

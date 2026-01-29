@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+    </plugins>
+    <handlers{assign_with}{default}>
+        {handlers}
+    </handlers>
+    <destinations>
+        <destination id="local" runner="local"/>
+    </destinations>
+</job_conf>

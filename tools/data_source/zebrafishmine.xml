@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<tool name="ZebrafishMine" id="zebrafishmine" tool_type="data_source" version="1.0.0" profile="20.09">
+    <description>server</description>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
+    <command><![CDATA[
+python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
+    ]]></command>
+    <inputs action="http://zebrafishmine.org/begin.do" check_values="false" method="get">
+        <display>go to ZebrafishMine server $GALAXY_URL</display>
+    </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="data_type" remote_name="data_type" missing="auto" >
+            <value_translation>
+                <value galaxy_value="auto" remote_value="txt" /> <!-- make txt auto detect -->
+            </value_translation>
+        </request_param>
+    </request_param_translation>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <options sanitize="False"/>
+</tool>

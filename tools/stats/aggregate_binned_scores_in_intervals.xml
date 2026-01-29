@@ -1,0 +1,120 @@
+<tool id="aggregate_scores_in_intervals2" name="Aggregate datapoints" version="1.1.4" profile="16.04">
+  <description>Appends the average, min, max of datapoints per interval</description>
+  <requirements>
+    <requirement type="package" version="19.9">galaxy-util</requirement>
+    <requirement type="package" version="0.8.6">bx-python</requirement>
+  </requirements>
+  <command>
+python '$__tool_directory__/aggregate_scores_in_intervals.py'
+#if $score_source_type.score_source == "user"
+    '$score_source_type.input2' '$input1' '${input1.metadata.chromCol}' '${input1.metadata.startCol}' '${input1.metadata.endCol}' '$out_file1' --chrom_buffer=3
+#else
+    '$score_source_type.datasets' '$input1' '${input1.metadata.chromCol}' '${input1.metadata.startCol}' '${input1.metadata.endCol}' '$out_file1' -b
+#end if
+  </command>
+  <inputs>
+    <param format="interval" name="input1" type="data" label="Interval file"/>
+    <conditional name="score_source_type">
+      <param name="score_source" type="select" label="Score Source">
+        <option value="cached" selected="true">Locally Cached Scores</option>
+        <option value="user">Scores in Your History</option>
+      </param>
+      <when value="cached">
+        <param name="datasets" type="select" label="Available datasets" display="radio">
+          <options from_file="binned_scores.loc">
+            <column name="name" index="1"/>
+            <column name="value" index="2"/>
+            <column name="dbkey" index="0"/>
+            <filter type="data_meta" ref="input1" key="dbkey" column="0" />
+          </options>
+        </param>
+      </when>
+      <when value="user">
+        <param format="wig" name="input2" type="data" label="Score file">
+          <options>
+            <filter type="data_meta" ref="input1" key="dbkey" />
+          </options>
+        </param>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="interval" name="out_file1" metadata_source="input1"/>
+  </outputs>
+  <tests>
+      <!-- no clue where to find the 'datasets' files
+    <test>
+      <param name="input1" value="6.bed" dbkey="hg17" ftype="bed"/>
+      <param name="score_source" value="cached"/>
+      <param name="datasets" value="/galaxy/data/binned_scores/hg17/phastcons_encode_sep2005_tba" />
+      <output name="out_file1" file="aggregate_binned_scores_in_intervals.out" />
+    </test>
+    <test>
+      <param name="input1" value="9_hg18.bed" dbkey="hg18" ftype="bed"/>
+      <param name="score_source" value="cached"/>
+      <param name="datasets" value="/galaxy/data/binned_scores/hg18/phastCons17way/ba" />
+      <output name="out_file1" file="aggregate_binned_scores_in_intervals2.interval" />
+    </test>
+    -->
+    <test>
+      <param name="input1" value="6.bed" dbkey="hg17" ftype="bed"/>
+      <param name="score_source" value="user"/>
+      <param name="input2" value="aggregate_binned_scores_3.wig" dbkey="hg17" ftype="wig"/>
+      <output name="out_file1" file="aggregate_binned_scores_in_intervals3.out" lines_diff="2"/>
+    </test>
+  </tests>
+  <help>
+.. class:: warningmark
+
+This tool currently only has cached data for genome builds hg16, hg17 and hg18. However, you may use your own data point (wiggle) data, such as those available from UCSC. If you are trying to use your own data point file and it is not appearing as an option, make sure that the builds for your history items are the same.
+
+.. class:: warningmark
+
+This tool assumes that the input dataset is in interval format and contains at least a chrom column, a start column and an end column.  These 3 columns can be dispersed throughout any number of other data columns.
+
+-----
+
+.. class:: infomark
+
+**TIP:** Computing summary information may throw exceptions if the data type (e.g., string, integer) in every line of the columns is not appropriate for the computation (e.g., attempting numerical calculations on strings).  If an exception is thrown when computing summary information for a line, that line is skipped as invalid for the computation.  The number of invalid skipped lines is documented in the resulting history item as a "Data issue".
+
+-----
+
+**Syntax**
+
+This tool appends columns of summary information for each interval matched against a selected dataset.  For each interval, the average, minimum and maximum for the data falling within the interval is computed.
+
+- Several quantitative scores are provided for the ENCODE regions.
+
+  - Various Scores
+      - Regulatory Potential
+      - Neutral rate (Ancestral Repeats)
+      - GC fraction
+  - Conservation Scores
+      - PhastCons
+      - binCons
+      - GERP
+
+-----
+
+**Example**
+
+If your original data has the following format:
+
++------+-----+-----+---+------+
+|other1|chrom|start|end|other2|
++------+-----+-----+---+------+
+
+and you choose to aggregate phastCons scores, your output will look like this:
+
++------+-----+-----+---+------+---+---+---+
+|other1|chrom|start|end|other2|avg|min|max|
++------+-----+-----+---+------+---+---+---+
+
+where:
+
+* **avg** - average phastCons score for each region
+* **min** - minimum phastCons score for each region
+* **max** - maximum phastCons score for each region
+  </help>
+</tool>

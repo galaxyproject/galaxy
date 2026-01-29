@@ -1,0 +1,57 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use alignment data stored as axt files (lines starting with "align")
+#or nib files (lines starting with "seq").  You will need to index 
+#them and then create an alignseq.loc file similar to this one (store
+#it in this directory) that points to the directories in which those 
+#alignments are stored.  The "align" data referred to by the alignseq.loc 
+#file has this format (white space characters are TAB characters):
+#
+#align	<build1>	<build2>	<dir>
+#
+#So, for example, if you had hg18/bosTau2 alignment files stored in 
+#/depot/data2/galaxy/hg18/align/bosTau2, then the alignseq.loc entry 
+#would look like this:
+#
+#align	hg18	bosTau2	/depot/data2/galaxy/hg18/align/bosTau2
+#
+#and your /depot/data2/galaxy/hg18/align/bosTau2 directory would 
+#contain all of your alignment files (e.g.):
+#
+#-rw-rw-r--   1 nate   galaxy 151842783 2006-01-08 01:00 chr10.axt
+#-rw-rw-r--   1 nate   galaxy     79575 2006-01-08 01:00 chr10_random.axt
+#-rw-rw-r--   1 nate   galaxy 155015634 2006-01-08 01:01 chr11.axt
+#...etc...
+#
+#Your alignseq.loc file should include an entry per line for each alignment 
+#file you have stored.  For example:
+#
+#align anoGam1 dm1 /depot/data2/galaxy/anoGam1/align/dm1
+#align anoGam1 dm2 /depot/data2/galaxy/anoGam1/align/dm2
+#align canFam1 hg17 /depot/data2/galaxy/canFam1/align/hg17
+#...etc...
+#
+#The "seq" data referred to by the alignseq.loc file has this 
+#format (white space characters are TAB characters):
+#
+#seq	<build1>	<dir>
+#
+#So, for example, if you had anoGam1 sequence files stored in
+#/depot/data2/galaxy/anoGam1/seq, then the alignseq.loc entry
+#would look like this:
+#
+#seq anoGam1 /depot/data2/galaxy/anoGam1/seq
+#and your seq anoGam1 /depot/data2/galaxy/anoGam1/seq directory would
+#contain all of your sequence files (e.g.):
+#
+#-rw-rw-r-- 1 nate galaxy 24397551 2006-06-26 12:51 chr2L.nib
+#-rw-rw-r-- 1 nate galaxy 31362964 2006-06-26 12:51 chr2R.nib
+#-rw-rw-r-- 1 nate galaxy 20642013 2006-06-26 12:51 chr3L.nib
+#-rw-rw-r-- 1 nate galaxy 26636071 2006-06-26 12:51 chr3R.nib
+#
+#Your alignseq.loc file should include an entry per line for each sequence
+#file you have stored.  For example:
+#
+#seq anoGam1 /depot/data2/galaxy/anoGam1/seq
+#seq bosTau2 /depot/data2/galaxy/bosTau2/seq
+#seq bosTau3 /depot/data2/galaxy/bosTau3/seq
+#...etc...

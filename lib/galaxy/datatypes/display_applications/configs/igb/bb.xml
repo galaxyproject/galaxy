@@ -1,0 +1,12 @@
+<display id="igb_bb" version="1.0.0" name="display in IGB">
+    <link id="View" name="View">
+        <url>http://bioviz.org/galaxy.html?version=${bigbed_file.dbkey}&amp;loadresidues=false&amp;feature_url_0=${bigbed_file.url}&amp;sym_name_0=${niceName}&amp;sym_method_0=${bigbed_file.url}&amp;query_url=${bigbed_file.url}&amp;server_url=galaxy</url>
+        <param type="data" name="bigbed_file_for_name" viewable="False"/>
+        <param type="template" name="niceName" viewable="False" strip="True">
+            #import re
+            #set nm=$bigbed_file_for_name.name
+            ${re.sub('\W',"_",nm)}
+        </param>
+        <param type="data" name="bigbed_file" url="${niceName}.bigbed" />
+    </link>
+</display>

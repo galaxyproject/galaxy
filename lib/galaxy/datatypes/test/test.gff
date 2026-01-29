@@ -1,0 +1,35 @@
+##gff-version 2
+##Date: Thu Dec 8 19:46:27 2005
+##gff.pl $Rev: 601 $
+##Input file: /depot/data2/galaxy/encode-data/datasets/msa.AR.20051208.bed
+
+chr7	bed2gff	AR	26731313	26731437	.	+	.	score
+chr7	bed2gff	AR	26731491	26731536	.	+	.	score
+chr7	bed2gff	AR	26731541	26731649	.	+	.	score
+chr7	bed2gff	AR	26731659	26731841	.	+	.	score
+chr7	bed2gff	AR	26732568	26732610	.	+	.	score
+chr7	bed2gff	AR	26734557	26734637	.	+	.	score
+chr7	bed2gff	AR	26734831	26734910	.	+	.	score
+chr7	bed2gff	AR	26736373	26736633	.	+	.	score
+chr7	bed2gff	AR	26736746	26736901	.	+	.	score
+chr7	bed2gff	AR	26737921	26738051	.	+	.	score
+chr7	bed2gff	AR	26738401	26739153	.	+	.	score
+chr7	bed2gff	AR	26739453	26739513	.	+	.	score
+chr7	bed2gff	AR	26740335	26740414	.	+	.	score
+chr7	bed2gff	AR	26740893	26740993	.	+	.	score
+chr7	bed2gff	AR	26742668	26742751	.	+	.	score
+chr7	bed2gff	AR	26749586	26749722	.	+	.	score
+chr7	bed2gff	AR	26751358	26751384	.	+	.	score
+chr7	bed2gff	AR	26751386	26751954	.	+	.	score
+chr7	bed2gff	AR	26751956	26752038	.	+	.	score
+chr7	bed2gff	AR	26752804	26753315	.	+	.	score
+chr7	bed2gff	AR	26753602	26754249	.	+	.	score
+chr7	bed2gff	AR	26754708	26754974	.	+	.	score
+chr7	bed2gff	AR	26754985	26755157	.	+	.	score
+chr7	bed2gff	AR	26755165	26755450	.	+	.	score
+chr7	bed2gff	AR	26755472	26756178	.	+	.	score
+chr7	bed2gff	AR	26758416	26758581	.	+	.	score
+chr7	bed2gff	AR	26759185	26759362	.	+	.	score
+chr7	bed2gff	AR	26765620	26765678	.	+	.	score
+chr7	bed2gff	AR	26765680	26766027	.	+	.	score
+chr7	bed2gff	AR	26766029	26766472	.	+	.	score

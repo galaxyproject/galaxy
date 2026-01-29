@@ -1,0 +1,52 @@
+<tool id="detect_errors_aggressive" name="detect_errors_aggressive" version="1.0.0">
+    <command detect_errors="aggressive">
+        #if $error_bool
+            echo "ERROR: Problem...."
+        #elif $exception_bool
+            echo "Exception: Problem..."
+        #else
+            echo "Everything is OK."
+        #end if
+        ; sh -c "exit $exit_code"
+
+    </command>
+    <inputs>
+        <param name="dataset" type="data" optional="true"/>
+        <param name="error_bool" type="boolean" label="error bool" />
+        <param name="exception_bool" type="boolean" label="exception bool" checked="false" />
+        <param name="exit_code" type="integer" value="0" label="exit code"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" />
+    </outputs>
+    <tests>
+        <test expect_exit_code="0" expect_failure="false">
+            <param name="error_bool" value="false" />
+            <param name="exception_bool" value="false" />
+            <param name="exit_code" value="0" />
+            <assert_stdout>
+                <has_line line="Everything is OK." />
+            </assert_stdout>
+        </test>
+        <test expect_exit_code="1" expect_failure="true">
+            <param name="error_bool" value="false" />
+            <param name="exception_bool" value="false" />
+            <param name="exit_code" value="1" />
+            <assert_stdout>
+                <has_line line="Everything is OK." />
+            </assert_stdout>
+        </test>
+        <test expect_exit_code="0" expect_failure="true">
+            <param name="error_bool" value="true" />
+            <param name="exception_bool" value="false" />
+            <param name="exit_code" value="0" />
+        </test>
+        <test expect_exit_code="0" expect_failure="true">
+            <param name="error_bool" value="false" />
+            <param name="exception_bool" value="true" />
+            <param name="exit_code" value="0" />
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

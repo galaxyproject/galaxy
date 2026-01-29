@@ -1,0 +1,39 @@
+<tool id="collection_creates_list" name="collection_creates_list" version="0.1.0">
+  <command>
+    #for $key in $list_output.keys()#
+    echo "identifier is $key" > "$list_output[$key]";
+    #end for#
+    echo 'ensure not empty';
+  </command>
+  <inputs>
+    <param name="input1" type="data_collection" collection_type="list" label="Input" help="Input collection..." format="txt" />
+  </inputs>
+  <outputs>
+    <collection name="list_output" type="list" label="Duplicate List" structured_like="input1" inherit_format="true">
+      <!-- inherit_format can be used in conjunction with structured_like
+           to perserve format. -->
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1">
+        <collection type="list">
+          <element name="l11" value="simple_line.txt" />
+          <element name="l12" value="simple_line.txt" />
+        </collection>
+      </param>
+      <output_collection name="list_output" type="list" count="2">
+        <element name="l11">
+          <assert_contents>
+            <has_text_matching expression="^identifier is l11\n$" />
+          </assert_contents>
+        </element>
+        <element name="l12">
+          <assert_contents>
+            <has_text_matching expression="^identifier is l12\n$" />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

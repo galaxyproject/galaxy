@@ -1,0 +1,25 @@
+
+{
+    "collection_type": "paired",
+    "deleted": false,
+    "history_content_type": "dataset_collection",
+    "model_class": "HistoryDatasetCollectionAssociation",
+    "history_id": "8317ee2b0d0f62d9",
+    "name": "pair",
+    "hide_source_items": false,
+    "copy_elements": true,
+    "element_identifiers": [
+        {
+            "name": "forward",
+            "src": "hda",
+            "id": "f34b0580f3485a58"
+        },
+        {
+            "name": "reverse",
+            "src": "hda",
+            "id": "42432a77a61b325b"
+        }
+    ],
+    "type": "dataset_collection",
+    "elements": []
+}

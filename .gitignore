@@ -1,0 +1,195 @@
+.hg*
+
+# Downloaded and locally built eggs
+eggs
+scripts/scramble/build
+scripts/scramble/lib
+scripts/scramble/archives
+
+# Python virtualenv
+.venv*/
+
+# Python build artifacts
+build
+dist
+lib/galaxy.egg-info
+.eggs
+
+# Generated static content
+lib/galaxy/web/framework/static/maps
+lib/galaxy/web/framework/static/scripts
+lib/galaxy/web/framework/static/style
+lib/galaxy/web/framework/meta.json
+
+# Misc. data, config, cache files
+/database/
+
+# Python bytecode
+*.pyc
+
+# Galaxy runtime files
+*.lock
+*.log
+*.pid
+celerybeat-schedule
+
+# Celery state files
+celerybeat-schedule.*
+
+# Tool Shed runtime files
+tool_shed_webapp.lock
+tool_shed_webapp.log
+tool_shed_webapp.pid
+hgweb.config*
+lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml
+
+# Reports runtime files
+reports_webapp.lock
+reports_webapp.log
+reports_webapp.pid
+
+# Jupyter runtime files
+.ipynb_checkpoints
+
+# Config files
+universe_wsgi.ini
+reports_wsgi.ini
+reports.ini
+tool_shed_wsgi.ini
+datatypes_conf.xml
+tool_conf.xml
+external_service_types_conf.xml
+migrated_tools_conf.xml
+shed_tool_conf.xml
+tool_data_table_conf.xml
+tool_sheds_conf.xml
+integrated_tool_panel.xml
+openid_conf.xml
+shed_tool_data_table_conf.xml
+job_conf.xml
+data_manager_conf.xml
+shed_data_manager_conf.xml
+object_store_conf.xml
+job_metrics_conf.xml
+workflow_schedulers_conf.xml
+config/*
+config/plugins/interactive_environments/**/*.ini
+config/plugins/**/.cache
+config/plugins/**/.parcel-cache
+config/plugins/visualizations
+!config/plugins
+static/welcome.html.*
+static/welcome.html
+static/client_build_hash.txt
+lib/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml
+
+# Tool data
+tool-data/annotation_profiler_options.xml
+tool-data/annotation_profiler_valid_builds.txt
+tool-data/gatk_annotations.txt
+tool-data/gd.restriction_enzymes.txt
+tool-data/gd.species.txt
+tool-data/shared/igv/igv_build_sites.txt
+tool-data/shared/rviewer/rviewer_build_sites.txt
+tool-data/shared/ncbi/builds.txt
+tool-data/shared/ucsc/builds.txt
+tool-data/shared/ucsc/manual_builds.txt
+tool-data/shared/ensembl/builds.txt
+tool-data/shared/ucsc/publicbuilds.txt
+tool-data/shared/ucsc/ucsc_build_sites.txt
+tool-data/*.loc
+tool-data/genome/*
+tool-data/*.sample
+tool-data/testtoolshed.g2.bx.psu.edu/
+tool-data/toolshed.g2.bx.psu.edu/
+tool-data/**/*.fa
+
+# Test output
+.pytest_cache/
+assets/
+test-data-cache
+run_api_tests.html
+run_cwl_tests.html
+run_framework_tests.html
+run_functional_tests.html
+run_integration_tests.html
+run_selenium_tests.html
+run_toolshed_tests.html
+test/tool_shed/tmp/*
+.coverage
+htmlcov
+run_unit_tests.html
+test/unit/**.log
+.tox
+tool_test_output.html
+tool_test_output.json
+
+# Project files
+*.kpf
+.idea
+.vscode
+client/**/jsconfig.json
+vetur.config.js
+.pre-commit-config.yaml
+galaxy.code-workspace
+
+# Chrom len files
+*.len
+
+# JARs
+tool-data/shared/jars/
+
+# JS, Local node_modules, and bower_components directories
+static/maps
+static/plugins
+static/scripts
+node_modules
+bower_components
+client/src/libs/*
+
+# Old galaxy client location
+client/galaxy
+
+# Documentation build files
+doc/build
+doc/schema.md
+doc/source/admin/config_logging_default_yaml.rst
+doc/source/dev/schema.md
+doc/source/dev/plantuml.jar
+client/docs/dist
+
+# Webpack stats
+client/webpack-stats.json
+
+# Packages
+packages/*/build
+packages/*/dist
+packages/*/*.egg-info
+packages/meta/requirements.txt
+
+# Standalone script + main, or build into dist
+config/plugins/**/static/dist
+config/plugins/**/static/script.js
+config/plugins/**/static/main.css
+config/plugins/**/static/script.css
+config/plugins/**/static/plugin_build_hash.txt
+config/plugins/**/static/*.map
+
+# Viz-specific build artifacts to ignore (until these are removed from codebase)
+config/plugins/visualizations/annotate_image/static/jquery.contextMenu.css
+config/plugins/visualizations/nvd3/nvd3_bar/static/nvd3.js
+config/plugins/visualizations/scatterplot/static/scatterplot.js
+config/plugins/visualizations/tiffviewer/static/
+
+# CWL conformance tests
+lib/galaxy_test/api/cwl/test_cwl_conformance_v1_?.py
+test/functional/tools/cwl_tools/v1.?/
+
+# Involucro tool
+involucro
+
+# Misc
+*.orig
+.DS_Store
+*.rej
+*~

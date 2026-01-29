@@ -1,0 +1,19 @@
+<tool name="expression_forty_two" id="expression_forty_two"
+	  version="0.1.0" tool_type="expression">
+    <description>Parse Int</description>
+    <expression type="ecma5.1">
+        {return {'output':
+                 42};
+        }
+    </expression>
+    <inputs>
+    </inputs>
+    <outputs>
+        <output type="integer" name="out1" from="output" />
+    </outputs>
+    <tests>
+    </tests>
+    <help><![CDATA[
+Produces the integer 42.
+    ]]></help>
+</tool>

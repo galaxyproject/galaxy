@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!-- If workflow_schedulers_conf.xml exists it defines the workflow scheduling
+     plugins to load and how to configure them. Currently only the core workflow
+     scheduling is available.
+-->
+<workflow_schedulers default="core">
+  <!-- Each element in this file corresponds to a workflow scheduling plugin
+       in lib/galaxy/workflow/schedulers. -->
+
+  <!-- Core plugin schedules whole workflow at outset inside Galaxy and doesn't
+       require any external dependencies. -->
+  <core id="core" />
+
+  <!-- Handlers (Galaxy server processes that perform the scheduling work) can
+       be defined here in the same format as in job_conf.xml. By default, the
+       handlers defined in job_conf.xml will be used (or the web process that
+       receives the workflow scheduling request if handlers are not configured
+       in job_conf.xml).
+
+       The options here are the same as is documented for <handlers> in
+       job_conf.xml.sample_advanced
+  -->
+  <!--
+  <handlers>
+    <handler id="handler0"/>
+    <handler id="handler1"/>
+  </handlers>
+  -->
+
+</workflow_schedulers>

@@ -1,0 +1,69 @@
+<display id="ensembl_interval" version="1.0.0" name="display at Ensembl">
+    <!-- Current Ensembl method of attaching user data via URL; archives older than ~November 2008 will use a different method -->
+    <!-- Load links from file: one line to one link -->
+    <dynamic_links site_type="ensembl" skip_startswith="#" id="0" name="1">
+        <!-- Define parameters by column from file, allow splitting on builds -->
+        <dynamic_param name="site_id" value="0"/>
+        <dynamic_param name="site_name" value="1"/>
+        <dynamic_param name="site_link" value="2"/>
+        <dynamic_param name="site_dbkeys" value="3" split="True" separator="," />
+        <dynamic_param name="site_organisms" value="4" split="True" separator="," />
+        <!-- Filter out some of the links based upon matching site_dbkeys to dataset dbkey -->
+        <filter>${dataset.dbkey in $site_dbkeys}</filter>
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>${site_link}${site_organism}/Location/View?r=${position};contigviewbottom=url:${bed_file.qp}=normal</url>
+        <param type="data" name="bed_file" url="galaxy_${DATASET_HASH}.bed" format="bedstrict"/>
+        <param type="template" name="site_organism" strip="True" >
+            $site_organisms[ $site_dbkeys.index( $bed_file.dbkey ) ]
+        </param>
+        <param type="template" name="position" strip="True" >
+#set chrom, start, end = $bed_file.datatype.get_estimated_display_viewport( $bed_file )
+#if $chrom is not None:
+##The difference between chr1 and 1 is handled by Ensembl, except for the viewport, we need to provide e.g. '1' instead of 'chr1' here
+##This is rather naive, it would be more ideal to have actual mappings
+#if $chrom == 'chrM':
+    #set $chrom = 'MT'
+#end if
+#if $chrom.startswith( 'chr' ):
+    #set $chrom = $chrom[3:]
+#end if
+${chrom}:${int( start ) + 1}-${end}
+#else:
+##default view is of '1'
+1
+#end if
+        </param>
+    </dynamic_links>
+    <!-- Old Ensembl method of attaching user data via URL -->
+    <!-- Load links from file: one line to one link -->
+    <dynamic_links site_type="ensembl_data_url" skip_startswith="#" id="0" name="1">
+        <!-- Define parameters by column from file, allow splitting on builds -->
+        <dynamic_param name="site_id" value="0"/>
+        <dynamic_param name="site_name" value="1"/>
+        <dynamic_param name="site_link" value="2"/>
+        <dynamic_param name="site_dbkeys" value="3" split="True" separator="," />
+        <dynamic_param name="site_organisms" value="4" split="True" separator="," />
+        <!-- Filter out some of the links based upon matching site_dbkeys to dataset dbkey -->
+        <filter>${dataset.dbkey in $site_dbkeys}</filter>
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>${site_link}${site_organism}/contigview?data_URL=${bed_file.qp}${position}</url>
+        <param type="data" name="bed_file" url="galaxy_${DATASET_HASH}.bed" format="bedstrict"/>
+        <param type="template" name="site_organism" strip="True" >
+            $site_organisms[ $site_dbkeys.index( $bed_file.dbkey ) ]
+        </param>
+        <param type="template" name="position" strip="True" >
+            #set chrom, start, end = $bed_file.datatype.get_estimated_display_viewport( $bed_file )
+            #if $chrom is not None:
+            ##The difference between chr1 and 1 is handled by Ensembl, except for the viewport, we need to provide e.g. '1' instead of 'chr1' here
+            ##This is rather naive, it would be more ideal to have actual mappings
+            #if $chrom == 'chrM':
+                #set $chrom = 'MT'
+            #end if
+            #if $chrom.startswith( 'chr' ):
+                #set $chrom = $chrom[3:]
+            #end if
+            &amp;chr=${chrom}&amp;start=${int( start ) + 1}&amp;end=${end}
+            #end if
+        </param>
+    </dynamic_links>
+</display>

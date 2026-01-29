@@ -1,0 +1,16 @@
+<tool id="maxseconds" name="maxseconds" version="0.1.0">
+    <command detect_errors="exit_code">
+        sleep 100
+    </command>
+    <inputs>
+    </inputs>
+    <outputs>
+        <data name="out_file1" />
+    </outputs>
+    <tests>
+        <test expect_failure="true" maxseconds="5">
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

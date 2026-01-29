@@ -1,0 +1,62 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use ENCODE data.  The encode_datasets.loc file has this format 
+#(white space characters are TAB characters):
+#
+#<EncodeGroup>	<build>	<DisplayName>	<UniqueID>	<FullPathToFile>	<Format>
+#             Encode Groups: ShortHandCode = Group
+#                                       CC = chromatin and chromosomes
+#                                       GT = genes and transcripts
+#                                      MSA = multi-species sequence analysis
+#                                       TR = transcription regulation
+#                                      ALD = All Latest Datasets
+#All files are assumbed to be BED.
+#
+#ALD	hg17	Latest Datasets (20051208)	all_latest_datasets.20051208.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051208.bed	bed
+#ALD	hg17	Latest Datasets (20051208) [gencode_partitioned]	all_latest_datasets.20051208.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051208.gencode_partitioned.bed	bed
+#ALD	hg17	Latest Datasets (20051208) [gencode_partitioned]	all_latest_datasets.20051208.gencode_partitioned.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051208.gencode_partitioned.gff	gff
+#ALD	hg17	Latest Datasets (20051208)	all_latest_datasets.20051208.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051208.gff	gff
+#ALD	hg17	Latest Datasets (20051209)	all_latest_datasets.20051209.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051209.bed	bed
+#ALD	hg17	Latest Datasets (20051209) [gencode_partitioned]	all_latest_datasets.20051209.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051209.gencode_partitioned.bed	bed
+#ALD	hg17	Latest Datasets (20051209) [gencode_partitioned]	all_latest_datasets.20051209.gencode_partitioned.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051209.gencode_partitioned.gff	gff
+#ALD	hg17	Latest Datasets (20051209)	all_latest_datasets.20051209.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051209.gff	gff
+#ALD	hg17	Latest Datasets (20051211)	all_latest_datasets.20051211.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051211.bed	bed
+#ALD	hg17	Latest Datasets (20051211) [gencode_partitioned]	all_latest_datasets.20051211.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051211.gencode_partitioned.bed	bed
+#ALD	hg17	Latest Datasets (20051211) [gencode_partitioned]	all_latest_datasets.20051211.gencode_partitioned.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051211.gencode_partitioned.gff	gff
+#ALD	hg17	Latest Datasets (20051211)	all_latest_datasets.20051211.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051211.gff	gff
+#ALD	hg17	Latest Datasets (20051212)	all_latest_datasets.20051212.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051212.bed	bed
+#ALD	hg17	Latest Datasets (20051212) [gencode_partitioned]	all_latest_datasets.20051212.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051212.gencode_partitioned.bed	bed
+#ALD	hg17	Latest Datasets (20051212) [gencode_partitioned]	all_latest_datasets.20051212.gencode_partitioned.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051212.gencode_partitioned.gff	gff
+#ALD	hg17	Latest Datasets (20051212)	all_latest_datasets.20051212.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051212.gff	gff
+#ALD	hg17	Latest Datasets (20051214)	all_latest_datasets.20051214.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051214.bed	bed
+#ALD	hg17	Latest Datasets (20051214) [gencode_partitioned]	all_latest_datasets.20051214.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051214.gencode_partitioned.bed	bed
+#ALD	hg17	Latest Datasets (20051214) [gencode_partitioned]	all_latest_datasets.20051214.gencode_partitioned.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051214.gencode_partitioned.gff	gff
+#ALD	hg17	Latest Datasets (20051214)	all_latest_datasets.20051214.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051214.gff	gff
+#ALD	hg17	Latest Datasets (20051216)	all_latest_datasets.20051216.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051216.bed	bed
+#ALD	hg17	Latest Datasets (20051216) [gencode_partitioned]	all_latest_datasets.20051216.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051216.gencode_partitioned.bed	bed
+#ALD	hg17	Latest Datasets (20051216) [gencode_partitioned]	all_latest_datasets.20051216.gencode_partitioned.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051216.gencode_partitioned.gff	gff
+#ALD	hg17	Latest Datasets (20051216)	all_latest_datasets.20051216.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20051216.gff	gff
+#ALD	hg17	Latest Datasets (20060105)	all_latest_datasets.20060105.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060105.bed	bed
+#ALD	hg17	Latest Datasets (20060105) [gencode_partitioned]	all_latest_datasets.20060105.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060105.gencode_partitioned.bed	bed
+#ALD	hg17	Latest Datasets (20060105) [gencode_partitioned]	all_latest_datasets.20060105.gencode_partitioned.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060105.gencode_partitioned.gff	gff
+#ALD	hg17	Latest Datasets (20060105)	all_latest_datasets.20060105.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060105.gff	gff
+#ALD	hg17	Latest Datasets (20060106)	all_latest_datasets.20060106.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060106.bed	bed
+#ALD	hg17	Latest Datasets (20060106) [gencode_partitioned]	all_latest_datasets.20060106.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060106.gencode_partitioned.bed	bed
+#ALD	hg17	Latest Datasets (20060106) [gencode_partitioned]	all_latest_datasets.20060106.gencode_partitioned.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060106.gencode_partitioned.gff	gff
+#ALD	hg17	Latest Datasets (20060106)	all_latest_datasets.20060106.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060106.gff	gff
+#ALD	hg17	Latest Datasets (20060116)	all_latest_datasets.20060116.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060116.bed	bed
+#ALD	hg17	Latest Datasets (20060116) [gencode_partitioned]	all_latest_datasets.20060116.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060116.gencode_partitioned.bed	bed
+#ALD	hg17	Latest Datasets (20060116) [gencode_partitioned]	all_latest_datasets.20060116.gencode_partitioned.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060116.gencode_partitioned.gff	gff
+#ALD	hg17	Latest Datasets (20060116)	all_latest_datasets.20060116.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060116.gff	gff
+#ALD	hg17	Latest Datasets (20060124)	all_latest_datasets.20060124.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060124.bed	bed
+#ALD	hg17	Latest Datasets (20060124) [gencode_partitioned]	all_latest_datasets.20060124.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060124.gencode_partitioned.bed	bed
+#ALD	hg17	Latest Datasets (20060124) [gencode_partitioned]	all_latest_datasets.20060124.gencode_partitioned.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060124.gencode_partitioned.gff	gff
+#ALD	hg17	Latest Datasets (20060124)	all_latest_datasets.20060124.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060124.gff	gff
+#ALD	hg17	Latest Datasets (20060204)	all_latest_datasets.20060204.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060204.bed	bed
+#ALD	hg17	Latest Datasets (20060204) [gencode_partitioned]	all_latest_datasets.20060204.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060204.gencode_partitioned.bed	bed
+#ALD	hg17	Latest Datasets (20060204) [gencode_partitioned]	all_latest_datasets.20060204.gencode_partitioned.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060204.gencode_partitioned.gff	gff
+#ALD	hg17	Latest Datasets (20060204)	all_latest_datasets.20060204.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060204.gff	gff
+#ALD	hg17	Latest Datasets (20060206)	all_latest_datasets.20060206.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060206.bed	bed
+#ALD	hg17	Latest Datasets (20060206) [gencode_partitioned]	all_latest_datasets.20060206.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060206.gencode_partitioned.bed	bed
+#ALD	hg17	Latest Datasets (20060206) [gencode_partitioned]	all_latest_datasets.20060206.gencode_partitioned.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060206.gencode_partitioned.gff	gff
+#ALD	hg17	Latest Datasets (20060206)	all_latest_datasets.20060206.gff	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060206.gff	gff
+#ALD	hg17	Latest Datasets (20060209) [gencode_partitioned]	all_latest_datasets.20060209.gencode_partitioned.bed	/depot/data2/galaxy/encode-data/all_latest/all_latest_datasets.20060209.gencode_partitioned.bed	bed

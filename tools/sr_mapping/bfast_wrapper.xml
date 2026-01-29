@@ -1,0 +1,384 @@
+<tool id="bfast_wrapper" name="Map with BFAST" version="0.1.3">
+  <description></description>
+  <command interpreter="python">bfast_wrapper.py
+    --numThreads="\${GALAXY_SLOTS:-4}"
+    --fastq="$input1"
+    #if $input1.extension.startswith( "fastqcs" ):
+        ##if extention starts with fastqcs, then we have a color space file
+        --space="1" ##color space
+    #else
+        --space="0"
+    #end if
+    --output="$output"
+    $suppressHeader
+    
+    #if $refGenomeSource.refGenomeSource_type == "history":
+      ##build indexes on the fly
+      --buildIndex
+      --ref="${refGenomeSource.ownFile}"
+      --indexMask="${",".join( [ "%s:%s" % ( str( custom_index.get( 'mask' ) ).strip(), str( custom_index.get( 'hash_width' ) ).strip() ) for custom_index in $refGenomeSource.custom_index ] )}"
+      ${refGenomeSource.indexing_repeatmasker}
+      #if $refGenomeSource.indexing_option.indexing_option_selector == "contig_offset":
+        --indexContigOptions="${refGenomeSource.indexing_option.start_contig},${refGenomeSource.indexing_option.start_pos},${refGenomeSource.indexing_option.end_contig},${refGenomeSource.indexing_option.end_pos}"
+      #elif $refGenomeSource.indexing_option.indexing_option_selector == "exons_file":
+        --indexExonsFileName="${refGenomeSource.indexing_option.exons_file}"
+      #end if
+    #else:
+      ##use precomputed indexes
+      --ref="${ refGenomeSource.indices.fields.path }"
+    #end if
+    
+    #if $params.source_select == "full":
+      --offsets="$params.offsets"
+      --keySize="$params.keySize"
+      --maxKeyMatches="$params.maxKeyMatches"
+      --maxNumMatches="$params.maxNumMatches"
+      --whichStrand="$params.whichStrand"
+      
+      #if str( $params.scoringMatrixFileName ) != 'None':
+        --scoringMatrixFileName="$params.scoringMatrixFileName"
+      #end if
+      ${params.ungapped}
+      ${params.unconstrained}
+      --offset="${params.offset}"
+      --avgMismatchQuality="${params.avgMismatchQuality}"
+      
+      --algorithm="${params.localalign_params.algorithm}"
+      ${params.unpaired}
+      ${params.reverseStrand}
+      #if $params.localalign_params.algorithm == "3":
+        ${params.localalign_params.pairedEndInfer}
+        ${params.localalign_params.randomBest}
+      #end if
+    #end if
+  </command>
+  <inputs>
+    <param name="input1" type="data" format="fastqsanger,fastqcssanger" label="FASTQ file" help="Must have Sanger-scaled quality values with ASCII offset 33"/>
+    <conditional name="refGenomeSource">
+      <param name="refGenomeSource_type" type="select" label="Will you select a reference genome from your history or use a built-in index?">
+        <option value="indexed">Use a built-in index</option>
+        <option value="history">Use one from the history</option>
+      </param>
+      <when value="indexed">
+        <param name="indices" type="select" label="Select a reference genome index set">
+          <options from_data_table="bfast_indexes">
+            <filter type="multiple_splitter" column="2" separator=","/>
+            <filter type="param_value" column="2" ref="input1" ref_attribute="extension"/>
+            <filter type="sort_by" column="3"/>
+            <validator type="no_options" message="No indexes are available for the selected input dataset"/>
+          </options>
+        </param>
+      </when>
+      <when value="history">
+        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference from history" />
+        <repeat name="custom_index" title="Custom indice" min="1" >
+            <param name="mask" type="text" value="" label="Specify the mask">
+              <!-- <validator type="no_options" message="No indexes are available for the selected input dataset"/> need is int validator here or regex all 01s-->
+            </param>
+            <param name="hash_width" type="integer" value="" label="Hash Width" />
+        </repeat>
+        <param name="indexing_repeatmasker" type="boolean" truevalue="--indexRepeatMasker" falsevalue="" checked="False" label="Do not index lower case sequences" help="Such as those created by RepeatMasker"/>
+        <conditional name="indexing_option">
+          <param name="indexing_option_selector" type="select" label="BFAST indexing settings to use" help="For most indexing needs use default settings. If you want full control use the other options.">
+            <option value="default">Default</option>
+            <option value="contig_offset">Contig Offset</option>
+            <option value="exons_file">Exons file</option>
+          </param>
+          <when value="default">
+            <!-- nothing here -->
+          </when>
+          <when value="contig_offset">
+            <param name="start_contig" type="integer" value="-1" label="Start Contig" help="Specifies the first contig to include when building indexes. (advanced users only)" />
+            <param name="start_pos" type="integer" value="-1" label="Start Position" help="Specifies the first position in the first contig to include when building indexes. (advanced users only)" />
+            <param name="end_contig" type="integer" value="-1" label="End Contig" help="Specifies the last contig to include when building indexes. (advanced users only)" />
+            <param name="end_pos" type="integer" value="-1" label="End Position" help="Specifies the last position in the last contig to include when building indexes. (advanced users only)" />
+          </when>
+          <when value="exons_file">
+            <param name="exons_file" type="data" format="tabular" label="Select an exons file from history" help="See BFAST manual for file format requirements. (advanced users only)"/>
+          </when>
+        </conditional>
+      </when>
+    </conditional>
+    <conditional name="params">
+      <param name="source_select" type="select" label="BFAST matching settings to use" help="For most mapping needs use Commonly Used settings. If you want full control use Full Parameter List">
+        <option value="pre_set">Commonly Used</option>
+        <option value="full">Full Parameter List</option>
+      </param>
+      <when value="pre_set">
+        <!-- nothing here -->
+      </when>
+      <when value="full">
+        <param name="offsets" type="text" value="" label="The offsets for 'bfast match'" help="Set if not all offsets from the 5' end of the read are to be examined (advanced users only)" />
+        <param name="keySize" type="integer" value="-1" label="Truncate key size in 'match'" help="Set this to reduce the effective key size of all indexes in 'bfast match' (advanced users only)" />
+        <param name="maxKeyMatches" type="integer" value="8" label="The maximum number of matches to allow before a key is ignored" help="Lower values will result in more unique regions being examined, while larger values will allow include repetitive regions" />
+        <param name="maxNumMatches" type="integer" value="384" label="The maximum number of matches to allow before a read is discarded" help="Larger values will allow more hits to be examined" />
+        <param name="whichStrand" type="select" label="The strands to consider" help="Both strands, forward strand only, or reverse strand only">
+          <option value="0">Both strands</option>
+          <option value="1">Forward strand only</option>
+          <option value="2">Reverse strand only</option>
+        </param>
+        
+        <param name="scoringMatrixFileName" type="data" format="text" optional="True" label="Scoring Matrix file used to score the alignments" help="See BFAST manual for file format requirements. (advanced users only)"/>
+        <param name="ungapped" type="boolean" truevalue="--ungapped" falsevalue="" checked="no" label="Perform ungapped local alignment" help="Performing ungapped local alignment will not consider indels while providing a significant speed increase" />
+        <param name="unconstrained" type="boolean" truevalue="--unconstrained" falsevalue="" checked="no" label="Perform unconstrained local alignment" help="Performing unconstrained local alignment will not use mask constraints at the cost of speed" />
+        <param name="offset" type="integer" value="20" label="The number of bases before and after each hit to consider in local alignment" help="Larger values will allow for larger insertions and deletions to be detected at the cost of speed" />
+        <param name="avgMismatchQuality" type="integer" value="10" label="The average mismatch quality" help="This can be used as a scaling factor for mapping quality (advanced users only)" />
+        
+        <conditional name="localalign_params">
+          <param name="algorithm" type="select" label="The post processing algorithm" help="This determines how reads with multiple candidate alignments are returned.  Unique alignments will return an alignment if the read has only one candidate alignment.  Uniquely best scoring alignments will return one alignment for a read if that alignment has a better alignment score than the rest of the candidate alignments.  All best scoring alignments will return all alignments that have the best alignment score for a read.">
+              <option value="0" selected="True">No filtering</option>
+              <option value="1">All alignments that pass filtering</option>
+              <option value="2">Unique alignments</option>
+              <option value="3">Uniquely best scoring alignments</option>
+              <option value="4">All best scoring alignments</option>
+          </param>
+          <when value="0">
+            <!-- nothing here -->
+          </when>
+          <when value="1">
+            <!-- nothing here -->
+          </when>
+          <when value="2">
+            <!-- nothing here -->
+          </when>
+          <when value="4">
+            <!-- nothing here -->
+          </when>
+          <when value="3">
+            <param name="pairedEndInfer" type="boolean" truevalue="--pairedEndInfer" falsevalue="" checked="no" label="pairedEndInfer" help="break ties when one end of a paired end read by estimating the insert size distribution" />
+            <param name="randomBest" type="boolean" truevalue="--randomBest" falsevalue="" checked="no" label="Random alignments" help="output a random best scoring alignment (advanced users only)" />
+          </when>
+        </conditional>
+        <param name="unpaired" type="boolean" truevalue="--unpaired" falsevalue="" checked="no" label="Disallow pairing" help="do not choose alignments based on pairing" />
+        <param name="reverseStrand" type="boolean" truevalue="--reverseStrand" falsevalue="" checked="no" label="Reverse paired ends" help="paired end reads are given on reverse strands" />
+        
+      </when>
+    </conditional>
+    <param name="suppressHeader" type="boolean" truevalue="--suppressHeader" falsevalue="" checked="False" label="Suppress the header in the output SAM file" help="BFAST produces SAM with several lines of header information" />
+  </inputs>
+  <outputs>
+    <data format="sam" name="output" label="${tool.name} on ${on_string}: mapped reads">
+      <actions>
+        <conditional name="refGenomeSource.refGenomeSource_type">
+          <when value="indexed">
+            <action type="metadata" name="dbkey">
+              <option type="from_data_table" column="1" name="bfast_indexes">
+                <filter type="param_value" ref="refGenomeSource.indices" column="0" />
+              </option>
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
+    </data>
+  </outputs>
+  <help>
+**What it does**
+
+BFAST facilitates the fast and accurate mapping of short reads to reference sequences. Some advantages of BFAST include:
+* Speed: enables billions of short reads to be mapped quickly.
+* Accuracy: A priori probabilities for mapping reads with defined set of variants
+* An easy way to measurably tune accuracy at the expense of speed. 
+Specifically, BFAST was designed to facilitate whole-genome resequencing, where mapping billions of short reads with variants is of utmost importance.
+
+BFAST supports both Illumina and ABI SOLiD data, as well as any other Next-Generation Sequencing Technology (454, Helicos), with particular emphasis on sensitivity towards errors, SNPs and especially indels. Other algorithms take short-cuts by ignoring errors, certain types of variants (indels), and even require further alignment, all to be the "fastest" (but still not complete). BFAST is able to be tuned to find variants regardless of the error-rate, polymorphism rate, or other factors. 
+
+------
+
+Please cite the website "http://bfast.sourceforge.net" as well as the accompanying 
+papers:
+
+Homer N, Merriman B, Nelson SF.
+BFAST: An alignment tool for large scale genome resequencing.
+PMID: 19907642
+PLoS ONE. 2009 4(11): e7767.  
+https://doi.org/10.1371/journal.pone.0007767  
+
+Homer N, Merriman B, Nelson SF.
+Local alignment of two-base encoded DNA sequence.
+BMC Bioinformatics. 2009 Jun 9;10(1):175.
+PMID: 19508732 
+https://doi.org/10.1186/1471-2105-10-175
+
+------
+
+**Know what you are doing**
+
+.. class:: warningmark
+
+There is no such thing (yet) as an automated gearshift in short read mapping. It is all like stick-shift driving in San Francisco. In other words = running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading the `documentation`__ and experimenting. Fortunately, Galaxy makes experimenting easy.
+
+.. __: http://bfast.sourceforge.net/
+
+------
+
+**Input formats**
+
+BFAST accepts files in Sanger FASTQ format. Use the FASTQ Groomer to prepare your files.
+
+------
+
+**Outputs**
+
+The output is in SAM format, and has the following columns::
+
+    Column  Description
+  --------  --------------------------------------------------------
+  1  QNAME  Query (pair) NAME
+  2  FLAG   bitwise FLAG
+  3  RNAME  Reference sequence NAME
+  4  POS    1-based leftmost POSition/coordinate of clipped sequence
+  5  MAPQ   MAPping Quality (Phred-scaled)
+  6  CIGAR  extended CIGAR string
+  7  MRNM   Mate Reference sequence NaMe ('=' if same as RNAME)
+  8  MPOS   1-based Mate POSition
+  9  ISIZE  Inferred insert SIZE
+  10 SEQ    query SEQuence on the same strand as the reference
+  11 QUAL   query QUALity (ASCII-33 gives the Phred base quality)
+  12 OPT    variable OPTional fields in the format TAG:VTYPE:VALU
+
+The flags are as follows::
+
+  Flag  Description
+  ------  -------------------------------------
+  0x0001  the read is paired in sequencing
+  0x0002  the read is mapped in a proper pair
+  0x0004  the query sequence itself is unmapped
+  0x0008  the mate is unmapped
+  0x0010  strand of the query (1 for reverse)
+  0x0020  strand of the mate
+  0x0040  the read is the first read in a pair
+  0x0080  the read is the second read in a pair
+  0x0100  the alignment is not primary
+
+It looks like this (scroll sideways to see the entire example)::
+
+  QNAME  FLAG  RNAME  POS  MAPQ  CIAGR  MRNM  MPOS  ISIZE  SEQ  QUAL  OPT
+  HWI-EAS91_1_30788AAXX:1:1:1761:343  4  *  0  0  *  *  0  0  AAAAAAANNAAAAAAAAAAAAAAAAAAAAAAAAAAACNNANNGAGTNGNNNNNNNGCTTCCCACAGNNCTGG  hhhhhhh;;hhhhhhhhhhh^hOhhhhghhhfhhhgh;;h;;hhhh;h;;;;;;;hhhhhhghhhh;;Phhh
+  HWI-EAS91_1_30788AAXX:1:1:1578:331  4  *  0  0  *  *  0  0  GTATAGANNAATAAGAAAAAAAAAAATGAAGACTTTCNNANNTCTGNANNNNNNNTCTTTTTTCAGNNGTAG  hhhhhhh;;hhhhhhhhhhhhhhhhhhhhhhhhhhhh;;h;;hhhh;h;;;;;;;hhhhhhhhhhh;;hhVh
+
+-------
+
+**BFAST settings**
+
+All of the options have a default value. You can change any of them. Most of the options in BFAST have been implemented here.
+
+------
+
+**BFAST parameter list**
+
+This is an exhaustive list of BFAST options:
+
+For **match**::
+
+  -o  STRING   Specifies the offset [Use all]
+  -l      Specifies to load all main or secondary indexes into memory
+  -A  INT    0: NT space 1: Color space [0]
+  -k  INT    Specifies to truncate all indexes to have the given key size
+  (must be greater than the hash width) [Not Using]
+  -K  INT    Specifies the maximum number of matches to allow before a key
+  is ignored [8]
+  -M  INT    Specifies the maximum total number of matches to consider
+  before the read is discarded [384]
+  -w  INT    0: consider both strands 1: forward strand only 2: reverse
+  strand only [0]
+  -n  INT   Specifies the number of threads to use [1] 
+  -t         Specifies to output timing information
+
+For **localalign**::
+
+  -x  FILE  Specifies the file name storing the scoring matrix
+  -u        Do ungapped local alignment (the default is gapped).
+  -U         Do not use mask constraints from the match step
+  -A  INT    0: NT space 1: Color space [0]
+  -o  INT    Specifies the number of bases before and after the match to
+  include in the reference genome
+  -M  INT    Specifies the maximum total number of matches to consider
+  before the read is discarded [384]
+  -q  INT    Specifies the average mismatch quality
+  -n  INT   Specifies the number of threads to use [1] 
+  -t         Specifies to output timing information
+
+For **postprocess**::
+
+  -a  INT    Specifies the algorithm to choose the alignment for each end of the read:
+
+    0: No filtering will occur.
+    1: All alignments that pass the filters will be output
+    2: Only consider reads that have been aligned uniquely
+    3: Choose uniquely the alignment with the best score
+    4: Choose all alignments with the best score
+  
+  -A  INT    0: NT space 1: Color space [0]
+  -U      Specifies that pairing should not be performed
+  -R          Specifies that paired reads are on opposite strands
+  -q   INT    Specifies the average mismatch quality
+  -x  FILE  Specifies the file name storing the scoring matrix
+  -z          Specifies to output a random best scoring alignment (with -a 3)
+  -r   FILE  Specifies to add the RG in the specified file to the SAM
+  header and updates the RG tag (and LB/PU tags if present) in
+  the reads (SAM only)
+  -n  INT   Specifies the number of threads to use [1] 
+  -t         Specifies to output timing information
+
+  </help>
+  <requirements>
+    <requirement type="package">bfast</requirement>
+  </requirements>
+  <tests>
+    <test>
+      <param name="input1" ftype="fastqsanger" value="random_phiX_1.fastqsanger" />
+      <param name="refGenomeSource_type" value="history" />
+      <param name="ownFile" ftype="fasta" value="phiX.fasta" />
+      <param name="mask" value="111111111111111111" />
+      <param name="hash_width" value="14" />
+      <param name="source_select" value="pre_set" />
+      <param name="indexing_repeatmasker" value="False" />
+      <param name="indexing_option_selector" value="default" />
+      <param name="suppressHeader" value="" />
+      <output name="output" ftype="sam" file="bfast_out1.sam" />
+    </test>
+    <test>
+      <param name="input1" ftype="fastqsanger" value="random_phiX_1.fastqsanger"/>
+      <param name="refGenomeSource_type" value="history" />
+      <param name="ownFile" ftype="fasta" value="phiX.fasta" />
+      <param name="mask" value="111111111111111111" />
+      <param name="hash_width" value="14" />
+      <param name="source_select" value="pre_set" />
+      <param name="indexing_repeatmasker" value="False" />
+      <param name="indexing_option_selector" value="default" />
+      <param name="suppressHeader" value="--suppressHeader" />
+      <output name="output" ftype="sam" file="bfast_out1.sam" lines_diff="3" /><!--  3 headers exist in compare file, but headers are suppressed -->
+    </test>
+    <test>
+      <param name="input1" ftype="fastqcssanger" value="random_phiX_1.fastqcssanger" />
+      <param name="refGenomeSource_type" value="history" />
+      <param name="ownFile" ftype="fasta" value="phiX.fasta" />
+      <param name="mask" value="111111111111111111" />
+      <param name="hash_width" value="14" />
+      <param name="source_select" value="pre_set" />
+      <param name="indexing_repeatmasker" value="False" />
+      <param name="indexing_option_selector" value="default" />
+      <param name="suppressHeader" value="" />
+      <output name="output" ftype="sam" file="bfast_out2.sam" />
+    </test>
+    <!-- test of pre-indexed data now -->
+    <test>
+      <param name="input1" ftype="fastqsanger" value="random_phiX_1.fastqsanger" />
+      <param name="refGenomeSource_type" value="indexed" />
+      <param name="indices" value="phiX_nt_50" />
+      <param name="source_select" value="pre_set" />
+      <param name="suppressHeader" value="" />
+      <output name="output" ftype="sam" file="bfast_out3.sam" lines_diff="2" /><!-- MD:Z:11T38 instead of MD:Z:50 on one line-->
+    </test>
+  </tests>
+
+  <citations>
+    <citation type="doi">10.1371/journal.pone.0007767</citation>
+  </citations>
+
+</tool>

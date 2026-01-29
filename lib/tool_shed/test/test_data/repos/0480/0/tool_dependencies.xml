@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<tool_dependency>
+    <package name="invalid_tool_dependency_xml" version="1.0.0">
+        <install version="1.0">
+            <action type="download_file">file://./</action>
+            <action type="shell_command">/bin/true</action>
+            <action type="set_environment">
+                <environment_variable action="set_to" name="INSTALL_DIR">$INSTALL_DIR</environment_variable>
+            </action>
+        </install>
+        <readme>
+        </readme>
+    </package>
+</tool_dependency>

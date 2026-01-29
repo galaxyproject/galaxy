@@ -1,0 +1,114 @@
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  failure_runner:
+    load: integration.resubmission_runners:FailsJobRunner
+    workers: 1
+  assertion_runner:
+    load: integration.resubmission_runners:AssertionJobRunner
+    workers: 1
+  dynamic:
+    rules_module: integration.resubmission_rules
+
+execution:
+  default: initial_target_environment
+  environments:
+    initial_target_environment:
+      runner: dynamic
+      type: python
+      function: initial_target_environment
+
+    fail_first_try:
+      runner: failure_runner
+      resubmit:
+      - condition: walltime_reached
+        environment: retry_test_more_walltime
+      - condition: memory_limit_reached
+        environment: retry_test_more_mem
+      - condition: unknown_error
+        environment: retry_unknown_error
+
+    fail_first_if_memory_or_walltime:
+      runner: failure_runner
+      resubmit:
+      - condition: 'walltime_reached or memory_limit_reached'
+        environment: retry_test_generic
+
+    fail_first_any_failure:
+      runner: failure_runner
+      resubmit:
+      - condition: any_failure
+        environment: retry_test_generic
+
+    # This will fail twice and succeed on walltime reached and will fail twice and fail hard else.
+    fail_two_attempts:
+      runner: failure_runner
+      resubmit:
+      - condition: 'attempt < 3'
+      - condition: 'attempt == 3 and walltime_reached'
+        environment: retry_test_generic
+
+    # Resubmit only jobs shorter than 5 seconds.
+    resubmit_if_short:
+      runner: failure_runner
+      resubmit:
+      - condition: 'seconds_running < 5'
+        environment: retry_test_generic
+      - condition: any_failure
+        environment: fails_without_resubmission
+
+    # Resubmit after a delay.
+    resubmit_after_delay:
+      runner: failure_runner
+      resubmit:
+      - condition: any_failure
+        delay: 5
+        environment: retry_after_delay
+
+    # Resubmit after a couple delays.
+    resubmit_after_two_delays:
+      runner: failure_runner
+      resubmit:
+      # Delay 1.5 seconds and then 3 seconds, then finally send off too another runner.
+      - condition: 'attempt < 3'
+        delay: 'attempt * 1.5'
+      - condition: any_failure
+        environment: retry_after_delay
+
+    fails_without_resubmission:
+      runner: failure_runner
+
+    retry_test_more_mem:
+      runner: assertion_runner
+      dest_name: retry_test_more_mem
+
+    retry_test_more_walltime:
+      runner: assertion_runner
+      dest_name: retry_test_more_walltime
+
+    retry_unknown_error:
+      runner: assertion_runner
+      dest_name: retry_unknown_error
+
+    retry_after_delay:
+      runner: assertion_runner
+      dest_name: retry_after_delay
+
+    retry_test_generic:
+      runner: assertion_runner
+      dest_name: retry_test_generic
+
+    local:
+      runner: local
+
+resources:
+  default: test
+  groups:
+    upload: []
+    test: [test_name,failure_state,initial_target_environment,run_for]
+
+tools:
+  - class: local
+    environment: local
+    resources: upload

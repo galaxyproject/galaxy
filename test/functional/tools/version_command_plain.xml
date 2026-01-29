@@ -1,0 +1,26 @@
+<tool id="version_command_plain" name="version_command_plain" version="1.0.0">
+    <version_command><![CDATA[
+VERSION="4.0.0"; echo "$VERSION"
+    ]]></version_command>
+    <command><![CDATA[
+cp '$input' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="txt" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="simple_line.txt" />
+            <output name="out_file1" checksum="sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041" />
+            <assert_command>
+                <not_has_text text="VERSION"/>
+            </assert_command>
+            <assert_command_version>
+                <has_text text="4.0.0" />
+            </assert_command_version>
+        </test>
+    </tests>
+</tool>

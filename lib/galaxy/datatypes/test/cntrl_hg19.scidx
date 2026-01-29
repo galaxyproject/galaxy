@@ -1,0 +1,20 @@
+#2016-11-04 08:39:36.449;localbam.bam;READ1
+chrom	index	forward	reverse	value
+chr1	13038	1	0	1
+chr1	16604	0	1	1
+chr1	19215	1	0	1
+chr1	20151	0	1	1
+chr1	48908	1	0	1
+chr1	49489	1	0	1
+chr1	55105	1	0	1
+chr1	57499	0	1	1
+chr1	66636	1	0	1
+chr1	67393	0	1	1
+chr1	72875	0	1	1
+chr1	73954	0	1	1
+chr1	82146	1	0	1
+chr1	85089	0	1	1
+chr1	101405	1	0	1
+chr1	106851	0	1	1
+chr1	108358	0	1	1
+chr1	113877	0	1	1

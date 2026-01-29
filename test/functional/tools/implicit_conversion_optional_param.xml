@@ -1,0 +1,23 @@
+<tool id="implicit_conversion_optional_param" name="Test Implicit Conversion" version="0.1" profile="22.01">
+    <!-- test that optional parameter in bigwig to wig converter can be left unset -->
+    <command><![CDATA[cp '$input' '$output']]></command>
+    <inputs>
+        <param name="input" type="data" format="wig" label="Biom1 file" />
+    </inputs>
+    <outputs>
+        <data name="output" format="wig" />
+    </outputs>
+    <tests>
+        <!-- bigwig file for wig input triggers bigwig to wig conversion -->
+        <test>
+            <param name="input" ftype="bigwig" value="2.bigwig" />
+            <output name="output" ftype="wig">
+                <assert_contents>
+                    <has_text text="variableStep chrom" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

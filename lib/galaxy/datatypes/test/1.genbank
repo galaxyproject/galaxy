@@ -1,0 +1,40 @@
+LOCUS       NC_008463            6537648 bp    dna     circular UNK
+DEFINITION  Pseudomonas aeruginosa UCBPP-PA14 chromosome, complete genome.
+ACCESSION   NC_008463
+FEATURES             Location/Qualifiers
+     source          1..6537648
+                     /mol_type="genomic DNA"
+                     /db_xref="taxon:208963"
+                     /strain="UCBPP-PA14"
+                     /organism="Pseudomonas aeruginosa UCBPP-PA14"
+     gene            483..2027
+                     /locus_tag="PA14_00010"
+                     /db_xref="GeneID:4384099"
+                     /name="dnaA"
+     CDS             483..2027
+                     /db_xref="GeneID:4384099"
+                     /translation="MSVELWQQCVDLLRDELPSQQFNTWIRPLQVEAEGDELRVYAPN
+                     RFVLDWVNEKYLGRLLELLGERGEGQLPALSLLIGSKRSRTPRAAIVPSQTHVAPPPP
+                     VAPPPAPVQPVSAAPVVVPREELPPVTTAPSVSSDPYEPEEPSIDPLAAAMPAGAAPA
+                     VRTERNVQVEGALKHTSYLNRTFTFENFVEGKSNQLARAAAWQVADNLKHGYNPLFLY
+                     GGVGLGKTHLMHAVGNHLLKKNPNAKVVYLHSERFVADMVKALQLNAINEFKRFYRSV
+                     DALLIDDIQFFARKERSQEEFFHTFNALLEGGQQVILTSDRYPKEIEGLEERLKSRFG
+                     WGLTVAVEPPELETRVAILMKKAEQAKIELPHDAAFFIAQRIRSNVRELEGALKRVIA
+                     HSHFMGRPITIELIRESLKDLLALQDKLVSIDNIQRTVAEYYKIKISDLLSKRRSRSV
+                     ARPRQVAMALSKELTNHSLPEIGVAFGGRDHTTVLHACRKIAQLRESDADIREDYKNL
+                     LRTLTT"
+                     /product="chromosomal replication initiation protein"
+                     /product_name_confidence=""
+                     /note="GO_function: ATP binding [goid GO:0005524]
+                     [evidence ISM];
+                     GO_process: DNA replication initiation [goid GO:0006270]
+                     [evidence ISM];
+                     GO_process: regulation of DNA replication [goid
+                     GO:0006275] [evidence ISM];
+                     GO_function: sequence-specific DNA binding [goid
+                     GO:0043565] [evidence ISM];
+                     GO_function: DNA binding [goid GO:0003677] [evidence
+                     ISM];
+                     GO_function: DNA replication origin binding [goid
+                     GO:0003688] [evidence ISM];
+                     "

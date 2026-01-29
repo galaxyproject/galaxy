@@ -1,0 +1,31 @@
+<tool id="interactivetool_two_entry_points" name="interactivetool_two_entry_points" tool_type="interactive" version="0.1">
+    <requirements>
+        <container type="docker">galaxy/test-http-example:0.1</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Server 1" requires_domain="True">
+            <port>7000</port>
+            <url>/</url>
+        </entry_point>
+        <entry_point name="Server 2" requires_domain="True">
+            <port>7001</port>
+            <url>/</url>
+        </entry_point>
+    </entry_points>
+    <command detect_errors="exit_code"><![CDATA[
+        echo "hello from IT" > '$test_output' &&
+        cd /;
+        python -m SimpleHTTPServer 7000 &
+        python -m SimpleHTTPServer 7001
+    ]]>
+    </command>
+    <inputs>
+    </inputs>
+    <outputs>
+        <data name="test_output" format="txt"/>
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

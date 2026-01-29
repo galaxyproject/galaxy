@@ -1,0 +1,9 @@
+include *.rst *.txt LICENSE */py.typed
+include galaxy/tool_util/deps/mulled/invfile.lua
+include galaxy/tool_util/deps/resolvers/default_conda_mapping.yml
+include galaxy/tool_util/toolbox/filters/*.sample
+include galaxy/tool_util/verify/test_config.sample.yml
+include galaxy/tool_util/xsd/*
+include galaxy/tool_util/ontologies/*tsv
+include galaxy/tool_util/linters/datatypes_conf.xml.sample
+include galaxy/tool_util/upgrade/upgrade_codes.json

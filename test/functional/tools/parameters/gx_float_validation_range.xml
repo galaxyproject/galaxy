@@ -1,0 +1,15 @@
+<tool id="gx_float_validation_range" name="gx_float_validation_range" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="parameter" value="1" type="float">
+            <validator type="in_range" min="0.1" max="9.8" exclude_min="false" exclude_max="true" />
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+</tool>

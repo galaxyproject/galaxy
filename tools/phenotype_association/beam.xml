@@ -1,0 +1,141 @@
+<tool id="hgv_beam" name="BEAM" version="1.0.0">
+  <description>significant single- and multi-locus SNP associations in case-control studies</description>
+
+  <command interpreter="bash">
+    BEAM2_wrapper.sh map=${input.extra_files_path}/${input.metadata.base_name}.map ped=${input.extra_files_path}/${input.metadata.base_name}.ped $burnin $mcmc $pvalue significance=$significance posterior=$posterior
+  </command>
+
+  <inputs>
+    <param format="lped" name="input" type="data" label="Dataset"/>
+    <param name="burnin" label="Number of MCMC burn-in steps" type="integer" value="200" />
+    <param name="mcmc" label="Number of MCMC sampling steps" type="integer" value="200" />
+    <param name="pvalue" label="Significance cutoff (after Bonferroni adjustment)" type="float" value="0.05" />
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="significance" />
+    <data format="tabular" name="posterior" />
+  </outputs>
+
+  <requirements>
+    <requirement type="package">beam</requirement>
+    <requirement type="binary">mv</requirement>
+    <requirement type="binary">rm</requirement>
+  </requirements>
+
+  <!-- broken.  will be fixed soon.
+  <tests>
+    <test>
+      <param name='input' value='gpass_and_beam_input' ftype='lped' >
+        <metadata name='base_name' value='gpass_and_beam_input' />
+        <composite_data value='gpass_and_beam_input.ped' />
+        <composite_data value='gpass_and_beam_input.map' />
+        <edit_attributes type='name' value='gpass_and_beam_input' />
+      </param>
+      <param name="burnin" value="200"/>
+      <param name="mcmc" value="200"/>
+      <param name="pvalue" value="0.05"/>
+      <output name="significance" file="beam_output1.tab"/>
+      <output name="posterior" file="beam_output2.tab"/>
+    </test>
+  </tests>
+  -->
+
+  <help>
+.. class:: infomark
+
+This tool can take a long time to run, depending on the number of SNPs, the
+sample size, and the number of MCMC steps specified.  If you have hundreds
+of thousands of SNPs, it may take over a day.  The main tasks that slow down
+this tool are searching for interactions and dynamically partitioning the
+SNPs into blocks.  Optimization is certainly possible, but hasn't been done
+yet.  **If your only interest is to detect SNPs with primary effects (i.e.,
+single-SNP associations), please use the GPASS tool instead.**
+
+-----
+
+**Dataset formats**
+
+The input dataset must be in lped_ format.  The output datasets are both tabular_.
+(`Dataset missing?`_)
+
+.. _lped: ${static_path}/formatHelp.html#lped
+.. _tabular: ${static_path}/formatHelp.html#tabular
+.. _Dataset missing?: ${static_path}/formatHelp.html
+
+-----
+
+**What it does**
+
+BEAM (Bayesian Epistasis Association Mapping) uses a Markov Chain Monte Carlo (MCMC) method to infer SNP block structures and detect both single-marker
+and interaction effects from case-control SNP data.
+This tool also partitions SNPs into blocks based on linkage disequilibrium (LD).  The method utilized is Bayesian, so the outputs are posterior probabilities of association, along with block partitions.  An advantage of this method is that it provides uncertainty measures for the associations and block partitions, and it scales well from small to large sample sizes. It is powerful in detecting gene-gene interactions, although slow for large datasets.
+
+-----
+
+**Example**
+
+- input map file::
+
+    1  rs0  0  738547
+    1  rs1  0  5597094
+    1  rs2  0  9424115
+    etc.
+
+- input ped file::
+
+    1 1 0 0 1  1  G G  A A  A A  A A  A A  A G  A A  G G  G G  A A  G G  G G  G G  A A  A A  A G  A A  G G  A G  A G  A A  G G  A A  G G  A A  G G  A G  A A  G G  A A  G G  A A  A G  A G  G G  A G  G G  G G  A A  A G  A A  G G  G G  G G  G G  A G  A A  A A  A A  A A
+    1 1 0 0 1  1  G G  A G  G G  A A  A A  A G  A A  G G  G G  G G  A A  G G  A G  A G  G G  G G  A G  G G  A G  A A  G G  A G  G G  A A  G G  G G  A G  A G  G G  A G  A A  A A  G G  G G  A G  A G  G G  A G  A A  A A  A G  G G  A G  G G  A G  G G  G G  A A  G G  A G
+    etc.
+
+- first output file, significance.txt::
+
+    ID   chr   position  results
+    rs0  chr1  738547    10 20 score= 45.101397 , df= 8 , p= 0.000431 , N=1225
+
+- second output file, posterior.txt::
+
+    id:  chr position  marginal + interaction = total posterior
+    0:   1 738547      0.0000 + 0.0000 = 0.0000
+    1:   1 5597094     0.0000 + 0.0000 = 0.0000
+    2:   1 9424115     0.0000 + 0.0000 = 0.0000
+    3:   1 13879818    0.0000 + 0.0000 = 0.0000
+    4:   1 13934751    0.0000 + 0.0000 = 0.0000
+    5:   1 16803491    0.0000 + 0.0000 = 0.0000
+    6:   1 17236854    0.0000 + 0.0000 = 0.0000
+    7:   1 18445387    0.0000 + 0.0000 = 0.0000
+    8:   1 21222571    0.0000 + 0.0000 = 0.0000
+    etc.
+
+    id:  chr position block_boundary  | allele counts in cases and controls
+    0:   1 738547      1.000          | 156 93 251 | 169 83 248 
+    1:   1 5597094     1.000          | 323 19 158 | 328 16 156 
+    2:   1 9424115     1.000          | 366 6 128 | 369 11 120 
+    3:   1 13879818    1.000          | 252 31 217 | 278 32 190 
+    4:   1 13934751    1.000          | 246 64 190 | 224 58 218 
+    5:   1 16803491    1.000          | 91 160 249 | 91 174 235 
+    6:   1 17236854    1.000          | 252 43 205 | 249 44 207 
+    7:   1 18445387    1.000          | 205 66 229 | 217 56 227 
+    8:   1 21222571    1.000          | 353 9 138 | 352 8 140 
+    etc.
+
+  The "id" field is an internally used index.
+
+-----
+
+**References**
+
+Zhang Y, Liu JS. (2007)
+Bayesian inference of epistatic interactions in case-control studies.
+Nat Genet. 39(9):1167-73. Epub 2007 Aug 26.
+
+Zhang Y, Zhang J, Liu JS. (2010)
+Block-based bayesian epistasis association mapping with application to WTCCC type 1 diabetes data.
+Submitted.
+
+  </help>
+  <citations>
+    <citation type="doi">10.1038/ng2110</citation>
+    <citation type="doi">10.1214/11-AOAS469</citation>
+  </citations>
+</tool>

@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!-- 
+    - Add ready_for_resubmission to job_wrapper.
+    - Use in the handler.
+-->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="1"/>
+        <plugin id="dynamic" type="runner">
+            <param id="rules_module">integration.objectstore_selection_rules</param>
+        </plugin>
+    </plugins>
+
+    <destinations default="local">
+        <!-- Upload destination. -->
+        <destination id="local" runner="local">
+        </destination>
+
+        <!-- Static object store configuration per destination. -->
+        <destination id="static_object_store" runner="local">
+            <param id="object_store_id">static</param>
+        </destination>
+
+        <!-- Dynamic object store configuration - can dispatch on user, tool, destination, etc.. -->
+        <destination id="dynamic_object_store_destination" runner="dynamic">
+            <param id="type">python</param>
+            <param id="function">the_destination</param>
+        </destination>
+
+    </destinations>
+
+    <resources default="test">
+      <group id="upload"></group>
+      <group id="storage_params">how_store</group>
+    </resources>
+
+    <tools>
+        <tool id="upload1" destination="local" resources="upload" />
+        <tool id="multi_data_param" destination="static_object_store" />
+        <tool id="create_10" destination="dynamic_object_store_destination" resources="storage_params" />
+    </tools>
+
+</job_conf>

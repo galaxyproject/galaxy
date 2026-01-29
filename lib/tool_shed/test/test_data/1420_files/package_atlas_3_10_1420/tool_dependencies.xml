@@ -1,0 +1,22 @@
+<tool_dependency>
+    <package name="atlas" version="3.10.1">
+        <install version="1.0">
+            <actions>
+                <!-- first action is always downloading -->
+                <action type="download_file">file://__PATH__</action>
+                <action type="move_directory_files">
+					<source_directory>.</source_directory>
+					<destination_directory>$INSTALL_DIR</destination_directory>
+				</action>
+                <action type="set_environment">
+                    <environment_variable name="ATLAS_LIB_DIR" action="set_to">$INSTALL_DIR/atlas/lib</environment_variable>
+                    <environment_variable name="ATLAS_INCLUDE_DIR" action="set_to">$INSTALL_DIR/atlas/include</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>ATLAS_LIB_DIR and ATLAS_INCLUDE_DIR (including libatlas.a) will be exported for later use.
+        During ATLAS library compilation, ATLAS performs code efficiency checks. These checks can only provide optimal results, if "frequency scaling" is disabled on the CPU, and no other load-intense processes are running. 
+        Ideally, you should compile on an empty cluster node with CPU frequency scaling disabled (see "cpufreq-selector" or "cpufreq-set").
+        </readme>
+    </package>
+</tool_dependency>

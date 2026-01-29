@@ -1,0 +1,3 @@
+include *.rst *.txt LICENSE */py.typed
+include galaxy_test/selenium/jupyter/galaxy_selenium_context.yml.sample
+include galaxy_test/selenium/jupyter/*.ipynb

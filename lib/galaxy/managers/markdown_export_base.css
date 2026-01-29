@@ -1,0 +1,14 @@
+p {
+}
+
+img{
+	width: 100%;
+}
+
+/**
+ *  Emulate dataset peek when generating tables.
+ */
+pre th {
+    color: white;
+    background: #25537b;
+}

@@ -1,0 +1,67 @@
+<tool id="multi_output_configured" name="Multi_Output_Configured" version="0.1.0">
+  <command>
+    echo "Hello" > $report;
+    mkdir subdir1;
+    echo "This" > subdir1/this.txt;
+    echo "That" > subdir1/that.txt;
+    mkdir subdir2;
+    echo "1" > subdir2/CUSTOM_1.txt;
+    echo "2" > subdir2/CUSTOM_2.tabular;
+    echo "3" > subdir2/CUSTOM_3.txt;
+    mkdir subdir3;
+    echo "Foo" > subdir3/Foo;
+    echo "mapped reads" > split_bam_.MAPPED.bam;
+    echo "unmapped reads" > split_bam_.UNMAPPED.bam;
+    echo "1" > sample1.report.tsv;
+    echo "2" > sample2.report.tsv;
+    echo "3" > sample3.report.tsv;
+  </command>
+  <inputs>
+    <param name="num_param" type="integer" value="7" />
+    <param name="input" type="data" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="report">
+      <discover_datasets pattern="__designation_and_ext__" directory="subdir1" visible="true" />
+      <discover_datasets pattern="CUSTOM_(?P&lt;designation&gt;.+)\.(?P&lt;ext&gt;.+)" directory="subdir2" visible="true" />
+      <discover_datasets pattern="__designation__" directory="subdir3" ext="input" visible="true" />
+      <discover_datasets pattern="split_bam_\.(?P&lt;designation&gt;([A-Z-])\w+)\.bam" format="txt" visible="true" /> <!-- can use ext or format attribute. -->
+      <discover_datasets pattern="(?P&lt;designation&gt;.+)\.report\.tsv" ext="tabular" visible="true" />
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="num_param" value="7" />
+      <param name="input" ftype="txt" value="simple_line.txt"/>
+      <output name="report">
+        <assert_contents>
+          <has_line line="Hello" />
+        </assert_contents>
+        <discovered_dataset designation="this" ftype="txt">
+          <assert_contents><has_line line="This" /></assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="that" ftype="txt">
+          <assert_contents><has_line line="That" /></assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="1" ftype="txt">
+          <assert_contents><has_line line="1" /></assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="2" ftype="tabular">
+          <assert_contents><has_line line="2" /></assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="Foo" ftype="txt">
+          <assert_contents><has_line line="Foo" /></assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="MAPPED" ftype="txt">
+          <assert_contents><has_line line="mapped reads" /></assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="UNMAPPED" ftype="txt">
+          <assert_contents><has_line line="unmapped reads" /></assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="sample1" ftype="tabular">
+          <assert_contents><has_line line="1" /></assert_contents>
+        </discovered_dataset>
+      </output>
+    </test>
+  </tests>
+</tool>

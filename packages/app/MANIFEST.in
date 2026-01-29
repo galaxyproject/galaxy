@@ -1,0 +1,12 @@
+include *.rst *.txt LICENSE */py.typed
+include galaxy/carbon_emissions/carbon_intensity.csv
+include galaxy/dependencies/*.txt
+include galaxy/dependencies/*.sh
+include galaxy/jobs/runners/util/job_script/*.sh
+include galaxy/managers/licenses.json
+include galaxy/managers/markdown_export_base.css
+recursive-include galaxy/tools/ *.xml
+recursive-include galaxy/tools/bundled/ *.pl *.py *.R *.sh
+include galaxy/tools/bundled/interactive/default_notebook.ipynb
+include galaxy/tools/expressions/*.js
+include galaxy/workflow/resources/*.sample

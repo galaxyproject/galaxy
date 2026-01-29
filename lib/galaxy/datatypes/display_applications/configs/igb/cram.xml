@@ -1,0 +1,13 @@
+<display id="igb_cram" version="0.0.0" name="display in IGB">
+    <link id="View" name="View">
+        <url>http://bioviz.org/galaxy.html?version=${cram_file.dbkey}&amp;feature_url_0=${cram_file.url}&amp;sym_name_0=${niceName}&amp;sym_method_0=${cram_file.url}&amp;query_url=${cram_file.url}&amp;server_url=galaxy</url>
+        <param type="data" name="cram_file_for_name" viewable="False"/>
+        <param type="template" name="niceName" viewable="False" strip="True">
+            #import re
+            #set nm=$cram_file_for_name.name
+            ${re.sub('\W',"_",nm)}
+        </param>
+        <param type="data" name="crai_file" url="${niceName}.cram.crai" metadata="cram_index" />
+        <param type="data" name="cram_file" url="${niceName}.cram" />
+    </link>
+</display>

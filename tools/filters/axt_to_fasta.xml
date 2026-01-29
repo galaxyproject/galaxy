@@ -1,0 +1,72 @@
+<tool id="axt_to_fasta" name="AXT to FASTA" version="1.0.0">
+  <description>Converts an AXT formatted file to FASTA format</description>
+  <edam_operations>
+    <edam_operation>operation_3434</edam_operation>
+  </edam_operations>
+  <command interpreter="python">axt_to_fasta.py $dbkey_1 $dbkey_2 &lt; $axt_input &gt; $out_file1</command>
+  <inputs>
+    <param format="axt" name="axt_input" type="data" label="AXT file"/>
+    <param name="dbkey_1" type="genomebuild" label="Genome"/>
+    <param name="dbkey_2" type="genomebuild" label="Genome"/>
+  </inputs>
+  <outputs>
+    <data format="fasta" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="axt_input" value="1.axt" ftype="axt" />
+      <param name="dbkey_1" value="hg17" />
+      <param name="dbkey_2" value="panTro1" />
+      <output name="out_file1" file="axt_to_fasta.dat" />
+    </test>
+  </tests>
+  <help>
+
+.. class:: warningmark
+
+**IMPORTANT**: AXT formatted alignments will be phased out from Galaxy in the coming weeks. They will be replaced with pairwise MAF alignments, which are already available. To try pairwise MAF alignments use "Extract Pairwise MAF blocks" tool in *Fetch Sequences and Alignments* section.
+
+--------
+
+
+**Syntax**
+
+This tool converts an AXT formatted file to the FASTA format.
+
+- **AXT format** The alignments are produced from Blastz, an alignment tool available from Webb Miller's lab at Penn State University. The lav format Blastz output, which does not include the sequence, was converted to AXT format with lavToAxt. Each alignment block in an AXT file contains three lines: a summary line and 2 sequence lines. Blocks are separated from one another by blank lines.
+
+- **FASTA format** a text-based format for representing both nucleic and protein sequences, in which base pairs or proteins are represented using a single-letter code.
+
+  - This format contains an one line header. It starts with a " >" symbol. The first word on this line is the name of the sequence. The rest of the line is a description of the sequence.
+  - The remaining lines contain the sequence itself.
+  - Blank lines in a FASTA file are ignored, and so are spaces or other gap symbols (dashes, underscores, periods) in a sequence.
+  - Fasta files containing multiple sequences are just the same, with one sequence listed right after another. This format is accepted for many multiple sequence alignment programs.
+
+-----
+
+**Example**
+
+- AXT format::
+
+    0 chr19 3001012 3001075 chr11 70568380 70568443 - 3500
+    TCAGCTCATAAATCACCTCCTGCCACAAGCCTGGCCTGGTCCCAGGAGAGTGTCCAGGCTCAGA
+    TCTGTTCATAAACCACCTGCCATGACAAGCCTGGCCTGTTCCCAAGACAATGTCCAGGCTCAGA
+
+    1 chr19 3008279 3008357 chr11 70573976 70574054 - 3900
+    CACAATCTTCACATTGAGATCCTGAGTTGCTGATCAGAATGGAAGGCTGAGCTAAGATGAGCGACGAGGCAATGTCACA
+    CACAGTCTTCACATTGAGGTACCAAGTTGTGGATCAGAATGGAAAGCTAGGCTATGATGAGGGACAGTGCGCTGTCACA
+
+- Convert the above file to FASTA format::
+
+    &gt;hg16.chr19(+):3001012-3001075|hg16_0
+    TCAGCTCATAAATCACCTCCTGCCACAAGCCTGGCCTGGTCCCAGGAGAGTGTCCAGGCTCAGA
+    &gt;mm5.chr11(-):70568380-70568443|mm5_0
+    TCTGTTCATAAACCACCTGCCATGACAAGCCTGGCCTGTTCCCAAGACAATGTCCAGGCTCAGA
+
+    &gt;hg16.chr19(+):3008279-3008357|hg16_1
+    CACAATCTTCACATTGAGATCCTGAGTTGCTGATCAGAATGGAAGGCTGAGCTAAGATGAGCGACGAGGCAATGTCACA
+    &gt;mm5.chr11(-):70573976-70574054|mm5_1
+    CACAGTCTTCACATTGAGGTACCAAGTTGTGGATCAGAATGGAAAGCTAGGCTATGATGAGGGACAGTGCGCTGTCACA
+
+  </help>
+</tool>

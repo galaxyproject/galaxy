@@ -1,0 +1,20 @@
+<tool id="CONVERTER_fastqsolexa_to_qual_0" name="Convert Fastqsolexa to Qual" version="1.0.1" profile="16.04">
+    <requirements>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+    <command>python '$__tool_directory__/fastqsolexa_to_qual_converter.py' '$input1' '$output1' ${input1.extension}</command>
+    <inputs>
+        <param format="fastqsolexa" name="input1" type="data" label="Choose Fastqsolexa file"/>
+    </inputs>
+    <outputs>
+        <data format="qualsolexa" name="output1" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" ftype="fastqsolexa" value="2.fastqsolexa"/>
+            <output name="output1" ftype="qualsolexa" value="2.qualsolexa"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -1,0 +1,82 @@
+<tool id="Summary_Statistics1" name="Summary Statistics" version="1.1.2">
+  <description>for any numerical column</description>
+  <edam_topics>
+    <edam_topic>topic_2269</edam_topic>
+  </edam_topics>
+  <requirements>
+    <requirement type="package" version="2.9.4">rpy2</requirement>
+  </requirements>
+  <stdio>
+    <exit_code range="1" level="fatal" />
+  </stdio>
+  <command>
+python '$__tool_directory__/gsummary.py' '$input' '$out_file1' '$cond'
+  </command>
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Summary statistics on" help="Dataset missing? See TIP below"/>
+    <param name="cond" type="text" value="c5" label="Column or expression" help="See syntax below">
+      <validator type="empty_field" message="Enter a valid column or expression, see syntax below for examples"/>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="tabular" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="cond" value="c2"/>
+      <output name="out_file1" file="gsummary_out1.tabular"/>
+    </test>
+  </tests>
+  <help>
+.. class:: warningmark
+
+This tool expects input datasets consisting of tab-delimited columns (blank or comment lines beginning with a # character are automatically skipped).
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert delimiters to TAB*
+
+.. class:: infomark
+
+**TIP:** Computing summary statistics may throw exceptions if the data value in every line of the columns being summarized is not numerical.  If a line is missing a value or contains a non-numerical value in the column being summarized, that line is skipped and the value is not included in the statistical computation.  The number of invalid skipped lines is documented in the resulting history item.
+
+.. class:: infomark
+
+**USING R FUNCTIONS:** Most functions (like *abs*) take only a single expression. *log* can take one or two parameters, like *log(expression,base)*
+
+Currently, these R functions are supported: *abs, sign, sqrt, floor, ceiling, trunc, round, signif, exp, log, cos, sin, tan, acos, asin, atan, cosh, sinh, tanh, acosh, asinh, atanh, lgamma, gamma, gammaCody, digamma, trigamma, cumsum, cumprod, cummax, cummin*
+
+-----
+
+**Syntax**
+
+This tool computes basic summary statistics on a given column, or on a valid expression containing one or more columns.
+
+- Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file.
+
+- For example:
+
+  - **log(c5)** calculates the summary statistics for the natural log of column 5
+  - **(c5 + c6 + c7) / 3** calculates the summary statistics on the average of columns 5-7
+  - **log(c5,10)** summary statistics of the base 10 log of column 5
+  - **sqrt(c5+c9)** summary statistics of the square root of column 5 + column 9
+
+-----
+
+**Examples**
+
+- Input Dataset::
+
+    c1      c2      c3      c4      c5              c6
+    586     chrX    161416  170887  41108_at        16990
+    73      chrX    505078  532318  35073_at        1700
+    595     chrX    1361578 1388460 33665_s_at      1960
+    74      chrX    1420620 1461919 1185_at         8600
+
+- Summary Statistics on column c6 of the above input dataset::
+
+    #sum       mean      stdev     0%        25%       50%       75%        100%
+    29250.000  7312.500  7198.636  1700.000  1895.000  5280.000  10697.500  16990.000
+  </help>
+</tool>

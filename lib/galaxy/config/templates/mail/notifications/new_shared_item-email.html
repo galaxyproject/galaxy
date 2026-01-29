@@ -1,0 +1,81 @@
+Use this template to customize the HTML email your users will receive
+when a new notification of category "new_shared_item" is sent to them.
+Copy the file to {{ templates_dir }}/mail/notifications/new_shared_item-email.html and modify as required.
+
+If you are adding URLs, remember that only absolute URLs (with
+a domain name) make sense in email! They can be served from any stable
+location, including your Galaxy server or GitHub.
+
+The following variables are available for inserting into the HTML with Jinja2
+syntax, like {{ variable_name }}. They will be rendered into the text before
+the email is sent:
+
+- name                      The user's name
+- user_email                The user's email
+- date                      Date and time of the notification
+- hostname                  Your galaxy's hostname (i.e. usegalaxy.* or the value in `server_name` from the galaxy config file)
+- contact_email             Your galaxy's contact email
+- notification_settings_url The URL to the user's notification settings to manage their subscriptions
+- variant                   The notification variant indicates the level of importance of the notification (i.e. info, warning, urgent)
+- content                   The new_shared_item payload
+  - item_type               The type of the shared item
+  - item_name               The name of the shared item
+  - owner_name              The name of the owner of the shared item
+  - slug                    The slug of the shared item. Used for the link to the item.
+- galaxy_url                The URL to the Galaxy instance (i.e. https://usegalaxy.*)
+
+Template begins here >>>>>>
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>[Galaxy] New {{ content['item_type'] }} shared with you: </title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  </head>
+  <body style="font-family: 'Roboto', sans-serif;">
+
+    <p style="font-size: 12pt;">
+      Hello {{ name }},<br><br>
+
+      A new <b>{{ content['item_type'] }}</b> named <i>{{ content['item_name'] }}</i> has been shared with you on <b>{{ date }}</b> by <b>{{ content['owner_name'] }}</b>.
+    </p>
+
+    <p style="font-size: 12pt;">
+      To access the shared {{ content['item_type'] }}, please visit the following link:
+      <br>
+      <a href="{{galaxy_url}}/{{ content['slug'] }}">{{ content['item_name'] }}</a>
+      <br><br>
+    
+    <p style="font-size: 12pt;">
+      Thank you for using Galaxy!
+    </p>
+    
+
+    <p style="font-size: 12pt;">
+      Regards,<br>
+      Your Galaxy Team at <a href="{{ galaxy_url }}">{{ hostname }}</a>
+    </p>
+
+    <p style="font-size: 10pt;">
+      You received this email because you are subscribed to receive notifications when another user shares an item with you.
+      {% if notification_settings_url %}
+      You can manage your notification settings <a href="{{ notification_settings_url }}">here</a>.
+      {% endif %}
+      
+      <br>
+
+      {% if contact_email %}
+      This is an automated email. If you have any questions or concerns, please do not reply to this email, instead, contact us at <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.
+      {% endif %}
+    </p>
+
+    <img
+      style="width: 130px; height: auto; margin: 15px 0;"
+      src="https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo_square.png"
+      alt="Galaxy project logo"
+    >
+
+    <br>
+
+  </body>
+</html>

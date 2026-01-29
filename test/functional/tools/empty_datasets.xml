@@ -1,0 +1,34 @@
+<tool id="empty_datasets" name="empty_datasets" version="1.0.0" profile="17.09">
+    <command>
+        touch $output;
+        touch out;
+        touch out_meta;
+        cp $c1 galaxy.json
+    </command>
+    <configfiles>
+      <configfile name="c1">{"output_tool_supplied_metadata": {
+  "name": "my dynamic name",
+  "ext": "fasta",
+  "info": "my dynamic info"
+}}
+</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input" type="integer" value="0" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+        <data name="output_workdir" from_work_dir="out" format="txt" />
+        <data name="output_tool_supplied_metadata" from_work_dir="out_meta" format="auto" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="7" />
+            <output name="output" md5="d41d8cd98f00b204e9800998ecf8427e" />
+            <output name="output_workdir" md5="d41d8cd98f00b204e9800998ecf8427e" />
+            <output name="output_tool_supplied_metadata" md5="d41d8cd98f00b204e9800998ecf8427e" ftype="fasta">
+                <metadata name="name" value="my dynamic name" />
+            </output>
+        </test>
+    </tests>
+</tool>

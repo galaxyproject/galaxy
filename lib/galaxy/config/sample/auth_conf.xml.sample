@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+<auth>
+<!--<authenticator>
+        <type>ldap</type>
+-->
+        <!-- Replacement fields: instances of {email}, {username} and {password}
+             are replaced with the corresponding user's values inside the
+             <filter>, <server>, <ldap-options>, <search-fields>,
+             <search-filter>, <search-base>, <search-user> and <search-password>
+             elements. -->
+        <!-- Filter users for which this authenticator applies. This is a Python
+             expression which is evaluated after field replacement. -->
+<!--    <filter>'{email}'.endswith('@example.com')</filter>
+        <options>
+-->
+            <!-- Whether to allow user registration. Possible values are True,
+                 False and Challenge (i.e. allow registration in case of
+                 successful authentication). Default is True. -->
+<!--        <allow-register>False</allow-register>
+-->
+            <!-- Whether Galaxy should automatically register users when they
+                 first login. Default is False. -->
+<!--        <auto-register>True</auto-register>
+-->
+
+            <!-- How often Galaxy should retry to validate a user-name: 
+                 If a username is invalid (already taken, too short, too long, non-alphanumeric + '_-')
+                 Galaxy tries again with username+"-i" for i<= max-retries. -->
+<!--        <max-retries>10</max-retries>
+-->
+            <!-- Whether users are allowed to change their password. Default is
+                 False. -->
+<!--        <allow-password-change>False</allow-password-change>
+-->
+            <!-- Whether roles should be automatically created if
+                 the attribute specified under auto-register-roles can be found.
+                 Default is False. -->
+<!--        <auto-create-roles>False</auto-create-roles>
+-->
+            <!-- Whether groups should be automatically created if
+                 the attribute specified under auto-register-roles can be found.
+                 Can be used in combination with auto-create-roles
+                 Default is False. -->
+<!--        <auto-create-groups>False</auto-create-groups>
+-->
+            <!-- If set, roles will be assigned to the auto generated groups,
+            not to the individual users. Can only be used if auto-create-roles and
+            auto-create-groups are True. Default is False. -->
+<!--        <auto-assign-roles-to-groups-only>False</auto-assign-roles-to-groups-only>
+-->
+
+            <!-- LDAP-specific options -->
+<!--        <server>ldap://dc1.example.com</server>
+-->
+            <!-- Additional options for the LDAP connection. The syntax is:
+                 option1=value1,option2=value2,...
+                 Options and values should match those from the python-ldap
+                 documentation.
+                 The following example allows connecting to ldaps:// (SSL/TLS)
+                 when self-signed certificates are used 
+                 These options are valid only if ldap provider is used. 
+                 For ldap3 none of these options are used-->
+<!--        <ldap-options>OPT_X_TLS_REQUIRE_CERT=OPT_X_TLS_ALLOW</ldap-options>
+-->
+            <!-- Whether unregistered users should use their LDAP username
+                 instead of the email at their first login when auto-register is
+                 True. Default is False. -->
+<!--        <login-use-username>False</login-use-username>
+-->
+            <!-- Whether to continue with the following authenticators if LDAP
+                 fails. Default is False. -->
+<!--        <continue-on-failure>False</continue-on-failure>
+-->
+            <!-- If search-fields is not specified, all other search-* elements
+                 are ignored.
+                 If search-user is not specified, Galaxy will bind anonymously
+                 to the LDAP server for search. -->
+            <!-- For Active Directory: -->
+<!--        <search-fields>sAMAccountName,mail</search-fields>
+            <search-base>dc=dc1,dc=example,dc=com</search-base>
+-->
+            <!-- If login-use-username is False -->
+<!--        <search-filter>(&amp;(objectClass=user)(mail={email}))</search-filter>
+-->
+            <!-- If login-use-username is True -->
+<!--        <search-filter>(&amp;(objectClass=user)(sAMAccountName={username}))</search-filter>
+-->
+            <!-- Only allow authentication when the user is a member of the given (CN, DN, ...)
+                 The given string will be searched for in each of the memberOf entries returned by
+                 the LDAP search (case sensitive). Partial hits are allowed so be as precise as
+                 possible -->
+<!--        <search-memberof-filter>galaxyGroup</search-memberof-filter>
+-->
+<!--        <search-user>jsmith@dc1.example.com</search-user>
+            <search-password>mysecret</search-password>
+-->
+            <!-- For OpenLDAP: -->
+<!--        <search-fields>uid,mail</search-fields>
+            <search-base>ou=People,dc=example,dc=com</search-base>
+-->
+            <!-- If login-use-username is False -->
+<!--        <search-filter>(mail={email})</search-filter>
+-->
+            <!-- If login-use-username is True -->
+<!--        <search-filter>(uid={username})</search-filter>
+-->
+<!--        <search-user>cn=jsmith,ou=People,dc=domain,dc=com</search-user>
+            <search-password>mysecret</search-password>
+-->
+
+            <!-- Replacement fields: instances of {email}, {username},
+                 {password}, {dn} plus all fields defined in <search-fields> are
+                 replaced with the corresponding user's values inside the
+                 <bind-user>, <bind-password>, <auto-register-username> and
+                 <auto-register-email> elements. -->
+            <!-- For Active Directory: -->
+<!--        <bind-user>{sAMAccountName}@dc1.example.com</bind-user>
+            <bind-password>{password}</bind-password>
+            <auto-register-username>{sAMAccountName}</auto-register-username>
+            <auto-register-email>{mail}</auto-register-email>
+            <auto-register-roles>{gidNumber}</auto-register-roles>
+-->
+            <!-- For OpenLDAP: -->
+<!--        <bind-user>{dn}</bind-user>
+            <bind-password>{password}</bind-password>
+            <auto-register-username>{uid}</auto-register-username>
+            <auto-register-email>{mail}</auto-register-email>
+            <auto-register-roles>{gid}</auto-register-roles>
+-->
+<!--    </options>
+    </authenticator>
+-->
+
+    <authenticator>
+        <type>localdb</type>
+        <options>
+            <!-- Whether users are allowed to change their password. Default is
+                 False. -->
+            <allow-password-change>true</allow-password-change>
+        </options>
+    </authenticator>
+</auth>

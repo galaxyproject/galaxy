@@ -1,0 +1,22 @@
+<tool id="CONVERTER_fasta_to_len" name="Convert FASTA to len file" version="1.0.1" profile="16.04">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <requirements>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+    <command>python '$__tool_directory__/fasta_to_len.py' '$input' '$output' 0</command>
+    <inputs>
+        <param name="input" type="data" format="fasta" label="Fasta file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="len"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="fasta" value="chr_m.fasta"/>
+            <output name="output" ftype="len" value="chr_m.len"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

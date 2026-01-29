@@ -1,0 +1,58 @@
+<tool id="bed_to_bigBed" name="BED-to-bigBed" version="1.0.1">
+  <description>converter</description>
+  <edam_operations>
+    <edam_operation>operation_3434</edam_operation>
+  </edam_operations>
+  <requirements>
+    <requirement type="package" version="357">ucsc-bedtobigbed</requirement>
+  </requirements>
+  <command>bedToBigBed $input1 $chromInfo $out_file1
+    #if $settings.settingsType == "full":
+      -blockSize=${settings.blockSize} -itemsPerSlot=${settings.itemsPerSlot} ${settings.unc}
+    #end if
+    2&gt;&amp;1 || echo "Error running bedToBigBed." >&amp;2
+  </command>
+  <inputs>
+    <param format="bed" name="input1" type="data" label="Convert">
+      <validator type="unspecified_build" />
+    </param>
+    <conditional name="settings">
+      <param name="settingsType" type="select" label="Converter settings to use" help="Default settings should usually be used.">
+        <option value="preset">Default</option>
+        <option value="full">Full parameter list</option>
+      </param>
+      <when value="preset" />
+      <when value="full">
+        <param name="blockSize" type="integer" value="256" label="Items to bundle in r-tree" help="Default is 256 (blockSize)" />
+        <param name="itemsPerSlot" type="integer" value="512" label="Data points bundled at lowest level" help="Default is 512 (itemsPerSlot)" />
+        <param name="unc" type="boolean" truevalue="-unc" falsevalue="" checked="False" label="Do not use compression" help="(unc)"/>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="bigbed" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="7.bed" dbkey="hg17" />
+      <param name="settingsType" value="full" />
+      <param name="blockSize" value="256" />
+      <param name="itemsPerSlot" value="512" />
+      <param name="unc" value="False" />
+      <output name="out_file1" file="7.bigbed" compare="sim_size"/>
+    </test>
+    <test>
+      <param name="input1" value="7.bed" dbkey="hg17" />
+      <param name="settingsType" value="preset" />
+      <output name="out_file1" file="7.bigbed" compare="sim_size"/>
+    </test>
+  </tests>
+  <help>
+
+This tool converts a **sorted** BED file into a bigBed file.
+
+Currently, the bedFields option to specify the number of non-standard fields is not supported as an AutoSQL file must be provided, which is a format
+currently not supported by Galaxy.
+
+</help>
+</tool>

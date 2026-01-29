@@ -1,0 +1,27 @@
+<tool id="CONVERTER_interval_to_bed12_0" name="Convert Genomic Intervals To Strict BED12" version="1.0.0" profile="16.04">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <requirements>
+        <requirement type="package" version="0.8.8">bx-python</requirement>
+    </requirements>
+    <command>
+        python '$__tool_directory__/interval_to_bedstrict_converter.py'
+        '$output1' '$input1' ${input1.metadata.chromCol}
+        ${input1.metadata.startCol} ${input1.metadata.endCol}
+        ${input1.metadata.strandCol} ${input1.metadata.nameCol}
+        ${input1.extension} 12
+    </command>
+    <inputs>
+        <param format="interval" name="input1" type="data" label="Choose intervals"/>
+    </inputs>
+    <outputs>
+        <data format="bed12" name="output1"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" ftype="interval" value="2.interval"/>
+            <output name="output1" ftype="bed12" value="2.bed12"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -1,0 +1,60 @@
+<tool id="gene2intron1" name="Gene BED To Intron BED" version="1.0.0">
+<description>expander</description>
+  <command interpreter="python">ucsc_gene_bed_to_intron_bed.py --input=$input1 --output=$out_file1</command>
+  <inputs>
+    <param name="input1" type="data" format="interval" label="UCSC Gene Table"/>
+    
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="bed"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="3.bed" /> 
+      <output name="out_file1" file="cf-gene2intron.dat"/>
+    </test>
+  </tests>
+<help>
+
+**Syntax**
+
+This tool converts a UCSC gene bed format file to a list of bed format lines corresponding to requested features of each gene.
+
+- **BED format** Browser Extensible Data format was designed at UCSC for displaying data tracks in the Genome Browser. It has three required fields and twelve additional optional ones::
+
+    The first three BED fields (required) are:
+    1. chrom - The name of the chromosome (e.g. chr1, chrY_random).
+    2. chromStart - The starting position in the chromosome. (The first base in a chromosome is numbered 0.)
+    3. chromEnd - The ending position in the chromosome, plus 1 (i.e., a half-open interval).
+
+    The twelve additional BED fields (optional) are:
+    4. name - The name of the BED line.
+    5. score - A score between 0 and 1000.
+    6. strand - Defines the strand - either '+' or '-'.
+    7. thickStart - The starting position where the feature is drawn thickly at the Genome Browser.
+    8. thickEnd - The ending position where the feature is drawn thickly at the Genome Browser.
+    9. reserved - This should always be set to zero.
+   10. blockCount - The number of blocks (exons) in the BED line.
+   11. blockSizes - A comma-separated list of the block sizes. The number of items in this list should correspond to blockCount.
+   12. blockStarts - A comma-separated list of block starts. All of the blockStart positions should be calculated relative to chromStart. The number of items in this list should correspond to blockCount.
+   13. expCount - The number of experiments.
+   14. expIds - A comma-separated list of experiment ids. The number of items in this list should correspond to expCount.
+   15. expScores - A comma-separated list of experiment scores. All of the expScores should be relative to expIds. The number of items in this list should correspond to expCount.
+
+-----
+
+**Example**
+
+- A UCSC gene bed format file::
+
+    chr7 127475281 127491632 NM_000230 0 + 127486022 127488767 0 3 29,172,3225,    0,10713,13126
+    chr7 127486011 127488900 D49487    0 + 127486022 127488767 0 2 155,490,        0,2399
+
+- Converts the above file to a list of bed lines, which has the introns::
+
+    chr7 127475311 127475993 NM_000230 0 +
+    chr7 127486167 127488406 NM_000230 0 +
+    chr7 127486167 127488409 D49487    0 +
+
+</help>
+</tool>

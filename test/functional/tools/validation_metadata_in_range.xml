@@ -1,0 +1,30 @@
+<tool id="validation_metadata_in_range" name="validation_metadata_in_range" profile="19.05" version="0.1">
+    <command><![CDATA[
+echo 'Hello World' > out1
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" format="fasta" label="fasta file with more than one sequence">
+            <validator type="dataset_metadata_in_range" metadata_name="sequences" min="2"/>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" from_work_dir="out1"/>
+    </outputs>
+    <tests>
+        <test expect_failure="true">
+            <!-- fails because 1.fasta has just a single sequence -->
+            <param name="input1" value="1.fasta" ftype="fasta"/>
+        </test>
+        <test expect_failure="false">
+            <!-- works because 4.fasta has more than 1 sequence -->
+            <param name="input1" value="4.fasta" ftype="fasta"/>
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="Hello World" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

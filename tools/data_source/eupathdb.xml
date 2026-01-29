@@ -1,0 +1,18 @@
+<tool name="EuPathDB" id="eupathdb" tool_type="data_source" url_method="post" version="1.0.0" profile="20.09">
+    <description>server</description>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
+    <command><![CDATA[
+python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
+    ]]></command>
+    <inputs action="http://eupathdb.org/eupathdb/queries_tools.jsp" check_values="false" method="get">
+        <display>go to EuPathDB server $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=eupathdb" />
+    </inputs>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="tabular" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>

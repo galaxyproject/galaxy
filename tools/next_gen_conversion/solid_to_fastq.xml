@@ -1,0 +1,101 @@
+<tool id="solid_to_fastq" name="SOLiD-to-FASTQ" version="1.0.0">
+  <description>converts SOLiD data to FASTQ data</description>
+  <command interpreter="python">
+    solid_to_fastq.py 
+    --input1=$input1 
+    --input2=$input2
+    #if $paired.pairedSingle == "single":
+     --input3="None"
+     --input4="None"
+    #else:
+     --input3=$input3
+     --input4=$input4
+    #end if
+    --output1=$output1
+    #if $paired.pairedSingle == "single":
+     --output2="None"
+    #else:
+     --output2=$output2
+    #end if
+  </command>
+  <inputs>
+    <conditional name="paired">
+      <param name="pairedSingle" type="select" label="Is this library mate-paired?">
+        <option value="single">Single</option>
+        <option value="paired">Paired</option>
+      </param>
+      <when value="single">
+        <param name="input1" type="data" format="csfasta" label="F3 read file" />
+        <param name="input2" type="data" format="qualsolid" label="F3 qual file" />
+      </when>
+      <when value="paired">
+        <param name="input1" type="data" format="csfasta" label="F3 read file" />
+        <param name="input2" type="data" format="qualsolid" label="F3 qual file" />
+        <param name="input3" type="data" format="csfasta" label="R3 read file" />
+        <param name="input4" type="data" format="qualsolid" label="R3 qual file" />      
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <!-- Variable number of outputs. Either one (for single-end) or two (for paired-end) -->
+    <data name="output1" format="fastqsanger"/>
+    <data name="output2" format="fastqsanger">
+      <filter>paired['pairedSingle'] == 'paired'</filter>
+    </data>    
+  </outputs>
+  <tests>
+    <test>
+      <param name="pairedSingle" value="single" />
+      <param name="input1" value="s2fq_phiX.csfasta" ftype="csfasta" />
+      <param name="input2" value="s2fq_phiX.qualsolid" ftype="qualsolid" />
+      <output name="output1" file="s2fq_out1.fastqsanger" />
+    </test>
+    <test>
+      <param name="pairedSingle" value="paired" />
+      <param name="input1" value="s2fq_paired_F3.csfasta" ftype="csfasta" />
+      <param name="input2" value="s2fq_paired_F3_QV.qualsolid" ftype="qualsolid" />
+      <param name="input3" value="s2fq_paired_R3.csfasta" ftype="csfasta" />
+      <param name="input4" value="s2fq_paired_R3_QV.qualsolid" ftype="qualsolid" />
+      <output name="output1" file="s2fq_out2.fastqsanger" />
+      <!-- testing framework does not deal with multiple outputs yet
+      <output name="output2" file="s2fq_out3.fastqsanger" />
+      -->
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool takes reads and quality files and converts them to FASTQ data ( Sanger variant ). Any -1 qualities are converted to 1 before being converted to FASTQ. Note that it also converts sequences to base pairs.
+
+-----
+
+**Example**
+
+- Converting the following sequences::
+
+    >1831_573_1004_F3
+    T00030133312212111300011021310132222
+    >1831_573_1567_F3
+    T03330322230322112131010221102122113
+
+- and quality scores::
+
+    >1831_573_1004_F3
+    4 29 34 34 32 32 24 24 20 17 10 34 29 20 34 13 30 34 22 24 11 28 19 17 34 17 24 17 25 34 7 24 14 12 22
+    >1831_573_1567_F3
+    8 26 31 31 16 22 30 31 28 29 22 30 30 31 32 23 30 28 28 31 19 32 30 32 19 8 32 10 13 6 32 10 6 16 11
+
+- will produce the following Sanger FASTQ data::
+
+    @1831_573_1004/1
+    AATACTTTCGGCGCCCTAAACCAGCTCACTGGGG
+    +
+    >CCAA9952+C>5C.?C79,=42C292:C(9/-7
+    @1831_573_1567/1
+    TTTATGGGTATGGCCGCTCACAGGCCAGCGGCCT
+    +
+    ;@@17?@=>7??@A8?==@4A?A4)A+.'A+'1,
+
+    </help>
+</tool>

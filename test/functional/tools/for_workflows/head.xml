@@ -1,0 +1,17 @@
+<tool id="head" name="Select first" version="1.0.0">
+    <description>lines from a dataset</description>
+    <command><![CDATA[
+head -n $lineNum '$input' > '$out_file1'
+    ]]></command>
+    <inputs>
+        <param name="lineNum" type="integer" value="10" label="Select first" help="lines"/>
+        <param name="input" type="data" format="txt" label="from"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="input" metadata_source="input"/>
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

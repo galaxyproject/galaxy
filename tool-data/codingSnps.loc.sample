@@ -1,0 +1,23 @@
+#This is a sample file distributed with Galaxy that enables tools to use a
+#directory of 2bit genome files for use with codingSnps.  You will need to
+#supply these files and then create a codingSnps.loc file similar to this one
+#(store it in this directory) that points to the directories in which those
+#files are stored.  The codingSnps.loc file has this format (white space
+#characters are TAB characters):
+#
+#<build>	<file_path>
+#
+#So, for example, if your codingSnps.loc began like this:
+#
+#hg18	/galaxy/data/hg18/seq
+#
+#then your /galaxy/data/hg18/seq directory would need to contain the following
+#2bit file:
+#
+#-rw-r--r--   1 g2data   g2data   807604784 Dec  8 13:21 hg18.2bit
+#
+#Your codingSnps.loc file should include an entry per line for each file you
+#have stored that you want to be available.  Note that your files should
+#all have the extension '2bit'.
+#hg18	/galaxy/data/hg18/seq
+#hg19	/galaxy/data/hg19/seq

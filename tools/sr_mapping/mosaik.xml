@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<tool id="mosaik_wrapper" name="Map with Mosaik" version="1.1.2">
+  <description/>
+  <requirements>
+    <requirement type="package" version="1.1.0021">mosaik</requirement>
+    <requirement type="package" version="0.1.18">samtools</requirement>
+  </requirements>
+  <version_command>MosaikAligner | sed -e 's/\x1b\[[[:digit:]]\{1,2\}\(;[[:digit:]]\{1,2\}\)\{0,1\}m//g' | grep -o 'MosaikAligner [[:digit:].]\{1,\}'</version_command>
+  <command>
+    #set $processors = '-p ${GALAXY_SLOTS:-4}'
+    MosaikBuild -fr
+    #if $genomeSource.refGenomeSource == 'indexed':
+        ${genomeSource.indexReference.fields.path}
+    #else:
+        ${genomeSource.historyReference}
+    #end if
+    -oa mosaik_ref_file;
+    MosaikBuild -q $reads
+    #if $paired.kind == 'single'
+      #set $ls_string  = ''
+    #else
+        -q2 ${paired.reads2}
+        -mfl ${paired.mfl}
+        #set $ls_string = '-ls %s' % $paired.ls
+    #end if
+    -st $st -out mosaik_reads_file;
+    MosaikAligner -ia mosaik_ref_file -in mosaik_reads_file -out mosaik_aligned_file $ls_string -mm $mm -mhp $mhp -act $act -bw $bw $processors -hs 15;
+    MosaikText -in mosaik_aligned_file -$outFormat sam_bam_file;
+    #if str($outFormat) == 'bam':
+        samtools sort sam_bam_file sorted_bam;
+        mv sorted_bam.bam $output
+    #else:
+        gunzip sam_bam_file.gz;
+        mv sam_bam_file $output
+    #end if
+  </command>
+  <inputs>
+    <conditional name="genomeSource">
+      <param name="refGenomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?">
+        <option value="indexed">Use a built-in index</option>
+        <option value="history">Use one from the history</option>
+      </param>
+      <when value="indexed">
+        <param name="indexReference" type="select" label="Select a reference genome">
+          <options from_data_table="mosaik_indexes">
+            <filter type="sort_by" column="2"/>
+            <validator type="no_options" message="No indexes are available" />
+          </options>
+        </param>
+      </when>
+      <when value="history">
+        <param format="fasta" name="historyReference" type="data" metadata_name="dbkey" label="Select a reference from history"/>
+      </when>
+    </conditional>
+    <param format="fastq" name="reads" type="data" label="FASTQ reads file" />
+    <param name="outFormat" type="select" label="Output format">
+      <option value="sam">SAM</option>
+      <option value="bam">BAM</option>
+    </param>
+    <param name="st" type="select" label="Sequencing technology used">
+      <option value="454">454</option>
+      <option value="illumina">Illumina</option>
+      <option value="solid">Solid</option>
+      <option value="sanger">Sanger</option>
+      <option value="helicos">Helicos</option>
+    </param>
+    <conditional name="paired">
+      <param name="kind" type="select" label="Is this library mate-paired?">
+        <option value="single">Single-end</option>
+        <option value="paired">Paired-end</option>
+      </param>
+      <when value="single"/>
+      <when value="paired">
+        <param format="fastq" name="reads2" type="data" label="FASTQ 2nd mate" />
+        <param name="mfl" type="integer" value="200" label="Median fragment length" />
+        <param name="ls" type="integer" min="0" value="50" label="Local alignment search radius to rescue mates" help="A large value slows down performances" />
+      </when>
+    </conditional>
+    <param name="mm" type="integer" value="6" label="Number of mismatches allowed per sequence" />
+    <param name="act" type="integer" value="35" label="Alignment candidate threshold" help="Determines which hash regions will be aligned with Smith-Waterman" />
+    <param name="bw" type="integer" value="9" label="Smith-Waterman band width" />
+    <param name="mhp" type="integer" value="100" label="Maximum number of positions stored per seed" help="Number of places in the reference the aligner will try to place a particular hash" />
+  </inputs>
+  <outputs>
+    <data format="sam" name="output">
+      <change_format>
+        <when input="outFormat" value="bam" format="bam" />
+      </change_format>
+      <actions>
+        <conditional name="genomeSource.refGenomeSource">
+          <when value="indexed">
+            <action type="metadata" name="dbkey">
+              <option type="from_data_table" name="mosaik_indexes" column="1">
+                <filter type="param_value" column="0" value="#" compare="startswith" keep="False" />
+                <filter type="param_value" ref="genomeSource.indexReference" column="0" />
+              </option>
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="genomeSource.historyReference" param_attribute="dbkey" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
+   </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="refGenomeSource" value="history"/>
+      <param name="historyReference" ftype="fasta" value="mosaik_test_ref.fasta"/>
+      <param name="reads" ftype="fastq" value="mosaik_test_input.fastq"/>
+      <param name="outFormat" value="sam"/>
+      <param name="st" value="454"/>
+      <param name="kind" value="single"/>
+      <param name="mm" value="6"/>
+      <param name="act" value="35"/>
+      <param name="bw" value="19"/>
+      <param name="mhp" value="100"/>
+      <output name="output" file="mosaik_test_out.sam" compare="sim_size" delta="0"/>
+    </test>
+  </tests>
+  <help>
+This tool uses Mosaik to align reads to a reference sequence.
+  </help>
+  <citations>
+    <citation type="doi">10.1371/journal.pone.0090581</citation>
+  </citations>
+</tool>

@@ -1,0 +1,100 @@
+<tool id="validation_tar_gz" name="Validation (tar.gz)" version="1.0">
+    <!-- tool tests for assertions on gzipped outputs 
+         also tests that test outputs can be given multiple times 
+         (eg to specify assertions on compressed and upcompressed data)-->
+    <command><![CDATA[
+cat '$input' > '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" />
+    </inputs>
+    <outputs>
+        <data name="output" format_source="input"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="1.fastqsanger.gz" ftype="fastqsanger.gz" />
+            <output name="output" ftype="fastqsanger.gz">
+                <assert_contents>
+                    <has_size value="161"/>
+                    <has_line line="@1831_573_1004/1" negate="true"/>
+                </assert_contents>
+            </output>
+            <output name="output" decompress="true" ftype="fastqsanger.gz">
+                <assert_contents>
+                    <has_size value="177"/>
+                    <has_line line="@1831_573_1004/1"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- assure that the assertions of the 2nd use of the output named "output" are considered -->
+        <test expect_test_failure="true">
+            <param name="input" value="1.fastqsanger.gz" />
+            <output name="output">
+                <assert_contents>
+                    <has_size value="161"/>
+                    <has_line line="@1831_573_1004/1" negate="true"/>
+                </assert_contents>
+            </output>
+            <output name="output" decompress="true">
+                <assert_contents>
+                    <has_size value="1M"/>
+                    <has_line line="I'm not here"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="testdir1.tar.gz" />
+            <!-- decompression works only for .gz but not .tar.gz
+                 hence has_size is the same as for decompress="false"-->
+            <output name="output" decompress="true">
+                <assert_contents>
+                    <has_size value="10240"/>
+                </assert_contents>
+            </output>
+            <output name="output">
+                <assert_contents>
+                    <has_size value="10240"/>
+                    <!-- Test 0: Empty tag, checks for presence of member -->
+                    <has_archive_member path="testdir1/file1"></has_archive_member>
+
+                    <!-- Test 1: explicit filename matching with sub-assertions-->
+                    <has_archive_member path="testdir1/file1">
+                        <has_line_matching expression="hello" />
+                    </has_archive_member>
+                    <has_archive_member path="testdir1/file2">
+                        <has_line_matching expression="world" />
+                    </has_archive_member>
+                    <has_archive_member path="testdir1/dir1/file3">
+                        <has_line_matching expression="subdirfile" />
+                    </has_archive_member>
+
+                    <!-- Test 2: regex filename matching with sub-assertions-->
+                    <has_archive_member path=".*file1">
+                        <has_line_matching expression="hello" />
+                    </has_archive_member>
+                    <has_archive_member path=".*file2">
+                        <has_line_matching expression="world" />
+                    </has_archive_member>
+                    <has_archive_member path=".*dir1/file3">
+                        <has_line_matching expression="subdirfile" />
+                    </has_archive_member>
+                    <has_archive_member path=".*file3">
+                        <has_line_matching expression="subdirfile" />
+                    </has_archive_member>
+                    <has_archive_member path=".*dir1.*file.*">
+                        <has_line_matching expression="subdirfile" />
+                    </has_archive_member>
+
+                    <!-- Test 3: multiple sub-assertions -->
+                    <has_archive_member path="testdir1/file1">
+                        <has_text text="hello" />
+                        <not_has_text text="goodbye" />
+                        <has_text_matching expression="hello" />
+                        <has_line_matching expression="hello" />
+                    </has_archive_member>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

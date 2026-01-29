@@ -1,0 +1,21 @@
+<tool id="parallelism_optional" name="Split file line-by-line and rebuild dataset (with optional dataset)" version="1.0.0">
+    <parallelism method="multi" split_inputs="input1" split_mode="to_size" split_size="1" merge_outputs="out_file1" />
+    <command detect_errors="exit_code"><![CDATA[
+cat '$input1' > '$out_file1'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" label="Dataset"/>
+        <param name="input2" type="data" optional="true" label="Optional Dataset" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="simple_line_x2.txt"/>
+            <output name="out_file1" file="simple_line_x2.txt" />
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

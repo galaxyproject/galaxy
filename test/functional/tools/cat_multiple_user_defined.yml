@@ -1,0 +1,29 @@
+class: GalaxyUserTool
+id: cat_multiple_user_defined
+version: "0.1"
+name: Concatenate Multiple Files
+description: tail-to-head
+container: busybox
+shell_command: |
+  cat $(inputs.datasets.map((input) => `'${input.path}'`).join(' ')) > output.txt
+inputs:
+  - name: datasets
+    type: data
+    multiple: true
+outputs:
+  - name: output1
+    type: data
+    format_source: datasets
+    from_work_dir: output.txt
+tests:
+  - inputs:
+      datasets:
+        - simple_line.txt
+        - simple_line_alternative.txt
+    outputs:
+      output1:
+        asserts:
+          - has_line:
+              line: This is a different line of text.
+          - has_line:
+              line: This is a line of text.

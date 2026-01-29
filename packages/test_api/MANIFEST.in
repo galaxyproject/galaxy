@@ -1,0 +1,2 @@
+include *.rst *.txt LICENSE */py.typed
+include galaxy_test/api/*.yml

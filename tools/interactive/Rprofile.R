@@ -1,0 +1,5 @@
+library("GalaxyConnector")
+options(encoding = "UTF-8")
+if (interactive()) {
+    message("\n   Welcome to the Galaxy RStudio with Bioconductor Interactive Tool.\n\n Any datasets that you included when starting RStudio are available in ~/galaxy_inputs directory. Any files you place in ~/galaxy_outputs will be available in Galaxy once you stop RStudio. You can use the convenience functions gx_put(), gx_get(), and gx_save() to fetch and place data to your current Galaxy history on demand.\n\n  gx_get(42) - Fetch dataset 42 from your Galaxy history. The file will be available in ~/galaxy_imports folder\n  gx_put('filename') - Push a dataset to Galaxy\n  gx_save() - Save .RHistory, .RData to your Galaxy environment\n\nA number of packages are pre-installed, which you can inspect with the 'installed.packages()' command. To install new packages, you can use the BiocManager package. For example, to install the treeio package, you can use the following command to install it and load it:\n\n  BiocManager::install(\"treeio\")\n  library(treeio)  # Load the treeio package after installation\n")
+}

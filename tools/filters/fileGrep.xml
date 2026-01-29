@@ -1,0 +1,46 @@
+<tool id="fileGrep1" name="Match" version="1.0.0">
+  <description>a column from one Query against another Query</description>
+  <edam_operations>
+    <edam_operation>operation_3695</edam_operation>
+  </edam_operations>
+  <command>
+cut -f '$col' '$input1' | grep -f - $match '$input2' > '$out_file1'
+  </command>
+  <inputs>
+    <param name="col" type="text" value="1" label="Match content of column"/>
+    <param name="input1" type="data" format="tabular" label="From Query1"/>
+    <param name="input2" type="data" format="tabular" label="Against Query2"/>
+    <param name="match" type="select" label="and return rows that">
+      <option value="">Match</option>
+      <option value="-v">Do not match</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="input" metadata_source="input2" />
+  </outputs>
+  <help>
+This tool is based on UNIX command grep with option -f. It matches content of one query against another. For example, assume you have two queries - one that contains EST accession numbers and some other information::
+
+  AA001229	12	12
+  A001501	7	7
+  AA001641	6	6
+  AA001842	6	6
+  AA002047	6	6
+  AA004638	3	3
+
+and another that is a typical BED file describing genomic location of some ESTs::
+
+  chr7 115443235 115443809 CA947954_exon_0_0_chr7_115443236_f 0	+
+  chr7 115443236 115443347 DB338189_exon_0_0_chr7_115443237_f 0	+
+  chr7 115443347 115443768 DB338189_exon_1_0_chr7_115443348_f 0	+
+  chr7 115443239 115443802 AA001842_exon_0_0_chr7_115443240_f 0	+
+  chr7 115443243 115443347 DB331869_exon_0_0_chr7_115443244_f 0	+
+  chr7 115443347 115443373 DB331869_exon_1_0_chr7_115443348_f 0	+
+
+Using this tool you will be able to tell how many ESTs in Query1 are also preset in Query2 and will output this::
+
+  chr7 115443239 115443802 AA001842_exon_0_0_chr7_115443240_f 0
+
+if **Match** option is chosen.
+  </help>
+</tool>

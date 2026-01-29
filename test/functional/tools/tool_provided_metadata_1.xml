@@ -1,0 +1,28 @@
+<tool id="tool_provided_metadata_1" name="tool_provided_metadata_1" version="1.0.0">
+    <!-- Demonstrate setting simple dataset metadata for output datasets via galaxy.json for legacy tools (galaxy.json structure changes for profile >= 17.09 tools). -->
+    <command><![CDATA[
+echo 'This is a line of text.' > '$out1' &&
+cp '$c1' galaxy.json
+    ]]></command>
+    <configfiles>
+        <configfile name="c1">{"type": "dataset", "dataset_id": $out1.dataset.dataset.id, "name": "my dynamic name", "ext": "txt", "info": "my dynamic info", "dbkey": "cust1"}</configfile>
+    </configfiles>
+    <inputs>
+    </inputs>
+    <outputs>
+        <!-- Set format="auto" to read from galaxy.json, use auto_format="true"
+             to sniff. -->
+        <data name="out1" format="auto" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="out1" file="simple_line.txt" ftype="txt">
+                <metadata name="name" value="my dynamic name" />
+                <metadata name="info" value="my dynamic info" />
+                <metadata name="dbkey" value="cust1" />
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

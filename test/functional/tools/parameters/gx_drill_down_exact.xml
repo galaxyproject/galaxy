@@ -1,0 +1,35 @@
+<tool id="gx_drill_down_exact" name="gx_drill_down_exact" version="1.0.0">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command><![CDATA[
+echo "parameter: $parameter" > '$output'
+    ]]></command>
+    <inputs>
+        <!-- default drill_down, i.e. hierarchy="exact"
+            - select exacty the chosen values
+            - "inner" option nodes (non-leaves) are selectable
+        -->
+        <param name="parameter" type="drill_down" hierarchy="exact">
+            <expand macro="drill_down_static_options" />
+        </param>
+    </inputs>
+    <expand macro="simple_text_output" />
+    <tests>
+        <!-- select options from different levels of tree -->
+        <test>
+            <param name="parameter" value="a"/>
+            <expand macro="assert_output">
+                <has_line line="parameter: a"/>
+            </expand>
+        </test>
+        <test>
+            <param name="parameter" value="ab"/>
+            <expand macro="assert_output">
+                <has_line line="parameter: ab"/>
+            </expand>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

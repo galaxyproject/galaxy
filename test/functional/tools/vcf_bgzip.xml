@@ -1,0 +1,18 @@
+<tool id="vcf_bgzip_test" name="vcf_bgzip_test" version="0.1.0">
+    <command detect_errors="exit_code"><![CDATA[
+stat '$input.metadata.tabix_index' &&
+cp '$input' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="vcf_bgzip" label="Source file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="vcf_bgzip" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="vcf_bgzip" value="test.vcf.gz"/>
+            <output name="output" value="test.vcf.gz" md5="b08896c2d3ed4254e90b9372ef772821"/>
+        </test>
+    </tests>
+</tool>

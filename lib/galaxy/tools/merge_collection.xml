@@ -1,0 +1,426 @@
+<tool id="__MERGE_COLLECTION__"
+      name="Merge collections"
+      version="1.0.0"
+      tool_type="merge_collection">
+  <description></description>
+  <type class="MergeCollectionTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+  <edam_operations>
+    <edam_operation>operation_2409</edam_operation>
+  </edam_operations>
+  <macros>
+      <xml name="suffix_param">
+          <param name="suffix_pattern" label="Use the follow suffix pattern:" help="Describe the suffix pattern to use when joing element name and data copy number. For instance, the default is '_#', which will produce _1 as the first suffix used." value="_#" type="text">
+              <sanitizer invalid_char="">
+                  <valid initial="string.ascii_letters,string.digits">
+                      <add value="_" />
+                      <add value="-" />
+                      <add value="#" />
+                  </valid>
+              </sanitizer>
+          </param>
+      </xml>
+      <xml name="test_collecton_simple_then_alternative">
+          <collection type="list">
+            <element name="sample1" value ="simple_line.txt"/>
+            <element name="sample2" value ="simple_line_alternative.txt"/>
+          </collection>
+      </xml>
+      <xml name="test_collection_alternative_then_simple">
+          <collection type="list">
+            <element name="sample1" value ="simple_line_alternative.txt"/>
+            <element name="sample2" value ="simple_line.txt"/>
+          </collection>
+      </xml>
+      <xml name="advanced_section" tokens="duplicate_handling,suffix_pattern">
+          <section name="advanced">
+              <conditional name="conflict">
+                  <param name="duplicate_options" value="@DUPLICATE_HANDLING@" />
+                  <param name="suffix_pattern" value="@SUFFIX_PATTERN@" />
+              </conditional>
+          </section>
+      </xml>
+      <xml name="assert_is_simple_line">
+          <assert_contents>
+              <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+      </xml>
+      <xml name="assert_is_simple_line_alternative">
+          <assert_contents>
+              <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+      </xml>
+  </macros>
+  <inputs>
+    <repeat name="inputs" title="Input Collections" min="2">
+        <param name="input" type="data_collection" label="Input Collection" />
+    </repeat>
+    <section name="advanced" title="Advanced Options">
+        <conditional name="conflict">
+          <param name="duplicate_options" type="select" label="How should conflicts (or potential conflicts) be handled?"
+                 help="Collection elements must have unique element identifiers, when appending how should unique identifiers be assured. See Help section below for examples.">
+            <option value="suffix_conflict">Append suffix to conflicted element identifers</option>
+            <option value="suffix_conflict_rest">Append suffix to conflicted element identifers after first one encountered</option>
+            <option value="suffix_every">Append suffix to every element identifer</option>
+            <option value="keep_first" selected="true">Keep first instance</option>
+            <option value="keep_last">Keep last instance</option>
+            <option value="fail">Fail collection creation</option>
+          </param>
+          <when value="suffix_conflict">
+            <expand macro="suffix_param" />
+          </when>
+          <when value="suffix_conflict_rest">
+            <expand macro="suffix_param" />
+          </when>
+          <when value="suffix_every">
+            <expand macro="suffix_param" />
+          </when>
+          <when value="keep_first" />
+          <when value="keep_last" />
+          <when value="fail" />
+        </conditional>
+    </section>
+  </inputs>
+  <outputs>
+    <collection name="output" format_source="input" type_source="inputs_0|input" label="${on_string} (merged)" >
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <repeat name="inputs">
+        <param name="input">
+          <collection type="list:paired">
+            <element name="i1">
+              <collection type="paired">
+                <element name="forward" value="simple_line.txt" />
+                <element name="reverse" value="simple_line_alternative.txt" />
+              </collection>
+            </element>
+          </collection>
+        </param>
+      </repeat>
+      <repeat name="inputs">
+        <param name="input">
+          <collection type="list:paired">
+            <element name="i2">
+              <collection type="paired">
+                <element name="forward" value="simple_line.txt" />
+                <element name="reverse" value="simple_line_alternative.txt" />
+              </collection>
+            </element>
+          </collection>
+        </param>
+      </repeat>
+      <output_collection name="output" type="list:paired">
+        <element name="i1">
+          <element name="forward">
+            <expand macro="assert_is_simple_line" />
+          </element>
+          <element name="reverse">
+            <expand macro="assert_is_simple_line_alternative" />
+          </element>
+        </element>
+        <element name="i2">
+          <element name="forward">
+            <expand macro="assert_is_simple_line" />
+          </element>
+          <element name="reverse">
+            <expand macro="assert_is_simple_line_alternative" />
+          </element>
+        </element>
+      </output_collection>
+    </test>
+    <test>
+      <repeat name="inputs">
+        <param name="input">
+          <expand macro="test_collecton_simple_then_alternative" />
+        </param>
+      </repeat>
+      <repeat name="inputs">
+        <param name="input">
+          <expand macro="test_collecton_simple_then_alternative" />
+        </param>
+      </repeat>
+      <expand macro="advanced_section" duplicate_handling="suffix_every" suffix_pattern="__#" />
+      <output_collection name="output" type="list">
+        <element name="sample1__1">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample2__2">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample1__1">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample2__1">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+    <test>
+      <repeat name="inputs">
+        <param name="input">
+          <expand macro="test_collecton_simple_then_alternative" />
+        </param>
+      </repeat>
+      <repeat name="inputs">
+        <param name="input">
+          <collection type="list">
+            <element name="sample3" value ="simple_line.txt"/>
+            <element name="sample4" value ="simple_line_alternative.txt"/>
+          </collection>
+        </param>
+      </repeat>
+      <expand macro="advanced_section" duplicate_handling="suffix_every" suffix_pattern="__#" />
+      <output_collection name="output" type="list">
+        <element name="sample1__1">
+            <expand macro="assert_is_simple_line" />
+        </element>
+        <element name="sample2__1">
+            <expand macro="assert_is_simple_line_alternative" />
+        </element>
+        <element name="sample3__2">
+            <expand macro="assert_is_simple_line" />
+        </element>
+        <element name="sample4__2">
+            <expand macro="assert_is_simple_line_alternative" />
+        </element>
+      </output_collection>
+    </test>
+    <test>
+      <expand macro="advanced_section" duplicate_handling="suffix_conflict_rest" suffix_pattern="-#" />
+      <repeat name="inputs">
+        <param name="input">
+          <expand macro="test_collecton_simple_then_alternative" />
+        </param>
+      </repeat>
+      <repeat name="inputs">
+        <param name="input">
+          <expand macro="test_collecton_simple_then_alternative" />
+        </param>
+      </repeat>
+      <output_collection name="output" type="list">
+        <element name="sample1">
+            <expand macro="assert_is_simple_line" />
+        </element>
+        <element name="sample2">
+            <expand macro="assert_is_simple_line_alternative" />
+        </element>
+        <element name="sample1-2">
+            <expand macro="assert_is_simple_line" />
+        </element>
+        <element name="sample2-2">
+            <expand macro="assert_is_simple_line_alternative" />
+        </element>
+      </output_collection>
+    </test>
+    <test>
+      <repeat name="inputs">
+        <param name="input">
+          <expand macro="test_collecton_simple_then_alternative" />
+        </param>
+      </repeat>
+      <repeat name="inputs">
+        <param name="input">
+          <expand macro="test_collection_alternative_then_simple" />
+        </param>
+      </repeat>
+      <output_collection name="output" type="list">
+        <element name="sample1">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample2">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+    <test>
+      <expand macro="advanced_section" duplicate_handling="keep_last" suffix_pattern="__#" />
+      <repeat name="inputs">
+        <param name="input">
+          <expand macro="test_collecton_simple_then_alternative" />
+        </param>
+      </repeat>
+      <repeat name="inputs">
+        <param name="input">
+          <expand macro="test_collection_alternative_then_simple" />
+        </param>
+      </repeat>
+      <output_collection name="output" type="list">
+        <element name="sample1">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$"/>
+          </assert_contents>
+        </element>
+        <element name="sample2">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+  <help><![CDATA[
+
+========
+Synopsis
+========
+
+Takes two or more collections and creates a single collection from them. 
+
+===========
+Description
+===========
+
+By default the tool assumes that collections that are being merged have unique dataset names. If it not the case only one (the first) of the datasets with a repeated name will be included in the merged collection. For example, suppose you have two collections. Each has two datasets named "A" and "B"::
+
+ Collection 1: [Dataset A] 
+               [Dataset B] 
+               [Dataset X]
+ Collection 2: [Dataset A] 
+               [Dataset B] 
+               [Dataset Y]
+
+Merging them will produce a single collection with only two datasets::
+
+ Merged Collection: [Dataset A] 
+                    [Dataset B] 
+                    [Dataset X] 
+                    [Dataset Y]
+
+This behavior can be changed by clicking on "*Advanced Options*" link. The following options are available:
+
+**Keep first instance (Default behavior)**
+
+Input::
+
+ Collection 1: [Dataset A] 
+               [Dataset B] 
+               [Dataset X]
+ Collection 2: [Dataset A] 
+               [Dataset B] 
+               [Dataset Y]
+
+Output::
+
+ Merged Collection: [Dataset A] 
+                    [Dataset B] 
+                    [Dataset X] 
+                    [Dataset Y]
+
+Here if two collection have identical dataset names, a dataset is chosen from the *first* collection.
+
+-----
+
+**Keep first instance**
+
+Input::
+
+ Collection 1: [Dataset A] 
+               [Dataset B] 
+               [Dataset X]
+ Collection 2: [Dataset A] 
+               [Dataset B] 
+               [Dataset Y]
+Output::
+
+ Merged Collection: [Dataset A] 
+                    [Dataset B] 
+                    [Dataset X] 
+                    [Dataset Y]
+
+Here if two collection have identical dataset names, a dataset is chosen from the *last* collection.
+
+-----
+
+**Append suffix to conflicted element identifiers**
+
+Input::
+
+ Collection 1: [Dataset A] 
+               [Dataset B] 
+               [Dataset X]
+ Collection 2: [Dataset A] 
+               [Dataset B] 
+               [Dataset Y]
+
+Output::
+
+ Merged Collection: [Dataset A_1] 
+                    [Dataset B_1]
+                    [Dataset A_2] 
+                    [Dataset B_2]  
+                    [Dataset X] 
+                    [Dataset Y]
+
+----
+
+**Append suffix to conflicted element identifiers after first on encountered**
+
+Input::
+
+ Collection 1: [Dataset A] 
+               [Dataset B] 
+               [Dataset X]
+ Collection 2: [Dataset A] 
+               [Dataset B] 
+               [Dataset Y]
+
+Output::
+
+ Merged Collection: [Dataset A] 
+                    [Dataset B]
+                    [Dataset A_2] 
+                    [Dataset B_2]  
+                    [Dataset X] 
+                    [Dataset Y]
+
+------
+
+**Append suffix to every element identifier**
+
+Input::
+
+ Collection 1: [Dataset A] 
+               [Dataset B] 
+               [Dataset X]
+ Collection 2: [Dataset A] 
+               [Dataset B] 
+               [Dataset Y]
+
+Output::
+
+ Merged Collection: [Dataset A_1] 
+                    [Dataset B_2]
+                    [Dataset A_2] 
+                    [Dataset B_2]  
+                    [Dataset X_1] 
+                    [Dataset Y_2]
+
+-----
+
+**Fail collection creation**
+
+This option will simply trigger an error.
+
+------
+
+.. class:: infomark
+
+This tool will create new history datasets for your collection but your quota usage will not increase.
+
+  ]]></help>
+</tool>

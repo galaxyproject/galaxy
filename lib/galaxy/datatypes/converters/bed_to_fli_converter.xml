@@ -1,0 +1,19 @@
+<tool id="CONVERTER_bed_to_fli_0" name="Convert BED to Feature Location Index" version="1.0.0">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <command>python '$__tool_directory__/interval_to_fli.py' -F bed '$input1' '$output1'</command>
+    <inputs>
+        <param format="bed" name="input1" type="data" label="Choose BED file"/>
+    </inputs>
+    <outputs>
+        <data format="fli" name="output1"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" ftype="bed" value="droPer1.bed"/>
+            <output name="output1" ftype="fli" value="droPer1.fli"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

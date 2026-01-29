@@ -1,0 +1,16 @@
+<display id="ucsc_bigwig" version="1.0.0" name="display at UCSC">
+    <!-- Load links from file: one line to one link -->
+    <dynamic_links site_type="ucsc" skip_startswith="#" id="0" name="0">
+        <!-- Define parameters by column from file, allow splitting on builds -->
+        <dynamic_param name="site_id" value="0"/>
+        <dynamic_param name="ucsc_link" value="1"/>
+        <dynamic_param name="builds" value="2" split="True" separator="," />
+        <!-- Filter out some of the links based upon matching site_id to a Galaxy application configuration parameter and by dataset dbkey -->
+        <filter>${site_id in $APP.datatypes_registry.get_display_sites('ucsc')}</filter>
+        <filter>${dataset.dbkey in $builds}</filter>
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>${ucsc_link}db=${qp($bigwig_file.dbkey)}&amp;hgt.customText=${qp($track.url)}</url>
+        <param type="data" name="bigwig_file" url="galaxy_${DATASET_HASH}.bigwig" />
+        <param type="template" name="track" viewable="True">track type="bigWig" name="${bigwig_file.name.replace( '\\', '\\\\' ).replace( '"', '\\"' )}" bigDataUrl="${bigwig_file.url}" db="${bigwig_file.dbkey}"</param>
+    </dynamic_links>
+</display>

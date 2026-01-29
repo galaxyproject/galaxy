@@ -1,0 +1,4 @@
+[run]
+branch = True
+include = lib/galaxy/*
+disable_warnings = include-ignored

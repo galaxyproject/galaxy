@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='utf-8'?>
+<tool_dependency>
+    <package name="numpy" version="1.7.1">
+        <repository name="package_numpy_1_7_1420" owner="user1" prior_installation_required="True" />
+    </package>
+    <package name="boost" version="1.53.0">
+        <repository name="package_boost_1_53_1420" owner="user1" prior_installation_required="True" />
+    </package>
+
+    <package name="rdkit" version="2012_12_1">
+        <install version="1.0">
+            <actions>
+                <!-- first action is always downloading -->
+                <action type="download_by_url">file://__PATH__</action>
+
+                <!-- populate the environment variables from the dependend repos -->
+                <action type="set_environment_for_install">
+                    <repository name="package_numpy_1_7_1420" owner="user1">
+                        <package name="numpy" version="1.7.1" />
+                    </repository>
+                    <repository name="package_boost_1_53_1420" owner="user1">
+                        <package name="boost" version="1.53.0" />
+                    </repository>
+                </action>
+
+                <!-- PYTHONPATH_NUMPY is set in the numpy package -->
+				<action type="move_directory_files">
+					<source_directory>.</source_directory>
+					<destination_directory>$INSTALL_DIR</destination_directory>
+				</action>
+                <action type="set_environment">
+                    <environment_variable action="set_to" name="RDBASE">$INSTALL_DIR/rdkit</environment_variable>
+                    <environment_variable action="append_to" name="LD_LIBRARY_PATH">$INSTALL_DIR/rdkit/lib/</environment_variable>
+                    <environment_variable action="prepend_to" name="PATH">$INSTALL_DIR/rdkit/bin</environment_variable>
+                    <environment_variable action="prepend_to" name="PYTHONPATH">$INSTALL_DIR/rdkit/lib/python2.7/site-packages/</environment_variable>
+                    <environment_variable action="prepend_to" name="PYTHONPATH">$ENV[PYTHONPATH_NUMPY]</environment_variable>
+                    <environment_variable action="append_to" name="LD_LIBRARY_PATH">$ENV[BOOST_ROOT_DIR]/lib/</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>Compiling rdkit requires cmake, python headers, sqlite3, flex and bison.</readme>
+    </package>
+</tool_dependency>

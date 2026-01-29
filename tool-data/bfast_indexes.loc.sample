@@ -1,0 +1,38 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use a directory of BFAST indexed sequences data files.  You will need
+#to create these data files and then create a bfast_indices.loc file 
+#similar to this one (store it in this directory) that points to 
+#the directories in which those files are stored. The bfast_indexes.loc 
+#file has this format (white space characters are TAB characters):
+#
+#<unique_id>	<build>	<galaxy format extensions valid1,valid2>	<description>	<bfast_index_directory>
+#
+#
+#So, for example, if you had hg18 indexed for 40+ bp NT reads stored in 
+#/galaxy/data/hg18/bfast_index/nt/40+, 
+#then the bfast_indices.loc entry could look like this:
+#
+#hg18_nt_40+	hg18	fastqsanger	hg18: 40+ bp NT Space reads	/galaxy/data/hg18/bfast_index/nt/40+/hg18.fa
+#
+#and your /depot/data2/galaxy/hg18/bfast/nt/40+ directory
+#would contain hg18.fa.*.brg and hg18.fa.*.bif files:
+#hg18.fa.nt.brg
+#hg18.fa.nt.1.1.bif
+#hg18.fa.nt.2.1.bif
+#...etc...
+#or similarly for color space indexes:
+#hg18.fa.nt.brg #NB: the localalign process requires the nucleotide brg file
+#hg18.fa.cs.brg
+#hg18.fa.cs.1.1.bif
+#hg18.fa.cs.2.1.bif
+#...etc...
+#
+#a 'generic' directory can be used to hold intermixed NT and CS indexes, when differentiating is not needed, the bfast_indices.loc entry could look like this:
+#hg18_standard	hg18	fastqsanger,fastqcssanger	hg18 standard indexes	/galaxy/data/hg18/bfast_index/hg18.fa
+#
+#The use of symlinks to prevent copying of e.g. .fa and .brg files is recommended
+#
+#hg18_nt_40+	hg18	fastqsanger	hg18: 40+ bp NT Space reads	/galaxy/data/hg18/bfast_index/nt/40+/hg18.fa
+#hg18_cs_50+	hg18	fastqcssanger	hg18: 50+ bp Color space reads	/galaxy/data/hg18/bfast_index/cs/50+/hg18.fa
+#hg18_nt_40-	hg18	fastqsanger	hg18: 40- bp NT Space reads	/galaxy/data/hg18/bfast_index/nt/40-/hg18.fa
+#phiX_nt_50	phiX	fastqsanger	phiX: 50 bp NT Space reads	/galaxy/data/phiX/bfast_index/nt/50/phiX.fa

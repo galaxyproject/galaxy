@@ -1,0 +1,1 @@
+../../../lib/galaxy/structured_app.py

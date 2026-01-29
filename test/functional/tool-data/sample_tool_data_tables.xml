@@ -1,0 +1,14 @@
+<tables>
+  <table name="testalpha" comment_char="#">
+    <columns>value, name, path</columns>
+    <file path="${__HERE__}/testalpha.loc" />
+  </table>
+  <table name="testbeta" comment_char="#">
+    <columns>value, path</columns>
+    <file path="${__HERE__}/testbeta.loc" />
+  </table>
+  <table name="test_fasta_indexes" comment_char="#">
+    <columns>value, dbkey, name, path</columns>
+    <file path="${__HERE__}/fasta_indexes.loc" />
+  </table>
+</tables>

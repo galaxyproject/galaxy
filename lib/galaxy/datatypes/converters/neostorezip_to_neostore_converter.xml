@@ -1,0 +1,30 @@
+<tool id="CONVERTER_neostorezip_to_neostore" name="Convert neostore.zip files to neostore" version="1.0.0" hidden="true" profile="16.04">
+  <requirements>
+    <requirement type="package" version="6.0">unzip</requirement>
+  </requirements>
+  <command><![CDATA[
+        unzip '${input1.extra_files_path}/neostore_file.zip' -d '${output1.files_path}' > $output1
+        ]]>
+  </command>
+  <inputs>
+    <param format="neostore.zip" name="input1" type="data" label="Choose neostore database file"/>
+  </inputs>
+  <outputs>
+    <data format="neostore" name="output1"/>
+  </outputs>
+  <tests>
+    <test>
+      <!-- TODO mock test? $output1 should be the html primary file? -->
+      <param name="input1" value="" ftype="neostore.zip">
+        <composite_data value="neostore.zip" />
+      </param>
+      <output name="output1" ftype="neostore">
+        <assert_contents>
+          <has_n_lines n="2"/>
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+  <help>
+  </help>
+</tool>

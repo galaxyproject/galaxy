@@ -1,0 +1,15 @@
+- id: google_drive
+  name: Google Drive
+  description: Configure your Google Drive account to accept file uploads. Only files uploaded by this Galaxy instance can be read.
+  configuration:
+    type: googledrive
+    oauth2_client_id: "{{ environment.oauth2_client_id }}"
+    oauth2_client_secret: "{{ environment.oauth2_client_secret }}"
+    writable: true
+  environment:
+    oauth2_client_id:
+      type: variable
+      variable: GALAXY_GOOGLE_DRIVE_APP_CLIENT_ID
+    oauth2_client_secret:
+      type: variable
+      variable: GALAXY_GOOGLE_DRIVE_APP_CLIENT_SECRET

@@ -1,0 +1,40 @@
+<tool id="exit_code_oom" name="exit_code_oom" version="0.1.1" profile="16.04">
+    <!-- tool errors out with identified OOM error if less than 10MB are allocated. -->
+    <command detect_errors="exit_code" oom_exit_code="42"><![CDATA[
+## test if the config file is accessible via the file name and the cheetah variable
+[[ -f hi.txt ]] || (>&2 echo 'configfile hi.text is missing'; exit 1) &&
+[[ -f '$hi_name' ]] || (>&2 echo 'configfile \$hi_name is missing'; exit 1) &&
+##
+mv hi.txt '$out_file1' &&
+echo "\$GALAXY_MEMORY_MB" &&
+: \${GALAXY_MEMORY_MB:=20} &&
+echo "\$GALAXY_MEMORY_MB" &&
+if [ "\$GALAXY_MEMORY_MB" -lt 10 ]; then
+    exit 42;
+else
+    exit 0;
+fi
+    ]]></command>
+    <configfiles>
+        <!-- also tests that configfiles are placed in working dir and that this works on resubmission as well -->
+        <configfile name="hi_name" filename="hi.txt">Hello</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input" type="integer" label="Dummy" value="6" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="5" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="Hello" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -1,0 +1,356 @@
+.. to_doc
+
+-------------------------------
+15.05
+-------------------------------
+
+.. enhancements
+
+Enhancements
+-------------------------------
+
+* Pluggable framework to custom authentication (including new LDAP/Active
+  Directory integration). Thanks to many including Andrew Robinson,
+  Nicola Soranzo, and David Trudgian. `Pull Request 1`_, `Pull Request 33`_,
+  `Pull Request 51`_, `Pull Request 75`_, `Pull Request 98`_,
+  `Pull Request 216`_
+* Implement a new ``section`` tag for tool parameters. `Pull Request 35`_,
+  `Trello <https://trello.com/c/KxlQK0FB>`__
+* New UI widgets allowing much more flexibility when creating simple dataset
+  pair and list collections. `Pull Request 134`_,
+  `Trello <https://trello.com/c/xCdFQPBW>`__
+* Improved JavaScript build system for client code and libraries (now
+  using uglify_ and featuring `Source Maps`_). 72c876c_, 9a7f5fc_, 648a623_,
+  22f280f_, `Trello <https://trello.com/c/7midE7Bx>`__
+* Add an `External Display Application`_ for viewing GFF/GTF files with IGV_.
+  `Pull Request 70`_, `Trello <https://trello.com/c/Hfg3gYsL>`__
+* Use TravisCI_ and Tox_ for continuous integration testing.
+  `Pull Request 40`_, `Pull Request 62`_, `Pull Request 97`_,
+  `Pull Request 99`_, `Pull Request 123`_, `Pull Request 222`_,
+  `Pull Request 235`_,
+* Infrastructure for improved toolbox and Tool Shed searching.
+  `Pull Request 9`_, `Pull Request 116`_, `Pull Request 142`_,
+  `Pull Request 226`_, c2eb74c_, 2bf52fe_, ec549db_,
+  `Trello <https://trello.com/c/YJW1dCkB>`__, `Trello <https://trello.com/c/AG3qYRZe>`__
+* Enhance UI to allow renaming dataset collections. 21d1d6b_
+* Improve highlighting of current/active content history panel.
+  `Pull Request 126`_
+* Improvements to UI and API for histories and collections. e36e51e_,
+  1e55206_, 0c79680_
+* Update history dataset API to account for job re-submission. b4cf49a_
+* Allow recalculating user disk usage from the admin interface. 964e081_
+* Collect significantly more metadata for BAM files. `Pull Request 107`_,
+  `Pull Request 108`_
+* Implement ``detect_errors`` attribute on command of tool XML.
+  `Pull Request 117`_
+* Allow setting ``auto_format="True"`` on tool ``output`` tags.
+  `Pull Request 130`_
+* Allow testing tool outputs based on MD5 hashes. `Pull Request 125`_
+* Improved Cheetah type casting for int/float values. `Pull Request 121`_
+* Add option to pass arbitrary parameters to gem install as part of
+  the tool shed ``setup_ruby_environment`` Tool Shed install action -
+  thanks to Björn Grüning. `Pull Request 118`_
+* Add ``argument`` attribute to tool parameters. `Pull Request 8`_
+* Improve link and message that appears after workflows are run.
+  `Pull Request 143`_
+* Add NCBI SRA datatype - thanks to Matt Shirley. `Pull Request 87`_
+* Stronger toolbox filtering. `Pull Request 119`_
+* Allow updating Tool Shed repositories via the API - thanks to Helena Rasche.
+  `Pull Request 30`_
+* Expose category list in show call for Tool Shed repositories - thanks to
+  Helena Rasche. `Pull Request 29`_
+* Add API endpoint to create Tool Shed repositories. `Pull Request 2`_
+* Do not configure Galaxy to use the test Tool Shed by default.
+  `Pull Request 38`_
+* Add fields and improve display of Tool Shed repositories.
+  a24e206_, d6d61bc_, `Trello <https://trello.com/c/g1dt8WhA>`__
+* Enhance multi-selection widgets to allow key combinations ``Ctrl-A``
+  and ``Ctrl-X``. e8564d7_, `Trello <https://trello.com/c/3QhD5l5h>`__
+* New, consistent button for displaying citation BibTeX. `Pull Request 19`_
+* Improved ``README`` reflecting move to Github - thanks in part to Helena
+  Rasche. `PR #2 (old repo)
+  <https://github.com/galaxyproject/galaxy-beta1/pull/2>`__,
+  226e826_, 2650d09_, 7d5dde8_
+* Update application to use new logo. 2748f9d_, `Pull Request 187`_,
+  `Pull Request 206`_
+* Update many documentation links to use https sites - thanks to
+  Nicola Soranzo. 8254cab_
+* Sync report options config with ``galaxy.ini`` - thanks to Björn Grüning.
+  `Pull Request 12`_
+* Eliminate need to use API key to list tools via API. cd7abe8_
+* Restore function necessary for splitting sequence datatypes - thanks to
+  Roberto Alonso. `Pull Request 5`_
+* Suppress filenames in SAM merge using ``egrep`` - thanks to Peter Cock
+  and Roberto Alonso. `Pull Request 4`_
+* Option to sort counts in ``Count1`` tool (``tools/filters/uniq.xml``) -
+  thanks to Peter Cock. `Pull Request 16`_
+* Preserve spaces in ``Count1`` tool (``tools/filters/uniq.xml``) - thanks to
+  Peter Cock. `Pull Request 13`_
+* `Interactive Environments`_ improvements and fixes from multiple
+  developers including Helena Rasche and  Björn Grüning. `Pull Request 69`_,
+  `Pull Request 73`_, `Pull Request 131`_, `Pull Request 135`_,
+  `Pull Request 152`_, `Pull Request 197`_
+* Enable multi-part upload for exporting files with the GenomeSpace export
+  tool. `Pull Request 74`_, `Trello <https://trello.com/c/28O46iln>`__
+* Large refactoring, expansion, and increase in test coverage for "managers".
+  `Pull Request 76`_
+* Improved display of headers in tool help. 157eba6_,
+  `Biostar <https://biostar.usegalaxy.org/p/11211/>`__
+* Uniform configuration of "From" field for sent emails - thanks to Nicola
+  Soranzo. `Pull Request 23`_
+* Allow setting ``job_conf.xml`` params via environment variables &
+  ``galaxy.ini``. dde2fc9_
+* Allow a tool data table to declare that duplicate entries are not
+  allowed. `Pull Request 245`_
+* Add verbose test error flag option in run_tests.sh. 62f0495_
+* Update ``.gitignore`` to include ``run_api_tests.html``. b52cc98_
+* Add experimental options to run tests in Docker. e99adb5_
+* Improve ``run_test.sh --help`` documentation to detail running specific
+  tests. `Pull Request 86`_
+* Remove older, redundant history tests. `Pull Request 120`_,
+  `Trello <https://trello.com/c/p6oOVhGp>`__
+* Add test tool demonstrating citing a Github repository. 65def71_
+* Add option to track all automated changes to the integrated tool panel.
+  10bb492_
+* Make tool version explicit in all distribution tool - thanks to Peter Cock.
+  `Pull Request 14`_.
+* Relocate the external metadata setting script. `Pull Request 7`_
+* Parameterize script used to pull new builds from the UCSC Browser.
+  e4e5df0_
+* Enhance jobs and workflow logging to report timings. 06346a4_
+* Add debug message for dynamic options exceptions. `Pull Request 91`_
+* Remove demo sequencer app. 3af3bf5_
+* Tweaks to the Pulsar's handling of async messages. `Pull Request 109`_
+* Return more specific API authentication errors. 71a64ca_
+* Upgrade Python dependency sqlalchemy to 1.0.0. d725aab_, `Pull Request 129`_
+* Upgrade Python dependency amqp to 1.4.6. `Pull Request 128`_
+* Upgrade Python dependency kombu to 3.0.24. `Pull Request 128`_
+* Upgrade JavaScript dependency raven.js to 1.1.17. bcd1701_
+
+.. fixes
+
+Fixes
+-------------------------------
+
+* During the 15.05 development cycle dozens of fixes were pushed to the
+  ``release_15.03`` branch of Galaxy. These are all included in 15.05 and
+  summarized `here
+  <https://github.com/galaxyproject/galaxy/compare/v15.03...release_15.03>`__
+  (with special thanks to Björn Grüning and Marius van den Beek).
+* Fix race condition that would occasionally prevent Galaxy from starting
+  properly. `Pull Request 198`_, `Trello <https://trello.com/c/WVlaLsOh>`__
+* Fix scatter plot API communications for certain proxied Galaxy instances -
+  thanks to @yhoogstrate. `Pull Request 89`_
+* Fix bug in collectl_ job metrics plugin - thanks to Carrie Ganote.
+  `Pull Request 231`_
+* Fix late validation of tool parameters. `Pull Request 115`_
+* Fix ``fasta_to_tabular_converter.py`` (for implicit conversion) - thanks to
+  Peter Cock. `Pull Request 11`_
+* Fix to eliminate race condition by collecting extra files before declaring
+  dataset's OK. `Pull Request 48`_
+* Fix setting current history for certain proxied Galaxy instances - thanks
+  to @wezen. 6946e46_.
+* Fix typo in tool failure testing example - thanks to Peter Cock.
+  `Pull Request 18`_.
+* Fix Galaxy to default to using SSL for communicating with Tool Sheds.
+  0b037a2_
+* Fix data source tools to open in ``_top`` window.
+  `Pull Request 17`_
+* Fix to fallback to name for tool parameters without labels.
+  `Pull Request 189`_, `Trello <https://trello.com/c/Y2xbXqzZ>`__
+* Fix to remove redundant version ids in tool version selector.
+  `Pull Request 244`_
+* Fix for downloading metadata files. `Pull Request 234`_
+* Fix for history failing to render if it contains more exotic dataset
+  collection types. `Pull Request 196`_
+* Fixes for BaseURLToolParameter. `Pull Request 247`_
+* Fix to suppress pysam binary incompatibility warning when using datatypes
+  in ``binary.py``. `Pull Request 252`_
+* Fix for library UI duplication bug. `Pull Request 179`_
+* Fix for `Backbone.js`_ loading as AMD_. 4e5218f_
+* Other small Tool Shed fixes. 815f86f_, 76e0915_
+* Fix file closing in ``lped_to_pbed_converter``. 182b67f_
+* Fix undefined variables in Tool Shed ``add_repository_entry`` API script.
+  47e6f08_
+* Fix user registration to respect use_panels when in the Galaxy app.
+  7ac8631_, `Trello <https://trello.com/c/lA1mdDrP>`__
+* Fix bug in scramble exception, incorrect reference to source_path 79d50d8_
+* Fix error handling in ``pbed_to_lped``. 7aecd7a_
+* Fix error handling in Tool Shed step handler for ``chmod`` action. 1454396_
+* Fix ``__safe_string_wrapper`` in tool evaluation object_wrapper. ab6f13e_
+* Fixes for data types and data providers. c1d2d1f_, 8da70bb_, 0b83b1e_
+* Fixes for Tool Shed commit and mercurial handling modules. 6102edf_,
+  b639bc0_, debea9d_
+* Fix to clean working directory during job re-submission. `Pull Request 236`_
+* Fix bug when task splitting jobs fail. `Pull Request 214`_
+* Fix some minor typos in comment docs in ``config/galaxy.ini.sample``.
+  `Pull Request 210`_
+* Fix admin disk usage message. `Pull Request 205`_,
+  `Trello <https://trello.com/c/2pdw2dK8>`__
+* Fix to sessionStorage Model to suppress QUOTA DOMExceptions when Safari
+  users are in private browsing mode. 0c94f04_
+
+.. _IGV: https://www.broadinstitute.org/igv/
+.. _External Display Application: https://wiki.galaxyproject.org/Admin/Tools/External%20Display%20Applications%20Tutorial
+.. _Interactive Environments: https://galaxyproject.org/Admin/IEs
+.. _TravisCI: https://travis-ci.org/
+.. _Tox: https://testrun.org/tox/latest/
+.. _Source Maps: https://developer.chrome.com/devtools/docs/javascript-debugging#source-maps
+.. _uglify: https://developer.chrome.com/devtools/docs/javascript-debugging#source-maps
+.. _collectl: http://collectl.sourceforge.net/
+.. _Backbone.js: http://backbonejs.org/
+.. _AMD: http://requirejs.org/docs/whyamd.html
+
+.. github_links
+.. _Pull Request 129: https://github.com/galaxyproject/galaxy/pull/129
+.. _Pull Request 128: https://github.com/galaxyproject/galaxy/pull/128
+.. _Pull Request 2: https://github.com/galaxyproject/galaxy/pull/2
+.. _Pull Request 247: https://github.com/galaxyproject/galaxy/pull/247
+.. _Pull Request 252: https://github.com/galaxyproject/galaxy/pull/252
+.. _Pull Request 245: https://github.com/galaxyproject/galaxy/pull/245
+.. _Pull Request 244: https://github.com/galaxyproject/galaxy/pull/244
+.. _Pull Request 236: https://github.com/galaxyproject/galaxy/pull/236
+.. _Pull Request 235: https://github.com/galaxyproject/galaxy/pull/235
+.. _Pull Request 222: https://github.com/galaxyproject/galaxy/pull/222
+.. _Pull Request 234: https://github.com/galaxyproject/galaxy/pull/234
+.. _Pull Request 231: https://github.com/galaxyproject/galaxy/pull/231
+.. _Pull Request 226: https://github.com/galaxyproject/galaxy/pull/226
+.. _Pull Request 216: https://github.com/galaxyproject/galaxy/pull/216
+.. _Pull Request 215: https://github.com/galaxyproject/galaxy/pull/215
+.. _Pull Request 214: https://github.com/galaxyproject/galaxy/pull/214
+.. _Pull Request 198: https://github.com/galaxyproject/galaxy/pull/198
+.. _Pull Request 210: https://github.com/galaxyproject/galaxy/pull/210
+.. _Pull Request 206: https://github.com/galaxyproject/galaxy/pull/206
+.. _Pull Request 205: https://github.com/galaxyproject/galaxy/pull/205
+.. _Pull Request 197: https://github.com/galaxyproject/galaxy/pull/197
+.. _Pull Request 196: https://github.com/galaxyproject/galaxy/pull/196
+.. _Pull Request 189: https://github.com/galaxyproject/galaxy/pull/189
+.. _Pull Request 187: https://github.com/galaxyproject/galaxy/pull/187
+.. _Pull Request 179: https://github.com/galaxyproject/galaxy/pull/179
+.. _Pull Request 153: https://github.com/galaxyproject/galaxy/pull/153
+.. _Pull Request 152: https://github.com/galaxyproject/galaxy/pull/152
+.. _5abb8ad: https://github.com/galaxyproject/galaxy/commit/5abb8ad
+.. _Pull Request 130: https://github.com/galaxyproject/galaxy/pull/130
+.. _Pull Request 146: https://github.com/galaxyproject/galaxy/pull/146
+.. _Pull Request 135: https://github.com/galaxyproject/galaxy/pull/135
+.. _Pull Request 143: https://github.com/galaxyproject/galaxy/pull/143
+.. _Pull Request 142: https://github.com/galaxyproject/galaxy/pull/142
+.. _Pull Request 131: https://github.com/galaxyproject/galaxy/pull/131
+.. _d725aab: https://github.com/galaxyproject/galaxy/commit/d725aab
+.. _Pull Request 126: https://github.com/galaxyproject/galaxy/pull/126
+.. _e09761e: https://github.com/galaxyproject/galaxy/commit/e09761e
+.. _8d3c531: https://github.com/galaxyproject/galaxy/commit/8d3c531
+.. _Pull Request 125: https://github.com/galaxyproject/galaxy/pull/125
+.. _Pull Request 123: https://github.com/galaxyproject/galaxy/pull/123
+.. _Pull Request 121: https://github.com/galaxyproject/galaxy/pull/121
+.. _Pull Request 120: https://github.com/galaxyproject/galaxy/pull/120
+.. _Pull Request 119: https://github.com/galaxyproject/galaxy/pull/119
+.. _Pull Request 117: https://github.com/galaxyproject/galaxy/pull/117
+.. _Pull Request 118: https://github.com/galaxyproject/galaxy/pull/118
+.. _Pull Request 134: https://github.com/galaxyproject/galaxy/pull/134
+.. _Pull Request 116: https://github.com/galaxyproject/galaxy/pull/116
+.. _Pull Request 109: https://github.com/galaxyproject/galaxy/pull/109
+.. _647cf55: https://github.com/galaxyproject/galaxy/commit/647cf55
+.. _Pull Request 108: https://github.com/galaxyproject/galaxy/pull/108
+.. _Pull Request 107: https://github.com/galaxyproject/galaxy/pull/107
+.. _8254cab: https://github.com/galaxyproject/galaxy/commit/8254cab
+.. _Pull Request 99: https://github.com/galaxyproject/galaxy/pull/99
+.. _Pull Request 98: https://github.com/galaxyproject/galaxy/pull/98
+.. _Pull Request 115: https://github.com/galaxyproject/galaxy/pull/115
+.. _Pull Request 97: https://github.com/galaxyproject/galaxy/pull/97
+.. _Pull Request 91: https://github.com/galaxyproject/galaxy/pull/91
+.. _Pull Request 89: https://github.com/galaxyproject/galaxy/pull/89
+.. _Pull Request 86: https://github.com/galaxyproject/galaxy/pull/86
+.. _Pull Request 87: https://github.com/galaxyproject/galaxy/pull/87
+.. _Pull Request 73: https://github.com/galaxyproject/galaxy/pull/73
+.. _Pull Request 74: https://github.com/galaxyproject/galaxy/pull/74
+.. _Pull Request 75: https://github.com/galaxyproject/galaxy/pull/75
+.. _Pull Request 70: https://github.com/galaxyproject/galaxy/pull/70
+.. _Pull Request 69: https://github.com/galaxyproject/galaxy/pull/69
+.. _Pull Request 62: https://github.com/galaxyproject/galaxy/pull/62
+.. _Pull Request 51: https://github.com/galaxyproject/galaxy/pull/51
+.. _Pull Request 76: https://github.com/galaxyproject/galaxy/pull/76
+.. _2650d09: https://github.com/galaxyproject/galaxy/commit/2650d09
+.. _7d5dde8: https://github.com/galaxyproject/galaxy/commit/7d5dde8
+.. _2748f9d: https://github.com/galaxyproject/galaxy/commit/2748f9d
+.. _d6d61bc: https://github.com/galaxyproject/galaxy/commit/d6d61bc
+.. _815f86f: https://github.com/galaxyproject/galaxy/commit/815f86f
+.. _76e0915: https://github.com/galaxyproject/galaxy/commit/76e0915
+.. _bce8171: https://github.com/galaxyproject/galaxy/commit/bce8171
+.. _06346a4: https://github.com/galaxyproject/galaxy/commit/06346a4
+.. _b4cf49a: https://github.com/galaxyproject/galaxy/commit/b4cf49a
+.. _Pull Request 40: https://github.com/galaxyproject/galaxy/pull/40
+.. _Pull Request 38: https://github.com/galaxyproject/galaxy/pull/38
+.. _a24e206: https://github.com/galaxyproject/galaxy/commit/a24e206
+.. _Pull Request 35: https://github.com/galaxyproject/galaxy/pull/35
+.. _e36e51e: https://github.com/galaxyproject/galaxy/commit/e36e51e
+.. _1e55206: https://github.com/galaxyproject/galaxy/commit/1e55206
+.. _0c79680: https://github.com/galaxyproject/galaxy/commit/0c79680
+.. _Pull Request 1: https://github.com/galaxyproject/galaxy/pull/1
+.. _Pull Request 33: https://github.com/galaxyproject/galaxy/pull/33
+.. _Pull Request 48: https://github.com/galaxyproject/galaxy/pull/48
+.. _21d1d6b: https://github.com/galaxyproject/galaxy/commit/21d1d6b
+.. _Pull Request 30: https://github.com/galaxyproject/galaxy/pull/30
+.. _Pull Request 29: https://github.com/galaxyproject/galaxy/pull/29
+.. _c0e5509: https://github.com/galaxyproject/galaxy/commit/c0e5509
+.. _157eba6: https://github.com/galaxyproject/galaxy/commit/157eba6
+.. _72c876c: https://github.com/galaxyproject/galaxy/commit/72c876c
+.. _9a7f5fc: https://github.com/galaxyproject/galaxy/commit/9a7f5fc
+.. _648a623: https://github.com/galaxyproject/galaxy/commit/648a623
+.. _59028c0: https://github.com/galaxyproject/galaxy/commit/59028c0
+.. _bcd1701: https://github.com/galaxyproject/galaxy/commit/bcd1701
+.. _22f280f: https://github.com/galaxyproject/galaxy/commit/22f280f
+.. _6946e46: https://github.com/galaxyproject/galaxy/commit/6946e46
+.. _65def71: https://github.com/galaxyproject/galaxy/commit/65def71
+.. _4e5218f: https://github.com/galaxyproject/galaxy/commit/4e5218f
+.. _Pull Request 16: https://github.com/galaxyproject/galaxy/pull/16
+.. _Pull Request 13: https://github.com/galaxyproject/galaxy/pull/13
+.. _e8564d7: https://github.com/galaxyproject/galaxy/commit/e8564d7
+.. _Pull Request 23: https://github.com/galaxyproject/galaxy/pull/23
+.. _Pull Request 22: https://github.com/galaxyproject/galaxy/pull/22
+.. _10bb492: https://github.com/galaxyproject/galaxy/commit/10bb492
+.. _Pull Request 19: https://github.com/galaxyproject/galaxy/pull/19
+.. _Pull Request 18: https://github.com/galaxyproject/galaxy/pull/18
+.. _0b037a2: https://github.com/galaxyproject/galaxy/commit/0b037a2
+.. _Pull Request 17: https://github.com/galaxyproject/galaxy/pull/17
+.. _b29a5e9: https://github.com/galaxyproject/galaxy/commit/b29a5e9
+.. _Pull Request 14: https://github.com/galaxyproject/galaxy/pull/14
+.. _7aecd7a: https://github.com/galaxyproject/galaxy/commit/7aecd7a
+.. _Pull Request 12: https://github.com/galaxyproject/galaxy/pull/12
+.. _cd7abe8: https://github.com/galaxyproject/galaxy/commit/cd7abe8
+.. _62f0495: https://github.com/galaxyproject/galaxy/commit/62f0495
+.. _Pull Request 11: https://github.com/galaxyproject/galaxy/pull/11
+.. _Pull Request 9: https://github.com/galaxyproject/galaxy/pull/9
+.. _632ec4e: https://github.com/galaxyproject/galaxy/commit/632ec4e
+.. _Pull Request 8: https://github.com/galaxyproject/galaxy/pull/8
+.. _Pull Request 7: https://github.com/galaxyproject/galaxy/pull/7
+.. _b52cc98: https://github.com/galaxyproject/galaxy/commit/b52cc98
+.. _1454396: https://github.com/galaxyproject/galaxy/commit/1454396
+.. _8da70bb: https://github.com/galaxyproject/galaxy/commit/8da70bb
+.. _b639bc0: https://github.com/galaxyproject/galaxy/commit/b639bc0
+.. _ab6f13e: https://github.com/galaxyproject/galaxy/commit/ab6f13e
+.. _debea9d: https://github.com/galaxyproject/galaxy/commit/debea9d
+.. _6102edf: https://github.com/galaxyproject/galaxy/commit/6102edf
+.. _c1d2d1f: https://github.com/galaxyproject/galaxy/commit/c1d2d1f
+.. _0b83b1e: https://github.com/galaxyproject/galaxy/commit/0b83b1e
+.. _216fb95: https://github.com/galaxyproject/galaxy/commit/216fb95
+.. _182b67f: https://github.com/galaxyproject/galaxy/commit/182b67f
+.. _47e6f08: https://github.com/galaxyproject/galaxy/commit/47e6f08
+.. _7ac8631: https://github.com/galaxyproject/galaxy/commit/7ac8631
+.. _2bf52fe: https://github.com/galaxyproject/galaxy/commit/2bf52fe
+.. _e4e5df0: https://github.com/galaxyproject/galaxy/commit/e4e5df0
+.. _6e17bf4: https://github.com/galaxyproject/galaxy/commit/6e17bf4
+.. _0c94f04: https://github.com/galaxyproject/galaxy/commit/0c94f04
+.. _Pull Request 1: https://github.com/galaxyproject/galaxy/pull/1
+.. _ec549db: https://github.com/galaxyproject/galaxy/commit/ec549db
+.. _226e826: https://github.com/galaxyproject/galaxy/commit/226e826
+.. _79d50d8: https://github.com/galaxyproject/galaxy/commit/79d50d8
+.. _964e081: https://github.com/galaxyproject/galaxy/commit/964e081
+.. _Pull Request 5: https://github.com/galaxyproject/galaxy/pull/5
+.. _1f1bb29: https://github.com/galaxyproject/galaxy/commit/1f1bb29
+.. _Pull Request 4: https://github.com/galaxyproject/galaxy/pull/4
+.. _dde2fc9: https://github.com/galaxyproject/galaxy/commit/dde2fc9
+.. _c2eb74c: https://github.com/galaxyproject/galaxy/commit/c2eb74c
+.. _71a64ca: https://github.com/galaxyproject/galaxy/commit/71a64ca
+.. _3af3bf5: https://github.com/galaxyproject/galaxy/commit/3af3bf5
+.. _e99adb5: https://github.com/galaxyproject/galaxy/commit/e99adb5

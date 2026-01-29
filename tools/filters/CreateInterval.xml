@@ -1,0 +1,59 @@
+<tool id="createInterval" name="Create single interval" version="1.0.0">
+  <description>as a new dataset</description>
+  <requirements>
+    <requirement type="package" version="5.26">perl</requirement>
+  </requirements>
+  <command>
+perl '$__tool_directory__/CreateInterval.pl' '$chrom' $start $end '$name' $strand '$out_file1'
+  </command>
+  <inputs>
+    <param name="chrom" type="text" value="chr7" label="Chromosome"/>
+    <param name="start" type="integer" value="100" label="Start position"/>
+    <param name="end" type="integer" value="1000" label="End position"/>
+    <param name="name" type="text" value="myInterval" label="Name"/>
+    <param name="strand" type="select" label="Strand" help="If your interval is strandless set strand to plus" >
+      <option value="plus">plus</option>
+      <option value="minus">minus</option>
+    </param>    
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="bed" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="chrom" value="chr7"/>
+      <param name="start" value="100"/>
+      <param name="end" value="1000"/>
+      <param name="name" value="myinterval"/>
+      <param name="strand" value="plus"/>
+      <output name="out_file1" file="eq-createinterval.dat"/>
+    </test>
+  </tests>
+  <help>
+.. class:: warningmark
+
+**TIP**. Once your interval appears in history, you must tell Galaxy which genome it belongs to by clicking pencil icon or the "?" link in the history item.
+
+-----
+
+**What it does**
+
+This tool allows you to create a single genomic interval. The resulting history item will be in the BED format.
+
+-----
+
+**Example**
+
+Typing the following values in the form::
+
+    Chromosome: chrX
+    Start position: 151087187
+    End position: 151370486
+    Name: NM_000808
+    Strand: minus
+
+will create a single interval::
+
+    chrX  151087187  151370486  NM_000808  0  -
+  </help>
+</tool>

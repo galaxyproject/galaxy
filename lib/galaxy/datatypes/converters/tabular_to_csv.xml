@@ -1,0 +1,21 @@
+<tool id="tabular_to_csv" name="Convert tabular to CSV" version="1.0.0" profile="16.04">
+    <description></description>
+    <requirements>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+    <command>python '$__tool_directory__/tabular_csv.py' --from-tabular -i '$tabular' -o '$csv'</command>
+    <inputs>
+        <param format="tsv,tabular" name="tabular" type="data" label="Choose file with tab-separated values"/>
+    </inputs>
+    <outputs>
+        <data format="csv" name="csv"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="tabular" ftype="tabular" value="gtf_filter_by_attribute_values_list_in3.tabular"/>
+            <output name="csv" ftype="csv" value="gtf_filter_by_attribute_values_list_in3.csv"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

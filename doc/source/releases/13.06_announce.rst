@@ -1,0 +1,11 @@
+===========================================================
+June 2013 Galaxy Release (v 13.06)
+===========================================================
+
+.. include:: _header.rst
+
+Please see the `Galaxy wiki`_ for announcement and release notes.
+
+.. _Galaxy wiki: https://galaxyproject.org/news/2013-06-03-galaxy-distribution/
+
+.. include:: _thanks.rst

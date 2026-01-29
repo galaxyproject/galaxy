@@ -1,0 +1,114 @@
+<tool id="hgv_david" name="DAVID" version="1.0.1">
+  <description>functional annotation for a list of genes</description>
+
+  <command interpreter="perl">
+    linkToDavid.pl $input $numerical_column $type $out_file1
+  </command>
+
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Dataset" />
+    <param name="numerical_column" type="data_column" data_ref="input" label="Column with identifiers" />
+    <param name="type" label="Identifier type" type="select">
+      <option value="AFFYMETRIX_3PRIME_IVT_ID">AFFYMETRIX_3PRIME_IVT_ID</option>
+      <option value="AFFYMETRIX_EXON_GENE_ID">AFFYMETRIX_EXON_GENE_ID</option>
+      <option value="AFFYMETRIX_SNP_ID">AFFYMETRIX_SNP_ID</option>
+      <option value="AGILENT_CHIP_ID">AGILENT_CHIP_ID</option>
+      <option value="AGILENT_ID">AGILENT_ID</option>
+      <option value="AGILENT_OLIGO_ID">AGILENT_OLIGO_ID</option>
+      <option value="ENSEMBL_GENE_ID">ENSEMBL_GENE_ID</option>
+      <option value="ENSEMBL_TRANSCRIPT_ID">ENSEMBL_TRANSCRIPT_ID</option>
+      <option value="ENTREZ_GENE_ID">ENTREZ_GENE_ID</option>
+      <option value="FLYBASE_GENE_ID">FLYBASE_GENE_ID</option>
+      <option value="FLYBASE_TRANSCRIPT_ID">FLYBASE_TRANSCRIPT_ID</option>
+      <option value="GENBANK_ACCESSION">GENBANK_ACCESSION</option>
+      <option value="GENOMIC_GI_ACCESSION">GENOMIC_GI_ACCESSION</option>
+      <option value="GENPEPT_ACCESSION">GENPEPT_ACCESSION</option>
+      <option value="ILLUMINA_ID">ILLUMINA_ID</option>
+      <option value="IPI_ID">IPI_ID</option>
+      <option value="MGI_ID">MGI_ID</option>
+      <option value="OFFICIAL_GENE_SYMBOL" selected="true">OFFICIAL_GENE_SYMBOL</option>
+      <option value="PFAM_ID">PFAM_ID</option>
+      <!--option value="PIR_ACCESSION">PIR_ACCESSION</option-->
+      <option value="PIR_ID">PIR_ID</option>
+      <option value="PROTEIN_GI_ACCESSION">PROTEIN_GI_ACCESSION</option>
+      <!--option value="PIR_NREF_ID">PIR_NREF_ID</option-->
+      <option value="REFSEQ_GENOMIC">REFSEQ_GENOMIC</option>
+      <option value="REFSEQ_MRNA">REFSEQ_MRNA</option>
+      <option value="REFSEQ_PROTEIN">REFSEQ_PROTEIN</option>
+      <option value="REFSEQ_RNA">REFSEQ_RNA</option>
+      <option value="RGD_ID">RGD_ID</option>
+      <option value="SGD_ID">SGD_ID</option>
+      <option value="TAIR_ID">TAIR_ID</option>
+      <option value="UCSC_GENE_ID">UCSC_GENE_ID</option>
+      <option value="UNIGENE">UNIGENE</option>
+      <option value="UNIPROT_ACCESSION">UNIPROT_ACCESSION</option>
+      <option value="UNIPROT_ID">UNIPROT_ID</option>
+      <option value="UNIREF100_ID">UNIREF100_ID</option>
+      <option value="WORMBASE_GENE_ID">WORMBASE_GENE_ID</option>
+      <option value="WORMPEP_ID">WORMPEP_ID</option>
+      <option value="ZFIN_ID">ZFIN_ID</option>
+    </param>
+  </inputs>
+
+  <outputs>
+    <data format="html" name="out_file1" />
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input" ftype="tabular" value="linkToDavid.tabular" />
+      <param name="numerical_column" value="1" />
+      <param name="type" value="ENTREZ_GENE_ID" />
+      <output name="out_file1" file="linkToDavid_1.out" />
+    </test>
+  </tests>
+
+  <help>
+ .. class:: infomark
+
+The list is limited to 400 IDs.
+
+-----
+
+**Dataset formats**
+
+The input dataset is in tabular_ format.  The output dataset is html_ with
+a link to the DAVID website as described below.
+(`Dataset missing?`_)
+
+.. _tabular: ${static_path}/formatHelp.html#tab
+.. _html: ${static_path}/formatHelp.html#html
+.. _Dataset missing?: ${static_path}/formatHelp.html
+
+-----
+
+**What it does**
+
+This tool creates a link to the Database for Annotation,
+Visualization, and Integrated Discovery (DAVID) website at NIH,
+sending a list of IDs from the selected column of a tabular
+Galaxy dataset.  To follow the created link, click on the
+eye icon once the Galaxy tool has finished running.
+
+DAVID provides a comprehensive set of functional annotation tools
+to help investigators discover biological meaning behind large
+lists of genes.
+
+-----
+
+**References**
+
+Huang DW, Sherman BT, Lempicki RA. (2009) Systematic and integrative analysis
+of large gene lists using DAVID bioinformatics resources.
+Nat Protoc. 4(1):44-57.
+
+Dennis G, Sherman BT, Hosack DA, Yang J, Gao W, Lane HC, Lempicki RA. (2003)
+DAVID: database for annotation, visualization, and integrated discovery.
+Genome Biol. 4(5):P3. Epub 2003 Apr 3.
+
+  </help>
+  <citations>
+    <citation type="doi">10.1038/nprot.2008.211</citation>
+    <citation type="doi">10.1186/gb-2003-4-5-p3</citation>
+  </citations>
+</tool>

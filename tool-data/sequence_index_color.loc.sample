@@ -1,0 +1,29 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use a directory of BWA indexed sequences data files.  You will need
+#to create these data files and then create a sequence_index_color.loc file 
+#similar to this one (store it in this directory) that points to 
+#the directories in which those files are stored. The sequence_index_color.loc 
+#file has this format (white space characters are TAB characters):
+#
+#<build>	<file_base>
+#
+#So, for example, if you had phiX indexed stored in 
+#/depot/data2/galaxy/phiX/color/, 
+#then the sequence_index_color.loc entry would look like this:
+#
+#phiX	/depot/data2/galaxy/phiX/color/phiX.fa
+#
+#and your /depot/data2/galaxy/phiX/color/ directory
+#would contain phiX.fa.* files:
+#
+#-rw-r--r--  1 james    universe 830134 2005-09-13 10:12 phiX.fa.amb
+#-rw-r--r--  1 james    universe 527388 2005-09-13 10:12 phiX.fa.ann
+#-rw-r--r--  1 james    universe 269808 2005-09-13 10:12 phiX.fa.bwt
+#...etc...
+#
+#Your sequence_index_color.loc file should include an entry per line for 
+#each index set you have stored.  The "file" in the path does not actually
+#exist, but it is the prefix for the actual index files.  For example:
+#
+#phiX	/depot/data2/galaxy/phiX/color/phiX.fa
+#hg18	/depot/data2/galaxy/hg18/color/hg18.fa

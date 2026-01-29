@@ -1,0 +1,28 @@
+<tool id="metadata_bam" name="metadata BAM" version="1.0.0" profile="16.04">
+  <command><![CDATA[
+#assert $input_bam.metadata.bam_index
+echo '${ref_names}' > '${output_of_input_metadata}'
+  ]]></command>
+  <inputs>
+    <param name="input_bam" type="data" format="bam" label="BAM File"/>
+    <param name="ref_names" type="select" optional="False" label="Select references you would like to restrict bam to" multiple="True">
+        <options>
+            <filter type="data_meta" ref="input_bam" key="reference_names" />
+        </options>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="output_of_input_metadata" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_bam" value="3.bam" ftype="bam" />
+      <!-- This output tests setting using bam reference name metadata above -->
+      <param name="ref_names" value="chr10_random,chr11,chrM,chrX,chr16" />
+      <output name="output_of_input_metadata" ftype="txt">
+        <assert_contents>
+          <has_line line="chr10_random,chr11,chrM,chrX,chr16" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests></tool>

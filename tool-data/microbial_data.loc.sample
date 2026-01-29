@@ -1,0 +1,37 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to retrieve microbial data via a URL .
+#
+#ORG	campJeju_RM1221_1	Campylobacter jejuni RM1221	bacteria	Epsilonproteobacteria	chr	http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=genomeprj&cmd=Retrieve&dopt=Overview&list_uids=303	UCSC
+#CHR	campJeju_RM1221_1	chr	Campylobacter jejuni RM1221, complete genome	1777831	57236892	None	http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&val=NC_003912
+#DATA	campJeju_RM1221_1_chr_CDS	campJeju_RM1221_1	chr	CDS	bed	/depot/data2/galaxy/microbes/campJeju_RM1221_1/chr.CDS.bed
+#DATA	campJeju_RM1221_1_chr_tRNA	campJeju_RM1221_1	chr	tRNA	bed	/depot/data2/galaxy/microbes/campJeju_RM1221_1/chr.tRNA.bed
+#DATA	campJeju_RM1221_1_chr_rRNA	campJeju_RM1221_1	chr	rRNA	bed	/depot/data2/galaxy/microbes/campJeju_RM1221_1/chr.rRNA.bed
+#DATA	campJeju_RM1221_1_chr_seq	campJeju_RM1221_1	chr	sequence	fasta	/depot/data2/galaxy/microbes/campJeju_RM1221_1/chr.fna
+#DATA	campJeju_RM1221_1_chr_GeneMark	campJeju_RM1221_1	chr	GeneMark	bed	/depot/data2/galaxy/microbes/campJeju_RM1221_1/chr.GeneMark.bed
+#DATA	campJeju_RM1221_1_chr_GeneMarkHMM	campJeju_RM1221_1	chr	GeneMarkHMM	bed	/depot/data2/galaxy/microbes/campJeju_RM1221_1/chr.GeneMarkHMM.bed
+#DATA	campJeju_RM1221_1_chr_Glimmer3	campJeju_RM1221_1	chr	Glimmer3	bed	/depot/data2/galaxy/microbes/campJeju_RM1221_1/chr.Glimmer3.bed
+#ORG	12521	Clostridium perfringens SM101	bacteria	Firmicutes	NC_008262,NC_008263,NC_008264,NC_008265	http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=genomeprj&cmd=Retrieve&dopt=Overview&list_uids=12521	None
+#CHR	12521	NC_008265	Clostridium perfringens phage phiSM101, complete genome	38092	110804020	None	http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&val=NC_008265
+#DATA	12521_NC_008265_CDS	12521	NC_008265	CDS	bed	/depot/data2/galaxy/microbes/12521/NC_008265.CDS.bed
+#DATA	12521_NC_008265_tRNA	12521	NC_008265	tRNA	bed	/depot/data2/galaxy/microbes/12521/NC_008265.tRNA.bed
+#DATA	12521_NC_008265_rRNA	12521	NC_008265	rRNA	bed	/depot/data2/galaxy/microbes/12521/NC_008265.rRNA.bed
+#DATA	12521_NC_008265_seq	12521	NC_008265	sequence	fasta	/depot/data2/galaxy/microbes/12521/NC_008265.fna
+#DATA	12521_NC_008265_GeneMark	12521	NC_008265	GeneMark	bed	/depot/data2/galaxy/microbes/12521/NC_008265.GeneMark.bed
+#DATA	12521_NC_008265_GeneMarkHMM	12521	NC_008265	GeneMarkHMM	bed	/depot/data2/galaxy/microbes/12521/NC_008265.GeneMarkHMM.bed
+#DATA	12521_NC_008265_Glimmer3	12521	NC_008265	Glimmer3	bed	/depot/data2/galaxy/microbes/12521/NC_008265.Glimmer3.bed
+#CHR	12521	NC_008264	Clostridium perfringens SM101 plasmid 2, complete sequence	12206	110804009	None	http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&val=NC_008264
+#DATA	12521_NC_008264_CDS	12521	NC_008264	CDS	bed	/depot/data2/galaxy/microbes/12521/NC_008264.CDS.bed
+#DATA	12521_NC_008264_tRNA	12521	NC_008264	tRNA	bed	/depot/data2/galaxy/microbes/12521/NC_008264.tRNA.bed
+#DATA	12521_NC_008264_rRNA	12521	NC_008264	rRNA	bed	/depot/data2/galaxy/microbes/12521/NC_008264.rRNA.bed
+#DATA	12521_NC_008264_seq	12521	NC_008264	sequence	fasta	/depot/data2/galaxy/microbes/12521/NC_008264.fna
+#DATA	12521_NC_008264_GeneMark	12521	NC_008264	GeneMark	bed	/depot/data2/galaxy/microbes/12521/NC_008264.GeneMark.bed
+#DATA	12521_NC_008264_GeneMarkHMM	12521	NC_008264	GeneMarkHMM	bed	/depot/data2/galaxy/microbes/12521/NC_008264.GeneMarkHMM.bed
+#DATA	12521_NC_008264_Glimmer3	12521	NC_008264	Glimmer3	bed	/depot/data2/galaxy/microbes/12521/NC_008264.Glimmer3.bed
+#CHR	12521	NC_008263	Clostridium perfringens SM101 plasmid 1, complete sequence	12397	110803998	None	http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&val=NC_008263
+#DATA	12521_NC_008263_CDS	12521	NC_008263	CDS	bed	/depot/data2/galaxy/microbes/12521/NC_008263.CDS.bed
+#DATA	12521_NC_008263_tRNA	12521	NC_008263	tRNA	bed	/depot/data2/galaxy/microbes/12521/NC_008263.tRNA.bed
+#DATA	12521_NC_008263_rRNA	12521	NC_008263	rRNA	bed	/depot/data2/galaxy/microbes/12521/NC_008263.rRNA.bed
+#DATA	12521_NC_008263_seq	12521	NC_008263	sequence	fasta	/depot/data2/galaxy/microbes/12521/NC_008263.fna
+#DATA	12521_NC_008263_GeneMark	12521	NC_008263	GeneMark	bed	/depot/data2/galaxy/microbes/12521/NC_008263.GeneMark.bed
+#DATA	12521_NC_008263_GeneMarkHMM	12521	NC_008263	GeneMarkHMM	bed	/depot/data2/galaxy/microbes/12521/NC_008263.GeneMarkHMM.bed
+#DATA	12521_NC_008263_Glimmer3	12521	NC_008263	Glimmer3	bed	/depot/data2/galaxy/microbes/12521/NC_008263.Glimmer3.bed

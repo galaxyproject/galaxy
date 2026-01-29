@@ -1,0 +1,252 @@
+<tool id="__RELABEL_FROM_FILE__"
+      name="Relabel identifiers"
+      version="1.1.0"
+      tool_type="relabel_from_file">
+    <description></description>
+    <type class="RelabelFromFileTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3096</edam_operation>
+    </edam_operations>
+    <inputs>
+        <param type="data_collection" name="input" label="Input Collection" help="collection to change identifiers in"/>
+        <conditional name="how">
+            <param type="select" name="how_select" label="How should the new labels be specified?">
+                <option value="txt">Use lines in a simple text file as new identifiers.</option>
+                <option value="tabular">Map original identifiers to new ones using a two-column table.</option>
+                <option value="tabular_extended">Use any two columns of a table for identifier mapping.</option>
+            </param>
+            <when value="txt">
+                <param type="data" name="labels" format="txt" label="New Identifiers" />
+                <param name="strict" type="boolean" label="Ensure strict mapping" help="If selected, the text file must contain exactly the correct number of lines." truevalue="true" falsevalue="false" />
+            </when>
+            <when value="tabular">
+                <param type="data" name="labels" format="tabular" label="Identifier mapping" />
+                <param name="strict" type="boolean" label="Ensure strict mapping" help="If checked, the table must contain exactly the correct number of lines and each original identifier must match exactly one element of the input collection." truevalue="true" falsevalue="false" />
+            </when>
+            <when value="tabular_extended">
+                <param type="data" name="labels" format="tabular" label="Identifier mapping" />
+                <param name="from" type="data_column" data_ref="labels" value="1" label="Column with current identifiers"/>
+                <param name="to" type="data_column" data_ref="labels" value="2" label="Column with new identifiers"/>
+                <param name="strict" type="boolean" label="Ensure strict mapping" help="If checked, the table must contain exactly the correct number of lines and each original identifier must match exactly one element of the input collection." truevalue="true" falsevalue="false" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (relabelled)" >
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="i1">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <param name="how_select" value="txt" />
+            <param name="labels" value="new_labels_1.txt" ftype="txt" />
+            <output_collection name="output" type="list:paired">
+              <element name="new_i1">
+                <element name="forward">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+                <element name="reverse">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a different line of text.\n$" />
+                  </assert_contents>
+                </element>
+              </element>
+            </output_collection>
+        </test>
+        <test>
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="i1">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <param name="how_select" value="tabular" />
+            <param name="labels" value="new_labels_2.txt" ftype="tabular" />
+            <output_collection name="output" type="list:paired">
+              <element name="new_i1">
+                <element name="forward">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+                <element name="reverse">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a different line of text.\n$" />
+                  </assert_contents>
+                </element>
+              </element>
+            </output_collection>
+        </test>
+        <!-- test non-default columns -->
+        <test>
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="i1">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <param name="how_select" value="tabular_extended" />
+            <param name="labels" value="new_labels_3.txt" ftype="tabular" />
+            <param name="from" value="3" />
+            <param name="to" value="1" />
+            <output_collection name="output" type="list:paired">
+              <element name="new_i1">
+                <element name="forward">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+                <element name="reverse">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a different line of text.\n$" />
+                  </assert_contents>
+                </element>
+              </element>
+            </output_collection>
+        </test>
+        <!-- test strict -->
+        <test expect_failure="true">
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="wrongi">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <param name="strict" value="true" />
+            <param name="how_select" value="tabular" />
+            <param name="labels" value="new_labels_2.txt" ftype="tabular" />
+        </test>
+        <test expect_failure="true">
+            <param name="input">
+                <collection type="list">
+                    <element name="i1" value="simple_line.txt" />
+                    <element name="i3" value="simple_line_alternative.txt" />
+                </collection>
+            </param>
+            <param name="how_select" value="txt" />
+            <param name="labels" value="new_labels_1.txt" ftype="txt" />
+        </test>
+        <!-- test label bad characters -->
+        <test expect_failure="true">
+            <param name="input">
+                <collection type="list">
+                    <element name="i1" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="how_select" value="txt" />
+            <param name="labels" value="new_labels_bad_1.txt" ftype="txt" />
+        </test>
+        <!-- test label bad because of duplicates -->
+        <test expect_failure="true">
+            <param name="input">
+                <collection type="list">
+                    <element name="i1" value="simple_line.txt" />
+                    <element name="i2" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="how_select" value="txt" />
+            <param name="labels" value="new_labels_bad_2.txt" ftype="txt" />
+        </test>
+    </tests>
+    <help><![CDATA[
+
+========
+Synopsis
+========
+
+Changes identifiers of datasets within a collection using identifiers from a supplied file. 
+
+===========
+Description
+===========
+
+New identifiers can be supplied as either a simple list or a tab-delimited file mapping old identifiers to new ones. This is controlled using **How should the new identifiers be specified?** drop-down:
+
+**Use lines in a simple text file as new identifiers**
+
+Given a collection::
+
+ Collection: [Dataset A] 
+             [Dataset B] 
+             [Dataset X]
+
+and a simple text file::
+
+             Alpha
+             Beta
+             Gamma
+
+the tool will return::
+
+ Collection: [Dataset Alpha] 
+             [Dataset Beta] 
+             [Dataset Gamma]
+
+.. class:: infomark
+
+**Note** that the order and number of entries in the text file must match the order of the items you want to rename in your dataset collection.
+
+-------
+
+**Map original identifiers to new ones using a two-column table**
+
+Given a collection::
+
+ Collection: [Dataset A] 
+             [Dataset B] 
+             [Dataset X]
+
+and a simple tabular file (you can see that entries do not have to be in order here)::
+
+             B Beta
+             X Gamma
+             A Alpha
+
+the tool will return::
+
+ Collection: [Dataset Alpha] 
+             [Dataset Beta] 
+             [Dataset Gamma]
+
+-------
+
+**Map original identifiers to new ones using a two-column table**
+
+This mode works exactly as the previous one, but the tabular mapping file is allowed to have more than two columns, and you can specify which of them holds the original and new element identifiers, respectively.
+
+-------
+
+.. class:: warningmark
+
+Valid identifiers must contain only characters (a-z, A-Z), numbers (0-9), dash (-), underscore (_), dot (.), space ( ) and comma (,). Other characters are not allowed.
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+    ]]></help>
+</tool>

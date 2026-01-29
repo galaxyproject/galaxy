@@ -1,0 +1,22 @@
+#This is a sample file distributed with Galaxy that enables tools to use
+#a directory of sqlite files for use with SIFT.  You will need to supply
+#these files and then create a sift_db.loc file similar to this one (store
+#it in this directory) that points to the directories in which those files
+#are stored.  The sift_db.loc file has this format (white space characters
+#are TAB characters):
+#
+#<build>	<file_path>
+#
+#So, for example, if your sift_db.loc began like this:
+#
+#hg18	/galaxy/data/hg18/misc/sift/Human_db_36
+#
+#then your /galaxy/data/hg18/misc/sift/Human_db_36 directory would need to
+#contain the following sqlite files, among others:
+#
+#-rw-r--r-- 1 g2test g2data 3010870272 Sep  2 14:09 Human_CHR10.sqlite
+#-rw-r--r-- 1 g2test g2data 2926365696 Sep  2 15:09 Human_CHR11.sqlite
+#-rw-r--r-- 1 g2test g2data 2557210624 Sep  2 14:19 Human_CHR12.sqlite
+#
+#hg18	/galaxy/data/hg18/misc/sift/Human_db_36
+#hg19	/galaxy/data/hg19/misc/sift/Human_db_37

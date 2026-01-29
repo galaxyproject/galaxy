@@ -1,0 +1,22 @@
+- id: lab_azure_storage
+  version: 0
+  name: Azure Blob Storage for our Lab
+  description: |
+    This template allows storing dataset in [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction).
+  configuration:
+    type: azure_blob
+    auth:
+      account_name: 'XXXXXXXXfillinaccount'
+      account_key: 'XXXXXXXXXfillinkey'
+
+    container:
+      name: '{{ variables.container_name }}'
+
+  variables:
+    container_name:
+      label: Container Name
+      type: string
+      help: |
+        The name of your Azure Blob Storage container in our lab space. Contact
+        our lab Galaxy admin awesomelabsnate@ourawesomelab.org if you're unsure
+        what container you should store your data in. 

@@ -1,0 +1,79 @@
+<tool id="simple_constructs" name="simple_constructs" version="1.0.0">
+    <command><![CDATA[
+echo '$p1.p1val'  > '$out_file1' &&
+echo $booltest  >> '$out_file1' &&
+echo $inttest   >> '$out_file1' &&
+echo $floattest >> '$out_file1' &&
+echo $radio_select >> '$out_file1' &&
+echo $check_select >> '$out_file1' &&
+echo $drop_select  >> '$out_file1' &&
+#if len($files) > 0
+    cat '$files[0].file' >> '$out_file1'
+#end if
+    ]]></command>
+    <inputs>
+        <conditional name="p1">
+            <param type="boolean" name="p1use" />
+            <when value="true">
+                <param name="p1val" value="p1used" type="text" />
+            </when>
+            <when value="false">
+                <param name="p1val" value="p1notused" type="text" />
+            </when>
+        </conditional>
+        <param name="booltest" truevalue="booltrue" falsevalue="boolfalse" checked="false" type="boolean" />
+        <param name="inttest" value="1" type="integer" />
+        <param name="floattest" value="1.0" type="float" />
+        <param name="radio_select" type="select" display="radio">
+            <option value="a_radio" selected="true">A Radio</option>
+            <option value="b_radio">B Radio</option>
+            <option value="c_radio">C Radio</option>
+        </param>
+        <param name="check_select" type="select" display="checkboxes" multiple="true">
+            <option value="a_check" selected="true">A Check</option>
+            <option value="b_check">B Check</option>
+            <option value="c_check">C Check</option>
+        </param>
+        <param name="drop_select" type="select">
+            <option value="a_drop" selected="true">A Drop</option>
+            <option value="b_drop">B Drop</option>
+            <option value="c_drop">C Drop</option>
+        </param>
+        <repeat name="files" title="Files">
+            <param name="file" type="data" format="txt" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="p1use" value="true" />
+            <param name="booltest" value="true" />
+            <param name="inttest" value="12456" />
+            <param name="floattest" value="6.789" />
+            <param name="file" value="simple_line.txt" /> <!-- This is a line of text. -->
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="p1used" />
+                    <has_line line="booltrue" />
+                    <has_line line="12456" />
+                    <has_line line="6.789" />
+                    <has_line line="This is a line of text." />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <!-- Again but using boolean's truevalue -->
+            <param name="p1use" value="true" />
+            <param name="booltest" value="booltrue" />
+            <param name="file" value="simple_line.txt" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="p1used" />
+                    <has_line line="booltrue" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

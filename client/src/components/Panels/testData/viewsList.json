@@ -1,0 +1,74 @@
+{
+    "default": {
+        "id": "default",
+        "model_class": "type",
+        "name": "Full Tool Panel",
+        "description": "Galaxy's fully configured toolbox panel with all sections, tools, and configured workflows loaded.",
+        "view_type": "default",
+        "searchable": true
+    },
+    "ontology:edam_operations": {
+        "id": "ontology:edam_operations",
+        "model_class": "EdamToolPanelView",
+        "name": "EDAM Operations",
+        "description": "Tools are grouped using annotated EDAM operation information (if available).",
+        "view_type": "ontology",
+        "searchable": true
+    },
+    "ontology:edam_topics": {
+        "id": "ontology:edam_topics",
+        "model_class": "EdamToolPanelView",
+        "name": "EDAM Topics",
+        "description": "Tools are grouped using annotated EDAM topic information (if available).",
+        "view_type": "ontology",
+        "searchable": true
+    },
+    "activity_1": {
+        "id": "activity_1",
+        "model_class": "StaticToolPanelView",
+        "name": "Globally Applied Filters",
+        "description": null,
+        "view_type": "activity",
+        "searchable": true
+    },
+    "generic_1": {
+        "id": "generic_1",
+        "model_class": "StaticToolPanelView",
+        "name": "Custom Panel in a New Section",
+        "description": null,
+        "view_type": "generic",
+        "searchable": true
+    },
+    "activity_2": {
+        "id": "activity_2",
+        "model_class": "StaticToolPanelView",
+        "name": "Filtering Tools",
+        "description": null,
+        "view_type": "activity",
+        "searchable": true
+    },
+    "publication_1": {
+        "id": "publication_1",
+        "model_class": "StaticToolPanelView",
+        "name": "Merged Section Example",
+        "description": null,
+        "view_type": "publication",
+        "searchable": true
+    },
+    "training_1": {
+        "id": "training_1",
+        "model_class": "StaticToolPanelView",
+        "name": "Filtered Test Section",
+        "description": null,
+        "view_type": "training",
+        "searchable": true
+    },
+    "generic_2": {
+        "id": "generic_2",
+        "model_class": "StaticToolPanelView",
+        "name": "Merged Section Example",
+        "description": null,
+        "view_type": "generic",
+        "searchable": true
+    }
+}

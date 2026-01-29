@@ -1,0 +1,18 @@
+<tool id="cat_interleave" name="Interleave two inputs (for test workflows)" version="1.0.0">
+    <command><![CDATA[
+cat '$input1' '$input2' > '$out_file1' &&
+cat '$input2' '$input1' > '$out_file2'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" label="Input 1"/>
+        <param name="input2" type="data" label="Input 2"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="input" metadata_source="input1"/>
+        <data name="out_file2" format="input" metadata_source="input2"/>
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

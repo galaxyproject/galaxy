@@ -1,0 +1,44 @@
+<tool id="dbkey_filter_multi_input" name="dbkey_filter_multi_input" version="0.1.0">
+    <description>Filter select on dbkey of multiple inputs and use of named column</description>
+    <command><![CDATA[
+#for $input in $inputs#
+    cat '$input' >> '$output';
+#end for#
+    ]]></command>
+    <inputs>
+        <param name="inputs" type="data" format="txt" multiple="true" label="Inputs" help="" />
+        <param name="index" type="select" label="Using reference genome">
+            <options from_data_table="test_fasta_indexes">
+                <filter type="data_meta" ref="inputs" key="dbkey" column="dbkey" />
+                <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+            </options>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+
+    <tests>
+        <!-- can choose a dbkey if it matches input -->
+        <test>
+            <param name="inputs" value="simple_line.txt,simple_line.txt" dbkey="hg19" />
+            <param name="index" value="hg19_value" />
+            <output name="output" file="simple_line_x2.txt"/>
+        </test>
+        <!-- can choose any dbkey if none specified in reference -->
+        <test>
+            <param name="inputs" value="simple_line.txt,simple_line.txt" />
+            <param name="index" value="hg19_value" />
+            <output name="output" file="simple_line_x2.txt"/>
+        </test>
+        <!-- can choose any dbkey none specified in reference -->
+        <test expect_failure="true">
+            <param name="inputs" value="simple_line.txt,simple_line.txt" dbkey="hg19"/>
+            <param name="index" value="hg18_value" />
+            <output name="output" file="simple_line_x2.txt"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -1,0 +1,21 @@
+<tool id="csv_to_tabular" name="Convert CSV to tabular" version="1.0.0" profile="16.04">
+    <description></description>
+    <requirements>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+    <command>python '$__tool_directory__/tabular_csv.py' -o '$tabular' -i '$csv'</command>
+    <inputs>
+        <param format="csv" name="csv" type="data" label="Choose file with comma-separated values"/>
+    </inputs>
+    <outputs>
+        <data format="tabular" name="tabular"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="csv" ftype="csv" value="1.csv"/>
+            <output name="tabular" ftype="tabular" value="1.csv_to_tabular.tabular"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

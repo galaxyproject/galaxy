@@ -1,0 +1,26 @@
+<tool name="expression_null_handling_boolean" id="expression_null_handling_boolean"
+	  version="0.1.0" tool_type="expression">
+    <expression type="ecma5.1">
+        {return {'bool_out': $job.bool_input};}
+    </expression>
+    <inputs>
+        <param type="boolean" label="Booelan input." name="bool_input" optional="true" />
+    </inputs>
+    <outputs>
+        <output type="bool" name="bool_out" from="bool_out" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="bool_input" value_json="true" />
+            <output name="bool_out" value_json="true" />
+        </test>
+        <test>
+            <param name="bool_input" value_json="false" />
+            <output name="bool_out" value_json="false" />
+        </test>
+        <test>
+            <param name="bool_input" value_json="null" />
+            <output name="bool_out" value_json="null" />
+        </test>
+    </tests>
+</tool>

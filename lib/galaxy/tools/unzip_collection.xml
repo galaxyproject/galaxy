@@ -1,0 +1,45 @@
+<tool id="__UNZIP_COLLECTION__"
+      name="Unzip collection"
+      version="1.0.0"
+      tool_type="unzip_collection">
+  <description></description>
+  <type class="UnzipCollectionTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3359</edam_operation>
+    </edam_operations>
+  <inputs>
+    <param type="data_collection" collection_type="paired" name="input" label="Paired input to unzip" />
+  </inputs>
+  <outputs>
+    <data name="forward" label="${on_string} (forward)" format_source="input"/>
+    <data name="reverse" label="${on_string} (reverse)" format_source="input"/>
+  </outputs>
+  <help><![CDATA[
+
+
+========
+Synopsis
+========
+
+Takes a paired collection and "unzips" it into two simple dataset collections (lists of datasets). 
+
+===========
+Description
+===========
+
+Given a paired collection of forward and reverse reads this tool will "unzip" it into two collections containing forward and reverse reads, respectively:
+
+.. image:: ${static_path}/images/tools/collection_ops/unzip.svg
+  :width: 500
+  :alt: Unzipping operation
+
+-----
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+
+  ]]></help>
+</tool>

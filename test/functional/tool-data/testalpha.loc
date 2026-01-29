@@ -1,0 +1,2 @@
+data1	data1name	${__HERE__}/data1/entry.txt
+data2	data2name	${__HERE__}/data2/entry.txt

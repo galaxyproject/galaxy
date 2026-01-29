@@ -1,0 +1,27 @@
+galaxy:
+  bootstrap_admin_api_key: changethis
+  config_dir: 'false'
+  helpsite_url: 'https://help.galaxyproject.org/'
+  job_config:
+    runners:
+      local:
+        load: galaxy.jobs.runners.local:LocalJobRunner
+        workers: 1
+      dynamic:
+        rules_module: integration.delay_rules
+    execution:
+      default: local_dest
+      environments:
+        local_dest:
+          runner: dynamic
+          type: python
+          function: delay
+        upload_dest:
+          runner: local
+    tools:
+      - id: upload1
+        destination: upload_dest
+  dependency_resolvers:
+    - type: galaxy_packages
+    - type: galaxy_packages
+      versionless: true

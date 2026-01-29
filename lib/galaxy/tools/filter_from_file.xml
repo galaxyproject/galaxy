@@ -1,0 +1,150 @@
+<tool id="__FILTER_FROM_FILE__"
+      name="Filter collection"
+      version="1.0.0"
+      tool_type="filter_from_file">
+    <description></description>
+    <type class="FilterFromFileTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3695</edam_operation>
+    </edam_operations>
+    <inputs>
+        <param type="data_collection" name="input" label="Input Collection" help="A collection whose elements will be filtered."/>
+        <conditional name="how">
+            <param type="select" name="how_filter" label="How should the elements to remove be determined?">
+                <option value="remove_if_absent" selected="true">Remove if identifiers are ABSENT from file</option>
+                <option value="remove_if_present">Remove if identifiers are PRESENT in file</option>
+            </param>
+            <when value="remove_if_absent">
+                <param type="data" name="filter_source" format="txt" label="Filter out identifiers absent from" />
+            </when>
+            <when value="remove_if_present">
+                <param type="data" name="filter_source" format="txt" label="Filter out identifiers present in" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="output_filtered" format_source="input" type_source="input" label="${on_string} (filtered)" >
+        </collection>
+        <collection name="output_discarded" format_source="input" type_source="input" label="${on_string} (discarded)" >
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="i1" value="simple_line.txt" />
+                    <element name="i2" value="simple_line_alternative.txt" />
+                </collection>
+            </param>
+            <param name="how_filter" value="remove_if_present" />
+            <param name="filter_source" value="filter_labels_1.txt" ftype="txt" />
+            <output_collection name="output_filtered" type="list">
+                <element name="i1">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="output_discarded" type="list">
+                <element name="i2">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a different line of text.\n$" />
+                  </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="i1" value="simple_line.txt" />
+                    <element name="i2" value="simple_line_alternative.txt" />
+                </collection>
+            </param>
+            <param name="how_filter" value="remove_if_absent" />
+            <param name="filter_source" value="filter_labels_1.txt" ftype="txt" />
+            <output_collection name="output_filtered" type="list">
+                <element name="i2">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a different line of text.\n$" />
+                  </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="output_discarded" type="list">
+                <element name="i1">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+========
+Synopsis
+========
+
+Filters elements from a collection using a list supplied in a file.
+
+===========
+Description
+===========
+
+This tools allow filtering elements from a data collection.  It takes an input collection and a text file with names (i.e. identifiers). The tool behavious is controlled by **How should the elements to remove be determined?** drop-down. It has the following options:
+
+**Remove if identifiers are ABSENT from file**
+
+Given a collection::
+
+ Collection: [Dataset A] 
+             [Dataset B] 
+             [Dataset X]
+
+and a text file::
+
+             A
+             B
+             Z
+
+the tool will return two collections::
+
+ (filtered):  [Dataset A]
+              [Dataset B]
+
+ (discarded): [Dataset X]
+
+------
+
+**Remove if identifiers are PRESENT in file**
+
+Given a collection::
+
+ Collection: [Dataset A] 
+             [Dataset B] 
+             [Dataset X]
+
+and a text file::
+
+             A
+             B
+             Z
+
+the tool will return two collections::
+
+ (filtered):  [Dataset X]
+
+ (discarded): [Dataset A]
+              [Dataset B]
+
+.. class:: warningmark
+
+**Note** how the tool deals with the ``Z`` entry.
+
+.. class:: infomark
+
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+    ]]></help>
+</tool>

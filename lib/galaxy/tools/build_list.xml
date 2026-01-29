@@ -1,0 +1,73 @@
+<tool id="__BUILD_LIST__"
+      name="Build list"
+      version="1.1.0"
+      tool_type="build_list">
+  <description></description>
+  <type class="BuildListCollectionTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+  <edam_operations>
+    <edam_operation>operation_2409</edam_operation>
+  </edam_operations>
+  <inputs>
+    <repeat name="datasets" title="Dataset" help="If collections are provided they should contain the same number of items.">
+      <param type="data" name="input" optional="true" label="Input Dataset" help="If providing a collection here the tool will be run in batch and one collection per element is created."/>
+    </repeat>
+  </inputs>
+  <outputs>
+    <collection name="output" type="list" label="${on_string} (as list)">
+    </collection>
+  </outputs>
+  <help><![CDATA[
+
+========
+Synopsis
+========
+
+Builds a new list collection from individual datasets or collections.
+
+===========
+Description
+===========
+
+This tool combines individual datasets or collections into a new collection. The simplest scenario is building a new colection from individual datasets (case **A** in the image below). You can merge a collection with individual dataset(s). In this case (see **B** in the image below) the individual dataset(s) will be merged with each element of the input collection to create a nested collection. Finally, two or more collection can be merged together creating a nested collection (case **C** in the image below).
+
+.. class:: warningmark 
+
+**Note**: When merging collections (e.g., case **C** below) the input collection **must** have equal number of elements.
+
+------
+
+.. image:: ${static_path}/images/tools/collection_ops/build_list.svg
+  :width: 800
+  :alt: Unzipping operation
+
+-------
+
+.. class:: infomark
+
+
+This tool will create a new collection from your history datasets but your quota usage will not increase.
+
+  ]]></help>
+  <tests>
+    <test>
+      <repeat name="datasets">
+        <param name="input" value="simple_line.txt" />
+      </repeat>
+      <output_collection name="output" type="list">
+        <element name="0">
+          <assert_contents>
+              <has_text_matching expression="^This is a line of text.\n$"/>
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+    <test>
+      <repeat name="datasets">
+      </repeat>
+      <output_collection name="output" type="list" count="0">
+      </output_collection>
+    </test>
+  </tests>
+</tool>

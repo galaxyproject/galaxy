@@ -1,0 +1,120 @@
+
+===========================================================
+April 2016 Galaxy Release (v 16.04)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Tool Profile Versions**
+  Tools may now `declare which version <https://planemo.readthedocs.io/en/latest/galaxy_changelog.html#tool-profile-version-pr-1688>`__
+  of Galaxy they require. Tools requiring 16.04 or newer will
+  have new default behaviors (such as using exit code for error detection) that should simplify tool development.
+  See `PR #1688 <https://github.com/galaxyproject/galaxy/pull/1688>`__.
+
+**Embedded Pulsar Job Runner**
+  Galaxy can now start a Pulsar application embedded within
+  the Galaxy process itself. This allows using Pulsar's
+  job staging and isolation without requiring a RESTful
+  web service or a message queue. This is enabling
+  `usegalaxy.org <https://usegalaxy.org/>`__ to run jobs to
+  on the new `JetStream cloud <http://jetstream-cloud.org/>`__.
+  See `PR #2057 <https://github.com/galaxyproject/galaxy/pull/2057>`__.
+
+**New chemical datatypes**
+  Galaxy now detects and supports many molecular datatypes. See `Pull Request 1941`_.
+  Thanks to `Björn Grüning (@bgruening) <https://github.com/bgruening>`__.
+
+
+.. _Pull Request 1941: https://github.com/galaxyproject/galaxy/pull/1941
+
+`Github <https://github.com/galaxyproject/galaxy>`__
+===========================================================
+
+New
+  .. code-block:: shell
+
+      % git clone -b master https://github.com/galaxyproject/galaxy.git
+
+Update to latest stable release
+  .. code-block:: shell
+
+      % git checkout master && pull --ff-only origin master
+
+Update to exact version
+  .. code-block:: shell
+
+      % git checkout v16.04
+
+
+`BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
+===========================================================
+
+**Note**: Version 16.04 will be the *final* release to be pushed to Bitbucket. More details can be found in the `Deprecation Notices`_ below.
+
+Upgrade
+  .. code-block:: shell
+
+      % hg pull
+      % hg update latest_16.04
+
+
+See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Security
+===========================================================
+
+TL;DR
+**Only Tool Sheds newer than 16.01 should be deployed from now on.**
+(with commit 449098d8b14b45269be106f6410c0b9145c51d50 from Mar 30 present)
+
+Due to the security fixes on the Mercurial_ side we had to update the hg version that
+both Galaxy and TS depend on because the fixes have not been backported to older versions.
+However this has broken the TS's ``hg push`` functionality as Mercurial changed their bundle
+format in a non-compatible manner. Given that we deprecated the ``hg push`` API
+functionality back in the 15.10 we decided to disable it fully from 16.01 (retroactively).
+
+.. _Mercurial: https://www.mercurial-scm.org/wiki/WhatsNew#Mercurial_3.7.3_.282016-3-29.29
+
+Deprecation Notices
+===========================================================
+
+API deprecations
+----------------
+
+API for history contents, index:
+ * **types**: is no longer a valid parameter but accessible using ``?q=history_content_type&qv=[dataset | dataset_collection]``
+ * **ids**: is no longer a valid url parameter but is accessible using ``?q=type_id-in&qv=<e.g. dataset-abcdef123,dataset_collection-987fedcba, ...>``
+ * **deleted** and **visible**: are no longer parameters but are still accessible using ``q=deleted&qv=[True | False]&q=visible&qv=[True | False]``
+
+API for history contents, show:
+  * **api_type**: removed and unavailable (was :code:`file` and constant across HDAs)
+  * **display_apps**, **display_types**, **visualization**: removed from the default :code:`detailed` view but still available by calling url with ``?keys=display_apps,display_types,visualization``
+
+API histories (removed from the available serialized data on all calls):
+  * **state, state_details, state_ids** - can be replaced by specifically requesting a single array of contents, each containing :code:`{ id, state, deleted, visible }`
+
+Galaxy no longer on Bitbucket
+-----------------------------
+
+Galaxy moved its code and development activities from Bitbucket to GitHub in early 2015. Since this time, releases have been mirrored back to Bitbucket. However, after this release, no new changes will be pushed to Bitbucket. Anyone still receiving updates to a Galaxy server via Bitbucket and Mercurial should switch to GitHub and Git. This can be done using the following process:
+
+1. Backup everything.
+2. Find what branch and commit your Mercurial Galaxy is at using :code:`hg log -b $(hg branch)`
+3. :code:`git clone https://github.com/galaxyproject/galaxy` in a temporary directory.
+4. Find the corresponding commit in the cloned Git repository on the corresponding branch (Bitbucket default->GitHub dev; Bitbucket stable->GitHub master).
+5. Checkout the GitHub repository at the commit you found in the previous step.
+6. Backup your .hg/ folder.
+7. Replace your .hg/ folder with the .git/ folder from the new checkout.
+8. Your Galaxy should be switched to Git. Unless you have local changes, git status should show none.
+9. You can now update to the latest Git revision using :code:`git pull`
+
+Release Notes
+===========================================================
+
+.. include:: 16.04.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

@@ -1,0 +1,49 @@
+<tool id="image_diff" name="image_diff" version="0.1.0">
+  <command><![CDATA[
+    cp '$in' '$out'
+  ]]></command>
+  <inputs>
+    <param name="in" type="data" format="data"/>
+  </inputs>
+  <outputs>
+    <data name="out" format="data"/>
+  </outputs>
+  <tests>
+    <!-- test pair of equal images (but different formats) -->
+    <test>
+      <param name="in" value="im1_uint8.png" />
+      <output name="out" value="im1_uint8.png" compare="image_diff" metric="mae" />
+    </test>
+    <test>
+      <param name="in" value="im1_uint8.tif" />
+      <output name="out" value="im1_uint8.png" compare="image_diff" metric="mse" eps="0" />
+    </test>
+    <test>
+      <param name="in" value="im1_uint8.png" />
+      <output name="out" value="im1_uint8.png" compare="image_diff" metric="rms" eps="0" />
+    </test>
+    <!-- test pair of equal images (float tiff) -->
+    <test>
+      <param name="in" value="im4_float.tif" />
+      <output name="out" value="im4_float.tif" compare="image_diff" />
+    </test>
+    <!-- test pair of different images -->
+    <test>
+      <param name="in" value="im2_a.png" />
+      <output name="out" value="im2_b.png" compare="image_diff" metric="mae" eps="0.25" />
+    </test>
+    <test>
+      <param name="in" value="im2_a.png" />
+      <output name="out" value="im2_b.png" compare="image_diff" metric="iou" eps="0.75" />
+    </test>
+    <test expect_test_failure="true">
+      <param name="in" value="im2_a.png" />
+      <output name="out" value="im2_b.png" compare="image_diff" metric="iou" eps="0.75" pin_labels="2" />
+    </test>
+    <!-- test RGB data -->
+    <test>
+      <param name="in" value="im3_a.png" />
+      <output name="out" value="im3_b.tif" compare="image_diff" metric="fro" eps="256" />
+    </test>
+  </tests>
+</tool>

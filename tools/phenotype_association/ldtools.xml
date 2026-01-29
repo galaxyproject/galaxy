@@ -1,0 +1,116 @@
+<tool id="hgv_ldtools" name="LD" version="1.0.0">
+  <description>linkage disequilibrium and tag SNPs</description>
+  <requirements>
+    <requirement type="package" version="2.7">python</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+'$__tool_directory__/ldtools_wrapper.sh' rsquare=$rsquare freq=$freq input='$input' output='$output'
+  </command>
+
+  <inputs>
+    <param format="tabular" name="input" type="data" label="Dataset"/>
+    <param name="rsquare" label="r&lt;sup&gt;2&lt;/sup&gt; threshold" type="float" value="0.64">
+      <validator type="in_range" message="rsquare must be in range [0.00, 1.00]" min="0.00" max="1.00" />
+    </param>
+    <param name="freq" label="Minimum allele frequency threshold" type="float" value="0.00">
+      <validator type="in_range" message="freq must be in range (0.00, 0.50]" min="0.00" max="0.50" />
+    </param>
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output" />
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input" value="ldInput1.txt" />
+      <param name="rsquare" value="0.64" />
+      <param name="freq" value="0.00" />
+      <output name="output" file="ldOutput1.txt" />
+    </test>
+  </tests>
+
+  <help>
+**Dataset formats**
+
+The input and output datasets are tabular_.
+(`Dataset missing?`_)
+
+.. _tabular: ${static_path}/formatHelp.html#tab
+.. _Dataset missing?: ${static_path}/formatHelp.html
+
+-----
+
+**What it does**
+
+This tool can be used to analyze the patterns of linkage disequilibrium
+(LD) between polymorphic sites in a locus.  SNPs are grouped based on the
+threshold level of LD as measured by r\ :sup:`2` (regardless of genomic
+position), and a representative "tag SNP" is reported for each group.
+The other SNPs in the group are in LD with the tag SNP, but not necessarily
+with each other.
+
+The underlying algorithm is the same as the one used in ldSelect (Carlson
+et al. 2004).  However, this tool is implemented to be much faster and more
+efficient than ldSelect.
+
+The input is a tabular file with genotype information for each individual
+at each SNP site, in exactly four columns: site ID, sample ID, and the
+two allele nucleotides.
+
+-----
+
+**Example**
+
+- input file::
+
+    rs2334386  NA20364  G  T
+    rs2334386  NA20363  G  G
+    rs2334386  NA20360  G  G
+    rs2334386  NA20359  G  G
+    rs2334386  NA20358  G  G
+    rs2334386  NA20356  G  G
+    rs2334386  NA20357  G  G
+    rs2334386  NA20350  G  G
+    rs2334386  NA20349  G  G
+    rs2334386  NA20348  G  G
+    rs2334386  NA20347  G  G
+    rs2334386  NA20346  G  G
+    rs2334386  NA20345  G  G
+    rs2334386  NA20344  G  G
+    rs2334386  NA20342  G  G
+    etc.
+
+- output file::
+
+    rs2238748  rs2793064,rs6518516,rs6518517,rs2283641,rs5993533,rs715590,rs2072123,rs2105421,rs2800954,rs1557847,rs807750,rs807753,rs5993488,rs8138035,rs2800980,rs2525079,rs5992353,rs712966,rs2525036,rs807743,rs1034727,rs807744,rs2074003
+    rs2871023  rs1210715,rs1210711,rs5748189,rs1210709,rs3788298,rs7284649,rs9306217,rs9604954,rs1210703,rs5748179,rs5746727,rs5748190,rs5993603,rs2238766,rs885981,rs2238763,rs5748165,rs9605996,rs9606001,rs5992398
+    rs7292006  rs13447232,rs5993665,rs2073733,rs1057457,rs756658,rs5992395,rs2073760,rs739369,rs9606017,rs739370,rs4493360,rs2073736
+    rs2518840  rs1061325,rs2283646,rs362148,rs1340958,rs361956,rs361991,rs2073754,rs2040771,rs2073740,rs2282684
+    rs2073775  rs10160,rs2800981,rs807751,rs5993492,rs2189490,rs5747997,rs2238743
+    rs5747263  rs12159924,rs2300688,rs4239846,rs3747025,rs3747024,rs3747023,rs2300691
+    rs433576   rs9605439,rs1109052,rs400509,rs401099,rs396012,rs410456,rs385105
+    rs2106145  rs5748131,rs2013516,rs1210684,rs1210685,rs2238767,rs2277837
+    rs2587082  rs2257083,rs2109659,rs2587081,rs5747306,rs2535704,rs2535694
+    rs807667   rs2800974,rs756651,rs762523,rs2800973,rs1018764
+    rs2518866  rs1206542,rs807467,rs807464,rs807462,rs712950
+    rs1110661  rs1110660,rs7286607,rs1110659,rs5992917,rs1110662
+    rs759076   rs5748760,rs5748755,rs5748752,rs4819925,rs933461
+    rs5746487  rs5992895,rs2034113,rs2075455,rs1867353
+    rs5748212  rs5746736,rs4141527,rs5748147,rs5748202
+    etc.
+
+-----
+
+**Reference**
+
+Carlson CS, Eberle MA, Rieder MJ, Yi Q, Kruglyak L, Nickerson DA. (2004)
+Selecting a maximally informative set of single-nucleotide polymorphisms for
+association analyses using linkage disequilibrium.
+Am J Hum Genet. 74(1):106-20. Epub 2003 Dec 15.
+
+  </help>
+  <citations>
+    <citation type="doi">10.1086/381000</citation>
+  </citations>
+</tool>

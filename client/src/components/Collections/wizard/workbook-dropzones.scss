@@ -1,0 +1,9 @@
+@import "theme/blue.scss";
+
+.dropzone.highlight {
+    border-width: 2px;
+    border-color: $border-color;
+    border-style: dashed;
+    border-radius: $border-radius-large;
+    -moz-border-radius: $border-radius-large;
+}

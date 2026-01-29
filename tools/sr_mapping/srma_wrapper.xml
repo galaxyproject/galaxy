@@ -1,0 +1,221 @@
+<tool id="srma_wrapper" name="Re-align with SRMA" version="0.2.5">
+  <description></description>
+  <command interpreter="python">srma_wrapper.py 
+    #if $refGenomeSource.refGenomeSource_type == "history":
+      --ref=$refGenomeSource.ownFile
+    #else:
+      --ref="${refGenomeSource.ref.fields.path}"
+      --refUID=$refGenomeSource.ref
+      ##--refLocations=${GALAXY_DATA_INDEX_DIR}/srma_index.loc
+    #end if
+    --input=$input
+    --inputIndex=${input.metadata.bam_index}
+    --output=$output
+    --params=$params.source_select
+    --fileSource=$refGenomeSource.refGenomeSource_type
+    --jarBin="${GALAXY_DATA_INDEX_DIR}/shared/jars"
+    #if $params.source_select == "full":
+      --offset=$params.offset
+      --minMappingQuality=$params.minMappingQuality
+      --minAlleleProbability=$params.minAlleleProbability
+      --minAlleleCoverage=$params.minAlleleCoverage
+      --range=$params.range
+      --correctBases=$params.correctBases
+      --useSequenceQualities=$params.useSequenceQualities
+      --maxHeapSize=$params.maxHeapSize
+    #end if
+    --jarFile="srma.jar"
+  </command>
+  <inputs>
+    <conditional name="refGenomeSource">
+      <param name="refGenomeSource_type" type="select" label="Will you select a reference genome from your history or use a built-in reference?">
+        <option value="built-in">Use a built-in reference</option>
+        <option value="history">Use one from the history</option>
+      </param>
+      <when value="built-in">
+        <param name="ref" type="select" label="Select a reference genome">
+          <options from_data_table="srma_indexes">
+            <filter type="sort_by" column="2" />
+            <validator type="no_options" message="No indexes are available" />
+          </options>
+        </param>
+      </when>
+      <when value="history">
+        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference from history" />
+      </when>
+    </conditional>
+    <param name="input" type="data" format="bam" label="Input BAM file" help="The input BAM file to re-align"/>
+    <conditional name="params">
+      <param name="source_select" type="select" label="SRMA settings to use" help="For most re-alignment needs, use Commonly Used settings. If you want full control use Full Parameter List">
+        <option value="pre_set">Commonly Used</option>
+        <option value="full">Full Parameter List</option>
+      </param>
+      <when value="pre_set" />
+      <when value="full">
+        <param name="offset" type="integer" value="20" label="Offset" help="The alignment offset" />
+        <param name="minMappingQuality" type="integer" value="0" label="Minimum mapping quality" help="The minimum mapping quality" />
+        <param name="minAlleleProbability" type="float" value="0.1" label="Minimum allele probability" help="The minimum allele probability conditioned on coverage (for the binomial quantile)." />
+        <param name="minAlleleCoverage" type="integer" value="2" label="Minimum allele coverage" help="The minimum haploid coverage for the consensus. Default value: 3. This option can be set " />
+        <param name="range" type="text" value="null" label="Range" help="A range to examine" />
+        <param name="correctBases" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Correct bases" help="Correct bases " />
+        <param name="useSequenceQualities" type="boolean" truevalue="true" falsevalue="false" checked="no" label="Use sequence qualities" help="Use sequence qualities " />
+        <param name="maxHeapSize" type="integer" value="8192" label="Maximum heap size" help="The maximum number of nodes on the heap before re-alignment is ignored" />
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="bam" name="output" label="${tool.name} on ${on_string}: re-aligned reads">
+      <actions>
+        <conditional name="refGenomeSource.refGenomeSource_type">
+          <when value="built-in">
+            <action type="metadata" name="dbkey">
+              <option type="from_data_table" name="srma_indexes" column="1" offset="0">
+                <filter type="param_value" column="0" value="#" compare="startswith" keep="False" />
+                <filter type="param_value" ref="refGenomeSource.ref" column="0" />
+              </option>
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
+    </data>
+  </outputs>
+  <tests>
+      <test>
+          <!-- Commands to run to prepare test files (uses built-in index)
+          Prepare bam index file:
+          samtools index srma_in1.bam
+          Run SRMA:
+          java -jar srma.jar I=srma_in1.bam O=srma_out1.bam R=/afs/bx.psu.edu/depot/data/genome/hg18/srma_index/chr21.fa
+          To create the bam file first, start with a sam file (srma_in1.sam) generated with a run using the chr21 fasta file and which contains the header. Run before samtools index:
+          samtools view -bt /afs/bx.psu.edu/depot/data/genome/hg18/sam_index/chr21.fa -o srma_in1.u.bam srma_in1.sam
+          samtools sort srma_in1.u.bam srma_in1
+          -->
+          <param name="refGenomeSource_type" value="built-in" />
+          <param name="ref" value="hg18chr21" />
+          <param name="input" value="srma_in1.bam" ftype="bam" />
+          <param name="source_select" value="pre_set" />
+          <output name="output" file="srma_out1.bam" ftype="bam" lines_diff="2" /><!-- allows tag with version number to be different -->
+      </test>
+      <test>
+          <!-- Commands to run to prepare test files (uses custom genome):
+          Prepare custom dict/index files:
+          samtools faidx srma_in2.fa
+          java -cp srma.jar net.sf.picard.sam.CreateSequenceDictionary R=srma_in2.fa O=srma_in2.dict
+          Prepare bam index file:
+          samtools index srma_in3.bam
+          Run SRMA:
+          java -jar "srma.jar" I=srma_in3.bam O=srma_out2.bam R=srma_in2.fa OFFSET=20 MIN_MAPQ=0 MINIMUM_ALLELE_PROBABILITY=0.1 MINIMUM_ALLELE_COVERAGE=2 RANGES=null RANGE=null CORRECT_BASES=true USE_SEQUENCE_QUALITIES=true MAX_HEAP_SIZE=8192
+          To create the bam file first, the sam file needs to have been run with the same reference file (srma_in2.fa) and have the header present. For instance:
+          samtools view -bT srma_in2.fa -o srma_in3.u.bam srma_in3.sam
+          samtools sort srma_in3.u.bam srma_in3
+          -->
+          <param name="refGenomeSource_type" value="history" />
+          <param name="ownFile" value="srma_in2.fa" ftype="fasta" />
+          <param name="input" value="srma_in3.bam" ftype="bam" />
+          <param name="source_select" value="full" />
+          <param name="offset" value="20" />
+          <param name="minMappingQuality" value="0" />
+          <param name="minAlleleProbability" value="0.1" />
+          <param name="minAlleleCoverage" value="2" />
+          <param name="range" value="null" />
+          <param name="correctBases" value="true" />
+          <param name="useSequenceQualities" value="true" />
+          <param name="maxHeapSize" value="8192" />
+          <output name="output" file="srma_out2.bam" ftype="bam" lines_diff="2" /><!-- allows tag with version number to be different -->
+      </test>
+  </tests>
+  <help>
+**What it does**
+
+SRMA is a short read micro re-aligner for next-generation high throughput sequencing data.
+
+Sequence alignment algorithms examine each read independently. When indels occur towards the ends of reads, the alignment can lead to false SNPs as well as improperly placed indels. This tool aims to perform a re-alignment of each read to a graphical representation of all alignments within a local region to provide a better overall base-resolution consensus.
+
+Currently this tool works well with and has been tested on 30x diploid coverage genome sequencing data from Illumina and ABI SOLiD technology. This tool may not work well with 454 data, as indels are a significant error mode for 454 data. 
+
+------
+
+Please cite the website "http://srma.sourceforge.net" as well as:
+
+Homer N, and Nelson SF.  SRMA: short read micro re-aligner. 2010.
+
+------
+
+**Know what you are doing**
+
+.. class:: warningmark
+
+There is no such thing (yet) as an automated gearshift in short read mapping. It is all like stick-shift driving in San Francisco. In other words = running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading the `documentation`__ and experimenting. Fortunately, Galaxy makes experimenting easy.
+
+.. __: http://srma.sourceforge.net/
+
+------
+
+**Input formats**
+
+SRMA accepts a BAM input file. Note that this file should have been generated from a SAM file which contains the header.
+
+------
+
+**Outputs**
+
+The output is in BAM format, see http://samtools.sourceforge.net for more details.
+
+-------
+
+**SRMA settings**
+
+All of the options have a default value. You can change any of them. Most of the options in SRMA have been implemented here.
+
+------
+
+**SRMA parameter list**
+
+This is an exhaustive list of SRMA options:
+
+For **SRMA**::
+
+  INPUT=File
+  I=File                        The input SAM or BAM file. Required. 
+  
+  OUTPUT=File
+  O=File                        The output SAM or BAM file. Default value: null. 
+  
+  REFERENCE=File
+  R=File                        The reference FASTA file. Required. 
+  
+  OFFSET=Integer                The alignment offset. Default value: 20. This option can be set to 'null' to clear the 
+                                default value. 
+  
+  MIN_MAPQ=Integer              The minimum mapping quality. Default value: 0. This option can be set to 'null' to clear 
+                                the default value. 
+  
+  MINIMUM_ALLELE_PROBABILITY=Double
+                                The minimum allele probability conditioned on coverage (for the binomial quantile). 
+                                Default value: 0.1. This option can be set to 'null' to clear the default value. 
+  
+  MINIMUM_ALLELE_COVERAGE=Integer
+                                The minimum haploid coverage for the consensus. Default value: 3. This option can be set 
+                                to 'null' to clear the default value. 
+  
+  RANGE=String                  A range to examine. Default value: null. 
+  
+  CORRECT_BASES=Boolean         Correct bases. Default value: false. This option can be set to 'null' to clear the 
+                                default value. Possible values: {true, false} 
+  
+  USE_SEQUENCE_QUALITIES=BooleanUse sequence qualities Default value: true. This option can be set to 'null' to clear the 
+                                default value. Possible values: {true, false} 
+  
+  MAX_HEAP_SIZE=Integer         The maximum number of nodes on the heap before re-alignment is ignored Default value: 
+                                8192. This option can be set to 'null' to clear the default value. 
+
+  </help>
+  <citations>
+    <citation type="doi">10.1093/bioinformatics/bts286</citation>
+  </citations>
+</tool>

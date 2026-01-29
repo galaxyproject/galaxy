@@ -1,0 +1,48 @@
+<tool id="__ZIP_COLLECTION__"
+      name="Zip collections"
+      version="1.0.0"
+      tool_type="zip_collection">
+  <description></description>
+  <type class="ZipCollectionTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+  <edam_operations>
+    <edam_operation>operation_3436</edam_operation>
+  </edam_operations>
+  <inputs>
+    <param type="data" name="input_forward" label="Input 1" help="Example: dataset or collection containing forward read(s)"/>
+    <param type="data" name="input_reverse" label="Input 2" help="Example: dataset or collection containing reverse read(s)"/>
+  </inputs>
+  <outputs>
+    <collection name="output" type="paired" label="${on_string} (zipped)">
+      <data name="forward" format_source="input_forward" />
+      <data name="reverse" format_source="input_reverse" />
+    </collection>
+  </outputs>
+  <help><![CDATA[
+
+========
+Synopsis
+========
+
+Takes two collections and creates a paired collection from them. 
+
+===========
+Description
+===========
+
+If you have one collection containing only forward reads and one containing only reverse, this tools will "zip" them together into a simple paired collection. For example, given two collections with `forward` and `reverse` reads they can be "zipped" into a single paired collection:
+
+.. image:: ${static_path}/images/tools/collection_ops/zip.svg
+  :width: 500
+  :alt: Zipping operation
+
+
+-----
+    
+.. class:: infomark
+
+This tool will create new history datasets for your collection but your quota usage will not increase.
+
+  ]]></help>
+</tool>

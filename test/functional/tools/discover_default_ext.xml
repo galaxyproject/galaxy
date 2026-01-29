@@ -1,0 +1,52 @@
+<tool id="discover_default_ext" name="discover_default_ext" version="0.1.0">
+    <command><![CDATA[
+echo 1 > 1.txt;
+]]></command>
+    <inputs />
+    <outputs>
+        <collection name="collection_with_default_ext" type="list" label="with default format" format="fasta">
+            <discover_datasets pattern="__name_and_ext__" />
+        </collection>
+        <collection name="collection_default_ext_and_explicit_format" type="list" label="with default format and static element format" format="fasta">
+            <discover_datasets pattern="__name__" format="txt" />
+        </collection>
+        <collection name="collection_default_ext_used" type="list" label="with default format and no override" format="fasta">
+            <discover_datasets pattern="__name__" />
+        </collection>
+        <collection name="collection_without_default_ext" type="list" label="wihtout default ext, should be data">
+            <discover_datasets pattern="__name__" />
+        </collection>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="4">
+            <output_collection name="collection_with_default_ext" type="list" count="1">
+                <element name="1" ftype="txt">
+                    <assert_contents>
+                        <has_text text="1" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="collection_default_ext_and_explicit_format" type="list" count="1">
+                <element name="1.txt" ftype="txt">
+                    <assert_contents>
+                        <has_text text="1" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="collection_default_ext_used" type="list" count="1">
+                <element name="1.txt" ftype="fasta">
+                    <assert_contents>
+                        <has_text text="1" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="collection_without_default_ext" type="list" count="1">
+                <element name="1.txt" ftype="data">
+                    <assert_contents>
+                        <has_text text="1" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+</tool>

@@ -1,0 +1,472 @@
+tool_shed:
+
+  # Verbosity of console log messages.  Acceptable values can be found
+  # here: https://docs.python.org/library/logging.html#logging-levels
+  #log_level: DEBUG
+
+  # By default, the Tool Shed uses a SQLite database at
+  # 'database/community.sqlite'.  You may use a SQLAlchemy connection
+  # string to specify an external database instead.  This string takes
+  # many options which are explained in detail in the config file
+  # documentation.
+  #database_connection: sqlite:///./database/community.sqlite?isolation_level=IMMEDIATE
+
+  # Where the hgweb.config file is stored. The default is the Galaxy
+  # installation directory.
+  #hgweb_config_dir: null
+
+  # Default URL prefix for repositories served via hgweb. If running an
+  # external hgweb server you should set this to an empty string.
+  #hgweb_repo_prefix: repos/
+
+  # Allow pushing directly to mercurial repositories directly and
+  # without authentication.
+  #config_hg_for_dev: null
+
+  # Where Tool Shed repositories are stored.
+  #file_path: database/community_files
+
+  # Where temporary files are stored.
+  #new_file_path: database/tmp
+
+  # File containing old-style genome builds
+  #builds_file_path: tool-data/shared/ucsc/builds.txt
+
+  # Format string used when showing date and time information. The
+  # string may contain: - the directives used by Python time.strftime()
+  # function (see
+  # https://docs.python.org/library/time.html#time.strftime ), - $locale
+  # (complete format string for the server locale), - $iso8601 (complete
+  # format string as specified by ISO 8601 international   standard).
+  #pretty_datetime_format: $locale (UTC)
+
+  # -- Repository and Tool search Using the script located at
+  # scripts/build_ts_whoosh_index.py you can generate search index and
+  # allow full text API searching over the repositories and tools within
+  # the Tool Shed given that you specify the following two config
+  # options.
+  #toolshed_search_on: true
+
+  # -- Repository and Tool search Using the script located at
+  # scripts/build_ts_whoosh_index.py you can generate search index and
+  # allow full text API searching over the repositories and tools within
+  # the Tool Shed given that you specify the following two config
+  # options.
+  #whoosh_index_dir: database/toolshed_whoosh_indexes
+
+  # Cache directory for Pydantic model objects.
+  #model_cache_dir: database/model_cache
+
+  # For searching repositories at /api/repositories:
+  #repo_name_boost: 0.9
+
+  # For searching repositories at /api/repositories:
+  #repo_description_boost: 0.6
+
+  # For searching repositories at /api/repositories:
+  #repo_long_description_boost: 0.5
+
+  # For searching repositories at /api/repositories:
+  #repo_homepage_url_boost: 0.3
+
+  # For searching repositories at /api/repositories:
+  #repo_remote_repository_url_boost: 0.2
+
+  # For searching repositories at /api/repositories:
+  #repo_owner_username_boost: 0.3
+
+  # For searching repositories at /api/repositories:
+  #categories_boost: 0.5
+
+  # For searching tools at /api/tools
+  #tool_name_boost: 1.2
+
+  # For searching tools at /api/tools
+  #tool_description_boost: 0.6
+
+  # For searching tools at /api/tools
+  #tool_help_boost: 0.4
+
+  # For searching tools at /api/tools
+  #tool_repo_owner_username: 0.3
+
+  # You can enter tracking code here to track visitor's behavior through
+  # your Google Analytics account. Example: UA-XXXXXXXX-Y
+  #ga_code: null
+
+  # Please enter the URL for the Plausible server (including https) so
+  # this can be used for tracking with Plausible
+  # (https://plausible.io/).
+  #plausible_server: null
+
+  # Please enter the URL for the Galaxy server so this can be used for
+  # tracking with Plausible (https://plausible.io/).
+  #plausible_domain: null
+
+  # Please enter the URL for the Matomo server (including https) so this
+  # can be used for tracking with Matomo (https://matomo.org/).
+  #matomo_server: null
+
+  # Please enter the site ID for the Matomo server so this can be used
+  # for tracking with Matomo (https://matomo.org/).
+  #matomo_site_id: null
+
+  # The Tool Shed encodes various internal values when these values will
+  # be output in some format (for example, in a URL or cookie).  You
+  # should set a key to be used by the algorithm that encodes and
+  # decodes these values.  It can be any string.  If left unchanged,
+  # anyone could construct a cookie that would grant them access to
+  # others' sessions. One simple way to generate a value for this is
+  # with the shell command:   python -c 'from __future__ import
+  # print_function; import time; print(time.time())' | md5sum | cut -f 1
+  # -d ' '
+  #id_secret: changethisinproductiontoo
+
+  # User authentication can be delegated to an upstream proxy server
+  # (usually Apache).  The upstream proxy should set a REMOTE_USER
+  # header in the request. Enabling remote user disables regular logins.
+  # For more information, see:
+  # https://galaxyproject.org/admin/config/apache-external-user-auth/
+  #use_remote_user: false
+
+  # If use_remote_user is enabled, anyone who can log in to the Galaxy
+  # host may impersonate any other user by simply sending the
+  # appropriate header. Thus a secret shared between the upstream proxy
+  # server, and Galaxy is required. If anyone other than the Galaxy user
+  # is using the server, then apache/nginx should pass a value in the
+  # header 'GX_SECRET' that is identical the one below
+  #remote_user_secret: changethisinproductiontoo
+
+  # If use_remote_user is enabled and your external authentication
+  # method just returns bare usernames, set a default mail domain to be
+  # appended to usernames, to become your Galaxy usernames (email
+  # addresses).
+  #remote_user_maildomain: null
+
+  # If use_remote_user is enabled, the header that the upstream proxy
+  # provides the remote username in defaults to HTTP_REMOTE_USER (the
+  # 'HTTP_' is prepended by WSGI).  This option allows you to change the
+  # header.  Note, you still need to prepend 'HTTP_' to the header in
+  # this option, but your proxy server should *not* include 'HTTP_' at
+  # the beginning of the header name.
+  #remote_user_header: HTTP_REMOTE_USER
+
+  # If use_remote_user is enabled, you can set this to a URL that will
+  # log your users out.
+  #remote_user_logout_href: null
+
+  # Administrative users - set this to a comma-separated list of valid
+  # Tool Shed users (email addresses).  These users will have access to
+  # the Admin section of the server, and will have access to create
+  # users, groups, roles, libraries, and more.
+  #admin_users: null
+
+  # Force everyone to log in (disable anonymous access)
+  #require_login: false
+
+  # Allow unregistered users to create new accounts (otherwise, they
+  # will have to be created by an admin).
+  #allow_local_account_creation: true
+
+  # Allow administrators to delete accounts.
+  #allow_user_deletion: false
+
+  # For use by email messages sent from the Tool Shed.
+  # (smtp.your_tool_shed_server)
+  #smtp_server: null
+
+  # For use by email messages sent from the Tool Shed.
+  # (your_tool_shed_email@server)
+  #email_from: null
+
+  # If your SMTP server requires a username and password, you can
+  # provide them here (password in cleartext here, but if your server
+  # supports STARTTLS it will be sent over the network encrypted).
+  #smtp_username: null
+
+  # If your SMTP server requires a username and password, you can
+  # provide them here (password in cleartext here, but if your server
+  # supports STARTTLS it will be sent over the network encrypted).
+  #smtp_password: null
+
+  # If your SMTP server requires SSL from the beginning of the
+  # connection
+  #smtp_ssl: false
+
+  # The URL linked by the "Support" link in the "Help" menu.
+  #support_url: https://galaxyproject.org/support/
+
+  # Address to join mailing list
+  #mailing_join_addr: galaxy-announce-join@bx.psu.edu
+
+  # Service ID for GA4GH services.
+  # If unset, one will be generated using the URL the target API
+  # requests are made against.
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  # This value should likely reflect your service's URL. For instance
+  # for usegalaxy.org this value should be org.usegalaxy. Particular
+  # Galaxy implementations will treat this value as a prefix and append
+  # the service type to this ID. For instance for the DRS service "id"
+  # (available via the DRS API) for the above configuration value would
+  # be org.usegalaxy.drs.
+  #ga4gh_service_id: null
+
+  # The name of the organization that operates this Galaxy instance.
+  # Serves as the default for the GA4GH service organization name and
+  # can be exposed through Galaxy markdown for reports and such. For
+  # instance, "Not Evil Corporation".
+  # For GA4GH APIs, this is exposed via the service-info endpoint for
+  # the Galaxy DRS API. If unset, one will be generated using
+  # ga4gh_service_id (but only in the context of GA4GH APIs).
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  #organization_name: null
+
+  # The URL of the organization that operates this Galaxy instance.
+  # Serves as the default for the GA4GH service organization name and
+  # can be exposed through Galaxy markdown for reports and such. For
+  # instance, "notevilcorp.com".
+  # For GA4GH APIs, this is exposed via the service-info endpoint.
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  #organization_url: null
+
+  # Service environment (exposed via the service-info endpoint for the
+  # Galaxy DRS API) for implemented GA4GH services.
+  # Suggested values are prod, test, dev, staging.
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  #ga4gh_service_environment: null
+
+  # Write thread status periodically to 'heartbeat.log' (careful, uses
+  # disk  space rapidly!)
+  #use_heartbeat: true
+
+  # Enable creation of Galaxy flavor Docker Image
+  #enable_galaxy_flavor_docker_image: false
+
+  # Show a message box under the masthead.
+  #message_box_visible: false
+
+  # Show a message box under the masthead.
+  #message_box_content: null
+
+  # Class of the message box under the masthead. Possible values are:
+  # 'info' (the default), 'warning', 'error', 'done'.
+  #message_box_class: info
+
+  # Serving static files (needed if running standalone)
+  #static_enabled: true
+
+  # Serving static files (needed if running standalone)
+  #static_cache_time: 360
+
+  # Serving static files (needed if running standalone)
+  #static_dir: static/
+
+  # Serving static files (needed if running standalone)
+  #static_images_dir: static/images
+
+  # Serving static files (needed if running standalone)
+  #static_favicon_dir: static/favicon.ico
+
+  # Serving static files (needed if running standalone)
+  #static_scripts_dir: static/scripts/
+
+  # Serving static files (needed if running standalone)
+  #static_style_dir: static/style
+
+  # Enables GDPR Compliance mode. This makes several changes to the way
+  # Galaxy logs and exposes data externally such as removing
+  # emails/usernames from logs and bug reports.
+  # You are responsible for removing personal data from backups.
+  # Please read the GDPR section under the special topics area of the
+  # admin documentation.
+  #enable_beta_gdpr: false
+
+  # For help on configuring the Advanced proxy features, see:
+  # https://docs.galaxyproject.org/en/master/admin/production.html
+  # Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.
+  # Set this to True to inform Galaxy that mod_xsendfile is enabled
+  # upstream.
+  #apache_xsendfile: false
+
+  # The same download handling can be done by nginx using
+  # X-Accel-Redirect.  This should be set to the path defined in the
+  # nginx config as an internal redirect with access to Galaxy's data
+  # files (see documentation linked above).
+  #nginx_x_accel_redirect_base: null
+
+  # This value overrides the action set on the file upload form, e.g.
+  # the web path where the nginx_upload_module has been configured to
+  # intercept upload requests.
+  #nginx_upload_path: null
+
+  # E-mail domains blocklist is used for filtering out users that are
+  # using disposable email addresses at registration.  If their address
+  # domain matches any domain on the list, they are refused
+  # registration.
+  #email_domain_blocklist_file: null
+
+  # E-mail domains allowlist is used to specify allowed email address
+  # domains. If the list is non-empty and a user attempts registration
+  # using an email address belonging to a domain that is not on the
+  # list, registration will be denied. This is a more restrictive option
+  # than <email_domain_blocklist_file>, and therefore, in case
+  # <email_domain_allowlist_file> is set and is not empty,
+  # <email_domain_blocklist_file> will be ignored.
+  #email_domain_allowlist_file: null
+
+  # E-mail ban file is used to specify email addresses that have been
+  # banned. If a user attempts to register a new account using an email
+  # address listed in this file, registration will be denied. This file
+  # does not affect user sign-in. Email addresses are matched against a
+  # canonical address representation based on rules defined in
+  # <canonical_email_rules>. The file should include one email address
+  # per line. Lines starting with the "#" character are ignored.
+  # Example value "banned_emails.conf"
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #email_ban_file: null
+
+  # Specifies how email addresses are reduced to their canonical form by
+  # assigning rules to email service domains and domain aliases.
+  # Available rules - ignore_case   Values are not case-sensitive
+  # (RickDeckard@foo.cOM == rickdeckard@foo.com) - ignore_dots   Periods
+  # in the local-part of an email address are ignored
+  # (rick.deckard@foo.com == rickdeckard@foo.com) - sub_addressing
+  # Suffixes prefixed with <sub_addressing_delim> in the local-part of
+  # an email address are ignored   (rickdeckard+anything@foo.com ==
+  # rickdeckard@foo.com if delimiter is the character '+')
+  #canonical_email_rules:
+  #  all:
+  #    ignore_case: false
+  #    ignore_dots: false
+  #    sub_addressing: false
+  #    sub_addressing_delim: +
+  #  gmail.com:
+  #    aliases:
+  #    - googlemail.com
+  #    ignore_case: true
+  #    ignore_dots: true
+  #    sub_addressing: true
+  #  proton.me:
+  #    aliases:
+  #    - pm.me
+  #    - protonmail.com
+  #    ignore_case: true
+  #    sub_addressing: true
+
+  # Append "/{brand}" to the "Galaxy" text in the masthead.
+  #brand: null
+
+  # Citation related caching.  Tool citations information maybe fetched
+  # from external sources such as https://doi.org/ by Galaxy - the
+  # following parameters can be used to control the caching used to
+  # store this information.
+  #citation_cache_type: file
+
+  # Citation related caching.  Tool citations information maybe fetched
+  # from external sources such as https://doi.org/ by Galaxy - the
+  # following parameters can be used to control the caching used to
+  # store this information.
+  #citation_cache_data_dir: database/citations/data
+
+  # Citation related caching.  Tool citations information maybe fetched
+  # from external sources such as https://doi.org/ by Galaxy - the
+  # following parameters can be used to control the caching used to
+  # store this information.
+  #citation_cache_lock_dir: database/citations/lock
+
+  # Url to database used by beaker for citation related caching.
+  #citation_cache_url: null
+
+  # Database table used by beaker for citation related caching.
+  #citation_cache_table_name: beaker_cache
+
+  # Schema of database table used by beaker for citation related
+  # caching.
+  #citation_cache_schema_name: null
+
+  # Turn on logging of user actions to the database.  Actions currently
+  # logged are grid views, tool searches, and use of "recently" used
+  # tools menu.  The log_events and log_actions functionality will
+  # eventually be merged.
+  #log_actions: false
+
+  # Password expiration period (in days). Users are required to change
+  # their password every x days. Users will be redirected to the change
+  # password screen when they log in after their password expires. Enter
+  # 0 to disable password expiration.
+  #password_expiration_period: 0
+
+  # Log to Sentry Sentry is an open source logging and error aggregation
+  # platform.  Setting sentry_dsn will enable the Sentry middleware and
+  # errors will be sent to the indicated sentry instance.  This
+  # connection string is available in your sentry instance under
+  # <project_name> -> Settings -> API Keys.
+  #sentry_dsn: null
+
+  # Determines the minimum log level that will be sent as an event to
+  # Sentry. Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
+  #sentry_event_level: ERROR
+
+  # Set to a number between 0 and 1. With this option set, every
+  # transaction created will have that percentage chance of being sent
+  # to Sentry. A value higher than 0 is required to analyze performance.
+  #sentry_traces_sample_rate: 0.0
+
+  # Use this option to provide the path to location of the CA
+  # (Certificate Authority) certificate file if the sentry server uses a
+  # self-signed certificate.
+  #sentry_ca_certs: null
+
+  # Galaxy Session Timeout This provides a timeout (in minutes) after
+  # which a user will have to log back in. A duration of 0 disables this
+  # feature.
+  #session_duration: 0
+
+  # The URL linked by the "Terms and Conditions" link in the "Help"
+  # menu, as well as on the user registration and login forms and in the
+  # activation emails.
+  #terms_url: null
+
+  # XML config file that allows the use of different authentication
+  # providers (e.g. LDAP) instead or in addition to local authentication
+  # (.sample is used if default does not exist).
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #auth_config_file: auth_conf.xml
+
+  # API key that allows performing some admin actions without actually
+  # having a real admin user in the database and config. Only set this
+  # if you need to bootstrap Galaxy, in particular to create a real
+  # admin user account via API. You should probably not set this on a
+  # production server.
+  #bootstrap_admin_api_key: null
+
+  # XML config file that contains additional data table entries for the
+  # ToolDataTableManager.  This file is automatically generated based on
+  # the current installed tool shed repositories that contain valid
+  # tool_data_table_conf.xml.sample files.  At the time of installation,
+  # these entries are automatically added to the following file, which
+  # is parsed and applied to the ToolDataTableManager at server start
+  # up.
+  # The value of this option will be resolved with respect to
+  # <managed_config_dir>.
+  #shed_tool_data_table_config: shed_tool_data_table_conf.xml
+
+  # Datatypes config file(s), defines what data (file) types are
+  # available in Galaxy (.sample is used if default does not exist).  If
+  # a datatype appears in multiple files, the last definition is used
+  # (though the first sniffer is used so limit sniffer definitions to
+  # one file).
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #datatypes_config_file: datatypes_conf.xml
+

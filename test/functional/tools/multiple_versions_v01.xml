@@ -1,0 +1,21 @@
+<tool id="multiple_versions" name="multiple_versions" version="0.1">
+    <command><![CDATA[
+        echo "Version 0.1" > '$out_file1'
+    ]]></command>
+    <inputs>
+        <param name="inttest" value="1" type="integer" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="inttest" value="1" />
+            <output name="out_file1" file="multiple_versions_0.1.txt">
+                <assert_contents>
+                    <has_line line="Version 0.1" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

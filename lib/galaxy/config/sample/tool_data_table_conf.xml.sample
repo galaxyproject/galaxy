@@ -1,0 +1,169 @@
+<!-- Paths are relative to the value of `tool_data_path` in galaxy.ini -->
+<tables>
+    <!-- Locations of all fasta files under genome directory -->
+    <table name="all_fasta" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, dbkey, name, path</columns>
+        <file path="all_fasta.loc" />
+    </table>
+    <!-- Locations of indexes in the BFAST mapper format -->
+    <table name="bfast_indexes" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, dbkey, formats, name, path</columns>
+        <file path="bfast_indexes.loc" />
+    </table>
+    <!-- Locations of nucleotide BLAST databases -->
+    <table name="blastdb" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, path</columns>
+        <file path="tool-data/blastdb.loc" />
+    </table>
+    <!-- Locations of protein BLAST databases -->
+    <table name="blastdb_p" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, path</columns>
+        <file path="blastdb_p.loc" />
+    </table>
+    <!-- Locations of protein domain BLAST databases -->
+    <table name="blastdb_d" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, path</columns>
+        <file path="tool-data/blastdb_d.loc" />
+    </table>
+    <!-- Locations of indexes in the BWA mapper format -->
+    <table name="bwa_indexes" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, dbkey, name, path</columns>
+        <file path="bwa_index.loc" />
+    </table>
+    <!-- Locations of indexes in the BWA color-space mapper format -->
+    <table name="bwa_indexes_color" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, dbkey, name, path</columns>
+        <file path="bwa_index_color.loc" />
+    </table>
+    <!-- Locations of MAF files that have been indexed with bx-python -->
+    <table name="indexed_maf_files">
+        <columns>name, value, dbkey, species</columns>
+        <file path="maf_index.loc" />
+    </table>
+    <!-- Locations of fasta files appropriate for NGS simulation -->
+    <table name="ngs_sim_fasta" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, dbkey, name, path</columns>
+        <file path="ngs_sim_fasta.loc" />
+    </table>
+    <!-- Locations of PerM base index files -->
+    <table name="perm_base_indexes" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, path</columns>
+        <file path="perm_base_index.loc" />
+    </table>
+    <!-- Locations of PerM color-space index files -->
+    <table name="perm_color_indexes" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, path</columns>
+        <file path="perm_color_index.loc" />
+    </table>
+    <!-- Location of Picard dict file and other files -->
+    <table name="picard_indexes" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, dbkey, name, path</columns>
+        <file path="picard_index.loc" />
+    </table>
+    <!-- Location of SRMA dict file and other files -->
+    <table name="srma_indexes" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, dbkey, name, path</columns>
+        <file path="picard_index.loc" />
+    </table>
+    <!-- Location of Mosaik files -->
+    <table name="mosaik_indexes" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, dbkey, name, path</columns>
+        <file path="mosaik_index.loc" />
+    </table>
+    <!-- Locations of indexes in the 2bit format -->
+    <table name="twobit" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, path</columns>
+        <file path="twobit.loc" />
+    </table>
+    <!-- Available IGV builds, loaded from URL -->
+    <table name="igv_broad_genomes" comment_char="#" allow_duplicate_entries="False">
+        <columns>name, url, value</columns>
+        <file url="http://igv.broadinstitute.org/genomes/genomes.txt" />
+    </table>
+    <!-- Available liftOver chain file -->
+    <table name="liftOver" comment_char="#" allow_duplicate_entries="False">
+        <columns>dbkey, name, value</columns>
+        <file path="liftOver.loc" />
+    </table>
+    <!-- iobio bam servers -->
+    <table name="bam_iobio" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, url</columns>
+        <file path="bam_iobio.loc" />
+    </table>
+    <!-- iobio vcf servers -->
+    <table name="vcf_iobio" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, url</columns>
+        <file path="vcf_iobio.loc" />
+    </table>
+    <!-- simple biom servers -->
+    <table name="biom_simple_display" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, url</columns>
+        <file path="biom_simple_display.loc" />
+    </table>
+    <!-- simple intermine servers -->
+    <table name="intermine_simple_display" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, url</columns>
+        <file path="tool-data/intermine_simple_display.loc" />
+    </table>
+    <!-- simple iCn3D Structure Viewer servers -->
+    <table name="icn3d_simple_display" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, url</columns>
+        <file path="tool-data/icn3d_simple_display.loc" />
+    </table>
+    <table name="sift_db" comment_char="#" allow_duplicate_entries="False">
+        <columns>dbkey, value</columns>
+        <file path="tool-data/sift_db.loc" />
+    </table>
+    <!-- Refgenie __dbkeys__ -->
+    <table name="__dbkeys__" type="refgenie" asset="fasta" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="len_path" template="true">${__REFGENIE_SEEK_KEY__('chrom_sizes')}</field>
+    </table>
+    <!-- Refgenie all_fasta -->
+    <table name="all_fasta" type="refgenie" asset="fasta" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+    </table>
+    <!-- Refgenie fasta_indexes (samtools) -->
+    <table name="fasta_indexes" type="refgenie" asset="fasta" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+    </table>
+    <!-- Refgenie bowtie2_indexes -->
+    <table name="bowtie2_indexes" type="refgenie" asset="bowtie2_index" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+    </table>
+    <!-- Refgenie bwa_indexes -->
+    <table name="bwa_mem_indexes" type="refgenie" asset="bwa_index" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+    </table>
+    <!-- Refgenie hisat2_indexes -->
+    <table name="hisat2_indexes" type="refgenie" asset="hisat2_index" >
+        <file from_config="refgenie_config_file" />
+        <field name="value" template="true">${__REFGENIE_UUID__}</field>
+        <field name="dbkey" template="true">${__REFGENIE_GENOME__}</field>
+        <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
+        <field name="path" template="true">${__REFGENIE_ASSET__}</field>
+    </table>
+    <!-- q2view servers -->
+    <table name="q2view_display" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, url</columns>
+        <file path="tool-data/q2view_display.loc" />
+    </table>
+</tables>

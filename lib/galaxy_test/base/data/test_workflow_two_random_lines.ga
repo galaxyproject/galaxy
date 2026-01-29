@@ -1,0 +1,99 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "",
+    "format-version": "0.1",
+    "name": "two_lines",
+    "steps": {
+        "0": {
+            "annotation": "",
+            "content_id": "random_lines1",
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "runtime parameter for tool Select random lines",
+                    "name": "input"
+                }
+            ],
+            "label": "random1",
+            "name": "Select random lines",
+            "outputs": [
+                {
+                    "name": "out_file1",
+                    "type": "input"
+                }
+            ],
+            "position": {
+                "bottom": 401.5,
+                "height": 92,
+                "left": 727,
+                "right": 927,
+                "top": 309.5,
+                "width": 200,
+                "x": 727,
+                "y": 309.5
+            },
+            "post_job_actions": {},
+            "tool_id": "random_lines1",
+            "tool_state": "{\"input\": {\"__class__\": \"RuntimeValue\"}, \"num_lines\": \"1\", \"seed_source\": {\"seed_source_selector\": \"no_seed\", \"__current_case__\": 0}, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "2.0.2",
+            "type": "tool",
+            "uuid": "9c6b3bb2-6513-4f4b-ace9-984a5aadf4e1",
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "out_file1",
+                    "uuid": "c7af6d97-dfba-44ad-8a1d-47749f95311e"
+                }
+            ]
+        },
+        "1": {
+            "annotation": "",
+            "content_id": "random_lines1",
+            "errors": null,
+            "id": 1,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "runtime parameter for tool Select random lines",
+                    "name": "input"
+                }
+            ],
+            "label": "random2",
+            "name": "Select random lines",
+            "outputs": [
+                {
+                    "name": "out_file1",
+                    "type": "input"
+                }
+            ],
+            "position": {
+                "bottom": 553.5,
+                "height": 92,
+                "left": 735,
+                "right": 935,
+                "top": 461.5,
+                "width": 200,
+                "x": 735,
+                "y": 461.5
+            },
+            "post_job_actions": {},
+            "tool_id": "random_lines1",
+            "tool_state": "{\"input\": {\"__class__\": \"RuntimeValue\"}, \"num_lines\": \"1\", \"seed_source\": {\"seed_source_selector\": \"no_seed\", \"__current_case__\": 0}, \"__page__\": null, \"__rerun_remap_job_id__\": null}",
+            "tool_version": "2.0.2",
+            "type": "tool",
+            "uuid": "d7281924-1423-482c-98e4-bc37c08b3dc1",
+            "workflow_outputs": [
+                {
+                    "label": null,
+                    "output_name": "out_file1",
+                    "uuid": "1d4ff58b-6127-45fd-917e-6c8739a32478"
+                }
+            ]
+        }
+    },
+    "tags": [],
+    "uuid": "878dd32d-d7f3-46d4-bc2b-7f10e69a9498",
+    "version": 1
+}

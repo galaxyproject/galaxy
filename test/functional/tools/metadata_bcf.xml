@@ -1,0 +1,21 @@
+<tool id="metadata_bcf" name="metadata_BCF" version="1.0.0">
+    <requirements>
+        <requirement type="package" version="5.39">file</requirement>
+    </requirements>
+    <command><![CDATA[
+file '${input_bcf.metadata.bcf_index}' > '${output_of_input_metadata}'
+    ]]></command>
+    <inputs>
+        <param name="input_bcf" type="data" format="bcf" label="BCF File"/>
+    </inputs>
+    <outputs>
+        <data name="output_of_input_metadata" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input_bcf" value="bcf_index_metadata_test.bcf" ftype="bcf" />
+            <!-- Tests whether the .bcf.csi file is of "gzip compressed data, extra field" type -->
+            <output name="output_of_input_metadata" ftype="txt" file="bcf_index_metadata_test.txt" compare="contains"/>
+        </test>
+    </tests>
+</tool>

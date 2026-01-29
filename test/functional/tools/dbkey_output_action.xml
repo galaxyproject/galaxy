@@ -1,0 +1,38 @@
+<tool id="dbkey_output_action" name="dbkey_output_action" version="0.1.0">
+    <command><![CDATA[
+echo foo > '$mapped_reads'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" />
+        <param name="index" type="select" label="Using reference genome">
+            <options from_data_table="test_fasta_indexes">
+                <filter type="data_meta" ref="input" key="dbkey" column="1" />
+                <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+            </options>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="mapped_reads" format="txt">
+            <actions>
+                <action type="metadata" name="dbkey">
+                    <option type="from_data_table" name="test_fasta_indexes" column="1" offset="0">
+                        <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
+                        <filter type="param_value" ref="index" column="0"/>
+                    </option>
+                </action>
+            </actions>
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="simple_line.txt" dbkey="hg18" />
+            <param name="index" value="hg18_value"/>
+            <output name="mapped_reads">
+                <metadata name="dbkey" value="hg18" />
+                <assert_contents>
+                    <has_text text="foo" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

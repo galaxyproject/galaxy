@@ -1,0 +1,107 @@
+
+===========================================================
+May 2018 Galaxy Release (v 18.05)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**New Interface Style Library**
+  The design of many components of the Galaxy user interface has been subtly improved as the result
+  of upgrading to the Bootstrap 4 style library. The upgrade process was a large community effort
+  with commits from six contributors and testing and bug reports from many others. A huge
+  thanks goes out to everyone who helped - it is a great step forward toward a more
+  standardized Galaxy client infrastructure built on reactive `VueJS <https://vuejs.org/>`__
+  components. Read more about whats new and changed in the underlying Bootstrap 4 JavaScript
+  library `here <http://blog.getbootstrap.com/2018/01/18/bootstrap-4/>`__.
+
+  `Pull Request 5807`_, `Galaxy Project Board for Bootstrap 4
+  <https://github.com/galaxyproject/galaxy/projects/10>`__.
+
+**Unlimited Browser Upload Size**
+  Support for chunked and resumable file uploads out-of-the-box. This should effectively
+  eliminate browser-based limitations on the size of files that can be uploaded to Galaxy.
+
+  `Pull Request 5516`_
+
+**New Powerful Rule-Based Data Uploader**
+  Galaxy now features a powerful new interface for manipulating lists of rules for processing metadata
+  that can be used to describe the upload of arbitrarily complex collections as well as individual
+  datasets. These rules can be used to build collections from lists of URLs, FTP directory contents,
+  data library folders, and tabular sample sheets or exports from external data sources. The same
+  technique can be applied to the metadata of an existing collection, enabling very flexible
+  filtering, sorting, relabelling, grouping, flattening, and general re-organization of collections.
+  This client widget is backed by a powerful new `hierarchical upload API <https://github.com/galaxyproject/galaxy/pull/5220>`__
+  and `a new collection operation tool <https://github.com/galaxyproject/galaxy/pull/5819>`__.
+
+  Check out `this tutorial <https://github.com/jmchilton/training-material/blob/rules/topics/introduction/tutorials/galaxy-intro-rules/tutorial.md>`__ describing new techniques for loading
+  large numbers of datasets and complex collections into Galaxy.
+
+  `Pull Request 5365`_, `Pull Request 5220`_, `Pull Request 5819`_, `Pull Request 5823`_,
+  `Pull Request 5929`_, `Pull Request 5940`_
+
+**GDPR Beta Mode**
+  We introduce beta GDPR privacy mode. Admins can enable it to help them comply with the European Union law
+  known as `General Data Protection Regulation <http://eur-lex.europa.eu/legal-content/en/TXT/?uri=CELEX:32016R0679>`__,
+  which goes into effect on May 25, 2018. Thanks to `@hexylena <https://github.com/hexylena>`__.
+
+  `Pull Request 6069`_
+
+**New HIV-TRACE Plugin**
+  Integration of a new visualization plugin - HIV-TRACE. Thanks to `@veg <https://github.com/veg>`__!
+
+  `Pull Request 5869`_
+
+**Visualization Frameworks Unified**
+  The charts and generic visualization frameworks have been merged together into a single coherent
+  one. You can use a new menu option to list and search all available visualizations.
+
+  `Pull Request 5633`_, `Pull Request 5505`_
+
+Get Galaxy
+==========
+
+The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_18.05 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_18.05 && git pull --ff-only origin release_18.05
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Security
+========
+
+vcffilter by devteam allowed RCE
+--------------------------------
+Tracked as ``GX-2018-0004``.
+
+Older versions of the VCF filter tool in the `vcffilter repository by devteam <https://toolshed.g2.bx.psu.edu/view/devteam/vcffilter/>`__ allowed remote code execution due to missing character escaping.
+If you have this repository installed in your Galaxy, please update to the revision ``4:6b935ab36d7b`` or newer and disable/uninstall all older versions.
+
+Breaking Changes
+================
+
+* The ``charts`` repository that powers Galaxy built-in visualizations that need backend computation has been moved to the IUC account. In order for these visualization options to keep working, admins need to install the following repository: `iuc/charts <https://toolshed.g2.bx.psu.edu/view/iuc/charts/>`__.
+
+* Removed support for the Graphite statistics middleware. We continue to further support the ``statsd`` middleware.
+
+* We reworked how compressed archives (zip, gz, bz etc.) are being defined and handled in Galaxy. As a result, if you have a custom ``datatypes_conf.xml`` configuration file, you should remove the compressed sniffers that used to be in the sample file but `now are not <https://github.com/galaxyproject/galaxy/blob/release_18.05/config/datatypes_conf.xml.sample>`__. Otherwise you will encounter non-breaking errors in the logs.
+
+* We have removed the deprecated symlink `static/scripts/packed -> .` If you used it please change your (proxy) configuration. An example can be seen `here <https://github.com/galaxyproject/ansible-galaxy-extras/pull/206/files>`__.
+
+Release Notes
+=============
+
+.. include:: 18.05.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

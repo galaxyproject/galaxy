@@ -1,0 +1,20 @@
+@import "theme/blue.scss";
+
+/* loading barber-pole */
+
+@keyframes scroller-loading-bg {
+    from {
+        background-position: -24px 0;
+    }
+    to {
+        background-position: 24px 0;
+    }
+}
+
+.loadingBackground {
+    background: repeating-linear-gradient(-45deg, $gray-200, $gray-200 6px, white 6px, white 12px);
+    animation-name: scroller-loading-bg;
+    animation-duration: 1s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}

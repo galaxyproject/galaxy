@@ -1,0 +1,10 @@
+# For testing
+-r test-requirements.txt
+
+# For dev
+sphinx
+mypy
+
+# For release
+build
+twine

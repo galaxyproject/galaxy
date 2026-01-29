@@ -1,0 +1,51 @@
+<tool id="validation_value_in_datatable" name="validation_value_in_datatable" profile="21.09" version="0.1">
+    <command><![CDATA[
+echo 'Hello World' > out1
+    ]]></command>
+    <inputs>
+        <!-- test value_in_data_table validator with and without negation-->
+        <param name="value" type="text">
+            <validator type="value_in_data_table" table_name="test_fasta_indexes" metadata_column="1"/>
+        </param>
+        <param name="value_neg" type="text">
+            <validator type="value_in_data_table" table_name="test_fasta_indexes" metadata_column="dbkey" negate="true"/>
+        </param>
+        <!-- also test deprecated value_not_in_data_table validator-->
+         <param name="value_neg_deprecated" type="text">
+            <validator type="value_not_in_data_table" table_name="test_fasta_indexes" metadata_column="1"/>
+        </param>
+        <!-- tests for select -->
+        <param name="select_value" type="select">
+            <option value="hg19_value">hg19</option>
+            <option value="absent_value">absent</option>
+            <validator type="value_in_data_table" metadata_column="0" message="MESSAGE" table_name="test_fasta_indexes" />
+        </param>
+        <param name="select_value_multiple" type="select" multiple="true">
+            <option value="hg18_value">hg18</option>
+            <option value="hg19_value">hg19</option>
+            <option value="absent_value">absent</option>
+            <validator type="value_in_data_table" metadata_column="0" message="MESSAGE" table_name="test_fasta_indexes" />
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" from_work_dir="out1"/>
+    </outputs>
+    <tests>
+        <test expect_failure="false">
+            <param name="value" value="hg19"/>
+            <param name="value_neg" value="wrongvalue"/>
+            <param name="value_neg_deprecated" value="wrongvalue"/>
+            <param name="select_value" value="hg19_value"/>
+            <param name="select_value_multiple" value="hg18_value,hg19_value"/>
+        </test>
+        <test expect_failure="true">
+            <param name="value" value="wrongvalue"/>
+            <param name="value_neg" value="hg19"/>
+            <param name="value_deprecated" value="hg19"/>
+            <param name="select_value" value="absent_value"/>
+            <param name="select_value_multiple" value="absent_value,hg19_value"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

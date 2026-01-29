@@ -1,0 +1,92 @@
+COM	Meta data section																		
+MTD	mzTab-version	2.0.0-M																	
+MTD	mzTab-ID	mzTab-GCxGC-MS																	
+MTD	description	Minimal sample file for GCxGC-MS quantification of small molecules between two experiments																	
+MTD	instrument[1]-name	[MS, MS:1001945, Pegasus 4D, ]																	
+MTD	instrument[1]-source	[MS, MS:1000389, electron Ionization, ]																	
+MTD	instrument[1]-analyzer[1]	[MS, MS:1000084, time-of-flight, ]																	
+MTD	instrument[1]-detector	[MS, MS:1000114, microchannel plate detector, ]																	
+MTD	software[1]	[MS, MS:1001799, ChromaTOF software, 3.21]
+MTD	software[1]-setting[1]	baseline=0.2
+MTD	software[1]-setting[2]	dbMatchTreshold=900
+MTD	sample[1]-species[1]	[NCBITaxon, NCBITaxon:9606, Homo sapiens, ]																	
+MTD	sample[1]-cell_type[1]	[CL, CL:0000233, platelet, ]																	
+MTD	sample[1]-description	Unstimulated human blood platelets																	
+MTD	sample[2]-species[1]	[NCBITaxon, NCBITaxon:9606, Homo sapiens, ]																	
+MTD	sample[2]-cell_type[1]	[CL, CL:0000233, platelet, ]																	
+MTD	sample[2]-description	Unstimulated human blood platelets																	
+MTD	ms_run[1]-location	file://c:/data/control.mzML																	
+MTD	ms_run[1]-format	[MS, MS:1000584, mzML file, ]																	
+MTD	ms_run[1]-id_format	[MS, MS:1000776, scan number only nativeID format, ]
+MTD	ms_run[1]-scan_polarity[1]	[MS, MS:1000130, positive scan, ]																	
+MTD	ms_run[2]-location	file://c:/data/treatment.mzML																	
+MTD	ms_run[2]-format	[MS, MS:1000584, mzML file, ]																	
+MTD	ms_run[2]-id_format	[MS, MS:1000776, scan number only nativeID format, ]
+MTD	ms_run[2]-scan_polarity[1]	[MS, MS:1000130, positive scan, ]																	
+MTD	assay[1]-sample_ref	sample[1]																	
+MTD	assay[1]-ms_run_ref	ms_run[1]																	
+MTD	assay[2]-sample_ref	sample[2]																	
+MTD	assay[2]-ms_run_ref	ms_run[2]																	
+MTD	study_variable[1]	Untreated																	
+MTD	study_variable[1]-assay_refs	assay[1]																	
+MTD	study_variable[1]-description	drug response control																	
+MTD	study_variable[1]-average_function	[MS, MS:1002962, mean, ]																	
+MTD	study_variable[1]-variation_function	[MS, MS:1002885, standard error, ]																	
+MTD	study_variable[2]	Treated																	
+MTD	study_variable[2]-assay_refs	assay[2]																	
+MTD	study_variable[2]-description	drug response treatment																	
+MTD	study_variable[2]-average_function	[MS, MS:1002962, mean, ]																	
+MTD	study_variable[2]-variation_function	[MS, MS:1002885, standard error, ]																	
+MTD	cv[1]-label	MS																	
+MTD	cv[1]-full_name	PSI-MS controlled vocabulary																	
+MTD	cv[1]-version	20-06-2018																	
+MTD	cv[1]-uri	https://www.ebi.ac.uk/ols/ontologies/ms																	
+MTD	cv[2]-label	NCBITaxon																	
+MTD	cv[2]-full_name	An ontology representation of the NCBI organismal taxonomy Ontology																	
+MTD	cv[2]-version	2018-03-02																	
+MTD	cv[2]-uri	https://www.ebi.ac.uk/ols/ontologies/ncbitaxon																	
+MTD	cv[3]-label	CL																	
+MTD	cv[3]-full_name	The Cell Ontology is a structured controlled vocabulary for cell types in animals.																	
+MTD	cv[3]-version	2017-12-11																	
+MTD	cv[3]-uri	https://www.ebi.ac.uk/ols/ontologies/cl																	
+MTD	cv[4]-label	PRIDE																	
+MTD	cv[4]-full_name	PRIDE PRoteomics IDEntifications (PRIDE) database controlled vocabulary																	
+MTD	cv[4]-version	14-06-2018																	
+MTD	cv[4]-uri	https://www.ebi.ac.uk/ols/ontologies/pride																	
+MTD	cv[5]-label	CHEBI																	
+MTD	cv[5]-full_name	Chemical Entities of Biological Interest
+MTD	cv[5]-version	08-02-2019																	
+MTD	cv[5]-uri	https://www.ebi.ac.uk/ols/ontologies/chebi
+MTD	database[1]	[, ,Golm Metabolite Database, ]																	
+MTD	database[1]-prefix	GMD																	
+MTD	database[1]-version	2.3																	
+MTD	database[1]-uri	http://gmd.mpimp-golm.mpg.de/																	
+MTD	database[2]	[, , no database, null]																	
+MTD	database[2]-prefix	null																	
+MTD	database[2]-uri	null																	
+MTD	database[2]-version	Unknown																	
+MTD	derivatization_agent[1]	[,,Methoxylamine hydrochloride,]																	
+MTD	derivatization_agent[2]	[CHEBI, CHEBI:85064, N-methyl-N-(trimethylsilyl)trifluoroacetamide,]																	
+MTD	small_molecule-identification_reliability	[MS, MS:1002896, compound identification confidence level, ]																	
+MTD	id_confidence_measure[1]	[MS, MS:1002890, fragmentation score, ]																	
+MTD	small_molecule-quantification_unit	[PRIDE, PRIDE:0000330, Arbitrary quantification unit, ]																	
+MTD	small_molecule_feature-quantification_unit	[PRIDE, PRIDE:0000330, Arbitrary quantification unit, ]																	
+MTD	quantification_method	[,,baseline-corrected intensity quantification,]																	
+MTD	custom[1]	[MS, MS:1000901, retention time normalization standard, n-alkanes C10–C36]																	
+																			
+COM	Small molecule summary rows (similar to Protein section). 																		
+COM	Evidences (e.g. multiple modifications, adducts incl. charge variants are summarized). 																		
+COM	For most use cases this summary lines might be sufficient.																		
+SMH	SML_ID	SMF_ID_REFS	database_identifier	chemical_formula	smiles	inchi	chemical_name	uri	theoretical_neutral_mass	adduct_ions	reliability	best_id_confidence_measure	best_id_confidence_value	abundance_assay[1]	abundance_study_variable[1]	abundance_variation_study_variable[1]	abundance_assay[2]	abundance_study_variable[2]	abundance_variation_study_variable[2]
+SML	1	1 | 2	GMD:cd7993ea-ad14-452a-a907-33376cc98790	C18H36O2	CCCCCCCCCCCCCCCCCC(O)=O	InChI=1S/C18H36O2/c1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18(19)20/h2-17H2,1H3,(H,19,20)	Octadecanoic acid	http://identifiers.org/gmd/cd7993ea-ad14-452a-a907-33376cc98790	284.478	[M+H]1+	2	[MS, MS:1002890, fragmentation score, ]	978	805.16	805.16	0	589.9	589.9	0
+																			
+COM	Small molecule feature rows (only reported in Complete Quantification files and if feature information like e.g. mass traces are important)																		
+SFH	SMF_ID	SME_ID_REFS	SME_ID_REF_ambiguity_code	adduct_ion	isotopomer	exp_mass_to_charge	charge	retention_time_in_seconds	retention_time_in_seconds_start	retention_time_in_seconds_end	abundance_assay[1]	abundance_assay[2]	opt_global_retention_time_nd	opt_global_retention_time_nd_window_start	opt_global_retention_time_nd_window_end				
+SMF	1	1	null	[M+H]1+	null	285.484	1	1564.47	1559.45	1564.48	805.16	805.16	1562 | 2.47 	1557 | 2.45 	1562 | 2.48				
+SMF	2	2	null	[M+H]1+	null	285.484	1	1564.48	1554.45	1569.47	589.9	589.9	1562 | 2.48	1552 | 2.45	1567| 2.47				
+																			
+COM	Small molecule evidence rows for parent ions. Analog to PSM. 																		
+COM	Primary use case: report single hits from spectral library or accurate mass searches without quantification.																		
+SEH	SME_ID	evidence_input_id	database_identifier	chemical_formula	smiles	inchi	chemical_name	uri	derivatized_form	adduct_ion	exp_mass_to_charge	charge	theoretical_mass_to_charge	spectra_ref	identification_method	ms_level	id_confidence_measure[1]	rank	
+SME	1	ms_run[1]:scan=8	GMD:f634c736-39e8-4323-8155-fa3cc26ac9e3	C18H36O2	CCCCCCCCCCCCCCCCCC(O)=O	InChI=1S/C18H36O2/c1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18(19)20/h2-17H2,1H3,(H,19,20)	Octadecanoic acid (1TMS)	http://identifiers.org/gmd.analyte/f634c736-39e8-4323-8155-fa3cc26ac9e3	[CHEBI, CHEBI:51088, trimethylsilyl group, 1]	[M+H]+	356.6588	1	356.659	ms_run[1]:scan=8	[,, ChromaTOF database search,]	[MS, MS:1000511, ms level, 1]	957	1	
+SME	2	ms_run[2]:scan=23	GMD:f634c736-39e8-4323-8155-fa3cc26ac9e3	C18H36O2	CCCCCCCCCCCCCCCCCC(O)=O	InChI=1S/C18H36O2/c1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18(19)20/h2-17H2,1H3,(H,19,20)	Octadecanoic acid (1TMS)	http://identifiers.org/gmd.analyte/f634c736-39e8-4323-8155-fa3cc26ac9e3	[CHEBI, CHEBI:51088, trimethylsilyl group, 1]	[M+H]+	356.6589	1	356.659	ms_run[2]:scan=23	[,, ChromaTOF database search,]	[MS, MS:1000511, ms level, 1]	972	1	

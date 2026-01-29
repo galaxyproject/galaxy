@@ -1,0 +1,34 @@
+#! rules
+// signal changes
+sig{i}::ext => sig{a}::ext @ k_sig_1
+sig{a}::ext => sig{a}::cell @ (k_sig_2*[sig{a}::ext])/(1 + [block{a}::cell])
+
+block{i}::ext => block{a}::ext @ k_block_1
+block{a}::ext => block{a}::cell @ (k_block_2*[block{a}::ext])/(1 + [sig{a}::cell])
+
+sig{a}::cell + P1()::cell => sig{a}.P1()::cell @ param_sig*[sig{a}::cell]*[P1()::cell]
+sig{_}.P1()::cell => sig{_}::cell + P1()::cell @ k_deg*[sig{_}.P1()::cell]
+sig{a}.P1(active{off})::cell => sig{a}.P1(active{on})::cell @ 0.5*[sig{a}.P1(active{off})::cell]
+sig{a}.P1()::cell => sig{a}::cell + P1()::cell @ k_deg*[sig{a}.P1()::cell]
+
+block{a}::cell + P1()::cell => block{a}.P1()::cell @ param_block*[block{a}::cell]*[P1()::cell]
+
+P1(active{on})::cell + P2()::cell => P1(active{on}).P2()::cell @ 0.4*[P1(active{on})::cell]*[P2()::cell]
+P1().P2()::cell => P1()::cell + P2()::cell @ k_deg*[P1().P2()::cell]
+P1().P2(active{off})::cell => P1().P2(active{on})::cell @ k_prod*[P1().P2(active{off})::cell]
+
+#! inits
+sig{i}::ext
+block{i}::ext
+P1(active{off})::cell
+P2(active{off})::cell
+
+#! definitions
+k_sig_1 = 0.8
+k_sig_2 = 0.2
+k_block_1 = 0.9
+k_block_2 = 0.3
+k_deg = 0.3
+k_prod = 0.6
+param_sig = 0.3
+param_block = 0.4

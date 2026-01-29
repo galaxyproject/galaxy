@@ -1,0 +1,23 @@
+- id: lab_minio_storage_legacy
+  version: 0
+  name: Lab Storage (Legacy)
+  description: Connect to our lab's local MinIO storage service.
+  variables:
+    bucket:
+      type: string
+      help: The bucket to connect to.
+  configuration:
+    type: generic_s3
+    auth:
+      access_key: 'XXXXXXXXfillinaccess'
+      secret_key: 'YYYYYYYYfillinsecret'
+    bucket:
+      name: '{{ variables.bucket }}'
+    connection:
+      host: 'storage.ourawesomelab.org'
+      port: 9000
+      is_secure: true
+    badges:
+    - type: slower
+    - type: less_secure
+    - type: less_stable

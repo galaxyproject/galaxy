@@ -1,0 +1,11 @@
+===========================================================
+April 2014 Galaxy Release (v 14.04)
+===========================================================
+
+.. include:: _header.rst
+
+Please see the `Galaxy wiki`_ for announcement and release notes.
+
+.. _Galaxy wiki: https://galaxyproject.org/news/2014-04-14-galaxy-distribution/
+
+.. include:: _thanks.rst

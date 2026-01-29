@@ -1,0 +1,25 @@
+<tool id="ucsc_gene_table_to_intervals1" name="Gene Table To BED" version="1.0.0">
+<description>Parse a UCSC Gene Table dump</description>
+  <command interpreter="python">ucsc_gene_table_to_intervals.py --input=$input1 --output=$out_file1 --region=$region $exon</command>
+  <inputs>
+    <param name="input1" type="data" format="inverval" label="UCSC Gene Table"/>
+    <param name="region" type="select">
+      <label>Feature Type</label>
+      <option value="transcribed">Transcribed</option>
+      <option value="coding">Coding</option>
+      <option value="utr3">3' UTR</option>
+      <option value="utr5">5' UTR</option>
+    </param>
+    <param name="exon" type="select">
+      <label>Only print intervals overlapping an exon</label>
+      <option value="">False</option>
+      <option value="--exons">True</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="bed"/>
+  </outputs>
+<help>
+Read a table dump in the UCSC gene table format and create a BED file corresponding to the requested feature of each gene.
+</help>
+</tool>

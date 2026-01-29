@@ -1,0 +1,37 @@
+<tool id="collection_creates_pair" name="collection_creates_pair" version="0.1.0">
+  <command>
+    sed 'n;d' $input1 > $forward ;
+    sed -n 'g;n;p' $input1 > "reverse.txt";
+  </command>
+  <inputs>
+    <param name="input1" type="data" label="Input" help="Input to be split." />
+  </inputs>
+  <outputs>
+    <collection name="paired_output" type="paired" label="Split Pair">
+      <!-- command can reference parts directly or find via from_work_dir. -->
+      <data name="forward" format="txt" />
+      <data name="reverse" format_source="input1" from_work_dir="reverse.txt" />
+      <!-- data elements can use format, format_source, metadata_from,
+           from_work_dir. The format="input" idiom is not supported,
+           it should be considered deprecated and format_source is superior.
+      -->
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" ftype="bed" value="simple_lines_interleaved.txt" />
+      <output_collection name="paired_output" type="paired">
+        <element name="forward" ftype="txt">
+          <assert_contents>
+            <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
+          </assert_contents>
+        </element>
+        <element name="reverse" ftype="bed">
+          <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

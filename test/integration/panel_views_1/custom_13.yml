@@ -1,0 +1,4 @@
+name: Filtered Test Section w/multiple versions
+type: activity
+items:
+- sections: [test_section_multi]

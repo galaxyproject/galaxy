@@ -1,0 +1,37 @@
+CONTENTS
+--------
+
+edu.psu.galaxy.GalaxyServer.plist:
+
+    This is the LaunchDaemon definition for OS X (pre-Snow Leopard?). Assuming
+    that Galaxy is installed in the home directory of the user 'galaxy', run:
+        mkdir /Users/galaxy/galaxy_dist/log
+        sudo cp /Users/galaxy/galaxy_dist/contrib/edu.psu.galaxy.GalaxyServer.plist /Library/LaunchDaemons/
+        sudo chown root:wheel /Library/LaunchDaemons/edu.psu.galaxy.GalaxyServer.plist
+    Launch Galaxy with:
+        sudo launchctl load /Library/LaunchDaemons/edu.psu.galaxy.GalaxyServer.plist
+    Galaxy will now be started everytime the computer starts.
+    Written and submitted by James Casbon.
+
+galaxy.debian-init:
+
+    init script for Debian/Ubuntu Linux.  Copy to /etc/init.d/galaxy, modify
+    paths, and configure for start at boot with `update-rc.d galaxy defaults`.
+    Also written and submitted by James Casbon.
+
+galaxy.fedora-init:
+
+    init script for Fedora/RedHat/Scientific Linux/CentOS.  Copy to
+    /etc/init.d/galaxy, modify paths, and configure for start at boot with
+    `chkconfig galaxy on`.  Written and submitted by Brad Chapman.
+
+galaxy.solaris-smf.xml:
+
+    SMF Manifest for Solaris 10 and OpenSolaris.  Import with `svccfg import
+    galaxy.solaris-smf.xml`.
+
+gls.pl:
+
+    "Galaxy ls", for sites where Galaxy logins match system logins, this script
+    can be used to list the filesystem paths to a user's history datasets.
+    Requires site modifications.  Written and submitted by Simon McGowan.

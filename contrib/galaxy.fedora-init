@@ -1,0 +1,107 @@
+#!/bin/bash
+#
+# Init file for Galaxy (http://galaxyproject.org/)
+#   Suitable for use on Fedora and derivatives (RedHat Enterprise Linux, Scientific Linux, CentOS)
+#
+# Contributed by Brad Chapman
+#
+# chkconfig: 2345 98 20
+# description: Galaxy http://galaxyproject.org/
+
+#--- loading functions
+. /etc/init.d/functions
+#--- config
+
+SERVICE_NAME="galaxy"
+RUN_AS="galaxy"
+RUN_IN="/path/to/galaxy-dist"
+
+#--- main actions
+
+start() {
+	echo "Starting $SERVICE_NAME... "
+	cmd="cd $RUN_IN && sh run.sh --daemon"
+	case "$(id -un)" in
+		$RUN_AS)
+			eval "$cmd"
+			;;
+		root)
+			su - $RUN_AS -c "$cmd"
+			;;
+		*)
+			echo "*** ERROR *** must be $RUN_AS or root in order to control this service" >&2
+			exit 1
+	esac
+	echo "...done."
+}
+
+stop() {
+	echo -n "Stopping $SERVICE_NAME... "
+	
+	cmd="cd $RUN_IN && sh run.sh --stop-daemon"
+
+	case "$(id -un)" in
+		$RUN_AS)
+			eval "$cmd"
+			;;
+		root)
+			su - $RUN_AS -c "$cmd"
+			;;
+		*)
+			echo "*** ERROR *** must be $RUN_AS or root in order to control this service" >&2
+			exit 1
+	esac
+	
+	echo "done."
+}
+
+galaxy_status() {
+	if [[ $(grep '\[server:' $RUN_IN/config/galaxy.ini|awk -F'(:)|(])' '{ print $2 }') == 'main' ]]
+	then
+		echo -n "$SERVICE_NAME status: "
+		status -p $RUN_IN/galaxy.pid galaxy
+	else
+		for proc in $(grep '\[server:' $RUN_IN/config/galaxy.ini|awk -F'(:)|(])' '{ print $2 }')
+		do
+			status -p $RUN_IN/${proc}.pid ${proc}
+		done
+	fi
+}
+
+notsupported() {
+	echo "*** ERROR*** $SERVICE_NAME: operation [$1] not supported"
+}
+
+usage() {
+	echo "Usage: $SERVICE_NAME start|stop|restart|status"
+}
+
+
+#---
+
+case "$1" in
+	start)
+		start "$@"
+		;;
+	stop)
+		stop
+		;;
+	restart|reload)
+		stop
+		start
+		;;
+	status)
+		set +e
+		galaxy_status
+		exit $?
+		;;
+	'')
+		usage >&2
+		exit 1
+		;;
+	*)
+		notsupported "$1" >&2
+		usage >&2
+		exit 1
+		;;
+esac

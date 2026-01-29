@@ -1,0 +1,27 @@
+<tool id="CONVERTER_interval_to_interval_index_0" name="Convert Interval to Interval Index" version="1.0.1" hidden="true" profile="16.04">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <requirements>
+        <requirement type="package" version="0.8.8">bx-python</requirement>
+    </requirements>
+    <command>
+        python '$__tool_directory__/interval_to_interval_index_converter.py'
+        -c ${input1.metadata.chromCol}
+        -s ${input1.metadata.startCol}
+        -e ${input1.metadata.endCol}
+        '$input1' '$output1'
+    </command>
+    <inputs>
+        <param format="interval" name="input1" type="data" label="Choose Interval file"/>
+    </inputs>
+    <outputs>
+        <data format="interval_index" name="output1"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" ftype="interval" value="2.interval"/>
+            <output name="output1" ftype="interval_index" value="2.interval_index"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -1,0 +1,40 @@
+name: Client linting
+on:
+  push:
+    paths:
+      - 'client/**'
+      - '.github/workflows/js_lint.yaml'
+  pull_request:
+    paths:
+      - 'client/**'
+      - '.github/workflows/js_lint.yaml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  client-unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Read Node.js version
+        id: node-version
+        run: echo "version=$(cat 'client/.node_version')" >> $GITHUB_OUTPUT
+      - name: Setup node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          cache: 'yarn'
+          cache-dependency-path: 'client/yarn.lock'
+      - run: yarn install --frozen-lockfile
+        working-directory: client
+      - name: Run ESLint
+        run: yarn run eslint
+        working-directory: client
+      - name: Run prettier checks
+        run: yarn run format-check
+        working-directory: client
+      - name: Run vue-tsc
+        working-directory: client
+        run: yarn type-check

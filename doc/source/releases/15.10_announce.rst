@@ -1,0 +1,85 @@
+
+===========================================================
+October 2015 Galaxy Release (v 15.10)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Reports Application**
+  The reports web application has been greatly enhanced - including
+  improved styling, new landing page, more reports, pagination, and
+  sparklines. Huge thanks to Daniel Bouchard
+  (`@Airistotal <https://github.com/Airistotal>`__) for these
+  enhancements.
+
+**Upload**
+  The Galaxy upload widget now features support for composite datatypes and
+  improved styling.
+
+**Data Libraries**
+  Improved API and UI for data libraries - including support for library
+  folder management and search.
+
+`GitHub <https://github.com/galaxyproject/galaxy>`__
+===========================================================
+
+New
+  .. code-block:: shell
+
+      % git clone -b master https://github.com/galaxyproject/galaxy.git
+
+Update to latest stable release
+  .. code-block:: shell
+
+      % git checkout master && pull --ff-only origin master
+
+Update to exact version
+  .. code-block:: shell
+
+      % git checkout v15.10
+
+
+`BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
+===========================================================
+
+Upgrade
+  .. code-block:: shell
+
+      % hg pull
+      % hg update latest_15.10
+
+
+See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+
+Deprecation Notices
+===========================================================
+
+The Mercurial repository at https://bitbucket.org/galaxy/galaxy-dist is deprecated.
+**We recommend deployers to switch their instances to git** and follow the `master`
+branch of GitHub repository https://github.com/galaxyproject/galaxy
+Details are available at https://galaxyproject.org/develop/source-code/
+*The next few releases will still be available on Bitbucket, but they may be
+less up to date than the corresponding GitHub branches.*
+
+The **old UI of Data Libraries is deprecated** and will be removed in the
+next release of Galaxy. The current Data Libraries Beta will replace it.
+The Data Library menu items were renamed accordingly.
+
+The **graphview visualization is deprecated** and will be replaced in the next
+release of Galaxy.
+
+The direct access to **Tool Shed repositories through the Mercurial API is deprecated**.
+It will be removed in a future release. Please use Planemo for uploading to the TS
+instead.
+
+Release Notes
+===========================================================
+
+.. include:: 15.10.rst
+   :start-after: enhancements
+
+.. include:: _thanks.rst

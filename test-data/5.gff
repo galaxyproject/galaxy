@@ -1,0 +1,25 @@
+##gff-version 2
+##Date: Thu Mar 23 11:21:17 2006
+##bed2gff.pl $Rev: 601 $
+##Input file: ./database/files/61c6c604e0ef50b280e2fd9f1aa7da61.dat
+
+chr1	bed2gff	CCDS1000.1_cds_0_0_chr1_148325916_f	148325916	148325975	.	+	.	score "0";
+chr2	bed2gff	CCDS2120.1_cds_0_0_chr2_118288584_f	118288584	118288668	.	+	.	score "0";
+chr5	bed2gff	CCDS3972.1_cds_0_0_chr5_56241230_f	56241230	56241327	.	+	.	score "0";
+chr6	bed2gff	CCDS4855.1_cds_0_0_chr6_41411593_f	41411593	41411644	.	+	.	score "0";
+chr7	bed2gff	CCDS5401.1_cds_0_0_chr7_26907299_r	26907299	26907654	.	+	.	score "0";
+chr8	bed2gff	CCDS6324.1_cds_0_0_chr8_118881132_r	118881132	118881317	.	+	.	score "0";
+chr9	bed2gff	CCDS6914.1_cds_0_0_chr9_128764157_f	128764157	128764189	.	+	.	score "0";
+chr10	bed2gff	CCDS7248.1_cds_0_0_chr10_55251624_r	55251624	55253124	.	+	.	score "0";
+chr11	bed2gff	CCDS7725.1_cds_0_0_chr11_1731309_r	1731309	1731476	.	+	.	score "0";
+chr12	bed2gff	CCDS8736.1_cds_0_0_chr12_38440095_r	38440095	38440321	.	+	.	score "0";
+chr13	bed2gff	CCDS9526.1_cds_0_0_chr13_112381695_f	112381695	112381953	.	+	.	score "0";
+chr14	bed2gff	CCDS9949.1_cds_0_0_chr14_98710241_r	98710241	98712285	.	+	.	score "0";
+chr15	bed2gff	CCDS10096.1_cds_0_0_chr15_41486873_r	41486873	41487060	.	+	.	score "0";
+chr16	bed2gff	CCDS10395.1_cds_0_0_chr16_37430_r	37430	37557	.	+	.	score "0";
+chr18	bed2gff	CCDS11891.1_cds_0_0_chr18_23786115_r	23786115	23786321	.	+	.	score "0";
+chr19	bed2gff	CCDS12866.1_cds_0_0_chr19_59068596_f	59068596	59069564	.	+	.	score "0";
+chr20	bed2gff	CCDS13249.1_cds_0_0_chr20_33330414_r	33330414	33330423	.	+	.	score "0";
+chr21	bed2gff	CCDS13614.1_cds_0_0_chr21_32707033_f	32707033	32707192	.	+	.	score "0";
+chr22	bed2gff	CCDS13897.1_cds_0_0_chr22_30120224_f	30120224	30120265	.	+	.	score "0";
+chrX	bed2gff	CCDS14606.1_cds_0_0_chrX_122745048_f	122745048	122745924	.	+	.	score "0";

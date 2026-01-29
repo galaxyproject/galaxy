@@ -1,0 +1,21 @@
+#This is a sample file distributed with Galaxy that is used by the
+#phastOdds scores tool.  The phastOdds.loc file has this format (white space 
+#characters are TAB characters):
+#
+#<build>	<description>	<path to phastOdds score files>
+#
+#So, for example, if you had hg17 ENCODE regions only, SEP-2005 tba.v2 alignments
+#stored in /depot/data2/galaxy/phastOdds_precomputed/encode_SEP-2005_tba.v2_phastOdds, 
+#then the phastOdds.loc entry would look like this:
+#
+#hg17	ENCODE regions only, SEP-2005 tba.v2 alignments	/depot/data2/galaxy/phastOdds_precomputed/encode_SEP-2005_tba.v2_phastOdds
+#
+#and your /depot/data2/galaxy/phastOdds_precomputed/ directory would 
+#contain all of your alignment files (e.g.):
+#
+#-rw-r--r--   1 james g2cache 56555036 2006-02-22 18:26 encode_SEP-2005_tba.v2_phastOdds.h5
+#-rw-r--r--   1 james g2cache     1367 2006-02-08 12:23 encode_SEP-2005_tba.v2_phastOdds.mapping.bed
+#...etc...
+#
+#Your phastOdds.loc file should include an entry per line for each phastOdds 
+#file you have stored.

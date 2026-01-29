@@ -1,0 +1,13 @@
+<tool id="multi_data_repeat" name="multi_data_repeat" version="0.1.0">
+  <command>
+    cat #for o in $outer_repeat# #for $f in $o.f1# ${f} #end for# #end for# >> $out1;
+  </command>
+  <inputs>
+    <repeat name="outer_repeat" title="Outer Repeat" min="1">
+      <param name="f1" type="data" format="txt" multiple="true" label="Data 1" min="1" max="1235" />
+    </repeat>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+</tool>

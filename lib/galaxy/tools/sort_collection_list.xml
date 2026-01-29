@@ -1,0 +1,198 @@
+<tool id="__SORTLIST__"
+      name="Sort collection"
+      version="1.0.0"
+      tool_type="sort_collection">
+    <description></description>
+    <type class="SortTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3802</edam_operation>
+    </edam_operations>
+    <inputs>
+        <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
+        <conditional name="sort_type">
+            <param type="select" name="sort_type" label="Sort type" help="All element identifiers must be present once.">
+                <option value="alpha">alphabetical</option>
+                <option value="numeric">numeric (non numeric characters are ignored)</option>
+                <option value="file">from file</option>
+            </param>
+            <when value="alpha" />
+            <when value="numeric" />
+            <when value="file">
+                <param name="sort_file" type="data" format="txt" label="Select file that contains the new order of collection elements" help="Lines in text file must match collection"></param>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (sorted)" >
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <!-- test that we can reorder a collection using a file with element identifiers-->
+            <param name="input">
+                <collection type="list">
+                    <element name="element_1" value="simple_line_alternative.txt" />
+                    <element name="element_2" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="sort_type" value="file"/>
+            <param name="sort_file" value="new_element_sort_order.txt"/>
+            <output_collection name="output" type="list">
+                <element name="element_2">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+                <element name="element_1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="def" value="simple_line_alternative.txt" />
+                    <element name="abc" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="sort_type" value="alpha" />
+            <output_collection name="output" type="list">
+                <element name="abc">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+                <element name="def">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="def0123400" value="simple_line_alternative.txt" />
+                    <element name="abc5678" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="sort_type" value="numeric" />
+            <output_collection name="output" type="list">
+                <element name="abc5678">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+                <element name="def0123400">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+        <test>
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="def456">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                    <element name="abc789">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <param name="sort_type" value="alpha" />
+            <output_collection name="output" type="list:paired">
+                <element name="abc789">
+                    <element name="forward">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a line of text.\n$" />
+                        </assert_contents>
+                    </element>
+                    <element name="reverse">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a different line of text.\n$" />
+                        </assert_contents>
+                    </element>
+                </element>
+                <element name="def456">
+                    <element name="forward">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a line of text.\n$" />
+                        </assert_contents>
+                    </element>
+                    <element name="reverse">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a different line of text.\n$" />
+                        </assert_contents>
+                    </element>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+========
+Synopsis
+========
+
+Sorts dataset collection alphabetically, numerically, or using predetermined order from a supplied file.
+
+===========
+Description
+===========
+
+**Numeric sort**
+
+The tool sort in ascending order. When *numeric* sort is chosen, the tool ignores non-numeric characters. For example, if a collection contains the following elements::
+
+ Collection: [Horse123] 
+             [Donkey543] 
+             [Mule176]
+
+The tool will output::
+
+ Collection: [Horse123]
+             [Mule176] 
+             [Donkey543] 
+
+-------
+
+**Sorting from file**
+
+Alternative, one can supply a single column text file containing elements identifiers in the desired sort order. For example, suppose there a collection::
+
+ Collection: [Horse123] 
+             [Donkey543] 
+             [Mule176]
+
+and a file specifying sort order::
+
+ Donkey543
+ Horse123 
+ Mule176
+ 
+the output will predictably look like this::
+
+ Collection: [Donkey543] 
+             [Horse123] 
+             [Mule176]
+
+-------
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+
+     ]]></help>
+</tool>

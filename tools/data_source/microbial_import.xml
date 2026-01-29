@@ -1,0 +1,113 @@
+<tool id="microbial_import1" name="Get Microbial Data" version="1.0.0">
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
+    <command><![CDATA[
+python '$__tool_directory__/microbial_import.py'
+$CDS,$tRNA,$rRNA,$sequence,$GeneMark,$GeneMarkHMM,$Glimmer3
+'$output'
+'${GALAXY_DATA_INDEX_DIR}/microbial_data.loc'
+    ]]></command>
+    <inputs>
+        <param name="kingdom" type="select" label="Select the Desired Kingdom">
+            <options from_file="microbial_data.loc" startswith="ORG">
+                <column name="name" index="3"/>
+                <column name="value" index="3"/>
+                <filter type="unique_value" name="unique" column="3"/>
+            </options>
+        </param>
+        <param name="org" type="select" label="Select the Desired Organism">
+            <options from_file="microbial_data.loc" startswith="ORG">
+                <column name="name" index="2"/>
+                <column name="value" index="1"/>
+                <filter type="param_value" ref="kingdom" name="kingdom" column="3"/>
+                <filter type="sort_by" column="2"/>
+            </options>
+        </param>
+        <param name="CDS" type="select" label="Select Desired Coding Sequences" display="checkboxes" multiple="True">
+            <options from_file="microbial_data.loc" startswith="DATA">
+                <column name="name" index="3"/>
+                <column name="value" index="1"/>
+                <column name="feature" index="4"/>
+                <filter type="param_value" ref="org" name="kingdom" column="2"/>
+                <filter type="static_value" name="feature" value="CDS" column="4"/>
+            </options>
+        </param>
+        <param name="tRNA" type="select" label="Select Desired tRNA" display="checkboxes" multiple="True">
+            <options from_file="microbial_data.loc" startswith="DATA">
+                <column name="name" index="3"/>
+                <column name="value" index="1"/>
+                <column name="feature" index="4"/>
+                <filter type="param_value" ref="org" name="kingdom" column="2"/>
+                <filter type="static_value" name="feature" value="tRNA" column="4"/>
+            </options>
+        </param>
+        <param name="rRNA" type="select" label="Select Desired rRNA" display="checkboxes" multiple="True">
+            <options from_file="microbial_data.loc" startswith="DATA">
+                <column name="name" index="3"/>
+                <column name="value" index="1"/>
+                <column name="feature" index="4"/>
+                <filter type="param_value" ref="org" name="kingdom" column="2"/>
+                <filter type="static_value" name="feature" value="rRNA" column="4"/>
+            </options>
+        </param>
+        <param name="sequence" type="select" label="Select Desired DNA Sequences" display="checkboxes" multiple="True">
+            <options from_file="microbial_data.loc" startswith="DATA">
+                <column name="name" index="3"/>
+                <column name="value" index="1"/>
+                <column name="feature" index="4"/>
+                <filter type="param_value" ref="org" name="kingdom" column="2"/>
+                <filter type="static_value" name="feature" value="sequence" column="4"/>
+            </options>
+        </param>
+        <param name="GeneMark" type="select" label="Select Desired GeneMark Annotations" display="checkboxes" multiple="True">
+            <options from_file="microbial_data.loc" startswith="DATA">
+                <column name="name" index="3"/>
+                <column name="value" index="1"/>
+                <column name="feature" index="4"/>
+                <filter type="param_value" ref="org" name="kingdom" column="2"/>
+                <filter type="static_value" name="feature" value="GeneMark" column="4"/>
+            </options>
+        </param>
+        <param name="GeneMarkHMM" type="select" label="Select Desired GeneMarkHMM Annotations" display="checkboxes" multiple="True">
+            <options from_file="microbial_data.loc" startswith="DATA">
+                <column name="name" index="3"/>
+                <column name="value" index="1"/>
+                <column name="feature" index="4"/>
+                <filter type="param_value" ref="org" name="kingdom" column="2"/>
+                <filter type="static_value" name="feature" value="GeneMarkHMM" column="4"/>
+            </options>
+        </param>
+        <param name="Glimmer3" type="select" label="Select Desired Glimmer3 Annotations" display="checkboxes" multiple="True">
+            <options from_file="microbial_data.loc" startswith="DATA">
+                <column name="name" index="3"/>
+                <column name="value" index="1"/>
+                <column name="feature" index="4"/>
+                <filter type="param_value" ref="org" name="kingdom" column="2"/>
+                <filter type="static_value" name="feature" value="Glimmer3" column="4"/>
+            </options>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="bed"/>
+    </outputs>
+    <code file="microbial_import_code.py"/>
+    <help><![CDATA[
+This tool will allow you to obtain various genomic datasets for any completed Microbial Genome Project as listed at NCBI_.
+
+.. _NCBI: http://www.ncbi.nlm.nih.gov/genomes/lproks.cgi?view=1
+
+Current datasets available include
+  1. CDS
+  2. tRNA
+  3. rRNA
+  4. FASTA Sequences
+  5. GeneMark Annotations
+  6. GeneMarkHMM Annotations
+  7. Glimmer3 Annotations
+
+-----
+
+Organisms in **bold** are available at the UCSC Browser.
+    ]]></help>
+</tool>

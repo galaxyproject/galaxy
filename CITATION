@@ -1,0 +1,30 @@
+If you use or extend Galaxy in your published work, please cite this
+publication:
+
+- The Galaxy Community. "The Galaxy platform for accessible, reproducible, and
+  collaborative data analyses: 2024 update"
+  Nucleic Acids Res. (2024) 52(W1):W83-W94 doi:10.1093/nar/gkae410
+
+BibTeX format:
+
+@article{10.1093/nar/gkae410,
+  title = {The {Galaxy} platform for accessible, reproducible, and collaborative data analyses: 2024 update},
+  author = {The Galaxy Community},
+  journal = {Nucleic Acids Res.},
+  doi = {10.1093/nar/gkae410},
+  volume = {52},
+  number = {W1},
+  pages = {W83-W94},
+  year = {2024},
+  url = {https://doi.org/10.1093/nar/gkae410},
+  publisher = {Oxford University Press}
+}
+
+
+More publications
+-----------------
+
+To cite specific Galaxy components/features or other Galaxy project
+publications, see
+
+https://galaxyproject.org/citing-galaxy

@@ -1,0 +1,92 @@
+<tool id="wiggle2simple1" name="Wiggle-to-Interval" version="1.0.1" profile="16.04">
+  <description>converter</description>
+  <requirements>
+    <requirement type="package" version="19.9">galaxy-util</requirement>
+    <requirement type="package" version="0.8.6">bx-python</requirement>
+  </requirements>
+  <command>python '$__tool_directory__/wiggle_to_simple.py' '$input' '$out_file1'</command>
+  <inputs>
+    <param format="wig" name="input" type="data" label="Convert"/>
+  </inputs>
+  <outputs>
+    <data format="interval" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="2.wig" />
+      <output name="out_file1" file="2.interval"/>
+    </test>
+    <test>
+      <param name="input" value="3.wig" />
+      <output name="out_file1" file="3_wig.bed"/>
+    </test>
+  </tests>
+  <help>
+**Syntax**
+
+This tool converts wiggle data into interval type.
+
+- **Wiggle format**: The .wig format is line-oriented. Wiggle data is preceded by a UCSC track definition line.  Following the track definition line is the track data, which can be entered in three different formats described below.
+
+  - **BED format** with no declaration line and four columns of data::
+
+      chromA  chromStartA  chromEndA  dataValueA
+      chromB  chromStartB  chromEndB  dataValueB
+
+  - **variableStep** two column data; started by a declaration line and followed with chromosome positions and data values::
+
+      variableStep  chrom=chrN  [span=windowSize]
+      chromStartA  dataValueA
+      chromStartB  dataValueB
+
+  - **fixedStep** single column data; started by a declaration line and followed with data values::
+
+      fixedStep  chrom=chrN  start=position  step=stepInterval  [span=windowSize]
+      dataValue1
+      dataValue2
+
+-----
+
+**Example**
+
+- input wiggle format file::
+
+    #track type=wiggle_0 name="Bed Format" description="BED format"
+    chr19 59302000 59302300 -1.0
+    chr19 59302300 59302600 -0.75
+    chr19 59302600 59302900 -0.50
+    chr19 59302900 59303200 -0.25
+    chr19 59303200 59303500 0.0
+    #track type=wiggle_0 name="variableStep" description="variableStep format"
+    variableStep chrom=chr19 span=150
+    59304701 10.0
+    59304901 12.5
+    59305401 15.0
+    59305601 17.5
+    #track type=wiggle_0 name="fixedStep" description="fixed step" visibility=full
+    fixedStep chrom=chr19 start=59307401 step=300 span=200
+    1000
+    900
+    800
+    700
+    600
+
+- convert the above file to interval file::
+
+    chr19	59302000	59302300	+	-1.0
+    chr19	59302300	59302600	+	-0.75
+    chr19	59302600	59302900	+	-0.5
+    chr19	59302900	59303200	+	-0.25
+    chr19	59303200	59303500	+	0.0
+    chr19	59304701	59304851	+	10.0
+    chr19	59304901	59305051	+	12.5
+    chr19	59305401	59305551	+	15.0
+    chr19	59305601	59305751	+	17.5
+    chr19	59307701	59307901	+	1000.0
+    chr19	59308001	59308201	+	900.0
+    chr19	59308301	59308501	+	800.0
+    chr19	59308601	59308801	+	700.0
+    chr19	59308901	59309101	+	600.0
+
+</help>
+</tool>

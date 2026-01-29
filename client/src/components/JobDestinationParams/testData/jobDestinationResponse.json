@@ -1,0 +1,12 @@
+{
+  "Runner": "local",
+  "Runner Job ID": "23027",
+  "Handler": "main.web.1",
+  "docker_auto_rm": "true",
+  "docker_enabled": "true",
+  "docker_net": "bridge",
+  "docker_set_user": null,
+  "docker_sudo": "false",
+  "docker_volumes": "$galaxy_root:ro,$tool_directory:ro,$job_directory:rw,$working_directory:rw,$default_file_path:ro",
+  "require_container": "true"
+}

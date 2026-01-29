@@ -1,0 +1,30 @@
+<tool id="color_param" name="color_param" version="1.0.0">
+    <command>
+        echo "$color_default"  > $out_file1;
+        echo "$color_rgb"      > $out_file2;
+    </command>
+    <inputs>
+        <param name="color_default" type="color" value="#aabbcc" />
+        <param name="color_rgb" type="color" value="#aabbcc" rgb="true" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+        <data name="out_file2" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="color_default" value="#aaaaaa" />
+            <param name="color_rgb" value="#aaaaaa" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="#aaaaaa" />
+                </assert_contents>
+            </output>
+            <output name="out_file2">
+                <assert_contents>
+                    <has_line line="(170, 170, 170)" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

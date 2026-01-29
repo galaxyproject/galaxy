@@ -1,0 +1,39 @@
+<tool id="implicit_nested_collection_conversion" name="implicit_nested_collection_conversion" version="0.1">
+  <command>
+    #for $outer_key in $input1.keys()
+        #for $inner_key in $input1[$outer_key].keys():
+            cut -f 1 '$input1[$outer_key][$inner_key]' > '$output1[$outer_key][$inner_key]'
+        #end for
+    #end for
+  </command>
+  <inputs>
+    <param type="data_collection" collection_type="list:list" format="tabular" name="input1" label="Input 1" />
+  </inputs>
+  <outputs>
+    <collection name="output1" type="list:list" structured_like="input1" format_source="input1">
+    </collection>
+  </outputs>
+  <tests>
+    <!-- Test implicit conversion. -->
+    <test>
+      <param name="input1">
+        <collection type="list:list">
+          <element name="o1">
+            <collection type="list">
+              <element name="i1" value="1.fasta" ftype="fasta" />
+            </collection>
+          </element>
+        </collection>
+      </param>
+      <output_collection name="output1" count="1">
+        <element name="o1">
+          <element name="i1" ftype="tabular">
+            <assert_contents>
+              <has_text text="hg17" />
+            </assert_contents>
+          </element>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

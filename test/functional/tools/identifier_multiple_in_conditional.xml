@@ -1,0 +1,28 @@
+<tool id="identifier_multiple_in_conditional" name="identifier_multiple_in_conditional" version="1.0.0">
+    <command><![CDATA[
+#for $input in $outer_cond.inner_cond.input1#
+    echo '$input.element_identifier' >> 'output1';
+#end for#
+    ]]></command>
+    <inputs>
+        <conditional name="outer_cond">
+            <param name="cond_param_outer" type="boolean" checked="true" />
+            <when value="true">
+                <conditional name="inner_cond">
+                    <param name="cond_param_inner" type="boolean" checked="true" />
+                    <when value="true">
+                        <param type="data" name="input1" label="True Input" multiple="true" />
+                    </when>
+                    <when value="false" />
+                </conditional>
+            </when>
+            <when value="false" />
+        </conditional>
+        <param name="thedata" type="data" optional="true" label="Optional dummy data"/>
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular" from_work_dir="output1" />
+    </outputs>
+    <tests>
+    </tests>
+</tool>

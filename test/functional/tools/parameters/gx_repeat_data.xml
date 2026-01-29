@@ -1,0 +1,21 @@
+<tool id="gx_repeat_data" name="gx_repeat_data" version="1.0.0">
+    <command><![CDATA[
+cat '$parameter[0].data_parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <repeat name="parameter" title="Repeat Parameter">
+            <param name="data_parameter" type="data" />
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <repeat name="parameter">
+                <param name="data_parameter" value="1.bed" />
+            </repeat>
+            <output name="out_file1" file="1.bed" />
+        </test>
+    </tests>
+</tool>

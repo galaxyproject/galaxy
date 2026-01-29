@@ -1,0 +1,85 @@
+<tool id="master2gd_snp" name="MasterVar to gd_snp" version="1.0.0">
+    <description>Convert from MasterVar to gd_snp table</description>
+    <command>
+perl '$__tool_directory__/master2gd_snp.pl' '$input1' -name='$indName' -build=${input1.metadata.dbkey}
+#if $snptab.tab2 == "yes"
+    -tab='$snptab.input2'
+    #if $snptab.colsOnly == "addColsOnly"
+        -addColsOnly
+    #end if
+#end if
+> '$out_file1'
+    </command>
+    <inputs>
+        <param name="input1" type="data" format="tabular" label="Complete Genomics MasterVar dataset" />
+        <conditional name="snptab">
+            <param name="tab2" type="select" label="Append to gd_snp table in history">
+                <option value="yes">yes</option>
+                <option value="no" selected="true">no</option>
+            </param>
+            <when value="yes">
+                <param format="gd_snp" name="input2" type="data" label="gd_snp table" />
+                <param name="colsOnly" type="select" label="Skip new SNPs">
+                    <option value="" selected="true">no</option>
+                    <option value="addColsOnly">yes</option>
+                </param>
+            </when>
+            <when value="no" />
+        </conditional>
+        <param name="indName" type="text" value="na" label="Label for new individual/group" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="gd_snp" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="masterVarTest.txt" ftype="tabular" />
+            <param name="tab2" value="no" />
+            <param name="indName" value="na" />
+            <output name="out_file1" file="master2snp_output.txt" />
+        </test>
+    </tests>
+
+    <help>
+**Dataset formats**
+
+The input dataset is in the MasterVar_ format provided by the Complete Genomics
+analysis process (Galaxy considers this to be tabular_, but it must have the
+columns specified for MasterVar).
+The output dataset is a gd_snp_ table.  (`Dataset missing?`_)
+
+.. _Dataset missing?: ./static/formatHelp.html
+.. _gd_snp: ./static/formatHelp.html#gd_snp
+.. _MasterVar: ./static/formatHelp.html#mastervar
+.. _tabular: ./static/formatHelp.html#tab
+
+-----
+
+**What it does**
+
+This converts a Complete Genomics MasterVar file to gd_snp format,
+so it can be used with the genome diversity tools.
+It can either
+start a new dataset or append to an old one. When appending, if any new SNPs
+appear only in the MasterVar file they can either be skipped or backfilled with
+"-1" (unknown) for previous individuals/groups in the gd_snp dataset.
+Positions homozygous for the reference are skipped.
+
+-----
+
+**Examples**
+
+- input MasterVar file::
+
+   934     2       chr1    41980   41981   hom     snp     A       G       G       76      97                      dbsnp.86:rs806721       425     1       1       1       2       -170                            ERVL-E-int:ERVL:47.4    2       1.17    N
+   935     2       chr1    41981   42198   hom     ref     =       =       =                                                                                       -170                                            1.17    N
+   1102    2       chr1    53205   53206   het-ref snp     G       C       G       93      127                     dbsnp.100:rs2854676     477     7       30      0       37      -127                                    2       1.17    N
+   etc.
+
+- output::
+
+   chr1    41980   A       G       -1      0       1       0       76
+   chr1    53205   G       C       -1      30      7       1       93
+   etc.
+    </help>
+</tool>

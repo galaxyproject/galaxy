@@ -1,0 +1,50 @@
+<tool id="multi_select" name="multi_select" version="1.0.0">
+    <description>multi_select</description>
+    <command><![CDATA[
+cat '$config' > '$output' &&
+echo '$select_optional' > '$output2'
+    ]]></command>
+    <configfiles>
+        <configfile name="config">${select_ex}</configfile>
+    </configfiles>
+    <inputs>
+        <param name="select_ex" type="select" display="checkboxes" multiple="true">
+            <option value="--ex1">Ex1</option>
+            <option value="ex2">Ex2</option>
+            <option value="--ex3">Ex3</option>
+            <option value="--ex4">Ex4</option>
+            <option value="ex5">Ex5</option>
+        </param>
+        <param name="select_optional" type="select" optional="true">
+            <option value="--ex1">Ex1</option>
+            <option value="ex2">Ex2</option>
+            <option value="--ex3">Ex3</option>
+            <option value="--ex4">Ex4</option>
+            <option value="ex5">Ex5</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+        <data name="output2" format="txt" />    
+    </outputs>
+    <tests>
+        <test>
+            <param name="select_ex" value="--ex1,ex2,--ex3" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="--ex1,ex2,--ex3" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="select_ex" value="Ex1" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="--ex1" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

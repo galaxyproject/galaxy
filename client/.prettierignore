@@ -1,0 +1,14 @@
+# Standard ignores
+**/.git
+**/.svn
+**/.hg
+**/node_modules
+# Ignore the dist folder
+**/dist
+# We will always defer to package manager for formatting of package.json files.
+**/package.json
+# Skip formatting of explicitly included libs (to stay in sync with upstream, and they should go away eventually)
+src/libs
+# Don't reformat .json or .yml files included in the project
+*.json
+*.yml

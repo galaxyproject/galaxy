@@ -1,0 +1,8 @@
+<!-- Use the file tool_data_table_conf.xml.oldlocstyle if you don't want to update your loc files as changed in revision 4550:535d276c92bc-->
+<tables>
+    <!-- Location of SAMTools indexes and other files -->
+    <table name="sam_fa_indexes" comment_char="#">
+        <columns>line_type, value, path</columns>
+        <file path="tool-data/sam_fa_indices.loc" />
+    </table>
+</tables>

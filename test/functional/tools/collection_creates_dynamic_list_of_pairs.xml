@@ -1,0 +1,73 @@
+<tool id="collection_creates_dynamic_list_of_pairs" name="collection_creates_dynamic_list_of_pairs" version="0.1.0">
+  <command><![CDATA[
+    echo "A" > samp1_1.fq &&
+    echo "B" > samp1_2.fq &&
+    echo "C" > samp2_1.fq &&
+    echo "D" > samp2_2.fq &&
+    echo "E" > samp3_1.fq &&
+    echo "F" > samp3_2.fq &&
+    ## Galaxy wants forward and reverse in pattern not _1 and _2.
+    ##   There is bash magic that would be more concise then this basename
+    ##   pattern but I think this is more portable.
+    for f in *_1.fq; do mv "\$f" "`basename \$f _1.fq`_forward.fq"; done &&
+    for f in *_2.fq; do mv "\$f" "`basename \$f _2.fq`_reverse.fq"; done
+  ]]></command>
+  <inputs>
+    <param name="foo" type="text" label="Dummy Parameter" />
+    <param name="file" type="data" label="Dummy File Parameter" optional="true"/>
+  </inputs>
+  <outputs>
+    <collection name="list_output" type="list:paired" label="Duplicate List">
+      <!-- Use named regex group to grab pattern
+           <identifier_0>_<identifier_1>.fq. Here identifier_0 is the list
+           identifier in the nested collection and identifier_1 is either
+           forward or reverse (for instance samp1_forward.fq).
+      -->
+      <discover_datasets pattern="(?P&lt;identifier_0&gt;[^_]+)_(?P&lt;identifier_1&gt;[^_]+)\.fq" ext="fastqsanger" visible="true" />
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="file" value="simple_line.txt" />
+      <param name="foo" value="bar" />
+      <output_collection name="list_output" type="list:paired">
+        <element name="samp1">
+          <element name="forward">
+            <assert_contents>
+              <has_text_matching expression="^A\n$" />
+            </assert_contents>
+          </element>
+          <element name="reverse">
+            <assert_contents>
+              <has_text_matching expression="^B\n$" />
+            </assert_contents>
+          </element>
+        </element>
+        <element name="samp2">
+          <element name="forward">
+            <assert_contents>
+              <has_text_matching expression="^C\n$" />
+            </assert_contents>
+          </element>
+          <element name="reverse">
+            <assert_contents>
+              <has_text_matching expression="^D\n$" />
+            </assert_contents>
+          </element>
+        </element>
+        <element name="samp3">
+          <element name="forward">
+            <assert_contents>
+              <has_text_matching expression="^E\n$" />
+            </assert_contents>
+          </element>
+          <element name="reverse">
+            <assert_contents>
+              <has_text_matching expression="^F\n$" />
+            </assert_contents>
+          </element>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

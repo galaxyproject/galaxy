@@ -1,0 +1,21 @@
+<tool id="collection_cat_group_tag" name="Concatenate multiple datasets (based on group tag)" version="1.0.0">
+    <description>tail-to-head</description>
+    <command><![CDATA[
+cat
+#for $file in $input1.get_datasets_for_group($group):
+    '$file'
+#end for
+> '$out_file1'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data_collection" collection_type="list" label="Concatenate Dataset" multiple="true" />
+        <param name="group" type="group_tag" data_ref="input1" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="input" metadata_source="input1"/>
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -1,0 +1,144 @@
+<tool id="liftOver1" name="Convert genome coordinates" version="1.0.6">
+  <description> between assemblies and genomes</description>
+  <requirements>
+    <requirement type="package" version="357">ucsc-liftover</requirement>
+  </requirements>
+  <command>
+  python $__tool_directory__/liftOver_wrapper.py
+  '$input'
+  '$out_file1'
+  '$out_file2'
+  '$dbkey'
+  '$to_dbkey'
+  #if $input.is_of_type('gff') or $input.is_of_type('gtf'):
+        "gff"
+  #else:
+        "interval"
+  #end if
+  $minMatch ${multiple.choice} ${multiple.minChainT} ${multiple.minChainQ} ${multiple.minSizeQ}
+  </command>
+  <inputs>
+    <param format="interval,gff,gtf" name="input" type="data" label="Convert coordinates of">
+      <validator type="unspecified_build" />
+      <validator type="dataset_metadata_in_data_table" table_name="liftOver" metadata_name="dbkey" metadata_column="0" message="Liftover mappings are currently not available for the specified build." />
+    </param>
+    <param name="to_dbkey" type="select" label="To">
+      <options from_data_table="liftOver">
+        <filter type="data_meta" ref="input" key="dbkey" column="0" />
+      </options>
+    </param>
+    <param name="minMatch" type="float" value="0.95" label="Minimum ratio of bases that must remap" help="Recommended values: same species = 0.95, different species = 0.10" />
+    <conditional name="multiple">
+        <param name="choice" type="select" label="Allow multiple output regions?" help="Recommended values: same species = No, different species = Yes">
+            <option value="0" selected="true">No</option>
+            <option value="1">Yes</option>
+        </param>
+        <when value="0">
+            <param name="minSizeQ" type="hidden" value="0" />
+            <param name="minChainQ" type="hidden" value="0" />
+            <param name="minChainT" type="hidden" value="0" />
+        </when>
+        <when value="1">
+            <param name="minSizeQ" type="integer" value="0" label="Minimum matching region size in dataset" help="Recommended value: set to >= 300 bases for complete transcripts"/>
+            <param name="minChainQ" type="integer" value="500" label="Minimum chain size in dataset"/>
+            <param name="minChainT" type="integer" value="500" label="Minimum chain size in target"/>
+        </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format_source="input" name="out_file1" label="${tool.name} on ${on_string} [ MAPPED COORDINATES ]">
+      <actions>
+        <action type="metadata" name="dbkey">
+          <option type="from_data_table" name="liftOver" column="1" offset="0">
+            <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
+            <filter type="param_value" ref="to_dbkey" column="2"/>
+          </option>
+        </action>
+      </actions>
+    </data>
+    <data format_source="input" name="out_file2" label="${tool.name} on ${on_string} [ UNMAPPED COORDINATES ]" />
+  </outputs>
+  <tests>
+    <!--
+    <test>
+      <param name="input" value="5.bed" dbkey="hg18" ftype="bed" />
+      <param name="to_dbkey" value="panTro2" />
+      <param name="minMatch" value="0.95" />
+      <param name="choice" value="0" />
+      <output name="out_file1" file="5_liftover_mapped.bed"/>
+      <output name="out_file2" file="5_liftover_unmapped.bed"/>
+    </test>
+    <test>
+      <param name="input" value="5.bed" dbkey="hg18" ftype="bed" />
+      <param name="to_dbkey" value="panTro2" />
+      <param name="minMatch" value="0.10" />
+      <param name="choice" value="1" />
+      <param name="minSizeQ" value="0" />
+      <param name="minChainQ" value="500" />
+      <param name="minChainT" value="500" />
+      <output name="out_file1" file="5_mult_liftover_mapped.bed"/>
+      <output name="out_file2" file="5_mult_liftover_unmapped.bed"/>
+    </test>
+    <test>
+      <param name="input" value="cuffcompare_in1.gtf" dbkey="hg18" ftype="gtf" />
+      <param name="to_dbkey" value="panTro2" />
+      <param name="minMatch" value="0.95" />
+      <param name="choice" value="0" />
+      <output name="out_file1" file="cuffcompare_in1_liftover_mapped.bed"/>
+      <output name="out_file2" file="cuffcompare_in1_liftover_unmapped.bed"/>
+    </test>
+    <test>
+      <param name="input" value="cuffcompare_in1.gtf" dbkey="hg18" ftype="gtf" />
+      <param name="to_dbkey" value="panTro2" />
+      <param name="minMatch" value="0.10" />
+      <param name="choice" value="1" />
+      <param name="minSizeQ" value="0" />
+      <param name="minChainQ" value="500" />
+      <param name="minChainT" value="500" />
+      <output name="out_file1" file="cuffcompare_in1_mult_liftover_mapped.bed"/>
+      <output name="out_file2" file="cuffcompare_in1_mult_liftover_unmapped.bed"/>
+    </test>
+    -->
+  </tests>
+  <help>
+.. class:: warningmark
+
+Make sure that the genome build of the input dataset is specified (click the pencil icon in the history item to set it if necessary).
+
+.. class:: warningmark
+
+This tool can work with interval, GFF, and GTF datasets. It requires the interval datasets to have chromosome in column 1,
+start co-ordinate in column 2 and end co-ordinate in column 3. BED comments
+and track and browser lines will be ignored, but if other non-interval lines
+are present the tool will return empty output datasets.
+
+-----
+
+.. class:: infomark
+
+**What it does**
+
+This tool is based on the LiftOver utility and Chain track from `the UC Santa Cruz Genome Browser`__.
+
+It converts coordinates and annotations between assemblies and genomes. It produces 2 files, one containing all the mapped coordinates and the other containing the unmapped coordinates, if any.
+
+ .. __: http://genome.ucsc.edu/
+
+-----
+
+**Example**
+
+Converting the following hg16 intervals to hg18 intervals::
+
+    chrX  85170   112199  AK002185  0  +
+    chrX  110458  112199  AK097346  0  +
+    chrX  112203  121212  AK074528  0  -
+
+will produce the following hg18 intervals::
+
+    chrX  132991  160020  AK002185  0  +
+    chrX  158279  160020  AK097346  0  +
+    chrX  160024  169033  AK074528  0  -
+
+  </help>
+</tool>

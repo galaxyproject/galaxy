@@ -1,0 +1,84 @@
+<tool id="gtf2bedgraph" name="GTF-to-BEDGraph" version="1.0.0">
+  <description>converter</description>
+  <edam_operations>
+    <edam_operation>operation_3434</edam_operation>
+  </edam_operations>
+  <command interpreter="python">gtf_to_bedgraph_converter.py $input $out_file1 $attribute_name</command>
+  <inputs>
+    <param format="gtf" name="input" type="data" label="Convert this query"/>
+    <param name="attribute_name" type="text" label="Attribute to Use for Value">
+        <validator type="empty_field" /> 
+    </param>
+  </inputs>
+  <outputs>
+    <data format="bedgraph" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="gtf2bedgraph_in.gtf" ftype="gtf"/>
+      <param name="attribute_name" value="FPKM"/>
+      <output name="out_file1" file="gtf2bedgraph_out.bedgraph" ftype="bedgraph"/>
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool converts data from GTF format to BEDGraph format (scroll down for format description).
+
+--------
+
+**Example**
+
+The following data in GFF format::
+
+    chr22  GeneA  enhancer  10000000  10001000  500	 +   .  gene_id "GeneA"; transcript_id "TranscriptAlpha"; FPKM "2.75"; frac "1.000000";
+    chr22  GeneA  promoter  10010000  10010100  900	 +   .  gene_id "GeneA"; transcript_id "TranscriptsAlpha"; FPKM "2.25"; frac "1.000000";
+
+using the attribute name 'FPKM' will be converted to BEDGraph (**note** that 1 is subtracted from the start coordinate)::
+
+
+    chr22   9999999  10001000   2.75
+    chr22  10009999  10010100   2.25   
+
+------
+
+.. class:: infomark
+
+**About formats**
+
+**GTF format** Gene Transfer Format is a format for describing genes and other features associated with DNA, RNA and Protein sequences. GTF lines have nine tab-separated fields::
+
+    1. seqname - Must be a chromosome or scaffold.
+    2. source - The program that generated this feature.
+    3. feature - The name of this type of feature. Some examples of standard feature types are "CDS", "start_codon", "stop_codon", and "exon".
+    4. start - The starting position of the feature in the sequence. The first base is numbered 1.
+    5. end - The ending position of the feature (inclusive).
+    6. score - A score between 0 and 1000. If there is no score value, enter ".".
+    7. strand - Valid entries include '+', '-', or '.' (for don't know/care).
+    8. frame - If the feature is a coding exon, frame should be a number between 0-2 that represents the reading frame of the first base. If the feature is not a coding exon, the value should be '.'.
+    9. group - The group field is a list of attributes. Each attribute consists of a type/value pair. Attributes must end in a semi-colon, and be separated from any following attribute by exactly one space. The attribute list must begin with the two mandatory attributes: (i) gene_id value - A globally unique identifier for the genomic source of the sequence and (ii) transcript_id value - A globally unique identifier for the predicted transcript.
+    
+**BEDGraph format**
+
+The bedGraph format is line-oriented. Bedgraph data are preceeded by a track definition line, which adds a number of options for controlling the default display of this track.
+
+For the track definition line, all options are placed in a single line separated by spaces:
+  track type=bedGraph name=track_label description=center_label
+        visibility=display_mode color=r,g,b altColor=r,g,b
+        priority=priority autoScale=on|off alwaysZero=on|off
+        gridDefault=on|off maxHeightPixels=max:default:min
+        graphType=bar|points viewLimits=lower:upper
+        yLineMark=real-value yLineOnOff=on|off
+        windowingFunction=maximum|mean|minimum smoothingWindow=off|2-16
+
+The track type is REQUIRED, and must be bedGraph:
+  type=bedGraph
+
+Following the track definition line are the track data in four column BED format::
+
+  chromA  chromStartA  chromEndA  dataValueA
+  chromB  chromStartB  chromEndB  dataValueB
+
+</help>
+</tool>

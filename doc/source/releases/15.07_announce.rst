@@ -1,0 +1,70 @@
+===========================================================
+July 2015 Galaxy Release (v 15.07)
+===========================================================
+
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Interactive Environments**
+  The interactive environments (IE) framework features several updates this release
+  and Galaxy is now distributed with a new IE for RStudio implemented by Helena Rasche.
+
+**Workflow Editor Enhancements**
+  The workflow editor has been significantly revamped - it now uses newer tool form
+  components and allow construction of workflows with tools explicitly producing
+  output collections.
+
+**Policies for Committers and Pull Requests**
+  The process for adding committers to the project and fielding pull requests has
+  been formalized and documented in the source code. Three new committers have been
+  added to the project - Björn Grüning, Nicola Soranzo, and Helena Rasche.
+
+
+`Github <https://github.com/galaxyproject/galaxy>`__
+===========================================================
+
+New
+  .. code-block:: shell
+
+      % git clone -b master https://github.com/galaxyproject/galaxy.git
+
+Update to latest stable release
+  .. code-block:: shell
+
+      % git checkout master && pull --ff-only origin master
+
+Update to exact version
+  .. code-block:: shell
+
+      % git checkout v15.07
+
+
+`BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
+===========================================================
+
+Upgrade
+  .. code-block:: shell
+
+      % hg pull
+      % hg update latest_15.07
+
+
+See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Deprecation Notice
+===========================================================
+
+Galaxy's built-in cloudlaunch functionality is being replaced by `CloudLaunch
+<https://github.com/galaxyproject/cloudlaunch>`__ and will be removed from the
+core codebase in the next release.
+
+Release Notes
+===========================================================
+
+.. include:: 15.07.rst
+   :start-after: enhancements
+
+.. include:: _thanks.rst

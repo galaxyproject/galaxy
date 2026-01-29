@@ -1,0 +1,21 @@
+ <tool_dependency>
+    <package name="bzlib" version="1.0.6">
+        <install version="1.0">
+            <actions>
+                <!-- first action is always downloading -->
+                <action type="download_by_url">file://__PATH__</action>
+                <action type="move_directory_files">
+                    <source_directory>.</source_directory>
+                    <destination_directory>$INSTALL_DIR</destination_directory>
+                </action>
+                <action type="set_environment">
+                    <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bzlib/bin</environment_variable>
+                    <environment_variable name="BZLIB_LIB_DIR" action="set_to">$INSTALL_DIR/bzlib/lib</environment_variable>
+                    <environment_variable name="BZLIB_INCLUDE_DIR" action="set_to">$INSTALL_DIR/bzlib/include</environment_variable>
+                    <environment_variable name="BZLIB_SOURCE_DIR" action="set_to">$INSTALL_DIR/bzlib/source</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>Compiling bzlib requires make and a C compiler. You can access bzlib with $BZLIB_LIB_DIR and $BZLIB_INCLUDE_DIR.</readme>
+    </package>
+</tool_dependency>

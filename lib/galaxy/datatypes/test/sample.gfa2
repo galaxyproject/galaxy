@@ -1,0 +1,12 @@
+H	VN:Z:2.0
+H	ul:Z:https://github.com/sjackman/assembly-graph/blob/master/sample.gfa
+S	1	8	CGATGCAA
+S	2	10	TGCAAAGTAC
+S	3	21	TGCAACGTATAGACTTGTCAC	RC:i:4
+S	4	7	GCATATA
+S	5	8	CGATGATA
+S	6	4	ATGA
+E	*	1+	2+	3	8$	0	5	5M
+E	*	3+	2+	21$	21$	0	0	0M
+E	*	3+	4-	17	21$	3	7$	1M1D2M
+E	*	4-	5+	0	0	0	0	0M

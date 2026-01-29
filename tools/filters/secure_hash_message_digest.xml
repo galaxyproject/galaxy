@@ -1,0 +1,48 @@
+<tool id="secure_hash_message_digest" name="Secure Hash / Message Digest" version="0.0.2" profile="18.01">
+    <description>on a dataset</description>
+    <requirements>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+    <command>
+    python '$__tool_directory__/secure_hash_message_digest.py' --input '${input1}' --output '${out_file1}'
+        #if $algorithms.value:
+            #for $algorithm in str( $algorithms ).split( "," ):
+                --algorithm "${algorithm}"
+            #end for
+        #end if
+    </command>
+    <inputs>
+        <param format="data" name="input1" type="data" label="Text file"/>
+        <param name="algorithms" type="select" optional="false" multiple="true" display="checkboxes" label="Choose the algorithms">
+          <option value="md5"/>
+          <option value="sha1"/>
+          <option value="sha224"/>
+          <option value="sha256"/>
+          <option value="sha384"/>
+          <option value="sha512"/>
+        </param>
+    </inputs>
+    <outputs>
+        <data format="tabular" name="out_file1"/>
+    </outputs>
+    <tests>
+        <test>
+          <param name="input1" value="1.bed"/>
+          <param name="algorithms" value="md5,sha1,sha224,sha384,sha512"/>
+          <output name="out_file1" file="secure_hash_message_digest_out1.tabular" />
+        </test>
+    </tests>
+    <help>
+
+**What it does**
+
+This tool outputs Secure Hashes / Message Digests of a dataset using the user selected algorithms.
+
+------
+
+**Citation**
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+    </help>
+</tool>

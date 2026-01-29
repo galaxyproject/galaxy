@@ -1,0 +1,27 @@
+<tool id="identifier_multiple_in_repeat" name="identifier_multiple_in_repeat" version="1.0.0">
+    <command><![CDATA[
+#for $repeat_instance in $the_repeat#
+    #for $input in $repeat_instance.the_data.input1#
+        echo '$input.element_identifier' >> 'output1';
+    #end for#
+#end for#
+    ]]></command>
+    <inputs>
+        <repeat name="the_repeat" title="Repeat Inputs">
+            <conditional name="the_data">
+                <param name="cond_param" type="boolean" />
+                <when value="true">
+                    <param name="input1" type="data" multiple="true" label="True Input" />
+                </when>
+                <when value="false">
+                    <param name="input1" type="data" multiple="true" label="False Input" />
+                </when>
+            </conditional>
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular" from_work_dir="output1" />
+    </outputs>
+    <tests>
+    </tests>
+</tool>

@@ -1,0 +1,59 @@
+<tool id="CONVERTER_smiles_to_smiles" name="SMILES to SMILES" version="2.4.1">
+    <description></description>
+    <parallelism method="multi" split_inputs="input" split_mode="to_size" split_size="10000" shared_inputs="" merge_outputs="output"></parallelism>
+    <requirements>
+        <requirement type="package" version="2.4.1">openbabel</requirement>
+    </requirements>
+    <command >
+<![CDATA[
+        obabel
+            -ismi '${input}'
+            #if $can:
+                -ocan
+            #else:
+                -osmi
+            #end if
+            -O '${output}'
+            -e
+            $remove_h
+            #if $iso_chi or $can or $exp_h:
+                -x$iso_chi$exp_h$can
+            #end if
+            #if $dative_bonds:
+                -b
+            #end if
+            #if int($ph) >= 0:
+                -p $ph
+            #end if
+
+            2>&1
+]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="smi" label="Molecules in SD-format"/>
+        <param name="iso_chi" type="boolean" label="Do not include isotopic or chiral markings (-xi)" truevalue="i" falsevalue="" checked="false" />
+        <param name="can" type="boolean" label="Output in canonical form (-xc)" truevalue="c" falsevalue="" checked="false" />
+        <param name="exp_h" type="boolean" label="Output explicit hydrogens as such (-xh)" truevalue="h" falsevalue="" checked="false" />
+        <param name="remove_h" type="boolean" label="Delete hydrogen atoms (-d)" truevalue="-d" falsevalue="" />
+        <param name="ph" type="float" value="-1" label="Add hydrogens appropriate for pH (-p)" help="-1 means deactivated"/>
+        <param name="dative_bonds" type="boolean" label="Convert dative bonds (e.g. [N+]([O-])=O to N(=O)=O) (-b)" truevalue="-b" falsevalue="" />
+    </inputs>
+    <outputs>
+        <data name="output" format="smi"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="smi" value="drugbank_drugs.smi"/>
+            <output name="output" ftype="smi">
+                <assert_contents>
+                    <has_text text="O=C(N1[C"/>
+                    <has_text text="Goserelin"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+<![CDATA[
+]]>
+    </help>
+</tool>

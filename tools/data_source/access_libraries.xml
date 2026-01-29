@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<tool name="Access Libraries" id="library_access1" version="1.0.0">
+    <description>stored locally</description>
+    <inputs action="/library/index" method="get" target="_parent">
+        <param name="default_action" type="hidden" value="import_to_histories" />
+    </inputs>
+    <uihints minwidth="800"/>
+</tool>

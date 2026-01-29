@@ -1,0 +1,61 @@
+<tool id="barchart_gnuplot" name="Bar chart" version="1.0.0">
+  <description>for multiple columns</description>
+  <command>
+python '$__tool_directory__/bar_chart.py' '$input'
+#if $xtic.userSpecified == "Yes"
+    $xtic.xticColumn
+#else
+    0
+#end if
+$colList '$title' '$ylabel' $ymin $ymax '$out_file1' '$pdf_size'
+  </command>
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Dataset" help="Dataset missing? See TIP below"/>
+    <conditional name="xtic">
+        <param name="userSpecified" type="select" label="Use X Tick labels?" help="see example below">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+        </param>
+        <when value="Yes">
+            <param name="xticColumn" type="data_column" data_ref="input" numerical="False" label="Use this column for X Tick labels" />
+        </when>
+        <when value="No">
+        </when>
+    </conditional>
+    <param name="colList" type="data_column" numerical="true" multiple="true" data_ref="input" label="Numerical columns" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
+    <param name="title" type="text" value="Bar Chart" label="Plot title"/>
+    <param name="ylabel" type="text" value="V1" label="Label for Y axis"/>
+    <param name="ymin" type="integer" value="0" label="Minimal value on Y axis" help="set to 0 for autoscaling"/>
+    <param name="ymax" type="integer" value="0" label="Maximal value on Y axis" help="set to 0 for autoscaling"/>
+    <param name="pdf_size" type="select" label="Choose chart size (pixels)">
+        <option value="800,600">Normal: 800 by 600</option>
+        <option value="640,480">Small: 640 by 480</option>
+        <option value="1480,800">Large: 1480 by 800</option>
+        <option value="600,800">Normal Flipped: 600 by 800</option>
+        <option value="480,640">Small Flipped: 480 by 640</option>
+        <option value="800,1480">Large Flipped: 800 by 1480</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="png" />
+  </outputs>
+  <requirements>
+    <requirement type="package">gnuplot-py</requirement>
+  </requirements>
+  <help>
+**What it does**
+
+This tool builds a bar chart on one or more columns. Suppose you have dataset like this one::
+
+  Gene1	10	15
+  Gene2	20	14
+  Gene3	67	45
+  Gene4	55	12
+
+Graphing columns 2 and 3 while using column 1 for X Tick Labels will produce the following plot:
+
+.. image:: ${static_path}/images/bar_chart.png
+   :height: 324
+   :width: 540
+  </help>
+</tool>

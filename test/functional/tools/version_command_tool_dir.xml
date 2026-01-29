@@ -1,0 +1,20 @@
+<tool id="version_command_tool_dir" name="version_command_tool_dir" version="1.0.0">
+    <version_command><![CDATA[
+python '$__tool_directory__/version_command.py'
+    ]]></version_command>
+    <command><![CDATA[
+cp '$input' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="txt" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="simple_line.txt" />
+            <output name="out_file1" checksum="sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041" />
+        </test>
+    </tests>
+</tool>

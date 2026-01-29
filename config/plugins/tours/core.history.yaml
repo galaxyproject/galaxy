@@ -1,0 +1,100 @@
+name: History Introduction
+description: A detailed introduction to the Galaxy History
+title_default: "Galaxy History Introduction"
+tags:
+  - "core"
+  - "history"
+
+steps:
+    - content: "This short tour will guide you through <b>Galaxy's History</b> and datasets."
+
+    - title: "Open the Upload Dialog"
+      component: upload.start
+      intro: |
+            At first we upload some data into your Galaxy history.<br>
+            Use this button to upload your data.
+      postclick: true
+
+    - title: "Upload your data"
+      component: upload.create_button
+      intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data."
+      postclick: true
+
+    - title: "Insert URLs"
+      component: upload.paste_content(n=0)
+      intro: "URLs separated by a line break are automatically downloaded by Galaxy."
+      textinsert: |
+        https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
+        https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
+
+    - title: "Start the upload"
+      component: upload.start_button
+      intro: "Upload the data into your Galaxy <b>History</b>."
+      postclick: true
+
+    - title: Close Upload
+      component: upload.close_button
+      intro: Hit the close button to close the upload dialog.
+      postclick: true
+
+    - title: "History"
+      element: "#current-history-panel"
+      intro: "This is your history! All analysis steps will be recorded and can be redone at any time."
+
+    - title: "Dataset information"
+      element: "div.content-item .content-title"
+      intro: "This is one of your uploaded datasets. You can get more informations and options like different visualizations by clicking on it."
+      postclick: true
+
+    - title: "Metadata"
+      element: "#current-history-panel div.content-item span.datatype"
+      intro: "Galaxy has assigned a datatype to your dataset during upload, which you can see here."
+
+    - element: "#current-history-panel div.content-item .download-btn"
+      title: "Download your dataset"
+      intro: "You can download every dataset by using the floppy disk symbol."
+
+    - element: "#current-history-panel div.content-item .display-btn"
+      title: "Inspect your data"
+      intro: "The eye symbol can be used to look at your data."
+      preclick: true
+
+    - component: dataset_view.details_tab
+      title: "Even more information"
+      intro: "Get an overview of all metadata associated with your dataset by using the Information symbol."
+      preclick: true
+
+    - component: dataset_view.edit_tab
+      title: "Edit metadata"
+      intro: "With the pencil button you can edit metadata attributes of your dataset, like the associated filetype or the dataset name."
+      preclick: true
+
+    - element: "#current-history-panel div.content-item .delete-btn"
+      title: "Remove datasets"
+      intro: "You can remove a dataset from the history with the trash can symbol."
+      postclick: true
+
+    - element: "#current-history-panel .content-operations-filters input[data-description='filter text input']"
+      title: "Filter your datasets"
+      intro: "By default your history will hide all deleted datasets from you. You can visualize them by filtering."
+      textinsert: "deleted:true"
+
+    - element: "#current-history-panel div.content-item .undelete-btn"
+      title: "Undeleting a dataset"
+      intro: |
+            Galaxy datasets are only marked as deleted and can be recovered by clicking this link.
+            Please note that datasets marked as deleted can be purged by your administrator at any time.
+      postclick: true
+
+    - element: "#current-history-panel .content-operations-filters input[data-description='filter text input']"
+      title: "Search your History"
+      intro: "You can filter your history by typing your search term in here. Galaxy supports more advanced filters that can be seen here."
+      textinsert: ""
+
+    - element: "#current-history-panel [data-description='history options']"
+      title: "History Options"
+      intro: "In the History menu you will find a lot more useful History options."
+      postclick: true
+
+    - title: "Enjoy your Galaxy Histories"
+      intro: "Thanks for taking this tour! Happy research with Galaxy!"

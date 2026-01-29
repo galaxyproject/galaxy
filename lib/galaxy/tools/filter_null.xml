@@ -1,0 +1,46 @@
+<tool id="__FILTER_NULL__" name="Filter null elements" version="1.0.0" tool_type="filter_null">
+    <description/>
+    <type class="FilterNullTool" module="galaxy.tools"/>
+    <action module="galaxy.tools.actions.model_operations" class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3695</edam_operation>
+    </edam_operations>
+    <inputs>
+        <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection"/>
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (without null datasets)">
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt"/>
+                </collection>
+            </param>
+            <output_collection name="output" type="list" count="1">
+                <element name="e1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$"/>
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+========
+Synopsis
+========
+
+Removes null elements from a collection.
+
+This tool takes a dataset collection and filters out nulls. This is useful for removing elements that resulted from conditional execution of jobs.
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+
+      ]]></help>
+</tool>

@@ -1,0 +1,25 @@
+<tool id="column_multi_param" name="Column Param Multi" version="1.0.0">
+    <command><![CDATA[
+#for $input in $input1#
+    cut -f '$col' '$input' >> 'col_output';
+#end for#
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" format="tabular" multiple="true" label="Input 1" />
+        <param name="col" type="data_column" data_ref="input1" label="Column to Use" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular" from_work_dir="col_output" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="2.tabular,2.tabular" />
+            <param name="col" value="2" />
+            <output name="outpu1">
+                <assert_contents>
+                    <has_line line="68" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

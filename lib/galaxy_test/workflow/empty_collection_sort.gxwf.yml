@@ -1,0 +1,26 @@
+class: GalaxyWorkflow
+inputs:
+  input: collection
+  filter_file: data
+outputs:
+  output:
+    outputSource: merge_collection/output
+steps:
+  filter_collection:
+    tool_id: __FILTER_FROM_FILE__
+    in:
+       input: input
+       how|filter_source: filter_file
+  sort_collection_1:
+    tool_id: __SORTLIST__
+    in:
+      input: filter_collection/output_filtered
+  sort_collection_2:
+    tool_id: __SORTLIST__
+    in:
+      input: filter_collection/output_discarded
+  merge_collection:
+    tool_id: __MERGE_COLLECTION__
+    in:
+      inputs_0|input: sort_collection_1/output
+      inputs_1|input: sort_collection_2/output

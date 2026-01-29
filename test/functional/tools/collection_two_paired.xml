@@ -1,0 +1,69 @@
+<tool id="collection_two_paired" name="collection_two_paired" version="0.1.0">
+  <command>
+    #if $kind.collection_type == "paired"
+      cat $kind.f1.forward $kind.f1['reverse'] >> $out1;
+      cat $kind.f2.forward $kind.f2['reverse'] >> $out1;
+    #else
+      #for $i, $_ in enumerate($kind.f1):
+        cat $kind.f1[$i] $kind.f2[$i] >> $out1;
+      #end for
+    #end if
+  </command>
+  <inputs>
+    <conditional name="kind">
+      <param type="select" name="collection_type">
+        <option value="paired">Paired Datasets</option>
+        <option value="list">List of Datasets</option>
+      </param>
+      <when value="paired">
+        <param name="f1" type="data_collection" collection_type="paired" label="F1" />
+        <param name="f2" type="data_collection" collection_type="paired" label="F2" />
+      </when>
+      <when value="list">
+        <param name="f1" type="data_collection" collection_type="list" label="F1" />
+        <param name="f2" type="data_collection" collection_type="list" label="F2" />
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+  <tests>
+    <test>
+      <conditional name="kind">
+        <param name="collection_type" value="paired" />
+        <param name="f1">
+          <collection type="paired">
+            <element name="forward" value="simple_line.txt" />
+            <element name="reverse" value="simple_line_alternative.txt" />
+          </collection>
+        </param>
+        <param name="f2">
+          <collection type="paired">
+            <element name="forward" value="simple_line.txt" />
+            <element name="reverse" value="simple_line_alternative.txt" />
+          </collection>
+        </param>
+      </conditional>
+      <output name="out1" file="simple_lines_interleaved.txt"/>
+    </test>
+    <test>
+      <conditional name="kind">
+        <param name="collection_type" value="list" />
+        <param name="f1">
+          <collection type="list">
+            <element name="l11" value="simple_line.txt" />
+            <element name="l12" value="simple_line.txt" />
+          </collection>
+        </param>
+        <param name="f2">
+          <collection type="list">
+            <element name="l21" value="simple_line_alternative.txt" />
+            <element name="l22" value="simple_line_alternative.txt" />
+          </collection>
+        </param>
+      </conditional>
+      <output name="out1" file="simple_lines_interleaved.txt"/>
+    </test>
+  </tests>
+</tool>

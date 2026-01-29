@@ -1,0 +1,24 @@
+{
+    "collection_type": "list",
+    "deleted": false,
+    "history_content_type": "dataset_collection",
+    "model_class": "HistoryDatasetCollectionAssociation",
+    "history_id": "f597429621d6eb2b",
+    "name": "asdf",
+    "hide_source_items": false,
+    "copy_elements": true,
+    "element_identifiers": [
+        {
+            "id": "df7a1f0c02a5b08e",
+            "name": "1.fasta",
+            "src": "hda"
+        },
+        {
+            "id": "5969b1f7201f12ae",
+            "name": "1.customtrack",
+            "src": "hda"
+        }
+    ],
+    "type": "dataset_collection",
+    "elements": []
+}

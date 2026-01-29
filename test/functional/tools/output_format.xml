@@ -1,0 +1,88 @@
+<tool id="output_format" name="output_format" version="1.0.0">
+    <command><![CDATA[
+echo 'test' > 1 &&
+echo 'test' > 2 &&
+echo 'test' > 3 &&
+echo 'test' > 4 &&
+echo 'test' > 5
+    ]]></command>
+    <inputs>
+        <param name="input_data_1" type="data" format="data" label="input_data_1" />
+        <param name="input_data_2" type="data" format="data" label="input_data_2" />
+        <param name="input_text" type="text" value="1"  label="input_text" />
+    </inputs>
+    <outputs>
+        <data name="direct_output" format="txt" from_work_dir="1" />
+        <!-- TODO: fixme, following input gets random type fastqsanger or
+        fastqsolexa. -->
+        <data name="input_based_output" format="input" from_work_dir="2" />
+        <data name="format_source_1_output" format_source="input_data_1" from_work_dir="3" />
+        <data name="format_source_2_output" format_source="input_data_2" from_work_dir="4" />
+        <data name="change_format_output" format="txt" from_work_dir="5">
+            <change_format>
+                <when input="input_text" value="foo" format="fastqsolexa" />
+                <when input="input_text" value="bar" format="fastqillumina" />
+            </change_format>
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input_data_1" value="1.fastqsanger" ftype="fastqsanger" />
+            <param name="input_data_2" value="1.fastqsolexa" ftype="fastqsolexa" />
+            <param name="input_text" value="foo" />
+            <output name="direct_output" ftype="txt">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+                <metadata name="created_from_basename" value="1" />
+            </output>
+            <!-- In this case input_based_output ftype is "randomly" either
+                fastqsanger or fastqsolexa -->
+            <output name="format_source_1_output" ftype="fastqsanger">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+                <metadata name="created_from_basename" value="3" />
+            </output>
+            <output name="format_source_2_output" ftype="fastqsolexa">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+            <!-- input_text == foo => format set to fastsolexa -->
+            <output name="change_format_output" ftype="fastqsolexa">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input_data_1" value="1.fastqsanger" ftype="fastqsanger" />
+            <param name="input_data_2" value="1.fastqsanger" ftype="fastqsanger" />
+            <param name="input_text" value="bar" />
+            <output name="input_based_output" ftype="fastqsanger">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+            <!-- input_text == bar => format set to fastqillumina -->
+            <output name="change_format_output" ftype="fastqillumina">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input_data_1" value="1.fastqsanger" ftype="fastqsanger" />
+            <param name="input_data_2" value="1.fastqsanger" ftype="fastqsanger" />
+            <param name="input_text" value="not_foo_or_bar" />
+            <!-- input_text doesn't match any when, default to explicitly declared
+            type. -->
+            <output name="change_format_output" ftype="txt">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

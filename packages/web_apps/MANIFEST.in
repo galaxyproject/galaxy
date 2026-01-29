@@ -1,0 +1,9 @@
+include *.rst *.txt LICENSE */py.typed
+include galaxy/datatypes/display_applications/configs/*/*.xml
+graft galaxy/webapps/base/static/
+exclude galaxy/webapps/base/static/client_build_hash.txt
+prune galaxy/webapps/base/static/dist/
+prune galaxy/webapps/base/static/plugins/
+exclude galaxy/webapps/base/static/style/base.css
+exclude galaxy/webapps/base/static/welcome.html
+graft galaxy/webapps/base/templates/

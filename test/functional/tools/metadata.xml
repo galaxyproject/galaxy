@@ -1,0 +1,34 @@
+<tool id="metadata" name="metadata" version="1.0.0">
+    <command><![CDATA[
+mkdir '$output_copy_of_input.extra_files_path' &&
+cp '$input.extra_files_path'/* '$output_copy_of_input.extra_files_path' &&
+echo '$input.metadata.base_name' > '$output_of_input_metadata'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="velvet" label="Velvet Dataset" help="Prepared by velveth."/>
+    </inputs>
+    <outputs>
+        <data name="output_of_input_metadata" format="txt" />
+        <data name="output_copy_of_input" format="velvet" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="velveth_test1/output.html" ftype="velvet" >
+                <composite_data value="velveth_test1/Sequences" />
+                <composite_data value="velveth_test1/Roadmaps" />
+                <composite_data value="velveth_test1/Log"/>
+                <metadata name="base_name" value="Example Metadata" />
+            </param>
+            <!-- This ouptut tests setting input metadata above -->
+            <output name="output_of_input_metadata" ftype="txt">
+                <assert_contents>
+                    <has_line line="Example Metadata" />
+                </assert_contents>
+            </output>
+            <!-- This output tests an assertion about output metadata -->
+            <output name="output_copy_of_input" file="velveth_test1/output.html">
+                <metadata name="base_name" value="velvet" />
+            </output>
+        </test>
+    </tests>
+</tool>

@@ -1,0 +1,19 @@
+<tool id="gzipped_inputs" name="Echo Dataset" version="1.0.0">
+    <command><![CDATA[
+cat '$input1' > '$out_file1'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" label="Concatenate Dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="input" metadata_source="input1"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="4.bed.gz" />
+            <output name="out_file1" file="4.bed" />
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

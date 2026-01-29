@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
+  <section id="getext" name="Get Data">
+    <tool file="upload.xml"/>
+  </section>
+</toolbox>

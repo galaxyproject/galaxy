@@ -1,0 +1,237 @@
+<?xml version="1.0"?>
+<tool name="Upload File" id="upload1" version="1.1.7" workflow_compatible="false" profile="16.04">
+  <description>from your computer</description>
+  <action module="galaxy.tools.actions.upload" class="UploadToolAction"/>
+  <edam_operations>
+    <edam_operation>operation_0224</edam_operation>
+  </edam_operations>
+  <configfiles>
+    <file_sources filename="file_sources.json" />
+  </configfiles>
+  <command>
+    python '$__tool_directory__/upload.py' '$GALAXY_ROOT_DIR' '$GALAXY_DATATYPES_CONF_FILE' '$paramfile'
+    #set $outnum = 0
+    #while $varExists('output%i' % $outnum):
+        #set $output = $getVar('output%i' % $outnum)
+        #set $outnum += 1
+        #set $file_name = str($output)
+        ## FIXME: This is not future-proof for other uses of external_filename (other than for use by the library upload's "link data" feature)
+        #if $output.dataset.dataset.external_filename:
+            #set $file_name = "None"
+        #end if
+        '${output.dataset.dataset.id}:${output.files_path}:${file_name}'
+    #end while
+  </command>
+  <inputs nginx_upload="true">
+    <param name="file_type" type="select" label="File Format" help="Which format? See help below">
+      <options from_parameter="tool.app.datatypes_registry.upload_file_formats" transform_lines="[ &quot;%s%s%s&quot; % ( line, self.separator, line ) for line in obj ]">
+        <column name="value" index="1"/>
+        <column name="name" index="0"/>
+        <filter type="sort_by" column="0"/>
+        <filter type="add_value" name="Auto-detect" value="auto" index="0"/>
+      </options>
+    </param>
+    <param name="file_count" type="hidden" value="auto" />
+    <upload_dataset name="files" title="Specify Files for Dataset" file_type_name="file_type" metadata_ref="files_metadata">
+        <param name="file_data" type="file" label="File" ajax-upload="true" help="TIP: Due to browser limitations, uploading files larger than 2GB is guaranteed to fail.  To upload large files, use the URL method (below) or FTP (if enabled by the site administrator).">
+      </param>
+      <param name="url_paste" type="text" area="true" label="URL/Text" help="Here you may specify a list of URLs (one per line) or paste the contents of a file."/>
+      <param name="ftp_files" type="ftpfile" label="Files uploaded via FTP"/>
+      <!-- Swap the following parameter for the select one that follows to
+           enable the to_posix_lines option in the Web GUI. See Bitbucket
+           Pull Request 171 for more information. -->
+      <param name="uuid" type="hidden" required="False" />
+      <param name="to_posix_lines" type="hidden" value="Yes" />
+      <param name="auto_decompress" type="hidden" value="Yes" />
+      <!-- allow per-file override of dbkey -->
+      <param name="file_type" type="hidden" value="" />
+      <param name="dbkey" type="hidden" value="" />
+
+      <!--
+      <param name="to_posix_lines" type="select" display="checkboxes" multiple="True" label="Convert universal line endings to Posix line endings" help="Turn this option off if you upload a gzip, bz2 or zip archive which contains a binary file." value="Yes">
+        <option value="Yes" selected="true">Yes</option>
+      </param>
+      -->
+      <param name="space_to_tab" type="select" display="checkboxes" multiple="True" label="Convert spaces to tabs" help="Use this option if you are entering intervals by hand.">
+        <option value="Yes">Yes</option>
+      </param>
+      <param name="NAME" type="hidden" help="Name for dataset in upload"></param>
+    </upload_dataset>
+    <param name="force_composite" type="hidden" value="false" />
+    <param name="dbkey" type="genomebuild" label="Genome" />
+    <param name="tags" type="hidden" value="" />
+    <conditional name="files_metadata" value_from="self:app.datatypes_registry.get_upload_metadata_params" value_ref="file_type" value_ref_in_group="False" />
+    <!-- <param name="other_dbkey" type="text" label="Or user-defined Genome" /> -->
+  </inputs>
+  <help>
+**Auto-detect**
+
+The system will attempt to detect Axt, Fasta, Fastqsolexa, Gff, Gff3, Html, Lav, Maf, Tabular, Wiggle, Bed and Interval (Bed with headers) formats. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed.
+
+-----
+
+**Ab1**
+
+A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must manually select this 'File Format' when uploading the file.
+
+-----
+
+**Axt**
+
+blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields.
+
+-----
+
+**Bam**
+
+A binary file compressed in the BGZF format with a '.bam' file extension.
+
+-----
+
+**Bed**
+
+* Tab delimited format (tabular)
+* Does not require header line
+* Contains 3 required fields:
+
+  - chrom - The name of the chromosome (e.g. chr3, chrY, chr2_random) or contig (e.g. ctgY1).
+  - chromStart - The starting position of the feature in the chromosome or contig. The first base in a chromosome is numbered 0.
+  - chromEnd - The ending position of the feature in the chromosome or contig. The chromEnd base is not included in the display of the feature. For example, the first 100 bases of a chromosome are defined as chromStart=0, chromEnd=100, and span the bases numbered 0-99.
+
+* May contain 9 additional optional BED fields:
+
+  - name - Defines the name of the BED line. This label is displayed to the left of the BED line in the Genome Browser window when the track is open to full display mode or directly to the left of the item in pack mode.
+  - score - A score between 0 and 1000. If the track line useScore attribute is set to 1 for this annotation data set, the score value will determine the level of gray in which this feature is displayed (higher numbers = darker gray).
+  - strand - Defines the strand - either '+' or '-'.
+  - thickStart - The starting position at which the feature is drawn thickly (for example, the start codon in gene displays).
+  - thickEnd - The ending position at which the feature is drawn thickly (for example, the stop codon in gene displays).
+  - itemRgb - An RGB value of the form R,G,B (e.g. 255,0,0). If the track line itemRgb attribute is set to "On", this RBG value will determine the display color of the data contained in this BED line. NOTE: It is recommended that a simple color scheme (eight colors or less) be used with this attribute to avoid overwhelming the color resources of the Genome Browser and your Internet browser.
+  - blockCount - The number of blocks (exons) in the BED line.
+  - blockSizes - A comma-separated list of the block sizes. The number of items in this list should correspond to blockCount.
+  - blockStarts - A comma-separated list of block starts. All of the blockStart positions should be calculated relative to chromStart. The number of items in this list should correspond to blockCount.
+
+* Example::
+
+    chr22 1000 5000 cloneA 960 + 1000 5000 0 2 567,488, 0,3512
+    chr22 2000 6000 cloneB 900 - 2000 6000 0 2 433,399, 0,3601
+
+-----
+
+**Fasta**
+
+A sequence in FASTA format consists of a single-line description, followed by lines of sequence data.  The first character of the description line is a greater-than (">") symbol in the first column.  All lines should be shorter than 80 characters::
+
+    >sequence1
+    atgcgtttgcgtgc
+    gtcggtttcgttgc
+    >sequence2
+    tttcgtgcgtatag
+    tggcgcggtga
+
+-----
+
+**FastqSolexa**
+
+FastqSolexa is the Illumina (Solexa) variant of the Fastq format, which stores sequences and quality scores in a single file::
+
+    @seq1
+    GACAGCTTGGTTTTTAGTGAGTTGTTCCTTTCTTT
+    +seq1
+    hhhhhhhhhhhhhhhhhhhhhhhhhhPW@hhhhhh
+    @seq2
+    GCAATGACGGCAGCAATAAACTCAACAGGTGCTGG
+    +seq2
+    hhhhhhhhhhhhhhYhhahhhhWhAhFhSIJGChO
+
+Or::
+
+    @seq1
+    GAATTGATCAGGACATAGGACAACTGTAGGCACCAT
+    +seq1
+    40 40 40 40 35 40 40 40 25 40 40 26 40 9 33 11 40 35 17 40 40 33 40 7 9 15 3 22 15 30 11 17 9 4 9 4
+    @seq2
+    GAGTTCTCGTCGCCTGTAGGCACCATCAATCGTATG
+    +seq2
+    40 15 40 17 6 36 40 40 40 25 40 9 35 33 40 14 14 18 15 17 19 28 31 4 24 18 27 14 15 18 2 8 12 8 11 9
+
+-----
+
+**Gff**
+
+GFF lines have nine required fields that must be tab-separated.
+
+-----
+
+**Gff3**
+
+The GFF3 format addresses the most common extensions to GFF, while preserving backward compatibility with previous formats.
+
+-----
+
+**Interval (Genomic Intervals)**
+
+- Tab delimited format (tabular)
+- File must start with definition line in the following format (columns may be in any order).::
+
+    #CHROM START END STRAND
+
+- CHROM - The name of the chromosome (e.g. chr3, chrY, chr2_random) or contig (e.g. ctgY1).
+- START - The starting position of the feature in the chromosome or contig. The first base in a chromosome is numbered 0.
+- END - The ending position of the feature in the chromosome or contig. The chromEnd base is not included in the display of the feature. For example, the first 100 bases of a chromosome are defined as chromStart=0, chromEnd=100, and span the bases numbered 0-99.
+- STRAND - Defines the strand - either '+' or '-'.
+
+- Example::
+
+    #CHROM START END   STRAND NAME COMMENT
+    chr1   10    100   +      exon myExon
+    chrX   1000  10050 -      gene myGene
+
+-----
+
+**Lav**
+
+Lav is the primary output format for BLASTZ.  The first line of a .lav file begins with #:lav..
+
+-----
+
+**MAF**
+
+TBA and multiz multiple alignment format.  The first line of a .maf file begins with ##maf. This word is followed by white-space-separated "variable=value" pairs. There should be no white space surrounding the "=".
+
+-----
+
+**Scf**
+
+A binary sequence file in 'scf' format with a '.scf' file extension.  You must manually select this 'File Format' when uploading the file.
+
+-----
+
+**Sff**
+
+A binary file in 'Standard Flowgram Format' with a '.sff' file extension.
+
+-----
+
+**Tabular (tab delimited)**
+
+Any data in tab delimited format (tabular)
+
+-----
+
+**Table (delimiter-separated)**
+
+Any delimiter-separated tabular data (CSV or TSV).
+
+-----
+
+**Wig**
+
+The wiggle format is line-oriented.  Wiggle data is preceded by a track definition line, which adds a number of options for controlling the default display of this track.
+
+-----
+
+**Other text type**
+
+Any text file
+  </help>
+</tool>

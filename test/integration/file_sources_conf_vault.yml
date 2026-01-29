@@ -1,0 +1,8 @@
+- type: posix
+  id: test_user_vault
+  root: ${user.user_vault.read_secret('posix/root_path')}
+  label: a user level test path
+- type: posix
+  id: test_app_vault
+  root: ${user.app_vault.read_secret('posix/root_path')}
+  label: an app level test path

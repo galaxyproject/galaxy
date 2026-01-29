@@ -1,0 +1,43 @@
+# https://developers.cloudflare.com/r2/examples/aws/boto3/
+- id: cloudflare
+  version: 0
+  name: CloudFlare R2
+  description: |
+    This template can be used to connect to your [CloudFlare R2](https://developers.cloudflare.com/r2/)
+    storage. To use these templates you will need to generate
+    [CloudFlare R2 access tokens](https://developers.cloudflare.com/r2/api/s3/tokens/).
+    Following that tutorial, you should have an "Account ID", and "Access Key ID", and a
+    "Secret Access Key".
+  variables:
+    access_key:
+      label: Access Key ID
+      type: string
+      help: |
+        An Access Key ID generated according to the
+        [CloudFlare R2 access tokens documentation](https://developers.cloudflare.com/r2/api/s3/tokens/).
+    account_id:
+      label: Account ID
+      type: string
+      help: |
+        Your account ID as available in the [CloudFlare dashboard](https://developers.cloudflare.com/fundamentals/setup/find-account-and-zone-ids/).
+    bucket:
+      label: Bucket
+      type: string
+      help: |
+        The name of a bucket you've created to store your Galaxy data. Documentation for how to create buckets
+        can be found in [this part of the CloudFlare R2 documentation](https://developers.cloudflare.com/r2/buckets/create-buckets/).
+  secrets:
+    secret_key:
+      label: Secret Access Key
+      help: |
+        A Secret Access Key generated according to the
+        [CloudFlare R2 access tokens documentation](https://developers.cloudflare.com/r2/api/s3/tokens/).
+  configuration:
+    type: boto3
+    auth:
+      access_key: '{{ variables.access_key }}'
+      secret_key: '{{ secrets.secret_key }}'
+    bucket:
+      name: '{{ variables.bucket }}'
+    connection:
+      endpoint_url: 'https://{{ variables.account_id}}.r2.cloudflarestorage.com/'

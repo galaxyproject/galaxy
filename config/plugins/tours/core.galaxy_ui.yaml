@@ -1,0 +1,147 @@
+name: Galaxy UI
+description: A gentle introduction to the Galaxy User Interface
+title_default: Welcome to Galaxy
+tags:
+  - "core"
+  - "UI"
+
+# A tour is made of several steps, each of them beginning with a dash '-'
+steps:
+    # 'title's will be displayed in the header of each step-container
+    # If you don't specify any title, a default title is used, defined above.
+    - title: Welcome to Galaxy
+      # 'content' is the actual text that is shown to the user
+      content: "This short tour will guide you through Galaxy's user interface. You can leave the tour at any time by pressing escape."
+
+    # 'element' is the JQuery Selector (http://api.jquery.com/category/selectors/) of the element you want to describe.
+    # We could highlight the Upload button using `#activity-upload` or, alternatively specify a `component` using the navigation interface.
+    - title: "Upload your data"
+      component: upload.start
+      intro: "Galaxy supports many ways to get in your data. Use this button to upload your data."
+      # You can trigger click() events on arbitrary elements before (preclick) or after (postclick) the element is shown
+      postclick: true
+
+    - title: "Upload your data"
+      component: upload.local_button
+      intro: "You can upload data from your computer."
+
+    - title: "Upload your data"
+      component: upload.create_button
+      intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data"
+      preclick: true
+
+    - title: "Insert URLs"
+      component: upload.paste_content(n=0)
+      intro: "URLs separated by a line break are automatically downloaded by Galaxy."
+      textinsert: |
+        https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/augustus/test-data/human_augustus.fa
+        https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/sailfish/test-data/reads_2.fastq
+        https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
+
+    - title: "Start the upload"
+      component: upload.start_button
+      intro: "Upload the data into your Galaxy history."
+      postclick: true
+
+    - title: "Close upload/download manager"
+      component: upload.close_button
+      intro: "Close the upload manager with this button or with a click outside of the manager window."
+      postclick: true
+
+    - title: "Tools"
+      component: _.left_panel
+      intro: "This is your ToolBox. All tools available in your Galaxy instance you can find here."
+
+    - title: "Tool categories"
+      component: tools.title
+      intro: "Tools are grouped into categories to make them easier to find."
+
+    - title: "Tool search bar"
+      component: tools.search
+      intro: "You can search for tools by keywords."
+      textinsert: 'filter'
+
+    - title: "Select a tool"
+      component: tool_panel.tool_link(tool_id=Filter1)
+      intro: "Select and load a tool for your analysis by clicking the underlined link."
+      postclick: true
+
+    - title: "Filter Tool"
+      component: _.center_panel
+      intro: "Your tool is loaded into the main Galaxy page and ready for use."
+
+    - title: "Tool parameters"
+      component: tools.body
+      intro: "Here you can choose your tool parameters. Select your input dataset from your history and specify parameters for your analysis."
+
+    - title: "Tool help"
+      component: tools.help
+      intro: "Every Galaxy tool has a help section with detailed information about the tool and its parameters.
+              Have a look and study your tool in depth by reading it."
+
+    - title: "Run your tool"
+      component: tools.execute
+      intro: "Click on 'Execute' to run your tool and send it to the compute cluster.
+              Don't be afraid to test different settings in parallel. Galaxy can handle multiple runs of the same tool."
+      postclick: true
+
+    - title: "History"
+      component: history_panel
+      intro: "This is your Galaxy history! All analysis steps with results of the tools and their parameters will be recorded here and can be redone at any time.<br>
+              A running tool is shown in yellow and if your calculation is done, it turns green. If your dataset is
+              grey this means you are queued and need to wait until your tool can be started. If your dataset turns into red, an error has occurred. Please report the bug to the Galaxy team with the bug report button."
+
+    - title: "Dataset information"
+      element: "div.content-item .content-title"
+      intro: "This is your dataset. You can get more informations and options like different visualizations by clicking on it."
+      postclick: true
+
+    - title: "View dataset"
+      element: "#current-history-panel div.content-item .display-btn"
+      intro: "View your dataset by clicking the eye button."
+      postclick: true
+
+    - title: "Dataset information"
+      component: dataset_view.details_tab
+      intro: "Clicking on your dataset provides you with more information regarding your dataset (e.g. filetype or size)."
+      preclick: true
+
+    - title: "Rename dataset"
+      component: dataset_view.edit_tab
+      intro: "Rename your dataset by clicking the pencil button."
+
+    - title: "Remove dataset"
+      element: "#current-history-panel div.content-item .delete-btn"
+      intro: "Delete your dataset by clicking the trash-button."
+
+    - title: "Re-run tool"
+      element: "#current-history-panel div.content-item .rerun-btn"
+      intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
+
+    - title: "Analyze data"
+      component: masthead.home
+      element: "#analysis"
+      intro: "This is the current view. Start your <b>Analysis</b> from here."
+
+    - title: "Workflow"
+      component: workflows.activity
+      intro: "Create, manage, import, export and share your <b>Workflows</b>."
+
+    - title: "Visualization"
+      component: visualization.activity
+      intro: "Galaxy offers a lot of visualizations to review your data!"
+
+    - title: "Help"
+      component: masthead.help
+      intro: "Here you get more help from the Galaxy <b>Community</b> with Videos, a QA board and more tours."
+
+    - title: "Window Manager"
+      component: masthead.window_manager
+      intro: "Window Manager offers you multiple visualizations next to each other. Have a look at our Window Manager tour to learn more about it."
+
+    - title: "Login"
+      component: masthead.login
+      intro: "Login and start your analysis!"
+
+    - title: "Enjoy Galaxy"
+      intro: "Thanks for taking this tour! Happy research with Galaxy!"

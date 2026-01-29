@@ -1,0 +1,222 @@
+<tool id="ngs_simulation" name="Simulate" version="1.0.0">
+<!--<tool id="ngs_simulation" name="Simulate" force_history_refresh="True" version="1.0.0">-->
+  <description>Illumina runs</description>
+  <requirements>
+    <requirement type="package" version="1.0.3">rpy</requirement>
+  </requirements>
+  <command interpreter="python">
+    ngs_simulation.py
+      #if $in_type.input_type == "built-in"
+        --input="${in_type.genome.fields.path}"
+        --genome=$in_type.genome
+      #else
+        --input="${ in_type.input1 }"
+      #end if
+      --read_len=$read_len
+      --avg_coverage=$avg_coverage
+      --error_rate=$error_rate
+      --num_sims=$num_sims
+      --polymorphism=$polymorphism
+      --detection_thresh=$detection_thresh
+      --output_png="${ output_png }"
+      --summary_out=$summary_out
+      --output_summary="${ output_summary }"
+      --new_file_path="."
+  </command>
+<!-- If want to include all simulation results file
+        sim_results=$sim_results
+        output=$output.id
+-->
+  <inputs>
+    <conditional name="in_type">
+      <param name="input_type" type="select" label="Use a built-in FASTA file or one from the history?">
+        <option value="built-in">Built-in</option>
+        <option value="history">History file</option>
+      </param>
+      <when value="built-in">
+        <param name="genome" type="select" label="Select a built-in genome" help="if your genome of interest is not listed - contact Galaxy team">
+          <options from_data_table="ngs_sim_fasta" />
+        </param>
+      </when>
+      <when value="history">
+        <param name="input1" type="data" format="fasta" label="Input genome (FASTA format)" />
+      </when>
+    </conditional>
+    <param name="read_len" type="integer" value="76" label="Read length" />
+    <param name="avg_coverage" type="integer" value="200" label="Average coverage" />
+    <param name="error_rate" type="float" value="0.001" label="Error rate or quality score" help="Quality score if integer 1 or greater; error rate if between 0 and 1" />
+    <param name="num_sims" type="integer" value="100" label="The number of simulations to run" />
+    <param name="polymorphism" type="select" multiple="true" label="Frequency/ies for minor allele">
+      <option value="0.001">0.001</option>
+      <option value="0.002">0.002</option>
+      <option value="0.003">0.003</option>
+      <option value="0.004">0.004</option>
+      <option value="0.005">0.005</option>
+      <option value="0.006">0.006</option>
+      <option value="0.007">0.007</option>
+      <option value="0.008">0.008</option>
+      <option value="0.009">0.009</option>
+      <option value="0.01">0.01</option>
+      <option value="0.02">0.02</option>
+      <option value="0.03">0.03</option>
+      <option value="0.04">0.04</option>
+      <option value="0.05">0.05</option>
+      <option value="0.06">0.06</option>
+      <option value="0.07">0.07</option>
+      <option value="0.08">0.08</option>
+      <option value="0.09">0.09</option>
+      <option value="0.1">0.1</option>
+      <option value="0.2">0.2</option>
+      <option value="0.3">0.3</option>
+      <option value="0.4">0.4</option>
+      <option value="0.5">0.5</option>
+      <option value="0.6">0.6</option>
+      <option value="0.7">0.7</option>
+      <option value="0.8">0.8</option>
+      <option value="0.9">0.9</option>
+      <option value="1.0">1.0</option>
+      <validator type="no_options" message="You must select at least one value" />
+    </param>
+    <param name="detection_thresh" type="select" multiple="true" label="Detection thresholds">
+      <option value="0.001">0.001</option>
+      <option value="0.002">0.002</option>
+      <option value="0.003">0.003</option>
+      <option value="0.004">0.004</option>
+      <option value="0.005">0.005</option>
+      <option value="0.006">0.006</option>
+      <option value="0.007">0.007</option>
+      <option value="0.008">0.008</option>
+      <option value="0.009">0.009</option>
+      <option value="0.01">0.01</option>
+      <option value="0.02">0.02</option>
+      <option value="0.03">0.03</option>
+      <option value="0.04">0.04</option>
+      <option value="0.05">0.05</option>
+      <option value="0.06">0.06</option>
+      <option value="0.07">0.07</option>
+      <option value="0.08">0.08</option>
+      <option value="0.09">0.09</option>
+      <option value="0.1">0.1</option>
+      <option value="0.2">0.2</option>
+      <option value="0.3">0.3</option>
+      <option value="0.4">0.4</option>
+      <option value="0.5">0.5</option>
+      <option value="0.6">0.6</option>
+      <option value="0.7">0.7</option>
+      <option value="0.8">0.8</option>
+      <option value="0.9">0.9</option>
+      <option value="1.0">1.0</option>
+      <validator type="no_options" message="You must select at least one value" />
+    </param>
+    <param name="summary_out" type="boolean" truevalue="true" falsevalue="false" checked="true" label="Include a (text) summary file for all the simulations" />
+<!--    <param name="sim_results" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Output all tabular simulation results" help="Number of polymorphisms times number of detection thresholds"/>
+-->
+  </inputs>
+  <outputs>
+    <data format="png" name="output_png" />
+    <data format="tabular" name="output_summary">
+      <filter>summary_out == True</filter>
+    </data>
+<!--
+    <data format="tabular" name="output">
+      <filter>sim_files_out</filter>
+    </data>
+-->
+  </outputs>
+  <tests>
+    <!--
+      Tests cannot be run because of the non-deterministic element of the simulation.
+      But if you run the following "tests" manually in the browser and check against
+      the output files, they should be very similar to the listed output files.
+    -->
+    <!--
+    <test>
+      <param name="input_type" value="history" />
+      <param name="input1" value="ngs_simulation_in1.fasta" ftype="fasta" />
+      <param name="read_len" value="76" />
+      <param name="avg_coverage" value="200" />
+      <param name="error_rate" value="0.001" />
+      <param name="num_sims" value="25" />
+      <param name="polymorphism" value="0.02,0.04,0.1" />
+      <param name="detection_thresh" value="0.01,0.02" />
+      <param name="summary_out" value="true" />
+      <output name="output_png" file="ngs_simulation_out1.png" />
+      <output name="output_summary" file="ngs_simulation_out2.tabular" />
+    </test>
+    <test>
+      <param name="input_type" value="built-in" />
+      <param name="genome" value="pUC18" />
+      <param name="read_len" value="50" />
+      <param name="avg_coverage" value="150" />
+      <param name="error_rate" value="0.005" />
+      <param name="num_sims" value="25" />
+      <param name="polymorphism" value="0.001,0.005" />
+      <param name="detection_thresh" value="0.001,0.002" />
+      <param name="summary_out" value="false" />
+      <output name="output_png" file="ngs_simulation_out3.png" />
+    </test>
+    -->
+  </tests>
+  <help>
+
+**What it does**
+
+This tool simulates an Illumina run and provides plots of false positives and false negatives. It allows for a range of simulation parameters to be set. Note that this simulation sets only one (randomly chosen) position in the genome as polymorphic, according to the value specified. Superimposed on this are "sequencing errors", which are uniformly (and randomly) distributed. Polymorphisms are assigned using the detection threshold, so if the detection threshold is set to the same as the minor allele frequency, the expected false negative rate is 50%.
+
+**Parameter list**
+
+These are the parameters that should be set for the simulation::
+
+  Read length (which is the same for all reads)
+  Average Coverage
+  Frequency for Minor Allele
+  Sequencing Error Rate
+  Detection Threshold
+  Number of Simulations
+
+You also should choose to use either a built-in genome or supply your own FASTA file.
+
+**Output**
+
+There are one or two. The first is a png that contains two different plots and is always generated. The second is optional and is a text file with some summary information about the simulations that were run. Below are some example outputs for a 10-simulation run on phiX with the default settings::
+
+  Read length                    76
+  Average coverage               200
+  Error rate/quality score       0.001
+  Number of simulations          100
+  Frequencies for minor allele   0.002
+                                 0.004
+  Detection thresholds           0.003
+                                 0.005
+                                 0.007
+  Include summary file           Yes
+
+Plot output (png):
+
+.. image:: ${static_path}/images/ngs_simulation.png
+
+Summary output (txt)::
+
+        FP              FN       GENOMESIZE.5386      fprate          hetcol          errcol
+  Min.   : 71.0   Min.   :0.0    Mode:logical     Min.   :0.01318         Min.   :0.004   Min.   :0.007
+  1st Qu.:86.0    1st Qu.:1.0    NA's:10          1st Qu.:0.01597         1st Qu.:0.004   1st Qu.:0.007
+  Median :92.5    Median :1.0    NA       Median :0.01717         Median :0.004   Median :0.007
+  Mean   :93.6    Mean   :0.9    NA       Mean   :0.01738         Mean   :0.004   Mean   :0.007
+  3rd Qu.:100.8   3rd Qu.:1.0    NA       3rd Qu.:0.01871         3rd Qu.:0.004   3rd Qu.:0.007
+  Max.   :123.0   Max.   :1.0    NA       Max.   :0.02284         Max.   :0.004   Max.   :0.007
+  
+  False Positive Rate Summary
+          0.003   0.005   0.007
+  0.001   0.17711 0.10854 0.01673
+  0.009   0.18049 0.10791 0.01738
+
+  False Negative Rate Summary
+          0.003   0.005     0.007
+  0.001   1.0     0.8       1.0
+  0.009   0.4     0.7       0.9
+
+
+  </help>
+</tool>
+
+

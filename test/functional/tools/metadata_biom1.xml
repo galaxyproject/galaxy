@@ -1,0 +1,30 @@
+<tool id="metadata_biom1" name="metadata_BIOM1" version="1.0.0">
+    <command><![CDATA[
+cp '${input_metadata_values}' '${output_of_input_metadata}'
+    ]]></command>
+    <configfiles>
+        <configfile name="input_metadata_values">table_rows: ${input_biom1.metadata.table_rows}
+table_matrix_element_type: ${input_biom1.metadata.table_matrix_element_type}
+table_format: ${input_biom1.metadata.table_format}
+table_generated_by: ${input_biom1.metadata.table_generated_by}
+table_matrix_type: ${input_biom1.metadata.table_matrix_type}
+table_shape: ${input_biom1.metadata.table_shape}
+table_format_url: ${input_biom1.metadata.table_format_url}
+table_date: ${input_biom1.metadata.table_date}
+table_type: ${input_biom1.metadata.table_type}
+table_id: ${input_biom1.metadata.table_id}
+table_columns: ${input_biom1.metadata.table_columns}</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input_biom1" type="data" format="biom1" label="BIOM1 File"/>
+    </inputs>
+    <outputs>
+        <data name="output_of_input_metadata" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input_biom1" value="input_taxonomy.biom1" ftype="biom1" />
+            <output name="output_of_input_metadata" ftype="txt" file="biom1_metadata_test.txt" lines_diff="4"/>
+        </test>
+    </tests>
+</tool>

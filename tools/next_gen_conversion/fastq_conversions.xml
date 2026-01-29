@@ -1,0 +1,133 @@
+<tool id="fastq_conversions" name="FASTQ Conversions" version="1.0.0">
+  <description>converts between FASTQ data and other data formats</description>
+  <command interpreter="python">
+    fastq_conversions.py 
+    --command=$conversionType.type
+    --input=$input
+    #if $conversionType.type == "sol2std":
+     --outputFastqsanger=$outputFastqsanger
+    #else:
+     --outputFastqsanger="None"
+    #end if
+    #if $conversionType.type == "std2sol":
+     --outputFastqsolexa=$outputFastqsolexa
+    #else:
+     --outputFastqsolexa="None"
+    #end if
+    #if $conversionType.type == "fq2fa":
+     --outputFasta=$outputFasta
+    #else:
+     --outputFasta="None"
+    #end if
+  </command>
+  <inputs>
+    <conditional name="conversionType">
+      <param name="type" type="select" label="What type of conversion do you want to do?">
+        <option value="sol2std">Solexa/Illumina FASTQ to standard Sanger FASTQ</option>
+        <option value="std2sol">Standard Sanger FASTQ to Solexa/Illumina FASTQ</option>
+        <option value="fq2fa">Various FASTQ to FASTA</option>
+      </param>
+      <when value="sol2std">
+        <param name="input" type="data" format="fastqsolexa" label="File to convert" />
+      </when>
+      <when value="std2sol">
+        <param name="input" type="data" format="fastqsanger" label="File to convert" />
+      </when>
+      <when value="fq2fa">
+        <param name="input" type="data" format="fastqsolexa, fastqsanger" label="File to convert" />
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data name="outputFastqsanger" format="fastqsanger">
+      <filter>conversionType['type'] == 'sol2std'</filter>
+    </data>
+    <data name="outputFastqsolexa" format="fastqsolexa">
+      <filter>conversionType['type'] == 'std2sol'</filter>
+    </data>
+    <data name="outputFasta" format="fasta">
+      <filter>conversionType['type'] == 'fq2fa'</filter>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="type" value="sol2std" />
+      <param name="input" value="fastq_conv_in1.fastq" ftype="fastqsolexa" />
+      <output name="outputFastqsanger" file="fastq_conv_out1.fastqsanger" />
+    </test>
+    <test>
+      <param name="type" value="std2sol" />
+      <param name="input" value="1.fastqsanger" ftype="fastqsanger" />
+      <output name="outputFastqsolexa" file="fastq_conv_out2.fastqsolexa" />
+    </test>
+    <test>
+      <param name="type" value="fq2fa" />
+      <param name="input" value="1.fastqsanger" ftype="fastqsanger" />
+      <output name="outputFasta" file="fastq_conv_out4.fasta" />
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+This tool offers several conversions options relating to the FASTQ format. 
+
+-----
+
+**Examples**
+
+- Converting the Solexa/Illumina FASTQ data::
+
+	@081017-and-081020:1:1:1715:1759
+	GGACTCAGATAGTAATCCACGCTCCTTTAAAATATC
+	+
+	II#IIIIIII$5+.(9IIIIIII$%*$G$A31I&amp;&amp;B
+
+- will produce the following Sanger FASTQ data::
+
+	@081017-and-081020:1:1:1715:1759
+	GGACTCAGATAGTAATCCACGCTCCTTTAAAATATC
+	+
+	++!+++++++!!!!!"+++++++!!!!)!%!!+!!%!
+	
+- Converting standard Sanger FASTQ::
+    
+    @1831_573_1004/1
+	AATACTTTCGGCGCCCTAAACCAGCTCACTGGGG
+	+
+	>&lt;C&amp;&amp;9952+C>5&lt;.?&lt;79,=42&lt;292:&lt;(9/-7
+	@1831_573_1050/1
+	TTTATGGGTATGGCCGCTCACAGGCCAGCGGCCT
+	+
+	;@@17?@=>7??@A8?==@4A?A4)&amp;+.'&amp;+'1,
+
+- will produce the following Solexa/Illumina FASTQ data::
+
+	@1831_573_1004/1
+	AATACTTTCGGCGCCCTAAACCAGCTCACTGGGG
+	+
+	][bEEXXTQJb]T[M^[VXK\SQ[QXQY[GXNLV
+	@1831_573_1050/1
+	TTTATGGGTATGGCCGCTCACAGGCCAGCGGCCT
+	+
+	Z__PV^_\]V^^_`W^\\_S`^`SHEJMFEJFPK
+
+- Converting the Sanger FASTQ data::
+
+    @1831_573_1004/1
+	AATACTTTCGGCGCCCTAAACCAGCTCACTGGGG
+	+
+	>&lt;C&amp;&amp;9952+C>5&lt;.?&lt;79,=42&lt;292:&lt;(9/-7
+	@1831_573_1050/1
+	TTTATGGGTATGGCCGCTCACAGGCCAGCGGCCT
+	+
+	;@@17?@=>7??@A8?==@4A?A4)&amp;+.'&amp;+'1,
+	
+- will produce the following FASTA data::
+
+	>1831_573_1004/1
+	AATACTTTCGGCGCCCTAAACCAGCTCACTGGGG
+	>1831_573_1050/1
+	TTTATGGGTATGGCCGCTCACAGGCCAGCGGCCT
+
+  </help>
+</tool>

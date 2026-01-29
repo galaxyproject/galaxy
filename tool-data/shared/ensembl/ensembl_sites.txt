@@ -1,0 +1,5 @@
+#These builds are displayed using the method described in:
+#http://www.ensembl.org/info/docs/webcode/linking.html
+ensembl_Current	Current	http://www.ensembl.org/	hg19,felCat3,galGal3,bosTau4,canFam2,loxAfr3,cavPor3,equCab2,anoCar1,oryLat2,mm9,monDom5,ponAbe2,susScr2,ornAna1,oryCun2,rn4,rheMac2,gasAcu1,tetNig2,xenTro2,taeGut1,danRer5,ci2,dm3,ce6,sacCer2	Homo_sapiens,Felis_catus,Gallus_gallus,Bos_taurus,Canis_familiaris,Loxodonta_africana,Cavia_porcellus,Equus_caballus,Anolis_carolinensis,Oryzias_latipes,Mus_musculus,Monodelphis_domestica,Pongo_pygmaeus,Sus_scrofa,Ornithorhynchus_anatinus,Oryctolagus_cuniculus,Rattus_norvegicus,Macaca_mulatta,Gasterosteus_aculeatus,Tetraodon_nigroviridis,Xenopus_tropicalis,Taeniopygia_guttata,Danio_rerio,Ciona_intestinalis,Drosophila_melanogaster,Caenorhabditis_elegans,Saccharomyces_cerevisiae
+ensembl_May_2009	May 2009	http://may2009.archive.ensembl.org/	hg18	Homo_sapiens
+ensembl_plants	Plants	http://plants.ensembl.org/	araTha_tair9	Arabidopsis_thaliana

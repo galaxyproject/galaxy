@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<display id="iobio_bam" version="1.0.0" name="display at bam.iobio">
+    <dynamic_links from_data_table="bam_iobio" skip_startswith="#" id="value" name="name">
+        <url>${url}?bam=${bam_file.qp}</url>
+        <param type="data" name="bam_file" url="galaxy_${DATASET_HASH}.bam" />
+        <param type="data" name="bai_file" url="galaxy_${DATASET_HASH}.bam.bai" metadata="bam_index" />
+    </dynamic_links>
+</display>

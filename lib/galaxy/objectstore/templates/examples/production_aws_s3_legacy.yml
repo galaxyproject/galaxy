@@ -1,0 +1,36 @@
+- id: aws_s3_legacy
+  version: 0
+  name: Amazon Web Services S3 Storage (Legacy)
+  description: |
+    Amazon's Simple Storage Service (S3) is Amazon's primary cloud storage service.
+    More information on S3 can be found in [Amazon's documentation](https://aws.amazon.com/s3/).
+  variables:
+    access_key:
+      label: Access Key ID
+      type: string
+      help: |
+        A security credential for interacting with AWS services can be created from your
+        AWS web console. Creating an "Access Key" creates a pair of keys used to identify
+        and authenticate access to your AWS account - the first part of the pair  is
+        "Access Key ID" and should be entered here. The second part of your key is the secret
+        part called the "Secret Access Key". Place that in the secure part of this form below.
+    bucket:
+      label: Bucket
+      type: string
+      help: |
+        The [AWS S3 Bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingBucket.html) to
+        store your datasets in. You will need to create a bucket to use in your AWS web console before
+        using this form.
+  secrets:
+    secret_key:
+      label: Secret Access Key
+      help: |
+        See the documentation above used "Access Key ID" for information about access key pairs.
+
+  configuration:
+    type: aws_s3
+    auth:
+      access_key: '{{ variables.access_key }}'
+      secret_key: '{{ secrets.secret_key }}'
+    bucket:
+      name: '{{ variables.bucket }}'

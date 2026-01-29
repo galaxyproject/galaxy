@@ -1,0 +1,24 @@
+#GBrowse Sites
+#site_id	site_name	site_link	site_dbkeys	site_organisms
+
+#WormBase
+wormbase	WormBase current	http://www.wormbase.org/db/gb2/gbrowse/	ce10,ce9,ce8,ce7,ce6,ce5,ce4,ce3,ce2,cb4,cb3,cb2,cb1,caeRem4,caeRem3,caeRem2,caeRem1,caePb2,caePb1,caeJap4,caeJap3,caeJap2,caeJap1,caeAng1	c_elegans,c_elegans,c_elegans,c_elegans,c_elegans,c_elegans,c_elegans,c_elegans,c_elegans,c_briggsae,c_briggsae,c_briggsae,c_briggsae,c_remanei,c_remanei,c_remanei,c_remanei,c_brenneri,c_brenneri,c_japonica,c_japonica,c_japonica,c_japonica,c_angaria
+wormbase_ws120	WormBase WS120	http://ws120.wormbase.org/db/seq/gbrowse/	ce2	wormbase
+wormbase_ws140	WormBase WS140	http://ws140.wormbase.org/db/seq/gbrowse/	ce3	wormbase
+wormbase_ws170	WormBase WS170	http://ws170.wormbase.org/db/seq/gbrowse/	ce4	wormbase
+wormbase_ws180	WormBase WS180	http://ws180.wormbase.org/db/seq/gbrowse/	ce5	elegans
+wormbase_ws190	WormBase WS190	http://ws190.wormbase.org/db/seq/gbrowse/	ce6	elegans
+wormbase_ws200	WormBase WS200	http://ws200.wormbase.org/db/seq/gbrowse/	ce7	c_elegans
+wormbase_ws204	WormBase WS204	http://ws204.wormbase.org/db/seq/gbrowse/	ce8	c_elegans
+wormbase_ws210	WormBase WS210	http://ws210.wormbase.org/db/seq/gbrowse/	ce9	c_elegans
+wormbase_ws220	WormBase WS220	http://ws220.wormbase.org/db/gb2/gbrowse/	ce10,caeRem4	c_elegans,c_remanei
+wormbase_ws225	WormBase WS225	http://ws225.wormbase.org/db/gb2/gbrowse/	caeAng1,cb4	c_angaria,c_briggsae
+
+#The Arabidopsis Information Resource (tair)
+tair	tair	http://arabidopsis.org/cgi-bin/gbrowse/	arabidopsis_tair8,arabidopsis,Arabidopsis_thaliana_TAIR10	arabidopsis_tair8,arabidopsis_tair9,arabidopsis
+
+#modENCODE
+modencode	modENCODE	http://gbrowse.modencode.org/fgb2/gbrowse/	ce10,dm3	worm,fly
+
+#Saccharomyces Genome Database (SGD)
+sgd_yeast	Saccharomyces Genome Database	http://browse.yeastgenome.org/fgb2/gbrowse/	Saccharomyces_cerevisiae_S288C_SGD2010	scgenome

@@ -1,0 +1,82 @@
+<tool id="interactive_tool_askomics" tool_type="interactive" name="AskOmics" version="4.3.1">
+    <icon src="askomics.png" />
+    <description>a visual SPARQL query builder</description>
+    <requirements>
+        <container type="docker">askomics/flaskomics-with-dependencies:4.3.1</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="AskOmics instance" requires_domain="True">
+            <port>5000</port>
+            <url>/loginapikey/${__user_name__}</url>
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+        <!-- AskOmics user -->
+        <environment_variable name="CREATE_USER">true</environment_variable>
+        <environment_variable name="USER_FIRST_NAME">${__user_name__}</environment_variable>
+        <environment_variable name="USER_LAST_NAME">Galaxy</environment_variable>
+        <environment_variable name="USER_USERNAME">${__user_name__}</environment_variable>
+        <environment_variable name="USER_EMAIL">${__user_email__}</environment_variable>
+        <environment_variable name="USER_APIKEY">${__user_name__}</environment_variable>
+        <!-- Galaxy info -->
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+        <environment_variable name="GALAXY_API_KEY" inject="api_key" />
+        <!-- AskOmics config -->
+        <environment_variable name="DEPMODE">prod</environment_variable>
+        <environment_variable name="MAX_CELERY_QUEUE">10</environment_variable>
+        <environment_variable name="ASKO_askomics_subtitle">Galaxy</environment_variable>
+        <environment_variable name="ASKO_askomics_footer_message">AskOmics Interactive Tool for Galaxy</environment_variable>
+        <environment_variable name="ASKO_askomics_data_directory">/tmp/askomics-it</environment_variable>
+        <environment_variable name="ASKO_askomics_database_path">/tmp/askomics-it/database.db</environment_variable>
+        <environment_variable name="ASKO_triplestore_load_url">http://localhost:5000</environment_variable>
+        <!-- Virtuoso config -->
+        <environment_variable name="SPARQL_UPDATE">true</environment_variable>
+        <!--
+        Update the following environment variables according to how much memory you want to allow to virtuoso
+        see https://github.com/askomics/flaskomics-docker-compose#configure-virtuoso for help
+         -->
+        <environment_variable name="VIRT_Parameters_NumberOfBuffers">170000</environment_variable>
+        <environment_variable name="VIRT_Parameters_MaxDirtyBuffers">130000</environment_variable>
+        <!-- Corese config -->
+        <environment_variable name="MEM">2G</environment_variable>
+    </environment_variables>
+    <command><![CDATA[
+        #import re
+
+        cd /askomics &&
+        source /askomics/venv/bin/activate &&
+        mkdir -p /import &&
+
+        #if $infiles:
+          #for $input in $infiles:
+              #set link_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+              #if $input.ext == 'tabular':
+                  #set link_name = $link_name
+              #elif $input.ext == 'interval':
+                  #set link_name = $link_name + '.bed'
+              #else:
+                  #set link_name = $link_name + '.' + $input.ext
+              #end if
+              ln -s '$input' '/import/$link_name' &&
+          #end for
+        #end if
+
+        bash /askomics/cli/set_config.sh &&
+        bash /askomics/cli/set_user.sh &&
+        python3 /askomics/cli/upload_files.py -c /askomics/config/askomics.ini -d /import -k $__user_name__ &&
+        bash /askomics/docker/start_all.sh
+    ]]>
+    </command>
+    <inputs>
+        <param name="infiles" type="data" optional="true" multiple="true" format="tabular,gff,gff3,interval,xml,ttl,nt" label="Datasets to load into AskOmics"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+        AskOmics is a visual SPARQL query interface supporting both intuitive data integration and
+        querying while shielding the user from most of the technical difficulties underlying RDF and SPARQL.
+    </help>
+</tool>

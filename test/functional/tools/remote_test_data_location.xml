@@ -1,0 +1,54 @@
+<tool id="remote_test_data_location" name="Remote test data location" version="1.0.0" profile="22.01">
+    <command><![CDATA[
+        cat '$input' > '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="txt" label="Input"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <!-- When only the `location` is defined, the name of the input file will be infered from the last component of the URL.
+                In this example, it will be equivalent to `value="hello.txt"`. -->
+            <param name="input" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="Hello World!"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <!-- When the `value` and the `location` are defined, if the local file is missing, the remote file pointed by location will be pre-downloaded
+                to the test data cache directory (GALAXY_TEST_DATA_REPO_CACHE) and then uploaded to Galaxy as usual. -->
+            <param name="input" value="missing_file_1.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="Hello World!"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <!-- When the `value` and the `location` are defined, if the local file already exists, the location will be ignored. -->
+            <param name="input" value="simple_line.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="This is a line of text."/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <!-- Outputs can also be backed up by a remote `location` and will be resolved to a local file.
+                The `checksum` will be also used to check the integrity of the download. -->
+            <param name="input" value="not_local_input.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/master/tests/data/not_hello.txt"/>
+            <output name="output" file="not_local_output.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/master/tests/data/not_hello.txt" checksum="sha1$3436387a8a45b00ef11e621e501ba23b52f06101"/>
+        </test>
+        <test>
+            <!-- If the output `file` or `value` is not specified, the last component of the location URL will be used
+                as filename. In this example, this will be equivalent to `file="not_hello.txt"`. -->
+            <param name="input" value="not_local_input.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/master/tests/data/not_hello.txt"/>
+            <output name="output" location="https://raw.githubusercontent.com/galaxyproject/planemo/master/tests/data/not_hello.txt" checksum="sha1$3436387a8a45b00ef11e621e501ba23b52f06101"/>
+        </test>
+    </tests>
+</tool>

@@ -1,0 +1,62 @@
+# This is an example mapping file for the module (http://modules.sourceforge.net/) Dependency resolver (in YAML format)
+#
+# The goal of this file is to map tool's requirements to existing modules available on your system
+# Of course, if the name of a requirement and the name of a module match perfectly, there is no need to map them together through this mapping file.
+#
+# This is a sample file so the first thing to do to activate the mapping system is to create a copy of this file called "environment_modules_mapping.yml".
+# The module dependency resolver is programmed to search and use this YAML file automatically if it exists in the "config" folder of your Galaxy instance.
+# Alternatively, you can also use the "mapping_files" attribute of the <modules /> resolver in the dependency_resolvers_conf.xml file to specify a custom mapping file
+#
+# Example 1:
+#
+# Let's say that one of the wrapper installed on your Galaxy instance has the following requirement:
+#
+#	<requirements>
+#		<requirement type="package" version="1.5.0">PIPITS</requirement>
+#	</requirements>
+#
+# But unfortunately, the name of the corresponding module file on your system is "pipits_pipeline/1.5.0"
+#
+# Then, to make Galaxy load/unload the appropriate module, you just have to add the following lines (without the #) to the "environment_modules_mapping.yml" file:
+#
+#- from:
+#    name: PIPITS
+#    version: 1.5.0
+#  to:
+#    name: pipits_pipeline
+#    version: 1.5.0.6
+#
+#
+# Example 2:
+#
+# The requirements section specify a requirement on the PIPITS tool but do not ask for a specific version of it:
+#
+#	<requirements>
+#		<requirement type="package">PIPITS</requirement>
+#	</requirements>
+#
+# Although, there is no version required you may want to force the loading of a version that is known to run well on your system.
+#
+# In that case you can add the following lines to the "environment_modules_mapping.yml" file:
+#
+#- from:
+#    name: PIPITS
+#    unversioned: true
+#  to:
+#    name: pipits_pipeline
+#    version: 1.4.0
+#
+#
+# ## WARNING ##
+# 
+# YAML is a typed language, and types are inferred. Thus, the unquoted version 1.10 (for example) will be read by the YAML parser as the floating
+# point number 1.1, which will not match module version 1.10 on your system. To avoid type inference, such values should be quoted with single (')
+# or double (") quotes like so:
+#
+#- from:
+#    name: bcftools
+#    version: "1.10"
+#  to:
+#    name: biotools/bcftools
+#
+# Values that cannot be inferred as numbers (such as 1.4.0) do not need to be quoted, but can be, if you prefer.

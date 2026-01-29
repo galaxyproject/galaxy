@@ -1,0 +1,84 @@
+
+===========================================================
+October 2016 Galaxy Release (v 16.10)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+==========
+
+**Galaxu UI plugins - Webhooks**
+  We introduce Galaxy Webhooks - optional plugins for the web UI that allow for better customization of your instance. See the :doc:`documentation <../admin/special_topics/webhooks>`.
+  Includes work from `@bgruening <https://github.com/bgruening>`__, `@anatskiy <https://github.com/anatskiy>`__, and Joachim Wolff `@joachimwolff <https://github.com/joachimwolff>`__.
+  Implemented in `Pull Request 3040`_.
+
+**Workflow run form replaced**
+  The workflow run form has been replaced by one backed by the new tool form and the API. Nicer, faster, standardized.
+  Implemented in `Pull Request 2669`_, `Pull Request 2720`_, `Pull Request 2766`_,
+  `Pull Request 2776`_, `Pull Request 2770`_, `Pull Request 2895`_,
+  `Pull Request 2935`_, `Pull Request 3007`_, `Pull Request 2969`_,
+  `Pull Request 2799`_, `Pull Request 3082`_, `Pull Request 2672`_,
+  `Pull Request 2920`_, `Pull Request 2777`_, `Pull Request 2902`_.
+
+**Automatic tool reload after installation**
+  Galaxy does not need to be restarted after tool installation anymore. This provides a smoother experience for the users. Yay!
+  Thanks to `@mvdbeek <https://github.com/mvdbeek>`__.
+  Implemented in `Pull Request 2840`_, `Pull Request 3025`_.
+
+Get Galaxy
+==========
+
+The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_16.10 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git checkout release_16.10 && git pull --ff-only origin release_16.10
+
+See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code location.
+
+Deprecation Notices
+===================
+
+* API-like endpoints (returning JSON) that start with ``<galaxy>/root/`` in the URL are now deprecated and will be removed in future releases. Please use proper API (e.g. ``/api/histories`` or ``/api/tools``) to replace your implementations.
+* The ``jsonp`` parameter for search API endpoints in Tool Shed is deprecated and will be removed in the future. Instead the presence of a ``callback`` argument will trigger the JSONP format to be returned.
+
+Security
+========
+
+An arbitrary code execution vulnerability in two tools and an XSS vulnerability
+with the upload tool were identified this release cycle and have been fixed
+concurrently with the release. In addition, the fixes have been backported to
+older releases.
+
+The Galaxy Committers would like to thank David Wyde for disclosing these
+vulnerabilities. Details follow:
+
+1. The vulnerable tools are "Filter GFF data by attribute" and "Filter GFF data
+   by feature count", both of which are provided with and enabled by default in
+   the Galaxy server. These two tools share code with each other and the more
+   general "Filter data on any column using simple expressions" tool. The
+   latter was fixed in a previous security disclosure but these GFF variants of
+   the tool were missed when updating the Filter tool. These tools use the
+   Python ``eval`` and ``exec`` functions and do not properly sanitize input to
+   these functions. The fix for this issue has been applied to Galaxy releases
+   back to v14.10 and can be found in `Commit c1e3087`_
+
+2. An uploaded file's name was not properly sanitized, and so a specially
+   crafted filename uploaded to the Galaxy server could be used as an XSS
+   attack vector. The fix for this issue has been applied to Galaxy releases
+   back to v16.07 and can be found in `Pull Request 3278`_.
+
+Release Notes
+=============
+
+.. include:: 16.10.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

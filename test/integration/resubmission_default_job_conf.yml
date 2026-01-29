@@ -1,0 +1,34 @@
+# Slimmed down resubmission_job_conf.xml for testing default resubmission rules.
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  first_failure_runner:
+    load: integration.resubmission_runners:FailOnlyFirstJobRunner
+    workers: 1
+  dynamic:
+    rules_module: integration.resubmission_rules
+
+execution:
+  default: initial_destination
+  environments:
+    initial_destination:
+      runner: dynamic
+      type: python
+      function: initial_destination
+
+    fail_first_try:
+      runner: first_failure_runner
+    local:
+      runner: local
+
+resources:
+  default: test
+  groups:
+    upload: []
+    test: [test_name,failure_state,initial_target_environment,run_for]
+
+tools:
+  - class: local
+    environment: local
+    resources: upload

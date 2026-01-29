@@ -1,0 +1,38 @@
+<tool id="collection_optional_param" name="collection_optional_param" version="0.1.0">
+  <command>
+    #if $f1
+      cat $f1.forward $f1['reverse'] >> $out1;
+    #else
+      echo "No input specified." >> $out1;
+    #end if
+  </command>
+  <inputs>
+    <param name="f1" type="data_collection" collection_type="paired" optional="true" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="f1">
+        <collection type="paired">
+          <element name="forward" value="simple_line.txt" />
+          <element name="reverse" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+          <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="No input specified." />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

@@ -1,0 +1,19 @@
+<tool id="compressed_gz_fastq_conversion" name="Confirm fastq.gz is converted to fastq on demand">
+    <command>
+        cat '$input1' > '$out_file1'
+    </command>
+    <inputs>
+        <param name="input1" type="data" format="fastq" label="Concatenate Dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="fastq"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="1.fastqsanger.gz"/>
+            <output name="out_file1" file="1.fastqsanger"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -1,0 +1,21 @@
+<tool id="CONVERTER_fastqsolexa_to_fasta_0" name="Convert Fastqsolexa to Fasta" version="1.0.0" profile="16.04">
+    <description>converts Fastqsolexa file to Fasta format</description>
+    <requirements>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+    <command>python '$__tool_directory__/fastqsolexa_to_fasta_converter.py' '$input' '$output'</command>
+    <inputs>
+        <param name="input" type="data" format="fastqsolexa" label="Choose Fastqsolexa file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="fasta"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="fastqsolexa" value="2.fastqsolexa"/>
+            <output name="output" ftype="fasta" value="2.fastqsolexa.fasta"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -1,0 +1,26 @@
+<tool id="genbank" name="Connect to Genbank" version="1.0.0">
+    <!--  <description>queries genbank</description> -->
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
+    <command><![CDATA[
+python '$__tool_directory__/genbank.py' $mode '$text' '$output'
+    ]]></command>
+    <inputs>
+        <param name="mode" type="select" label="Get sequences from the">
+            <option value="nucleotide">nucleotide database</option>
+            <option value="protein">proteins database</option>
+        </param>
+        <param name="text" type="text" value="6273291" label="with accession ID" />
+    </inputs>
+    <outputs>
+        <data name="output" format="fasta" />
+    </outputs>
+    <help><![CDATA[
+At the moment this tool allows the following simple searches:
+
+- by GI: **51594135**
+- by accession: **CF622840**
+- using text: **human hbb1** (this feature is experimental)
+    ]]></help>
+</tool>

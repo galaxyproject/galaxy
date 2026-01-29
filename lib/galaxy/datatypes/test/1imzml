@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<mzML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://psi.hupo.org/ms/mzml http://psidev.info/files/ms/mzML/xsd/mzML1.1.0.xsd" xmlns="http://psi.hupo.org/ms/mzml" version="1.1">
+  <cvList count="4">
+    <cv URI="http://ontologies.berkeleybop.org/pato.obo" fullName="Phenotype And Trait Ontology" id="PATO" version="releases/2017-07-10"/>
+    <cv URI="http://ontologies.berkeleybop.org/uo.obo" fullName="Units of Measurement Ontology" id="UO" version="releases/2017-09-25"/>
+    <cv URI="https://raw.githubusercontent.com/hupo-psi/psi-ms-cv/master/psi-ms.obo" fullName="Proteomics Standards Initiative Mass Spectrometry Ontology" id="MS" version="4.1.0"/>
+    <cv URI="https://raw.githubusercontent.com/imzML/imzML/master/imagingMS.obo" fullName="Mass Spectrometry Imaging Ontology" id="IMS" version="1.1.0"/>
+  </cvList>
+  <fileDescription>
+    <fileContent>
+      <cvParam cvRef="MS" accession="MS:1000579" name="MS1 spectrum"/>
+      <cvParam cvRef="MS" accession="MS:1000128" name="profile spectrum"/>
+      <cvParam cvRef="IMS" accession="IMS:1000080" name="universally unique identifier" value="9d501bdc53444916b7e97e795b02c856"/>
+      <cvParam cvRef="IMS" accession="IMS:1000091" name="ibd SHA-1" value="7e8fdb93053915d3edb51b70aa0619ac209964df"/>
+      <cvParam cvRef="IMS" accession="IMS:1000031" name="processed"/>
+    </fileContent>
+    <sourceFileList count="1">
+      <sourceFile id="sf1" location="C:\Users\Thorsten Schramm\Documents\Promotion\imzML\Website\files\Beispiel-Dateien\Example images\" name="Example.raw">
+        <cvParam cvRef="MS" accession="MS:1000563" name="Thermo RAW format"/>
+        <cvParam cvRef="MS" accession="MS:1000768" name="Thermo nativeID format"/>
+        <cvParam cvRef="MS" accession="MS:1000569" name="SHA-1" value="7623BE263B25FF99FDF017154B86FAB742D4BB0B"/>
+      </sourceFile>
+    </sourceFileList>
+    <contact>
+      <cvParam cvRef="MS" accession="MS:1000586" name="contact name" value="Thorsten Schramm"/>
+      <cvParam cvRef="MS" accession="MS:1000590" name="contact affiliation" value="Institut für Anorganische und Analytische Chemie"/>
+      <cvParam cvRef="MS" accession="MS:1000587" name="contact address" value="Schubertstraße 60, Haus 16, Gießen, Germany"/>
+      <cvParam cvRef="MS" accession="MS:1000589" name="contact email" value="thorsten.schramm@anorg.chemie.uni-.giessen.de"/>
+    </contact>
+  </fileDescription>
+  <referenceableParamGroupList count="4">
+    <referenceableParamGroup id="mzArray">
+      <cvParam cvRef="MS" accession="MS:1000576" name="no compression"/>
+      <cvParam cvRef="MS" accession="MS:1000514" name="m/z array" unitCvRef="MS" unitAccession="MS:1000040" unitName="m/z"/>
+      <cvParam cvRef="IMS" accession="IMS:1000101" name="external data" value="true"/>
+      <cvParam cvRef="MS" accession="MS:1000521" name="32-bit float"/>
+    </referenceableParamGroup>
+    <referenceableParamGroup id="intensityArray">
+      <cvParam cvRef="MS" accession="MS:1000576" name="no compression"/>
+      <cvParam cvRef="MS" accession="MS:1000515" name="intensity array" unitCvRef="MS" unitAccession="MS:1000131" unitName="number of detector counts"/>
+      <cvParam cvRef="IMS" accession="IMS:1000101" name="external data" value="true"/>
+      <cvParam cvRef="MS" accession="MS:1000521" name="32-bit float"/>
+    </referenceableParamGroup>
+    <referenceableParamGroup id="scan1">
+      <cvParam cvRef="MS" accession="MS:1000093" name="increasing m/z scan"/>
+      <cvParam cvRef="MS" accession="MS:1000512" name="filter string" value="ITMS - p NSI Full ms [100,00-800,00]"/>
+    </referenceableParamGroup>
+    <referenceableParamGroup id="spectrum1">
+      <cvParam cvRef="MS" accession="MS:1000579" name="MS1 spectrum"/>
+      <cvParam cvRef="MS" accession="MS:1000511" name="ms level" value="0"/>
+      <cvParam cvRef="MS" accession="MS:1000128" name="profile spectrum"/>
+      <cvParam cvRef="MS" accession="MS:1000129" name="negative scan"/>
+    </referenceableParamGroup>
+  </referenceableParamGroupList>
+  <sampleList count="1">
+    <sample id="sample1" name="Sample1">
+      <cvParam cvRef="MS" accession="MS:1000001" name="sample number" value="1"/>
+    </sample>
+  </sampleList>
+  <softwareList count="2">
+    <software id="Xcalibur" version="2.2">
+      <cvParam cvRef="MS" accession="MS:1000532" name="Xcalibur"/>
+    </software>
+    <software id="TMC" version="1.1 beta">
+      <cvParam cvRef="MS" accession="MS:1000799" name="custom unreleased software tool" value=""/>
+    </software>
+  </softwareList>
+  <scanSettingsList count="1">
+    <scanSettings id="scansettings1">
+      <cvParam cvRef="IMS" accession="IMS:1000401" name="top down"/>
+      <cvParam cvRef="IMS" accession="IMS:1000413" name="flyback"/>
+      <cvParam cvRef="IMS" accession="IMS:1000480" name="horizontal line scan"/>
+      <cvParam cvRef="IMS" accession="IMS:1000491" name="linescan left right"/>
+      <cvParam cvRef="IMS" accession="IMS:1000042" name="max count of pixels x" value="3"/>
+      <cvParam cvRef="IMS" accession="IMS:1000043" name="max count of pixels y" value="3"/>
+      <cvParam cvRef="IMS" accession="IMS:1000044" name="max dimension x" value="300" unitCvRef="UO" unitAccession="UO:0000017" unitName="micrometer"/>
+      <cvParam cvRef="IMS" accession="IMS:1000045" name="max dimension y" value="300" unitCvRef="UO" unitAccession="UO:0000017" unitName="micrometer"/>
+      <cvParam cvRef="IMS" accession="IMS:1000046" name="pixel size (x)" value="100.0" unitCvRef="UO" unitAccession="UO:0000017" unitName="micrometer"/>
+      <cvParam cvRef="IMS" accession="IMS:1000047" name="pixel size y" value="100.0" unitCvRef="UO" unitAccession="UO:0000017" unitName="micrometer"/>
+    </scanSettings>
+  </scanSettingsList>
+  <instrumentConfigurationList count="1">
+    <instrumentConfiguration id="LTQFTUltra0">
+      <cvParam cvRef="MS" accession="MS:1000557" name="LTQ FT Ultra"/>
+      <cvParam cvRef="MS" accession="MS:1000529" name="instrument serial number" value="none"/>
+      <componentList count="3">
+        <source order="1">
+          <cvParam cvRef="MS" accession="MS:1000073" name="electrospray ionization"/>
+          <cvParam cvRef="MS" accession="MS:1000485" name="nanospray inlet"/>
+          <cvParam cvRef="MS" accession="MS:1000844" name="focus diameter x" value="10.0"/>
+          <cvParam cvRef="MS" accession="MS:1000845" name="focus diameter y" value="10.0"/>
+          <cvParam cvRef="MS" accession="MS:1000846" name="pulse energy" value="10.0"/>
+          <cvParam cvRef="MS" accession="MS:1000847" name="pulse duration" value="10.0"/>
+          <cvParam cvRef="MS" accession="MS:1000848" name="attenuation" value="50.0"/>
+          <cvParam cvRef="MS" accession="MS:1000850" name="gas laser"/>
+          <cvParam cvRef="MS" accession="MS:1000836" name="dried droplet MALDI matrix preparation"/>
+          <cvParam cvRef="MS" accession="MS:1000835" name="matrix solution concentration" value="10.0"/>
+          <cvParam cvRef="MS" accession="MS:1000834" name="matrix solution" value="DHB"/>
+        </source>
+        <analyzer order="2">
+          <cvParam cvRef="MS" accession="MS:1000264" name="ion trap"/>
+          <cvParam cvRef="MS" accession="MS:1000014" name="accuracy" value="0.0" unitCvRef="MS" unitAccession="MS:1000040" unitName="m/z"/>
+        </analyzer>
+        <detector order="3">
+          <cvParam cvRef="MS" accession="MS:1000253" name="electron multiplier"/>
+          <cvParam cvRef="MS" accession="MS:1000120" name="transient recorder"/>
+        </detector>
+      </componentList>
+      <softwareRef ref="Xcalibur"/>
+    </instrumentConfiguration>
+  </instrumentConfigurationList>
+  <dataProcessingList count="2">
+    <dataProcessing id="XcaliburProcessing">
+      <processingMethod softwareRef="Xcalibur" order="1">
+        <cvParam cvRef="MS" accession="MS:1000594" name="low intensity data point removal"/>
+      </processingMethod>
+    </dataProcessing>
+    <dataProcessing id="TMCConversion">
+      <processingMethod softwareRef="TMC" order="2">
+        <cvParam cvRef="MS" accession="MS:1000544" name="Conversion to mzML"/>
+      </processingMethod>
+    </dataProcessing>
+  </dataProcessingList>
+  <run defaultInstrumentConfigurationRef="LTQFTUltra0" defaultSourceFileRef="sf1" id="Experiment01" sampleRef="sample1" startTimeStamp="2009-08-11T15:59:44">
+    <spectrumList count="9" defaultDataProcessingRef="XcaliburProcessing">
+      <spectrum id="Scan=1" defaultArrayLength="0" dataProcessingRef="XcaliburProcessing" sourceFileRef="sf1" index="0">
+        <referenceableParamGroupRef ref="spectrum1"/>
+        <cvParam cvRef="MS" accession="MS:1000285" name="total ion current" value="121.85039039868471"/>
+        <scanList count="1">
+          <cvParam cvRef="MS" accession="MS:1000795" name="no combination"/>
+          <scan instrumentConfigurationRef="LTQFTUltra0">
+            <referenceableParamGroupRef ref="scan1"/>
+            <cvParam cvRef="IMS" accession="IMS:1000050" name="position x" value="1"/>
+            <cvParam cvRef="IMS" accession="IMS:1000051" name="position y" value="1"/>
+          </scan>
+        </scanList>
+        <binaryDataArrayList count="2">
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="mzArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="16"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="intensityArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="33612"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+        </binaryDataArrayList>
+      </spectrum>
+      <spectrum id="Scan=2" defaultArrayLength="0" dataProcessingRef="XcaliburProcessing" sourceFileRef="sf1" index="1">
+        <referenceableParamGroupRef ref="spectrum1"/>
+        <cvParam cvRef="MS" accession="MS:1000285" name="total ion current" value="182.31835420101888"/>
+        <scanList count="1">
+          <cvParam cvRef="MS" accession="MS:1000795" name="no combination"/>
+          <scan instrumentConfigurationRef="LTQFTUltra0">
+            <referenceableParamGroupRef ref="scan1"/>
+            <cvParam cvRef="IMS" accession="IMS:1000050" name="position x" value="2"/>
+            <cvParam cvRef="IMS" accession="IMS:1000051" name="position y" value="1"/>
+          </scan>
+        </scanList>
+        <binaryDataArrayList count="2">
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="mzArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="67208"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="intensityArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="100804"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+        </binaryDataArrayList>
+      </spectrum>
+      <spectrum id="Scan=3" defaultArrayLength="0" dataProcessingRef="XcaliburProcessing" sourceFileRef="sf1" index="2">
+        <referenceableParamGroupRef ref="spectrum1"/>
+        <cvParam cvRef="MS" accession="MS:1000285" name="total ion current" value="161.8091904482675"/>
+        <scanList count="1">
+          <cvParam cvRef="MS" accession="MS:1000795" name="no combination"/>
+          <scan instrumentConfigurationRef="LTQFTUltra0">
+            <referenceableParamGroupRef ref="scan1"/>
+            <cvParam cvRef="IMS" accession="IMS:1000050" name="position x" value="3"/>
+            <cvParam cvRef="IMS" accession="IMS:1000051" name="position y" value="1"/>
+          </scan>
+        </scanList>
+        <binaryDataArrayList count="2">
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="mzArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="134400"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="intensityArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="167996"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+        </binaryDataArrayList>
+      </spectrum>
+      <spectrum id="Scan=4" defaultArrayLength="0" dataProcessingRef="XcaliburProcessing" sourceFileRef="sf1" index="3">
+        <referenceableParamGroupRef ref="spectrum1"/>
+        <cvParam cvRef="MS" accession="MS:1000285" name="total ion current" value="200.9633277092539"/>
+        <scanList count="1">
+          <cvParam cvRef="MS" accession="MS:1000795" name="no combination"/>
+          <scan instrumentConfigurationRef="LTQFTUltra0">
+            <referenceableParamGroupRef ref="scan1"/>
+            <cvParam cvRef="IMS" accession="IMS:1000050" name="position x" value="1"/>
+            <cvParam cvRef="IMS" accession="IMS:1000051" name="position y" value="2"/>
+          </scan>
+        </scanList>
+        <binaryDataArrayList count="2">
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="mzArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="201592"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="intensityArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="235188"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+        </binaryDataArrayList>
+      </spectrum>
+      <spectrum id="Scan=5" defaultArrayLength="0" dataProcessingRef="XcaliburProcessing" sourceFileRef="sf1" index="4">
+        <referenceableParamGroupRef ref="spectrum1"/>
+        <cvParam cvRef="MS" accession="MS:1000285" name="total ion current" value="135.30584173158496"/>
+        <scanList count="1">
+          <cvParam cvRef="MS" accession="MS:1000795" name="no combination"/>
+          <scan instrumentConfigurationRef="LTQFTUltra0">
+            <referenceableParamGroupRef ref="scan1"/>
+            <cvParam cvRef="IMS" accession="IMS:1000050" name="position x" value="2"/>
+            <cvParam cvRef="IMS" accession="IMS:1000051" name="position y" value="2"/>
+          </scan>
+        </scanList>
+        <binaryDataArrayList count="2">
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="mzArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="268784"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="intensityArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="302380"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+        </binaryDataArrayList>
+      </spectrum>
+      <spectrum id="Scan=6" defaultArrayLength="0" dataProcessingRef="XcaliburProcessing" sourceFileRef="sf1" index="5">
+        <referenceableParamGroupRef ref="spectrum1"/>
+        <cvParam cvRef="MS" accession="MS:1000285" name="total ion current" value="108.39597418421639"/>
+        <scanList count="1">
+          <cvParam cvRef="MS" accession="MS:1000795" name="no combination"/>
+          <scan instrumentConfigurationRef="LTQFTUltra0">
+            <referenceableParamGroupRef ref="scan1"/>
+            <cvParam cvRef="IMS" accession="IMS:1000050" name="position x" value="3"/>
+            <cvParam cvRef="IMS" accession="IMS:1000051" name="position y" value="2"/>
+          </scan>
+        </scanList>
+        <binaryDataArrayList count="2">
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="mzArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="335976"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="intensityArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="369572"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+        </binaryDataArrayList>
+      </spectrum>
+      <spectrum id="Scan=7" defaultArrayLength="0" dataProcessingRef="XcaliburProcessing" sourceFileRef="sf1" index="6">
+        <referenceableParamGroupRef ref="spectrum1"/>
+        <cvParam cvRef="MS" accession="MS:1000285" name="total ion current" value="127.84664447846832"/>
+        <scanList count="1">
+          <cvParam cvRef="MS" accession="MS:1000795" name="no combination"/>
+          <scan instrumentConfigurationRef="LTQFTUltra0">
+            <referenceableParamGroupRef ref="scan1"/>
+            <cvParam cvRef="IMS" accession="IMS:1000050" name="position x" value="1"/>
+            <cvParam cvRef="IMS" accession="IMS:1000051" name="position y" value="3"/>
+          </scan>
+        </scanList>
+        <binaryDataArrayList count="2">
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="mzArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="403168"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="intensityArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="436764"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+        </binaryDataArrayList>
+      </spectrum>
+      <spectrum id="Scan=8" defaultArrayLength="0" dataProcessingRef="XcaliburProcessing" sourceFileRef="sf1" index="7">
+        <referenceableParamGroupRef ref="spectrum1"/>
+        <cvParam cvRef="MS" accession="MS:1000285" name="total ion current" value="168.27018147522492"/>
+        <scanList count="1">
+          <cvParam cvRef="MS" accession="MS:1000795" name="no combination"/>
+          <scan instrumentConfigurationRef="LTQFTUltra0">
+            <referenceableParamGroupRef ref="scan1"/>
+            <cvParam cvRef="IMS" accession="IMS:1000050" name="position x" value="2"/>
+            <cvParam cvRef="IMS" accession="IMS:1000051" name="position y" value="3"/>
+          </scan>
+        </scanList>
+        <binaryDataArrayList count="2">
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="mzArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="470360"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="intensityArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="503956"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+        </binaryDataArrayList>
+      </spectrum>
+      <spectrum id="Scan=9" defaultArrayLength="0" dataProcessingRef="XcaliburProcessing" sourceFileRef="sf1" index="8">
+        <referenceableParamGroupRef ref="spectrum1"/>
+        <cvParam cvRef="MS" accession="MS:1000285" name="total ion current" value="243.5395066031077"/>
+        <scanList count="1">
+          <cvParam cvRef="MS" accession="MS:1000795" name="no combination"/>
+          <scan instrumentConfigurationRef="LTQFTUltra0">
+            <referenceableParamGroupRef ref="scan1"/>
+            <cvParam cvRef="IMS" accession="IMS:1000050" name="position x" value="3"/>
+            <cvParam cvRef="IMS" accession="IMS:1000051" name="position y" value="3"/>
+          </scan>
+        </scanList>
+        <binaryDataArrayList count="2">
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="mzArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="537552"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+          <binaryDataArray encodedLength="0">
+            <referenceableParamGroupRef ref="intensityArray"/>
+            <cvParam cvRef="IMS" accession="IMS:1000103" name="external array length" value="8399"/>
+            <cvParam cvRef="IMS" accession="IMS:1000102" name="external offset" value="571148"/>
+            <cvParam cvRef="IMS" accession="IMS:1000104" name="external encoded length" value="33596"/>
+            <binary />
+          </binaryDataArray>
+        </binaryDataArrayList>
+      </spectrum>
+    </spectrumList>
+  </run>
+</mzML>

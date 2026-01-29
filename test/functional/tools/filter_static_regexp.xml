@@ -1,0 +1,96 @@
+<tool id="filter_static_regexp" name="filter_static_regexp" version="0.1.0">
+    <description>Filter by static value and regexp</description>
+    <command><![CDATA[
+#if $index_static
+    echo index_static $index_static > '$output' &&
+#end if
+#if $index_static_keep
+    echo index_static_keep $index_static_keep >> '$output' &&
+#end if
+#if $index_regexp
+    echo index_regexp $index_regexp >> '$output' &&
+#end if
+#if $index_regexp_keep
+    echo index_regexp_keep $index_regexp_keep >> '$output'
+#end if
+    ]]></command>
+    <inputs>
+        <!-- tests for static_value filter: remove hp18 from the options by 
+             a) removing it explicitly (due to keep="false") 
+             b) keeping only the other option, i.e. hg19 -->
+        <param name="index_static" type="select" optional="true" label="Using reference genome">
+            <options from_data_table="test_fasta_indexes">
+                <filter type="static_value" column="dbkey" value="hg18" />
+                <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+            </options>
+        </param>
+        <param name="index_static_keep" type="select" optional="true" label="Using reference genome">
+            <options from_data_table="test_fasta_indexes">
+                <filter type="static_value" column="dbkey" value="hg18" keep="false" />
+                <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+            </options>
+        </param>
+        <!-- tests for regexp filter: remove hp18 from the options 
+             essentially the same as for the static value filter, just using a simple regexp -->
+        <param name="index_regexp" type="select" optional="true" label="Using reference genome">
+            <options from_data_table="test_fasta_indexes">
+                <filter type="regexp" column="dbkey" value="hg.8" />
+                <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+            </options>
+        </param>
+        <param name="index_regexp_keep" type="select" optional="true" label="Using reference genome">
+            <options from_data_table="test_fasta_indexes">
+                <filter type="regexp" column="dbkey" value="hg.8" keep="false" />
+                <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+            </options>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+
+    <tests>
+        <!-- check that non filtered values can be chosen -->
+        <test>
+            <param name="index_static" value="hg18_value" />
+            <param name="index_static_keep" value="hg19_value" />
+            <param name="index_regexp" value="hg18_value" />
+            <param name="index_regexp_keep" value="hg19_value" />
+            <output name="output">
+                <assert_contents>
+                    <has_text text="index_static hg18_value" />    
+                    <has_text text="index_static_keep hg19_value" />    
+                    <has_text text="index_regexp hg18_value" />    
+                    <has_text text="index_regexp_keep hg19_value" />    
+                </assert_contents>
+            </output>
+        </test>
+        <!-- ... all of them -->
+        <test>
+            <param name="index_static_keep" value="mm10_value" />
+            <param name="index_regexp_keep" value="mm10_value" />
+            <output name="output">
+                <assert_contents>
+                    <has_text text="index_static_keep mm10_value" />    
+                    <has_text text="index_regexp_keep mm10_value" />    
+                </assert_contents>
+            </output>
+        </test>
+        <!-- cannot pick filtered options -->
+        <test expect_failure="true">
+            <param name="index_static" value="hg19_value" />
+        </test>
+        <test expect_failure="true">
+            <param name="index_static_keep" value="hg18_value" />
+        </test>
+        <test expect_failure="true">
+            <param name="index_regexp" value="hg19_value" />
+        </test>
+        <test expect_failure="true">
+            <param name="index_regexp_keep" value="hg18_value" />
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

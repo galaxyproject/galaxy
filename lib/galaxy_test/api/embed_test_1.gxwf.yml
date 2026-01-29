@@ -1,0 +1,20 @@
+class: GalaxyWorkflow
+inputs:
+  - label: input1
+
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+  - label: embed1
+    run: 
+      "@import": "embed_test_1_tool.gxtool.yml"
+  - tool_id: cat1
+    state:
+      input1:
+        $link: first_cat/out_file1
+      queries:
+        - input2:
+            $link: embed1/output1

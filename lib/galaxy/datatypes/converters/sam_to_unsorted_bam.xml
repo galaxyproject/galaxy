@@ -1,0 +1,29 @@
+<tool id="CONVERTER_sam_to_unsorted_bam" name="Convert SAM to BAM without sorting" version="1.0.1" profile="18.01">
+    <requirements>
+        <requirement type="package" version="1.17">samtools</requirement>
+    </requirements>
+    <command><![CDATA[
+        samtools view
+            -b
+            -h
+            -@ \${GALAXY_SLOTS:-2}
+            --no-PG
+            -o '${output}'
+            '$input'
+    ]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="sam" label="SAM file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="unsorted.bam"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="sam" value="bfast_out1.sam"/>
+            <output name="output" ftype="unsorted.bam" value="bfast_out1.unsorted.bam"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -1,0 +1,18 @@
+<tool id="create_2" name="create_2" version="1.0.0">
+    <command detect_errors="exit_code"><![CDATA[
+echo '1' > '$out_file1' &&
+echo '2' > '$out_file2' &&
+sleep $sleep_time
+    ]]></command>
+    <inputs>
+        <param name="sleep_time" type="integer" value="0" label="Sleep" help="Optionally simulates computation before creating collection" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+        <data name="out_file2" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    </help>
+</tool>

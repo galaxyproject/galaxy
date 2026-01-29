@@ -1,0 +1,26 @@
+<tool id="CONVERTER_cram_to_bam_0" name="Convert CRAM to BAM" version="1.0.2" hidden="true" profile="16.04">
+    <requirements>
+        <requirement type="package" version="1.17">samtools</requirement>
+    </requirements>
+    <command><![CDATA[
+        samtools sort -@\${GALAXY_SLOTS:-1} -T "\${TMPDIR:-.}" -o '$output' --output-fmt BAM '$input'
+    ]]></command>
+    <inputs>
+        <param format="cram" name="input" type="data" label="Choose CRAM file"/>
+    </inputs>
+    <outputs>
+        <data format="bam" name="output"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="cram" value="2.cram"/>
+            <output name="output" ftype="bam">
+                <assert_contents>
+                    <has_size min="55000" max="58000"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

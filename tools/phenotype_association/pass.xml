@@ -1,0 +1,130 @@
+<tool id="hgv_pass" name="PASS" version="1.0.0">
+  <description>significant transcription factor binding sites from ChIP data</description>
+
+  <command interpreter="bash">
+    pass_wrapper.sh "$input" "$min_window" "$max_window" "$false_num" "$output"
+  </command>
+
+  <inputs>
+    <param format="gff" name="input" type="data" label="Dataset"/>
+    <param name="min_window" label="Smallest window size (by # of probes)" type="integer" value="2" />
+    <param name="max_window" label="Largest window size (by # of probes)" type="integer" value="6" />
+    <param name="false_num" label="Expected total number of false positive intervals to be called" type="float" value="5.0" help="N.B.: this is a &lt;em&gt;count&lt;/em&gt;, not a rate." />
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="output" />
+  </outputs>
+
+  <requirements>
+    <requirement type="package">pass</requirement>
+    <requirement type="binary">sed</requirement>
+  </requirements>
+
+  <!-- we need to be able to set the seed for the random number generator
+  <tests>
+    <test>
+      <param name="input" ftype="gff" value="pass_input.gff"/>
+      <param name="min_window" value="2"/>
+      <param name="max_window" value="6"/>
+      <param name="false_num" value="5"/>
+      <output name="output" file="pass_output.tab"/>
+    </test>
+  </tests>
+  -->
+
+  <help>
+**Dataset formats**
+
+The input is in GFF_ format, and the output is tabular_.
+(`Dataset missing?`_)
+
+.. _GFF: ${static_path}/formatHelp.html#gff
+.. _tabular: ${static_path}/formatHelp.html#tab
+.. _Dataset missing?: ${static_path}/formatHelp.html
+
+-----
+
+**What it does**
+
+PASS (Poisson Approximation for Statistical Significance) detects
+significant transcription factor binding sites in the genome from
+ChIP data.  This is probably the only peak-calling method that
+accurately controls the false-positive rate and FDR in ChIP data,
+which is important given the huge discrepancy in results obtained
+from different peak-calling algorithms.  At the same time, this
+method achieves a similar or better power than previous methods.
+
+<!-- we don't have wrapper support for the "prior" file yet
+Another unique feature of this method is that it allows varying
+thresholds to be used for peak calling at different genomic
+locations.  For example, if a position lies in an open chromatin
+region, is depleted of nucleosome positioning, or a co-binding
+protein has been detected within the neighborhood, then the position
+is more likely to be bound by the target protein of interest, and
+hence a lower threshold will be used to call significant peaks.
+As a result, weak but real binding sites can be detected.
+-->
+
+-----
+
+**Hints**
+
+- ChIP-Seq data:
+
+  If the data is from ChIP-Seq, you need to convert the ChIP-Seq values
+  into z-scores before using this program.  It is also recommended that
+  you group read counts within a neighborhood together, e.g. in tiled
+  windows of 30bp.  In this way, the ChIP-Seq data will resemble
+  ChIP-chip data in format.
+
+- Choosing window size options:
+
+  The window size is related to the probe tiling density.  For example,
+  if the probes are tiled at every 100bp, then setting the smallest
+  window = 2 and largest window = 6 is appropriate, because the DNA
+  fragment size is around 300-500bp.
+
+-----
+
+**Example**
+
+- input file::
+
+    chr7  Nimblegen  ID  40307603  40307652  1.668944     .  .  .
+    chr7  Nimblegen  ID  40307703  40307752  0.8041307    .  .  .
+    chr7  Nimblegen  ID  40307808  40307865  -1.089931    .  .  .
+    chr7  Nimblegen  ID  40307920  40307969  1.055044     .  .  .
+    chr7  Nimblegen  ID  40308005  40308068  2.447853     .  .  .
+    chr7  Nimblegen  ID  40308125  40308174  0.1638694    .  .  .
+    chr7  Nimblegen  ID  40308223  40308275  -0.04796628  .  .  .
+    chr7  Nimblegen  ID  40308318  40308367  0.9335709    .  .  .
+    chr7  Nimblegen  ID  40308526  40308584  0.5143972    .  .  .
+    chr7  Nimblegen  ID  40308611  40308660  -1.089931    .  .  .
+    etc.
+
+  In GFF, a value of dot '.' is used to mean "not applicable".
+
+- output file::
+
+    ID  Chr   Start     End       WinSz  PeakValue  # of FPs  FDR
+    1   chr7  40310931  40311266  4      1.663446   0.248817  0.248817
+
+-----
+
+**References**
+
+Zhang Y. (2008)
+Poisson approximation for significance in genome-wide ChIP-chip tiling arrays.
+Bioinformatics. 24(24):2825-31. Epub 2008 Oct 25.
+
+Chen KB, Zhang Y. (2010)
+A varying threshold method for ChIP peak calling using multiple sources of information.
+Submitted.
+
+  </help>
+  <citations>
+    <citation type="doi">10.1093/bioinformatics/btn549</citation>
+    <citation type="doi">10.1093/bioinformatics/btq379</citation>
+  </citations>
+</tool>

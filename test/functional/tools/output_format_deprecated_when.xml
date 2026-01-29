@@ -1,0 +1,34 @@
+<tool id="output_format_deprecated_when" name="output_format_deprecated_when" version="1.0.0">
+    <command><![CDATA[
+echo "test" > 5
+    ]]></command>
+    <inputs>
+        <param name="input_data_1" type="data" format="data" label="input_data_1" />
+    </inputs>
+    <outputs>
+        <data name="change_format_deprecated" format="txt" from_work_dir="5">
+            <change_format>
+                <when input_dataset="input_data_1" attribute="extension" value="fastq" format="fastq" />
+            </change_format>
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input_data_1" value="1.fastqsanger" ftype="fastq" />
+            <output name="change_format_deprecated" ftype="fastq">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input_data_1" value="1.fastqsanger" ftype="fastqsanger" />
+            <output name="change_format_deprecated" ftype="txt">
+                <!-- Fails to check subclasses, use format_soure if possible -->
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

@@ -1,0 +1,2 @@
+include galaxy/web_client/client_build_hash.txt
+recursive-include galaxy/web_client/dist *

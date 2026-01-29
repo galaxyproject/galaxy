@@ -1,0 +1,60 @@
+<tool id="Summary Statistics1" name="Summary Statistics">
+  <description>of a column in a tab delimited file according to an expression</description>
+  <command>
+python '$__tool_directory__/gsummary.py' '$input' '$out_file1' '$cond' '$groups'
+  </command>
+  <inputs>
+    <param name="cond" type="text" value="c5" label="expression"/>
+    <param name="groups" type="text" value="none" label="group terms (c1,c4,etc.)"/>
+    <param name="input" type="data" format="txt" label="summary statistics on"/>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format="txt" />
+  </outputs>
+  <help>
+.. class:: warningmark
+
+This tool expects input datasets to consist of tab-delimited columns (blank or comment lines beginning with a # character are automatically skipped).
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
+
+.. class:: infomark
+
+**TIP:** Computing summary statistics may throw exceptions if the data value in every line of the columns being summarized is not numerical.  If a line is missing a value or contains a non-numerical value in the column being summarized, that line is skipped and the value is not included in the statistical computation.  The number of invalid skipped lines is documented in the resulting history item.
+
+**Syntax**
+
+This tool computes basic summary statistics on a given column, or on an expression containing those columns
+
+- Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
+- To group the summary by the values in a column or columns, specify in the **group terms** box...
+    + **c1**  *group by the values in column 1*
+    + **c1,c4** *group by the values in column 1, then by the values in column 4*
+
+-----
+
+**Expression examples**
+
+- **log(c5)** calculates the summary statistics for the natural log of column 5
+- **(c5 + c6 + c7) / 3** calculates the summary statistics on the average of columns 5-7
+- **log(c5,10)** summary statistics of the base 10 log of column 5
+- **sqrt(c5+c9)** summary statistics of the square root of column 5 + column 9
+
+**Group examples**
+
+- **c1**  group by the values in column 1
+- **c1,c4** group by the values in column 1, then by the values in column 4
+
+-----
+
+.. class:: infomark
+
+**TIP:** Most functions (like *abs*) take only a single expression. *log* can take one or two parameters, like *log(expression,base)*
+
+Currently, these R functions are supported: *abs, sign, sqrt, floor, ceiling, trunc, round, signif, exp, log, cos, sin, tan, acos, asin, atan, cosh, sinh, tanh, acosh, asinh, atanh, lgamma, gamma, gammaCody, digamma, trigamma, cumsum, cumprod, cummax, cummin*
+
+.. |INFO| image:: ./static/images/icon_info_sml.gif
+  </help>
+</tool>

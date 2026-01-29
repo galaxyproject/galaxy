@@ -1,0 +1,37 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use a directory of FileBinnedArray data files.  You will need
+#to create these data files and then create a binned_scores.loc file 
+#similar to this one (store it in this directory ) that points to 
+#the directories in which those files are stored.  The binned_scores.loc 
+#file has this format (white space characters are TAB characters):
+#
+#<build>	<description>	<dir>
+#
+#So, for example, if you had hg16 ENCODE binCons on MLAGAN alignments
+#stored in /depot/data2/galaxy/binned_scores/hg16/encode_bincons_lagan, 
+#then the binned_scores.loc entry would look like this:
+#
+#hg16    ENCODE binCons on MLAGAN alignments     /depot/data2/galaxy/binned_scores/hg16/encode_bincons_lagan
+#
+#and your /depot/data2/galaxy/binned_scores/hg16/encode_bincons_lagan
+#directory would contain all of your "binned" files (e.g.):
+#
+#-rw-r--r--  1 james    universe 830134 2005-09-13 10:12 ENm001
+#-rw-r--r--  1 james    universe 527388 2005-09-13 10:12 ENm002
+#-rw-r--r--  1 james    universe 269808 2005-09-13 10:12 ENm003
+#...etc...
+#
+#Your binned_scores.loc file should include an entry per line for each
+#"binned" file you have stored.  For example:
+#
+#hg16	ENCODE binCons on MLAGAN alignments	/depot/data2/galaxy/binned_scores/hg16/encode_bincons_lagan
+#hg16	ENCODE binCons on TBA alignments	/depot/data2/galaxy/binned_scores/hg16/encode_bincons_tba
+#hg16	ENCODE GERP on MLAGAN alignment	/depot/data2/galaxy/binned_scores/hg16/encode_gerp_lagan
+#hg16	ENCODE GERP on TBA alignment	/depot/data2/galaxy/binned_scores/hg16/encode_gerp_tba
+#hg16	ENCODE phastCons on MLAGAN alignment	/depot/data2/galaxy/binned_scores/hg16/encode_phastcons_lagan
+#hg16	ENCODE phastCons on TBA alignment	/depot/data2/galaxy/binned_scores/hg16/encode_phatcons_tba
+#hg17	ENCODE phastCons on TBA alignment	/depot/data2/galaxy/binned_scores/hg17/phastcons_encode_sep2005_tba
+#hg17	phastCons on 8-species multiz, 16-Jun-2005	/depot/data2/galaxy/binned_scores/hg17/phastcons_mzPt1Mm5Rn3Cf1Gg2Fr1Dr1/
+#hg17	phastCons on 17-species multiz, 13-Apr-2006	/depot/data2/galaxy/binned_scores/hg17/phastCons17way/ba
+#hg17	ESPERR Regulatory Potential, 7-species, 23-Jun-2006	/depot/data2/galaxy/binned_scores/hg17/esperr_rp_7way/ba
+#hg18	phastCons on 17-species multiz, 06-Apr-2006	/depot/data2/galaxy/binned_scores/hg18/phastCons17way/ba

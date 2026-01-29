@@ -1,0 +1,27 @@
+#This is a sample file distributed with Galaxy that is used by the
+#liftOver tools.  The liftOver.loc file has this format (white space 
+#characters are TAB characters):
+#
+#<FromSpecies>	<ToSpecies>	<PathToChainFile>
+#
+#So, for example, if you had the chain file to convert from anoCar1 to galGal3
+#located at /depot/data2/galaxy/anoCar1/liftOver/anoCar1ToGalGal3.over.chain, 
+#then the liftOver.loc entry would look like this:
+#
+#anoCar1	galGal3	/depot/data2/galaxy/anoCar1/liftOver/anoCar1ToGalGal3.over.chain
+#
+#and your /depot/data2/galaxy/anoCar1/liftOver directory would 
+#contain all of your "chain" files (e.g.):
+#
+#-rw-rw-r-- 1 gua110 galaxy 24046079 2008-01-16 14:20 anoCar1ToGalGal3.over.chain
+#-rw-rw-r-- 1 gua110 galaxy 13216668 2008-01-16 14:20 anoCar1ToGasAcu1.over.chain
+#-rw-rw-r-- 1 gua110 galaxy 29597067 2008-01-16 14:20 anoCar1ToHg18.over.chain
+#...etc...
+#
+#Your liftOver.loc file should include an entry per line for each build you can
+#convert.  For example:
+#
+#anoCar1	galGal3	/depot/data2/galaxy/anoCar1/liftOver/anoCar1ToGalGal3.over.chain
+#anoCar1	gasAcu1	/depot/data2/galaxy/anoCar1/liftOver/anoCar1ToGasAcu1.over.chain
+#anoCar1	hg18	/depot/data2/galaxy/anoCar1/liftOver/anoCar1ToHg18.over.chain
+#...etc...

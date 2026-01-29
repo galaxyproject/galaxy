@@ -1,0 +1,353 @@
+<tool id="meme_meme" name="MEME" version="1.0.0">
+  <requirements><requirement type='package'>meme</requirement></requirements>
+  <description>- Multiple Em for Motif Elicitation</description>
+  <command>meme "$input1" -o "${html_outfile.files_path}" 
+  -nostatus
+  
+  ##-p 8 ##number of processors
+  
+  #if str( $options_type.options_type_selector ) == 'advanced':
+  -sf "${ str( $options_type.sf ).replace( ' ', '_' ) }"
+  -${options_type.alphabet_type.alphabet_type_selector} 
+  -mod "${options_type.mod_type.mod_type_selector}" 
+  -nmotifs "${options_type.nmotifs}" 
+  -wnsites "${options_type.wnsites}"
+  
+  #if $options_type.evt &lt; float('inf'):
+    -evt "${options_type.evt}" 
+  #end if
+  
+  #if str( $options_type.mod_type.mod_type_selector ) != 'oops':
+    #if str( $options_type.mod_type.motif_occurrence_type.motif_occurrence_type_selector ) == 'nsites':
+      -nsites "${options_type.mod_type.motif_occurrence_type.nsites}"
+    #elif str( $options_type.mod_type.motif_occurrence_type.motif_occurrence_type_selector ) == 'min_max_sites':
+      -minsites "${options_type.mod_type.motif_occurrence_type.minsites}" -maxsites "${options_type.mod_type.motif_occurrence_type.maxsites}"
+    #end if
+  #end if
+  
+  #if str( $options_type.motif_width_type.motif_width_type_selector ) == 'exact':
+    -w "${options_type.motif_width_type.width}"
+  #else
+    -minw "${options_type.motif_width_type.minw}" -maxw "${options_type.motif_width_type.maxw}"
+  #end if
+  
+  #if str( $options_type.motif_trim_type.motif_trim_type_selector ) == 'nomatrim':
+    -nomatrim
+  #else
+    -wg "${options_type.motif_trim_type.wg}" -ws "${options_type.motif_trim_type.ws}" ${options_type.motif_trim_type.noendgaps}
+  #end if
+  
+  #if str( $options_type.bfile ) != 'None':
+    -bfile "${options_type.bfile}"
+  #end if
+  
+  #if str( $options_type.pspfile ) != 'None':
+    -psp "${options_type.pspfile}"
+  #end if
+  
+  #if str( $options_type.alphabet_type.alphabet_type_selector ) == "dna":
+    ${options_type.alphabet_type.revcomp} ${options_type.alphabet_type.pal}
+  #end if
+  
+  -maxiter "${options_type.maxiter}" -distance "${options_type.distance}"
+  
+  -prior "${options_type.alphabet_type.prior_type.prior_type_selector}"
+  #if str( $options_type.alphabet_type.prior_type.prior_type_selector ) != 'addone':
+    -b "${options_type.alphabet_type.prior_type.prior_b}" 
+    #if str( $options_type.alphabet_type.prior_type.plib ) != 'None':
+      -plib "${options_type.alphabet_type.prior_type.plib}"
+    #end if
+  #end if
+  
+  #if str( $options_type.alphabet_type.spmap_type.spmap_type_selector ) == 'cons':
+    -cons "${options_type.alphabet_type.spmap_type.cons}" 
+  #else
+    -spmap "${options_type.alphabet_type.spmap_type.spmap_type_selector}"
+    -spfuzz "${options_type.alphabet_type.spmap_type.spfuzz}" 
+  #end if
+  
+  #if str( $options_type.branching_type.branching_type_selector ) == 'x_branch':
+    -x_branch -bfactor "${options_type.branching_type.bfactor}" -heapsize "${options_type.branching_type.heapsize}"
+  #end if
+  
+  ##-maxsize "1000000" ##remove hardcoded maxsize? should increase number of processors instead
+  
+  #end if
+  
+  2&gt;&amp;1 || echo "Error running MEME."
+  
+  
+  &amp;&amp; mv ${html_outfile.files_path}/meme.html ${html_outfile}
+  
+  &amp;&amp; mv ${html_outfile.files_path}/meme.txt ${txt_outfile}
+  
+  &amp;&amp; mv ${html_outfile.files_path}/meme.xml ${xml_outfile}
+  
+  </command>
+  <inputs>
+    <param format="fasta" name="input1" type="data" label="Sequences"/>
+      
+      <conditional name="options_type">
+        <param name="options_type_selector" type="select" label="Options Configuration">
+          <option value="basic" selected="true">Basic</option>
+          <option value="advanced">Advanced</option>
+        </param>
+        <when value="basic">
+          <!-- do nothing here -->
+        </when>
+        <when value="advanced">
+      
+      <param name="sf" type="text" value="Galaxy FASTA Input" label="Name of sequence set" />
+      
+      <conditional name="alphabet_type">
+        <param name="alphabet_type_selector" type="select" label="Sequence Alphabet">
+          <option value="protein">Protein</option>
+          <option value="dna" selected="true">DNA</option>
+        </param>
+        <when value="protein">
+          <conditional name="prior_type">
+            <param name="prior_type_selector" type="select" label="Choice of prior">
+              <option value="dirichlet">simple Dirichlet prior</option>
+              <option value="dmix" selected="true">mixture of Dirichlets prior</option>
+              <option value="mega">extremely low variance dmix</option>
+              <option value="megap">mega for all but last iteration of EM; dmix on last iteration</option>
+              <option value="addone">add +1 to each observed count</option>
+            </param>
+            <when value="dirichlet">
+              <param name="prior_b" type="float" value="0.01" label="strength of prior on model parameters" />
+              <param name="plib" type="data" format="txt" optional="True" label="Dirichlet prior file" />
+            </when>
+            <when value="dmix">
+              <param name="prior_b" type="float" value="0" label="strength of prior on model parameters" />
+              <param name="plib" type="data" format="txt" optional="True" label="Dirichlet prior file" />
+            </when>
+            <when value="mega">
+              <param name="prior_b" type="float" value="0" label="strength of prior on model parameters" />
+              <param name="plib" type="data" format="txt" optional="True" label="Dirichlet prior file" />
+            </when>
+            <when value="megap">
+              <param name="prior_b" type="float" value="0" label="strength of prior on model parameters" />
+              <param name="plib" type="data" format="txt" optional="True" label="Dirichlet prior file" />
+            </when>
+            <when value="addone">
+              <!-- no values here? -->
+            </when>
+          </conditional>
+          <conditional name="spmap_type">
+            <param name="spmap_type_selector" type="select" label="EM starting points">
+              <option value="uni">uni</option>
+              <option value="pam" selected="true">pam</option>
+              <option value="cons">Use starting point from string</option>
+            </param>
+            <when value="uni">
+              <param name="spfuzz" type="float" value="0.5" label="Fuzziness of the mapping" />
+            </when>
+            <when value="pam">
+              <param name="spfuzz" type="integer" value="120" label="Fuzziness of the mapping" />
+            </when>
+            <when value="cons">
+              <param name="cons" type="text" value="" label="Starting point from string" />
+            </when>
+          </conditional>
+        </when>
+        <when value="dna">
+          <param name="revcomp" label="Check reverse complement" type="boolean" truevalue="-revcomp" falsevalue="" checked="False"/>
+          <param name="pal" label="Check for palindromes" type="boolean" truevalue="-pal" falsevalue="" checked="False"/>
+          <conditional name="prior_type">
+            <param name="prior_type_selector" type="select" label="Sequence Alphabet">
+              <option value="dirichlet" selected="true">simple Dirichlet prior</option>
+              <option value="dmix">mixture of Dirichlets prior</option>
+              <option value="mega">extremely low variance dmix</option>
+              <option value="megap">mega for all but last iteration of EM; dmix on last iteration</option>
+              <option value="addone">add +1 to each observed count</option>
+            </param>
+            <when value="dirichlet">
+              <param name="prior_b" type="float" value="0.01" label="strength of prior on model parameters" />
+              <param name="plib" type="data" format="txt" optional="True" label="Dirichlet prior file" />
+            </when>
+            <when value="dmix">
+              <param name="prior_b" type="float" value="0" label="strength of prior on model parameters" />
+              <param name="plib" type="data" format="txt" optional="True" label="Dirichlet prior file" />
+            </when>
+            <when value="mega">
+              <param name="prior_b" type="float" value="0" label="strength of prior on model parameters" />
+              <param name="plib" type="data" format="txt" optional="True" label="Dirichlet prior file" />
+            </when>
+            <when value="megap">
+              <param name="prior_b" type="float" value="0" label="strength of prior on model parameters" />
+              <param name="plib" type="data" format="txt" optional="True" label="Dirichlet prior file" />
+            </when>
+            <when value="addone">
+              <!-- no values here? -->
+            </when>
+          </conditional>
+          <conditional name="spmap_type">
+            <param name="spmap_type_selector" type="select" label="EM starting points">
+              <option value="uni" selected="true">uni</option>
+              <option value="pam">pam</option>
+              <option value="cons">Use starting point from string</option>
+            </param>
+            <when value="uni">
+              <param name="spfuzz" type="float" value="0.5" label="Fuzziness of the mapping" />
+            </when>
+            <when value="pam">
+              <param name="spfuzz" type="integer" value="120" label="Fuzziness of the mapping" />
+            </when>
+            <when value="cons">
+              <param name="cons" type="text" value="" label="Starting point from string" />
+            </when>
+          </conditional>
+        </when>
+      </conditional>
+      
+      <param name="nmotifs" type="integer" value="1" label="Number of different motifs to search" />
+      <param name="evt" type="float" value="inf" label="E-value to stop looking for motifs" />
+      <conditional name="mod_type">
+        <param name="mod_type_selector" type="select" label="Expected motif distribution">
+          <option value="oops">One Occurrence Per Sequence</option>
+          <option value="zoops" selected="true">Zero or One Occurrence Per Sequence</option>
+          <option value="anr">Any Number of Repetitions</option>
+        </param>
+        <when value="oops">
+          <!-- no values here -->
+        </when>
+        <when value="zoops">
+          <conditional name="motif_occurrence_type">
+            <param name="motif_occurrence_type_selector" type="select" label="Number of motif occurrences">
+              <option value="default" selected="true">Use defaults</option>
+              <option value="nsites">nsites</option>
+              <option value="min_max_sites">min and max sites</option>
+            </param>
+            <when value="default">
+              <!-- no values here -->
+            </when>
+            <when value="nsites">
+              <param name="nsites" type="integer" value="1" label="Search nsites number of occurrences" />
+            </when>
+            <when value="min_max_sites">
+              <param name="minsites" type="integer" value="1" label="minsites" />
+              <param name="maxsites" type="integer" value="50" label="maxsites" />
+            </when>
+          </conditional>
+        </when>
+        <when value="anr">
+          <conditional name="motif_occurrence_type">
+            <param name="motif_occurrence_type_selector" type="select" label="Number of motif occurrences">
+              <option value="default" selected="true">Use defaults</option>
+              <option value="nsites">nsites</option>
+              <option value="min_max_sites">min and max sites</option>
+            </param>
+            <when value="default">
+              <!-- no values here -->
+            </when>
+            <when value="nsites">
+              <param name="nsites" type="integer" value="1" label="Search nsites number of occurrences" />
+            </when>
+            <when value="min_max_sites">
+              <param name="minsites" type="integer" value="1" label="minsites" />
+              <param name="maxsites" type="integer" value="50" label="maxsites" />
+            </when>
+          </conditional>
+        </when>
+      </conditional>
+      <param name="wnsites" type="float" value="0.8" label="Weight on the prior on nsites" />
+      
+      <conditional name="motif_width_type">
+        <param name="motif_width_type_selector" type="select" label="Motif width type">
+          <option value="exact">Exact width</option>
+          <option value="range" selected="true">Specify a range</option>
+        </param>
+        <when value="exact">
+          <param name="width" type="integer" value="10" label="Width of motif to search" />
+        </when>
+        <when value="range">
+          <param name="minw" type="integer" value="8" label="Min width of motif to search" />
+          <param name="maxw" type="integer" value="50" label="Max width of motif to search" />
+        </when>
+      </conditional>
+    
+      <conditional name="motif_trim_type">
+        <param name="motif_trim_type_selector" type="select" label="Motif trim type">
+          <option value="nomatrim">No motif trim</option>
+          <option value="trim" selected="true">Trim motif</option>
+        </param>
+        <when value="nomatrim">
+          <!-- no values here -->
+        </when>
+        <when value="trim">
+          <param name="wg" type="integer" value="11" label="Gap cost" />
+          <param name="ws" type="integer" value="1" label="Space cost" />
+          <param name="noendgaps" label="Do not penalize endgaps" type="boolean" truevalue="-noendgaps" falsevalue="" checked="False"/>
+        </when>
+      </conditional>
+    
+    <param name="bfile" type="data" format="txt" optional="True" label="Background Model" />
+    <param name="pspfile" type="data" format="txt" optional="True" label="Position-Specific Prior" />
+    
+    <param name="maxiter" type="integer" value="50" label="Number of iterations of EM to run" />
+    <param name="distance" type="float" value="0.001" label="Convergence criterion" />
+    
+      <conditional name="branching_type">
+        <param name="branching_type_selector" type="select" label="x-branching type">
+          <option value="x_branch">Perform x-branching</option>
+          <option value="no_x_branch" selected="true">No x-branching</option>
+        </param>
+        <when value="no_x_branch">
+          <!-- no values here -->
+        </when>
+        <when value="x_branch">
+          <param name="bfactor" type="integer" value="3" label="Number of iterations of branching" />
+          <param name="heapsize" type="integer" value="64" label="Maximum number of heaps to use" />
+        </when>
+      </conditional>
+  
+    </when>
+  </conditional>
+  
+  <param name="non_commercial_use" label="I certify that I am not using this tool for commercial purposes." type="boolean" truevalue="NON_COMMERCIAL_USE" falsevalue="COMMERCIAL_USE" checked="False">
+    <validator type="expression" message="This tool is only available for non-commercial use.">value == True</validator>
+  </param>
+  
+  </inputs>
+  <outputs>
+    <data format="html" name="html_outfile" label="${tool.name} on ${on_string} (html)"/>
+    <data format="txt" name="txt_outfile" label="${tool.name} on ${on_string} (text)"/>
+    <data format="memexml" name="xml_outfile" label="${tool.name} on ${on_string} (xml)"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="meme/meme/meme_input_1.fasta" ftype="fasta" dbkey="hg19"/>
+      <param name="options_type_selector" value="basic"/>
+      <param name="non_commercial_use" value="True"/>
+      <output name="html_outfile" file="meme/meme/meme_output_html_1.html" lines_diff="12"/>
+      <output name="txt_outfile" file="meme/meme/meme_output_txt_1.txt" lines_diff="12"/>
+      <output name="xml_outfile" file="meme/meme/meme_output_xml_1.xml" lines_diff="8"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: warningmark
+
+**WARNING: This tool is only available for non-commercial use. Use for educational, research and non-profit purposes is permitted. Before using, be sure to review, agree, and comply with the license.**
+
+If you want to specify sequence weights, you must include them at the top of your input FASTA file.
+
+.. class:: infomark
+
+**To cite MEME:**
+Timothy L. Bailey and Charles Elkan, "Fitting a mixture model by expectation maximization to discover motifs in biopolymers", Proceedings of the Second International Conference on Intelligent Systems for Molecular Biology, pp. 28-36, AAAI Press, Menlo Park, California, 1994. 
+
+
+For detailed information on MEME, click here_. To view the license_.
+
+------
+
+**Citation**
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+.. _here: http://meme.nbcr.net/meme/meme-intro.html
+.. _license: http://meme.nbcr.net/meme/COPYRIGHT.html
+
+  </help>
+</tool>

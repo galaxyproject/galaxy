@@ -1,0 +1,31 @@
+<tool id="composite_output" name="composite_output" version="1.0.0">
+    <command><![CDATA[
+mkdir '$output.extra_files_path' &&
+cp '$input.extra_files_path'/* '$output.extra_files_path' &&
+cp '$input.extra_files_path'/Log '$output.extra_files_path'/second_log &&
+mkdir '$output.extra_files_path'/nested &&
+cp '$input.extra_files_path'/Log '$output.extra_files_path'/nested/nested_log
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="velvet" label="Velvet Dataset" help="Prepared by velveth."/>
+    </inputs>
+    <outputs>
+        <data name="output" format="velvet" label="" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="velveth_test1/output.html" ftype="velvet" >
+                <composite_data value="velveth_test1/Sequences" />
+                <composite_data value="velveth_test1/Roadmaps" />
+                <composite_data value="velveth_test1/Log" />
+            </param>
+            <output name="output" file="velveth_test1/output.html">
+                <extra_files type="file" name="Sequences" value="velveth_test1/Sequences" />
+                <extra_files type="file" name="Roadmaps" value="velveth_test1/Roadmaps" />
+                <extra_files type="file" name="Log" value="composite_output_expected_log" />
+                <extra_files type="file" name="second_log" value="composite_output_expected_log" />
+                <extra_files type="file" name="nested/nested_log" value="composite_output_expected_log" />
+            </output>
+        </test>
+    </tests>
+</tool>

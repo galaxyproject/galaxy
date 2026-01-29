@@ -1,0 +1,40 @@
+<tool id="solid_qual_boxplot" name="Draw quality score boxplot" version="1.0.0">
+	<description>for SOLiD data</description>
+	
+	<command interpreter="bash">qualsolid_boxplot_graph.sh -t '$input.name' -i $input -o $output</command>
+	
+	<inputs>
+		<param format="txt" name="input" type="data" label="Statistics report file (output of 'Quality Statistics for SOLiD data' tool)" />
+	</inputs>
+
+	<outputs>
+		<data format="png" name="output" metadata_source="input" />
+	</outputs>
+<help>
+
+**What it does**
+
+Creates a boxplot graph for the quality scores in the library.
+
+.. class:: infomark
+
+**TIP:** Use the **Quality Statistics for SOLiD data** tool to generate the report file needed for this tool.
+
+-----
+
+**Output Example**
+
+* Black horizontal lines are medians
+* Rectangular red boxes show the Inter-quartile Range (IQR) (top value is Q3, bottom value is Q1)
+* Whiskers show outliers at max. 1.5*IQR
+
+
+.. image:: ${static_path}/images/solid_qual.png
+
+------
+
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/
+</help>
+</tool>

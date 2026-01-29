@@ -1,0 +1,99 @@
+<tool id="blat_wrapper" name="BLAT" version="1.0.0">
+  <description> compare sequencing reads against UCSC genome builds</description>
+  <command interpreter="python">
+    #if $source.source_select=="database" #blat_wrapper.py 0 $source.dbkey $input_query $output1 $iden $tile_size $one_off
+    #else                                 #blat_wrapper.py 1 $source.input_target $input_query $output1 $iden $tile_size $one_off
+    #end if# ${GALAXY_DATA_INDEX_DIR}
+  </command>
+	<inputs>
+	<conditional name="source">
+		<param name="source_select" type="select" label="Target source">
+				<option value="database">Genome Build</option>
+				<option value="input_ref">Your Upload File</option>
+		</param>
+		<when value="database">
+			<param name="dbkey" type="genomebuild" label="Genome" />
+		</when>
+		<when value="input_ref">
+			<param name="input_target" type="data" format="fasta" label="Reference sequence" />
+ 		</when>
+	</conditional>	
+		<param name="input_query" type="data" format="fasta" label="Sequence file"/>
+		<param name="iden" type="float" value="90.0" label="Minimal identity (-minIdentity)" />
+		<param name="tile_size" type="integer" value="11" label="Minimal size of exact match (-tileSize)" help="Must be between 6 and 18."/>
+		<param name="one_off" type="integer" value="0" label="Number of mismatch in the word (-oneOff)" help="Must be between 0 and 2." />
+	</inputs>
+	<outputs>
+		<data name="output1" format="tabular"/>
+	</outputs>
+	<requirements>
+	  <requirement type="binary">blat</requirement>
+	</requirements>
+	<tests>
+		<test>
+		<param name="source_select" value="database" />
+		<param name="dbkey" value="eschColi_K12" />
+		<param name="input_query" value="blat_wrapper_test1.fa" ftype="fasta"/>
+		<param name="iden" value="90.0" />
+		<param name="tile_size" value="11" />
+		<param name="one_off" value="0" />
+		<output name="output1" file="blat_wrapper_test1.out" />
+		</test>
+	</tests>
+	<help>
+	
+.. class:: warningmark 
+
+Using a smaller word size (*Minimal Size of Exact Match*) will increase the computational time.
+
+.. class:: warningmark 
+
+Using a larger mismatch number (*Number of Mismatch in the Word*) will increase the computational time.
+
+-----
+	
+**What it does**
+ 
+This tool currently uses the **BLAT** alignment program. Your short reads file is searched against a genome build or another uploaded file. 
+ 
+-----
+ 
+**Example**
+ 
+- Input a multiple fasta file::
+
+	&gt;seq1
+	TGGTAATGGTGGTTTTTTTTTTTTTTTTTTATTTTT
+
+- Use the default settings:
+
+  - alignment identity must be higher than or equal to 90%.
+  
+  - minimal size of exact match to trigger an alignment is 11.
+  
+  - allow 0 mismatches in the above exact match size.
+  
+- Search against ce2 (C. elegans March 2004), partial result::
+
+	25 1 0 0 0 0 0 0 + seq1 36 10 36 chrI 15080483 9704438 9704464 1 26, 10, 9704438, ggttttttttttttttttttattttt, ggtttttttttttttttttttttttt,
+	27 0 0 0 0 0 1 32 + seq1 36 9 36 chrI 15080483 1302536 1302595 2 21,6, 9,30, 1302536,1302589, tggtttttttttttttttttt,attttt, tggtttttttttttttttttt,attttt,
+
+-----
+
+**Parameters**
+
+- *Minimal Identity* (**-minIdentity**) : In percent, the minimum sequence identity between the query and target alignment. Default is 90.
+
+- *Minimal Size of Exact Match* (**-tileSize**) : The size of a match that will trigger an alignment. Default is 11. Usually between 8 and 12. Must be between 6 and 18.
+
+- *Number of Mismatch in the Word* (**-oneOff**) : The number of mismatches allowed in the word (tile size) and still triggers an alignment. Default is 0.
+
+-----
+
+**Reference**
+ 
+ **BLAT**: Kent, W James, BLAT--the BLAST-like alignment tool. (2002) Genome Research:12(4) 656-664.
+
+
+	</help>
+</tool>

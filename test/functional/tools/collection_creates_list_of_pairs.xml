@@ -1,0 +1,54 @@
+<tool id="collection_creates_list_of_pairs" name="collection_creates_list_or_pairs" version="0.1.0" profile="21.01">
+  <!-- You usually wouldn't want to do this - just write the operation for
+       a single dataset and allow the user to map that tool over the whole
+       collection. -->
+  <command>
+    #for $list_key in $list_output.keys()#
+    #for $pair_key in $list_output[$list_key].keys()#
+    echo "identifier is $list_key:$pair_key" > "$list_output[$list_key][$pair_key]";
+    #end for#
+    #end for#
+    echo 'ensure not empty';
+    #if $failbool:
+      exit 1
+    #end if
+  </command>
+  <inputs>
+    <param name="failbool" type="boolean" label="fail job?"/>
+    <param name="input1" type="data_collection" collection_type="list:paired" label="Input" help="Input collection..." format="txt" />
+  </inputs>
+  <outputs>
+    <collection name="list_output" type="list:paired" label="Duplicate List" structured_like="input1" inherit_format="true">
+      <!-- inherit_format can be used in conjunction with structured_like
+           to perserve format. -->
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1">
+        <collection type="list:paired">
+          <element name="i1">
+            <collection type="paired">
+              <element name="forward" value="simple_line.txt" />
+              <element name="reverse" value="simple_line_alternative.txt" />
+            </collection>
+          </element>
+        </collection>
+      </param>
+      <output_collection name="list_output" type="list:paired">
+        <element name="i1">
+          <element name="forward">
+            <assert_contents>
+              <has_text_matching expression="^identifier is i1:forward\n$" />
+            </assert_contents>
+          </element>
+          <element name="reverse">
+            <assert_contents>
+              <has_text_matching expression="^identifier is i1:reverse\n$" />
+            </assert_contents>
+          </element>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

@@ -1,0 +1,79 @@
+<tool id="Show beginning1" name="Select first" version="1.0.2" profile="20.05">
+  <description>lines from a dataset</description>
+  <edam_operations>
+    <edam_operation>operation_3695</edam_operation>
+  </edam_operations>
+  <requirements>
+    <requirement type="package" version="8.31">coreutils</requirement>
+  </requirements>
+  <command><![CDATA[
+    #if $header
+      #set $n = int($lineNum) + 1
+    #else
+      #set $n = $lineNum
+    #end if
+    head -n $n '$input' > '$out_file1'
+  ]]></command>
+  <inputs>
+    <param name="lineNum" type="integer" value="10" min="1" label="Select first" help="lines"/>
+    <param name="input" type="data" format="txt" label="from"/>
+    <param name="header" type="boolean" label="Dataset has a header" help="if checked the header is kept and is not counted as a kept line"/>
+  </inputs>
+  <outputs>
+    <data name="out_file1" format_source="input" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="lineNum" value="10"/>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="eq-showbeginning.dat">
+        <assert_contents>
+          <not_has_text text="CCDS9526.1_cds_0_0_chr13_112381695_f"/>
+          <has_n_lines n="10"/>
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="lineNum" value="1"/>
+      <param name="input" value="GRCm38mm10_chr5_34761740-34912521.fa"/>
+      <output name="out_file1">
+        <assert_contents>
+          <has_n_lines n="1"/>
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="lineNum" value="10"/>
+      <param name="input" value="1.bed"/>
+      <param name="header" value="true"/>
+      <output name="out_file1">
+        <assert_contents>
+          <has_text text="CCDS9526.1_cds_0_0_chr13_112381695_f"/>
+          <has_n_lines n="11"/>
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+  <help>
+**What it does**
+
+This tool outputs specified number of lines from the **beginning** of a dataset
+
+-----
+
+**Example**
+
+Selecting 2 lines from this::
+
+    chr7  56632  56652  D17003_CTCF_R6  310  +
+    chr7  56736  56756  D17003_CTCF_R7  354  +
+    chr7  56761  56781  D17003_CTCF_R4  220  +
+    chr7  56772  56792  D17003_CTCF_R7  372  +
+    chr7  56775  56795  D17003_CTCF_R4  207  +
+
+will produce::
+
+    chr7  56632  56652  D17003_CTCF_R6  310  +
+    chr7  56736  56756  D17003_CTCF_R7  354  +
+  </help>
+</tool>

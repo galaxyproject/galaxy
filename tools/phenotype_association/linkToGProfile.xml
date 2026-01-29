@@ -1,0 +1,93 @@
+<tool id="hgv_linkToGProfile" name="g:Profiler" version="1.0.0">
+  <description>tools for functional profiling of gene lists</description>
+
+  <command detect_errors="exit_code">
+perl '$__tool_directory__/linkToGProfile.pl' '$input' $type '$out_file1' -region='$region' -gene=$genes -chr=${input.metadata.chromCol} -start=${input.metadata.startCol} -end=${input.metadata.endCol}
+  </command>
+
+  <inputs>
+    <param name="input" type="data" format="tabular" label="Dataset" />
+    <param name="genes" type="data_column" data_ref="input" label="Column with identifiers" />
+    <param name="region" type="select" label="Or use genomic intervals">
+      <option value="0" selected="true">No</option>
+      <option value="1">Yes</option>
+    </param>
+    <param name="type" label="Identifier type if numeric" type="select">
+      <option value="ENTREZGENE_ACC" selected="true">Entrez Gene Acc</option>
+      <option value="MIM_MORBID">OMIM Morbid Map</option>
+      <option value="MIM_GENE">OMIM Gene ID</option>
+      <option value="AFFY_HUGENE_1_0_ST_V1">AFFY_HUGENE_1_0_ST_V1</option>
+      <option value="HGNC_AUTOMATIC_GENE_ACC">HGNC_AUTOMATIC_GENE_ACC</option>
+      <option value="HGNC_MB001_ACC">HGNC_MB001_ACC</option>
+      <option value="HGNC_ACC">HGNC_ACC</option>
+      <option value="WIKIGENE_ACC">WIKIGENE_ACC</option>
+      <option value="DBASS5_ACC">DBASS5_ACC</option>
+      <option value="ILLUMINA_HUMANWG_6_V1">ILLUMINA_HUMANWG_6_V1</option>
+      <option value="AFFY_HUEX_1_0_ST_V2">AFFY_HUEX_1_0_ST_V2</option>
+      <option value="DBASS3_ACC">DBASS3_ACC</option>
+    </param>
+  </inputs>
+
+  <outputs>
+    <data format="html" name="out_file1" />
+  </outputs>
+
+  <tests>
+    <test>
+      <param name="input" ftype="bed" value="linkToGProfile.tabular" />
+      <param name="genes" value="2" />
+      <param name="type" value="Entrez Gene Acc" />
+      <output name="out_file1" file="linkToGProfile_1.out" sort="true"/>
+    </test>
+  </tests>
+
+  <help>
+**Dataset formats**
+
+The input dataset is tabular_ with a column of identifiers.
+The output dataset is html_ with a link to g:Profiler.
+(`Dataset missing?`_)
+
+.. _tabular: ${static_path}/formatHelp.html#tab
+.. _html: ${static_path}/formatHelp.html#html
+.. _Dataset missing?: ${static_path}/formatHelp.html
+
+-----
+
+**What it does**
+
+This tool creates a link to the g:GOSt tool (Gene Group Functional
+Profiling), which is part of the g:Profiler site at the University
+of Tartu in Estonia.  g:GOSt retrieves the most significant Gene
+Ontology (GO) terms, KEGG and REACTOME pathways, and TRANSFAC motifs
+for a user-specified group of genes, proteins, or microarray probes.
+g:GOSt also allows analysis of ranked or ordered lists of genes,
+visual browsing of GO graph structure, interactive visualization of
+retrieved results, and many other features.  Multiple testing
+corrections are applied to extract only statistically important
+results.
+
+The g:GOSt form is pre-filled with gene, protein, or microarray probe
+IDs from the selected column of a tabular Galaxy dataset.  Or you
+can chose to use the genomic coordinates (must be lastest build used by
+Ensembl).  The coordinates don't have to be genes they can be for
+SNPs, and g:GOst will map to the gene ID.  To follow
+the created link, click on the eye icon when the Galaxy tool has
+finished running.  Once at the g:Profiler site, scroll down to see
+the g:GOSt results.  You can also adjust the options in the g:GOSt
+form to your liking, or use the row of links between the form and
+the results to run other g:Profiler tools using the same list of IDs.
+
+-----
+
+**Reference**
+
+Reimand J, Kull M, Peterson H, Hansen J, Vilo J. (2007) g:Profiler -- a web-based
+toolset for functional profiling of gene lists from large-scale experiments.
+Nucleic Acids Res. 35(Web Server issue):W193-200. Epub 2007 May 3.
+
+  </help>
+  <citations>
+    <citation type="doi">10.1093/nar/gkm226</citation>
+  </citations>
+</tool>

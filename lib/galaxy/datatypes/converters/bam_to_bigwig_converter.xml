@@ -1,0 +1,33 @@
+<tool id="CONVERTER_bam_to_bigwig_0" name="Convert BAM to BigWig" version="1.0.2" hidden="true">
+    <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <requirements>
+        <requirement type="package" version="377">ucsc-bedgraphtobigwig</requirement>
+        <requirement type="package" version="2.29.2">bedtools</requirement>
+        <requirement type="package" version="8.25">coreutils</requirement>
+    </requirements>
+    <command detect_errors="aggressive"><![CDATA[
+bedtools genomecov -bg -split -ibam '$input'
+| LC_COLLATE=C sort -k1,1 -k2,2n
+
+## Streaming the bedgraph file to wigToBigWig is fast but very memory intensive; hence, this
+## should only be used on systems with large RAM.
+## | wigToBigWig stdin '$chromInfo' '$output'
+
+## This can be used anywhere.
+> temp.bg && bedGraphToBigWig temp.bg '$chromInfo' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="bam,unsorted.bam" label="Choose BAM file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="bigwig"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="bam" value="srma_out2.bam" dbkey="hg17"/>
+            <output name="output" ftype="bigwig" value="srma_out2.bigwig"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

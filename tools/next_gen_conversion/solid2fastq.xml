@@ -1,0 +1,154 @@
+<tool id="solid2fastq" name="Convert" version="1.0.0">
+  <description>SOLiD output to fastq</description>
+  <command interpreter="python">
+    #if   $is_run.paired == "no"    #solid2fastq.py --fr=$input1 --fq=$input2 --fout=$out_file1 -q $qual $trim_name $trim_first_base $double_encode
+    #elif $is_run.paired == "yes"   #solid2fastq.py --fr=$input1 --fq=$input2 --fout=$out_file1 --rr=$input3 --rq=$input4 --rout=$out_file2 -q $qual $trim_name $trim_first_base $double_encode
+    #end if#
+  </command>
+  <inputs>
+    <param name="input1" type="data" format="csfasta" label="Select reads"/>
+    <param name="input2" type="data" format="qualsolid" label="Select qualities"/>
+    <conditional name="is_run">
+        <param name="paired" type="select" label="Is this a mate-pair run?">
+            <option value="no" selected="true">No</option>
+            <option value="yes">Yes</option>
+        </param>
+        <when value="yes">
+            <param name="input3" type="data" format="csfasta" label="Select Reverse reads"/>
+            <param name="input4" type="data" format="qualsolid" label="Select Reverse qualities"/>
+        </when>
+        <when value="no">
+        </when>
+    </conditional>
+    <param name="qual" label="Remove reads containing color qualities below this value" type="integer" value="0"/>
+    <param name="trim_name" type="select" label="Trim trailing &quot;_F3&quot; and &quot;_R3&quot; ?">
+        <option value="-t" selected="true">Yes</option>
+        <option value="">No</option>
+    </param>
+    <param name="trim_first_base" type="select" label="Trim first base?">
+        <option value="-f">Yes (BWA)</option>
+        <option value="" selected="true">No (bowtie)</option>
+    </param>
+    <param name="double_encode" type="select" label="Double encode?">
+        <option value="-d">Yes (BWA)</option>
+        <option value="" selected="true">No (bowtie)</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="fastqcssanger" name="out_file1"/>
+    <data format="fastqcssanger" name="out_file2">
+        <filter>is_run['paired'] == 'yes'</filter>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="fr.csfasta" ftype="csfasta"/>
+      <param name="input2" value="fr.qualsolid" ftype="qualsolid" />
+      <param name="paired" value="no"/>
+      <param name="qual" value="0" />
+      <param name="trim_first_base" value="No (bowtie)" />
+      <param name="trim_name" value="No" />
+      <param name="double_encode" value="No (bowtie)"/>
+      <output name="out_file1" file="solid2fastq_out_1.fastq"/>
+    </test>
+    <test>
+      <param name="input1" value="fr.csfasta" ftype="csfasta"/>
+      <param name="input2" value="fr.qualsolid" ftype="qualsolid" />
+      <param name="paired" value="yes"/>
+      <param name="input3" value="rr.csfasta" ftype="csfasta"/>
+      <param name="input4" value="rr.qualsolid" ftype="qualsolid" />
+      <param name="qual" value="0" />
+      <param name="trim_first_base" value="No (bowtie)" />
+      <param name="trim_name" value="Yes" />
+      <param name="double_encode" value="No (bowtie)"/>
+      <output name="out_file1" file="solid2fastq_out_2.fastq"/>
+      <output name="out_file2" file="solid2fastq_out_3.fastq"/>
+    </test>
+ </tests>
+<help>
+**What it does**
+
+Converts output of SOLiD instrument (versions 3.5 and earlier) to fastq format suitable for bowtie, bwa, and PerM mappers.
+
+--------
+
+**Input datasets**
+
+Below are examples of forward (F3) reads and quality scores:
+
+Reads::
+
+    &gt;1831_573_1004_F3
+    T00030133312212111300011021310132222
+    &gt;1831_573_1567_F3
+    T03330322230322112131010221102122113
+
+Quality scores::
+
+    &gt;1831_573_1004_F3
+    4 29 34 34 32 32 24 24 20 17 10 34 29 20 34 13 30 34 22 24 11 28 19 17 34 17 24 17 25 34 7 24 14 12 22
+    &gt;1831_573_1567_F3
+    8 26 31 31 16 22 30 31 28 29 22 30 30 31 32 23 30 28 28 31 19 32 30 32 19 8 32 10 13 6 32 10 6 16 11
+
+
+**Mate pairs**
+
+If your data is from a mate-paired run, you will have additional read and quality datasets that will look similar to the ones above with one exception: the names of reads will be ending with "_R3".
+In this case choose **Yes** from the *Is this a mate-pair run?* drop down and you will be able to select R reads. When processing mate pairs this tool generates two output files: one for F3 reads and the other for R3 reads.
+The reads are guaranteed to be paired -- mated reads will be in the same position in F3 and R3 fastq file. However, because pairing is verified it may take a while to process an entire SOLiD run (several hours).
+
+------
+
+**Explanation of parameters**
+
+**Remove reads containing color qualities below this value** - any read that contains as least one color call with quality lower than the specified value **will not** be reported.
+
+**Trim trailing "_F3" and "_R3"?** - does just that. Not necessary for bowtie. Required for BWA.
+
+**Trim first base?** - SOLiD reads contain an adapter base such as the first T in this read::
+
+    &gt;1831_573_1004_F3
+    T00030133312212111300011021310132222
+  
+this option removes this base leaving only color calls. Not necessary for bowtie. Required for BWA.
+
+**Double encode?** - converts color calls (0123.) to pseudo-nucleotides (ACGTN). Not necessary for bowtie. Required for BWA.
+
+------
+
+**Examples of output**
+
+When all parameters are left "as-is" you will get this (using reads and qualities shown above)::
+
+ @1831_573_1004
+ T00030133312212111300011021310132222
+ +
+ %%&gt;CCAA9952+C&gt;5C.?C79,=42C292:C(9/-7
+ @1831_573_1004
+ T03330322230322112131010221102122113
+ +
+ );@@17?@=&gt;7??@A8?==@4A?A4)A+.'A+'1,
+
+Setting *Trim first base from reads* to **Yes** will produce this::
+
+ @1831_573_1004
+ 00030133312212111300011021310132222
+ +
+ %%&gt;CCAA9952+C&gt;5C.?C79,=42C292:C(9/-7
+ @1831_573_1004
+ 03330322230322112131010221102122113
+ +
+ );@@17?@=&gt;7??@A8?==@4A?A4)A+.'A+'1,
+
+Finally, setting *Double encode* to **Yes** will yield::
+
+ @1831_573_1004
+ TAAATACTTTCGGCGCCCTAAACCAGCTCACTGGGG
+ +
+ %%&gt;CCAA9952+C&gt;5C.?C79,=42C292:C(9/-7
+ @1831_573_1004
+ TATTTATGGGTATGGCCGCTCACAGGCCAGCGGCCT
+ +
+ );@@17?@=&gt;7??@A8?==@4A?A4)A+.'A+'1,
+</help>
+</tool>

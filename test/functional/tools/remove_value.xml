@@ -1,0 +1,32 @@
+<tool id="remove_value" name="Remove values from dynamic options" version="0.1.0">
+    <command detect_errors="exit_code"><![CDATA[
+echo $choose_value > '$out_file'
+    ]]></command>
+    <inputs>
+        <param name="choose_value" type="select">
+            <options from_data_table="test_fasta_indexes">
+                <!-- contains hg18 and hg19 -->
+                <filter type="remove_value" value="hg18_value"/>
+                <filter type="remove_value" value="hg20_value"/>
+                <!-- This doesn't work as we don't have the remaining values like name and path
+                <filter type="add_value" value="hg20"/>
+                -->
+            </options>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out_file"/>
+    </outputs>
+    <tests>
+        <test>
+            <output name="out_file">
+                <assert_contents>
+                    <has_line line="hg19_value" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_failure="true">
+            <param name="choose_value" value="hg18_value"/>
+        </test>
+    </tests>
+</tool>

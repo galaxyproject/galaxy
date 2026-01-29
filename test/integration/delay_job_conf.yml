@@ -1,0 +1,18 @@
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  dynamic:
+    rules_module: integration.delay_rules
+execution:
+  default: local_dest
+  environments:
+    local_dest:
+      runner: dynamic
+      type: python
+      function: delay
+    upload_dest:
+      runner: local
+tools:
+  - class: local
+    destination: upload_dest

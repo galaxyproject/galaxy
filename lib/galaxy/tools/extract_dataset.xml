@@ -1,0 +1,129 @@
+<tool id="__EXTRACT_DATASET__"
+      name="Extract dataset"
+      version="1.0.2"
+      tool_type="extract_element">
+  <description></description>
+  <type class="ExtractDatasetCollectionTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+  <edam_operations>
+    <edam_operation>operation_3695</edam_operation>
+  </edam_operations>
+  <inputs>
+    <param type="data_collection" collection_type="list,paired,paired_or_unpaired,record" name="input" label="Input List" />
+    <conditional name="which">
+      <param name="which_dataset" type="select" label="How should a dataset be selected?">
+        <option value="first">The first dataset</option>
+        <option value="by_identifier">Select by element identifier</option>
+        <option value="by_index">Select by index</option>
+      </param>
+      <when value="first" />
+      <when value="by_identifier">
+        <param name="identifier" label="Element identifier:" type="text" optional="false">
+          <sanitizer invalid_char="">
+              <valid initial="string.ascii_letters,string.digits">
+                  <add value="_" />
+                  <add value="-" />
+                  <add value="#" />
+              </valid>
+          </sanitizer>
+        </param>
+      </when>
+      <when value="by_index">
+        <param name="index" label="Element index:" type="integer" value="0" help="Starting from 0">
+        </param>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data name="output" label="${on_string} (extracted element)" />
+  </outputs>
+  <help><![CDATA[
+
+========
+Synopsis
+========
+
+Extracts datasets from a collection based on either position or identifier.
+
+===========
+Description
+===========
+
+The tool allow extracting datasets based on position (**The first dataset** and **Select by index** options) or name (**Select by element identifier** option). This tool effectively collapses the inner-most collection into a dataset. For nested collections (e.g a list of lists of lists: outer:middle:inner, extracting the inner dataset element) a new list is created where the selected element takes the position of the inner-most collection (so outer:middle, where middle is not a collection but the inner dataset element).
+
+.. class:: warningmark
+
+**Note**: Dataset index (numbering) begins with 0 (zero).
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+
+  ]]></help>
+  <tests>
+    <test>
+      <param name="input">
+        <collection type="list">
+          <element name="foo" value="simple_line.txt" />
+          <element name="bar" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="output" file="simple_line.txt">
+        <metadata name="name" value="foo" />
+      </output>
+    </test>
+    <test>
+      <param name="input">
+        <collection type="paired_or_unpaired">
+          <element name="unpaired" value="simple_line.txt" />
+        </collection>
+      </param>
+      <output name="output" file="simple_line.txt">
+        <metadata name="name" value="unpaired" />
+      </output>
+    </test>
+    <test>
+      <param name="input">
+        <collection type="record">
+          <fields>[{"name": "parent", "type": "File"}, {"name": "child", "type": "File"}]</fields>
+          <element name="parent" value="simple_line.txt" />
+          <element name="child" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="output" file="simple_line.txt">
+        <metadata name="name" value="parent" />
+      </output>
+    </test>
+    <test>
+      <conditional name="which">
+        <param name="which_dataset" value="by_identifier" />
+        <param name="identifier" value="bar" />
+      </conditional>
+      <param name="input">
+        <collection type="list">
+          <element name="foo" value="simple_line.txt" />
+          <element name="bar" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="output" file="simple_line_alternative.txt">
+        <metadata name="name" value="bar" />
+      </output>
+    </test>
+    <test>
+      <conditional name="which">
+        <param name="which_dataset" value="by_index" />
+        <param name="index" value="1" />
+      </conditional>
+      <param name="input">
+        <collection type="list">
+          <element name="foo" value="simple_line.txt" />
+          <element name="bar" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="output" file="simple_line_alternative.txt">
+        <metadata name="name" value="bar" />
+      </output>
+    </test>
+  </tests>
+</tool>

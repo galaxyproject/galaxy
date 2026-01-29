@@ -1,0 +1,58 @@
+===========================================================
+May 2015 Galaxy Release (v 15.05)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Authentication Plugins**
+  Galaxy now has native support for LDAP and Active Directory via a new 
+  community developed authentication plugin system.
+
+**Tool Sections**
+  Tool parameters may now be groupped into collapsable sections.
+
+**Collection Creators**
+  New widgets have been added that allow much more flexibility when creating
+  simple dataset pair and list collections.
+
+`Github <https://github.com/galaxyproject/galaxy>`__
+===========================================================
+
+New
+  .. code-block:: shell
+  
+      % git clone -b master https://github.com/galaxyproject/galaxy.git
+
+Update to latest stable release
+  .. code-block:: shell
+  
+      % git checkout master && pull --ff-only origin master
+
+Update to exact version
+  .. code-block:: shell
+  
+      % git checkout v15.05
+
+
+`BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
+===========================================================
+
+Upgrade
+  .. code-block:: shell
+  
+      % hg pull 
+      % hg update latest_15.05
+
+
+See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Release Notes
+===========================================================
+
+.. include:: 15.05.rst
+   :start-after: enhancements
+
+.. include:: _thanks.rst

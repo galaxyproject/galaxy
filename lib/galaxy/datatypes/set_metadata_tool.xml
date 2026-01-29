@@ -1,0 +1,17 @@
+<tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.3" tool_type="set_metadata">
+    <type class="SetMetadataTool" module="galaxy.tools"/>
+    <action module="galaxy.tools.actions.metadata" class="SetMetadataToolAction"/>
+    <command detect_errors="exit_code">
+cd ..; "\${GALAXY_PYTHON:-python}" '${set_metadata}' ${__SET_EXTERNAL_METADATA_COMMAND_LINE__}
+    </command>
+    <configfiles>
+        <configfile name="set_metadata">from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input1" type="data" format="data" label="File to set metadata on"/>
+        <param name="__ORIGINAL_DATASET_STATE__" type="hidden" value=""/>
+        <param name="__SET_EXTERNAL_METADATA_COMMAND_LINE__" type="hidden" value="">
+            <sanitizer sanitize="False"/>
+        </param>
+    </inputs>
+</tool>

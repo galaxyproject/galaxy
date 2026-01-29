@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>edu.psu.galaxy.GalaxyServer</string>
+	<key>OnDemand</key>
+	<false/>
+	<key>Program</key>
+	<string>/Users/galaxy/galaxy_dist/run.sh</string>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>ServiceDescription</key>
+	<string>Galaxy</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/galaxy/galaxy_dist/log/galaxy.stderr</string>
+	<key>StandardOutPath</key>
+	<string>/Users/galaxy/galaxy_dist/log/galaxy.stdout</string>
+	<key>UserName</key>
+	<string>galaxy</string>
+</dict>
+</plist>

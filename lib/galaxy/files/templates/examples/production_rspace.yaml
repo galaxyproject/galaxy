@@ -1,0 +1,25 @@
+- id: rspace
+  version: 0
+  name: RSpace
+  description: >
+    RSpace is an electronic lab notebook (ELN) designed for documenting, managing and sharing scientific data. This
+    template configuration allows you to connect to an RSpace instance of your choice.
+  variables:
+    endpoint:
+      label: RSpace instance endpoint (e.g. https://demos.researchspace.com)
+      type: string
+      help: |
+        The endpoint of the RSpace server you are connecting to. This should be the full URL including the protocol
+        (http or https) and the domain name.
+  secrets:
+    api_key:
+      label: API Key
+      help: |
+        The API key to use to connect to the RSpace server. Navigate to the _My RSpace_ page on your RSpace server and
+        scroll all the way to the bottom to the _Manage API key_ section. Generate or regenerate your API key using the
+        button on the right.
+  configuration:
+    type: rspace
+    endpoint: "{{ variables.endpoint }}"
+    api_key: "{{ secrets.api_key }}"
+    writable: true

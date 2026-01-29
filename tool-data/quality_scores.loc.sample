@@ -1,0 +1,26 @@
+#This is a sample file distributed with Galaxy that is used by some
+#regional variation tools.  The quality_scores.loc file has this format (white 
+#space characters are TAB characters):
+#
+#<build>	<QualityScoreDirectoryPath>
+#
+#So, for example, if you had panTro2 qualit score files stored in 
+#/depot/data2/galaxy/panTro2/quality_scores, then the quality_scores.loc entry 
+#would look like this:
+#
+#panTro2	/depot/data2/galaxy/panTro2/quality_scores
+#
+#and your /depot/data2/galaxy/panTro2/quality_scores directory would 
+#contain all of your quality score files (e.g.):
+#
+#-rw-r--r--  1 gua110 galaxy 10964768 2007-10-02 10:33 chr10.qa.bqv
+#-rw-r--r--  1 gua110 galaxy  1749899 2007-10-02 10:33 chr10_random.qa.bqv
+#-rw-r--r--  1 gua110 galaxy 11310721 2007-10-02 10:33 chr11.qa.bqv
+#...etc...
+#
+#Your quality_scores.loc file should include an entry per line for each quality score 
+#file you have stored.  For example:
+#
+#panTro2	/depot/data2/galaxy/panTro2/quality_scores
+#rheMac2	/depot/data2/galaxy/rheMac2/quality_scores
+#ponAbe2	/depot/data2/galaxy/ponAbe2/quality_scores

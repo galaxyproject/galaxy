@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!-- 
+    job_conf used by test_workflow_handler_configuration.py
+-->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+    </plugins>
+
+    <handlers default="handlers">
+        <handler id="handler0" tags="handlers"/>
+        <handler id="handler1" tags="handlers"/>
+        <handler id="handler2" tags="handlers" />
+        <handler id="handler3" tags="handlers" />
+        <handler id="handler4" tags="handlers" />
+        <handler id="handler5" tags="handlers" />
+        <handler id="handler6" tags="handlers" />
+        <handler id="handler7" tags="handlers" />
+        <handler id="handler8" tags="handlers" />
+        <handler id="handler9" tags="handlers" />
+    </handlers>
+
+    <destinations default="local">
+        <destination id="local" runner="local">
+        </destination>
+    </destinations>
+</job_conf>

@@ -1,0 +1,79 @@
+
+===========================================================
+January 2020 Galaxy Release (v 20.01)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Enhanced workflow functionality**
+  Workflows can now make use of optional datasets and optional parameters,
+  optional parameter default values and dataset inputs can now be restricted to
+  user-defined datatypes. The workflow editor and execution engine have been
+  enhanced to allow defining options to choose from, and these options can be
+  connected to compatible text, integer, float, color and select tool parameters
+  for more flexible and universally re-usable workflows (`Pull Request 9086`_).
+
+**Major update to container and dependency management interface**
+  The manage dependencies interface has been ported to vue.js and displays
+  additional information about installed, missing and available dependencies
+  and conveniently summarizes dependency status for all installed tools.
+  Additionally the user interface now displays whether a `Biocontainers <https://biocontainers.pro/#/registry>`__ image
+  is available at `quay.io <https://quay.io>`__ (`Pull Request 8741`_).
+
+**Extended job metadata collection**
+  Creating Job metadata has been reworked so that the dataset transfer that
+  occurs after a Galaxy job can be initiated by the compute node that runs a
+  Galaxy job. Previously the transfer was often done by Galaxy. Offloading this
+  task to the compute node should allow handling many more jobs in parallel. This
+  work will also make jobs running on remote compute resources much more
+  efficient if the remote resources can write to Galaxy's object store. To
+  benefit from this new metadata setting Galaxy needs to use object stores that
+  use uuids for storing datasets and set the ``metadata_strategy`` configuration
+  value to ``extended``. This feature is in beta testing, but work is ongoing to
+  mix existing object store configuration and choose the most efficient way of
+  transfering datasets automatically (`Pull Request 8930`_ ).
+
+
+Also check out the `20.01 user release notes <https://docs.galaxyproject.org/en/release_20.01/releases/20.01_announce_user.html>`__
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_20.01 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_20.01 && git pull --ff-only origin release_20.01
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Updates to Tools and Converters in the Galaxy distribution
+==========================================================
+
+Many tools and Converters have been updated in the 20.01 release.
+As a consequence deployers need to install dependencies for these in the
+Admin Menu -> Manage Dependencies.
+
+Deprecation Notice
+==================
+
+With the release of Galaxy 20.01 we strongly encourage all deployers to run Galaxy under Python 3.
+For instructions on how to transition to Python 3 please see `here <https://docs.galaxyproject.org/en/release_20.01/admin/python.html>`__.
+
+
+Release Notes
+===========================================================
+
+.. include:: 20.01.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

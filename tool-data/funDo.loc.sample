@@ -1,0 +1,11 @@
+#This is a sample file distributed with Galaxy that is used by the FunDO tool.
+#The funDo.loc file has this format (white space characters are TAB
+#characters):
+#
+#<build>	<description>	<path to disease associated genes file>
+#
+#Your funDo.loc file should include an entry per line for each disease
+#associated genes file you have stored.
+#
+#hg18	disease associated genes	/galaxy/data/hg18/misc/funDo/genes-disease.Sept2010.interval
+#hg19	disease associated genes	/galaxy/data/hg19/misc/funDo/genes-disease.Sept2010.interval

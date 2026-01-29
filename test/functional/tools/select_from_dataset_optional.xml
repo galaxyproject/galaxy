@@ -1,0 +1,21 @@
+<tool id="select_from_dataset_optional" name="select_from_dataset_optional" version="0.1.0" profile="21.05">
+    <description>Create dynamic options from data sets</description>
+    <command><![CDATA[
+echo select_single '$select_single' > '$output'
+    ]]></command>
+    <inputs>
+        <param name="single" type="data" optional="true" format="tabular" label="single"/>
+        <param name="select_single" type="select" optional="true" label="select_single">
+            <options from_dataset="single">
+                <column name="name" index="1"/>
+                <column name="value" index="0"/>
+                <validator type="no_options" message="No data is available in single" />
+            </options>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <help>
+    </help>
+</tool>

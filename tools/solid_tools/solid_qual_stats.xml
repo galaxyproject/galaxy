@@ -1,0 +1,69 @@
+<tool id="solid_qual_stats" name="Compute quality statistics" version="1.0.0">
+    <description>for SOLiD data</description>
+    <command>
+python '$__tool_directory__/solid_qual_stats.py' '$input' '$output1'</command>
+    <inputs>
+        <param format="qualsolid" name="input" type="data" label="SOLiD qual file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" />
+    </inputs>
+    <outputs>
+        <data format="txt" name="output1" metadata_source="input" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="qualscores.qualsolid" />
+            <output name="output1" file="qualsolid.stats" compare="sim_size" />
+        </test>
+    </tests>
+
+<help>
+
+**What it does**
+
+Creates quality statistics report for the given SOLiD quality score file.
+
+.. class:: infomark
+
+**TIP:** This statistics report can be used as input for **Quality Boxplot for SOLiD data** and **Nucleotides Distribution** tool.
+
+-----
+
+**The output file will contain the following fields:**
+
+* column    = column number (position on the read)
+* count   = number of bases found in this column.
+* min     = Lowest quality score value found in this column.
+* max     = Highest quality score value found in this column.
+* sum     = Sum of quality score values for this column.
+* mean    = Mean quality score value for this column.
+* Q1    = 1st quartile quality score.
+* med   = Median quality score.
+* Q3    = 3rd quartile quality score.
+* IQR   = Inter-Quartile range (Q3-Q1).
+* lW    = 'Left-Whisker' value (for boxplotting).
+* rW    = 'Right-Whisker' value (for boxplotting).
+
+
+
+
+
+**Output Example**::
+
+    column  count   min max sum mean    Q1  med Q3  IQR lW  rW
+    1   6362991 2  32  250734117   20.41   5  9  28  23   2  31
+    2   6362991 2  32  250531036   21.37  10  26 30  20   5  31
+    3   6362991 2  34  248722469   19.09  10  26 30  20   5  31
+    4   6362991 2  34  247654797   18.92  10  26 30  20   5  31
+    .
+    .    
+    32  6362991 2  31  143436943   16.54   3  10  25  22  2  31
+    33  6362991 2  32  114269843   16.96   3  10  25  22  2  31
+    34  6362991 2  29  140638447   12.10   3  10  25  22  2  29
+    35  6362991 2  29  138910532   11.83   3  10  25  22  2  29
+    
+------
+
+This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
+
+ .. __: http://hannonlab.cshl.edu/fastx_toolkit/
+</help>
+</tool>
