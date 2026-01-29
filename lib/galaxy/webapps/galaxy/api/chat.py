@@ -135,7 +135,7 @@ class ChatAPI:
             # Context from payload is a string (e.g., "tool_error"), convert to dict for agent system
             context_str = payload.context if hasattr(payload, "context") else None
             query_context = {"context_type": context_str} if context_str else {}
-            regenerate = payload.regenerate if hasattr(payload, "regenerate") else False
+            regenerate = bool(payload.regenerate) if hasattr(payload, "regenerate") else False
         elif query:
             # New format: query parameters (context not supported in this path)
             query_text = query

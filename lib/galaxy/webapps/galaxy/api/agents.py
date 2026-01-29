@@ -133,7 +133,9 @@ class AgentAPI:
         query: str = Body(..., description="Description of the error or problem"),
         job_id: Optional[DecodedDatabaseIdField] = Body(None, description="Job ID for context"),
         error_details: Optional[dict[str, Any]] = Body(None, description="Additional error details"),
-        save_exchange: bool = Body(False, description="Save exchange for feedback tracking"),
+        save_exchange: Optional[bool] = Body(
+            None, description="Save exchange for feedback tracking. Defaults to false."
+        ),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:
@@ -156,7 +158,7 @@ class AgentAPI:
             )
 
             # Save chat exchange for feedback tracking if requested or if job_id provided
-            if save_exchange or job_id:
+            if bool(save_exchange) or job_id:
                 if job_id:
                     job = self.job_manager.get_accessible_job(trans, job_id)
                     if job:
@@ -181,7 +183,9 @@ class AgentAPI:
         self,
         query: str = Body(..., description="Description of the tool to create"),
         context: Optional[dict[str, Any]] = Body(None, description="Additional context for tool creation"),
-        save_exchange: bool = Body(False, description="Save exchange for feedback tracking"),
+        save_exchange: Optional[bool] = Body(
+            None, description="Save exchange for feedback tracking. Defaults to false."
+        ),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:
@@ -200,7 +204,7 @@ class AgentAPI:
             )
 
             # Save chat exchange for feedback tracking if requested
-            if save_exchange and trans.user:
+            if bool(save_exchange) and trans.user:
                 result = {"response": response.content, "agent_response": response.model_dump()}
                 exchange = self.chat_manager.create_general_chat(trans, query, result, "custom_tool")
                 response.metadata["exchange_id"] = exchange.id

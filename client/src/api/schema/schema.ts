@@ -7768,10 +7768,9 @@ export interface components {
             query: string;
             /**
              * Save Exchange
-             * @description Save exchange for feedback tracking
-             * @default false
+             * @description Save exchange for feedback tracking. Defaults to false.
              */
-            save_exchange: boolean;
+            save_exchange?: boolean | null;
         };
         /** Body_create_api_histories_post */
         Body_create_api_histories_post: {
@@ -7810,10 +7809,9 @@ export interface components {
             query: string;
             /**
              * Save Exchange
-             * @description Save exchange for feedback tracking
-             * @default false
+             * @description Save exchange for feedback tracking. Defaults to false.
              */
-            save_exchange: boolean;
+            save_exchange?: boolean | null;
         };
         /** Body_create_form_api_libraries__library_id__contents_post */
         Body_create_form_api_libraries__library_id__contents_post: {
@@ -8237,10 +8235,9 @@ export interface components {
             query: string;
             /**
              * Regenerate
-             * @description Force fresh analysis even if a cached response exists (for job-based queries).
-             * @default false
+             * @description Force fresh analysis even if a cached response exists (for job-based queries). Defaults to false if not provided.
              */
-            regenerate: boolean;
+            regenerate?: boolean | null;
         };
         /** ChatResponse */
         ChatResponse: {

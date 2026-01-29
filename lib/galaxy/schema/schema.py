@@ -3888,10 +3888,10 @@ class ChatPayload(Model):
         title="Exchange ID",
         description="The ID of an existing chat exchange to continue.",
     )
-    regenerate: bool = Field(
-        default=False,
+    regenerate: Optional[bool] = Field(
+        default=None,
         title="Regenerate",
-        description="Force fresh analysis even if a cached response exists (for job-based queries).",
+        description="Force fresh analysis even if a cached response exists (for job-based queries). Defaults to false if not provided.",
     )
 
 
