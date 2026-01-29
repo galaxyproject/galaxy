@@ -164,10 +164,8 @@ class ConditionalDependencies:
         if exists(file_source_templates_conf_yml):
             with open(file_source_templates_conf_yml) as f:
                 file_source_templates_conf = apply_syntactic_sugar(yaml.safe_load(f))
-        else:
-            file_source_templates_conf = []
-        for file_source_template in file_source_templates_conf:
-            self.file_sources.append(file_source_template["configuration"].get("type"))
+            for file_source_template in file_source_templates_conf:
+                self.file_sources.append(file_source_template["configuration"].get("type"))
 
         # Parse vault config
         vault_conf_yml = self.config_object.vault_config_file
