@@ -355,7 +355,7 @@ watch(operationMessage, () => {
                 :show-advanced.sync="showAdvanced"
                 view="compact" />
         </div>
-        <div v-if="initDataLoading" class="position-relative h-100">
+        <div v-if="initDataLoading" class="position-relative h-100" data-description="grid initial loading">
             <LoadingOverlay />
         </div>
         <span v-else-if="!isAvailable || hasInvalidFilters">

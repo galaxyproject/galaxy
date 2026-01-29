@@ -48,11 +48,11 @@ const isOkay = computed(() => props.okay && !hasWarningItems.value);
 
 <template>
     <GCard :data-lint-status="isOkay ? 'ok' : 'warning'">
-        <div v-if="isOkay">
+        <div v-if="isOkay" data-description="lint okay section">
             <FontAwesomeIcon :icon="faCheck" class="text-success" />
             <span v-localize>{{ props.successMessage }}</span>
         </div>
-        <div v-else>
+        <div v-else data-description="lint warning section">
             <FontAwesomeIcon
                 :icon="faExclamationTriangle"
                 :class="props.highPriority ? 'text-danger' : 'text-warning'" />
@@ -74,6 +74,7 @@ const isOkay = computed(() => props.okay && !hasWarningItems.value);
                         :disabled="props.requiresSave"
                         disabled-title="Fix disabled. Save workflow to enable this fix."
                         :data-item-index="idx"
+                        data-description="autofix item link"
                         v-bind="dataAttributes(item)"
                         @click="emit('onClick', item)">
                         <FontAwesomeIcon v-if="item.autofix" :icon="faMagic" class="mr-1" />
@@ -84,7 +85,7 @@ const isOkay = computed(() => props.okay && !hasWarningItems.value);
                 </div>
             </div>
             <p v-else-if="props.attributeLink" class="mt-2 ml-1 my-0">
-                <GLink thin @click="emit('onClickAttribute')">
+                <GLink thin data-description="attribute link" @click="emit('onClickAttribute')">
                     <FontAwesomeIcon :icon="faPencilAlt" class="mr-1" />{{ props.attributeLink }}
                 </GLink>
             </p>

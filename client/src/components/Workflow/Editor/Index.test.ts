@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { shallowMount, type Wrapper } from "@vue/test-utils";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -9,6 +9,7 @@ import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+import type { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 import { getVersions } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
@@ -33,8 +34,20 @@ const mockGetStateUpgradeMessages = vi.mocked(getStateUpgradeMessages);
 const mockLoadWorkflow = vi.mocked(getWorkflowFull);
 const MockGetVersions = vi.mocked(getVersions);
 
+/** TODO: A potentially hacky type until we modernize the entire
+ * component to Composition API and TypeScript */
+type IndexComponent = Vue & {
+    annotation: string | null;
+    name: string | null;
+    stateStore: ReturnType<typeof useWorkflowStateStore>;
+    datatypesMapper: ReturnType<typeof useDatatypesMapperStore> | null;
+    datatypes: Record<string, string[]> | null;
+    onDownload: () => void;
+    onChange: () => void;
+};
+
 describe("Index", () => {
-    let wrapper: any; // don't know how to add type hints here, see https://github.com/vuejs/vue-test-utils/issues/255
+    let wrapper: Wrapper<IndexComponent>;
 
     beforeEach(() => {
         const testingPinia = createTestingPinia({ createSpy: vi.fn });
@@ -82,14 +95,21 @@ describe("Index", () => {
         });
     });
 
+    // Methods to handle the `hasChanges` ref. Once we modernize, we can just use the store directly.
+    function getHasChanges() {
+        return wrapper.vm.stateStore.hasChanges;
+    }
     async function resetChanges() {
-        wrapper.vm.hasChanges = false;
+        setHasChanges(false);
         await wrapper.vm.$nextTick();
+    }
+    function setHasChanges(value: boolean) {
+        wrapper.vm.stateStore.hasChanges = value;
     }
 
     it("resolves datatypes", async () => {
-        expect(wrapper.datatypesMapper).not.toBeNull();
-        expect(wrapper.datatypes).not.toBeNull();
+        expect(wrapper.vm.datatypesMapper).not.toBeNull();
+        expect(wrapper.vm.datatypes).not.toBeNull();
     });
 
     it("routes to download URL and respects Galaxy prefix", async () => {
@@ -102,43 +122,43 @@ describe("Index", () => {
     });
 
     it("tracks changes to annotations", async () => {
-        expect(wrapper.vm.hasChanges).toBeFalsy();
+        expect(getHasChanges()).toBeFalsy();
         wrapper.vm.annotation = "original annotation";
         await wrapper.vm.$nextTick();
-        expect(wrapper.vm.hasChanges).toBeTruthy();
+        expect(getHasChanges()).toBeTruthy();
 
-        resetChanges();
+        await resetChanges();
 
         wrapper.vm.annotation = "original annotation";
         await wrapper.vm.$nextTick();
-        expect(wrapper.vm.hasChanges).toBeFalsy();
+        expect(getHasChanges()).toBeFalsy();
 
         wrapper.vm.annotation = "new annotation";
         await wrapper.vm.$nextTick();
-        expect(wrapper.vm.hasChanges).toBeTruthy();
+        expect(getHasChanges()).toBeTruthy();
     });
 
     it("tracks changes to name", async () => {
-        expect(wrapper.hasChanges).toBeFalsy();
+        expect(getHasChanges()).toBeFalsy();
         wrapper.vm.name = "original name";
         await wrapper.vm.$nextTick();
-        expect(wrapper.vm.hasChanges).toBeTruthy();
+        expect(getHasChanges()).toBeTruthy();
 
-        resetChanges();
+        await resetChanges();
 
         wrapper.vm.name = "original name";
         await wrapper.vm.$nextTick();
-        expect(wrapper.vm.hasChanges).toBeFalsy();
+        expect(getHasChanges()).toBeFalsy();
 
         wrapper.vm.name = "new name";
         await wrapper.vm.$nextTick();
-        expect(wrapper.vm.hasChanges).toBeTruthy();
+        expect(getHasChanges()).toBeTruthy();
     });
 
     it("prevents navigation only if hasChanges", async () => {
-        expect(wrapper.vm.hasChanges).toBeFalsy();
+        expect(getHasChanges()).toBeFalsy();
         await wrapper.vm.onChange();
-        const confirmationRequired = wrapper.emitted()["update:confirmation"][0][0];
+        const confirmationRequired = wrapper.emitted()["update:confirmation"]![0]![0];
         expect(confirmationRequired).toBeTruthy();
     });
 });

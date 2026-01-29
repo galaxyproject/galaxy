@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed } from "vue";
+import { computed, toRefs } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { type ConfirmDialogOptions, useConfirmDialog } from "@/composables/confirmDialog";
@@ -56,7 +56,7 @@ const {
     disconnectedInputs,
     duplicateLabels,
     missingMetadata,
-} = props.lintData;
+} = toRefs(props.lintData);
 
 /** Renders the celebratory reaction when all critical and non-critical best practice issues are resolved. */
 const showSuccessReaction = computed(
