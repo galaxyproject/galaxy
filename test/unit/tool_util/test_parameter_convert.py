@@ -233,10 +233,10 @@ def test_fill_defaults():
     assert with_defaults["parameter"] is None
 
     with_defaults = fill_state_for({}, "parameters/gx_select_multiple")
-    assert with_defaults["parameter"] == []
+    assert with_defaults["parameter"] is None
 
     with_defaults = fill_state_for({}, "parameters/gx_select_multiple_optional")
-    assert with_defaults["parameter"] == []
+    assert with_defaults["parameter"] is None
 
     with_defaults = fill_state_for({}, "parameters/gx_select_multiple_one_default")
     assert with_defaults["parameter"] == ["--ex3"]
