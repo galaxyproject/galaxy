@@ -295,10 +295,34 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             container = match.group("container")
             object_id: Optional[int] = None
             encoded_id: Optional[str] = None
+            match_text = match.group()
 
-            if id_match := re.search(UNENCODED_ID_PATTERN, match.group()):
+            # First try to find an explicit history_dataset_id
+            if id_match := re.search(UNENCODED_ID_PATTERN, match_text):
                 object_id = int(id_match.group(2))
                 encoded_id = trans.security.encode_id(object_id)
+            else:
+                # If not found, try to resolve output/input labels via invocation
+                if invocation_id_match := re.search(INVOCATION_ID_PATTERN, match_text):
+                    invocation_id = invocation_id_match.group(1)
+                    invocation = workflow_manager.get_invocation(
+                        trans, invocation_id, check_ownership=False, check_accessible=True
+                    )
+                    if output_match := re.search(OUTPUT_LABEL_PATTERN, match_text):
+                        # Find the first non-empty group in the match
+                        output_label = next((g for g in output_match.groups() if g), None)
+                        if output_label and invocation:
+                            ref_object = invocation.get_output_object(output_label)
+                            if ref_object and ref_object.history_content_type == "dataset":
+                                object_id = ref_object.id
+                                encoded_id = trans.security.encode_id(object_id)
+                    elif input_match := re.search(INPUT_LABEL_PATTERN, match_text):
+                        input_label = next((g for g in input_match.groups() if g), None)
+                        if input_label and invocation:
+                            ref_object = invocation.get_input_object(input_label)
+                            if ref_object and ref_object.history_content_type == "dataset":
+                                object_id = ref_object.id
+                                encoded_id = trans.security.encode_id(object_id)
             if container == "history_dataset_type":
                 _check_object(object_id, match.group(0))
                 hda = hda_manager.get_accessible(object_id, trans.user)
@@ -1040,7 +1064,25 @@ def populate_invocation_markdown(trans, invocation, workflow_markdown):
 
         return (line, False)
 
+    def _remap_embed_container(match):
+        """Add invocation_id to inline/embedded directives that have output/input labels."""
+        whole_match = match.group()
+        invocation_id_match = re.search(INVOCATION_ID_PATTERN, whole_match)
+        if invocation_id_match:
+            # Already has invocation_id
+            return whole_match
+
+        output_match = re.search(OUTPUT_LABEL_PATTERN, whole_match)
+        input_match = re.search(INPUT_LABEL_PATTERN, whole_match)
+        if output_match or input_match:
+            # Add invocation_id to the directive
+            container = match.group("container")
+            whole_match = whole_match.replace(f"{container}(", f"{container}(invocation_id={invocation.id}, ")
+
+        return whole_match
+
     galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    galaxy_markdown = _remap_galaxy_markdown_embedded_containers(_remap_embed_container, galaxy_markdown)
     galaxy_markdown = process_invocation_ids(lambda _: invocation.id, galaxy_markdown)
     return galaxy_markdown
 
@@ -1178,7 +1220,48 @@ def resolve_invocation_markdown(trans, workflow_markdown):
                 line = line.replace(invocation_id_match.group(), "")
         return line, False
 
+    def _remap_embed_container(match):
+        """Remap inline/embedded directives to resolve output/input labels to actual IDs."""
+        whole_match = match.group()
+        invocation_id_match = re.search(INVOCATION_ID_PATTERN, whole_match)
+        invocation = get_invocation(trans, whole_match) if invocation_id_match else None
+        if invocation is None:
+            return whole_match
+
+        output_match = re.search(OUTPUT_LABEL_PATTERN, whole_match)
+        input_match = re.search(INPUT_LABEL_PATTERN, whole_match)
+
+        def find_non_empty_group(match):
+            for group in match.groups():
+                if group:
+                    return group
+
+        ref_object = None
+        target_match = None
+        ref_object_type = None
+
+        if output_match:
+            target_match = output_match
+            name = find_non_empty_group(target_match)
+            ref_object = invocation.get_output_object(name)
+        elif input_match:
+            target_match = input_match
+            name = find_non_empty_group(target_match)
+            ref_object = invocation.get_input_object(name)
+
+        if ref_object and target_match:
+            if ref_object.history_content_type == "dataset":
+                ref_object_type = "history_dataset"
+            else:
+                ref_object_type = "history_dataset_collection"
+            whole_match = whole_match.replace(target_match.group(), f"{ref_object_type}_id={ref_object.id}")
+            if invocation_id_match is not None:
+                whole_match = whole_match.replace(invocation_id_match.group(), "")
+
+        return whole_match
+
     workflow_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
+    workflow_markdown = _remap_galaxy_markdown_embedded_containers(_remap_embed_container, workflow_markdown)
     return workflow_markdown
 
 
