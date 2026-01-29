@@ -211,7 +211,7 @@ class ToolDataTable(Dictifiable):
         persist: bool = False,
         entry_source: EntrySource = None,
         tool_data_file_path: Optional[str] = None,
-        use_first_file_path: bool = False,
+        bundle_mode: bool = False,
         **kwd,
     ) -> None:
         raise NotImplementedError("Abstract method")
@@ -223,7 +223,7 @@ class ToolDataTable(Dictifiable):
         persist: bool = False,
         entry_source: EntrySource = None,
         tool_data_file_path: Optional[str] = None,
-        use_first_file_path: bool = False,
+        bundle_mode: bool = False,
         **kwd,
     ) -> int:
         self._add_entry(
@@ -232,7 +232,7 @@ class ToolDataTable(Dictifiable):
             persist=persist,
             entry_source=entry_source,
             tool_data_file_path=tool_data_file_path,
-            use_first_file_path=use_first_file_path,
+            bundle_mode=bundle_mode,
             **kwd,
         )
         return self._update_version()
@@ -670,7 +670,7 @@ class TabularToolDataTable(ToolDataTable):
         persist: bool = False,
         entry_source: EntrySource = None,
         tool_data_file_path: Optional[str] = None,
-        use_first_file_path: bool = False,
+        bundle_mode: bool = False,
         **kwd,
     ) -> None:
         # accepts dict or list of columns
@@ -703,19 +703,9 @@ class TabularToolDataTable(ToolDataTable):
             raise MessageException(
                 f"Attempted to add fields ({fields}) to data table '{self.name}', but there were not enough fields specified ( {len(fields)} < {self.largest_index + 1} )."
             )
-        filename = None
 
         if persist:
-            if tool_data_file_path is not None:
-                filename = tool_data_file_path
-                if os.path.realpath(filename) not in [os.path.realpath(n) for n in self.filenames]:
-                    raise MessageException(f"Path '{tool_data_file_path}' is not a known data table file path.")
-            elif not use_first_file_path:
-                filename = self.get_filename_for_source(entry_source)
-            else:
-                for name in self.filenames:
-                    filename = name
-                    break
+            filename = self._locate_filename(tool_data_file_path, entry_source, bundle_mode)
             if filename is None:
                 # If we reach this point, there is no data table with a corresponding .loc file.
                 raise MessageException(
@@ -741,6 +731,19 @@ class TabularToolDataTable(ToolDataTable):
                         raise
                 fields_collapsed = f"{self.separator.join(fields)}\n"
                 data_table_fh.write(fields_collapsed.encode("utf-8"))
+
+    def _locate_filename(self, tool_data_file_path, entry_source, bundle_mode):
+        if tool_data_file_path is not None:
+            filename = tool_data_file_path
+            if os.path.realpath(filename) not in [os.path.realpath(n) for n in self.filenames]:
+                raise MessageException(f"Path '{tool_data_file_path}' is not a known data table file path.")
+        elif not bundle_mode:
+            filename = self.get_filename_for_source(entry_source)
+        else:
+            for name in self.filenames:
+                filename = name
+                break
+        return filename
 
     def _remove_entry(self, values):
         # update every file
@@ -1183,7 +1186,7 @@ class ToolDataTableManager(Dictifiable):
         bundle = DataTableBundle(**index)
         assert bundle.output_name
         out_data = {bundle.output_name: DirectoryAsExtraFiles(target_directory)}
-        return _process_bundle(out_data, bundle, options, self)
+        return _process_bundle(out_data, bundle, options, self, bundle_mode=True)
 
     def write_bundle(
         self,
@@ -1255,6 +1258,7 @@ def _process_bundle(
     bundle: DataTableBundle,
     options: BundleProcessingOptions,
     tool_data_tables: ToolDataTableManager,
+    bundle_mode: bool = False,
 ):
     updated_data_tables = []
     data_tables_dict = bundle.data_tables
@@ -1319,7 +1323,7 @@ def _process_bundle(
                 persist=True,
                 entry_source=bundle.repo_info,
                 tool_data_file_path=options.tool_data_file_path,
-                use_first_file_path=True,
+                bundle_mode=bundle_mode,
             )
         # Removes data table entries
         for data_table_row in data_table_remove_values:
@@ -1344,7 +1348,12 @@ def _process_bundle(
                 for name, value in data_table_row.items():
                     if name in path_column_names:
                         data_table_value[name] = os.path.abspath(os.path.join(options.data_manager_path, value))
-                data_table.add_entry(data_table_value, persist=True, entry_source=bundle.repo_info)
+                data_table.add_entry(
+                    data_table_value,
+                    persist=True,
+                    entry_source=bundle.repo_info,
+                    bundle_mode=bundle_mode,
+                )
             updated_data_tables.append(data_table_name)
     else:
         for data_table_name, data_table_values in data_tables_dict.items():
