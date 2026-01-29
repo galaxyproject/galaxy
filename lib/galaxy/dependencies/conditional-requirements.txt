@@ -33,7 +33,7 @@ fs-azureblob # type: azure
 rspace-client>=2.6.1,<3  # type: rspace
 adlfs
 huggingface_hub
-omero-py #type: omero # Requires manual installation of additional dependencies, see https://omero.readthedocs.io/en/stable/developers/Python.html#omero-python-language-bindings
+omero-py #type: omero
 
 # Vault backend
 hvac
