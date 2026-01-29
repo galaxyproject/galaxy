@@ -197,4 +197,16 @@ describe("ToolPanel", () => {
         expect(wrapper.find('[data-description="panel toolbox"]').exists()).toBeFalsy();
         expect(wrapper.find('[data-description="tool panel error message"]').text()).toBe(PANEL_VIEW_ERR_MSG);
     });
+
+    it("shows go to all button when not in workflow mode and hides it in workflow mode", async () => {
+        const wrapper = await createWrapper();
+
+        // Test: go to all button should appear when workflow is false (default)
+        expect(wrapper.find('[data-description="Discover Tools button"]').exists()).toBe(true);
+
+        // Test: change workflow prop to true and button should disappear
+        await wrapper.setProps({ workflow: true });
+
+        expect(wrapper.find('[data-description="Discover Tools button"]').exists()).toBe(false);
+    });
 });

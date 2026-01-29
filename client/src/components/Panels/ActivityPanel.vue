@@ -38,7 +38,7 @@ const hasGoToAll = computed(() => props.goToAllTitle && props.href);
                 v-if="hasGoToAll"
                 class="activity-panel-footer"
                 variant="primary"
-                :data-description="`props.mainButtonText button`"
+                :data-description="`${props.goToAllTitle} button`"
                 :to="props.href"
                 size="sm"
                 @click="emit('goToAll')">
