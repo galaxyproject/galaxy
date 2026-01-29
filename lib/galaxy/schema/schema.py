@@ -35,6 +35,7 @@ from typing_extensions import (
     TypedDict,
 )
 
+from galaxy.schema.agents import AgentResponse
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -3887,6 +3888,11 @@ class ChatPayload(Model):
         title="Exchange ID",
         description="The ID of an existing chat exchange to continue.",
     )
+    regenerate: bool = Field(
+        default=False,
+        title="Regenerate",
+        description="Force fresh analysis even if a cached response exists (for job-based queries).",
+    )
 
 
 class ChatResponse(BaseModel):
@@ -3905,15 +3911,20 @@ class ChatResponse(BaseModel):
         title="Error Message",
         description="The error message, if any, for the chat query.",
     )
-    agent_response: Optional[dict[str, Any]] = Field(
+    agent_response: Optional[AgentResponse] = Field(
         default=None,
         title="Agent Response",
-        description="Full agent response with metadata and suggestions.",
+        description="Full structured agent response with metadata and suggestions.",
     )
     exchange_id: Optional[int] = Field(
         default=None,
         title="Exchange ID",
         description="The ID of the chat exchange for continuing conversations.",
+    )
+    processing_time: Optional[float] = Field(
+        default=None,
+        title="Processing Time",
+        description="Time taken to process the query in seconds.",
     )
 
 

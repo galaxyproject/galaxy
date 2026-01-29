@@ -72,21 +72,23 @@ class AgentResponse(BaseModel):
 
 
 class AgentQueryRequest(BaseModel):
-    """Request to query an AI agent."""
+    """Request to query an AI agent.
+
+    DEPRECATED: Use /api/chat instead for new integrations.
+    """
 
     query: str = Field(description="The user's question or request")
     agent_type: str = Field(default="auto", description="Preferred agent type ('auto' for routing)")
     context: dict[str, Any] = Field(default_factory=dict, description="Additional context for the query")
-    stream: bool = Field(default=False, description="Whether to stream the response")
 
 
 class AgentQueryResponse(BaseModel):
-    """Response from an AI agent query."""
+    """Response from an AI agent query.
+
+    DEPRECATED: Use /api/chat instead for new integrations.
+    """
 
     response: AgentResponse = Field(description="The agent's response")
-    routing_info: Optional[dict[str, Any]] = Field(
-        default=None, description="Information about how the query was routed"
-    )
     processing_time: Optional[float] = Field(default=None, description="Time taken to process the query in seconds")
 
 

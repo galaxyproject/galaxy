@@ -4,6 +4,7 @@ API Controller providing Chat functionality
 
 import json
 import logging
+import time
 from typing import (
     Annotated,
     Any,
@@ -115,21 +116,26 @@ class ChatAPI:
 
         Returns enhanced response with agent metadata and action suggestions.
         """
+        start_time = time.time()
+
         # Initialize response structure
-        result = {
+        result: dict[str, Any] = {
             "response": "",
             "error_code": 0,
             "error_message": "",
             "agent_response": None,
+            "processing_time": None,
         }
 
         # Determine query source - either from payload (job-based) or query param (general)
+        regenerate = False
         if payload and payload.query:
             # Old format: payload body with query and context string
             query_text = payload.query
             # Context from payload is a string (e.g., "tool_error"), convert to dict for agent system
             context_str = payload.context if hasattr(payload, "context") else None
             query_context = {"context_type": context_str} if context_str else {}
+            regenerate = payload.regenerate if hasattr(payload, "regenerate") else False
         elif query:
             # New format: query parameters (context not supported in this path)
             query_text = query
@@ -141,18 +147,16 @@ class ChatAPI:
 
         job = None
         if job_id:
-            # Job-based chat - check for existing responses
+            # Job-based chat - check for existing responses (unless regenerate requested)
             job = self.job_manager.get_accessible_job(trans, job_id)
-            if job:
-                # If there's an existing response for this job, just return that one for now.
-                # TODO: Support regenerating the response as a new message, and
-                # asking follow-up questions.
+            if job and not regenerate:
                 existing_response = self.chat_manager.get(trans, job.id)
                 if existing_response and existing_response.messages[0]:
                     return ChatResponse(
                         response=existing_response.messages[0].message,
                         error_code=0,
                         error_message="",
+                        exchange_id=existing_response.id,
                     )
 
         # Check if we're continuing an existing conversation (do this ONCE at the beginning)
@@ -183,7 +187,7 @@ class ChatAPI:
                     query_text, agent_type, trans, user, job, full_context
                 )
                 result["response"] = agent_response.content
-                result["agent_response"] = agent_response.model_dump()
+                result["agent_response"] = agent_response
             else:
                 # Fallback to legacy implementation
                 self._ensure_ai_configured()
@@ -201,11 +205,12 @@ class ChatAPI:
                 # Use the exchange_id we already extracted at the beginning
                 if exchange_id:
                     # Add to existing conversation
+                    agent_resp = result.get("agent_response")
                     conversation_data = {
                         "query": query_text,
                         "response": result.get("response", ""),
                         "agent_type": agent_type,
-                        "agent_response": result.get("agent_response"),
+                        "agent_response": agent_resp.model_dump() if agent_resp else None,
                     }
                     message_content = json.dumps(conversation_data)
                     self.chat_manager.add_message(trans, exchange_id, message_content)
@@ -215,11 +220,14 @@ class ChatAPI:
                     exchange = self.chat_manager.create_general_chat(trans, query_text, result, agent_type)
                     result["exchange_id"] = exchange.id
 
+            result["processing_time"] = time.time() - start_time
+
         except Exception as e:
             log.error(f"Error getting AI response: {e}")
             result["response"] = "Sorry, there was an error processing your query. Please try again later."
             result["error_code"] = 500
             result["error_message"] = "Internal error"
+            result["processing_time"] = time.time() - start_time
 
         # Return the enhanced response structure
         return ChatResponse(**result)

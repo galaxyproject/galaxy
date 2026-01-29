@@ -95,14 +95,19 @@ class AgentAPI:
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentQueryResponse:
-        """Query an AI agent. Use agent_type='auto' for automatic routing."""
+        """Query an AI agent. Use agent_type='auto' for automatic routing.
+
+        DEPRECATED: Use /api/chat for new integrations. This endpoint will be
+        removed in a future release.
+        """
+        log.warning("DEPRECATED: /api/ai/agents/query is deprecated. Use /api/chat instead.")
+
         if not HAS_AGENTS:
             raise ConfigurationError("Agent system is not available")
 
         start_time = time.time()
 
         try:
-            # Get full agent response with all metadata and routing info
             result = await self.agent_service.route_and_execute(
                 query=request.query,
                 trans=trans,
@@ -115,7 +120,6 @@ class AgentAPI:
 
             return AgentQueryResponse(
                 response=result,
-                routing_info=result.metadata.get("routing_info"),
                 processing_time=processing_time,
             )
 
@@ -129,10 +133,14 @@ class AgentAPI:
         query: str = Body(..., description="Description of the error or problem"),
         job_id: Optional[DecodedDatabaseIdField] = Body(None, description="Job ID for context"),
         error_details: Optional[dict[str, Any]] = Body(None, description="Additional error details"),
+        save_exchange: bool = Body(False, description="Save exchange for feedback tracking"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:
-        """Analyze job errors and provide debugging assistance."""
+        """Analyze job errors and provide debugging assistance.
+
+        Set save_exchange=True to enable feedback tracking on the response.
+        """
         try:
             # Build context
             context = error_details or {}
@@ -147,16 +155,20 @@ class AgentAPI:
                 context=context,
             )
 
-            # Save chat exchange for job-based error analysis (enables feedback)
-            if job_id:
-                job = self.job_manager.get_accessible_job(trans, job_id)
-                if job:
-                    # Check if exchange already exists
-                    existing = self.chat_manager.get(trans, job.id)
-                    if not existing:
-                        # Create new exchange for feedback tracking
-                        exchange = self.chat_manager.create(trans, job.id, response.content)
-                        response.metadata["exchange_id"] = exchange.id
+            # Save chat exchange for feedback tracking if requested or if job_id provided
+            if save_exchange or job_id:
+                if job_id:
+                    job = self.job_manager.get_accessible_job(trans, job_id)
+                    if job:
+                        existing = self.chat_manager.get(trans, job.id)
+                        if not existing:
+                            exchange = self.chat_manager.create(trans, job.id, response.content)
+                            response.metadata["exchange_id"] = exchange.id
+                elif trans.user:
+                    # Create general chat exchange for non-job error analysis
+                    result = {"response": response.content, "agent_response": response.model_dump()}
+                    exchange = self.chat_manager.create_general_chat(trans, query, result, "error_analysis")
+                    response.metadata["exchange_id"] = exchange.id
 
             return response
 
@@ -169,13 +181,14 @@ class AgentAPI:
         self,
         query: str = Body(..., description="Description of the tool to create"),
         context: Optional[dict[str, Any]] = Body(None, description="Additional context for tool creation"),
+        save_exchange: bool = Body(False, description="Save exchange for feedback tracking"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> AgentResponse:
         """Create a custom Galaxy tool.
 
-        Note: Returns AgentResponse with tool_yaml in metadata. A dedicated
-        CustomToolResponse schema may be cleaner for this endpoint in the future.
+        Note: Returns AgentResponse with tool_yaml in metadata.
+        Set save_exchange=True to enable feedback tracking on the response.
         """
         try:
             response = await self.agent_service.execute_agent(
@@ -185,6 +198,12 @@ class AgentAPI:
                 user=user,
                 context=context or {},
             )
+
+            # Save chat exchange for feedback tracking if requested
+            if save_exchange and trans.user:
+                result = {"response": response.content, "agent_response": response.model_dump()}
+                exchange = self.chat_manager.create_general_chat(trans, query, result, "custom_tool")
+                response.metadata["exchange_id"] = exchange.id
 
             return response
 

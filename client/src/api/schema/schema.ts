@@ -7243,6 +7243,8 @@ export interface components {
         /**
          * AgentQueryRequest
          * @description Request to query an AI agent.
+         *
+         *     DEPRECATED: Use /api/chat instead for new integrations.
          */
         AgentQueryRequest: {
             /**
@@ -7263,16 +7265,12 @@ export interface components {
              * @description The user's question or request
              */
             query: string;
-            /**
-             * Stream
-             * @description Whether to stream the response
-             * @default false
-             */
-            stream: boolean;
         };
         /**
          * AgentQueryResponse
          * @description Response from an AI agent query.
+         *
+         *     DEPRECATED: Use /api/chat instead for new integrations.
          */
         AgentQueryResponse: {
             /**
@@ -7282,13 +7280,6 @@ export interface components {
             processing_time?: number | null;
             /** @description The agent's response */
             response: components["schemas"]["AgentResponse"];
-            /**
-             * Routing Info
-             * @description Information about how the query was routed
-             */
-            routing_info?: {
-                [key: string]: unknown;
-            } | null;
         };
         /**
          * AgentResponse
@@ -7775,6 +7766,12 @@ export interface components {
              * @description Description of the error or problem
              */
             query: string;
+            /**
+             * Save Exchange
+             * @description Save exchange for feedback tracking
+             * @default false
+             */
+            save_exchange: boolean;
         };
         /** Body_create_api_histories_post */
         Body_create_api_histories_post: {
@@ -7811,6 +7808,12 @@ export interface components {
              * @description Description of the tool to create
              */
             query: string;
+            /**
+             * Save Exchange
+             * @description Save exchange for feedback tracking
+             * @default false
+             */
+            save_exchange: boolean;
         };
         /** Body_create_form_api_libraries__library_id__contents_post */
         Body_create_form_api_libraries__library_id__contents_post: {
@@ -8232,16 +8235,20 @@ export interface components {
              * @description The query to be sent to the chatbot.
              */
             query: string;
+            /**
+             * Regenerate
+             * @description Force fresh analysis even if a cached response exists (for job-based queries).
+             * @default false
+             */
+            regenerate: boolean;
         };
         /** ChatResponse */
         ChatResponse: {
             /**
              * Agent Response
-             * @description Full agent response with metadata and suggestions.
+             * @description Full structured agent response with metadata and suggestions.
              */
-            agent_response?: {
-                [key: string]: unknown;
-            } | null;
+            agent_response?: components["schemas"]["AgentResponse"] | null;
             /**
              * Error Code
              * @description The error code, if any, for the chat query.
@@ -8257,6 +8264,11 @@ export interface components {
              * @description The ID of the chat exchange for continuing conversations.
              */
             exchange_id?: number | null;
+            /**
+             * Processing Time
+             * @description Time taken to process the query in seconds.
+             */
+            processing_time?: number | null;
             /**
              * Response
              * @description The response to the chat query.
