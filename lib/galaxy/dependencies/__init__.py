@@ -20,6 +20,7 @@ from galaxy.util import (
     parse_xml,
     which,
 )
+from galaxy.util.config_templates import apply_syntactic_sugar
 from galaxy.util.properties import (
     find_config_file,
     load_app_properties,
@@ -151,13 +152,20 @@ class ConditionalDependencies:
 
         # Parse file sources config
         file_sources_conf_yml = self.config_object.file_sources_config_file
-
         if exists(file_sources_conf_yml):
             with open(file_sources_conf_yml) as f:
                 file_sources_conf = yaml.safe_load(f)
         else:
             file_sources_conf = []
         self.file_sources = [c.get("type", None) for c in file_sources_conf]
+
+        # Parse file source templates config
+        file_source_templates_conf_yml = self.config_object.file_source_templates_config_file
+        if exists(file_source_templates_conf_yml):
+            with open(file_source_templates_conf_yml) as f:
+                file_source_templates_conf = apply_syntactic_sugar(yaml.safe_load(f))
+            for file_source_template in file_source_templates_conf:
+                self.file_sources.append(file_source_template["configuration"].get("type"))
 
         # Parse vault config
         vault_conf_yml = self.config_object.vault_config_file
