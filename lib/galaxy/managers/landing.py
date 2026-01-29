@@ -156,6 +156,7 @@ class LandingRequestManager:
         model.client_secret = payload.client_secret
         model.request_state = self.validate_workflow_request_state(payload.request_state)
         model.public = payload.public
+        model.origin = str(payload.origin) if payload.origin else None
         self._save(model)
         return self._workflow_response(model)
 
