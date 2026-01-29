@@ -1022,7 +1022,10 @@ class MinimalJobWrapper(HasResourceParameters):
         # wait for that to be assigned before configuring it. Either way the working
         # directory does not to be configured on this object before prepare() is called.
         if job.object_store_id:
-            self._setup_working_directory(job=job)
+            try:
+                self._setup_working_directory(job=job)
+            except PermissionError:
+                log.warning("Could not setup the working directory")
         # the path rewriter needs destination params, so it cannot be set up until after the destination has been
         # resolved
         self._job_io: Optional[JobIO] = None
