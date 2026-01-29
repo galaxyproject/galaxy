@@ -135,6 +135,7 @@ def _description_from_tool_source(
 
     tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
     processed_test_dict: Union[ValidToolTestDict, InvalidToolTestDict]
+    profile = tool_source.parse_profile()
     try:
         processed_inputs = _process_raw_inputs(
             tool_source,
@@ -144,7 +145,6 @@ def _description_from_tool_source(
             required_data_tables,
             required_loc_files,
         )
-        profile = tool_source.parse_profile()
         processed_test_dict = ValidToolTestDict(
             {
                 "inputs": processed_inputs,
@@ -172,7 +172,6 @@ def _description_from_tool_source(
             }
         )
     except Exception:
-        profile = tool_source.parse_profile()
         processed_test_dict = InvalidToolTestDict(
             {
                 "tool_id": tool_id,
