@@ -66,6 +66,9 @@ RUN ansible-galaxy install -r requirements.yml -p roles --force-with-deps
 # Add Galaxy source code
 COPY . $SERVER_DIR/
 
+# Strip inline comments from conditional-requirements.txt (ansible role passes lines directly to pip)
+RUN sed -i 's/[[:space:]]*# type:.*$//' $SERVER_DIR/lib/galaxy/dependencies/conditional-requirements.txt
+
 #======================================================
 # Stage 2.1 - Build galaxy server
 #======================================================
@@ -191,6 +194,7 @@ USER $GALAXY_USER
 
 ENV PATH="$SERVER_DIR/.venv/bin:${PATH}"
 ENV GALAXY_CONFIG_CONDA_AUTO_INIT=False
+ENV PYTHONPATH="$SERVER_DIR/lib/"
 
 ENTRYPOINT ["tini", "--"]
 
