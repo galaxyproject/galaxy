@@ -24,32 +24,47 @@ const filter = ref("");
 const showAdvanced = ref(false);
 const showSelectModal = ref(false);
 const initialLoaded = ref(false);
+const displayCount = ref(4);
 
 const { currentUser } = storeToRefs(useUserStore());
 const { histories, currentHistory, historiesLoading } = storeToRefs(useHistoryStore());
 
 const historyStore = useHistoryStore();
 
+/** All user-owned histories sorted by update time (most recent first) */
+const sortedUserHistories = computed(() => {
+    return [...histories.value]
+        .filter((h) => userOwnsHistory(currentUser.value, h))
+        .sort((a, b) => {
+            if (a.update_time < b.update_time) {
+                return 1;
+            } else {
+                return -1;
+            }
+        });
+});
+
 const selectedHistories = computed<PinnedHistory[]>(() => {
     if (hasPinnedHistories.value) {
         return historyStore.pinnedHistories;
     } else {
-        // get the latest four histories
-        return [...histories.value]
-            .filter((h) => userOwnsHistory(currentUser.value, h))
-            .sort((a, b) => {
-                if (a.update_time < b.update_time) {
-                    return 1;
-                } else {
-                    return -1;
-                }
-            })
-            .slice(0, 4)
-            .map((history) => {
-                return { id: history.id };
-            });
+        return sortedUserHistories.value.slice(0, displayCount.value).map((history) => {
+            return { id: history.id };
+        });
     }
 });
+
+/** Whether there are more histories available to load (only relevant when not using pinned) */
+const canLoadMore = computed(() => {
+    if (hasPinnedHistories.value) {
+        return false;
+    }
+    return sortedUserHistories.value.length > displayCount.value;
+});
+
+function loadMore() {
+    displayCount.value += 4;
+}
 
 // On mounted, wait for history store to load, then set `initialLoaded` to true
 watch(
@@ -156,7 +171,9 @@ function showRecent() {
                 :filter="filter"
                 :current-history="currentHistory"
                 :selected-histories="selectedHistories"
-                :show-modal.sync="showSelectModal" />
+                :can-load-more="canLoadMore"
+                :show-modal.sync="showSelectModal"
+                @load-more="loadMore" />
         </div>
         <BAlert v-else-if="!histories.length" class="m-2" variant="danger" show>
             <span v-localize class="font-weight-bold">No History found.</span>

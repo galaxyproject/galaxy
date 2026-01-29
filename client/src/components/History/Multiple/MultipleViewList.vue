@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCheckSquare, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare, faChevronCircleRight, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
@@ -23,15 +23,17 @@ const props = withDefaults(
     defineProps<{
         selectedHistories: { id: string }[];
         filter?: string;
+        canLoadMore?: boolean;
     }>(),
     {
         filter: "",
+        canLoadMore: false,
     },
 );
 
-// defineEmits below
 const emit = defineEmits<{
     (e: "update:show-modal", value: boolean): void;
+    (e: "load-more"): void;
 }>();
 
 const scrollContainer: Ref<HTMLElement | null> = ref(null);
@@ -65,10 +67,13 @@ const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistor
 
 async function onKeyDown(evt: KeyboardEvent) {
     if (evt.key === "Enter" || evt.key === " ") {
-        if ((evt.target as HTMLElement)?.classList?.contains("top-picker")) {
+        const target = evt.target as HTMLElement;
+        if (target?.classList?.contains("create-picker")) {
             await createAndPin();
-        } else if ((evt.target as HTMLElement)?.classList?.contains("bottom-picker")) {
+        } else if (target?.classList?.contains("select-picker")) {
             emit("update:show-modal", true);
+        } else if (target?.classList?.contains("load-more-picker")) {
+            emit("load-more");
         }
     }
 }
@@ -100,15 +105,24 @@ async function onKeyDown(evt: KeyboardEvent) {
                 @dragleave.prevent="onDragLeave">
                 <span v-if="!showDropZone" class="d-flex flex-column h-100">
                     <div
-                        class="history-picker-box top-picker text-primary"
+                        v-if="props.canLoadMore"
+                        class="history-picker-box load-more-picker text-primary"
+                        tabindex="0"
+                        @keydown="onKeyDown"
+                        @click.stop="emit('load-more')">
+                        <FontAwesomeIcon :icon="faChevronCircleRight" class="mr-1" />
+                        {{ localize("Load more") }}
+                    </div>
+                    <div
+                        class="history-picker-box create-picker text-primary"
                         tabindex="0"
                         @keydown="onKeyDown"
                         @click.stop="createAndPin">
                         <FontAwesomeIcon :icon="faPlus" class="mr-1" />
-                        {{ localize("Create and pin new history") }}
+                        {{ localize("Create new history") }}
                     </div>
                     <div
-                        class="history-picker-box bottom-picker text-primary"
+                        class="history-picker-box select-picker text-primary"
                         tabindex="0"
                         @keydown="onKeyDown"
                         @click.stop="emit('update:show-modal', true)">
@@ -140,11 +154,14 @@ async function onKeyDown(evt: KeyboardEvent) {
             display: flex;
             align-items: center;
             text-wrap: none;
-            &.top-picker {
-                height: 20%;
+            &.load-more-picker {
+                flex: 1;
             }
-            &.bottom-picker {
-                height: 80%;
+            &.create-picker {
+                flex: 1;
+            }
+            &.select-picker {
+                flex: 2;
             }
             &:not(.history-picker-drop-zone) {
                 &:hover {
