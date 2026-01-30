@@ -1,13 +1,10 @@
 import type { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 
-import type { BootstrapVariant } from "@/components/Common";
+import type { BootstrapSize, BootstrapVariant } from "@/components/Common";
 
 /** Card badge display styles */
 export type CardBadgeType = "pill" | "badge";
-
-/** Bootstrap component sizes */
-export type BootstrapSize = "xs" | "sm" | "md" | "lg" | "xl";
 
 /** Title sizes for heading components */
 export type TitleSize = "xl" | "lg" | "md" | "sm" | "text";
