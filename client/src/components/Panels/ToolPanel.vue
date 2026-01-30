@@ -73,7 +73,7 @@ initializePanel();
         aria-labelledby="toolbox-heading"
         class="toolbox-panel"
         go-to-all-title="Discover Tools"
-        href="/tools/list">
+        :href="!props.workflow ? `/tools/list` : undefined">
         <template v-slot:activity-panel-header-top>
             <PanelViewMenu />
         </template>
