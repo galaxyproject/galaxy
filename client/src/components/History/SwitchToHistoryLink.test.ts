@@ -127,7 +127,11 @@ function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended, has
  * @param setsFilters Whether filters are applied to the current history on click
  */
 async function expectActionForHistory(
-    tooltip: "Switch to this history" | "This is your current history" | "View in new tab" | "Show in history",
+    tooltip:
+        | "Switch to this history"
+        | "This is your current history"
+        | "View in new tab"
+        | "Switch to history and view dataset",
     history: HistorySummaryExtended,
     opensInNewTab = false,
     hasFilters = false,
@@ -192,7 +196,7 @@ describe("SwitchToHistoryLink", () => {
         await expectActionForHistory("Switch to this history", history, false, false, true, false);
 
         // Since history was not current, we switch to it AND apply filters
-        await expectActionForHistory("Show in history", history, false, true, true, true);
+        await expectActionForHistory("Switch to history and view dataset", history, false, true, true, true);
     });
 
     it("only applies filters when the history is the Current history", async () => {
@@ -209,7 +213,7 @@ describe("SwitchToHistoryLink", () => {
         await expectActionForHistory("This is your current history", history);
 
         // Since history is already current, we only apply filters
-        await expectActionForHistory("Show in history", history, false, true, false, true);
+        await expectActionForHistory("Switch to history and view dataset", history, false, true, false, true);
     });
 
     it("opens purged history in new tab or applies filters", async () => {
@@ -226,7 +230,7 @@ describe("SwitchToHistoryLink", () => {
         await expectActionForHistory("View in new tab", history, true);
 
         // We switch to the purged history and apply filters
-        await expectActionForHistory("Show in history", history, false, true, true, true);
+        await expectActionForHistory("Switch to history and view dataset", history, false, true, true, true);
     });
 
     it("opens archived history in new tab or applies filters", async () => {
@@ -243,7 +247,7 @@ describe("SwitchToHistoryLink", () => {
         await expectActionForHistory("View in new tab", history, true);
 
         // We switch to the archived history and apply filters
-        await expectActionForHistory("Show in history", history, false, true, true, true);
+        await expectActionForHistory("Switch to history and view dataset", history, false, true, true, true);
     });
 
     it("only opens an accessible unowned history in new tab", async () => {

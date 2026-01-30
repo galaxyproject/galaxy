@@ -6,9 +6,53 @@ import {
     GalaxyApi,
     type GalaxyApiPaths,
     type HDADetailed,
+    type HDASummary,
 } from "@/api";
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
+
+export interface LoadDatasetsOptions {
+    limit?: number;
+    offset?: number;
+    sortBy?: string;
+    sortDesc?: boolean;
+    search?: string;
+}
+
+export interface LoadDatasetsResult {
+    data: HDASummary[];
+    totalMatches: number;
+}
+
+export async function loadDatasets(options: LoadDatasetsOptions): Promise<LoadDatasetsResult> {
+    const { limit = 24, offset = 0, sortBy = "update_time", sortDesc = true, search = "" } = options;
+
+    const {
+        response,
+        data: datasets,
+        error,
+    } = await GalaxyApi().GET("/api/datasets", {
+        params: {
+            query: {
+                q: search ? ["name-contains"] : undefined,
+                qv: search ? [search] : undefined,
+                limit,
+                offset,
+                order: `${sortBy}${sortDesc ? "-dsc" : "-asc"}`,
+                view: "summary",
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0", 10) || 0;
+    const data = datasets as unknown as HDASummary[];
+
+    return { data, totalMatches };
+}
 
 export async function fetchDatasetTextContentDetails(params: { id: string }): Promise<DatasetTextContentDetails> {
     const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}/get_content_as_text", {
@@ -56,17 +100,21 @@ export async function undeleteDataset(datasetId: string) {
     return data;
 }
 
-export async function purgeDataset(datasetId: string) {
+export async function deleteDataset(datasetId: string, purge: boolean = false) {
     const { data, error } = await GalaxyApi().DELETE("/api/datasets/{dataset_id}", {
         params: {
             path: { dataset_id: datasetId },
-            query: { purge: true },
+            query: { purge },
         },
     });
     if (error) {
         rethrowSimple(error);
     }
     return data;
+}
+
+export async function purgeDataset(datasetId: string) {
+    return deleteDataset(datasetId, true);
 }
 
 type CopyDatasetParamsType = GalaxyApiPaths["/api/histories/{history_id}/contents/{type}s"]["post"]["parameters"];

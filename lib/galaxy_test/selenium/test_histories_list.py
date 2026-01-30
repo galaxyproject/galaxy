@@ -230,8 +230,8 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        self.wait_for_and_click_selector('[data-title="Sort by name ascending"]')
-        self.wait_for_and_click_selector('[data-title="Sort by name ascending"]')
+        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
+        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
         self.sleep_for(self.wait_types.UX_RENDER)
 
         expected_histories = [self.history2_name, self.history3_name]

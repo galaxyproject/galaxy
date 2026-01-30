@@ -43,7 +43,7 @@ const canSwitch = computed(
 
 const linkTitle = computed(() => {
     if (props.filters && history.value && userOwnsHistory(userStore.currentUser, history.value)) {
-        return "Show in history";
+        return "Switch to history and view dataset";
     }
 
     if (historyStore.currentHistoryId === props.historyId) {
