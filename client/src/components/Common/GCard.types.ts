@@ -7,7 +7,7 @@ import type { BootstrapSize, BootstrapVariant } from "@/components/Common";
 export type CardBadgeType = "pill" | "badge";
 
 /** Title sizes for heading components */
-export type TitleSize = "xl" | "lg" | "md" | "sm" | "text";
+export type TitleSize = BootstrapSize | "text";
 
 /** Base properties for all card elements */
 interface BaseCardElement {
