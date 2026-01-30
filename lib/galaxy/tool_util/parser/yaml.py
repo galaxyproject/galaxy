@@ -8,6 +8,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
 
 import packaging.version
@@ -34,6 +35,7 @@ from galaxy.tool_util_models.tool_source import (
     HelpContent,
     XrefDict,
     YamlTemplateConfigFile,
+    JsonTestCollectionDefDict,
 )
 from galaxy.util import listify
 from .interface import (
@@ -44,6 +46,8 @@ from .interface import (
     PagesSource,
     ToolSource,
     ToolSourceTest,
+    ToolSourceTestInput,
+    ToolSourceTestInputs,
     ToolSourceTests,
 )
 from .output_actions import ToolOutputActionApp
@@ -358,14 +362,24 @@ class YamlToolSource(ToolSource):
         return json.dumps(self.root_dict, ensure_ascii=False, sort_keys=False)
 
 
-def _parse_test(i, test_dict) -> ToolSourceTest:
-    inputs = test_dict["inputs"]
+def __parse_test_inputs(i: int, test_inputs: Union[list, dict]) -> ToolSourceTestInputs:
+    inputs = test_inputs
     if is_dict(inputs):
         new_inputs = []
         for key, value in inputs.items():
             new_inputs.append({"name": key, "value": value, "attributes": {}})
-        test_dict["inputs"] = new_inputs
+        inputs = new_inputs
+    for input in inputs:
+        if is_dict(input["value"]) and "class" in input["value"] and input["value"]["class"] == "Collection":
+            collection_def = JsonTestCollectionDefDict(input["value"])
+            attrib = input.setdefault("attributes", {})
+            attrib["collection"] = collection_def
 
+    return inputs
+
+
+def _parse_test(i: int, test_dict: dict) -> ToolSourceTest:
+    test_dict["inputs"] = __parse_test_inputs(i, deepcopy(test_dict["inputs"]))
     outputs = test_dict["outputs"]
 
     new_outputs = []

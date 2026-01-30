@@ -1,0 +1,41 @@
+class: GalaxyTool
+id: collection_paired_test_y
+name: collection_paired_test_y
+version: "0.1.0"
+container: busybox
+shell_command: |
+  cat '$(inputs.f1.forward.path)' '$(inputs.f1.reverse.path)' >> out1.txt
+  echo 'Collection name: $(inputs.f1.name)'
+inputs:
+  - name: f1
+    type: data_collection
+    collection_type: paired
+    label: Input pair
+outputs:
+  - name: out1
+    type: data
+    format: txt
+    from_work_dir: out1.txt
+tests:
+  - inputs:
+      f1:
+        class: Collection
+        collection_type: paired
+        name: collection name
+        elements:
+          - identifier: forward
+            class: File
+            path: simple_line.txt
+          - identifier: reverse
+            class: File
+            path: simple_line_alternative.txt
+    outputs:
+      out1:
+        asserts:
+          - has_line:
+              line: This is a line of text.
+          - has_line:
+              line: This is a different line of text.
+    assert_stdout:
+      - has_line:
+          line: "Collection name: collection name"
