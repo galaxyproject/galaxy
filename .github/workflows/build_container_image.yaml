@@ -238,8 +238,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: galaxyproject/galaxy-helm
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Update Chart.yaml appVersion
         run: |
