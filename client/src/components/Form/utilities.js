@@ -213,11 +213,13 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
     for (const inputId in values) {
         const inputValue = values[inputId];
         const isEmpty = !isDefined(inputValue) || inputValue === "";
+        const hasValue = !isEmpty;
         const inputDef = index[inputId];
+        const isRequired = !inputDef.optional;
         if (!inputDef || inputDef.step_linked) {
             continue;
         }
-        if (!inputDef.optional && inputDef.type != "hidden") {
+        if (isRequired && inputDef.type != "hidden") {
             if (isEmpty && !allowEmptyValueOnRequiredInput) {
                 return [inputId, "Please provide a value for this option."];
             }
@@ -225,7 +227,7 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
         if (inputDef.wp_linked && inputDef.text_value == inputValue) {
             return [inputId, "Please provide a value for this workflow parameter."];
         }
-        if (inputValue && Array.isArray(inputValue.values) && inputValue.values.length == 0 && !inputDef.optional) {
+        if (inputValue && Array.isArray(inputValue.values) && inputValue.values.length == 0 && !isRequired) {
             return [inputId, "Please provide data for this input."];
         }
         if (inputValue) {
@@ -263,8 +265,8 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
             }
         }
 
-        // Run custom validators if present
-        if (inputDef.validators && inputValue != null && inputValue !== "") {
+        // Run custom validators if field is required or has a value
+        if (inputDef.validators && (isRequired || hasValue)) {
             for (const validator of inputDef.validators) {
                 const validationResult = runValidator(validator, inputValue);
                 if (!validationResult.isValid) {
