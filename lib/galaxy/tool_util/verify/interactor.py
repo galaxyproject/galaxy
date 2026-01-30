@@ -2001,6 +2001,9 @@ def expanded_inputs_from_json(expanded_inputs_json: ExpandedToolInputsJsonified)
         if isinstance(value, dict) and value.get("model_class"):
             collection_def_dict = cast(XmlTestCollectionDefDict, value)
             loaded_inputs[key] = TestCollectionDef.from_dict(collection_def_dict)
+        elif isinstance(value, dict) and value.get("class") == "Collection":
+            collection_def_dict = cast(JsonTestCollectionDefDict, value)
+            loaded_inputs[key] = TestCollectionDef.from_dict(collection_def_dict)
         else:
             loaded_inputs[key] = value
     return loaded_inputs

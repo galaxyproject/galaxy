@@ -345,6 +345,7 @@ def _process_raw_inputs(
                         value = input_dict["value"]
                         attributes = input_dict["attributes"]
                         require_file(name, value, attributes, required_files)
+                    print(collection_def)
                     processed_value = collection_def
                 else:
                     processed_value = _process_simple_value(
