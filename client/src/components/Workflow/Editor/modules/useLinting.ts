@@ -2,6 +2,7 @@ import { storeToRefs } from "pinia";
 import type { Ref } from "vue";
 import { computed, ref, watch } from "vue";
 
+import type { Creator } from "@/api/workflows";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
@@ -41,7 +42,7 @@ export function useLintData(
     annotation?: Ref<string | null>,
     readme?: Ref<string | null>,
     license?: Ref<string | null>,
-    creator?: Ref<any>, // TODO: Define creator type
+    creator?: Ref<Creator[] | null>,
 ): LintData {
     const workflowStores = useWorkflowStores(workflowId);
 

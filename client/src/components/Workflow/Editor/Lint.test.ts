@@ -6,89 +6,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
-import { type Step, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { useLintData } from "./modules/useLinting";
+import lintStepsData from "./test-data/lint_steps.json";
 
 import Lint from "./Lint.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
-const steps: Steps = {
-    "0": {
-        id: 0,
-        type: "data_input",
-        label: "data input",
-        content_id: null,
-        name: "Input dataset",
-        errors: null,
-        inputs: [],
-        outputs: [
-            {
-                name: "output",
-                extensions: ["input"],
-                optional: false,
-            },
-        ],
-        annotation: "",
-        input_connections: null,
-        tool_state: null,
-    } as unknown as Step,
-    "1": {
-        id: 1,
-        label: "step label",
-        annotation: "",
-        config_form: {
-            inputs: [
-                {
-                    name: "input",
-                    type: "text",
-                    value: "${untyped_parameter}",
-                },
-            ],
-        },
-        inputs: [
-            {
-                label: "input_label",
-                name: "data_input",
-                multiple: false,
-                extensions: ["txt"],
-                optional: false,
-                input_type: "dataset",
-            },
-        ],
-        input_connections: {
-            data_input: {
-                output_name: "output",
-                id: 0,
-            },
-        },
-        outputs: [
-            {
-                name: "output",
-                extensions: ["input"],
-                optional: false,
-            },
-        ],
-        workflow_outputs: [
-            {
-                output_name: "output",
-            },
-        ],
-        tool_state: null,
-    } as unknown as Step,
-    "2": {
-        id: 2,
-        title: "",
-        label: "",
-        annotation: "",
-        outputs: {},
-        inputs: [],
-        input_connections: null,
-        tool_state: null,
-    } as unknown as Step,
-};
+const steps: Steps = lintStepsData as unknown as Steps;
 const stepsRef = ref(steps);
 
 describe("Lint", () => {
@@ -108,7 +36,12 @@ describe("Lint", () => {
                     ref("workflow annotation"),
                     ref(null),
                     ref("MIT"),
-                    ref([{ name: "Test Creator" }]),
+                    ref([
+                        {
+                            class: "Person",
+                            name: "Test Creator",
+                        },
+                    ]),
                 ),
                 steps: steps,
                 datatypesMapper: testDatatypesMapper,
