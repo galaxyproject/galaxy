@@ -17,7 +17,8 @@ interface Props {
     bold?: boolean;
     separator?: boolean;
     inline?: boolean;
-    size?: "xl" | "lg" | "md" | "sm" | "text";
+    // TODO: Redo in Vue 3 to use BootstrapSize for prop typing.
+    size?: "xs" | "sm" | "md" | "lg" | "xl" | "text";
     icon?: IconLike;
     truncate?: boolean;
     collapse?: "open" | "closed" | "none";
