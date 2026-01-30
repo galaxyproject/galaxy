@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { ref } from "vue";
+
+import { isDefined } from "@/utils/validation";
+
 import type { FormEntry } from "./formUtil";
 
 import ForceActionButton from "./ForceActionButton.vue";
@@ -27,9 +31,14 @@ const emit = defineEmits<{
 }>();
 
 let formData: any;
+const hasValidationErrors = ref(false);
 
 function onChange(incoming: any) {
     formData = incoming;
+}
+
+function onValidation(validation: any) {
+    hasValidationErrors.value = isDefined(validation);
 }
 
 async function handleSubmit() {
@@ -46,11 +55,17 @@ async function handleForceSubmit() {
         <div v-else>
             <FormCard :title="title">
                 <template v-slot:body>
-                    <FormDisplay :inputs="inputs" @onChange="onChange" />
+                    <FormDisplay :inputs="inputs" @onChange="onChange" @onValidation="onValidation" />
                 </template>
             </FormCard>
             <div class="mt-3">
-                <GButton id="submit" color="blue" class="mr-1" :disabled="busy" @click="handleSubmit">
+                <GButton
+                    id="submit"
+                    color="blue"
+                    class="mr-1"
+                    :disabled="busy || hasValidationErrors"
+                    disabled-title="Please fix validation errors before submitting"
+                    @click="handleSubmit">
                     {{ submitTitle }}
                 </GButton>
                 <ForceActionButton v-show="showForceActionButton" :action="submitTitle" @click="handleForceSubmit">
