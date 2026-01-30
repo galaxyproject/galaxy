@@ -67,6 +67,25 @@ class TestLandingApi(ApiTestCase):
         assert_error_code_is(response, 400008)
         assert "Input should be a valid integer" in response.text
 
+    @skip_without_tool("cat1")
+    def test_workflow_landing_origin(self):
+        request = _get_simple_landing_payload(self.workflow_populator, public=True)
+        request = CreateWorkflowLandingRequestPayload(
+            workflow_id=request.workflow_id,
+            workflow_target_type=request.workflow_target_type,
+            request_state=request.request_state,
+            public=request.public,
+            origin=HttpUrl("http://example.localhost/"),
+        )
+        response = self.dataset_populator.create_workflow_landing(request)
+        assert response.workflow_id == request.workflow_id
+        assert response.state == "unclaimed"
+        assert str(response.origin) == "http://example.localhost/"
+        response = self.dataset_populator.claim_workflow_landing(response.uuid)
+        assert response.workflow_id == request.workflow_id
+        assert response.state == "claimed"
+        assert str(response.origin) == "http://example.localhost/"
+
     def test_data_landing(self):
         data_landing_request_state = DataLandingRequestState(
             targets=[
