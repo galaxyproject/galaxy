@@ -1,6 +1,6 @@
 import { type Ref, ref } from "vue";
 
-import type { BootstrapVariant } from "@/components/Common";
+import type { BootstrapSize, BootstrapVariant } from "@/components/Common";
 
 /**
  * Bootstrap Vue modal message box options interface.
@@ -25,7 +25,7 @@ export interface ConfirmDialogOptions {
      * Modal size: 'sm', 'lg', 'xl'
      * @default undefined (medium)
      */
-    size?: "sm" | "lg" | "xl";
+    size?: BootstrapSize;
     /**
      * Center modal vertically
      * @default true
@@ -60,7 +60,7 @@ export interface ConfirmDialogOptions {
      * Footer button size: 'sm', 'lg'
      * @default undefined (normal)
      */
-    buttonSize?: "sm" | "lg";
+    buttonSize?: BootstrapSize;
     /**
      * Hide header close button
      * @default false
