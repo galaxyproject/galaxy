@@ -1587,7 +1587,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
     def parse_tests(self):
         if self.tool_source:
-            test_descriptions = parse_tool_test_descriptions(self.tool_source, self.id, getattr(self, "parameters", None))
+            test_descriptions = parse_tool_test_descriptions(
+                self.tool_source, self.id, getattr(self, "parameters", None)
+            )
             try:
                 self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
             except Exception:

@@ -84,9 +84,7 @@ def parse_tool_test_descriptions(
                 if parameters is None:
                     tool_parameter_bundle = input_models_for_tool_source(tool_source)
                     parameters = tool_parameter_bundle.parameters
-                validated_test_case = case_state(
-                    raw_test_dict, parameters, profile, validate=True
-                )
+                validated_test_case = case_state(raw_test_dict, parameters, profile, validate=True)
                 request_and_schema = TestRequestAndSchema(
                     validated_test_case.tool_state,
                     tool_parameter_bundle or ToolParameterBundleModel(parameters=parameters),
