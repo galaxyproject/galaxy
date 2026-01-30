@@ -1,5 +1,7 @@
 import _ from "underscore";
 
+import { isValidNumber } from "@/utils/validation";
+
 /** Visits tool inputs.
  * @param{dict}   inputs    - Nested dictionary of input elements
  * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
@@ -131,10 +133,10 @@ function validateLength(validator, value) {
     const valueLength = String(value).length;
     let isValid = true;
 
-    if (validator.min !== undefined && valueLength < validator.min) {
+    if (isValidNumber(validator.min) && valueLength < validator.min) {
         isValid = false;
     }
-    if (validator.max !== undefined && valueLength > validator.max) {
+    if (isValidNumber(validator.max) && valueLength > validator.max) {
         isValid = false;
     }
     if (validator.negate) {
@@ -164,10 +166,10 @@ function validateInRange(validator, value) {
 
     let isValid = true;
 
-    if (validator.min !== undefined && numericValue < validator.min) {
+    if (isValidNumber(validator.min) && numericValue < validator.min) {
         isValid = false;
     }
-    if (validator.max !== undefined && numericValue > validator.max) {
+    if (isValidNumber(validator.max) && numericValue > validator.max) {
         isValid = false;
     }
     if (validator.negate) {
