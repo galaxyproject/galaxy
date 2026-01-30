@@ -112,7 +112,8 @@ TemplateVariable = Union[
 class TemplateSecret(StrictModel):
     name: str
     label: Optional[str] = None
-    help: Optional[MarkdownContent]
+    help: Optional[MarkdownContent] = None
+    default: Optional[str] = None  # If set, secret is optional
 
 
 class TemplateEnvironmentSecret(StrictModel):
@@ -362,7 +363,8 @@ def validate_defines_all_required_secrets(instance: InstanceDefinition, template
     secrets = instance.secrets
     for template_secret in template.secrets or []:
         name = template_secret.name
-        if name not in secrets:
+        has_default = template_secret.default is not None
+        if name not in secrets and not has_default:
             raise RequestParameterMissingException(f"Must define secret '{name}'")
 
 

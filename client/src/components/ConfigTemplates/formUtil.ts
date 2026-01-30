@@ -91,6 +91,7 @@ export function templateSecretFormEntry(secret: TemplateSecret): FormEntry {
         type: "password",
         help: markup(secret.help || "", true),
         value: "",
+        optional: isDefined(secret.default),
     };
 }
 
