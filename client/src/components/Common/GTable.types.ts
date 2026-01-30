@@ -1,10 +1,7 @@
 import type { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 
-import type { BootstrapVariant } from "@/components/Common";
-
-/** Bootstrap component sizes */
-export type BootstrapSize = "xs" | "sm" | "md" | "lg" | "xl";
+import type { BootstrapSize, BootstrapVariant } from "@/components/Common";
 
 /** Table field sorting order */
 export type SortOrder = "asc" | "desc";

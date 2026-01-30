@@ -24,6 +24,9 @@ export type BootstrapVariant =
     | "outline-link"
     | "outline-dark";
 
+/** Bootstrap component sizes */
+export type BootstrapSize = "xs" | "sm" | "md" | "lg" | "xl";
+
 /**
  * Represents a breadcrumb item in the BreadcrumbHeading component.
  * Each item can have a title, an optional URL to navigate to, and optional additional text
