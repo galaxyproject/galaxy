@@ -2,9 +2,14 @@
 import MarkdownIt from "markdown-it";
 //@ts-ignore
 import markdownItRegexp from "markdown-it-regexp";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useGxUris } from "@/components/Markdown/gxuris";
+import {
+    extractInvocationIds,
+    resolveInlineDirectives,
+} from "@/components/Markdown/Utilities/resolveInlineDirectives";
+import { useInvocationStore } from "@/stores/invocationStore";
 
 //@ts-ignore
 import markdownItKatex from "./Plugins/markdown-it-katex";
@@ -21,7 +26,27 @@ const props = defineProps<{
     content: string;
 }>();
 
-const renderedContent = computed(() => md.render(props.content));
+const { getInvocationById, fetchInvocationById } = useInvocationStore();
+
+// Extract invocation IDs and fetch them when content changes
+const invocationIds = computed(() => extractInvocationIds(props.content));
+
+watch(
+    invocationIds,
+    async (ids) => {
+        for (const id of ids) {
+            await fetchInvocationById({ id });
+        }
+    },
+    { immediate: true },
+);
+
+// Resolve inline directives using fetched invocation data
+const processedContent = computed(() => {
+    return resolveInlineDirectives(props.content, getInvocationById);
+});
+
+const renderedContent = computed(() => md.render(processedContent.value));
 
 const renderedMarkdownDiv = ref<HTMLDivElement>();
 const { internalHelpReferences, MarkdownHelpPopovers } = useGxUris(renderedMarkdownDiv);

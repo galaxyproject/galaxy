@@ -297,32 +297,25 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             encoded_id: Optional[str] = None
             match_text = match.group()
 
-            # First try to find an explicit history_dataset_id
             if id_match := re.search(UNENCODED_ID_PATTERN, match_text):
                 object_id = int(id_match.group(2))
                 encoded_id = trans.security.encode_id(object_id)
-            else:
-                # For inline directives, resolve output/input labels via invocation
-                # (Block-level directives are resolved on the frontend instead)
-                if invocation_id_match := re.search(INVOCATION_ID_PATTERN, match_text):
-                    invocation_id = invocation_id_match.group(1)
-                    invocation = workflow_manager.get_invocation(
-                        trans, invocation_id, check_ownership=False, check_accessible=True
+
+            # If no object_id but has invocation_id with output/input labels,
+            # return the match with encoded invocation_id for frontend resolution
+            if object_id is None:
+                invocation_id_match = re.search(INVOCATION_ID_PATTERN, match_text)
+                if invocation_id_match and (
+                    re.search(OUTPUT_LABEL_PATTERN, match_text) or re.search(INPUT_LABEL_PATTERN, match_text)
+                ):
+                    # Encode the invocation_id for the frontend
+                    inv_id = invocation_id_match.group(1)
+                    encoded_inv_id = trans.security.encode_id(int(inv_id))
+                    match_text = match_text.replace(
+                        invocation_id_match.group(), f"invocation_id={encoded_inv_id}, "
                     )
-                    if output_match := re.search(OUTPUT_LABEL_PATTERN, match_text):
-                        output_label = next((g for g in output_match.groups() if g), None)
-                        if output_label and invocation:
-                            ref_object = invocation.get_output_object(output_label)
-                            if ref_object and ref_object.history_content_type == "dataset":
-                                object_id = ref_object.id
-                                encoded_id = trans.security.encode_id(object_id)
-                    elif input_match := re.search(INPUT_LABEL_PATTERN, match_text):
-                        input_label = next((g for g in input_match.groups() if g), None)
-                        if input_label and invocation:
-                            ref_object = invocation.get_input_object(input_label)
-                            if ref_object and ref_object.history_content_type == "dataset":
-                                object_id = ref_object.id
-                                encoded_id = trans.security.encode_id(object_id)
+                    return match_text
+
             if container == "history_dataset_type":
                 _check_object(object_id, match.group(0))
                 hda = hda_manager.get_accessible(object_id, trans.user)
