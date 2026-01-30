@@ -2,13 +2,10 @@
 import MarkdownIt from "markdown-it";
 //@ts-ignore
 import markdownItRegexp from "markdown-it-regexp";
-import { computed, ref, watch } from "vue";
+import { computed, inject, ref, watch } from "vue";
 
 import { useGxUris } from "@/components/Markdown/gxuris";
-import {
-    extractInvocationIds,
-    resolveInlineDirectives,
-} from "@/components/Markdown/Utilities/resolveInlineDirectives";
+import { resolveInlineDirectives } from "@/components/Markdown/Utilities/resolveInlineDirectives";
 import { useInvocationStore } from "@/stores/invocationStore";
 
 //@ts-ignore
@@ -26,24 +23,28 @@ const props = defineProps<{
     content: string;
 }>();
 
+// Inject invocationId from parent (e.g., InvocationReport.vue)
+const invocationId = inject<string | undefined>("invocationId", undefined);
+
 const { getInvocationById, fetchInvocationById } = useInvocationStore();
 
-// Extract invocation IDs and fetch them when content changes
-const invocationIds = computed(() => extractInvocationIds(props.content));
-
+// Fetch the invocation data when invocationId is available
 watch(
-    invocationIds,
-    async (ids) => {
-        for (const id of ids) {
+    () => invocationId,
+    async (id) => {
+        if (id) {
             await fetchInvocationById({ id });
         }
     },
     { immediate: true },
 );
 
-// Resolve inline directives using fetched invocation data
+// Get invocation data for resolution
+const invocation = computed(() => (invocationId ? getInvocationById(invocationId) : undefined));
+
+// Resolve inline directives using invocation context
 const processedContent = computed(() => {
-    return resolveInlineDirectives(props.content, getInvocationById);
+    return resolveInlineDirectives(props.content, invocation.value);
 });
 
 const renderedContent = computed(() => md.render(processedContent.value));

@@ -295,26 +295,16 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             container = match.group("container")
             object_id: Optional[int] = None
             encoded_id: Optional[str] = None
-            match_text = match.group()
 
-            if id_match := re.search(UNENCODED_ID_PATTERN, match_text):
+            if id_match := re.search(UNENCODED_ID_PATTERN, match.group()):
                 object_id = int(id_match.group(2))
                 encoded_id = trans.security.encode_id(object_id)
 
-            # If no object_id but has invocation_id with output/input labels,
-            # return the match with encoded invocation_id for frontend resolution
+            # If no object_id but has output/input labels, return original match
+            # for frontend resolution using the page's invocation context
             if object_id is None:
-                invocation_id_match = re.search(INVOCATION_ID_PATTERN, match_text)
-                if invocation_id_match and (
-                    re.search(OUTPUT_LABEL_PATTERN, match_text) or re.search(INPUT_LABEL_PATTERN, match_text)
-                ):
-                    # Encode the invocation_id for the frontend
-                    inv_id = invocation_id_match.group(1)
-                    encoded_inv_id = trans.security.encode_id(int(inv_id))
-                    match_text = match_text.replace(
-                        invocation_id_match.group(), f"invocation_id={encoded_inv_id}, "
-                    )
-                    return match_text
+                if re.search(OUTPUT_LABEL_PATTERN, match.group()) or re.search(INPUT_LABEL_PATTERN, match.group()):
+                    return match.group()
 
             if container == "history_dataset_type":
                 _check_object(object_id, match.group(0))
