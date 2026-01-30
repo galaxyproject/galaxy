@@ -1,6 +1,6 @@
 import _ from "underscore";
 
-import { isValidNumber } from "@/utils/validation";
+import { isDefined, isValidNumber } from "@/utils/validation";
 
 /** Visits tool inputs.
  * @param{dict}   inputs    - Nested dictionary of input elements
@@ -212,12 +212,13 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
     let batchSrc = null;
     for (const inputId in values) {
         const inputValue = values[inputId];
+        const isEmpty = !isDefined(inputValue) || inputValue === "";
         const inputDef = index[inputId];
         if (!inputDef || inputDef.step_linked) {
             continue;
         }
         if (!inputDef.optional && inputDef.type != "hidden") {
-            if (inputValue == null || (allowEmptyValueOnRequiredInput && inputValue === "")) {
+            if (isEmpty && !allowEmptyValueOnRequiredInput) {
                 return [inputId, "Please provide a value for this option."];
             }
         }
