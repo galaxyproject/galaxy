@@ -11,6 +11,7 @@ import type {
     VariableValueType,
 } from "@/api/configTemplates";
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
+import { isDefined } from "@/utils/validation";
 
 export interface FormEntry {
     name: string;
@@ -48,6 +49,7 @@ export function templateVariableFormEntry(variable: TemplateVariable, variableVa
         label: variable.label ?? variable.name,
         help: markup(variable.help || "", true),
         validators: variable.validators ?? [],
+        optional: isDefined(variable.default),
     };
     if (variable.type == "string") {
         const defaultValue = variable.default ?? "";

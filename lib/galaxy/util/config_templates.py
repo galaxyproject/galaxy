@@ -79,18 +79,18 @@ class StrictModel(BaseModel):
 class BaseTemplateVariable(StrictModel):
     name: str
     label: Optional[str] = None
-    help: Optional[MarkdownContent]
+    help: Optional[MarkdownContent] = None
     validators: Optional[Sequence[AnySafeValidatorModel]] = None
 
 
 class TemplateVariableString(BaseTemplateVariable):
     type: Literal["string"]
-    default: str = ""
+    default: Optional[str] = None
 
 
 class TemplateVariableInteger(BaseTemplateVariable):
     type: Literal["integer"]
-    default: int = 0
+    default: Optional[int] = None
     # add min/max
 
 
@@ -101,7 +101,7 @@ class TemplateVariablePathComponent(BaseTemplateVariable):
 
 class TemplateVariableBoolean(BaseTemplateVariable):
     type: Literal["boolean"]
-    default: bool = False
+    default: Optional[bool] = None
 
 
 TemplateVariable = Union[
