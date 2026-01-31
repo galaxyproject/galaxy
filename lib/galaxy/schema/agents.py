@@ -43,11 +43,10 @@ class ActionType(str, Enum):
     """Types of actions agents can suggest."""
 
     TOOL_RUN = "tool_run"
-    DOCUMENTATION = "documentation"
+    SAVE_TOOL = "save_tool"
     CONTACT_SUPPORT = "contact_support"
     VIEW_EXTERNAL = "view_external"
-    SAVE_TOOL = "save_tool"
-    REFINE_QUERY = "refine_query"
+    DOCUMENTATION = "documentation"
 
 
 class ActionSuggestion(BaseModel):

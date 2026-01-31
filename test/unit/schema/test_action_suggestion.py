@@ -119,15 +119,6 @@ class TestActionSuggestionValidation:
         )
         assert s.parameters == {}
 
-    def test_refine_query_no_params_required(self):
-        """REFINE_QUERY does not require any parameters."""
-        s = ActionSuggestion(
-            action_type=ActionType.REFINE_QUERY,
-            description="Try rephrasing your question",
-            confidence=ConfidenceLevel.LOW,
-        )
-        assert s.parameters == {}
-
     def test_priority_defaults_to_one(self):
         """Priority defaults to 1 when not specified."""
         s = ActionSuggestion(
