@@ -111,6 +111,9 @@ function getButtonClass(priority: number): string {
     font-size: 0.8rem;
     border-radius: $border-radius-large;
     transition: all 0.15s ease;
+    // Some Galaxy pages/themes apply inherited button colors that can make text
+    // effectively invisible until hover. Set explicit colors for the outlines.
+    color: $text-color;
 
     &:hover:not(:disabled) {
         transform: translateY(-1px);
@@ -122,7 +125,22 @@ function getButtonClass(priority: number): string {
     }
 }
 
+.action-button.btn-outline-primary {
+    color: $brand-primary;
+}
+
+.action-button.btn-outline-secondary {
+    color: $text-color;
+}
+
+.action-button:deep(svg) {
+    color: inherit;
+}
+
 .action-text {
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 </style>
