@@ -821,26 +821,11 @@ class SimpleGalaxyAgent(BaseGalaxyAgent):
             return ConfidenceLevel.MEDIUM
 
     def _extract_suggestions(self, content: str) -> list[ActionSuggestion]:
-        """Extract action suggestions from response content."""
-        suggestions = []
+        """Extract action suggestions from response content.
 
-        # Simple heuristics to extract suggestions
-        if "try" in content.lower() or "recommend" in content.lower():
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.TOOL_RUN,
-                    description="Follow the suggested approach",
-                    confidence=ConfidenceLevel.MEDIUM,
-                )
-            )
-
-        if "documentation" in content.lower() or "manual" in content.lower():
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.DOCUMENTATION,
-                    description="Check the relevant documentation",
-                    confidence=ConfidenceLevel.MEDIUM,
-                )
-            )
-
-        return suggestions
+        Returns empty list by default - subclasses should override to provide
+        meaningful, actionable suggestions with proper parameters.
+        """
+        # Don't create vague suggestions from keyword matching.
+        # Suggestions should be concrete, executable Galaxy actions.
+        return []

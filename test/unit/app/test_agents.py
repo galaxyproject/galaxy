@@ -195,14 +195,10 @@ class TestAgentUnitMocked:
         assert suggestions == []
 
     def test_error_analysis_suggestions_with_admin_required(self):
-        """Test error analysis creates CONTACT_SUPPORT suggestion when admin required."""
+        """Test error analysis doesn't create suggestions yet (future work)."""
         from galaxy.agents.error_analysis import (
             ErrorAnalysisAgent,
             ErrorAnalysisResult,
-        )
-        from galaxy.schema.agents import (
-            ActionSuggestion,
-            ActionType,
         )
 
         analysis = ErrorAnalysisResult(
@@ -217,18 +213,8 @@ class TestAgentUnitMocked:
         agent = ErrorAnalysisAgent(self.deps)
         suggestions = agent._create_suggestions(analysis)
 
-        # Should include exactly one CONTACT_SUPPORT suggestion
-        assert len(suggestions) == 1
-        assert suggestions[0].action_type == ActionType.CONTACT_SUPPORT
-
-        # Should include context message for support request
-        message = suggestions[0].parameters.get("message")
-        assert message is not None
-        assert "system_error" in message
-        assert "Disk quota exceeded" in message
-
-        # Validate through ActionSuggestion to ensure it passes validation
-        ActionSuggestion.model_validate(suggestions[0].model_dump())
+        # Currently returns empty - CONTACT_SUPPORT not wired up yet
+        assert suggestions == []
 
     @pytest.mark.skip(reason="TestModel API changed in pydantic-ai, needs update for new version")
     @pytest.mark.asyncio

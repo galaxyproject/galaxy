@@ -533,20 +533,23 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         if not content_parts:
             content_parts = [normalized_text]  # Fallback to full response
 
-        # Create suggestions
+        # Create suggestions - only if tool actually exists in toolbox
         suggestions = []
         if tool and tool.group(1).strip():
             tool_name = tool.group(1).strip()
             tool_id_value = tool_id.group(1).strip() if tool_id else tool_name.lower().replace(" ", "_")
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.TOOL_RUN,
-                    description=f"Run {tool_name}",
-                    parameters={"tool_id": tool_id_value, "tool_name": tool_name},
-                    confidence=confidence_level,
-                    priority=1,
+            if self._verify_tool_exists(tool_id_value):
+                suggestions.append(
+                    ActionSuggestion(
+                        action_type=ActionType.TOOL_RUN,
+                        description=f"Run {tool_name}",
+                        parameters={"tool_id": tool_id_value, "tool_name": tool_name},
+                        confidence=confidence_level,
+                        priority=1,
+                    )
                 )
-            )
+            else:
+                log.warning(f"Tool '{tool_id_value}' from simple response not found in toolbox - skipping suggestion")
 
         return {
             "content": "\n\n".join(content_parts),

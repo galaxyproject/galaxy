@@ -323,34 +323,12 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
 
         Only creates suggestions for concrete, executable Galaxy actions.
         General guidance (solution steps, alternatives) is in the response content.
+
+        Currently returns empty - future work could add:
+        - CONTACT_SUPPORT with pre-filled context when requires_admin=True
+        - TOOL_RUN with specific tool_id if we can suggest rerunning with different params
         """
-        suggestions = []
-
-        # Admin contact if needed - this is an actionable suggestion
-        if analysis.requires_admin:
-            # Build context message for support request
-            message_parts = [
-                f"Error Type: {analysis.error_category}",
-                f"Severity: {analysis.error_severity}",
-                f"Likely Cause: {analysis.likely_cause}",
-            ]
-            if analysis.solution_steps:
-                message_parts.append(f"Attempted Solutions: {'; '.join(analysis.solution_steps)}")
-
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.CONTACT_SUPPORT,
-                    description="Contact Galaxy administrator",
-                    parameters={"message": "\n".join(message_parts)},
-                    confidence="high",
-                    priority=1,
-                )
-            )
-
-        # Future: could add TOOL_RUN suggestions with specific tool_id
-        # if we have job context and can suggest rerunning with different params
-
-        return suggestions
+        return []
 
     def _get_simple_system_prompt(self) -> str:
         """Simple system prompt for models without structured output."""
