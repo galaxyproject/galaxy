@@ -1,5 +1,5 @@
 import functools
-from collections import namedtuple
+import operator
 from json import (
     dumps,
     loads,
@@ -598,5 +598,41 @@ test_data:
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         return implicit_hdca, job_id
 
+    def __check_workflow(
+        self,
+        workflow,
+        step_count: Optional[int] = None,
+        verify_connected: bool = False,
+        data_input_count: Optional[int] = None,
+        data_collection_input_count: Optional[int] = None,
+        tool_ids=None,
+    ):
+        steps = workflow["steps"]
 
-RunJobsSummary = namedtuple("RunJobsSummary", ["history_id", "workflow_id", "inputs", "jobs"])
+        if step_count is not None:
+            assert len(steps) == step_count
+        if verify_connected:
+            self.__assert_connected(workflow, steps)
+        if tool_ids is not None:
+            tool_steps = self._get_steps_of_type(workflow, "tool")
+            found_steps = set(map(operator.itemgetter("tool_id"), tool_steps))
+            expected_steps = set(tool_ids)
+            assert found_steps == expected_steps
+        if data_input_count is not None:
+            self._get_steps_of_type(workflow, "data_input", expected_len=data_input_count)
+        if data_collection_input_count is not None:
+            self._get_steps_of_type(workflow, "data_collection_input", expected_len=data_collection_input_count)
+
+    def __assert_connected(self, workflow, steps):
+        disconnected_inputs = []
+
+        for value in steps.values():
+            if value["type"] == "tool":
+                input_connections = value["input_connections"]
+                if not input_connections:
+                    disconnected_inputs.append(value)
+
+        if disconnected_inputs:
+            template = "%d steps disconnected in extracted workflow - disconnectect steps are %s - workflow is %s"
+            message = template % (len(disconnected_inputs), disconnected_inputs, workflow)
+            raise AssertionError(message)
