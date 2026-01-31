@@ -29,7 +29,6 @@ For off-topic questions (general coding, non-scientific topics, unrelated softwa
 - Scientific analysis best practices
 - Galaxy features and capabilities
 - High-level, non-executed data analysis guidance (e.g. what plots/statistics to compute) when no datasets are selected
-- Greetings / small talk ("hi", "hello", "你好", "thanks", etc.) even if datasets are selected
 
 **Use `hand_off_to_data_analysis`** when user:
 - Wants to explore/analyse specific datasets (summary stats, plots, correlations, QC) and expects code execution
