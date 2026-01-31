@@ -178,6 +178,30 @@ const isChatBusy = computed(
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 const { processingAction, handleAction } = useAgentActions();
 
+function escapeHtml(raw: string): string {
+    // Minimal escaping for fallback rendering.
+    return raw
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function safeRenderMarkdown(content: unknown): string {
+    const text = typeof content === "string" ? content : String(content ?? "");
+    try {
+        return renderMarkdown(text);
+    } catch (error) {
+        console.error("Failed to render markdown for chat message:", error);
+        return `<pre>${escapeHtml(text)}</pre>`;
+    }
+}
+
+function normaliseSuggestions(raw: unknown): ActionSuggestion[] {
+    return Array.isArray(raw) ? (raw as ActionSuggestion[]) : [];
+}
+
 interface AgentType {
     value: string;
     label: string;
@@ -409,8 +433,9 @@ function populateAssistantMessage(
     options?: { skipDatasetUpdate?: boolean },
 ) {
     const agentResponse = (payload?.agent_response ?? payload?.response?.agent_response) as AgentResponse | undefined;
-    const content =
+    const rawContent =
         typeof payload === "string" ? payload : (payload?.response ?? agentResponse?.content ?? "No response received");
+    const content = typeof rawContent === "string" ? rawContent : String(rawContent ?? "No response received");
     const effectiveAgentType =
         agentResponse?.agent_type || (fallbackAgentType === "auto" ? "router" : fallbackAgentType);
 
@@ -420,7 +445,7 @@ function populateAssistantMessage(
     target.confidence = agentResponse?.confidence || (payload?.confidence as string) || "medium";
     target.feedback = target.feedback ?? null;
     target.agentResponse = agentResponse;
-    target.suggestions = agentResponse?.suggestions || [];
+    target.suggestions = normaliseSuggestions(agentResponse?.suggestions);
     target.routingInfo = payload?.routing_info;
 
     const metadata = agentResponse?.metadata as Record<string, unknown> | undefined;
@@ -433,9 +458,13 @@ function populateAssistantMessage(
         const storedArtifacts = normaliseArtifactList(artifactSource);
         updateMessageOutputsFromArtifacts(target, storedArtifacts);
         const plotEntries = normalisePathList((metadata as any)?.plots);
-        target.generatedPlots = plotEntries.length ? plotEntries : undefined;
+        if (plotEntries.length) {
+            target.generatedPlots = plotEntries;
+        }
         const fileEntries = normalisePathList((metadata as any)?.files);
-        target.generatedFiles = fileEntries.length ? fileEntries : undefined;
+        if (fileEntries.length) {
+            target.generatedFiles = fileEntries;
+        }
         const executedTask = (metadata as any)?.executed_task;
         if (executedTask?.task_id) {
             const taskId = String(executedTask.task_id);
@@ -623,8 +652,11 @@ function runPyodideTaskForMessage(message: Message, task: PyodideTask, taskKey: 
 
     const runnerTask: PyodideTask = { ...task, task_id: taskKey };
 
-    pyodideRunner
-        .runTask(runnerTask, {
+    let executionPromise: Promise<any>;
+    try {
+        // `runTask` may throw synchronously (e.g. Worker construction failures). Make
+        // sure we surface the error instead of taking down the whole chat UI.
+        executionPromise = pyodideRunner.runTask(runnerTask, {
             onStdout: (line) => {
                 state.stdout += line;
             },
@@ -634,7 +666,20 @@ function runPyodideTaskForMessage(message: Message, task: PyodideTask, taskKey: 
             onStatus: (event) => {
                 state.status = mapStatus(event.status);
             },
-        })
+        });
+    } catch (error) {
+        const errMessage = error instanceof Error ? error.message : String(error);
+        state.status = "error";
+        state.errorMessage = errMessage;
+        metadata.pyodide_status = "error";
+        if (metadata.pyodide_task) {
+            delete metadata.pyodide_task;
+        }
+        toast.error(`Pyodide execution failed: ${errMessage}`);
+        return;
+    }
+
+    executionPromise
         .then(async (result) => {
             state.stdout = result.stdout;
             state.stderr = result.stderr;
@@ -1311,7 +1356,7 @@ async function submitQuery() {
                 confidence: agentResponse?.confidence || "medium",
                 feedback: null,
                 agentResponse: agentResponse,
-                suggestions: agentResponse?.suggestions || [],
+                suggestions: normaliseSuggestions(agentResponse?.suggestions),
             };
             messages.value.push(assistantMessage);
 
@@ -1507,10 +1552,14 @@ async function loadPreviousChat(item: ChatHistoryItem) {
                     }
                     continue;
                 }
+                if (msg?.role !== "user" && msg?.role !== "assistant") {
+                    // Defensive: ignore unexpected roles to avoid template/runtime errors.
+                    continue;
+                }
                 const message: Message = {
                     id: `hist-${msg.role}-${item.id}-${index}`,
                     role: msg.role as "user" | "assistant",
-                    content: msg.content,
+                    content: typeof msg.content === "string" ? msg.content : String(msg.content ?? ""),
                     timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
                     feedback: null,
                 };
@@ -1522,7 +1571,7 @@ async function loadPreviousChat(item: ChatHistoryItem) {
 
                     if (msg.agent_response) {
                         message.agentResponse = msg.agent_response;
-                        message.suggestions = msg.agent_response.suggestions || [];
+                        message.suggestions = normaliseSuggestions(msg.agent_response.suggestions);
                         const metadata = (msg.agent_response as any)?.metadata as Record<string, unknown> | undefined;
                         const steps = metadata ? normaliseAnalysisSteps((metadata as any)?.analysis_steps) : [];
                         if (steps.length) {
@@ -1602,7 +1651,7 @@ function loadSingleMessageFallback(item: ChatHistoryItem) {
     const userMessage: Message = {
         id: `hist-user-${item.id}`,
         role: "user",
-        content: item.query,
+        content: typeof item.query === "string" ? item.query : String(item.query ?? ""),
         timestamp: new Date(item.timestamp),
         feedback: null,
     };
@@ -1610,7 +1659,7 @@ function loadSingleMessageFallback(item: ChatHistoryItem) {
     const assistantMessage: Message = {
         id: `hist-assistant-${item.id}`,
         role: "assistant",
-        content: item.response,
+        content: typeof item.response === "string" ? item.response : String(item.response ?? ""),
         timestamp: new Date(item.timestamp),
         agentType: item.agent_type,
         confidence: item.agent_response?.confidence || "medium",
@@ -1619,7 +1668,7 @@ function loadSingleMessageFallback(item: ChatHistoryItem) {
 
     if (item.agent_response) {
         assistantMessage.agentResponse = item.agent_response;
-        assistantMessage.suggestions = item.agent_response.suggestions || [];
+        assistantMessage.suggestions = normaliseSuggestions(item.agent_response.suggestions);
         const metadata = (item.agent_response as any)?.metadata as Record<string, unknown> | undefined;
         const steps = metadata ? normaliseAnalysisSteps((metadata as any)?.analysis_steps) : [];
         if (steps.length) {
@@ -1630,9 +1679,13 @@ function loadSingleMessageFallback(item: ChatHistoryItem) {
             const storedArtifacts = normaliseArtifactList(artifactSource);
             updateMessageOutputsFromArtifacts(assistantMessage, storedArtifacts);
             const plots = normalisePathList((metadata as any)?.plots);
-            assistantMessage.generatedPlots = plots.length ? plots : undefined;
+            if (plots.length) {
+                assistantMessage.generatedPlots = plots;
+            }
             const files = normalisePathList((metadata as any)?.files);
-            assistantMessage.generatedFiles = files.length ? files : undefined;
+            if (files.length) {
+                assistantMessage.generatedFiles = files;
+            }
             const executedTask = (metadata as any)?.executed_task;
             if (executedTask?.task_id) {
                 deliveredTaskIds.add(String(executedTask.task_id));
@@ -1764,9 +1817,10 @@ function toggleHistory() {
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Main Chat Area -->
-                <div ref="chatContainer" class="chat-messages flex-grow-1">
+            <!-- Main Chat Area -->
+            <div ref="chatContainer" class="chat-messages flex-grow-1">
                     <div class="mb-3">
                         <div class="pb-2">Select a dataset for this chat</div>
                         <DatasetSelector
@@ -1808,7 +1862,7 @@ function toggleHistory() {
                             </div>
                             <div class="cell-content">
                                 <!-- eslint-disable-next-line vue/no-v-html -->
-                                <div v-html="renderMarkdown(message.content)" />
+                                <div v-html="safeRenderMarkdown(message.content)" />
 
                                 <div v-if="isAwaitingExecution(message)" class="alert alert-warning pyodide-hint mb-2">
                                     ⚙️ Analysis still running… please keep this tab open; refreshing will restart the
@@ -2058,7 +2112,7 @@ function toggleHistory() {
                                                         {{ collapsedSummary(historyMessage) }}
                                                     </div>
                                                     <div class="message-content">
-                                                        <div v-html="renderMarkdown(historyMessage.content)" />
+                                                        <div v-html="safeRenderMarkdown(historyMessage.content)" />
                                                         <div v-if="shouldShowArtifacts(historyMessage)" class="mt-2">
                                                             <details open class="artifacts-panel">
                                                                 <summary class="text-muted">
@@ -2409,7 +2463,7 @@ function toggleHistory() {
                                                 </div>
                                                 <div class="message-content">
                                                     <!-- eslint-disable-next-line vue/no-v-html -->
-                                                    <div v-html="renderMarkdown(historyMessage.content)" />
+                                                    <div v-html="safeRenderMarkdown(historyMessage.content)" />
                                                     <div v-if="shouldShowArtifacts(historyMessage)" class="mt-2">
                                                         <details open class="artifacts-panel">
                                                             <summary class="text-muted">
@@ -2568,7 +2622,7 @@ function toggleHistory() {
 
                                 <!-- Action suggestions -->
                                 <ActionCard
-                                    v-if="message.suggestions?.length"
+                                    v-if="Array.isArray(message.suggestions) && message.suggestions.length"
                                     :suggestions="message.suggestions"
                                     :processing-action="processingAction"
                                     @handle-action="
@@ -2576,7 +2630,7 @@ function toggleHistory() {
                                     " />
                             </div>
                             <div
-                                v-if="!message.content.startsWith('❌') && !message.isSystemMessage"
+                                v-if="!(message.content || '').startsWith('❌') && !message.isSystemMessage"
                                 class="cell-footer">
                                 <div class="feedback-actions">
                                     <button
@@ -2618,7 +2672,6 @@ function toggleHistory() {
                             </div>
                         </template>
                     </div>
-                </div>
 
                 <!-- Loading state -->
                 <div v-if="busy" class="notebook-cell response-cell loading-cell">
@@ -2865,6 +2918,19 @@ function toggleHistory() {
 .artifact-grid-item .artifact-name {
     font-size: 0.9rem;
     margin-bottom: 0.25rem;
+}
+
+.artifact-grid-item .artifact-name > .btn-link,
+.artifact-grid-item .artifact-name > span:not(.text-muted) {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.artifact-grid-item .artifact-name > span.text-muted {
+    display: block;
 }
 
 .artifact-preview img {

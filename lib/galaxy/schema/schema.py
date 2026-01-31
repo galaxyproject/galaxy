@@ -3878,6 +3878,14 @@ class ChatPayload(Model):
         title="Query",
         description="The query to be sent to the chatbot.",
     )
+    agent_type: Optional[str] = Field(
+        default=None,
+        title="Agent Type",
+        description=(
+            "Optional agent type to use for this query. "
+            "When omitted, the server will default to automatic routing."
+        ),
+    )
     context: Optional[str] = Field(
         default="",
         title="Context",
@@ -3900,7 +3908,20 @@ class ChatPayload(Model):
     )
 
 
+class PyodideResultPayload(BaseModel):
+    """Payload submitted after client-side Pyodide execution."""
+
+    task_id: Optional[str] = Field(default=None, description="Agent-specified task identifier")
+    stdout: str = Field(default="", description="Captured stdout")
+    stderr: str = Field(default="", description="Captured stderr")
+    artifacts: list[dict[str, Any]] = Field(default_factory=list, description="Artifacts generated during execution")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional execution metadata")
+    success: bool = Field(default=True, description="Whether the execution succeeded")
+
+
 class ChatResponse(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     response: str = Field(
         ...,
         title="Response",
@@ -3930,6 +3951,16 @@ class ChatResponse(BaseModel):
         default=None,
         title="Processing Time",
         description="Time taken to process the query in seconds.",
+    )
+    dataset_ids: Optional[list[str]] = Field(
+        default=None,
+        title="Dataset Identifiers",
+        description="Optional list of encoded dataset IDs selected for this exchange.",
+    )
+    routing_info: Optional[dict[str, Any]] = Field(
+        default=None,
+        title="Routing Info",
+        description="Optional routing/debug info from the router agent.",
     )
 
 

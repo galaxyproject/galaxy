@@ -10,6 +10,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, ClassVar
 
+from galaxy.util.pyodide import infer_requirements_from_python
+
 DSPY_IMPORT_ERROR: Optional[Exception] = None
 
 try:  # Optional dependency
@@ -218,6 +220,9 @@ if HAS_DSPY:
             original_func = finish_tool.func
 
             def _finish_proxy(**kwargs):
+                # Some models try to pass the final JSON payload via the `finish`
+                # tool arguments, but DSPy's default finish tool is a no-arg lambda.
+                # Accept any kwargs, map common alias keys, then best-effort call.
                 if "answer" not in kwargs:
                     for alias in alias_fields:
                         if alias in kwargs:
@@ -225,12 +230,19 @@ if HAS_DSPY:
                             new_kwargs["answer"] = new_kwargs.pop(alias)
                             kwargs = new_kwargs
                             break
-                return original_func(**kwargs)
+                try:
+                    return original_func(**kwargs)
+                except TypeError:
+                    # Fall back to the no-arg finish implementation.
+                    return original_func()
 
             finish_tool.func = _finish_proxy
             setattr(finish_tool, "_gxy_finish_wrapped", True)
 
-        def forward(self, question, context):
+        def forward(self, question, context, trajectory=None):
+            # NOTE: DSPy ReAct already manages a `trajectory` input internally and
+            # will raise if callers pass it through. We accept the kwarg only to
+            # avoid hard failures if upstream passes it, but we do not forward it.
             return self.react_agent(question=question, context=context)
 
 
@@ -446,20 +458,18 @@ class GalaxyDSPyPlanner:
         plan: DSPyPlanResult,
         execution_result: Dict[str, Any],
     ) -> DSPyPlanResult:
-        """Re-run the planner with execution feedback appended to the trajectory."""
+        """Re-run the planner with execution feedback.
+
+        DSPy ReAct manages its own `trajectory` field internally; passing a
+        `trajectory=` kwarg causes a runtime error (duplicate argument). We
+        therefore inject execution feedback into the context text and run the
+        extraction step without additional tool calls.
+        """
 
         self._configure_lm()
         code_tool = CodeCaptureTool()
         dataset_tool = DatasetLookupTool(self._deps)
         module = GalaxyDataAnalysisModule([code_tool, dataset_tool])
-
-        augmented = dict(plan.trajectory) if plan.trajectory else {}
-        indices = [
-            int(key.split('_')[1])
-            for key in augmented
-            if '_' in key and key.split('_')[1].isdigit() and key.startswith('thought_')
-        ]
-        next_index = (max(indices) + 1) if indices else 0
 
         observation_payload = {
             'success': execution_result.get('success'),
@@ -467,20 +477,21 @@ class GalaxyDSPyPlanner:
             'stderr': execution_result.get('stderr'),
             'artifacts': [artifact.get('name') for artifact in execution_result.get('artifacts', [])],
         }
-        thought_message = 'Execution results captured; incorporate them before finalising the answer.'
-        augmented[f'thought_{next_index}'] = thought_message
-        augmented[f'tool_name_{next_index}'] = 'python_code_executor'
-        augmented[f'tool_args_{next_index}'] = {'code': plan.python_code or ''}
-        augmented[f'observation_{next_index}'] = json.dumps(observation_payload)
-        if execution_result.get('success'):
-            next_index += 1
-            augmented[f'thought_{next_index}'] = (
-                "Execution succeeded. Unless you can clearly justify a missing part of the user's request, "
-                "do not generate more code. Call finish with the final summary using the observed results."
-            )
+        execution_block = json.dumps(observation_payload, ensure_ascii=True)
+        refined_context = (
+            f"{context_text}\n\n"
+            "EXECUTION RESULTS (latest):\n"
+            f"{execution_block}\n\n"
+            "IMPORTANT:\n"
+            "- The code has already been executed in the browser.\n"
+            "- Do NOT call tools (python_code_executor/dataset_lookup).\n"
+            "- Use the execution results above (including artifacts) to produce the final JSON answer.\n"
+            "- Ensure `plots` and `files` contain `generated_file/<name>` entries for any artifacts.\n"
+        )
 
         try:
-            result = module(question=question, context=context_text, trajectory=augmented)
+            # Skip the ReAct tool loop; just extract a final answer using the context.
+            result = module(question=question, context=refined_context, max_iters=0)
         except Exception as exc:  # pragma: no cover - DSPy runtime path
             log.exception('DSPy module execution failed during refinement')
             raise RuntimeError(f"DSPy refinement failed: {exc}") from exc
@@ -518,24 +529,11 @@ class GalaxyDSPyPlanner:
             analysis_steps=analysis_steps or plan.analysis_steps,
             is_complete=finish_called or plan.is_complete,
             raw_answer=answer_data or plan.raw_answer,
-            trajectory=trajectory or augmented,
+            trajectory=trajectory or plan.trajectory,
         )
 
     def _infer_requirements(self, code: str) -> List[str]:
-        requirements: List[str] = []
-        if not code:
-            return requirements
-        marker = '# requirements:'
-        for line in code.splitlines():
-            normalized = line.strip()
-            if normalized.lower().startswith(marker):
-                _, _, payload = normalized.partition(':')
-                for item in payload.split(','):
-                    cleaned = item.strip()
-                    if cleaned and cleaned not in requirements:
-                        requirements.append(cleaned)
-                break
-        inferred = set(requirements)
+        inferred = set(infer_requirements_from_python(code))
         for package, pattern in self._PACKAGE_HINTS:
             try:
                 if re.search(pattern, code, flags=re.IGNORECASE):
@@ -613,6 +611,12 @@ def build_context_text(
         "",
         "HELPERS:",
         "Use load_dataset('<alias>') to read a pandas DataFrame for a mounted dataset or get_dataset_path('<alias>') to obtain its file path. Aliases include dataset IDs, names, and dataset_<index>.",
+        "",
+        "OUTPUTS:",
+        "- Save ALL generated artifacts (plots, tables, exported files) under the `generated_file/` directory.",
+        "  - The Pyodide runtime mounts `generated_file/` to Galaxy's artifact output folder.",
+        "  - Example: write to `generated_file/eda_summary.csv` or `generated_file/eda_plot.png`.",
+        "- In your final JSON answer, list artifact paths as `generated_file/<name>` in `plots` and `files`.",
         "",
         "QUESTION:",
         question,

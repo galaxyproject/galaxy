@@ -5,6 +5,8 @@ Pydantic schemas for AI agent responses and requests.
 from enum import Enum
 from typing import (
     Any,
+    Dict,
+    List,
     Optional,
 )
 

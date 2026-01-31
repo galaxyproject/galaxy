@@ -21,7 +21,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlencode
 
-from itsdangerous import URLSafeTimedSerializer
+try:
+    from itsdangerous import URLSafeTimedSerializer
+
+    HAS_ITSDANGEROUS = True
+except ImportError:  # pragma: no cover - optional dependency
+    URLSafeTimedSerializer = None  # type: ignore[assignment]
+    HAS_ITSDANGEROUS = False
 
 from galaxy import exceptions
 from galaxy.managers.hdas import HDAManager
@@ -46,13 +52,13 @@ class DataAnalysisAgent(BaseGalaxyAgent):
     """Agent orchestrating dataset analysis with generated code execution."""
 
     USE_PYDANTIC_AGENT = False
+    agent_type = "data_analysis"
     DEBUG_LOG_PATH = Path(tempfile.gettempdir()) / "galaxy_data_analysis_debug.log"
     DEFAULT_TIMEOUT_MS = 20_000
     DATASET_TOKEN_SALT = "galaxy.agents.pyodide.dataset"
 
     def __init__(self, deps: GalaxyAgentDependencies):
         super().__init__(deps)
-        self.agent_type = "data_analysis"
         self._examples_path = Path(__file__).parent / "examples.json"
         self._example_snippets = self._load_example_snippets(self._examples_path)
         self._planner = GalaxyDSPyPlanner(deps)
@@ -62,7 +68,7 @@ class DataAnalysisAgent(BaseGalaxyAgent):
         config = getattr(deps, "config", None)
         self._dataset_token_signer: Optional[URLSafeTimedSerializer] = None
         self._dataset_token_ttl: int = 600
-        if config and getattr(config, "id_secret", None):
+        if config and getattr(config, "id_secret", None) and HAS_ITSDANGEROUS and URLSafeTimedSerializer is not None:
             self._dataset_token_signer = URLSafeTimedSerializer(config.id_secret, salt=self.DATASET_TOKEN_SALT)
             ttl_default = getattr(config, "pyodide_dataset_token_ttl", 600)
             try:
@@ -178,6 +184,31 @@ class DataAnalysisAgent(BaseGalaxyAgent):
 
         should_execute = self._should_enqueue_execution(code, normalized_requirements, last_executed_task)
         if should_execute and code:
+            if dataset_descriptors and self._dataset_token_signer is None:
+                metadata: Dict[str, Any] = {
+                    "datasets_used": [str(entry.get("id")) for entry in dataset_descriptors if entry.get("id")]
+                    or list(datasets),
+                    "planner": "dspy",
+                    "pyodide_status": "error",
+                    "is_complete": False,
+                    "error": "Pyodide dataset download tokens are not configured.",
+                }
+                suggestions = [
+                    ActionSuggestion(
+                        action_type=ActionType.REFINE_QUERY,
+                        description="Server missing itsdangerous or id_secret; install 'itsdangerous' and configure id_secret to enable dataset execution.",
+                        parameters={},
+                        confidence="low",
+                        priority=1,
+                    )
+                ]
+                return AgentResponse(
+                    content="Cannot execute analysis in browser: dataset download tokens are not configured (missing 'itsdangerous' and/or id_secret).",
+                    confidence="low",
+                    agent_type=self.agent_type,
+                    suggestions=suggestions,
+                    metadata=metadata,
+                )
             pyodide_task = self._build_pyodide_task(code, normalized_requirements, dataset_descriptors, alias_map)
             log.info(
                 "Dispatching Pyodide task %s with packages=%s datasets=%s",

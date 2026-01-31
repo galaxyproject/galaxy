@@ -27,13 +27,12 @@ from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
 
-# Import agent system (pydantic_ai is optional)
+# Import agent system (agents are optional; optional dependencies must not break import)
 try:
     # Note: DSPy data analysis agent temporarily disabled; keep import commented.
     from galaxy.agents import (
         agent_registry,
         GalaxyAgentDependencies,
-        DataAnalysisAgent,
         # DataAnalysisDSPyAgent,
     )
     # from galaxy.agents.dspy_adapter import DSPyPlanResult
@@ -45,7 +44,6 @@ except ImportError:
     HAS_AGENTS = False
     agent_registry = None  # type: ignore[assignment,misc,unused-ignore]
     GalaxyAgentDependencies = None  # type: ignore[assignment,misc,unused-ignore]
-    DataAnalysisAgent = None  # type: ignore[assignment,misc,unused-ignore]
     # DataAnalysisDSPyAgent = None  # type: ignore[assignment,misc,unused-ignore]
     # DSPyPlanResult = None  # type: ignore[assignment,misc,unused-ignore]
     QueryRouterAgent = None  # type: ignore[assignment,misc,unused-ignore]
@@ -53,6 +51,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     from galaxy.agents.dspy_adapter import DSPyPlanResult  # pragma: no cover
+    from galaxy.agents.data_analysis import DataAnalysisAgent  # pragma: no cover
 else:  # pragma: no cover - provide dummies when DSPy agent disabled
     DataAnalysisDSPyAgent = Any  # type: ignore[assignment]
     DSPyPlanResult = Any  # type: ignore[assignment]
@@ -74,13 +73,17 @@ class AgentService:
         self.config = config
         self.job_manager = job_manager
 
-        if not HAS_ITSDANGEROUS:
-            raise ConfigurationError(
-                "itsdangerous is required for the data analysis agent. Install via 'pip install itsdangerous'."
-            )
-
         token_salt = "galaxy.agents.pyodide.dataset"
-        self._dataset_token_signer = URLSafeTimedSerializer(self.config.id_secret, salt=token_salt)
+        self._dataset_token_signer = None
+        if HAS_ITSDANGEROUS and URLSafeTimedSerializer is not None and getattr(self.config, "id_secret", None):
+            # Used for signed dataset download tokens for browser-side execution.
+            self._dataset_token_signer = URLSafeTimedSerializer(self.config.id_secret, salt=token_salt)
+        else:
+            log.warning(
+                "itsdangerous is not available or id_secret is not configured; Pyodide dataset download tokens are "
+                "disabled. Install via 'pip install itsdangerous' and set id_secret to enable data analysis execution "
+                "with datasets."
+            )
         ttl_default = getattr(self.config, "pyodide_dataset_token_ttl", 600)
         try:
             ttl_value = int(ttl_default)
@@ -304,7 +307,7 @@ class AgentService:
 
     def _dataset_descriptors(
         self,
-        data_agent: DataAnalysisAgent,
+        data_agent: "DataAnalysisAgent",
         dataset_ids: List[str],
     ) -> tuple[List[Dict[str, Any]], Dict[str, str]]:
         if not dataset_ids:
@@ -401,6 +404,10 @@ class AgentService:
         return f"{base_url}{separator}{urlencode({'token': token})}"
 
     def _sign_dataset_download_token(self, trans: ProvidesUserContext, dataset_id: str) -> str:
+        if self._dataset_token_signer is None:
+            raise ConfigurationError(
+                "Pyodide dataset download tokens are not configured. Install 'itsdangerous' and configure id_secret."
+            )
         session = getattr(trans, "galaxy_session", None)
         session_id = getattr(session, "id", None)
         encoded_user_id = None
@@ -422,6 +429,10 @@ class AgentService:
         dataset_id: str,
         token: str,
     ) -> Dict[str, Any]:
+        if self._dataset_token_signer is None:
+            raise ConfigurationError(
+                "Pyodide dataset download tokens are not configured. Install 'itsdangerous' and configure id_secret."
+            )
         try:
             payload = self._dataset_token_signer.loads(token, max_age=self._dataset_token_ttl)
         except SignatureExpired as exc:  # pragma: no cover - time-based expiry
