@@ -5,6 +5,7 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 import datetime
 import json
 import logging
+from typing import TYPE_CHECKING
 
 import jwt
 
@@ -15,6 +16,9 @@ from galaxy import (
 from galaxy.util import url_get
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import BaseUIController
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -163,7 +167,7 @@ class OIDC(BaseUIController):
         return trans.response.send_redirect(url_for(redirect_url))
 
     @web.expose
-    def create_user(self, trans, provider, **kwargs):
+    def create_user(self, trans: "GalaxyWebTransaction", provider: str, **kwargs):
         try:
             success, message, (redirect_url, user) = trans.app.authnz_manager.create_user(
                 provider, token=kwargs.get("token", " "), trans=trans, login_redirect_url=url_for("/")

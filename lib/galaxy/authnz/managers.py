@@ -1,5 +1,6 @@
 import builtins
 import logging
+from typing import TYPE_CHECKING
 
 from galaxy import (
     exceptions,
@@ -21,6 +22,9 @@ from .psa_authnz import (
     BACKENDS_NAME,
     PSAAuthnz,
 )
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesAppContext
 
 OIDC_BACKEND_SCHEMA = resource_path(__name__, "xsd/oidc_backends_config.xsd")
 
@@ -215,7 +219,7 @@ class AuthnzManager:
                 return k.lower()
         return None
 
-    def _get_authnz_backend(self, provider, idphint=None):
+    def _get_authnz_backend(self, provider: str, idphint=None):
         unified_provider_name = self._unify_provider_name(provider)
         if unified_provider_name in self.oidc_backends_config:
             provider = unified_provider_name
@@ -326,7 +330,7 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, (None, None)
 
-    def create_user(self, provider, token, trans, login_redirect_url):
+    def create_user(self, provider: str, token: str, trans: "ProvidesAppContext", login_redirect_url: str):
         try:
             success, message, backend = self._get_authnz_backend(provider)
             if success is False:
