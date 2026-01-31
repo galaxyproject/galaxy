@@ -168,17 +168,16 @@ class TestAgentUnitMocked:
             assert info["agent_type"] == agent_type
             assert "class_name" in info
 
-    def test_error_analysis_creates_valid_suggestions(self):
-        """Verify _create_suggestions produces valid ActionSuggestions.
+    def test_error_analysis_no_suggestions_without_admin(self):
+        """Verify _create_suggestions only returns actionable suggestions.
 
-        This validates that suggestions pass ActionSuggestion validation,
-        which checks required parameters per action type.
+        Solution steps and alternatives are guidance, not executable actions,
+        so they shouldn't generate suggestions.
         """
         from galaxy.agents.error_analysis import (
             ErrorAnalysisAgent,
             ErrorAnalysisResult,
         )
-        from galaxy.schema.agents import ActionSuggestion
 
         analysis = ErrorAnalysisResult(
             error_category="tool_configuration",
@@ -186,16 +185,14 @@ class TestAgentUnitMocked:
             likely_cause="Missing input file",
             solution_steps=["Check input", "Re-upload file"],
             confidence="high",
+            requires_admin=False,
         )
 
         agent = ErrorAnalysisAgent(self.deps)
         suggestions = agent._create_suggestions(analysis)
 
-        # Should create at least one valid suggestion
-        assert suggestions
-        for s in suggestions:
-            # Re-validate through ActionSuggestion to ensure parameters are correct
-            ActionSuggestion.model_validate(s.model_dump())
+        # No actionable suggestions when admin not required
+        assert suggestions == []
 
     def test_error_analysis_suggestions_with_admin_required(self):
         """Test error analysis creates CONTACT_SUPPORT suggestion when admin required."""
@@ -203,7 +200,10 @@ class TestAgentUnitMocked:
             ErrorAnalysisAgent,
             ErrorAnalysisResult,
         )
-        from galaxy.schema.agents import ActionType
+        from galaxy.schema.agents import (
+            ActionSuggestion,
+            ActionType,
+        )
 
         analysis = ErrorAnalysisResult(
             error_category="system_error",
@@ -217,9 +217,18 @@ class TestAgentUnitMocked:
         agent = ErrorAnalysisAgent(self.deps)
         suggestions = agent._create_suggestions(analysis)
 
-        # Should include CONTACT_SUPPORT suggestion
-        action_types = [s.action_type for s in suggestions]
-        assert ActionType.CONTACT_SUPPORT in action_types
+        # Should include exactly one CONTACT_SUPPORT suggestion
+        assert len(suggestions) == 1
+        assert suggestions[0].action_type == ActionType.CONTACT_SUPPORT
+
+        # Should include context message for support request
+        message = suggestions[0].parameters.get("message")
+        assert message is not None
+        assert "system_error" in message
+        assert "Disk quota exceeded" in message
+
+        # Validate through ActionSuggestion to ensure it passes validation
+        ActionSuggestion.model_validate(suggestions[0].model_dump())
 
     @pytest.mark.skip(reason="TestModel API changed in pydantic-ai, needs update for new version")
     @pytest.mark.asyncio

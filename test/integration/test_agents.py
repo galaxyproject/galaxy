@@ -254,10 +254,9 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         content = data["response"]["content"].lower()
         assert "command" in content or "samtools" in content or "not found" in content
 
-        # Verify suggestions are present and valid
+        # Suggestions are optional - only returned for actionable items like CONTACT_SUPPORT
+        # In this mock, requires_admin=False, so no suggestions expected
         suggestions = data["response"].get("suggestions", [])
-        assert len(suggestions) >= 1, "Error analysis should return at least one suggestion"
-        # All suggestions should have valid action types
         for suggestion in suggestions:
             assert "action_type" in suggestion
             assert "description" in suggestion

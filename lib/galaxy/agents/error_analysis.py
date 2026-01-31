@@ -319,41 +319,36 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         return "\n".join(parts)
 
     def _create_suggestions(self, analysis: ErrorAnalysisResult) -> list[ActionSuggestion]:
-        """Create action suggestions from analysis result."""
+        """Create action suggestions from analysis result.
+
+        Only creates suggestions for concrete, executable Galaxy actions.
+        General guidance (solution steps, alternatives) is in the response content.
+        """
         suggestions = []
 
-        # Primary solution - use REFINE_QUERY since this is guidance, not a specific tool
-        if analysis.solution_steps:
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.REFINE_QUERY,
-                    description=f"Follow the {len(analysis.solution_steps)}-step solution above",
-                    confidence=analysis.confidence,
-                    priority=1,
-                )
-            )
-
-        # Alternative approaches - also guidance
-        for approach in analysis.alternative_approaches[:2]:  # Limit to 2 alternatives
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.REFINE_QUERY,
-                    description=f"Try alternative: {approach[:100]}",
-                    confidence="medium",
-                    priority=2,
-                )
-            )
-
-        # Admin contact if needed
+        # Admin contact if needed - this is an actionable suggestion
         if analysis.requires_admin:
+            # Build context message for support request
+            message_parts = [
+                f"Error Type: {analysis.error_category}",
+                f"Severity: {analysis.error_severity}",
+                f"Likely Cause: {analysis.likely_cause}",
+            ]
+            if analysis.solution_steps:
+                message_parts.append(f"Attempted Solutions: {'; '.join(analysis.solution_steps)}")
+
             suggestions.append(
                 ActionSuggestion(
                     action_type=ActionType.CONTACT_SUPPORT,
                     description="Contact Galaxy administrator",
+                    parameters={"message": "\n".join(message_parts)},
                     confidence="high",
                     priority=1,
                 )
             )
+
+        # Future: could add TOOL_RUN suggestions with specific tool_id
+        # if we have job context and can suggest rerunning with different params
 
         return suggestions
 
