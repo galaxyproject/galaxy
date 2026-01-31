@@ -60,5 +60,6 @@ class ToolTestDescriptionDict(TypedDict):
     required_loc_files: List[str]
     error: bool
     exception: Optional[str]
+    request_unavailable_reason: NotRequired[Optional[str]]
     maxseconds: NotRequired[Optional[int]]
     value_state_representation: NotRequired[ValueStateRepresentationT]
