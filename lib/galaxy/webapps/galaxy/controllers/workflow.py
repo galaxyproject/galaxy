@@ -200,15 +200,17 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         if not user:
             trans.response.status = 403
             return trans.show_error_message("Must be logged in to create workflows")
-        if (job_ids is None and dataset_ids is None) or workflow_name is None:
+        if workflow_name is None:
+            # Initial page load - render the extraction form
             jobs, warnings = summarize(trans, history)
-            # Render
             return trans.fill_template("build_from_current_history.mako", jobs=jobs, warnings=warnings, history=history)
         else:
             # If there is just one dataset name selected or one dataset collection, these
             # come through as string types instead of lists. xref #3247.
             dataset_names = util.listify(dataset_names)
             dataset_collection_names = util.listify(dataset_collection_names)
+            # Decode encoded job IDs from form submission
+            job_ids = [self.decode_id(job_id) for job_id in util.listify(job_ids)]
             stored_workflow = extract_workflow(
                 trans,
                 user=user,

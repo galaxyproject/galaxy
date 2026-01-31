@@ -2151,6 +2151,16 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def click_history_option_sharing(self):
         self.use_bootstrap_dropdown(option="share and manage access", menu="history options")
 
+    def click_history_option_extract_workflow(self):
+        self.use_bootstrap_dropdown(option="extract workflow", menu="history options")
+
+    def navigate_to_workflow_extraction(self):
+        """Navigate to workflow extraction UI via history options menu."""
+        self.click_history_option_extract_workflow()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.switch_to_main_panel()
+        self.components.workflow_extract._.wait_for_visible()
+
     def click_history_option(self, option_label_or_component):
         # Open menu
         self.click_history_options()
