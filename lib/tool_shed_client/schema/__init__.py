@@ -214,6 +214,39 @@ class RepositoryMetadata(RootModel):
         return len(self.root) == 0
 
 
+class RepositoryRevisionMetadataPreview(BaseModel):
+    """Like RepositoryRevisionMetadata but with Optional fields for dry-run/preview scenarios.
+
+    During reset_metadata dry-run, metadata objects are created in-memory but not persisted,
+    so they lack database IDs. The numeric_revision may also be unavailable for newly-pushed
+    changesets that haven't been indexed yet.
+    """
+
+    id: Optional[str] = None
+    repository: Repository
+    repository_dependencies: list["RepositoryDependency"]
+    tools: Optional[list["RepositoryTool"]] = None
+    invalid_tools: list[str] = []
+    repository_id: Optional[str] = None
+    numeric_revision: Optional[int] = None
+    changeset_revision: str
+    malicious: bool
+    downloadable: bool
+    missing_test_components: bool
+    has_repository_dependencies: bool
+    includes_tools: bool
+    includes_tools_for_display_in_tool_panel: bool
+    includes_tool_dependencies: Optional[bool] = None
+    includes_datatypes: Optional[bool] = None
+    includes_workflows: Optional[bool] = None
+
+
+class RepositoryMetadataPreview(RootModel):
+    """Like RepositoryMetadata but uses RepositoryRevisionMetadataPreview for dry-run scenarios."""
+
+    root: dict[str, RepositoryRevisionMetadataPreview]
+
+
 class ResetMetadataOnRepositoryRequest(BaseModel):
     repository_id: str
     dry_run: bool = False
@@ -241,8 +274,9 @@ class ResetMetadataOnRepositoryResponse(BaseModel):
     dry_run: bool = False
     changeset_details: Optional[list[ChangesetMetadataStatus]] = None
     # Full metadata snapshots for diffing (only when verbose=True)
-    repository_metadata_before: Optional["RepositoryMetadata"] = None
-    repository_metadata_after: Optional["RepositoryMetadata"] = None
+    # Uses Preview types since dry-run objects may lack IDs
+    repository_metadata_before: Optional["RepositoryMetadataPreview"] = None
+    repository_metadata_after: Optional["RepositoryMetadataPreview"] = None
 
 
 # Ugh - use with care - param descriptions scraped from older version of the API.

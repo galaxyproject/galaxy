@@ -81,8 +81,8 @@ from tool_shed_client.schema import (
     LegacyInstallInfoTuple,
     PaginatedRepositoryIndexResults,
     Repository as SchemaRepository,
-    RepositoryMetadata as SchemaRepositoryMetadata,
     RepositoryMetadataInstallInfoDict,
+    RepositoryMetadataPreview,
     RepositoryRevisionMetadata,
     ResetMetadataOnRepositoriesRequest,
     ResetMetadataOnRepositoriesResponse,
@@ -474,8 +474,12 @@ def serialize_regenerated_metadata(
 def get_repository_revision_metadata_dict(
     app: ToolShedApp, repository: Repository, metadata: RepositoryMetadata, recursive: bool = False
 ):
+    # Create a safe encoder that handles None IDs (for unpersisted dry-run objects)
+    def safe_encode_id(id_value):
+        return app.security.encode_id(id_value) if id_value is not None else None
+
     metadata_dict = metadata.to_dict(
-        value_mapper={"id": app.security.encode_id, "repository_id": app.security.encode_id}
+        value_mapper={"id": safe_encode_id, "repository_id": safe_encode_id}
     )
     metadata_dict["repository"] = repository.to_dict(
         value_mapper={"id": app.security.encode_id, "user_id": app.security.encode_id}
@@ -565,7 +569,7 @@ def reset_metadata_on_repository(
         metadata_before = None
         if verbose:
             as_dict = get_repository_metadata_dict_for_repository(app, repository, recursive=False, downloadable_only=False)
-            metadata_before = SchemaRepositoryMetadata(root=as_dict)
+            metadata_before = RepositoryMetadataPreview(root=as_dict)
 
         results, regenerated_metadata = handle_repository(trans, start_time, repository, dry_run, verbose, repository_clone_url)
 
@@ -576,7 +580,7 @@ def reset_metadata_on_repository(
             # This shows what was actually generated (and persisted for non-dry-run,
             # or what would be persisted for dry-run)
             as_dict = serialize_regenerated_metadata(app, repository, regenerated_metadata)
-            metadata_after = SchemaRepositoryMetadata(root=as_dict)
+            metadata_after = RepositoryMetadataPreview(root=as_dict)
 
         stop_time = strftime("%Y-%m-%d %H:%M:%S")
         results["stop_time"] = stop_time

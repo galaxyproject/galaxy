@@ -18,6 +18,7 @@ import resetApplied from "./reset_metadata_applied.json"
 import resetBismark from "./reset_metadata_bismark.json"
 import resetUnchanged from "./reset_metadata_unchanged.json"
 import resetSubset from "./reset_metadata_subset.json"
+import resetDirectPush from "./reset_metadata_direct_push.json"
 
 // Simulated fixtures for edge cases
 // TODO: Update test_shed_repositories.py::test_generate_frontend_fixtures to generate real API
@@ -26,7 +27,6 @@ import resetSubset from "./reset_metadata_subset.json"
 // - Repository with no tools (empty workflow-only or datatype-only repo)
 // - Repository with repository_dependencies (define one with deps in test_data)
 // - Repository with multiple different tool IDs (multi-tool repo)
-// - Reset response with record_operation: "created" (first-time reset on fresh repo)
 // - Reset response with error (broken tool XML)
 // - Reset response with status: "warning" (partial success)
 import simulatedChangesetActions from "./simulated_changeset_actions.json"
@@ -64,6 +64,9 @@ export const resetMetadataUnchanged = resetUnchanged as ResetMetadataOnRepositor
 
 /** Reset metadata dry-run preview showing "subset" comparison_result (additive changes only) */
 export const resetMetadataSubset = resetSubset as ResetMetadataOnRepositoryResponse
+
+/** Reset metadata dry-run preview showing "created" record_operation (changeset pushed via hg without metadata) */
+export const resetMetadataDirectPush = resetDirectPush as ResetMetadataOnRepositoryResponse
 
 // ============================================================================
 // Simulated Fixtures for Edge Case Testing

@@ -7,6 +7,7 @@ from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.resources import resource_path
 from galaxy_test.base import api_asserts
 from tool_shed.test.base.api_util import create_user
+from tool_shed.test.base.hg_operations import HgRepositoryOperations
 from tool_shed.test.base.populators import (
     HasRepositoryId,
     repo_tars,
@@ -629,6 +630,76 @@ class TestShedRepositoriesApi(ShedApiTestCase):
 
         with open(os.path.join(output_dir, "reset_metadata_subset.json"), "w") as f:
             json.dump(subset_reset_data, f, indent=2)
+
+        # 8. ResetMetadataOnRepositoryResponse - direct_push (has "created" record_operation)
+        # This repo is created via API (creates metadata), then modified via direct hg push
+        # (no metadata created). Reset should show record_operation: "created" for the pushed changeset.
+        # NOTE: Requires TOOL_SHED_CONFIG_CONFIG_HG_FOR_DEV=1 when starting the tool shed.
+        direct_push_repo = populator.setup_test_data_repo("column_maker_direct_push")
+        # Clone the repo locally
+        clone_dir = tempfile.mkdtemp(prefix="hg_clone_")
+        hg_ops = HgRepositoryOperations(
+            shed_url=self.url,
+            username=direct_push_repo.owner,
+            password="testpass",  # Default test password
+        )
+        hg_ops.clone_repo(direct_push_repo.owner, direct_push_repo.name, clone_dir)
+        # Modify the tool and push via hg - this creates a changeset WITHOUT metadata
+        updated_tool_xml = """<tool id="Add_a_column1" name="Compute" version="1.1.0">
+  <description>an expression on every row</description>
+  <command interpreter="python">
+    column_maker.py $input $out_file1 "$cond" $round ${input.metadata.columns} "${input.metadata.column_types}"
+  </command>
+  <inputs>
+    <param name="cond" size="40" type="text" value="c3-c2" label="Add expression"/>
+    <param format="tabular" name="input" type="data" label="as a new column to" help="Query missing? See TIP below"/>
+    <param name="round" type="select" label="Round result?">
+      <option value="no">NO</option>
+      <option value="yes">YES</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <help>
+Computes an expression for every row and appends result as new column.
+Now with improved help text!
+</help>
+</tool>
+"""
+        hg_ops.add_and_commit(
+            clone_dir,
+            {"column_maker.xml": updated_tool_xml},
+            "Update to version 1.1.0",
+        )
+        try:
+            hg_ops.push(clone_dir, direct_push_repo.owner, direct_push_repo.name)
+        except Exception as e:
+            if "authorization failed" in str(e):
+                print("\n  WARNING: Skipping fixture #8 (reset_metadata_direct_push.json)")
+                print("  Push authorization failed. Start tool shed with:")
+                print("    TOOL_SHED_CONFIG_CONFIG_HG_FOR_DEV=1")
+            else:
+                raise
+        else:
+            # Reset metadata - should show "created" for the pushed changeset
+            direct_push_reset_response = self.api_interactor.post(
+                f"repositories/{direct_push_repo.id}/reset_metadata",
+                params={"dry_run": True, "verbose": True},
+            )
+            api_asserts.assert_status_code_is_ok(direct_push_reset_response)
+            direct_push_reset_data = direct_push_reset_response.json()
+            assert direct_push_reset_data["dry_run"] is True
+            assert direct_push_reset_data["changeset_details"] is not None
+            # Verify we got a "created" record_operation - this is the whole point of this fixture
+            has_created = any(
+                d.get("record_operation") == "created"
+                for d in direct_push_reset_data["changeset_details"]
+            )
+            assert has_created, "direct_push should produce 'created' record_operation"
+
+            with open(os.path.join(output_dir, "reset_metadata_direct_push.json"), "w") as f:
+                json.dump(direct_push_reset_data, f, indent=2)
 
         print(f"\nFixtures written to: {output_dir}")
         print("Files generated:")
