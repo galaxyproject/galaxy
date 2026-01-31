@@ -322,23 +322,23 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         """Create action suggestions from analysis result."""
         suggestions = []
 
-        # Primary solution
+        # Primary solution - use REFINE_QUERY since this is guidance, not a specific tool
         if analysis.solution_steps:
             suggestions.append(
                 ActionSuggestion(
-                    action_type=ActionType.TOOL_RUN,
-                    description=f"Follow the {len(analysis.solution_steps)}-step solution",
+                    action_type=ActionType.REFINE_QUERY,
+                    description=f"Follow the {len(analysis.solution_steps)}-step solution above",
                     confidence=analysis.confidence,
                     priority=1,
                 )
             )
 
-        # Alternative approaches
+        # Alternative approaches - also guidance
         for approach in analysis.alternative_approaches[:2]:  # Limit to 2 alternatives
             suggestions.append(
                 ActionSuggestion(
-                    action_type=ActionType.TOOL_RUN,
-                    description=f"Try alternative: {approach[:100]}...",
+                    action_type=ActionType.REFINE_QUERY,
+                    description=f"Try alternative: {approach[:100]}",
                     confidence="medium",
                     priority=2,
                 )

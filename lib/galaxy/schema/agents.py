@@ -11,6 +11,7 @@ from typing import (
 from pydantic import (
     BaseModel,
     Field,
+    model_validator,
 )
 
 
@@ -57,6 +58,20 @@ class ActionSuggestion(BaseModel):
     parameters: dict[str, Any] = Field(default_factory=dict, description="Parameters for the action")
     confidence: ConfidenceLevel = Field(description="Confidence in this suggestion")
     priority: int = Field(default=1, description="Priority level (1=high, 2=medium, 3=low)")
+
+    @model_validator(mode="after")
+    def validate_parameters(self) -> "ActionSuggestion":
+        """Ensure required parameters exist for each action type."""
+        if self.action_type == ActionType.TOOL_RUN:
+            if not self.parameters.get("tool_id"):
+                raise ValueError("TOOL_RUN requires 'tool_id' parameter")
+        elif self.action_type == ActionType.SAVE_TOOL:
+            if not self.parameters.get("tool_yaml"):
+                raise ValueError("SAVE_TOOL requires 'tool_yaml' parameter")
+        elif self.action_type == ActionType.VIEW_EXTERNAL:
+            if not self.parameters.get("url"):
+                raise ValueError("VIEW_EXTERNAL requires 'url' parameter")
+        return self
 
 
 class AgentResponse(BaseModel):
