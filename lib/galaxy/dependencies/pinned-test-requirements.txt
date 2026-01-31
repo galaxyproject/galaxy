@@ -99,7 +99,7 @@ prettytable==3.17.0
 prompt-toolkit==3.0.52
 propcache==0.4.1
 proto-plus==1.27.0
-protobuf==6.33.4
+protobuf==6.33.5
 psutil==7.2.1 ; sys_platform != 'cygwin'
 psycopg==3.3.2
 pyasn1==0.6.2
