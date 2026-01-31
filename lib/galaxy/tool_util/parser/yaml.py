@@ -339,7 +339,7 @@ class YamlToolSource(ToolSource):
         return parameter_bundle
 
     def parse_profile(self) -> str:
-        return self.root_dict.get("profile") or "16.04"
+        return self.root_dict.get("profile") or "24.2"
 
     def parse_license(self) -> Optional[str]:
         return self.root_dict.get("license")
