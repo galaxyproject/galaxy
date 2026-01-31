@@ -1,6 +1,5 @@
 import functools
 import operator
-from collections import namedtuple
 from json import (
     dumps,
     loads,
@@ -681,6 +680,3 @@ test_data:
             template = "%d steps disconnected in extracted workflow - disconnectect steps are %s - workflow is %s"
             message = template % (len(disconnected_inputs), disconnected_inputs, workflow)
             raise AssertionError(message)
-
-
-RunJobsSummary = namedtuple("RunJobsSummary", ["history_id", "workflow_id", "inputs", "jobs"])
