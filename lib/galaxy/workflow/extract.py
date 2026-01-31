@@ -3,11 +3,25 @@ histories.
 """
 
 import logging
-from typing import Optional
+from typing import (
+    Any,
+    Optional,
+    Union,
+)
 
 from galaxy import (
     exceptions,
     model,
+)
+from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.model import (
+    History,
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+    Job,
+    StoredWorkflow,
+    User,
+    WorkflowStep,
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.tool_util.parser import ToolOutputCollectionPart
@@ -26,22 +40,25 @@ from .steps import (
     order_workflow_steps_with_levels,
 )
 
+# Type alias for history content items
+HistoryContentItem = Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]
+
 log = logging.getLogger(__name__)
 
 WARNING_SOME_DATASETS_NOT_READY = "Some datasets still queued or running were ignored"
 
 
 def extract_workflow(
-    trans,
-    user,
-    history=None,
-    job_ids=None,
-    dataset_ids=None,
-    dataset_collection_ids=None,
-    workflow_name=None,
-    dataset_names=None,
-    dataset_collection_names=None,
-):
+    trans: ProvidesHistoryContext,
+    user: User,
+    history: Optional[History] = None,
+    job_ids: Optional[list[int]] = None,
+    dataset_ids: Optional[list[int]] = None,
+    dataset_collection_ids: Optional[list[int]] = None,
+    workflow_name: Optional[str] = None,
+    dataset_names: Optional[list[str]] = None,
+    dataset_collection_names: Optional[list[str]] = None,
+) -> StoredWorkflow:
     steps = extract_steps(
         trans,
         history=history,
@@ -78,14 +95,14 @@ def extract_workflow(
 
 
 def extract_steps(
-    trans,
-    history=None,
-    job_ids=None,
-    dataset_ids=None,
-    dataset_collection_ids=None,
-    dataset_names=None,
-    dataset_collection_names=None,
-):
+    trans: ProvidesHistoryContext,
+    history: Optional[History] = None,
+    job_ids: Optional[list[int]] = None,
+    dataset_ids: Optional[list[int]] = None,
+    dataset_collection_ids: Optional[list[int]] = None,
+    dataset_names: Optional[list[str]] = None,
+    dataset_collection_names: Optional[list[str]] = None,
+) -> list[WorkflowStep]:
     # Ensure job_ids and dataset_ids are lists (possibly empty)
     job_ids = listify(job_ids)
     dataset_ids = listify(dataset_ids)
@@ -203,12 +220,12 @@ class FakeJob:
     they will be treated as "input" datasets.
     """
 
-    def __init__(self, dataset):
+    def __init__(self, dataset: HistoryDatasetAssociation) -> None:
         self.is_fake = True
         self.id = f"fake_{dataset.id}"
         self.name = self._guess_name_from_dataset(dataset)
 
-    def _guess_name_from_dataset(self, dataset) -> Optional[str]:
+    def _guess_name_from_dataset(self, dataset: HistoryDatasetAssociation) -> Optional[str]:
         """Tries to guess the name of the fake job from the dataset associations."""
         if dataset.copied_from_history_dataset_association:
             return "Import from History"
@@ -218,19 +235,21 @@ class FakeJob:
 
 
 class DatasetCollectionCreationJob:
-    def __init__(self, dataset_collection):
+    def __init__(self, dataset_collection: HistoryDatasetCollectionAssociation) -> None:
         self.is_fake = True
         self.id = f"fake_{dataset_collection.id}"
-        self.from_jobs = None
+        self.from_jobs: Optional[list[Job]] = None
         self.name = "Dataset Collection Creation"
         self.disabled_why = "Dataset collection created in a way not compatible with workflows"
 
-    def set_jobs(self, jobs):
+    def set_jobs(self, jobs: list[Job]) -> None:
         assert jobs is not None
         self.from_jobs = jobs
 
 
-def summarize(trans, history=None):
+def summarize(
+    trans: ProvidesHistoryContext, history: Optional[History] = None
+) -> tuple[dict[Any, list[tuple[Optional[str], HistoryContentItem]]], set[str]]:
     """Return mapping of job description to datasets for active items in
     supplied history - needed for building workflow from a history.
 
@@ -241,22 +260,22 @@ def summarize(trans, history=None):
 
 
 class WorkflowSummary:
-    def __init__(self, trans, history):
+    def __init__(self, trans: ProvidesHistoryContext, history: Optional[History]) -> None:
         if not history:
             history = trans.get_history()
         self.history = history
-        self.warnings = set()
-        self.jobs = {}
-        self.job_id2representative_job = {}  # map a non-fake job id to its representative job
-        self.implicit_map_jobs = []
-        self.collection_types = {}
+        self.warnings: set[str] = set()
+        self.jobs: dict[Any, list[tuple[Optional[str], HistoryContentItem]]] = {}
+        self.job_id2representative_job: dict[int, Job] = {}  # map a non-fake job id to its representative job
+        self.implicit_map_jobs: list[Job] = []
+        self.collection_types: dict[int, str] = {}
 
-        self.hda_hid_in_history = {}
-        self.hdca_hid_in_history = {}
+        self.hda_hid_in_history: dict[int, int] = {}
+        self.hdca_hid_in_history: dict[int, int] = {}
 
         self.__summarize()
 
-    def hid(self, object):
+    def hid(self, object: HistoryContentItem) -> int:
         if object.history_content_type == "dataset_collection":
             if object.id in self.hdca_hid_in_history:
                 return self.hdca_hid_in_history[object.id]
@@ -274,7 +293,7 @@ class WorkflowSummary:
                 log.warning("extraction issue, using hda hid from outside current history and unmapped")
                 return object.hid
 
-    def __summarize(self):
+    def __summarize(self) -> None:
         # Make a first pass handle all singleton jobs, input dataset and dataset collections
         # just grab the implicitly mapped jobs and handle in second pass. Second pass is
         # needed because cannot allow selection of individual datasets from an implicit
@@ -282,7 +301,7 @@ class WorkflowSummary:
         for content in self.history.visible_contents:
             self.__summarize_content(content)
 
-    def __summarize_content(self, content):
+    def __summarize_content(self, content: HistoryContentItem) -> None:
         # Update internal state for history content (either an HDA or
         # an HDCA).
         if content.history_content_type == "dataset_collection":
@@ -290,7 +309,7 @@ class WorkflowSummary:
         else:
             self.__summarize_dataset(content)
 
-    def __summarize_dataset_collection(self, dataset_collection):
+    def __summarize_dataset_collection(self, dataset_collection: HistoryDatasetCollectionAssociation) -> None:
         hid_in_history = dataset_collection.hid
         dataset_collection = self.__original_hdca(dataset_collection)
         self.hdca_hid_in_history[dataset_collection.id] = hid_in_history
@@ -351,7 +370,7 @@ class WorkflowSummary:
             job = DatasetCollectionCreationJob(dataset_collection)
             self.jobs[job] = [(None, dataset_collection)]
 
-    def __summarize_dataset(self, dataset):
+    def __summarize_dataset(self, dataset: HistoryDatasetAssociation) -> None:
         if not self.__check_state(dataset):
             return
 
@@ -370,18 +389,20 @@ class WorkflowSummary:
                 self.jobs[job] = [(assoc.name, dataset)]
                 self.job_id2representative_job[job.id] = job
 
-    def __original_hdca(self, hdca):
+    def __original_hdca(
+        self, hdca: HistoryDatasetCollectionAssociation
+    ) -> HistoryDatasetCollectionAssociation:
         while hdca.copied_from_history_dataset_collection_association:
             hdca = hdca.copied_from_history_dataset_collection_association
         return hdca
 
-    def __original_hda(self, hda):
+    def __original_hda(self, hda: HistoryDatasetAssociation) -> HistoryDatasetAssociation:
         # if this hda was copied from another, we need to find the job that created the original hda
         while hda.copied_from_history_dataset_association:
             hda = hda.copied_from_history_dataset_association
         return hda
 
-    def __check_state(self, hda):
+    def __check_state(self, hda: HistoryDatasetAssociation) -> Optional[HistoryDatasetAssociation]:
         # FIXME: Create "Dataset.is_finished"
         if hda.state in ("new", "running", "queued"):
             self.warnings.add(WARNING_SOME_DATASETS_NOT_READY)
@@ -389,7 +410,9 @@ class WorkflowSummary:
         return hda
 
 
-def step_inputs(trans, job):
+def step_inputs(
+    trans: ProvidesHistoryContext, job: Job
+) -> tuple[dict[str, Any], list[tuple[int, str]]]:
     tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
     param_values = tool.get_param_values(
         job, ignore_errors=True
@@ -399,7 +422,7 @@ def step_inputs(trans, job):
     return tool_inputs, associations
 
 
-def __cleanup_param_values(inputs, values):
+def __cleanup_param_values(inputs: dict[str, Any], values: dict[str, Any]) -> list[tuple[int, str]]:
     """
     Remove 'Data' values from `param_values`, along with metadata cruft,
     but track the associations.

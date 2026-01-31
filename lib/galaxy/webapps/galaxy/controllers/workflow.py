@@ -18,6 +18,7 @@ from galaxy.webapps.base.controller import (
     SharableMixin,
     UsesStoredWorkflowMixin,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.workflow.extract import (
     extract_workflow,
     summarize,
@@ -182,16 +183,16 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.expose
     def build_from_current_history(
         self,
-        trans,
+        trans: GalaxyWebTransaction,
         job_ids=None,
         dataset_ids=None,
         dataset_collection_ids=None,
-        workflow_name=None,
+        workflow_name: str | None = None,
         dataset_names=None,
         dataset_collection_names=None,
-        history_id=None,
+        history_id: str | None = None,
         **kwargs,
-    ):
+    ) -> str:
         user = trans.get_user()
         history = trans.history
         if history_id:
