@@ -66,11 +66,15 @@ def parse_tool_test_descriptions(
     """
     Build ToolTestDescription objects for each test description.
     """
-    validate_on_load = Version(tool_source.parse_profile()) >= Version("24.2")
+    profile = tool_source.parse_profile()
+    validate_on_load = Version(profile) >= Version("24.2")
+    validation_skipped_reason: Optional[str] = None
+    if not validate_on_load:
+        validation_skipped_reason = f"tool profile {profile} < 24.2, validation skipped"
+
     raw_tests_dict: ToolSourceTests = tool_source.parse_tests_to_dict()
     tests: List[ToolTestDescription] = []
 
-    profile = tool_source.parse_profile()
     for i, raw_test_dict in enumerate(raw_tests_dict.get("tests", [])):
         validation_exception: Optional[Exception] = None
         request_and_schema: Optional[TestRequestAndSchema] = None
@@ -101,12 +105,13 @@ def parse_tool_test_descriptions(
                         "inputs": {},
                         "error": True,
                         "exception": unicodify(validation_exception),
+                        "request_unavailable_reason": "validation exception during tool loading",
                         "maxseconds": None,
                     }
                 )
             )
         else:
-            test = _description_from_tool_source(tool_source, raw_test_dict, i, tool_guid, request_and_schema)
+            test = _description_from_tool_source(tool_source, raw_test_dict, i, tool_guid, request_and_schema, validation_skipped_reason)
         tests.append(test)
     return tests
 
@@ -123,6 +128,7 @@ def _description_from_tool_source(
     test_index: int,
     tool_guid: Optional[str],
     request_and_schema: Optional[TestRequestAndSchema],
+    request_unavailable_reason: Optional[str],
 ) -> ToolTestDescription:
     required_files: RequiredFilesT = []
     required_data_tables: RequiredDataTablesT = []
@@ -159,6 +165,7 @@ def _description_from_tool_source(
                 "inputs": processed_inputs,
                 "request": request,
                 "request_schema": request_schema,
+                "request_unavailable_reason": request_unavailable_reason,
                 "outputs": raw_test_dict["outputs"],
                 "output_collections": raw_test_dict["output_collections"],
                 "num_outputs": num_outputs,
@@ -189,6 +196,7 @@ def _description_from_tool_source(
                 "inputs": {},
                 "error": True,
                 "exception": unicodify(traceback.format_exc()),
+                "request_unavailable_reason": "exception during input processing",
                 "maxseconds": maxseconds,
                 "value_state_representation": value_state_representation,
             }
