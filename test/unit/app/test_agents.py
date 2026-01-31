@@ -168,6 +168,59 @@ class TestAgentUnitMocked:
             assert info["agent_type"] == agent_type
             assert "class_name" in info
 
+    def test_error_analysis_creates_valid_suggestions(self):
+        """Verify _create_suggestions produces valid ActionSuggestions.
+
+        This validates that suggestions pass ActionSuggestion validation,
+        which checks required parameters per action type.
+        """
+        from galaxy.agents.error_analysis import (
+            ErrorAnalysisAgent,
+            ErrorAnalysisResult,
+        )
+        from galaxy.schema.agents import ActionSuggestion
+
+        analysis = ErrorAnalysisResult(
+            error_category="tool_configuration",
+            error_severity="medium",
+            likely_cause="Missing input file",
+            solution_steps=["Check input", "Re-upload file"],
+            confidence="high",
+        )
+
+        agent = ErrorAnalysisAgent(self.deps)
+        suggestions = agent._create_suggestions(analysis)
+
+        # Should create at least one valid suggestion
+        assert suggestions
+        for s in suggestions:
+            # Re-validate through ActionSuggestion to ensure parameters are correct
+            ActionSuggestion.model_validate(s.model_dump())
+
+    def test_error_analysis_suggestions_with_admin_required(self):
+        """Test error analysis creates CONTACT_SUPPORT suggestion when admin required."""
+        from galaxy.agents.error_analysis import (
+            ErrorAnalysisAgent,
+            ErrorAnalysisResult,
+        )
+        from galaxy.schema.agents import ActionType
+
+        analysis = ErrorAnalysisResult(
+            error_category="system_error",
+            error_severity="high",
+            likely_cause="Disk quota exceeded",
+            solution_steps=["Contact admin"],
+            confidence="high",
+            requires_admin=True,
+        )
+
+        agent = ErrorAnalysisAgent(self.deps)
+        suggestions = agent._create_suggestions(analysis)
+
+        # Should include CONTACT_SUPPORT suggestion
+        action_types = [s.action_type for s in suggestions]
+        assert ActionType.CONTACT_SUPPORT in action_types
+
     @pytest.mark.skip(reason="TestModel API changed in pydantic-ai, needs update for new version")
     @pytest.mark.asyncio
     async def test_router_with_test_model(self):

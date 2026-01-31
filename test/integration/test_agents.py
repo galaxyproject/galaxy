@@ -198,6 +198,15 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         assert data["response"]["metadata"]["tool_id"] == "line-counter"
         assert "wc -l" in data["response"]["metadata"]["tool_yaml"]
 
+        # Verify suggestions are present and valid
+        suggestions = data["response"].get("suggestions", [])
+        assert len(suggestions) >= 1, "Custom tool should return at least one suggestion"
+        # Should have a SAVE_TOOL suggestion with required parameters
+        save_suggestions = [s for s in suggestions if s["action_type"] == "save_tool"]
+        assert len(save_suggestions) == 1, "Should have exactly one SAVE_TOOL suggestion"
+        assert save_suggestions[0]["parameters"].get("tool_yaml"), "SAVE_TOOL must have tool_yaml"
+        assert save_suggestions[0]["parameters"].get("tool_id"), "SAVE_TOOL must have tool_id"
+
     @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
     @patch("galaxy.agents.error_analysis.Agent")
     def test_query_error_analysis_agent_mocked(self, mock_agent_class):
@@ -244,6 +253,15 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         # Should mention the error type or solution
         content = data["response"]["content"].lower()
         assert "command" in content or "samtools" in content or "not found" in content
+
+        # Verify suggestions are present and valid
+        suggestions = data["response"].get("suggestions", [])
+        assert len(suggestions) >= 1, "Error analysis should return at least one suggestion"
+        # All suggestions should have valid action types
+        for suggestion in suggestions:
+            assert "action_type" in suggestion
+            assert "description" in suggestion
+            assert "confidence" in suggestion
 
 
 # ============================================================================
