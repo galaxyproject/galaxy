@@ -140,10 +140,8 @@ async function rerunWorkflow() {
             <div v-if="workflow" class="bg-secondary px-2 py-1 rounded d-flex flex-gapx-1 justify-content-between">
                 <div class="py-1 d-flex flex-wrap align-items-center flex-gapx-1" data-description="workflow heading">
                     <FontAwesomeIcon :icon="faSitemap" fixed-width />
-                    <b>
-                        {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }}
-                    </b>
-                    <span>({{ localize("Version") }}: {{ workflow.version + 1 }})</span>
+                    <b> {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }} </b>
+                    <span>(Version: {{ workflow.version + 1 }})</span>
                 </div>
                 <div class="d-flex flex-gapx-1 align-self-baseline">
                     <GButtonGroup data-button-group>
