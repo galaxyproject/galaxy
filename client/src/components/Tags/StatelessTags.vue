@@ -35,6 +35,8 @@ upstream component or environment that is accessed through props and events -->
 <script>
 import VueTagsInput from "@johmun/vue-tags-input";
 
+import localize from "@/utils/localization";
+
 import { createTag, VALID_TAG_RE } from "./model";
 
 export default {
@@ -94,6 +96,7 @@ export default {
         },
     },
     methods: {
+        localize,
         tagsChanged(newTags) {
             this.$emit("input", this.pluckLabels(newTags));
         },
