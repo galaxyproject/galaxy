@@ -14,6 +14,7 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 
 import type { SelectedWorkflow } from "./types";
 import { useWorkflowCardActions } from "./useWorkflowCardActions";

@@ -11,6 +11,7 @@ import { Toast } from "@/composables/toast";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useHistoryStore } from "@/stores/historyStore";
 import { copy } from "@/utils/clipboard";
+import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import LoadingSpan from "../LoadingSpan.vue";

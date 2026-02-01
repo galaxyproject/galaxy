@@ -18,6 +18,7 @@ import { computed, type Ref, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { useEntryPointStore } from "@/stores/entryPointStore";
+import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
 
 const props = defineProps({

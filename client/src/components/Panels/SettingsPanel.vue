@@ -5,6 +5,7 @@ import { BButton, BModal } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { useActivityStore } from "@/stores/activityStore";
+import localize from "@/utils/localization";
 
 import ActivitySettings from "@/components/ActivityBar/ActivitySettings.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";

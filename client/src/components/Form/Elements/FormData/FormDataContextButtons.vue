@@ -10,6 +10,7 @@ import {
     COLLECTION_TYPE_TO_LABEL,
     type CollectionBuilderType,
 } from "@/components/Collections/common/buildCollectionModal";
+import localize from "@/utils/localization";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import { buildersForCollectionTypes, unconstrainedCollectionTypeBuilders } from "./collections";

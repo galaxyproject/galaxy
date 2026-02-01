@@ -2,6 +2,8 @@
 import { BButton, BButtonGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
+import localize from "@/utils/localization";
+
 interface Props {
     selectionSize: number;
 }

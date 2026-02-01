@@ -14,6 +14,7 @@ import type { Activity } from "@/stores/activityStoreTypes";
 import { useEventStore } from "@/stores/eventStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
 import ActivityItem from "./ActivityItem.vue";

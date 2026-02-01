@@ -13,6 +13,7 @@ import { type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
 import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 
