@@ -141,7 +141,7 @@ async function rerunWorkflow() {
                 <div class="py-1 d-flex flex-wrap align-items-center flex-gapx-1" data-description="workflow heading">
                     <FontAwesomeIcon :icon="faSitemap" fixed-width />
                     <b>
-                        {{ props.invocation ? "Invoked " : "" }} {{ localize("Workflow") }}: {{ getWorkflowName() }}
+                        {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }}
                     </b>
                     <span>({{ localize("Version") }}: {{ workflow.version + 1 }})</span>
                 </div>
