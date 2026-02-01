@@ -203,7 +203,11 @@ onMounted(async () => {
                     id="edit-preferences-permissions"
                     :icon="faUsers"
                     :title="localize('Set Dataset Permissions for New Histories')"
-                    :description="localize('Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.')"
+                    :description="
+                        localize(
+                            'Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.',
+                        )
+                    "
                     to="/user/permissions" />
 
                 <UserPreferencesElement
@@ -289,7 +293,11 @@ onMounted(async () => {
                     class="manage-file-sources"
                     :icon="faFile"
                     :title="localize('Manage Your Repositories')"
-                    :description="localize('Add, remove, or update your personally configured location to find files from and write files to.')"
+                    :description="
+                        localize(
+                            'Add, remove, or update your personally configured location to find files from and write files to.',
+                        )
+                    "
                     to="/file_source_instances/index" />
             </div>
 

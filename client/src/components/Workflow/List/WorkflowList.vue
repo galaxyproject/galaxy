@@ -477,7 +477,9 @@ onMounted(() => {
         </div>
         <div v-else-if="!loading && !overlay && noItems" class="workflow-list-alert">
             <BAlert id="workflow-list-empty" variant="info" show>
-                <span v-localize>No workflows found. You may create or import new workflows using the buttons above.</span>
+                <span v-localize
+                    >No workflows found. You may create or import new workflows using the buttons above.</span
+                >
             </BAlert>
         </div>
         <span v-else-if="!loading && !overlay && (noResults || hasInvalidFilters)" class="workflow-list-alert">

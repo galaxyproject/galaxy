@@ -36,7 +36,10 @@ async function onMarkAllAsRead() {
 </script>
 
 <template>
-    <ActivityPanel :title="localize('Unread Notifications')" :go-to-all-title="localize('All notifications')" href="/user/notifications">
+    <ActivityPanel
+        :title="localize('Unread Notifications')"
+        :go-to-all-title="localize('All notifications')"
+        href="/user/notifications">
         <template v-slot:header-buttons>
             <BButtonGroup>
                 <BButton
