@@ -32,9 +32,6 @@ ARG SERVER_DIR
 ARG GALAXY_PLAYBOOK_REPO
 ARG GALAXY_PLAYBOOK_BRANCH
 
-# Add Galaxy source code
-COPY . $SERVER_DIR/
-
 # Init Env
 ENV LC_ALL=en_US.UTF-8
 ENV LANG=en_US.UTF-8
@@ -56,6 +53,9 @@ RUN set -xe; \
 # Remove context from previous build; copy current context; run playbook
 WORKDIR /tmp/ansible
 RUN rm -rf *
+
+# Add Galaxy source code
+COPY . $SERVER_DIR/
 
 RUN git clone --depth 1 --branch $GALAXY_PLAYBOOK_BRANCH $GALAXY_PLAYBOOK_REPO galaxy-docker
 WORKDIR /tmp/ansible/galaxy-docker
