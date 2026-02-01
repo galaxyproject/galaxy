@@ -114,8 +114,8 @@ const { keyObject } = useKeyedObjects();
 <template>
     <div>
         <div v-if="!props.sustainRepeats || props.input.cache?.length > 0">
-            <div class="font-weight-bold mb-2">{{ props.input.title }}</div>
-            <div v-if="props.input.help" class="mb-2" data-description="repeat help">{{ props.input.help }}</div>
+            <div class="font-weight-bold mb-2">{{ localize(props.input.title) }}</div>
+            <div v-if="props.input.help" class="mb-2" data-description="repeat help">{{ localize(props.input.help) }}</div>
         </div>
 
         <FormCard

@@ -94,7 +94,7 @@ const meta = computed(() => store.metaForId(props.id));
                     </span>
                     <FontAwesomeIcon :icon="icon" />
                 </div>
-                <TextShort v-if="title" :text="title" class="nav-title" />
+                <TextShort v-if="title" :text="localize(title)" class="nav-title" />
             </b-nav-item>
         </template>
         <div class="text-center px-2 py-1">

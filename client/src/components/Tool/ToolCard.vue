@@ -248,7 +248,7 @@ onBeforeMount(() => {
         <template v-slot:footer>
             <slot name="buttons" />
             <div v-if="props.options.help" class="mt-2 mb-4">
-                <Heading h2 separator bold size="sm">Help</Heading>
+                <Heading v-localize h2 separator bold size="sm">Help</Heading>
                 <ToolHelp :content="props.options.help" :format="props.options.help_format" />
             </div>
 

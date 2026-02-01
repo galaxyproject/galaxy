@@ -6,6 +6,7 @@ import { computed } from "vue";
 import { isRegisteredUser } from "@/api";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 
 const { config } = useConfig();
@@ -34,7 +35,7 @@ const usage = computed(() => {
 const quotaLink = computed(() => (isAnonymous.value ? "/login/start" : "/storage"));
 
 const quotaTitle = computed(() =>
-    isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details",
+    localize(isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details"),
 );
 
 const variant = computed(() => {
