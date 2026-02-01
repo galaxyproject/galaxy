@@ -1,9 +1,10 @@
 /** Adds window manager masthead icon and functionality **/
 import "winbox/src/css/winbox.css";
 
-import localize from "@/utils/localization";
 import { withPrefix } from "utils/redirect";
 import WinBox from "winbox/src/js/winbox.js";
+
+import localize from "@/utils/localization";
 
 export class WindowManager {
     constructor(options) {

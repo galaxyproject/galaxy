@@ -4,13 +4,13 @@ import { faEye, faPlus, faSpinner, faTimes, faUpload } from "@fortawesome/free-s
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
-import localize from "@/utils/localization";
 
 import type { CollectionType } from "@/api/datasetCollections";
 import {
     COLLECTION_TYPE_TO_LABEL,
     type CollectionBuilderType,
 } from "@/components/History/adapters/buildCollectionModal";
+import localize from "@/utils/localization";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import { buildersForCollectionTypes, unconstrainedCollectionTypeBuilders } from "./collections";

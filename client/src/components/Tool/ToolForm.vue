@@ -42,7 +42,7 @@
             @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
             @onChangeVersion="onChangeVersion">
             <div class="mt-2 mb-4">
-                <Heading h2 separator bold size="sm" v-localize> Tool Parameters </Heading>
+                <Heading v-localize h2 separator bold size="sm"> Tool Parameters </Heading>
                 <FormDisplay
                     :id="toolId"
                     :inputs="formConfig.inputs"
@@ -55,7 +55,7 @@
             </div>
 
             <div class="mt-2 mb-4">
-                <Heading h2 separator bold size="sm" v-localize> Additional Options </Heading>
+                <Heading v-localize h2 separator bold size="sm"> Additional Options </Heading>
                 <FormElement
                     v-if="emailAllowed(config, currentUser)"
                     id="send_email_notification"

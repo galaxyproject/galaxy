@@ -154,7 +154,7 @@ onMounted(async () => {
     <div class="d-flex flex-column">
         <BreadcrumbHeading :items="breadcrumbItems" />
 
-        <Heading h2 size="sm" v-localize>
+        <Heading v-localize h2 size="sm">
             Manage your user preferences on this page, including email address, password, and other settings.
         </Heading>
 

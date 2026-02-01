@@ -5,9 +5,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import localize from "@/utils/localization";
 
 import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 

@@ -37,8 +37,6 @@ import VueTagsInput from "@johmun/vue-tags-input";
 
 import { createTag, VALID_TAG_RE } from "./model";
 
-import localize from "@/utils/localization";
-
 export default {
     components: {
         VueTagsInput,

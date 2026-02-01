@@ -4,9 +4,9 @@ import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router/composables";
-import localize from "@/utils/localization";
 
 import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 

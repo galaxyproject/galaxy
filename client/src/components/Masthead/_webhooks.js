@@ -9,7 +9,7 @@ export async function loadMastheadWebhooks(items) {
                 id: webhook.id,
                 icon: webhook.config.icon,
                 url: webhook.config.url,
-                tooltip: localize(webhook.config.tooltip),
+                tooltip: webhook.config.tooltip,
                 /*jslint evil: true */
                 onclick: webhook.config.function && new Function(webhook.config.function),
                 target: "_parent",

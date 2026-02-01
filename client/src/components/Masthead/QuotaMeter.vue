@@ -6,9 +6,8 @@ import { computed } from "vue";
 import { isRegisteredUser } from "@/api";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
-import { bytesToString } from "@/utils/utils";
-
 import localize from "@/utils/localization";
+import { bytesToString } from "@/utils/utils";
 
 const { config } = useConfig();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());

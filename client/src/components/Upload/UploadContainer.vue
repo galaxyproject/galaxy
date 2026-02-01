@@ -15,13 +15,12 @@ import { computed, onMounted, ref } from "vue";
 import { canMutateHistory } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUploadStore } from "@/stores/uploadStore";
+import localize from "@/utils/localization";
 import { uploadPayload } from "@/utils/upload-payload.js";
 
 import CompositeBox from "./CompositeBox";
 import DefaultBox from "./DefaultBox";
 import RulesInput from "./RulesInput";
-
-import localize from "@/utils/localization";
 
 const props = defineProps({
     auto: {
