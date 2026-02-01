@@ -148,7 +148,6 @@ WORKDIR $ROOT_DIR
 # Copy galaxy files to final image
 # The chown value MUST be hardcoded (see https://github.com/moby/moby/issues/35018)
 COPY --chown=$GALAXY_USER:$GALAXY_USER --from=stage1 $ROOT_DIR .
-COPY --chown=$GALAXY_USER:$GALAXY_USER --from=stage1 $SERVER_DIR/static ./server/static
 
 WORKDIR $SERVER_DIR
 

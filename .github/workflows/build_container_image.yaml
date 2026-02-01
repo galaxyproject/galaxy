@@ -227,6 +227,19 @@ jobs:
           if [ "$appVersion" != "$apiVersion" ]; then
             exit 1
           fi
+      - name: Check client build is served
+        run: |
+          base_url=$(kubectl get svc -n galaxy galaxy-nginx -o jsonpath="http://{.spec.clusterIP}:{.spec.ports[0].port}")
+          css_url="${base_url}/galaxy/static/dist/base.css"
+          echo "Checking client build at $css_url"
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" "$css_url")
+          echo "Status code: $status_code"
+          if [ "$status_code" != "200" ]; then
+            echo "ERROR: Failed to fetch base.css (status: $status_code)"
+            echo "This indicates the client build was not properly included in the image"
+            exit 1
+          fi
+          echo "Client build is properly served"
 
   pr:
     name: Create a PR to update the Galaxy Helm chart when a release is tagged
