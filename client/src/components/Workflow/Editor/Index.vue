@@ -1102,6 +1102,7 @@ export default {
             if (!this.nameValidate()) {
                 return false;
             }
+            const lastActiveNodeId = this.activeNodeId;
 
             try {
                 this.loadingWorkflow = true;
@@ -1120,6 +1121,7 @@ export default {
                 });
                 return false;
             } finally {
+                this.stateStore.activeNodeId = lastActiveNodeId;
                 this.loadingWorkflow = false;
             }
             return true;
