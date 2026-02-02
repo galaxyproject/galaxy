@@ -51,6 +51,7 @@ if TYPE_CHECKING:
     from galaxy.managers.interactivetool import InteractiveToolManager
     from galaxy.managers.jobs import JobSearch
     from galaxy.managers.tools import DynamicToolManager
+    from galaxy.managers.users import UserManager
     from galaxy.managers.workflows import (
         WorkflowContentsManager,
         WorkflowsManager,
@@ -131,7 +132,7 @@ class MinimalManagerApp(MinimalApp):
     library_folder_manager: "FolderManager"
     library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
-    user_manager: Any
+    user_manager: "UserManager"
     job_config: "JobConfiguration"
     job_manager: "JobManager"
     job_search: "JobSearch"

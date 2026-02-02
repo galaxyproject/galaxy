@@ -134,12 +134,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Create a new user.
         """
         self._error_on_duplicate_email(email)
-        user = self.model_class(email=email)
+        user = self.model_class(email=email, username=username)
         if password:
             user.set_password_cleartext(password)
         else:
             user.set_random_password()
-        user.username = username
         if self.app.config.user_activation_on:
             user.active = False
         else:

@@ -210,6 +210,7 @@ class ExportHistoryToolAction(ToolAction):
             directory_uri = incoming["directory_uri"]
             file_name = incoming.get("file_name")
             if file_name is None:
+                assert history.name
                 hname = ready_name_for_url(history.name)
                 human_timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
                 if compressed:

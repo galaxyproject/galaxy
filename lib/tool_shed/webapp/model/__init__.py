@@ -140,9 +140,10 @@ class User(Base, Dictifiable):
         ),
     )
 
-    def __init__(self, email=None, password=None):
+    def __init__(self, email=None, password=None, username=None) -> None:
         self.email = email
         self.password = password
+        self.username = username
         self.external = False
         self.deleted = False
         self.purged = False
