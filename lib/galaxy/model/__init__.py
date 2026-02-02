@@ -1670,6 +1670,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     credentials_context_associations: Mapped[list["JobCredentialsContextAssociation"]] = relationship(
         back_populates="job"
     )
+    direct_credentials: Mapped[list["JobDirectCredentials"]] = relationship(back_populates="job")
 
     dict_collection_visible_keys = [
         "id",
@@ -2822,6 +2823,36 @@ class JobCredentialsContextAssociation(Base, RepresentById):
         self.service_version = service_version
         self.selected_group_id = selected_group_id
         self.selected_group_name = selected_group_name
+
+
+class JobDirectCredentials(Base, RepresentById):
+    """Stores direct credentials provided for tool execution without vault access.
+
+    Direct credentials are typically used during tool testing where credentials
+    are provided as embedded values rather than retrieved from the vault.
+    """
+
+    __tablename__ = "job_direct_credentials"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True)
+    service_name: Mapped[str] = mapped_column(String(255))
+    variables: Mapped[Optional[dict[str, str]]] = mapped_column(JSONType)
+    secrets: Mapped[Optional[dict[str, str]]] = mapped_column(JSONType)
+
+    job: Mapped["Job"] = relationship(back_populates="direct_credentials")
+
+    def __init__(
+        self,
+        job: "Job",
+        service_name: str,
+        variables: Optional[dict[str, str]] = None,
+        secrets: Optional[dict[str, str]] = None,
+    ):
+        self.job = job
+        self.service_name = service_name
+        self.variables = variables or {}
+        self.secrets = secrets or {}
 
 
 class ImplicitlyCreatedDatasetCollectionInput(Base, RepresentById):
