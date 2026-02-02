@@ -14,7 +14,6 @@ import { withPrefix } from "@/utils/redirect";
 import type { TrsSelection } from "./types";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-import GCard from "@/components/Common/GCard.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsServerSelection from "@/components/Workflow/Import/TrsServerSelection.vue";
 import TrsTool from "@/components/Workflow/Import/TrsTool.vue";
@@ -187,7 +186,7 @@ defineExpose({ triggerImport });
 </script>
 
 <template>
-    <GCard class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
+    <div class="container workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
         <BAlert :show="hasErrorMessage" variant="danger">
             {{ errorMessage }}
         </BAlert>
@@ -259,7 +258,7 @@ defineExpose({ triggerImport });
                 </template>
             </BTable>
         </div>
-    </GCard>
+    </div>
 </template>
 
 <style>

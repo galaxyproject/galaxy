@@ -106,13 +106,16 @@ defineExpose({ attemptImport });
     <BForm class="mt-4 workflow-import-url" @submit="submit">
         <h2 class="h-sm">Import from a Galaxy workflow export URL</h2>
 
-        <BFormGroup label="Archived Workflow URL">
+        <BFormGroup label="Workflow Archive URL">
             <BFormInput
                 id="workflow-import-url-input"
                 v-model="sourceURL"
                 aria-label="Workflow Import URL"
-                type="url" />
-            If the workflow is accessible via a URL, enter the URL above and click Import.
+                type="url"
+        />
+            If your URL is from a workflow repository and doesn't end in <code>.ga</code>, you might need to use the
+            <a href="/workflows/import?trs_url=Enter%20a%20TRS%20URL">TRS import method</a>
+            instead.
         </BFormGroup>
 
         <BAlert :show="hasErrorMessage" variant="danger">
