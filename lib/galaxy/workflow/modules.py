@@ -1506,10 +1506,15 @@ class InputParameterModule(WorkflowModule):
                     subworkflow_input_name = connection.input_name
                     for step in module.subworkflow.input_steps:
                         if step.input_type == "parameter" and step.label == subworkflow_input_name:
+                            # static_options are raw tuples, convert to ParameterOption namedtuples
+                            # to match ToolModule path and support intersection logic
                             static_options.append(
-                                step.module.get_runtime_inputs(step, connections=step.output_connections)[
-                                    "input"
-                                ].static_options
+                                [
+                                    ParameterOption(*o)
+                                    for o in step.module.get_runtime_inputs(step, connections=step.output_connections)[
+                                        "input"
+                                    ].static_options
+                                ]
                             )
 
             options: Optional[list[OptionDict]] = None
