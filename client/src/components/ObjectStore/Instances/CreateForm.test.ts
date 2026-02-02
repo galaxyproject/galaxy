@@ -79,6 +79,65 @@ const SIMPLE_TEMPLATE: ObjectStoreTemplateSummary = {
     hidden: false,
 };
 
+const OPTIONAL_SECRET_TEMPLATE: ObjectStoreTemplateSummary = {
+    type: "aws_s3",
+    name: "moo",
+    description: null,
+    variables: [
+        {
+            name: "myvar",
+            type: "string",
+            help: "myvar help",
+            default: "default",
+        },
+    ],
+    secrets: [
+        {
+            name: "optional_secret",
+            help: "An optional secret",
+            default: "default_value",
+        },
+    ],
+    id: "moo",
+    version: 0,
+    badges: [],
+    hidden: false,
+};
+
+const OPTIONAL_VAR_WITH_VALIDATION_TEMPLATE: ObjectStoreTemplateSummary = {
+    type: "aws_s3",
+    name: "moo",
+    description: null,
+    variables: [
+        {
+            name: "optional_var",
+            type: "string",
+            help: "optional var help",
+            default: "",
+            validators: [
+                {
+                    type: "length",
+                    min: 5,
+                    message: "Must be at least 5 characters",
+                    negate: false,
+                    implicit: false,
+                },
+            ],
+        },
+    ],
+    secrets: [
+        {
+            name: "mysecret",
+            help: "mysecret help",
+            default: "default_secret",
+        },
+    ],
+    id: "moo",
+    version: 0,
+    badges: [],
+    hidden: false,
+};
+
 const localVue = getLocalVue(true);
 const { server, http } = useServerMock();
 
@@ -188,5 +247,62 @@ describe("CreateForm", () => {
         await flushPromises();
         const emitted = wrapper.emitted("created") || [];
         expect(emitted).toHaveLength(0);
+    });
+
+    it("should allow submission when optional secret is empty", async () => {
+        server.use(
+            http.post("/api/object_store_instances", ({ response }) => {
+                return response(200).json(FAKE_OBJECT_STORE);
+            }),
+            http.post("/api/object_store_instances/test", ({ response }) => {
+                return response(200).json(OK_PLUGIN_STATUS);
+            }),
+        );
+
+        const wrapper = mount(CreateForm as object, {
+            propsData: {
+                template: OPTIONAL_SECRET_TEMPLATE,
+            },
+            localVue,
+        });
+
+        const nameForElement = wrapper.find("#form-element-_meta_name");
+        await nameForElement.find("input").setValue("My New Name");
+
+        // Don't fill in the optional secret
+
+        const submitElement = wrapper.find("#submit");
+        expect(submitElement.classes().includes("g-disabled")).toBe(false);
+
+        await submitElement.trigger("click");
+        await flushPromises();
+        const emitted = wrapper.emitted("created") || [];
+        expect(emitted).toHaveLength(1);
+    });
+
+    it("should validate optional fields when they have values", async () => {
+        const wrapper = mount(CreateForm as object, {
+            propsData: {
+                template: OPTIONAL_VAR_WITH_VALIDATION_TEMPLATE,
+            },
+            localVue,
+        });
+
+        const nameForElement = wrapper.find("#form-element-_meta_name");
+        await nameForElement.find("input").setValue("My New Name");
+
+        // Set optional field to a value that's too short
+        const optionalVarElement = wrapper.find("#form-element-optional_var");
+        await optionalVarElement.find("input").setValue("abc"); // Too short (< 5 chars)
+        await flushPromises();
+
+        const submitElement = wrapper.find("#submit");
+        expect(submitElement.classes().includes("g-disabled")).toBe(true);
+
+        // Fix the validation error
+        await optionalVarElement.find("input").setValue("validvalue");
+        await flushPromises();
+
+        expect(submitElement.classes().includes("g-disabled")).toBe(false);
     });
 });

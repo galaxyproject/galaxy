@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { TemplateVariable } from "@/api/configTemplates";
+import type { TemplateSecret, TemplateVariable } from "@/api/configTemplates";
 
-import { createTemplateForm, templateVariableFormEntry, upgradeForm } from "./formUtil";
+import { createTemplateForm, templateSecretFormEntry, templateVariableFormEntry, upgradeForm } from "./formUtil";
 import {
     GENERIC_FTP_FILE_SOURCE_TEMPLATE,
     OBJECT_STORE_INSTANCE,
@@ -97,6 +97,88 @@ describe("formUtils", () => {
             const hostVariable = FTP_VARIABLES[0] as TemplateVariable;
             const formEntry = templateVariableFormEntry(hostVariable, "mycoolhost.org");
             expect(formEntry.value).toBe("mycoolhost.org");
+        });
+    });
+
+    describe("templateVariableFormEntry optional field", () => {
+        it("should mark variable as optional when it has a default", () => {
+            const varWithDefault: TemplateVariable = {
+                name: "test_var",
+                type: "string",
+                default: "default_value",
+            };
+            const formEntry = templateVariableFormEntry(varWithDefault, undefined);
+            expect(formEntry.optional).toBe(true);
+        });
+
+        it("should mark variable as required when it has no default", () => {
+            const varWithoutDefault: TemplateVariable = {
+                name: "test_var",
+                type: "string",
+            };
+            const formEntry = templateVariableFormEntry(varWithoutDefault, undefined);
+            expect(formEntry.optional).toBe(false);
+        });
+
+        it("should mark integer variable as optional when default is zero", () => {
+            const varWithZeroDefault: TemplateVariable = {
+                name: "test_var",
+                type: "integer",
+                default: 0,
+            };
+            const formEntry = templateVariableFormEntry(varWithZeroDefault, undefined);
+            expect(formEntry.optional).toBe(true);
+        });
+
+        it("should mark boolean variable as optional when default is false", () => {
+            const varWithFalseDefault: TemplateVariable = {
+                name: "test_var",
+                type: "boolean",
+                default: false,
+            };
+            const formEntry = templateVariableFormEntry(varWithFalseDefault, undefined);
+            expect(formEntry.optional).toBe(true);
+        });
+
+        it("should mark string variable as optional when default is empty string", () => {
+            const varWithEmptyDefault: TemplateVariable = {
+                name: "test_var",
+                type: "string",
+                default: "",
+            };
+            const formEntry = templateVariableFormEntry(varWithEmptyDefault, undefined);
+            expect(formEntry.optional).toBe(true);
+        });
+    });
+
+    describe("templateSecretFormEntry optional field", () => {
+        it("should mark secret as optional when it has a default", () => {
+            const secretWithDefault: TemplateSecret = {
+                name: "mysecret",
+                help: "Help text",
+                default: "default_value",
+            };
+            const formEntry = templateSecretFormEntry(secretWithDefault);
+            expect(formEntry.optional).toBe(true);
+        });
+
+        it("should mark secret as required when it has no default", () => {
+            const secretWithoutDefault: TemplateSecret = {
+                name: "mysecret",
+                help: "Help text",
+            };
+            const formEntry = templateSecretFormEntry(secretWithoutDefault);
+            expect(formEntry.optional).toBe(false);
+        });
+
+        it("should mark secret as optional when default is empty string", () => {
+            const secretWithEmptyDefault: TemplateSecret = {
+                name: "mysecret",
+                help: "Help text",
+                default: "",
+            };
+            const formEntry = templateSecretFormEntry(secretWithEmptyDefault);
+            expect(formEntry.optional).toBe(true);
         });
     });
 });

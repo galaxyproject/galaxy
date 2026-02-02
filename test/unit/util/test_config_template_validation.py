@@ -374,3 +374,89 @@ def test_validators_skip_null_values():
     # Empty value should not trigger validator when field has empty default
     instance = _test_instance_with_variables({})
     validate_secrets_and_variables(instance, template)
+
+
+def test_secret_with_default_is_optional():
+    """Test that secrets with default values are optional."""
+    secret = TemplateSecret(name="mysecret", help="Help for secret.", default="default_value")
+    template = TestTemplate(
+        id=TEST_TEMPLATE_ID,
+        version=TEST_TEMPLATE_VERSION,
+        variables=[],
+        secrets=[secret],
+        environment=None,
+    )
+
+    # Should not require the secret when it has a default
+    instance = _test_instance_with_secrets({})
+    validate_secrets_and_variables(instance, template)
+
+
+def test_validators_run_on_optional_fields_with_values():
+    """Test that validators run on optional fields when they have values."""
+    validator = LengthParameterValidatorModel(
+        min=3,
+        message="Value must be at least 3 characters",
+    )
+    template = _template_with_variable(
+        TemplateVariableString(name="optional_field", help=None, type="string", default="ok", validators=[validator])
+    )
+
+    # Should run validator when optional field has a value
+    instance = _test_instance_with_variables({"optional_field": "ab"})  # Too short
+    e = assert_validation_throws(instance, template)
+    assert isinstance(e, RequestParameterInvalidException)
+    assert "at least 3 characters" in str(e)
+
+    # Should pass validation with valid value
+    instance = _test_instance_with_variables({"optional_field": "valid"})
+    validate_secrets_and_variables(instance, template)
+
+
+def test_variable_with_null_default():
+    """Test variables with null defaults are still required (None is not a valid default)."""
+    template = _template_with_variable(
+        TemplateVariableString(name="optional_var", help=None, type="string", default=None)
+    )
+
+    # Should still require the variable when default is None (None is not a valid default)
+    instance = _test_instance_with_variables({})
+    e = assert_validation_throws(instance, template)
+    assert isinstance(e, RequestParameterMissingException)
+
+    # Should pass when variable is provided
+    instance = _test_instance_with_variables({"optional_var": "some_value"})
+    validate_secrets_and_variables(instance, template)
+
+
+def test_variable_with_empty_string_default():
+    """Test variables with empty string defaults are optional."""
+    template = _template_with_variable(
+        TemplateVariableString(name="optional_var", help=None, type="string", default="")
+    )
+
+    # Should not require the variable when it has an empty string default
+    instance = _test_instance_with_variables({})
+    validate_secrets_and_variables(instance, template)
+
+
+def test_secret_without_default_is_required():
+    """Test that secrets without defaults are required."""
+    secret = TemplateSecret(name="requiredsecret", help="Help for secret.")
+    template = TestTemplate(
+        id=TEST_TEMPLATE_ID,
+        version=TEST_TEMPLATE_VERSION,
+        variables=[],
+        secrets=[secret],
+        environment=None,
+    )
+
+    # Should require the secret when it has no default
+    instance = _test_instance_with_secrets({})
+    e = assert_validation_throws(instance, template)
+    assert isinstance(e, RequestParameterMissingException)
+    assert "requiredsecret" in str(e)
+
+    # Should pass when secret is provided
+    instance = _test_instance_with_secrets({"requiredsecret": "myvalue"})
+    validate_secrets_and_variables(instance, template)

@@ -306,4 +306,120 @@ describe("form component utilities", () => {
         const result = validateInputs(index, values);
         expect(result).toEqual(["age", "Value must be numeric for range validation"]);
     });
+
+    it("test validators run on optional fields with values", () => {
+        const index = {
+            optional_field: {
+                optional: true,
+                validators: [
+                    {
+                        type: "length",
+                        min: 3,
+                        message: "Must be at least 3 characters",
+                    },
+                ],
+            },
+        };
+
+        // Empty value should not trigger validator
+        let values = { optional_field: "" };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // null value should not trigger validator
+        values = { optional_field: null };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // undefined should not trigger validator
+        values = { optional_field: undefined };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // But when optional field has a value, validator should run
+        values = { optional_field: "ab" }; // Too short
+        result = validateInputs(index, values);
+        expect(result).toEqual(["optional_field", "Must be at least 3 characters"]);
+
+        // Valid value should pass
+        values = { optional_field: "valid" };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+    });
+
+    it("test validators with undefined min or max values", () => {
+        const index = {
+            field_with_undefined_min: {
+                validators: [
+                    {
+                        type: "length",
+                        min: undefined,
+                        max: 10,
+                        message: "Must be at most 10 characters",
+                    },
+                ],
+            },
+        };
+
+        // Should only validate max when min is undefined
+        let values = { field_with_undefined_min: "a" }; // Very short but no min
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { field_with_undefined_min: "a".repeat(11) }; // Too long
+        result = validateInputs(index, values);
+        expect(result).toEqual(["field_with_undefined_min", "Must be at most 10 characters"]);
+    });
+
+    it("test validators with null min or max values", () => {
+        const index = {
+            field_with_null_max: {
+                validators: [
+                    {
+                        type: "length",
+                        min: 3,
+                        max: null,
+                        message: "Must be at least 3 characters",
+                    },
+                ],
+            },
+        };
+
+        // Should only validate min when max is null
+        let values = { field_with_null_max: "a".repeat(100) }; // Very long but no max
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { field_with_null_max: "ab" }; // Too short
+        result = validateInputs(index, values);
+        expect(result).toEqual(["field_with_null_max", "Must be at least 3 characters"]);
+    });
+
+    it("test required field validation with empty string vs undefined vs null", () => {
+        const index = {
+            required_field: {
+                optional: false,
+            },
+        };
+
+        // Empty string should fail for required field
+        let values = { required_field: "" };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(["required_field", "Please provide a value for this option."]);
+
+        // undefined should fail for required field
+        values = { required_field: undefined };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["required_field", "Please provide a value for this option."]);
+
+        // null should fail for required field
+        values = { required_field: null };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["required_field", "Please provide a value for this option."]);
+
+        // Non-empty value should pass
+        values = { required_field: "value" };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+    });
 });
