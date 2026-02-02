@@ -15,7 +15,7 @@ from typing_extensions import (
 
 from galaxy.tool_util.parser.interface import (
     AssertionList,
-    TestCredential,
+    DirectCredential,
     TestSourceTestOutputColllection,
     ToolSourceTestOutputs,
 )
@@ -60,4 +60,4 @@ class ToolTestDescriptionDict(TypedDict):
     error: bool
     exception: Optional[str]
     maxseconds: NotRequired[Optional[int]]
-    credentials: NotRequired[Optional[List[TestCredential]]]
+    credentials: NotRequired[Optional[List[DirectCredential]]]

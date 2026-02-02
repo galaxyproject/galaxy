@@ -2056,7 +2056,7 @@ class ToolTestDescription:
     outputs: ToolSourceTestOutputs
     output_collections: List[TestCollectionOutputDef]
     maxseconds: Optional[int]
-    credentials: Optional[List[Any]]  # List of TestCredential dicts
+    credentials: Optional[List[Any]]  # List of DirectCredential dicts
 
     @staticmethod
     def from_tool_source_dict(processed_test_dict: ToolTestDict) -> "ToolTestDescription":
