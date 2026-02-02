@@ -1821,6 +1821,9 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                     output_hdca = _find_hdca(output_key)
                     if output_hdca:
                         imported_job.add_output_dataset_collection(output_name, output_hdca)
+                        # Also set the HDCA's job reference so job_state_summary works
+                        if output_hdca.job_id is None:
+                            output_hdca.job = imported_job
 
     def _normalize_job_parameters(
         self,
@@ -2240,12 +2243,10 @@ class DirectoryModelExportStore(ModelExportStore):
         collections = sa_session.scalars(stmt_hdca)
 
         for collection in collections:
-            # filter this ?
+            # Skip unpopulated collections (they don't have all elements yet),
+            # but export all others regardless of state to preserve error states
             if not collection.populated:
-                break
-            if collection.state != "ok":
-                break
-
+                continue
             self.export_collection(collection, include_deleted=include_deleted)
 
         # Write datasets' attributes to file.
