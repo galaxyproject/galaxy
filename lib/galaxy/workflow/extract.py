@@ -5,9 +5,9 @@ histories.
 import logging
 from typing import (
     Any,
+    cast,
     Optional,
     Union,
-    cast,
 )
 
 from galaxy import (
@@ -120,7 +120,7 @@ def extract_steps(
     step_labels = set()
     hid_to_output_pair = {}
     # Input dataset steps
-    for i, hid in enumerate(dataset_ids):
+    for i, input_hid in enumerate(dataset_ids):
         step = model.WorkflowStep()
         step.type = "data_input"
         if dataset_names:
@@ -131,14 +131,14 @@ def extract_steps(
             step.label = name
             step_labels.add(name)
         step.tool_inputs = dict(name=name)
-        hid_to_output_pair[hid] = (step, "output")
+        hid_to_output_pair[input_hid] = (step, "output")
         steps.append(step)
-    for i, hid in enumerate(dataset_collection_ids):
+    for i, input_hid in enumerate(dataset_collection_ids):
         step = model.WorkflowStep()
         step.type = "data_collection_input"
-        if hid not in summary.collection_types:
-            raise exceptions.RequestParameterInvalidException(f"hid {hid} does not appear to be a collection")
-        collection_type = summary.collection_types[hid]
+        if input_hid not in summary.collection_types:
+            raise exceptions.RequestParameterInvalidException(f"hid {input_hid} does not appear to be a collection")
+        collection_type = summary.collection_types[input_hid]
         if dataset_collection_names:
             name = dataset_collection_names[i]
         else:
@@ -147,7 +147,7 @@ def extract_steps(
             step.label = name
             step_labels.add(name)
         step.tool_inputs = dict(name=name, collection_type=collection_type)
-        hid_to_output_pair[hid] = (step, "output")
+        hid_to_output_pair[input_hid] = (step, "output")
         steps.append(step)
     # Tool steps
     for job_id in job_ids:
@@ -337,9 +337,9 @@ class WorkflowSummary:
                     self.implicit_map_jobs.append(representative_job)
             else:
                 self.jobs[representative_job].append((representative_assoc.name, dataset_collection))
-            for assoc in cja:
-                job = assoc.job
-                self.job_id2representative_job[job.id] = representative_job
+            for cja_assoc in cja:
+                cja_job = cja_assoc.job
+                self.job_id2representative_job[cja_job.id] = representative_job
         # This whole elif condition may no longer be needed do to additional
         # tracking with creating_job_associations. Will delete at some point.
         elif dataset_collection.implicit_output_name:
@@ -393,9 +393,7 @@ class WorkflowSummary:
                 self.jobs[job] = [(assoc.name, dataset)]
                 self.job_id2representative_job[job.id] = job
 
-    def __original_hdca(
-        self, hdca: HistoryDatasetCollectionAssociation
-    ) -> HistoryDatasetCollectionAssociation:
+    def __original_hdca(self, hdca: HistoryDatasetCollectionAssociation) -> HistoryDatasetCollectionAssociation:
         while hdca.copied_from_history_dataset_collection_association:
             hdca = hdca.copied_from_history_dataset_collection_association
         return hdca
@@ -414,9 +412,7 @@ class WorkflowSummary:
         return hda
 
 
-def step_inputs(
-    trans: ProvidesHistoryContext, job: Job
-) -> tuple[dict[str, Any], list[tuple[int, str]]]:
+def step_inputs(trans: ProvidesHistoryContext, job: Job) -> tuple[dict[str, Any], list[tuple[int, str]]]:
     tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
     assert tool is not None, f"Tool {job.tool_id} (version {job.tool_version}) not found"
     param_values = tool.get_param_values(
