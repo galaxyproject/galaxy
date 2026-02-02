@@ -152,7 +152,7 @@ async function rerunWorkflow() {
                             transparent
                             color="blue"
                             size="small"
-                            title="Edit Workflow"
+                            :title="localize('Edit Workflow')"
                             disabled-title="This workflow has been deleted."
                             :disabled="workflow.deleted"
                             :to="`/workflows/edit?id=${workflow.id}&version=${workflow.version}`">
@@ -181,11 +181,11 @@ async function rerunWorkflow() {
                         :disabled="runDisabled"
                         size="small"
                         :tooltip="executeButtonTooltip"
-                        :title="!props.validRerun ? 'Run Workflow' : 'Rerun Workflow'"
+                        :title="!props.validRerun ? localize('Run Workflow') : localize('Rerun Workflow')"
                         @onClick="emit('on-execute')" />
                     <GButtonGroup v-else>
                         <GButton
-                            title="Run Workflow"
+                            :title="localize('Run Workflow')"
                             disabled-title="This workflow has been deleted."
                             data-button-run
                             tooltip
@@ -197,7 +197,7 @@ async function rerunWorkflow() {
                             <span v-localize>Run</span>
                         </GButton>
                         <GButton
-                            title="Rerun Workflow with same inputs"
+                            :title="localize('Rerun Workflow with same inputs')"
                             disabled-title="This workflow has been deleted."
                             data-button-rerun
                             tooltip

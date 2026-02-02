@@ -5,6 +5,7 @@ import { BButton, BModal } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { useActivityStore } from "@/stores/activityStore";
+import localize from "@/utils/localization";
 
 import ActivitySettings from "@/components/ActivityBar/ActivitySettings.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
@@ -41,7 +42,7 @@ function onQuery(newQuery: string) {
                 data-description="restore factory settings"
                 size="sm"
                 variant="link"
-                title="Restore default"
+                :title="localize('Restore default')"
                 @click="confirmRestore = true">
                 <span v-localize>Reset</span>
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
@@ -53,7 +54,7 @@ function onQuery(newQuery: string) {
             @activityClicked="(...args) => emit('activityClicked', ...args)" />
         <BModal
             v-model="confirmRestore"
-            title="Restore Activity Bar Defaults"
+            :title="localize('Restore Activity Bar Defaults')"
             title-tag="h2"
             @ok="activityStore.restore()">
             <p v-localize>Are you sure you want to reset the activity bar to its default settings?</p>

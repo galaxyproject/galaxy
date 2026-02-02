@@ -22,6 +22,7 @@ import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { invokeWorkflow } from "./services";
@@ -456,7 +457,7 @@ onBeforeMount(() => {
                             <GButton
                                 tooltip
                                 size="small"
-                                :title="!showGraph ? 'Show workflow graph' : 'Hide workflow graph'"
+                                :title="localize(!showGraph ? 'Show workflow graph' : 'Hide workflow graph')"
                                 transparent
                                 color="blue"
                                 :pressed="showGraph"
@@ -467,7 +468,7 @@ onBeforeMount(() => {
                                 v-if="workflow?.readme || workflow?.help"
                                 tooltip
                                 size="small"
-                                :title="!showHelp ? 'Show workflow help' : 'Hide workflow help'"
+                                :title="localize(!showHelp ? 'Show workflow help' : 'Hide workflow help')"
                                 transparent
                                 color="blue"
                                 :pressed="showHelp"
@@ -478,7 +479,7 @@ onBeforeMount(() => {
                         <GButton
                             tooltip
                             size="small"
-                            title="Workflow Run Settings"
+                            :title="localize('Workflow Run Settings')"
                             transparent
                             color="blue"
                             class="workflow-run-settings"

@@ -10,6 +10,7 @@ import {
     COLLECTION_TYPE_TO_LABEL,
     type CollectionBuilderType,
 } from "@/components/Collections/common/buildCollectionModal";
+import localize from "@/utils/localization";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import { buildersForCollectionTypes, unconstrainedCollectionTypeBuilders } from "./collections";
@@ -89,7 +90,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
                 :key="index"
                 v-b-tooltip.hover.bottom
                 :pressed="props.currentField === index"
-                :title="v.tooltip"
+                :title="localize(v.tooltip)"
                 :style="v.icon === faFolder && v.multiple ? 'padding: 2px' : ''"
                 @click="emit('set-current-field', index)">
                 <span v-if="v.icon === faFolder && v.multiple" class="fa-stack" style="height: unset">
@@ -101,7 +102,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             <BButton
                 v-if="props.canBrowse && !props.workflowRun"
                 v-b-tooltip.hover.bottom
-                title="Browse or Upload Datasets"
+                :title="localize('Browse or Upload Datasets')"
                 @click="emit('on-browse')">
                 <FontAwesomeIcon v-if="props.loading" :icon="faSpinner" spin />
                 <span v-else class="font-weight-bold">...</span>

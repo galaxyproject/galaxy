@@ -52,7 +52,7 @@ function userTitle(title: string) {
             aria-label="current history management">
             <GButton v-if="!props.minimal" size="small" transparent @click="emit('show', false)">
                 <FontAwesomeIcon fixed-width :icon="faChevronRight" />
-                <span>History</span>
+                <span v-localize>History</span>
             </GButton>
 
             <BButtonGroup>

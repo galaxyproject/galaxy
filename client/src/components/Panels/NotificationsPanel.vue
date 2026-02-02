@@ -7,6 +7,7 @@ import { computed } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useNotificationsStore } from "@/stores/notificationsStore";
+import localize from "@/utils/localization";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationCard from "@/components/Notifications/NotificationCard.vue";
@@ -36,7 +37,10 @@ async function onMarkAllAsRead() {
 </script>
 
 <template>
-    <ActivityPanel title="Unread Notifications" go-to-all-title="All notifications" href="/user/notifications">
+    <ActivityPanel
+        :title="localize('Unread Notifications')"
+        :go-to-all-title="localize('All notifications')"
+        href="/user/notifications">
         <template v-slot:header-buttons>
             <BButtonGroup>
                 <BButton
@@ -44,7 +48,7 @@ async function onMarkAllAsRead() {
                     data-description="mark all as read"
                     size="sm"
                     variant="link"
-                    title="Mark all as read"
+                    :title="localize('Mark all as read')"
                     @click="onMarkAllAsRead">
                     <FontAwesomeIcon :icon="faCheckDouble" fixed-width />
                 </BButton>

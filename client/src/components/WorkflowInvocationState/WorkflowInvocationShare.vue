@@ -11,6 +11,7 @@ import { Toast } from "@/composables/toast";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useHistoryStore } from "@/stores/historyStore";
 import { copy } from "@/utils/clipboard";
+import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import LoadingSpan from "../LoadingSpan.vue";
@@ -101,7 +102,7 @@ function shareInvocationButtonClicked() {
     <div v-if="owned" class="d-flex">
         <GButton
             tooltip
-            title="Share Invocation"
+            :title="localize('Share Invocation')"
             size="small"
             transparent
             color="blue"
@@ -113,7 +114,7 @@ function shareInvocationButtonClicked() {
 
         <GModal
             :show.sync="modalToggle"
-            title="Share Workflow Invocation"
+            :title="localize('Share Workflow Invocation')"
             confirm
             ok-text="Share"
             size="small"
