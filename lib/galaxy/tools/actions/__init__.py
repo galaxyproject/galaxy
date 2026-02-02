@@ -32,6 +32,7 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     Job,
     JobCredentialsContextAssociation,
+    JobDirectCredentials,
     LibraryDatasetDatasetAssociation,
     WorkflowRequestInputParameter,
 )
@@ -43,7 +44,7 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import (
     CredentialsContextT,
-    TestCredentialsContext,
+    DirectCredentialsContext,
 )
 from galaxy.tool_util.parser.output_objects import tool_output_is_collection
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
@@ -967,19 +968,22 @@ class DefaultToolAction(ToolAction):
         if credentials_context is None:
             return
 
-        if isinstance(credentials_context, TestCredentialsContext):
-            # Test mode: store embedded values as job parameter for resolver to use
-            test_creds_dict = {
-                service.name: {
-                    "variables": {v.name: v.value for v in service.variables},
-                    "secrets": {s.name: s.value for s in service.secrets},
-                }
-                for service in credentials_context.root
-            }
-            job.add_parameter("__test_credentials__", json.dumps(test_creds_dict))
+        if isinstance(credentials_context, DirectCredentialsContext):
+            # Direct mode: store embedded values in database for resolver to use
+            for service in credentials_context.root:
+                variables_dict = {v.name: v.value for v in service.variables}
+                secrets_dict = {s.name: s.value for s in service.secrets}
+
+                direct_creds = JobDirectCredentials(
+                    job=job,
+                    service_name=service.name,
+                    variables=variables_dict,
+                    secrets=secrets_dict,
+                )
+                sa_session.add(direct_creds)
             return
 
-        # Production mode: create database associations
+        # Vault mode: create database associations
         for service_context in credentials_context.root:
             association = JobCredentialsContextAssociation(
                 job=job,
