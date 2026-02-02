@@ -1,7 +1,9 @@
 <script setup lang="ts">
+
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormSelect } from "bootstrap-vue";
+import semver from 'semver';
 import { computed, onMounted, ref, watch } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
@@ -26,16 +28,29 @@ const emit = defineEmits<{
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
-const reversedVersions = computed(() => {
-    return [...props.trsTool.versions].reverse();
+const sortedVersions = computed(() => {
+    return props.trsTool.versions.slice().sort((a, b) => {
+        const aSemver = semver.coerce(a.name);
+        const bSemver = semver.coerce(b.name);
+
+        if (aSemver && bSemver) {
+            return semver.rcompare(aSemver, bSemver);
+        } else if (aSemver) {
+            return -1;
+        } else if (bSemver) {
+            return 1;
+        } else {
+            return b.name.localeCompare(a.name);
+        }
+    });
 });
 
 const selectedVersion = ref<TrsToolVersion | null>(
-    reversedVersions.value.length > 0 ? (reversedVersions.value[0] ?? null) : null,
+    sortedVersions.value.length > 0 ? (sortedVersions.value[0] ?? null) : null,
 );
 
 const versionOptions = computed(() => {
-    return reversedVersions.value.map((version) => ({
+    return sortedVersions.value.map((version) => ({
         value: version,
         text: version.name,
     }));
