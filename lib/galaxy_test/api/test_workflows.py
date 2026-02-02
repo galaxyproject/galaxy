@@ -7408,6 +7408,62 @@ steps:
         assert len(options) == 5
         assert options[0] == ["Ex1", "--ex1", False]
 
+    def test_value_restriction_with_select_from_multiple_subworkflow_inputs(self):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/21602
+        # When a workflow input with restrictOnConnections connects to multiple subworkflows,
+        # the options should be the intersection of all connected subworkflow options.
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  Outer input parameter:
+    optional: false
+    restrictOnConnections: true
+    type: string
+steps:
+- in:
+    inner input parameter:
+      source: Outer input parameter
+  run:
+    class: GalaxyWorkflow
+    label: First subworkflow
+    inputs:
+      inner input parameter:
+        optional: false
+        restrictOnConnections: true
+        type: string
+    steps:
+    - tool_id: multi_select
+      in:
+        select_ex:
+          source: inner input parameter
+- in:
+    inner input parameter:
+      source: Outer input parameter
+  run:
+    class: GalaxyWorkflow
+    label: Second subworkflow
+    inputs:
+      inner input parameter:
+        optional: false
+        restrictOnConnections: true
+        type: string
+    steps:
+    - tool_id: multi_select
+      in:
+        select_ex:
+          source: inner input parameter
+"""
+        )
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        options = run_workflow["steps"][0]["inputs"][0]["options"]
+        # Both subworkflows use multi_select with same options, so intersection should have all 5 options
+        assert len(options) == 5
+        # Options are sorted by label when there are multiple connections
+        option_values = {opt[1] for opt in options}
+        assert option_values == {"--ex1", "ex2", "--ex3", "--ex4", "ex5"}
+
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):
         workflow_request, history_id, workflow_id = self._setup_random_x2_workflow("test_for_replace_tool_params")
