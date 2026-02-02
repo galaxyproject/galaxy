@@ -17,12 +17,14 @@
     bucket:
       label: Bucket
       type: string
+      default: ""
       help: |
         The [Amazon Web Services Bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingBucket.html) to
         access. This should be a bucket the user described by the Access Key ID has access to.
     writable:
       label: Writable?
       type: boolean
+      default: false
       help: Is this a bucket you have permission to write to?
   secrets:
     secret_key:

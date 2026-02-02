@@ -102,6 +102,7 @@
     writable:
       label: Writable?
       type: boolean
+      default: false
       help: Is this a bucket you have permission to write to?
   secrets:
     secret_key:

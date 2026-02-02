@@ -18,12 +18,14 @@
     user:
       label: FTP User
       type: string
+      default: ""
       help: |
         Username to connect with. Leave this blank to connect to the server
         anonymously (if allowed by target server).
     writable:
       label: Writable?
       type: boolean
+      default: false
       help: Is this an FTP server you have permission to write to?
     port:
       label: FTP Port
@@ -33,6 +35,7 @@
   secrets:
     password:
       label: FTP Password
+      default: ""
       help: |
         Password to connect to FTP server with. Leave this blank to connect
         to the server anonymously (if allowed by target server).
