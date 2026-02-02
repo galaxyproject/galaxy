@@ -259,6 +259,7 @@ function open(record: SelectionItem) {
 function load() {
     showFTPHelper.value = urlTracker.current.value?.url === "gxftp://";
     filter.value = undefined;
+    selectionDialog.value?.resetFilter();
     optionsShow.value = false;
     undoShow.value = !urlTracker.isAtRoot.value;
     if (urlTracker.isAtRoot.value || errorMessage.value) {

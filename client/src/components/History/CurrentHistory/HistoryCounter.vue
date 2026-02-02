@@ -38,7 +38,7 @@ const props = withDefaults(
 const emit = defineEmits(["update:filter-text", "reloadContents"]);
 
 const router = useRouter();
-const { currentUser } = storeToRefs(useUserStore());
+const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useHistoryContentStats(
     toRef(props, "history"),
 );
@@ -54,9 +54,7 @@ watchImmediate(
 );
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
-const canManageStorage = computed(
-    () => userOwnsHistory(currentUser.value, props.history) && !currentUser.value?.isAnonymous,
-);
+const canManageStorage = computed(() => !isAnonymous.value && userOwnsHistory(currentUser.value, props.history));
 
 function onDashboard() {
     router.push({ name: "HistoryOverviewInAnalysis", params: { historyId: props.history.id } });

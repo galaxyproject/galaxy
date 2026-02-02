@@ -2,7 +2,7 @@ import { toValue } from "@vueuse/core";
 import { onScopeDispose, ref, watch } from "vue";
 
 export function useFilterObjectArray(array, filter, objectFields, asRegex = false) {
-    const worker = new Worker(new URL("./filter.worker.js", import.meta.url));
+    const worker = new Worker(new URL("./filter.worker.js", import.meta.url), { type: "module" });
 
     const filtered = ref([]);
     filtered.value = toValue(array);

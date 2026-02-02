@@ -185,6 +185,7 @@ class LandingRequestManager:
         model.request_state = request_state
 
         model.public = payload.public
+        model.origin = str(payload.origin) if payload.origin else None
         self._save(model)
         return self._workflow_response(model)
 

@@ -210,7 +210,7 @@ if [ $FETCH_WHEELS -eq 1 ]; then
             echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
             ${PIP_CMD} uninstall ${UNINSTALL_OPTIONS} psycopg2 psycopg2-binary
         fi
-        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}"
+        echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | ${PIP_CMD} install -r /dev/stdin --extra-index-url "${GALAXY_WHEELS_INDEX_URL}" --constraint lib/galaxy/dependencies/conditional-constraints.txt
     fi
 fi
 
