@@ -120,6 +120,10 @@ describe("CreateForm", () => {
 
         const nameForElement = wrapper.find("#form-element-_meta_name");
         await nameForElement.find("input").setValue("My New Name");
+
+        const passwordElement = wrapper.find("#form-element-mysecret");
+        await passwordElement.find("input").setValue("mysecretvalue");
+
         const submitElement = wrapper.find("#submit");
         await submitElement.trigger("click");
         await flushPromises();
@@ -147,14 +151,42 @@ describe("CreateForm", () => {
         await flushPromises();
         const nameForElement = wrapper.find("#form-element-_meta_name");
         nameForElement.find("input").setValue("My New Name");
-        const submitElement = wrapper.find("#submit");
+
+        const passwordElement = wrapper.find("#form-element-mysecret");
+        await passwordElement.find("input").setValue("mysecretvalue");
+
         expect(wrapper.find("[data-description='object-store-creation-error']").exists()).toBe(false);
-        submitElement.trigger("click");
+
+        const submitElement = wrapper.find("#submit");
+        await submitElement.trigger("click");
         await flushPromises();
         const emitted = wrapper.emitted("created") || [];
         expect(emitted).toHaveLength(0);
         const errorEl = wrapper.find("[data-description='object-store-creation-error']");
         expect(errorEl.exists()).toBe(true);
         expect(errorEl.html()).toContain("Error creating this");
+    });
+
+    it("should disable submit when there are validation errors", async () => {
+        const wrapper = mount(CreateForm as object, {
+            propsData: {
+                template: SIMPLE_TEMPLATE,
+            },
+            localVue,
+        });
+
+        const nameForElement = wrapper.find("#form-element-_meta_name");
+        await nameForElement.find("input").setValue("My New Name");
+
+        // Leave secret empty to trigger validation error
+
+        const submitElement = wrapper.find("#submit");
+        expect(submitElement.classes().includes("g-disabled")).toBe(true);
+
+        // Try to click when submit is disabled will not emit created event
+        await submitElement.trigger("click");
+        await flushPromises();
+        const emitted = wrapper.emitted("created") || [];
+        expect(emitted).toHaveLength(0);
     });
 });

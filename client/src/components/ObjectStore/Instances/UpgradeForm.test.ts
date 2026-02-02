@@ -42,6 +42,7 @@ const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
         {
             name: "newsecret",
             help: "new secret help",
+            default: "", // New secret with default value making it effectively optional, so no need to fill in value
         },
     ],
     id: "moo",
