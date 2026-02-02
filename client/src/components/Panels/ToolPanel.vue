@@ -74,7 +74,7 @@ initializePanel();
         class="toolbox-panel"
         go-to-all-title="Discover Tools"
         go-to-all-data-description="toolbox discover tools"
-        href="/tools/list">
+        :href="!props.workflow ? `/tools/list` : undefined">
         <template v-slot:activity-panel-header-top>
             <PanelViewMenu />
         </template>

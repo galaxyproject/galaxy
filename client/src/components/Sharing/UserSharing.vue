@@ -94,7 +94,7 @@ function onBlur() {
 }
 
 function onRemove(user: { email: string }) {
-    const index = sharingCandidates.value.indexOf(user);
+    const index = sharingCandidates.value.findIndex((candidate) => candidate.email === user.email);
 
     if (index >= 0) {
         sharingCandidates.value.splice(index, 1);
@@ -170,7 +170,7 @@ defineExpose({
                     :internal-search="false"
                     :max-height="exposeEmails ? 300 : 0"
                     label="email"
-                    tack-by="email"
+                    track-by="email"
                     placeholder="Please specify user email"
                     @remove="onRemove"
                     @search-change="onSearchChanged"
