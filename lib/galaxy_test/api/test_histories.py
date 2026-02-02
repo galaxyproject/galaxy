@@ -729,6 +729,18 @@ class ImportExportTests(BaseHistories):
             history_id=imported_history_id, hid=1, assert_ok=False, hda_checker=check_failed, job_checker=check_failed
         )
 
+        # Also check collection state is preserved - regression test for issue #20450
+        imported_collection = self.dataset_populator.get_history_collection_details(
+            history_id=imported_history_id,
+            history_content_type="dataset_collection",
+            assert_ok=False,
+        )
+        assert "job_state_summary" in imported_collection, imported_collection
+        assert imported_collection["job_state_summary"].get("error", 0) == 1, (
+            f"Expected error count of 1 after import, got {imported_collection['job_state_summary']}. "
+            "Collection job state was not preserved during history export/import (issue #20450)."
+        )
+
     def test_import_metadata_regeneration(self):
         if self.task_based:
             raise SkipTest("skipping test_import_metadata_regeneration for task based...")
