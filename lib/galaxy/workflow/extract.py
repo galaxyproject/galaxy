@@ -7,6 +7,7 @@ from typing import (
     Any,
     Optional,
     Union,
+    cast,
 )
 
 from galaxy import (
@@ -165,7 +166,7 @@ def extract_steps(
         #       job.
         for other_hid, input_name in associations:
             if job in summary.implicit_map_jobs:
-                an_implicit_output_collection = jobs[job][0][1]
+                an_implicit_output_collection = cast(HistoryDatasetCollectionAssociation, jobs[job][0][1])
                 input_collection = an_implicit_output_collection.find_implicit_input_collection(input_name)
                 if input_collection:
                     other_hid = input_collection.hid
@@ -188,7 +189,7 @@ def extract_steps(
             if assoc_name.startswith("__new_primary_file"):
                 continue
             if job in summary.implicit_map_jobs:
-                hid = None
+                hid: Optional[int] = None
                 for implicit_pair in jobs[job]:
                     query_assoc_name, dataset_collection = implicit_pair
                     if query_assoc_name == assoc_name or assoc_name.startswith(
@@ -262,8 +263,9 @@ def summarize(
 class WorkflowSummary:
     def __init__(self, trans: ProvidesHistoryContext, history: Optional[History]) -> None:
         if not history:
-            history = trans.get_history()
-        self.history = history
+            history = trans.history
+        assert history is not None
+        self.history: History = history
         self.warnings: set[str] = set()
         self.jobs: dict[Any, list[tuple[Optional[str], HistoryContentItem]]] = {}
         self.job_id2representative_job: dict[int, Job] = {}  # map a non-fake job id to its representative job
@@ -275,23 +277,27 @@ class WorkflowSummary:
 
         self.__summarize()
 
-    def hid(self, object: HistoryContentItem) -> int:
-        if object.history_content_type == "dataset_collection":
-            if object.id in self.hdca_hid_in_history:
-                return self.hdca_hid_in_history[object.id]
-            elif object.history == self.history:
-                return object.hid
+    def hid(self, content: HistoryContentItem) -> int:
+        if content.history_content_type == "dataset_collection":
+            if content.id in self.hdca_hid_in_history:
+                return self.hdca_hid_in_history[content.id]
+            elif content.history == self.history:
+                assert content.hid is not None, f"HDCA {content.id} in history has no hid"
+                return content.hid
             else:
                 log.warning("extraction issue, using hdca hid from outside current history and unmapped")
-                return object.hid
+                assert content.hid is not None, f"HDCA {content.id} from external history has no hid"
+                return content.hid
         else:
-            if object.id in self.hda_hid_in_history:
-                return self.hda_hid_in_history[object.id]
-            elif object.history == self.history:
-                return object.hid
+            if content.id in self.hda_hid_in_history:
+                return self.hda_hid_in_history[content.id]
+            elif content.history == self.history:
+                assert content.hid is not None, f"HDA {content.id} in history has no hid"
+                return content.hid
             else:
                 log.warning("extraction issue, using hda hid from outside current history and unmapped")
-                return object.hid
+                assert content.hid is not None, f"HDA {content.id} from external history has no hid"
+                return content.hid
 
     def __summarize(self) -> None:
         # Make a first pass handle all singleton jobs, input dataset and dataset collections
@@ -305,16 +311,18 @@ class WorkflowSummary:
         # Update internal state for history content (either an HDA or
         # an HDCA).
         if content.history_content_type == "dataset_collection":
-            self.__summarize_dataset_collection(content)
+            self.__summarize_dataset_collection(cast(HistoryDatasetCollectionAssociation, content))
         else:
-            self.__summarize_dataset(content)
+            self.__summarize_dataset(cast(HistoryDatasetAssociation, content))
 
     def __summarize_dataset_collection(self, dataset_collection: HistoryDatasetCollectionAssociation) -> None:
         hid_in_history = dataset_collection.hid
+        assert hid_in_history is not None, f"HDCA {dataset_collection.id} has no hid"
         dataset_collection = self.__original_hdca(dataset_collection)
         self.hdca_hid_in_history[dataset_collection.id] = hid_in_history
 
         hid = dataset_collection.hid
+        assert hid is not None, f"Original HDCA {dataset_collection.id} has no hid"
         self.collection_types[hid] = dataset_collection.collection.collection_type
         if cja := dataset_collection.creating_job_associations:
             # Use the "first" job to represent all mapped jobs.
@@ -340,12 +348,10 @@ class WorkflowSummary:
             if not element:
                 # Got no dataset instance to walk back up to creating job.
                 # TODO track this via tool request model
-                job = DatasetCollectionCreationJob(dataset_collection)
-                self.jobs[job] = [(None, dataset_collection)]
+                self.jobs[DatasetCollectionCreationJob(dataset_collection)] = [(None, dataset_collection)]
                 return
-            else:
-                dataset_instance = element.hda
-            if not self.__check_state(dataset_instance):
+            dataset_instance = element.hda
+            if dataset_instance is None or not self.__check_state(dataset_instance):
                 # Just checking the state of one instance, don't need more but
                 # makes me wonder if even need this check at all?
                 return
@@ -355,8 +361,7 @@ class WorkflowSummary:
                 log.warning(
                     "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!"
                 )
-                job = DatasetCollectionCreationJob(dataset_collection)
-                self.jobs[job] = [(None, dataset_collection)]
+                self.jobs[DatasetCollectionCreationJob(dataset_collection)] = [(None, dataset_collection)]
 
             for assoc in original_hda.creating_job_associations:
                 job = assoc.job
@@ -367,8 +372,7 @@ class WorkflowSummary:
                 else:
                     self.jobs[job].append((assoc.name, dataset_collection))
         else:
-            job = DatasetCollectionCreationJob(dataset_collection)
-            self.jobs[job] = [(None, dataset_collection)]
+            self.jobs[DatasetCollectionCreationJob(dataset_collection)] = [(None, dataset_collection)]
 
     def __summarize_dataset(self, dataset: HistoryDatasetAssociation) -> None:
         if not self.__check_state(dataset):
@@ -406,7 +410,7 @@ class WorkflowSummary:
         # FIXME: Create "Dataset.is_finished"
         if hda.state in ("new", "running", "queued"):
             self.warnings.add(WARNING_SOME_DATASETS_NOT_READY)
-            return
+            return None
         return hda
 
 
@@ -414,6 +418,7 @@ def step_inputs(
     trans: ProvidesHistoryContext, job: Job
 ) -> tuple[dict[str, Any], list[tuple[int, str]]]:
     tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
+    assert tool is not None, f"Tool {job.tool_id} (version {job.tool_version}) not found"
     param_values = tool.get_param_values(
         job, ignore_errors=True
     )  # If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
