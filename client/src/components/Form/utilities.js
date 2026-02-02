@@ -210,11 +210,11 @@ function runValidator(validator, value) {
 export function validateInputs(index, values, allowEmptyValueOnRequiredInput = false) {
     let batchN = -1;
     let batchSrc = null;
-    for (const inputId in values) {
+    for (const inputId in index) {
+        const inputDef = index[inputId];
         const inputValue = values[inputId];
         const isEmpty = !isDefined(inputValue) || inputValue === "";
         const hasValue = !isEmpty;
-        const inputDef = index[inputId];
         const isRequired = !inputDef.optional;
         if (!inputDef || inputDef.step_linked) {
             continue;
