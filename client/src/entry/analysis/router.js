@@ -777,6 +777,16 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                     },
                     {
+                        path: "workflows/trs_import",
+                        component: WorkflowImport,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "workflows/trs_search",
+                        component: TrsSearch,
+                        redirect: redirectAnon(),
+                    },
+                    {
                         path: "workflows/invocations",
                         component: GridInvocation,
                         redirect: redirectAnon(),
@@ -858,14 +868,6 @@ export function getRouter(Galaxy) {
                             pluralName: "Workflows",
                             modelClass: "Workflow",
                         }),
-                    },
-                    {
-                        path: "workflows/trs_import",
-                        component: WorkflowImport,
-                    },
-                    {
-                        path: "workflows/trs_search",
-                        component: TrsSearch,
                     },
                     {
                         path: "workflows/:storedWorkflowId/invocations",
