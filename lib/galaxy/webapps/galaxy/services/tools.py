@@ -36,10 +36,10 @@ from galaxy.model import (
     User,
 )
 from galaxy.schema.credentials import (
-    CredentialsContext,
-    TestCredentialsContext,
-    TestCredentialValue,
-    TestServiceCredentialsContext,
+    DirectCredentialsContext,
+    DirectCredentialValue,
+    DirectServiceCredentialsContext,
+    VaultCredentialsContext,
 )
 from galaxy.schema.fetch_data import (
     CreateDataLandingPayload,
@@ -363,10 +363,10 @@ class ToolsService(ServiceBase):
         tags = payload.get("__tags")
 
         # Handle credentials_context - can be either:
-        # - JSON string (legacy API from planemo)
-        # - dict (test mode with embedded values from planemo)
-        # - list (production mode Pydantic model structure)
-        credentials_context: Optional[CredentialsContext | TestCredentialsContext] = None
+        # - JSON string (legacy API)
+        # - dict (direct mode with embedded values)
+        # - list (vault mode Pydantic model structure)
+        credentials_context: Optional[VaultCredentialsContext | DirectCredentialsContext] = None
         if credentials_context_raw:
             # Parse JSON string if needed
             if isinstance(credentials_context_raw, str):
@@ -375,24 +375,25 @@ class ToolsService(ServiceBase):
                 credentials_context_raw = json.loads(credentials_context_raw)
 
             if isinstance(credentials_context_raw, dict):
-                # Test mode from planemo - convert dict to TestCredentialsContext
+                # Direct mode - convert dict to DirectCredentialsContext
                 # Expected format: {service_name: {variables: {name: value}, secrets: {name: value}}}
-                test_services = []
+                direct_services = []
                 for service_name, creds in credentials_context_raw.items():
                     variables = [
-                        TestCredentialValue(name=name, value=value)
+                        DirectCredentialValue(name=name, value=value)
                         for name, value in creds.get("variables", {}).items()
                     ]
                     secrets = [
-                        TestCredentialValue(name=name, value=value) for name, value in creds.get("secrets", {}).items()
+                        DirectCredentialValue(name=name, value=value)
+                        for name, value in creds.get("secrets", {}).items()
                     ]
-                    test_services.append(
-                        TestServiceCredentialsContext(name=service_name, variables=variables, secrets=secrets)
+                    direct_services.append(
+                        DirectServiceCredentialsContext(name=service_name, variables=variables, secrets=secrets)
                     )
-                credentials_context = TestCredentialsContext(root=test_services)
+                credentials_context = DirectCredentialsContext(root=direct_services)
             else:
-                # Production mode - wrap in Pydantic model
-                credentials_context = CredentialsContext(root=credentials_context_raw)
+                # Vault mode - wrap in Pydantic model
+                credentials_context = VaultCredentialsContext(root=credentials_context_raw)
 
         vars = tool.handle_input(
             trans,
