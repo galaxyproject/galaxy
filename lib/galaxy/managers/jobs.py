@@ -52,7 +52,8 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import (
-    dereference_input,
+    dereference_input_to_hda,
+    dereference_input_to_hdca,
     HDAManager,
 )
 from galaxy.managers.histories import HistoryManager
@@ -2135,12 +2136,11 @@ class JobSubmitter:
             if not history:
                 raise InconsistentDatabase("Tool request has no history associated")
 
-            hdca = dereference_input(trans, data_request, history)
-            assert isinstance(hdca, model.HistoryDatasetCollectionAssociation)
+            hdca = dereference_input_to_hdca(trans, data_request, history)
 
             # we need the HDCA to have an ID - so we force a commit here - for
-            # consistency it would be great if this happened in the dereference_input
-            # since the HDA is committed in the other branch.
+            # consistency it would be great if this happened in dereference_input_to_hdca
+            # since the HDA is committed in dereference_input_to_hda.
             history.add_pending_items()
             trans.sa_session.commit()
 
@@ -2164,8 +2164,7 @@ class JobSubmitter:
             if not history:
                 raise InconsistentDatabase("Tool request has no history associated")
 
-            hda = dereference_input(trans, data_request, history)
-            assert isinstance(hda, model.HistoryDatasetAssociation)
+            hda = dereference_input_to_hda(trans, data_request, history)
             new_hdas.append(DereferencedDatasetPair(hda, data_request))
             return DataRequestInternalHda(id=hda.id, src="hda")
 

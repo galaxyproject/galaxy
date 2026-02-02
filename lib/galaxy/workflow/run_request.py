@@ -12,7 +12,10 @@ from pydantic import ValidationError
 
 from galaxy import exceptions
 from galaxy.exceptions.utils import validation_error_to_message_exception
-from galaxy.managers.hdas import dereference_input
+from galaxy.managers.hdas import (
+    dereference_input_to_hda,
+    dereference_input_to_hdca,
+)
 from galaxy.model import (
     EffectiveOutput,
     History,
@@ -26,7 +29,12 @@ from galaxy.model import (
     WorkflowRequestStepState,
 )
 from galaxy.model.base import ensure_object_added_to_session
-from galaxy.tool_util_models.parameters import DataOrCollectionRequestAdapter
+from galaxy.tool_util_models.parameters import (
+    DataOrCollectionRequestAdapter,
+    DataRequestCollectionUri,
+    DataRequestUri,
+    FileRequestUri,
+)
 from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
@@ -421,11 +429,20 @@ def build_workflow_run_configs(
                     content = app.dataset_collection_manager.get_dataset_collection_instance(
                         trans, "history", data_request.id
                     )
-                elif data_request.src == "url" or data_request.class_ == "File" or data_request.class_ == "Collection":
-                    request_input = dereference_input(trans, data_request, history)
+                elif isinstance(data_request, DataRequestCollectionUri):
+                    hdca_input = dereference_input_to_hdca(trans, data_request, history)
                     added_to_history = True
                     content = InputWithRequest(
-                        input=request_input,
+                        input=hdca_input,
+                        request=data_request.model_dump(mode="json"),
+                    )
+                    if not data_request.deferred:
+                        requires_materialization = True
+                elif isinstance(data_request, (DataRequestUri, FileRequestUri)):
+                    hda_input = dereference_input_to_hda(trans, data_request, history)
+                    added_to_history = True
+                    content = InputWithRequest(
+                        input=hda_input,
                         request=data_request.model_dump(mode="json"),
                     )
                     if not data_request.deferred:
