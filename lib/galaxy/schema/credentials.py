@@ -399,7 +399,7 @@ class ServiceCredentialsContextResponse(Model):
     ]
 
 
-class CredentialsContext(RootModel):
+class VaultCredentialsContext(RootModel):
     """Context for credentials to be used during tool execution.
 
     Contains the list of selected service credentials provided by the user.
@@ -408,37 +408,37 @@ class CredentialsContext(RootModel):
     root: list[ServiceCredentialsContext]
 
 
-class TestCredentialValue(Model):
-    """Represents a credential value (variable or secret) in a test."""
+class DirectCredentialValue(Model):
+    """Represents a credential value (variable or secret) provided directly."""
 
     name: Annotated[str, Field(description="The name of the credential variable or secret.")]
     value: Annotated[str, Field(description="The value of the credential variable or secret.")]
 
 
-class TestServiceCredentialsContext(Model):
-    """Context for test credentials to be used during tool testing.
+class DirectServiceCredentialsContext(Model):
+    """Context for direct credentials to be used during tool execution.
 
     Contains embedded credential values instead of database references.
     """
 
     name: Annotated[str, Field(description="The name of the service (credentials requirement name).")]
     variables: Annotated[
-        list[TestCredentialValue],
+        list[DirectCredentialValue],
         Field(default_factory=list, description="List of credential variables with embedded values."),
     ]
     secrets: Annotated[
-        list[TestCredentialValue],
+        list[DirectCredentialValue],
         Field(default_factory=list, description="List of credential secrets with embedded values."),
     ]
 
 
-class TestCredentialsContext(RootModel):
-    """Context for test credentials to be used during tool testing.
+class DirectCredentialsContext(RootModel):
+    """Context for direct credentials to be used during tool execution.
 
-    Contains embedded credential values for testing without vault access.
+    Contains embedded credential values for execution without vault access.
     """
 
-    root: list[TestServiceCredentialsContext]
+    root: list[DirectServiceCredentialsContext]
 
 
 class CredentialsContextResponse(RootModel):
@@ -450,5 +450,5 @@ class CredentialsContextResponse(RootModel):
     root: list[ServiceCredentialsContextResponse]
 
 
-# Type alias for credentials context that can be either production or test mode
-CredentialsContextT = Optional[CredentialsContext | TestCredentialsContext]
+# Type alias for credentials context that can be either vault-based or direct
+CredentialsContextT = Optional[VaultCredentialsContext | DirectCredentialsContext]
