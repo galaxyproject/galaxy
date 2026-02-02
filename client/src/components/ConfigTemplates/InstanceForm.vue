@@ -62,7 +62,7 @@ async function handleForceSubmit() {
                 <GButton
                     id="submit"
                     color="blue"
-                    class="mr-1"
+                    class="mr-1 mb-3"
                     :disabled="busy || hasValidationErrors"
                     disabled-title="Please fix validation errors before submitting"
                     @click="handleSubmit">
