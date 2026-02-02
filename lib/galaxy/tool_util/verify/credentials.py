@@ -32,24 +32,24 @@ class CredentialsResolver(ABC):
         pass
 
 
-class TestCredentialsResolver(CredentialsResolver):
-    """Resolver for test mode credentials.
+class DirectCredentialsResolver(CredentialsResolver):
+    """Resolver for direct credentials.
 
-    Used during tool testing (e.g., via planemo) where credentials are provided
-    as embedded dictionaries in job parameters rather than from the vault.
+    Used during tool execution where credentials are provided as embedded
+    dictionaries rather than retrieved from the vault.
     """
 
-    def __init__(self, test_credentials: Dict[str, Dict[str, Any]]):
-        """Initialize with test credentials dictionary.
+    def __init__(self, direct_credentials: Dict[str, Dict[str, Any]]):
+        """Initialize with direct credentials dictionary.
 
         Args:
-            test_credentials: Dict mapping service names to credential dicts
+            direct_credentials: Dict mapping service names to credential dicts
                 containing 'secrets' and 'variables' sub-dicts.
         """
-        self.test_credentials = test_credentials
+        self.direct_credentials = direct_credentials
 
     def resolve(self, requirements: List[Any]) -> List[Dict[str, str]]:
-        """Resolve test credentials to environment variables.
+        """Resolve direct credentials to environment variables.
 
         Args:
             requirements: List of credential requirements from the tool definition.
@@ -60,8 +60,8 @@ class TestCredentialsResolver(CredentialsResolver):
         """
         env_variables: List[Dict[str, str]] = []
         for credential in requirements:
-            if credential.name in self.test_credentials:
-                service_creds = self.test_credentials[credential.name]
+            if credential.name in self.direct_credentials:
+                service_creds = self.direct_credentials[credential.name]
                 for secret in credential.secrets:
                     value = service_creds.get("secrets", {}).get(secret.name, "")
                     env_variables.append({"name": secret.inject_as_env, "value": value})
