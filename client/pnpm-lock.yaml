@@ -218,8 +218,8 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
       openapi-fetch:
-        specifier: ^0.10.6
-        version: 0.10.6
+        specifier: ^0.15.0
+        version: 0.15.0
       pinia:
         specifier: ^2.3.1
         version: 2.3.1(typescript@5.8.3)(vue@2.7.16)
@@ -3366,16 +3366,16 @@ packages:
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
 
-  openapi-fetch@0.10.6:
-    resolution: {integrity: sha512-6xXfvIEL/POtLGOaFPsp3O+pDe+J3DZYxbD9BrsQHXOTeNK8z/gsWHT6adUy1KcpQOhmkerMzlQrJM6DbN55dQ==}
+  openapi-fetch@0.15.0:
+    resolution: {integrity: sha512-OjQUdi61WO4HYhr9+byCPMj0+bgste/LtSBEcV6FzDdONTs7x0fWn8/ndoYwzqCsKWIxEZwo4FN/TG1c1rI8IQ==}
 
   openapi-msw@0.7.0:
     resolution: {integrity: sha512-K35jmP8dgu/EXvTg6vyg2HvJt4n4WfIiehgrzOyTyIV7cYs/nYQ3XSt8GklEGYND0JZcOpC0kEj4H28/FKy+Cg==}
     peerDependencies:
       msw: ^2.0.0
 
-  openapi-typescript-helpers@0.0.11:
-    resolution: {integrity: sha512-xofUHlVFq+BMquf3nh9I8N2guHckW6mrDO/F3kaFgrL7MGbjldDnQ9TIT+rkH/+H0LiuO+RuZLnNmsJwsjwUKg==}
+  openapi-typescript-helpers@0.0.15:
+    resolution: {integrity: sha512-opyTPaunsklCBpTK8JGef6mfPhLSnyy5a0IN9vKtx3+4aExf+KxEqYwIy3hqkedXIB97u357uLMJsOnm3GVjsw==}
 
   openapi-typescript-helpers@0.0.8:
     resolution: {integrity: sha512-1eNjQtbfNi5Z/kFhagDIaIRj6qqDzhjNJKz8cmMW0CVdGwT6e1GLbAfgI0d28VTJa1A8jz82jm/4dG8qNoNS8g==}
@@ -7666,16 +7666,16 @@ snapshots:
     dependencies:
       wrappy: 1.0.2
 
-  openapi-fetch@0.10.6:
+  openapi-fetch@0.15.0:
     dependencies:
-      openapi-typescript-helpers: 0.0.11
+      openapi-typescript-helpers: 0.0.15
 
   openapi-msw@0.7.0(msw@2.3.4(typescript@5.8.3)):
     dependencies:
       msw: 2.3.4(typescript@5.8.3)
       openapi-typescript-helpers: 0.0.8
 
-  openapi-typescript-helpers@0.0.11: {}
+  openapi-typescript-helpers@0.0.15: {}
 
   openapi-typescript-helpers@0.0.8: {}
 
