@@ -27,11 +27,11 @@ from galaxy.util import listify
 from .interface import (
     AssertionDict,
     AssertionList,
+    DirectCredential,
+    DirectCredentialValue,
     InputSource,
     PageSource,
     PagesSource,
-    TestCredential,
-    TestCredentialValue,
     ToolSource,
     ToolSourceTest,
     ToolSourceTests,
@@ -368,10 +368,10 @@ def __parse_credentials_yaml(credentials_data):
             else:
                 raise ValueError("YAML credential variable must be a dictionary with 'name' and 'value'")
             if not var_name:
-                raise ValueError("Test credential variable must have a 'name'")
+                raise ValueError("Credential variable must have a 'name'")
             if var_value is None:
-                raise ValueError(f"Test credential variable '{var_name}' must have a 'value'")
-            variables.append(TestCredentialValue(name=var_name, value=var_value))
+                raise ValueError(f"Credential variable '{var_name}' must have a 'value'")
+            variables.append(DirectCredentialValue(name=var_name, value=var_value))
 
         secrets = []
         for secret_data in cred_data.get("secrets", []):
@@ -381,12 +381,12 @@ def __parse_credentials_yaml(credentials_data):
             else:
                 raise ValueError("YAML credential secret must be a dictionary with 'name' and 'value'")
             if not secret_name:
-                raise ValueError("Test credential secret must have a 'name'")
+                raise ValueError("Credential secret must have a 'name'")
             if secret_value is None:
-                raise ValueError(f"Test credential secret '{secret_name}' must have a 'value'")
-            secrets.append(TestCredentialValue(name=secret_name, value=secret_value))
+                raise ValueError(f"Credential secret '{secret_name}' must have a 'value'")
+            secrets.append(DirectCredentialValue(name=secret_name, value=secret_value))
 
-        credentials_list.append(TestCredential(name=name, variables=variables, secrets=secrets))
+        credentials_list.append(DirectCredential(name=name, variables=variables, secrets=secrets))
 
     return credentials_list if credentials_list else None
 
