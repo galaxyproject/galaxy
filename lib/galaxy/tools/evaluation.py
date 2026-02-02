@@ -44,7 +44,7 @@ from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util.verify.credentials import (
     CredentialsResolver,
-    TestCredentialsResolver,
+    DirectCredentialsResolver,
 )
 from galaxy.tool_util_models.tool_source import (
     FileSourceConfigFile,
@@ -992,17 +992,22 @@ class ToolEvaluator:
         """Get the appropriate credentials resolver based on the execution context.
 
         Returns:
-            TestCredentialsResolver if test credentials are present in job parameters,
-            VaultCredentialsResolver for production mode with vault access,
+            DirectCredentialsResolver if direct credentials are present in database,
+            VaultCredentialsResolver for vault-based credentials,
             or None if credentials cannot be resolved.
         """
-        # Check for test credentials in job parameters (test mode from planemo)
-        for param in self.job.parameters:
-            if param.name == "__test_credentials__":
-                test_credentials = json.loads(param.value)
-                return TestCredentialsResolver(test_credentials)
+        # Check for direct credentials in database
+        if self.job.direct_credentials:
+            direct_credentials = {
+                dc.service_name: {
+                    "variables": dc.variables or {},
+                    "secrets": dc.secrets or {},
+                }
+                for dc in self.job.direct_credentials
+            }
+            return DirectCredentialsResolver(direct_credentials)
 
-        # Production mode: use database associations
+        # Vault mode: use database associations
         if not isinstance(self.app, StructuredApp):
             log.warning("Tool credentials specified but app is not a StructuredApp, cannot set environment variables")
             return None
