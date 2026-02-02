@@ -227,7 +227,7 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
         if (inputDef.wp_linked && inputDef.text_value == inputValue) {
             return [inputId, "Please provide a value for this workflow parameter."];
         }
-        if (inputValue && Array.isArray(inputValue.values) && inputValue.values.length == 0 && !isRequired) {
+        if (inputValue && Array.isArray(inputValue.values) && inputValue.values.length == 0 && isRequired) {
             return [inputId, "Please provide data for this input."];
         }
         if (inputValue) {
