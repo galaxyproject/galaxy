@@ -18,10 +18,6 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsServerSelection from "@/components/Workflow/Import/TrsServerSelection.vue";
 import TrsTool from "@/components/Workflow/Import/TrsTool.vue";
 
-interface Props {}
-
-const props = defineProps<Props>();
-
 const emit = defineEmits<{
     (e: "input-valid", valid: boolean): void;
 }>();
