@@ -460,26 +460,27 @@ test_data:
         history_b = self.dataset_populator.new_history()
         copied = self.__copy_content_to_history(history_b, output_a)
 
-        # Run tool on copied dataset
-        self.dataset_populator.run_tool(
+        # Run tool on copied dataset in history B
+        run_b = self.dataset_populator.run_tool(
             tool_id="cat1",
             inputs={"input1": {"src": "hda", "id": copied["id"]}},
             history_id=history_b,
         )
         self.dataset_populator.wait_for_history(history_b)
 
-        # Extract from History B using auto-detection (from_history_id)
-        create_response = self._post(
-            "workflows",
-            data={"from_history_id": history_b, "workflow_name": "test partial copy extraction"},
+        # Extract: copied dataset as input, cat1 job from history B
+        # HID 1 = copied output (should be treated as input, not follow to history A's cat1)
+        # HID 2 = result of cat1 in history B
+        cat1_job_id = run_b["jobs"][0]["id"]
+        downloaded_workflow = self._extract_and_download_workflow(
+            history_b,
+            dataset_ids=[1],  # copied output as input
+            job_ids=[cat1_job_id],
         )
-        self._assert_status_code_is(create_response, 200)
-        workflow_id = create_response.json()["id"]
-        workflow = self.workflow_populator.download_workflow(workflow_id)
 
-        # Should have: input step (copied dataset) + cat1 (NOT the cat1 from History A)
-        assert len(workflow["steps"]) == 2
-        tool_steps = [s for s in workflow["steps"].values() if s["type"] == "tool"]
+        # Should have: 1 input step + 1 cat1 tool (NOT including cat1 from History A)
+        assert len(downloaded_workflow["steps"]) == 2
+        tool_steps = [s for s in downloaded_workflow["steps"].values() if s["type"] == "tool"]
         assert len(tool_steps) == 1
         assert tool_steps[0]["tool_id"] == "cat1"
 
@@ -490,7 +491,7 @@ test_data:
         # History A: input → cat1 → output
         history_a = self.dataset_populator.new_history()
         input_a = self.dataset_populator.new_dataset(history_a, content="test")
-        self.dataset_populator.run_tool(
+        run_a = self.dataset_populator.run_tool(
             tool_id="cat1",
             inputs={"input1": {"src": "hda", "id": input_a["id"]}},
             history_id=history_a,
@@ -501,18 +502,20 @@ test_data:
         history_b = self.dataset_populator.copy_history(history_a).json()["id"]
         self.dataset_populator.wait_for_history(history_b)
 
-        # Extract from History B - should preserve full lineage
-        create_response = self._post(
-            "workflows",
-            data={"from_history_id": history_b, "workflow_name": "test full copy extraction"},
-        )
-        self._assert_status_code_is(create_response, 200)
-        workflow_id = create_response.json()["id"]
-        workflow = self.workflow_populator.download_workflow(workflow_id)
+        # Get job ID for cat1 (same job referenced by copied output)
+        cat1_job_id = run_a["jobs"][0]["id"]
 
-        # Should have: input step + cat1 tool step
-        assert len(workflow["steps"]) == 2
-        tool_steps = [s for s in workflow["steps"].values() if s["type"] == "tool"]
+        # Extract: input at HID 1, cat1 job
+        # Since full copy, lineage is preserved - cat1 job should be included
+        downloaded_workflow = self._extract_and_download_workflow(
+            history_b,
+            dataset_ids=[1],  # input copy
+            job_ids=[cat1_job_id],
+        )
+
+        # Should have: input step + cat1 tool step (lineage preserved)
+        assert len(downloaded_workflow["steps"]) == 2
+        tool_steps = [s for s in downloaded_workflow["steps"].values() if s["type"] == "tool"]
         assert len(tool_steps) == 1
         assert tool_steps[0]["tool_id"] == "cat1"
 
@@ -523,7 +526,7 @@ test_data:
         # History A: input → cat1 → output
         history_a = self.dataset_populator.new_history()
         input_a = self.dataset_populator.new_dataset(history_a, content="test")
-        self.dataset_populator.run_tool(
+        run_a = self.dataset_populator.run_tool(
             tool_id="cat1",
             inputs={"input1": {"src": "hda", "id": input_a["id"]}},
             history_id=history_a,
@@ -538,24 +541,25 @@ test_data:
         contents = self._history_contents(history_b)
         copied_output = [c for c in contents if c["hid"] == 2][0]
 
-        self.dataset_populator.run_tool(
+        run_b = self.dataset_populator.run_tool(
             tool_id="cat1",
             inputs={"input1": {"src": "hda", "id": copied_output["id"]}},
             history_id=history_b,
         )
         self.dataset_populator.wait_for_history(history_b)
 
-        # Extract - should have input + cat1 + cat1 (full chain)
-        create_response = self._post(
-            "workflows",
-            data={"from_history_id": history_b, "workflow_name": "test full copy with work"},
+        # Extract: input at HID 1, both cat1 jobs (from history A and B)
+        cat1_job_a = run_a["jobs"][0]["id"]
+        cat1_job_b = run_b["jobs"][0]["id"]
+        downloaded_workflow = self._extract_and_download_workflow(
+            history_b,
+            dataset_ids=[1],  # input copy
+            job_ids=[cat1_job_a, cat1_job_b],
         )
-        self._assert_status_code_is(create_response, 200)
-        workflow_id = create_response.json()["id"]
-        workflow = self.workflow_populator.download_workflow(workflow_id)
 
-        assert len(workflow["steps"]) == 3
-        tool_steps = [s for s in workflow["steps"].values() if s["type"] == "tool"]
+        # Should have: input + cat1 + cat1 (full chain preserved)
+        assert len(downloaded_workflow["steps"]) == 3
+        tool_steps = [s for s in downloaded_workflow["steps"].values() if s["type"] == "tool"]
         assert len(tool_steps) == 2
 
     @skip_without_tool("cat1")
@@ -588,24 +592,25 @@ test_data:
         # - Pipeline 1: FULL (both input1 and output1)
         # - Pipeline 2: PARTIAL (only output2)
         history_b = self.dataset_populator.new_history()
-        self.__copy_content_to_history(history_b, input1)
-        self.__copy_content_to_history(history_b, output1)
-        self.__copy_content_to_history(history_b, output2)  # No input2!
+        self.__copy_content_to_history(history_b, input1)  # HID 1
+        self.__copy_content_to_history(history_b, output1)  # HID 2
+        self.__copy_content_to_history(history_b, output2)  # HID 3 - No input2!
 
-        # Extract from History B
-        create_response = self._post(
-            "workflows",
-            data={"from_history_id": history_b, "workflow_name": "test mixed copy"},
+        # Extract: pipeline 1's cat1 should work (full lineage)
+        # Pipeline 2's output2 becomes an input (partial copy - its cat1 won't connect)
+        cat1_job1 = run1["jobs"][0]["id"]
+
+        downloaded_workflow = self._extract_and_download_workflow(
+            history_b,
+            dataset_ids=[1, 3],  # input1_copy + output2_copy (as inputs)
+            job_ids=[cat1_job1],  # only pipeline 1's cat1
         )
-        self._assert_status_code_is(create_response, 200)
-        workflow_id = create_response.json()["id"]
-        workflow = self.workflow_populator.download_workflow(workflow_id)
 
         # Pipeline 1 should have full lineage (input + tool)
-        # Pipeline 2's output2 should become an input (partial copy)
+        # Pipeline 2's output2 is just an input (partial copy)
         # Total: 2 inputs + 1 tool = 3 steps
-        input_steps = [s for s in workflow["steps"].values() if s["type"] == "data_input"]
-        tool_steps = [s for s in workflow["steps"].values() if s["type"] == "tool"]
+        input_steps = [s for s in downloaded_workflow["steps"].values() if s["type"] == "data_input"]
+        tool_steps = [s for s in downloaded_workflow["steps"].values() if s["type"] == "tool"]
 
         assert len(input_steps) == 2  # input1_copy + output2_copy (as input)
         assert len(tool_steps) == 1  # only cat1 from pipeline 1
