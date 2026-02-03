@@ -12,13 +12,9 @@
                 :state="!nameCurrent ? false : null"
                 @keyup="$emit('update:nameCurrent', nameCurrent)" />
         </div>
-        <div v-if="versionOptions.length > 0" id="workflow-version-area" class="mt-2">
+        <div v-if="versions.length > 0" id="workflow-version-area" class="mt-2">
             <b>Version</b>
-            <b-form-select v-model="versionCurrent" @change="onVersion">
-                <b-form-select-option v-for="v in versionOptions" :key="v.version" :value="v.version">
-                    {{ v.label }}
-                </b-form-select-option>
-            </b-form-select>
+            <WorkflowVersionSelector :version="version" :versions="versions" @onVersion="onVersion" />
         </div>
         <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
             <b>Parameters</b>
@@ -145,8 +141,6 @@
 </template>
 
 <script>
-import { format, parseISO } from "date-fns";
-
 import { Services } from "@/components/Workflow/services";
 
 import {
@@ -158,6 +152,7 @@ import {
 } from "./modules/linting";
 import { UntypedParameters } from "./modules/parameters";
 
+import WorkflowVersionSelector from "../WorkflowVersionSelector.vue";
 import ItemListEditor from "@/components/Common/ItemListEditor.vue";
 import LicenseSelector from "@/components/License/LicenseSelector.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -174,6 +169,7 @@ export default {
         CreatorEditor,
         ItemListEditor,
         ActivityPanel,
+        WorkflowVersionSelector,
     },
     props: {
         id: {
@@ -240,7 +236,6 @@ export default {
             bestPracticeWarningReadme: bestPracticeWarningReadme,
             message: null,
             messageVariant: null,
-            versionCurrent: this.version,
             annotationCurrent: this.annotation,
             nameCurrent: this.name,
             logoUrlCurrent: this.logoUrl,
@@ -268,27 +263,6 @@ Acceptable format:
         hasParameters() {
             return this.parameters && this.parameters.parameters.length > 0;
         },
-        versionOptions() {
-            const versions = [];
-            for (let i = 0; i < this.versions.length; i++) {
-                const current_wf = this.versions[i];
-                let update_time;
-                if (current_wf.update_time) {
-                    update_time = `${format(
-                        parseISO(current_wf.update_time, "yyyy-MM-dd", new Date()),
-                        "MMM do yyyy",
-                    )}`;
-                } else {
-                    update_time = "";
-                }
-                const label = `${current_wf.version + 1}: ${update_time}, ${current_wf.steps} steps`;
-                versions.push({
-                    version: i,
-                    label: label,
-                });
-            }
-            return versions;
-        },
         annotationBestPracticeMessage() {
             if (this.annotationCurrent) {
                 return bestPracticeWarningAnnotationLength;
@@ -298,9 +272,6 @@ Acceptable format:
         },
     },
     watch: {
-        version() {
-            this.versionCurrent = this.version;
-        },
         license() {
             this.licenseCurrent = this.license;
 
@@ -361,8 +332,8 @@ Acceptable format:
             this.onAttributes({ tags });
             this.$emit("tags", tags);
         },
-        onVersion() {
-            this.$emit("version", this.versionCurrent);
+        onVersion(version) {
+            this.$emit("version", version);
         },
         onLicense(license) {
             this.$emit("license", license);
