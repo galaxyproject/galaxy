@@ -18,7 +18,7 @@
     user:
       label: FTP User
       type: string
-      default: ""
+      optional: true
       help: |
         Username to connect with. Leave this blank to connect to the server
         anonymously (if allowed by target server).
@@ -35,7 +35,7 @@
   secrets:
     password:
       label: FTP Password
-      default: ""
+      optional: true
       help: |
         Password to connect to FTP server with. Leave this blank to connect
         to the server anonymously (if allowed by target server).

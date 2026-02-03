@@ -26,12 +26,14 @@ const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
             type: "string",
             help: "old var help",
             default: "old default",
+            optional: true,
         },
         {
             name: "newvar",
             type: "string",
             help: "new var help",
             default: "",
+            optional: true,
         },
     ],
     secrets: [
@@ -42,7 +44,7 @@ const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
         {
             name: "newsecret",
             help: "new secret help",
-            default: "", // New secret with default value making it effectively optional, so no need to fill in value
+            optional: true, // New secret is optional
         },
     ],
     id: "moo",

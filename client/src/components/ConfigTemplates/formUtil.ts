@@ -11,7 +11,6 @@ import type {
     VariableValueType,
 } from "@/api/configTemplates";
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
-import { isDefined } from "@/utils/validation";
 
 export interface FormEntry {
     name: string;
@@ -49,7 +48,7 @@ export function templateVariableFormEntry(variable: TemplateVariable, variableVa
         label: variable.label ?? variable.name,
         help: markup(variable.help || "", true),
         validators: variable.validators ?? [],
-        optional: isDefined(variable.default),
+        optional: variable.optional || false,
     };
     if (variable.type == "string") {
         const defaultValue = variable.default ?? "";
@@ -91,7 +90,7 @@ export function templateSecretFormEntry(secret: TemplateSecret): FormEntry {
         type: "password",
         help: markup(secret.help || "", true),
         value: "",
-        optional: isDefined(secret.default),
+        optional: secret.optional || false,
     };
 }
 

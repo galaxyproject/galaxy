@@ -101,84 +101,64 @@ describe("formUtils", () => {
     });
 
     describe("templateVariableFormEntry optional field", () => {
-        it("should mark variable as optional when it has a default", () => {
-            const varWithDefault: TemplateVariable = {
+        it("should mark variable as optional when template specifies optional=true", () => {
+            const optionalVar: TemplateVariable = {
                 name: "test_var",
                 type: "string",
-                default: "default_value",
+                optional: true,
             };
-            const formEntry = templateVariableFormEntry(varWithDefault, undefined);
+            const formEntry = templateVariableFormEntry(optionalVar, undefined);
             expect(formEntry.optional).toBe(true);
         });
 
-        it("should mark variable as required when it has no default", () => {
-            const varWithoutDefault: TemplateVariable = {
+        it("should mark variable as required when template specifies optional=false", () => {
+            const requiredVar: TemplateVariable = {
                 name: "test_var",
                 type: "string",
+                optional: false,
             };
-            const formEntry = templateVariableFormEntry(varWithoutDefault, undefined);
+            const formEntry = templateVariableFormEntry(requiredVar, undefined);
             expect(formEntry.optional).toBe(false);
         });
 
-        it("should mark integer variable as optional when default is zero", () => {
-            const varWithZeroDefault: TemplateVariable = {
-                name: "test_var",
-                type: "integer",
-                default: 0,
-            };
-            const formEntry = templateVariableFormEntry(varWithZeroDefault, undefined);
-            expect(formEntry.optional).toBe(true);
-        });
-
-        it("should mark boolean variable as optional when default is false", () => {
-            const varWithFalseDefault: TemplateVariable = {
-                name: "test_var",
-                type: "boolean",
-                default: false,
-            };
-            const formEntry = templateVariableFormEntry(varWithFalseDefault, undefined);
-            expect(formEntry.optional).toBe(true);
-        });
-
-        it("should mark string variable as optional when default is empty string", () => {
-            const varWithEmptyDefault: TemplateVariable = {
+        it("should mark variable as required when template does not specify optional", () => {
+            const varWithoutOptional: TemplateVariable = {
                 name: "test_var",
                 type: "string",
-                default: "",
             };
-            const formEntry = templateVariableFormEntry(varWithEmptyDefault, undefined);
-            expect(formEntry.optional).toBe(true);
+            const formEntry = templateVariableFormEntry(varWithoutOptional, undefined);
+            expect(formEntry.optional).toBe(false);
         });
     });
 
     describe("templateSecretFormEntry optional field", () => {
-        it("should mark secret as optional when it has a default", () => {
-            const secretWithDefault: TemplateSecret = {
+        it("should mark secret as optional when template specifies optional=true", () => {
+            const optionalSecret: TemplateSecret = {
                 name: "mysecret",
                 help: "Help text",
-                default: "default_value",
+                optional: true,
             };
-            const formEntry = templateSecretFormEntry(secretWithDefault);
+            const formEntry = templateSecretFormEntry(optionalSecret);
             expect(formEntry.optional).toBe(true);
         });
 
-        it("should mark secret as required when it has no default", () => {
-            const secretWithoutDefault: TemplateSecret = {
+        it("should mark secret as required when template specifies optional=false", () => {
+            const requiredSecret: TemplateSecret = {
                 name: "mysecret",
                 help: "Help text",
+                optional: false,
             };
-            const formEntry = templateSecretFormEntry(secretWithoutDefault);
+            const formEntry = templateSecretFormEntry(requiredSecret);
             expect(formEntry.optional).toBe(false);
         });
 
-        it("should mark secret as optional when default is empty string", () => {
-            const secretWithEmptyDefault: TemplateSecret = {
+        it("should mark secret as required when template does not specify optional", () => {
+            const secretWithoutOptional: TemplateSecret = {
                 name: "mysecret",
                 help: "Help text",
-                default: "",
             };
-            const formEntry = templateSecretFormEntry(secretWithEmptyDefault);
-            expect(formEntry.optional).toBe(true);
+            const formEntry = templateSecretFormEntry(secretWithoutOptional);
+            expect(formEntry.optional).toBe(false);
         });
     });
 });

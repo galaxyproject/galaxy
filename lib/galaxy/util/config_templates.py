@@ -80,6 +80,7 @@ class BaseTemplateVariable(StrictModel):
     name: str
     label: Optional[str] = None
     help: Optional[MarkdownContent] = None
+    optional: Optional[bool] = None
     validators: Optional[Sequence[AnySafeValidatorModel]] = None
 
 
@@ -113,6 +114,7 @@ class TemplateSecret(StrictModel):
     name: str
     label: Optional[str] = None
     help: Optional[MarkdownContent] = None
+    optional: Optional[bool] = None
     default: Optional[str] = None  # If set, secret is optional
 
 

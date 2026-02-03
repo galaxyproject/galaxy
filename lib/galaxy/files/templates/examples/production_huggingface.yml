@@ -15,7 +15,7 @@
   secrets:
       token:
           label: Hugging Face Access Token
-          default: ""
+          optional: true
           help: |
               The personal access token to use to connect to the Hugging Face Hub. You can generate a new token in your Hugging Face account settings.
               This will allow Galaxy to access private models if you have the necessary permissions.
