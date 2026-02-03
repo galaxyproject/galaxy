@@ -496,13 +496,13 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
 
         # Check for Galaxy job resource parameter 'mem' (in GB, convert to MiB)
         if resource_params.get("mem"):
-            mem_gb = int(resource_params["mem"])
-            return mem_gb * 1024  # Convert GB to MiB
+            mem_gb = float(resource_params["mem"])
+            return int(mem_gb * 1024)  # Convert GB to MiB
 
         # Check for TPV-style 'mem' in destination params (in GB)
         if "mem" in job_destination.params:
-            mem_gb = int(job_destination.params["mem"])
-            return mem_gb * 1024  # Convert GB to MiB
+            mem_gb = float(job_destination.params["mem"])
+            return int(mem_gb * 1024)  # Convert GB to MiB
 
         # Fall back to configured default
         return int(params.get("memory_mib", DEFAULT_MEMORY_MIB))
