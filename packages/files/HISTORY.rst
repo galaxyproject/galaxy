@@ -3,11 +3,18 @@ History
 
 .. to_doc
 
------------
-25.1.1.dev0
------------
+-------------------
+25.1.1 (2026-02-03)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Add missing dependencies to ``galaxy-files`` package by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21518 <https://github.com/galaxyproject/galaxy/pull/21518>`_
+* Supports Dataverse file access via both persistent and database IDs by `@davelopez <https://github.com/davelopez>`_ in `#21569 <https://github.com/galaxyproject/galaxy/pull/21569>`_
+* Harden Dataverse integration by `@davelopez <https://github.com/davelopez>`_ in `#21624 <https://github.com/galaxyproject/galaxy/pull/21624>`_
 
 -------------------
 25.1.0 (2025-12-12)

@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-25.1.1.dev0
------------
+-------------------
+25.1.1 (2026-02-03)
+-------------------
 
 
+=============
+Other changes
+=============
+
+* Improve tempdir cleanup in integration tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21520 <https://github.com/galaxyproject/galaxy/pull/21520>`_
 
 -------------------
 25.1.0 (2025-12-12)

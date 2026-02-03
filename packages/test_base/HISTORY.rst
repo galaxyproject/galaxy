@@ -3,11 +3,23 @@ History
 
 .. to_doc
 
------------
-25.1.1.dev0
------------
+-------------------
+25.1.1 (2026-02-03)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Sample sheet column fix by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21446 <https://github.com/galaxyproject/galaxy/pull/21446>`_
+* Usability fixes for sample sheet selection.  by `@jmchilton <https://github.com/jmchilton>`_ in `#21503 <https://github.com/galaxyproject/galaxy/pull/21503>`_
+
+============
+Enhancements
+============
+
+* Add database operation tool to convert sample sheets to list collections by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21625 <https://github.com/galaxyproject/galaxy/pull/21625>`_
 
 -------------------
 25.1.0 (2025-12-12)
