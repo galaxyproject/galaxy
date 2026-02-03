@@ -265,7 +265,7 @@ export default {
     "Convert to new format": "Convertir en un nouveau format de données",
     Save: "Sauvegarde",
     Permissions: "Permissions",
-    Datatypes: "Format de données",
+    Datatypes: "Formats de données",
     Convert: "Converssion",
     Attributes: "Attributs",
     // ---------------------------------------------------------------------------- dataset-li-edit
