@@ -33,7 +33,7 @@ interface WorkflowStep {
 /**
  * Generate a descriptive label for a workflow step
  */
-function generateStepLabel(orderIndex: number, workflowStep: WorkflowStep): string {
+export function generateStepLabel(orderIndex: number, workflowStep: WorkflowStep): string {
     let label = `Step ${orderIndex + 1}`;
     if (workflowStep) {
         // Try to get label from the workflow step
