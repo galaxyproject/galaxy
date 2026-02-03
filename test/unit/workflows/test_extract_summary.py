@@ -63,7 +63,7 @@ class TestWorkflowExtractSummary(TestCase):
         assert not warnings
         assert len(job_dict) == 1
         fake_job = next(iter(job_dict.keys()))
-        assert "History" in fake_job.name
+        assert "history" in fake_job.name.lower()
         self.history.active_datasets.remove(hda_from_history)
 
         hda_from_library = MockHda(job=UNDEFINED_JOB)

@@ -291,6 +291,12 @@ class WorkflowSummary:
                 self.original_hdca_ids_in_history.add(content.id)
                 original = self.__original_hdca(content)
                 self.original_hdca_ids_in_history.add(original.id)
+                # Also add element HDA IDs so mapped job input checks find them.
+                # Collection elements aren't top-level visible items but are
+                # valid job inputs for mapped operations.
+                self.__add_collection_element_hda_ids(content.collection)
+                if original is not content:
+                    self.__add_collection_element_hda_ids(original.collection)
 
         # Second pass: summarize all content.
         # Handle singleton jobs, input datasets and dataset collections.
@@ -407,6 +413,19 @@ class WorkflowSummary:
             else:
                 self.jobs[job] = [(assoc.name, dataset)]
                 self.job_id2representative_job[job.id] = job
+
+    def __add_collection_element_hda_ids(self, collection):
+        """Recursively add HDA IDs from collection elements to the lookup set.
+
+        Mapped jobs reference individual element HDAs as inputs rather than the
+        parent collection, so these IDs must be in the lookup set for lineage
+        completeness checks to work correctly.
+        """
+        for element in collection.elements:
+            if element.child_collection:
+                self.__add_collection_element_hda_ids(element.child_collection)
+            elif element.hda:
+                self.original_hda_ids_in_history.add(element.hda.id)
 
     def __original_hdca(self, hdca):
         while hdca.copied_from_history_dataset_collection_association:
