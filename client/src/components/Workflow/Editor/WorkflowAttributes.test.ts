@@ -75,6 +75,14 @@ describe("WorkflowAttributes", () => {
         expect(version.props("version")).toBe(0);
         expect(version.props("versions")).toHaveLength(TEST_VERSIONS.length);
 
+        // When not on latest version, "switch to latest" link should be visible
+        expect(wrapper.find("#workflow-version-area").text()).toContain("switch to latest");
+
+        // When on latest version, should show "(latest version)" instead
+        await wrapper.setProps({ version: 1 });
+        expect(wrapper.find("#workflow-version-area").text()).toContain("latest version");
+        expect(wrapper.find("#workflow-version-area").text()).not.toContain("switch to latest");
+
         // Check that version options have valid date labels
         const multiselect = version.findComponent(Multiselect);
         const options = multiselect.props("options") as { label: string; version: number }[];

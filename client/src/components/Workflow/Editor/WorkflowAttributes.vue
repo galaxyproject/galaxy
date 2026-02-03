@@ -14,6 +14,14 @@
         </div>
         <div v-if="versions.length > 0" id="workflow-version-area" class="mt-2">
             <b>Version</b>
+            <GLink
+                v-if="canSwitchToLatestVersion"
+                thin
+                title="You are not editing the latest version of this workflow. Click to switch to the latest version."
+                @click.prevent="onVersion(versions[versions.length - 1].version)">
+                <i>(switch to latest)</i>
+            </GLink>
+            <i v-else> (latest version)</i>
             <WorkflowVersionSelector :version="version" :versions="versions" @onVersion="onVersion" />
         </div>
         <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
@@ -153,6 +161,7 @@ import {
 import { UntypedParameters } from "./modules/parameters";
 
 import WorkflowVersionSelector from "../WorkflowVersionSelector.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import ItemListEditor from "@/components/Common/ItemListEditor.vue";
 import LicenseSelector from "@/components/License/LicenseSelector.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -169,6 +178,7 @@ export default {
         CreatorEditor,
         ItemListEditor,
         ActivityPanel,
+        GLink,
         WorkflowVersionSelector,
     },
     props: {
@@ -251,6 +261,10 @@ Acceptable format:
         };
     },
     computed: {
+        /** Determines if the current version is not the latest */
+        canSwitchToLatestVersion() {
+            return this.versions?.length > 1 && this.version !== this.versions[this.versions.length - 1].version;
+        },
         creatorAsList() {
             let creator = this.creator;
             if (!creator) {
