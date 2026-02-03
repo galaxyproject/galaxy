@@ -341,7 +341,8 @@ export default {
 
         const { connectionStore, stepStore, stateStore, commentStore, undoRedoStore } = provideScopedWorkflowStores(id);
 
-        const { getWorkflowBoundingBox } = useWorkflowBoundingBox(id);
+        const { getWorkflowBoundingBox, captureTransformAndBounds, calculateAdjustedTransform } =
+            useWorkflowBoundingBox(id);
 
         const { undo, redo } = undoRedoStore;
         const { ctrl_z, ctrl_shift_z, meta_z, meta_shift_z } = useMagicKeys();
@@ -716,6 +717,8 @@ export default {
             onScrollTo,
             scrollToId,
             getWorkflowBoundingBox,
+            captureTransformAndBounds,
+            calculateAdjustedTransform,
         };
     },
     data() {
@@ -845,9 +848,16 @@ export default {
             this.messageIsError = false;
         },
         async onRefactor(response) {
+            // Store transform and bounds before resetting to adjust for coordinate shifts
+            const { transform: transformBefore, bounds: boundsBefore } = this.captureTransformAndBounds(this.transform);
+
             await this.resetStores();
             await fromSimple(this.id, response.workflow);
-            this._loadEditorData(response.workflow);
+            await this._loadEditorData(response.workflow);
+
+            // Adjust for coordinate shifts so nodes appear in the same position
+            // and stateStore.position is synced with the d3 transform
+            this.adjustForCoordinateShift(transformBefore, boundsBefore);
         },
         onChange() {
             this.hasChanges = true;
@@ -1218,9 +1228,9 @@ export default {
                 this.loadingWorkflow = true;
 
                 // Store the current transform and bounding box before loading; to adjust for coordinate shifts
-                const transformBefore = { ...this.transform };
-                const boundingBoxBefore = this.getWorkflowBoundingBox();
-                const boundsBefore = { minX: boundingBoxBefore.x, minY: boundingBoxBefore.y };
+                const { transform: transformBefore, bounds: boundsBefore } = this.captureTransformAndBounds(
+                    this.transform,
+                );
                 try {
                     // Load editor view workflow data
                     const data = await this.lastQueue.enqueue(() => getWorkflowFull(id, version));
@@ -1252,26 +1262,15 @@ export default {
          * @param boundsBefore The bounding box min coordinates we had before refetching the workflow
          */
         adjustForCoordinateShift(transformBefore, boundsBefore) {
-            // Calculate new bounds after loading
-            const newBoundingBox = this.getWorkflowBoundingBox();
-            const newBounds = { minX: newBoundingBox.x, minY: newBoundingBox.y };
+            const adjustedTransform = this.calculateAdjustedTransform(transformBefore, boundsBefore);
 
-            const offsetX = boundsBefore.minX - newBounds.minX;
-            const offsetY = boundsBefore.minY - newBounds.minY;
-
-            // Scale the offset by the current zoom level since transform is in viewport coordinates
-            const scaledOffsetX = offsetX * transformBefore.k;
-            const scaledOffsetY = offsetY * transformBefore.k;
-
-            this.workflowGraph.setTransform({
-                x: transformBefore.x + scaledOffsetX,
-                y: transformBefore.y + scaledOffsetY,
-                k: transformBefore.k,
-            });
+            // TODO: Once we migrate to Composition API we can probably handle this within the workflowBoundingBox
+            // and d3Zoom composables
+            this.workflowGraph.setTransform(adjustedTransform);
 
             // TODO: Verify if setting scale is still needed after setting full transform
             //       I still needed to set scale separately otherwise it would reset to 1
-            this.stateStore.scale = transformBefore.k;
+            this.stateStore.scale = adjustedTransform.k;
         },
         onLicense(license) {
             if (this.license != license) {

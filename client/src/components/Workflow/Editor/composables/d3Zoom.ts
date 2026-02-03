@@ -6,6 +6,12 @@ import { type Ref, ref, watch } from "vue";
 import type { Vector } from "@/components/Workflow/Editor/modules/geometry";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
 
+export interface WorkflowTransform {
+    x: number;
+    y: number;
+    k: number;
+}
+
 // if element is draggable it may implement its own drag handler,
 // but d3zoom would call preventDefault
 const filter = (event: D3ZoomEvent<HTMLElement, unknown>["sourceEvent"]) => {
