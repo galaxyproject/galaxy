@@ -80,30 +80,62 @@ const myHistory: HistorySummary = {
 
 ## Examples
 
-See more in `src/example.ts` that demonstrate how to use the client:
+See `src/example.ts` for more complete examples. Here are some common operations:
 
-### Basic Example
+### Working with Histories
 
 ```typescript
 import { createGalaxyApi } from "@galaxyproject/galaxy-api-client";
 
-// Create a client with a specific Galaxy instance
-const api = createGalaxyApi("https://usegalaxy.org");
+const api = createGalaxyApi({
+    baseUrl: "https://usegalaxy.org",
+    apiKey: "your-api-key",
+});
 
-// Example: Get a list of tools
-async function getTools() {
-    const { data, error } = await api.GET("/api/tools");
+// List all histories
+const { data: histories, error } = await api.GET("/api/histories");
 
-    if (error) {
-        console.error("Error fetching tools:", error);
-        return [];
-    }
+// Get most recently used history
+const { data: recent } = await api.GET("/api/histories/most_recently_used");
 
-    // Log tool count
-    console.log(`Found ${data.length} tools`);
+// Get history details
+const { data: history } = await api.GET("/api/histories/{history_id}", {
+    params: { path: { history_id: "abc123" } },
+});
 
-    return data;
-}
+// Update a history
+const { data: updated } = await api.PUT("/api/histories/{history_id}", {
+    params: { path: { history_id: "abc123" } },
+    body: { name: "My Analysis", annotation: "RNA-seq experiment" },
+});
+```
+
+### Working with Workflows
+
+```typescript
+// List workflows
+const { data: workflows } = await api.GET("/api/workflows");
+
+// Get workflow details
+const { data: workflow } = await api.GET("/api/workflows/{workflow_id}", {
+    params: { path: { workflow_id: "def456" } },
+});
+
+// Check invocation status
+const { data: invocation } = await api.GET("/api/invocations/{invocation_id}", {
+    params: { path: { invocation_id: "ghi789" } },
+});
+```
+
+### Checking Job Status
+
+```typescript
+// Get job details
+const { data: job } = await api.GET("/api/jobs/{job_id}", {
+    params: { path: { job_id: "jkl012" } },
+});
+
+console.log(`Job state: ${job.state}`);
 ```
 
 ## Notes
@@ -160,7 +192,7 @@ This package maintains version parity with Galaxy to indicate API compatibility.
     }
     ```
 
-There's also a script to automate this process of syncing with galaxy version that we may want to use in other contexts, too?:
+There's also a script to automate syncing with the Galaxy version:
 
 ```bash
 # Using npm script
