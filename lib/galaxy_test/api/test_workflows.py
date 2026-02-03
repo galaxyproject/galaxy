@@ -7972,8 +7972,7 @@ steps:
         # Regression test for https://github.com/galaxyproject/galaxy/issues/21602
         # When a workflow input with restrictOnConnections connects to multiple subworkflows,
         # the options should be the intersection of all connected subworkflow options.
-        workflow_id = self.workflow_populator.upload_yaml_workflow(
-            """
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   Outer input parameter:
@@ -8013,8 +8012,7 @@ steps:
       in:
         select_ex:
           source: inner input parameter
-"""
-        )
+""")
         with self.dataset_populator.test_history() as history_id:
             run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
         options = run_workflow["steps"][0]["inputs"][0]["options"]
