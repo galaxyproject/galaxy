@@ -104,6 +104,12 @@ interface Props {
     overlayLoading?: boolean;
 
     /**
+     * Whether to disable local sorting (will only emit sort-changed event)
+     * @default false
+     */
+    noLocalSorting?: boolean;
+
+    /**
      * Whether to show striped rows
      * @default true
      */
@@ -167,6 +173,7 @@ const props = withDefaults(defineProps<Props>(), {
     loadingMessage: "Loading...",
     loadMoreLoading: false,
     loadMoreMessage: "Loading more...",
+    noLocalSorting: false,
     overlayLoading: false,
     selectable: false,
     selectedItems: () => [],
@@ -210,7 +217,64 @@ const emit = defineEmits<{
 const sortBy = ref<string>(props.sortBy || "update_time");
 const sortDesc = ref<boolean>(props.sortDesc || true);
 
-const localItems = computed(() => props.items || []);
+const localItems = computed(() => {
+    const items = props.items || [];
+
+    // If local sorting is disabled, return items as-is
+    if (props.noLocalSorting) {
+        return items;
+    }
+
+    // If no sort field is set, return items as-is
+    if (!sortBy.value) {
+        return items;
+    }
+
+    // Create a shallow copy to avoid mutating the original array
+    const sortedItems = [...items];
+
+    // Find the field definition for the current sort key
+    const field = props.fields.find((f) => f.key === sortBy.value);
+
+    // Sort the items
+    sortedItems.sort((a, b) => {
+        let aVal = a[sortBy.value];
+        let bVal = b[sortBy.value];
+
+        // Apply formatter if available
+        if (field?.formatter) {
+            aVal = field.formatter(aVal, sortBy.value, a);
+            bVal = field.formatter(bVal, sortBy.value, b);
+        }
+
+        // Handle null/undefined values
+        if (aVal == null && bVal == null) {
+            return 0;
+        }
+        if (aVal == null) {
+            return 1;
+        }
+        if (bVal == null) {
+            return -1;
+        }
+
+        // Compare values
+        let comparison = 0;
+        if (typeof aVal === "string" && typeof bVal === "string") {
+            comparison = aVal.localeCompare(bVal);
+        } else if (typeof aVal === "number" && typeof bVal === "number") {
+            comparison = aVal - bVal;
+        } else {
+            // Convert to strings for comparison
+            comparison = String(aVal).localeCompare(String(bVal));
+        }
+
+        return sortDesc.value ? -comparison : comparison;
+    });
+
+    return sortedItems;
+});
+
 const selectAllDisabled = computed(() => {
     return props.selectable && localItems.value.length === 0;
 });
