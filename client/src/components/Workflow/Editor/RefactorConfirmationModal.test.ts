@@ -3,12 +3,12 @@ import { shallowMount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { refactor } from "./modules/services";
+import { refactor, type RefactorResponse } from "@/api/workflows";
 
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
-vi.mock("./modules/services", () => ({
+vi.mock("@/api/workflows", () => ({
     refactor: vi.fn(),
 }));
 
@@ -49,7 +49,7 @@ describe("RefactorConfirmationModal.vue", () => {
         await flushPromises();
         expect(wrapper.emitted().onWorkflowError!.length).toBe(1);
         expect(vi.mocked(refactor).mock.calls[0]![0]).toEqual(TEST_WORKFLOW_ID);
-        expect(vi.mocked(refactor).mock.calls[0]![2]).toBeTruthy(); // dry run argument
+        expect(vi.mocked(refactor).mock.calls[0]![3]).toBeTruthy(); // dry run argument
 
         // onRefactor never emitted because there was a failure
         expect(wrapper.emitted().onRefactor).toBeFalsy();
@@ -60,7 +60,7 @@ describe("RefactorConfirmationModal.vue", () => {
             new Promise((then) => {
                 then({
                     action_executions: [],
-                });
+                } as unknown as RefactorResponse);
             }),
         );
         await wrapper.setProps({
@@ -70,10 +70,10 @@ describe("RefactorConfirmationModal.vue", () => {
         expect(wrapper.emitted().onWorkflowError).toBeFalsy();
         // called with dry run as true...
         expect(vi.mocked(refactor).mock.calls[0]![0]).toEqual(TEST_WORKFLOW_ID);
-        expect(vi.mocked(refactor).mock.calls[0]![2]).toBeTruthy();
+        expect(vi.mocked(refactor).mock.calls[0]![3]).toBeTruthy();
         // ... and then as false
         expect(vi.mocked(refactor).mock.calls[1]![0]).toEqual(TEST_WORKFLOW_ID);
-        expect(vi.mocked(refactor).mock.calls[1]![2]).toBeFalsy();
+        expect(vi.mocked(refactor).mock.calls[1]![3]).toBeFalsy();
         // second time onRefactor emitted with the final response
         expect(wrapper.emitted().onRefactor!.length).toBe(1);
     });
@@ -93,7 +93,7 @@ describe("RefactorConfirmationModal.vue", () => {
                             ],
                         },
                     ],
-                });
+                } as unknown as RefactorResponse);
             }),
         );
 
@@ -108,7 +108,7 @@ describe("RefactorConfirmationModal.vue", () => {
 
         // called with dry run...
         expect(vi.mocked(refactor).mock.calls[0]![0]).toEqual(TEST_WORKFLOW_ID);
-        expect(vi.mocked(refactor).mock.calls[0]![2]).toBeTruthy();
+        expect(vi.mocked(refactor).mock.calls[0]![3]).toBeTruthy();
         // but didn't follow up with executing the action because we need to confirm
         expect(vi.mocked(refactor).mock.calls.length).toBe(1);
 

@@ -10,7 +10,8 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import { dataAttributes, type LintState } from "./modules/linting";
+import { dataAttributes } from "./modules/linting";
+import type { LintState } from "./modules/lintingTypes";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
@@ -77,7 +78,7 @@ const isOkay = computed(() => props.okay && !hasWarningItems.value);
                         data-description="autofix item link"
                         v-bind="dataAttributes(item)"
                         @click="emit('onClick', item)">
-                        <FontAwesomeIcon v-if="item.autofix" :icon="faMagic" class="mr-1" />
+                        <FontAwesomeIcon v-if="'autofix' in item && item.autofix" :icon="faMagic" class="mr-1" />
                         <FontAwesomeIcon v-else :icon="faSearch" class="mr-1" />
                         <strong>Step {{ item.stepId + 1 }}</strong>
                         {{ item.stepLabel }}: {{ item.warningLabel }}

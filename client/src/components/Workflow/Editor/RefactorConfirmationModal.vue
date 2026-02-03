@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
-import { refactor } from "./modules/services";
+import {
+    refactor,
+    type RefactorRequestAction,
+    type RefactorResponse,
+    type RefactorResponseActionExecution,
+} from "@/api/workflows";
 
 import GModal from "@/components/BaseComponents/GModal.vue";
 
 interface Props {
-    refactorActions: any[]; // TODO: type from schema
+    refactorActions: RefactorRequestAction[];
     workflowId: string;
     title?: string;
     message?: string;
@@ -20,11 +25,11 @@ const emit = defineEmits<{
     (e: "onShow"): void;
     (e: "onWorkflowMessage", message: string, type: string): void;
     (e: "onWorkflowError", message: string, response: any): void;
-    (e: "onRefactor", data: any): void; // TODO: type from schema
+    (e: "onRefactor", data: RefactorResponse): void;
 }>();
 
 const show = ref(props.refactorActions.length > 0);
-const confirmActionExecutions = ref<any[]>([]); // TODO: type from schema
+const confirmActionExecutions = ref<RefactorResponseActionExecution[]>([]);
 
 watch(
     () => props.refactorActions,
@@ -46,21 +51,23 @@ watch(show, (newShow) => {
 async function dryRun() {
     emit("onWorkflowMessage", "Pre-checking requested workflow changes (dry run)...", "progress");
     try {
-        const data = await refactor(props.workflowId, props.refactorActions, true); // dry run
+        const data = await refactor(props.workflowId, props.refactorActions, "editor", true);
         onDryRunResponse(data);
     } catch (response) {
-        onError(response);
+        onError(response as string);
     }
 }
 
-function onError(response: any) {
+function onError(response: string) {
     emit("onWorkflowError", "Reworking workflow failed...", response);
 }
 
-function onDryRunResponse(data: any) {
+function onDryRunResponse(data: RefactorResponse) {
     // TODO: type from schema
     const actionExecutions = data.action_executions;
-    const anyRequireConfirmation = actionExecutions.some((execution: any) => execution.messages.length > 0);
+    const anyRequireConfirmation = actionExecutions.some(
+        (execution: RefactorResponseActionExecution) => execution.messages.length > 0,
+    );
     if (anyRequireConfirmation) {
         confirmActionExecutions.value = actionExecutions;
         show.value = true;
@@ -73,10 +80,10 @@ async function executeRefactoring() {
     show.value = false;
     emit("onWorkflowMessage", "Applying requested workflow changes...", "progress");
     try {
-        const data = await refactor(props.workflowId, props.refactorActions, false);
+        const data = await refactor(props.workflowId, props.refactorActions, "editor", false);
         emit("onRefactor", data);
     } catch (response) {
-        onError(response);
+        onError(response as string);
     }
 }
 </script>

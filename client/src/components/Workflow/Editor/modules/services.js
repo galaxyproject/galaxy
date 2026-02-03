@@ -27,20 +27,6 @@ export async function getModule(request_data, stepId, setLoadingState) {
     }
 }
 
-export async function refactor(id, actions, dryRun = false) {
-    try {
-        const requestData = {
-            actions: actions,
-            style: "editor",
-            dry_run: dryRun,
-        };
-        const { data } = await axios.put(`${getAppRoot()}api/workflows/${id}/refactor`, requestData);
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
-    }
-}
-
 export async function saveWorkflow(workflow) {
     if (workflow.hasChanges) {
         try {

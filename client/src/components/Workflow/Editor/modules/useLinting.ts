@@ -7,7 +7,6 @@ import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
 
-import type { LintState } from "./linting";
 import {
     getDisconnectedInputs,
     getDuplicateLabels,
@@ -15,6 +14,13 @@ import {
     getUnlabeledOutputs,
     getUntypedParameters,
 } from "./linting";
+import type {
+    DisconnectedInputState,
+    DuplicateLabelState,
+    MetadataLintState,
+    UnlabeledOuputState,
+    UntypedParameterState,
+} from "./lintingTypes";
 import { getUntypedWorkflowParameters, type UntypedParameters } from "./parameters";
 
 export interface LintData {
@@ -28,11 +34,11 @@ export interface LintData {
     resolvedAttributeIssues: Ref<number>;
     totalAttributeIssues: Ref<number>;
     untypedParameters: Ref<UntypedParameters | undefined>;
-    untypedParameterWarnings: Ref<LintState[]>;
-    disconnectedInputs: Ref<LintState[]>;
-    duplicateLabels: Ref<LintState[]>;
-    unlabeledOutputs: Ref<LintState[]>;
-    missingMetadata: Ref<LintState[]>;
+    untypedParameterWarnings: Ref<UntypedParameterState[]>;
+    disconnectedInputs: Ref<DisconnectedInputState[]>;
+    duplicateLabels: Ref<DuplicateLabelState[]>;
+    unlabeledOutputs: Ref<UnlabeledOuputState[]>;
+    missingMetadata: Ref<MetadataLintState[]>;
 }
 
 export function useLintData(
@@ -47,12 +53,11 @@ export function useLintData(
     const workflowStores = useWorkflowStores(workflowId);
 
     const untypedParameters = ref<UntypedParameters>();
-    const untypedParameterWarnings = ref<LintState[]>([]);
-    const disconnectedInputs = ref<LintState[]>([]);
-    const duplicateLabels = ref<LintState[]>([]);
-    const unlabeledOutputs = ref<LintState[]>([]);
-    const missingMetadata = ref<LintState[]>([]);
-
+    const untypedParameterWarnings = ref<UntypedParameterState[]>([]);
+    const disconnectedInputs = ref<DisconnectedInputState[]>([]);
+    const duplicateLabels = ref<DuplicateLabelState[]>([]);
+    const unlabeledOutputs = ref<UnlabeledOuputState[]>([]);
+    const missingMetadata = ref<MetadataLintState[]>([]);
     watch(
         () => [steps, datatypesMapper.value],
         () => {

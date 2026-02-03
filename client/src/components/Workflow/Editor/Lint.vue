@@ -8,7 +8,6 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
 
 import type { Rectangle } from "./modules/geometry";
-import type { LintState } from "./modules/linting";
 import {
     bestPracticeWarningAnnotation,
     bestPracticeWarningAnnotationLength,
@@ -19,7 +18,9 @@ import {
     fixDisconnectedInput,
     fixUnlabeledOutputs,
     fixUntypedParameter,
+    isStateForInputOrOutput,
 } from "./modules/linting";
+import type { DisconnectedInputState, LintState, UntypedParameterState } from "./modules/lintingTypes";
 import type { LintData } from "./modules/useLinting";
 
 import LintSectionSeparator from "./LintSectionSeparator.vue";
@@ -123,7 +124,7 @@ async function onFixUntypedParameter(item: LintState) {
     );
 
     if (confirmed) {
-        emit("onRefactor", [fixUntypedParameter(item)]);
+        emit("onRefactor", [fixUntypedParameter(item as UntypedParameterState)]);
     } else {
         emit("onScrollTo", item.stepId);
     }
@@ -145,7 +146,7 @@ async function onFixDisconnectedInput(item: LintState) {
         "Fix Disconnected Input",
     );
     if (confirmed) {
-        emit("onRefactor", [fixDisconnectedInput(item)]);
+        emit("onRefactor", [fixDisconnectedInput(item as DisconnectedInputState)]);
     } else {
         emit("onScrollTo", item.stepId);
     }
@@ -169,7 +170,11 @@ function openAndFocus(item: LintState) {
 }
 
 function onHighlight(item: LintState) {
-    const bounds = searchStore.getBoundsForItemCached(item.stepId, item.highlightType || "step", item.name);
+    const bounds = searchStore.getBoundsForItemCached(
+        item.stepId,
+        isStateForInputOrOutput(item) ? item.highlightType : "step",
+        "name" in item ? item.name : undefined,
+    );
     if (bounds) {
         emit("onHighlightRegion", bounds);
     }

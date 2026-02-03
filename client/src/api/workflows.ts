@@ -4,6 +4,9 @@ import { rethrowSimple } from "@/utils/simple-error";
 import { GalaxyApi } from "./client";
 
 export type Creator = components["schemas"]["Person"] | components["schemas"]["CreatorOrganization"];
+export type RefactorRequestAction = components["schemas"]["RefactorRequest"]["actions"][number];
+export type RefactorResponse = components["schemas"]["RefactorResponse"];
+export type RefactorResponseActionExecution = RefactorResponse["action_executions"][number];
 export type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
 export type WorkflowStepTyped = StoredWorkflowDetailed["steps"][number];
 
@@ -105,6 +108,24 @@ export async function getWorkflowInfo(workflowId: string, version?: number, inst
     }
 
     return data;
+}
+
+export async function refactor(id: string, actions: RefactorRequestAction[], style: string, dryRun = false) {
+    const { data, error } = await GalaxyApi().PUT("/api/workflows/{workflow_id}/refactor", {
+        params: {
+            path: { workflow_id: id },
+        },
+        body: {
+            actions: actions,
+            style: style,
+            dry_run: dryRun,
+        },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data as RefactorResponse;
 }
 
 export async function undeleteWorkflow(id: string): Promise<WorkflowSummary> {
