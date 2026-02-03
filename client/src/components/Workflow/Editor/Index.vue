@@ -1205,6 +1205,11 @@ export default {
             await Vue.nextTick();
             this.hasChanges = has_changes;
         },
+        /**
+         * Fetches and loads the workflow data for the given id and version into the editor.
+         * @param {string} id - The workflow ID
+         * @param {number|undefined} version - The workflow version number
+         */
         async _loadCurrent(id, version) {
             if (!this.isNewTempWorkflow) {
                 await this.resetStores();
