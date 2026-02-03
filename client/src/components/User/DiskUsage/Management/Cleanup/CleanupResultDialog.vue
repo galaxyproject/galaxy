@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import type { TableField } from "@/components/Common/GTable.types";
 import localize from "@/utils/localization";
 
 import type { CleanupResult } from "./model";
 
 import Alert from "@/components/Alert.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 interface CleanupResultDialogProps {
     result?: CleanupResult;
@@ -33,7 +35,7 @@ const title = computed<string>(() => {
     return message;
 });
 
-const errorFields = [
+const errorFields: TableField[] = [
     { key: "name", label: localize("Name") },
     { key: "reason", label: localize("Reason") },
 ];
@@ -54,7 +56,7 @@ defineExpose({
                 variant="info"
                 message="After the operation, the storage space that will be freed up will only be for the unique items. This means that some items may not free up any storage space because they are duplicates of other items." />
             <b-spinner v-if="isLoading" class="mx-auto" data-test-id="loading-spinner" />
-            <div v-else>
+            <div v-else-if="result">
                 <b-alert v-if="result.hasFailed" show variant="danger" data-test-id="error-alert">
                     {{ result.errorMessage }}
                 </b-alert>
@@ -72,11 +74,10 @@ defineExpose({
                         </h3>
                     </b-alert>
                 </div>
-                <b-table-lite
+                <GTable
                     v-if="result.hasSomeErrors"
                     :fields="errorFields"
                     :items="result.errors"
-                    small
                     data-test-id="errors-table" />
             </div>
         </div>
