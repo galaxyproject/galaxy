@@ -38,7 +38,7 @@ watch(
     (newValue) => {
         emit("input-valid", newValue);
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 // Hide submit button in wizard mode (or when hideSubmitButton is true)

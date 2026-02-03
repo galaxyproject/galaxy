@@ -1,9 +1,8 @@
 <script setup lang="ts">
-
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormSelect } from "bootstrap-vue";
-import semver from 'semver';
+import semver from "semver";
 import { computed, onMounted, ref, watch } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";

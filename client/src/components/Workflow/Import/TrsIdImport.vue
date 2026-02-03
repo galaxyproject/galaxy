@@ -168,11 +168,7 @@ defineExpose({ triggerImport });
                 </BAlert>
             </div>
 
-            <TrsTool
-                v-if="trsTool"
-                :trs-tool="trsTool"
-                @onImport="onVersionSelected"
-                @onSelect="onVersionSelected" />
+            <TrsTool v-if="trsTool" :trs-tool="trsTool" @onImport="onVersionSelected" @onSelect="onVersionSelected" />
         </div>
     </div>
 </template>

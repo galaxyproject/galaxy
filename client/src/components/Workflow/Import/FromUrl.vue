@@ -109,8 +109,7 @@ defineExpose({ attemptImport });
                 id="workflow-import-url-input"
                 v-model="sourceURL"
                 aria-label="Workflow Import URL"
-                type="url"
-        />
+                type="url" />
             If your URL is from a workflow repository and doesn't end in <code>.ga</code>, you might need to use the
             <a href="/workflows/import?trs_url=Enter%20a%20TRS%20URL">TRS import method</a>
             instead.
