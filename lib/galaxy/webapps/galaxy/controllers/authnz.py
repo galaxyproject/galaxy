@@ -78,7 +78,7 @@ class OIDC(BaseUIController):
 
     @web.json
     @web.expose
-    def login(self, trans, provider, idphint=None, next=None, **kwargs):
+    def login(self, trans, provider, idphint=None, next=None, redirect=None):
         if not trans.app.config.enable_oidc:
             msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
             log.debug(msg)
@@ -90,7 +90,7 @@ class OIDC(BaseUIController):
             trans.set_cookie(value="/", name=LOGIN_NEXT_COOKIE_NAME)
         success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans, idphint)
         if success:
-            if kwargs.get("redirect", None) == "true":
+            if redirect and redirect.lower() == "true":
                 return trans.response.send_redirect(redirect_uri)
             else:
                 return {"redirect_uri": redirect_uri}
