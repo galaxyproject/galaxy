@@ -3,11 +3,34 @@ History
 
 .. to_doc
 
----------
-26.0.dev0
----------
+-------
+26.0rc1
+-------
 
 
+
+-------------------
+25.1.1 (2026-02-03)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix data manager .loc file selection logic by `@jdavcs <https://github.com/jdavcs>`_ in `#21664 <https://github.com/galaxyproject/galaxy/pull/21664>`_
+
+============
+Enhancements
+============
+
+* Document security considerations for using secrets by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21654 <https://github.com/galaxyproject/galaxy/pull/21654>`_
+
+=============
+Other changes
+=============
+
+* Improve tempdir cleanup in integration tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21520 <https://github.com/galaxyproject/galaxy/pull/21520>`_
 
 -------------------
 25.1.0 (2025-12-12)
