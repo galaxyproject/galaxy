@@ -212,5 +212,55 @@ describe("useWorkflowBoundingBox coordinate shift adjustment", () => {
             expect(adjustedTransform.y).toBe(-65);
             expect(adjustedTransform.k).toBe(1);
         });
+
+        it("returns original transform when workflow has no steps (empty bounding box)", () => {
+            // Edge case: Switching to a workflow version with 0 steps
+            // The bounding box will have Infinity values, which would cause NaN
+
+            // Setup: Original workflow with a step
+            addStep(1, 100, 50, 200, 100);
+
+            const { captureTransformAndBounds, calculateAdjustedTransform } = useWorkflowBoundingBox(WORKFLOW_ID);
+
+            // Capture state BEFORE
+            const transformBefore = { x: -50, y: -25, k: 1.5 };
+            const { bounds: boundsBefore } = captureTransformAndBounds(transformBefore);
+
+            // Simulate switching to empty workflow version
+            stepStore.$reset();
+            stateStore.$reset();
+            // No steps added - empty workflow
+
+            const adjustedTransform = calculateAdjustedTransform(transformBefore, boundsBefore);
+
+            // Should return original transform unchanged (no NaN)
+            expect(adjustedTransform.x).toBe(-50);
+            expect(adjustedTransform.y).toBe(-25);
+            expect(adjustedTransform.k).toBe(1.5);
+            expect(Number.isFinite(adjustedTransform.x)).toBe(true);
+            expect(Number.isFinite(adjustedTransform.y)).toBe(true);
+        });
+
+        it("returns original transform when starting from empty workflow", () => {
+            // Edge case: Starting with empty workflow, then loading one with steps
+
+            const { captureTransformAndBounds, calculateAdjustedTransform } = useWorkflowBoundingBox(WORKFLOW_ID);
+
+            // Capture state BEFORE with empty workflow (bounds will be Infinity)
+            const transformBefore = { x: 0, y: 0, k: 1 };
+            const { bounds: boundsBefore } = captureTransformAndBounds(transformBefore);
+
+            // Now add steps (simulating loading a workflow with steps)
+            addStep(1, 100, 50, 200, 100);
+
+            const adjustedTransform = calculateAdjustedTransform(transformBefore, boundsBefore);
+
+            // Should return original transform unchanged (no NaN)
+            expect(adjustedTransform.x).toBe(0);
+            expect(adjustedTransform.y).toBe(0);
+            expect(adjustedTransform.k).toBe(1);
+            expect(Number.isFinite(adjustedTransform.x)).toBe(true);
+            expect(Number.isFinite(adjustedTransform.y)).toBe(true);
+        });
     });
 });

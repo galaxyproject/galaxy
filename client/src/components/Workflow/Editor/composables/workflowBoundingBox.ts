@@ -72,6 +72,17 @@ export function useWorkflowBoundingBox(workflowId?: string) {
         const newBoundingBox = getWorkflowBoundingBox();
         const newBounds = { minX: newBoundingBox.x, minY: newBoundingBox.y };
 
+        // If either bounding box is empty (no steps/comments), skip adjustment
+        // to avoid NaN from Infinity - Infinity calculations
+        if (
+            !Number.isFinite(boundsBefore.minX) ||
+            !Number.isFinite(boundsBefore.minY) ||
+            !Number.isFinite(newBounds.minX) ||
+            !Number.isFinite(newBounds.minY)
+        ) {
+            return { ...transformBefore };
+        }
+
         const offsetX = boundsBefore.minX - newBounds.minX;
         const offsetY = boundsBefore.minY - newBounds.minY;
 
