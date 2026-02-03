@@ -3,6 +3,7 @@ Determine what optional dependencies are needed.
 """
 
 import os
+import re
 import sys
 from os.path import (
     dirname,
@@ -350,6 +351,12 @@ class ConditionalDependencies:
         return "omero" in self.file_sources
 
 
+def strip_comment(line):
+    # lifted from https://github.com/tox-dev/tox/commit/3c6b4f204e89852c4b7536b246a66d20be6d39ec
+    # xref https://github.com/pyupio/dparse/issues/34
+    return re.sub(r"\s+#.*", "", line).strip()
+
+
 def optional(config_file=None):
     if not config_file:
         config_file = find_config_file(["galaxy", "universe_wsgi"], include_samples=True)
@@ -360,5 +367,5 @@ def optional(config_file=None):
     conditional = ConditionalDependencies(config_file)
     for dependency in conditional.conditional_reqs:
         if conditional.check(dependency.name):
-            rval.append(dependency.line)
+            rval.append(strip_comment(dependency.line))
     return rval
