@@ -138,6 +138,7 @@ def _description_from_tool_source(
 
     tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
     processed_test_dict: Union[ValidToolTestDict, InvalidToolTestDict]
+    profile = tool_source.parse_profile()
     try:
         processed_inputs = _process_raw_inputs(
             tool_source,
@@ -167,6 +168,7 @@ def _description_from_tool_source(
                 "required_loc_files": required_loc_files,
                 "tool_id": tool_id,
                 "tool_version": tool_version,
+                "profile": profile,
                 "test_index": test_index,
                 "maxseconds": maxseconds,
                 "error": False,
@@ -177,6 +179,7 @@ def _description_from_tool_source(
             {
                 "tool_id": tool_id,
                 "tool_version": tool_version,
+                "profile": profile,
                 "test_index": test_index,
                 "inputs": {},
                 "error": True,
