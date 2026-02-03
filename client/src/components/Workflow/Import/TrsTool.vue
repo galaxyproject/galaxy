@@ -14,12 +14,9 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     trsTool: TrsTool;
-    mode?: "modal" | "wizard";
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    mode: "modal",
-});
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "onImport", versionId: string): void;
@@ -56,13 +53,12 @@ const versionOptions = computed(() => {
     }));
 });
 
-// In modal mode: show import button and allow manual import
-// In wizard mode: hide import button and emit onSelect when version changes
-const showImportButton = computed(() => props.mode === "modal");
+// Hide import button in wizard mode
+const showImportButton = computed(() => false);
 
 // Watch for version changes in wizard mode to emit selection
 watch(selectedVersion, (newVersion) => {
-    if (newVersion && props.mode === "wizard") {
+    if (newVersion) {
         const version_id = newVersion.id.includes(`:${newVersion.name}`) ? newVersion.name : newVersion.id;
         emit("onSelect", version_id);
     }
@@ -70,7 +66,7 @@ watch(selectedVersion, (newVersion) => {
 
 // Emit initial selection in wizard mode
 onMounted(() => {
-    if (props.mode === "wizard" && selectedVersion.value) {
+    if (selectedVersion.value) {
         const version_id = selectedVersion.value.id.includes(`:${selectedVersion.value.name}`)
             ? selectedVersion.value.name
             : selectedVersion.value.id;

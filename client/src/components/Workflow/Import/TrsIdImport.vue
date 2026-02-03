@@ -16,12 +16,9 @@ interface Props {
     queryTrsId?: string;
     queryTrsServer?: string;
     queryTrsVersionId?: string;
-    mode?: "modal" | "wizard";
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    mode: "modal",
-});
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "onImport", trsId: string, toolId: string, version?: string): void;
@@ -115,8 +112,8 @@ function onTrsSelectionError(message: string) {
 function onVersionSelected(versionId: string) {
     selectedVersion.value = versionId;
 
-    // Only auto-import in modal mode or during auto-import
-    if (props.mode === "modal" || isAutoImport.value) {
+    // Only auto-import during auto-import
+    if (isAutoImport.value) {
         importVersion(trsSelection.value?.id || "", trsTool.value?.id || "", versionId);
     }
 }
@@ -174,7 +171,6 @@ defineExpose({ triggerImport });
             <TrsTool
                 v-if="trsTool"
                 :trs-tool="trsTool"
-                :mode="props.mode"
                 @onImport="onVersionSelected"
                 @onSelect="onVersionSelected" />
         </div>

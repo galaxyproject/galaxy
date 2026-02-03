@@ -248,13 +248,13 @@ function onTrsIdValid(e: boolean) {
 
             <div v-else-if="wizard.isCurrent('upload-file')" class="import-form">
                 <div class="container-narrow">
-                    <FromFile ref="fileComponent" mode="wizard" @input-valid="onUploadValid" />
+                    <FromFile ref="fileComponent" @input-valid="onUploadValid" />
                 </div>
             </div>
 
             <div v-else-if="wizard.isCurrent('fetch-url')" class="import-form">
                 <div class="container-narrow">
-                    <FromUrl ref="urlComponent" mode="wizard" @input-valid="onUrlValid" />
+                    <FromUrl ref="urlComponent" @input-valid="onUrlValid" />
                 </div>
             </div>
 
@@ -303,7 +303,6 @@ function onTrsIdValid(e: boolean) {
                         ref="trsComponent"
                         :trs-servers="trsServers"
                         :is-run="queryParams.isRun"
-                        mode="wizard"
                         trs-method="search"
                         @input-valid="onTrsSearchValid" />
                 </div>
@@ -316,7 +315,6 @@ function onTrsIdValid(e: boolean) {
                         :trs-servers="trsServers"
                         :is-run="queryParams.isRun"
                         :query-trs-url="queryParams.trsUrl"
-                        mode="wizard"
                         trs-method="url"
                         @input-valid="onTrsUrlValid" />
                 </div>
@@ -331,7 +329,6 @@ function onTrsIdValid(e: boolean) {
                         :query-trs-id="queryParams.trsId"
                         :query-trs-server="queryParams.trsServer"
                         :query-trs-version-id="queryParams.trsVersionId"
-                        mode="wizard"
                         trs-method="id"
                         @input-valid="onTrsIdValid" />
                 </div>

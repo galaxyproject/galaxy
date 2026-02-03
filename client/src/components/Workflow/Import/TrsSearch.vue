@@ -18,13 +18,9 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsServerSelection from "@/components/Workflow/Import/TrsServerSelection.vue";
 import TrsTool from "@/components/Workflow/Import/TrsTool.vue";
 
-interface Props {
-    mode?: "modal" | "wizard";
-}
+interface Props {}
 
-const props = withDefaults(defineProps<Props>(), {
-    mode: "modal",
-});
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "input-valid", valid: boolean): void;
@@ -147,11 +143,6 @@ const router = useRouter();
 function onVersionSelected(toolData: TrsSearchData, versionId: string) {
     selectedTool.value = toolData;
     selectedVersion.value = versionId;
-
-    // Only auto-import in modal mode
-    if (props.mode === "modal") {
-        importVersion(trsSelection.value?.id, toolData.id, versionId);
-    }
 }
 
 async function importVersion(trsId?: string, toolIdToImport?: string, version?: string, isRunFormRedirect = false) {
@@ -247,7 +238,6 @@ defineExpose({ triggerImport });
 
                         <TrsTool
                             :trs-tool="row.item.data"
-                            :mode="props.mode"
                             @onImport="(versionId) => onVersionSelected(row.item.data, versionId)"
                             @onSelect="(versionId) => onVersionSelected(row.item.data, versionId)" />
                     </BCard>

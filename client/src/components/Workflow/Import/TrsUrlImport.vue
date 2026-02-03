@@ -7,12 +7,10 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 interface Props {
     queryTrsUrl?: string;
     hideSubmitButton?: boolean;
-    mode?: "modal" | "wizard";
 }
 
 const props = withDefaults(defineProps<Props>(), {
     hideSubmitButton: false,
-    mode: "modal",
 });
 
 const emit = defineEmits<{
@@ -43,9 +41,9 @@ watch(
     { immediate: true }
 );
 
-// Show button in modal mode, hide in wizard mode or when hideSubmitButton is true
+// Hide submit button in wizard mode (or when hideSubmitButton is true)
 const showSubmitButton = computed(() => {
-    return props.mode === "modal" && !props.hideSubmitButton;
+    return !props.hideSubmitButton;
 });
 
 function submit(ev: SubmitEvent) {
@@ -64,12 +62,6 @@ function triggerImport() {
 }
 
 defineExpose({ triggerImport });
-
-// Automatically trigger the import if the TRS URL was provided as a query param
-// Only in modal mode to avoid auto-import in wizard
-if (trsUrl.value && props.mode === "modal") {
-    emit("onImport", trsUrl.value);
-}
 </script>
 
 <template>

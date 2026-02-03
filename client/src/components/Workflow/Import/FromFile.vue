@@ -11,12 +11,10 @@ import GButton from "@/components/BaseComponents/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
-    mode?: "modal" | "wizard";
     hideSubmitButton?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    mode: "modal",
     hideSubmitButton: false,
 });
 
@@ -48,9 +46,9 @@ watch(isValid, (newValue) => {
     emit("input-valid", newValue);
 });
 
-// Show button in modal mode, hide in wizard mode or when hideSubmitButton is true
+// Hide submit button in wizard mode (or when hideSubmitButton is true)
 const showSubmitButton = computed(() => {
-    return props.mode === "modal" && !props.hideSubmitButton;
+    return !props.hideSubmitButton;
 });
 
 const router = useRouter();
