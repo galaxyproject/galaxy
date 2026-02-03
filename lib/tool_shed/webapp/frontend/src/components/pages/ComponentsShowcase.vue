@@ -26,6 +26,7 @@ import {
     resetMetadataBismark,
     resetMetadataUnchanged,
     resetMetadataSubset,
+    resetMetadataDirectPush,
     getChangesetDetails,
     getFirstRevision,
     makeChangeset,
@@ -79,6 +80,7 @@ const changesetsFromColumnMaker = getChangesetDetails(resetMetadataPreview)
 const changesetsFromBismark = getChangesetDetails(resetMetadataBismark)
 const changesetsFromUnchanged = getChangesetDetails(resetMetadataUnchanged)
 const changesetsFromSubset = getChangesetDetails(resetMetadataSubset)
+const changesetsFromDirectPush = getChangesetDetails(resetMetadataDirectPush)
 
 const sampleRevisionData = getFirstRevision(repositoryMetadataColumnMaker)
 
@@ -196,6 +198,13 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
                 <ChangesetSummaryTable :changesets="changesetsFromSubset" />
             </component-showcase-example>
             <q-separator />
+            <component-showcase-example
+                title="direct push (API fixture)"
+                description="Real API response showing 'New Record' operation - changeset pushed via hg without metadata"
+            >
+                <ChangesetSummaryTable :changesets="changesetsFromDirectPush" />
+            </component-showcase-example>
+            <q-separator />
             <component-showcase-example title="empty" description="No changesets">
                 <ChangesetSummaryTable :changesets="[]" />
             </component-showcase-example>
@@ -265,8 +274,12 @@ const singleRevisionMetadata: RepositoryMetadata = (() => {
         </component-showcase>
 
         <component-showcase title="ToolHistoryTab">
-            <component-showcase-example title="tool version timeline">
+            <component-showcase-example title="single tool with version history (column_maker)">
                 <ToolHistoryTab :metadata="repositoryMetadataColumnMaker" />
+            </component-showcase-example>
+            <q-separator />
+            <component-showcase-example title="multiple different tools (bismark)">
+                <ToolHistoryTab :metadata="repositoryMetadataBismark" />
             </component-showcase-example>
             <q-separator />
             <component-showcase-example title="no tools">
