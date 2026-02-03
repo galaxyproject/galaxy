@@ -115,6 +115,7 @@ class MockJobToOutputDatasetAssociation:
 
 class MockHistory:
     def __init__(self):
+        self.id = 1
         self.active_datasets = []
 
     @property
@@ -135,9 +136,10 @@ class MockTrans:
 
 
 class MockHda:
-    def __init__(self, state="ok", output_name="out1", job=None):
+    def __init__(self, state="ok", output_name="out1", job=None, history_id=1):
         self.hid = 1
         self.id = 123
+        self.history_id = history_id
         self.state = state
         self.copied_from_history_dataset_association = None
         self.copied_from_library_dataset_dataset_association = None

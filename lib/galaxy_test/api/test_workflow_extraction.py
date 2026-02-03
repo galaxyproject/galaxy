@@ -441,6 +441,175 @@ test_data:
             tool_ids=tool_ids,
         )
 
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_partial_copy_as_input(self, history_id):
+        """Partial copy: only output copied, input missing - treat as input."""
+        # History A: input → cat1 → output
+        history_a = self.dataset_populator.new_history()
+        input_a = self.dataset_populator.new_dataset(history_a, content="test")
+        run_response = self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": input_a["id"]}},
+            history_id=history_a,
+        )
+        output_a = run_response["outputs"][0]
+        self.dataset_populator.wait_for_history(history_a)
+
+        # Copy ONLY output to History B (partial copy - input missing)
+        history_b = self.dataset_populator.new_history()
+        copied = self.__copy_content_to_history(history_b, output_a)
+
+        # Run tool on copied dataset
+        self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": copied["id"]}},
+            history_id=history_b,
+        )
+        self.dataset_populator.wait_for_history(history_b)
+
+        # Extract from History B using auto-detection (from_history_id)
+        create_response = self._post(
+            "workflows",
+            data={"from_history_id": history_b, "workflow_name": "test partial copy extraction"},
+        )
+        self._assert_status_code_is(create_response, 200)
+        workflow_id = create_response.json()["id"]
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+
+        # Should have: input step (copied dataset) + cat1 (NOT the cat1 from History A)
+        assert len(workflow["steps"]) == 2
+        tool_steps = [s for s in workflow["steps"].values() if s["type"] == "tool"]
+        assert len(tool_steps) == 1
+        assert tool_steps[0]["tool_id"] == "cat1"
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_full_history_copy(self, history_id):
+        """Full copy: all datasets copied - lineage should be preserved."""
+        # History A: input → cat1 → output
+        history_a = self.dataset_populator.new_history()
+        input_a = self.dataset_populator.new_dataset(history_a, content="test")
+        self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": input_a["id"]}},
+            history_id=history_a,
+        )
+        self.dataset_populator.wait_for_history(history_a)
+
+        # Copy ALL to History B (full copy)
+        history_b = self.dataset_populator.copy_history(history_a).json()["id"]
+        self.dataset_populator.wait_for_history(history_b)
+
+        # Extract from History B - should preserve full lineage
+        create_response = self._post(
+            "workflows",
+            data={"from_history_id": history_b, "workflow_name": "test full copy extraction"},
+        )
+        self._assert_status_code_is(create_response, 200)
+        workflow_id = create_response.json()["id"]
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+
+        # Should have: input step + cat1 tool step
+        assert len(workflow["steps"]) == 2
+        tool_steps = [s for s in workflow["steps"].values() if s["type"] == "tool"]
+        assert len(tool_steps) == 1
+        assert tool_steps[0]["tool_id"] == "cat1"
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_full_copy_with_additional_work(self, history_id):
+        """Full copy + new work: full lineage chain should be extracted."""
+        # History A: input → cat1 → output
+        history_a = self.dataset_populator.new_history()
+        input_a = self.dataset_populator.new_dataset(history_a, content="test")
+        self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": input_a["id"]}},
+            history_id=history_a,
+        )
+        self.dataset_populator.wait_for_history(history_a)
+
+        # Full copy to History B
+        history_b = self.dataset_populator.copy_history(history_a).json()["id"]
+        self.dataset_populator.wait_for_history(history_b)
+
+        # Get the copied output and run another tool
+        contents = self._history_contents(history_b)
+        copied_output = [c for c in contents if c["hid"] == 2][0]
+
+        self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": copied_output["id"]}},
+            history_id=history_b,
+        )
+        self.dataset_populator.wait_for_history(history_b)
+
+        # Extract - should have input + cat1 + cat1 (full chain)
+        create_response = self._post(
+            "workflows",
+            data={"from_history_id": history_b, "workflow_name": "test full copy with work"},
+        )
+        self._assert_status_code_is(create_response, 200)
+        workflow_id = create_response.json()["id"]
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+
+        assert len(workflow["steps"]) == 3
+        tool_steps = [s for s in workflow["steps"].values() if s["type"] == "tool"]
+        assert len(tool_steps) == 2
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_mixed_copy_scenario(self, history_id):
+        """Some datasets fully copied, some partial - each handled correctly."""
+        # Create two independent pipelines in History A
+        history_a = self.dataset_populator.new_history()
+
+        # Pipeline 1: input1 → cat1 → output1
+        input1 = self.dataset_populator.new_dataset(history_a, content="test1")
+        run1 = self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": input1["id"]}},
+            history_id=history_a,
+        )
+        output1 = run1["outputs"][0]
+
+        # Pipeline 2: input2 → cat1 → output2
+        input2 = self.dataset_populator.new_dataset(history_a, content="test2")
+        run2 = self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": input2["id"]}},
+            history_id=history_a,
+        )
+        output2 = run2["outputs"][0]
+        self.dataset_populator.wait_for_history(history_a)
+
+        # Copy to History B:
+        # - Pipeline 1: FULL (both input1 and output1)
+        # - Pipeline 2: PARTIAL (only output2)
+        history_b = self.dataset_populator.new_history()
+        self.__copy_content_to_history(history_b, input1)
+        self.__copy_content_to_history(history_b, output1)
+        self.__copy_content_to_history(history_b, output2)  # No input2!
+
+        # Extract from History B
+        create_response = self._post(
+            "workflows",
+            data={"from_history_id": history_b, "workflow_name": "test mixed copy"},
+        )
+        self._assert_status_code_is(create_response, 200)
+        workflow_id = create_response.json()["id"]
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+
+        # Pipeline 1 should have full lineage (input + tool)
+        # Pipeline 2's output2 should become an input (partial copy)
+        # Total: 2 inputs + 1 tool = 3 steps
+        input_steps = [s for s in workflow["steps"].values() if s["type"] == "data_input"]
+        tool_steps = [s for s in workflow["steps"].values() if s["type"] == "tool"]
+
+        assert len(input_steps) == 2  # input1_copy + output2_copy (as input)
+        assert len(tool_steps) == 1  # only cat1 from pipeline 1
+
     def _job_id_for_tool(self, jobs, tool_id):
         return self._job_for_tool(jobs, tool_id)["id"]
 
