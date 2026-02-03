@@ -61,7 +61,7 @@ def check_database_connection(session):
     if isinstance(session, scoped_session):
         session = session()
     trans = session.get_transaction()
-    if (trans and not trans.is_active) or session.connection().invalidated:
+    if trans and (not trans.is_active or session.connection().invalidated):
         session.rollback()
         log.error("Database transaction rolled back due to inactive session transaction or invalid connection state.")
 
