@@ -211,7 +211,10 @@ class FakeJob:
     def _guess_name_from_dataset(self, dataset) -> Optional[str]:
         """Tries to guess the name of the fake job from the dataset associations."""
         if dataset.copied_from_history_dataset_association:
-            return "Import from History"
+            source = dataset.copied_from_history_dataset_association
+            if hasattr(source, "history") and source.history:
+                return f"Copied from '{source.history.name}'"
+            return "Copied from another history"
         if dataset.copied_from_library_dataset_dataset_association:
             return "Import from Library"
         return None
@@ -275,10 +278,24 @@ class WorkflowSummary:
                 return object.hid
 
     def __summarize(self):
-        # Make a first pass handle all singleton jobs, input dataset and dataset collections
-        # just grab the implicitly mapped jobs and handle in second pass. Second pass is
-        # needed because cannot allow selection of individual datasets from an implicit
-        # mapping during extraction - you get the collection or nothing.
+        # First pass: build set of original HDA/HDCA IDs represented in this history.
+        # This is needed to detect partial cross-history copies where job inputs are missing.
+        self.original_hda_ids_in_history = set()
+        self.original_hdca_ids_in_history = set()
+        for content in self.history.visible_contents:
+            if content.history_content_type == "dataset":
+                self.original_hda_ids_in_history.add(content.id)
+                original = self.__original_hda(content)
+                self.original_hda_ids_in_history.add(original.id)
+            else:
+                self.original_hdca_ids_in_history.add(content.id)
+                original = self.__original_hdca(content)
+                self.original_hdca_ids_in_history.add(original.id)
+
+        # Second pass: summarize all content.
+        # Handle singleton jobs, input datasets and dataset collections.
+        # Implicitly mapped jobs are collected and handled as collections rather than
+        # individual datasets.
         for content in self.history.visible_contents:
             self.__summarize_content(content)
 
@@ -292,6 +309,18 @@ class WorkflowSummary:
 
     def __summarize_dataset_collection(self, dataset_collection):
         hid_in_history = dataset_collection.hid
+
+        # Check if this is a partial cross-history copy (incomplete lineage)
+        if self.__is_partial_cross_history_collection_copy(dataset_collection):
+            # Treat as input - don't trace back to original history
+            self.hdca_hid_in_history[dataset_collection.id] = hid_in_history
+            self.collection_types[dataset_collection.hid] = dataset_collection.collection.collection_type
+            job = DatasetCollectionCreationJob(dataset_collection)
+            job.disabled_why = "Collection copied from another history (incomplete lineage)"
+            self.jobs[job] = [(None, dataset_collection)]
+            return
+
+        # Lineage is complete, safe to follow back to original
         dataset_collection = self.__original_hdca(dataset_collection)
         self.hdca_hid_in_history[dataset_collection.id] = hid_in_history
 
@@ -356,6 +385,15 @@ class WorkflowSummary:
             return
 
         hid_in_history = dataset.hid
+
+        # Check if this is a partial cross-history copy (incomplete lineage)
+        if self.__is_partial_cross_history_copy(dataset):
+            # Treat as input - don't trace back to original history
+            self.hda_hid_in_history[dataset.id] = hid_in_history
+            self.jobs[FakeJob(dataset)] = [(None, dataset)]
+            return
+
+        # Lineage is complete, safe to follow back to original
         original_hda = self.__original_hda(dataset)
         self.hda_hid_in_history[original_hda.id] = hid_in_history
 
@@ -387,6 +425,82 @@ class WorkflowSummary:
             self.warnings.add(WARNING_SOME_DATASETS_NOT_READY)
             return
         return hda
+
+    def __is_partial_cross_history_copy(self, hda):
+        """
+        Returns True if hda was copied from a different history AND the creating
+        job's lineage is incomplete (inputs don't exist in current history).
+        """
+        if hda.copied_from_library_dataset_dataset_association:
+            return True  # Library imports always treated as inputs
+
+        if not hda.copied_from_history_dataset_association:
+            return False  # Not a copy
+
+        source_hda = hda.copied_from_history_dataset_association
+        if source_hda.history_id == self.history.id:
+            return False  # Same-history copy - follow the chain
+
+        # Cross-history copy - check if lineage is complete
+        return not self.__job_lineage_exists_in_history(source_hda)
+
+    def __job_lineage_exists_in_history(self, hda):
+        """Check if the job that created this HDA has all inputs in current history."""
+        original_hda = self.__original_hda(hda)
+        if not original_hda.creating_job_associations:
+            return True  # No creating job means it's an uploaded input anyway
+
+        job = original_hda.creating_job_associations[0].job
+        return self.__job_inputs_exist_in_history(job)
+
+    def __job_inputs_exist_in_history(self, job):
+        """Check if all inputs to a job exist in the current history."""
+        # Check dataset inputs
+        for input_assoc in job.input_datasets:
+            input_hda = input_assoc.dataset
+            if input_hda and input_hda.id not in self.original_hda_ids_in_history:
+                return False
+
+        # Check collection inputs
+        for input_assoc in job.input_dataset_collections:
+            input_hdca = input_assoc.dataset_collection
+            if input_hdca and input_hdca.id not in self.original_hdca_ids_in_history:
+                return False
+
+        return True
+
+    def __is_partial_cross_history_collection_copy(self, hdca):
+        """Same check for collections."""
+        if not hdca.copied_from_history_dataset_collection_association:
+            return False
+
+        source_hdca = hdca.copied_from_history_dataset_collection_association
+        if source_hdca.history_id == self.history.id:
+            return False
+
+        return not self.__collection_job_lineage_exists_in_history(source_hdca)
+
+    def __collection_job_lineage_exists_in_history(self, hdca):
+        """Check if the job(s) that created this HDCA have all inputs in current history."""
+        original_hdca = self.__original_hdca(hdca)
+
+        # Check implicit collection jobs (multiple jobs from mapping)
+        if original_hdca.implicit_collection_jobs_id:
+            icj = original_hdca.implicit_collection_jobs
+            if icj and icj.jobs:
+                # Check all jobs - each may have different input datasets
+                for job_assoc in icj.jobs:
+                    job = job_assoc.job
+                    if not self.__job_inputs_exist_in_history(job):
+                        return False
+
+        # Check creating job associations (single job creating collection)
+        for assoc in original_hdca.creating_job_associations:
+            job = assoc.job
+            if not self.__job_inputs_exist_in_history(job):
+                return False
+
+        return True
 
 
 def step_inputs(trans, job):
