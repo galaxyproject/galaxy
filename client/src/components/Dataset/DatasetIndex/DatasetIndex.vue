@@ -81,9 +81,9 @@ const fields: TableField[] = [
 
 <template>
     <div>
-        <GTable v-if="directoryContent && !errorMessage" :fields="fields" :items="directoryContent" />
         <div v-if="errorMessage">
             <b v-if="path">{{ path }}</b> {{ errorMessage }}
         </div>
+        <GTable v-else-if="directoryContent" :fields="fields" :items="directoryContent" />
     </div>
 </template>
