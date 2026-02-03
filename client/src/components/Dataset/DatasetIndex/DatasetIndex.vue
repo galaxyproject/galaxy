@@ -3,7 +3,10 @@ import { computedAsync } from "@vueuse/core";
 import { computed } from "vue";
 
 import type { DatasetExtraFiles } from "@/api/datasets";
+import type { TableField } from "@/components/Common/GTable.types";
 import { type PathDestination, useDatasetPathDestination } from "@/composables/datasetPathDestination";
+
+import GTable from "@/components/Common/GTable.vue";
 
 interface Props {
     historyDatasetId: string;
@@ -62,9 +65,10 @@ function removeParentDirectory(datasetContent: DatasetExtraFiles, filepath?: str
     });
 }
 
-const fields = [
+const fields: TableField[] = [
     {
         key: "path",
+        label: "Path",
         sortable: true,
     },
     {
@@ -77,14 +81,7 @@ const fields = [
 
 <template>
     <div>
-        <b-table
-            v-if="directoryContent && !errorMessage"
-            thead-class="hidden_header"
-            striped
-            hover
-            :fields="fields"
-            :items="directoryContent">
-        </b-table>
+        <GTable v-if="directoryContent && !errorMessage" :fields="fields" :items="directoryContent" />
         <div v-if="errorMessage">
             <b v-if="path">{{ path }}</b> {{ errorMessage }}
         </div>
