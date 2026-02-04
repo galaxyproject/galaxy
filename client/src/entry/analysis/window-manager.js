@@ -50,7 +50,15 @@ export class WindowManager {
             params.index = 850;
             this.zIndexInitialized = true;
         }
-        WinBox.new(params);
+        const win = WinBox.new(params);
+        // Overlay to capture clicks on unfocused windows, since mousedown
+        // doesn't propagate out of iframes. WinBox toggles the "focus"
+        // class, and CSS sets pointer-events:none on the overlay for the
+        // focused window so the iframe works normally.
+        const overlay = document.createElement("div");
+        overlay.className = "iframe-focus-overlay";
+        overlay.addEventListener("mousedown", () => win.focus());
+        win.body.appendChild(overlay);
     }
 
     /** Called before closing all windows. */
