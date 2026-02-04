@@ -100,8 +100,8 @@ export async function undeleteDataset(datasetId: string) {
     return data;
 }
 
-export async function deleteDataset(datasetId: string, purge: boolean = false) {
-    const { data, error } = await GalaxyApi().DELETE("/api/datasets/{dataset_id}", {
+export async function deleteDataset(datasetId: string, purge: boolean = false): Promise<void> {
+    const { error } = await GalaxyApi().DELETE("/api/datasets/{dataset_id}", {
         params: {
             path: { dataset_id: datasetId },
             query: { purge },
@@ -110,10 +110,9 @@ export async function deleteDataset(datasetId: string, purge: boolean = false) {
     if (error) {
         rethrowSimple(error);
     }
-    return data;
 }
 
-export async function purgeDataset(datasetId: string) {
+export async function purgeDataset(datasetId: string): Promise<void> {
     return deleteDataset(datasetId, true);
 }
 
