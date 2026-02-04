@@ -8,12 +8,14 @@ import {
     faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BTable } from "bootstrap-vue";
+
+import type { TableField } from "@/components/Common/GTable.types";
 
 import type { ExportRecord } from "./models/exportRecordModel";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 interface Props {
     records: ExportRecord[];
@@ -26,13 +28,13 @@ const emit = defineEmits<{
     (e: "onCopyDownloadLink", record: ExportRecord): void;
 }>();
 
-const fields = [
+const fields: TableField[] = [
     { key: "elapsedTime", label: "Exported" },
     { key: "format", label: "Format" },
     { key: "expires", label: "Expires" },
-    { key: "isUpToDate", label: "Up to date", class: "text-center" },
-    { key: "isReady", label: "Ready", class: "text-center" },
-    { key: "actions", label: "Actions" },
+    { key: "isUpToDate", label: "Up to date", align: "center" },
+    { key: "isReady", label: "Ready", align: "center" },
+    { key: "actions", label: "Actions", align: "center" },
 ];
 
 async function reimportObject(record: ExportRecord) {
@@ -49,9 +51,9 @@ function copyDownloadLink(record: ExportRecord) {
 </script>
 
 <template>
-    <BTable :items="props.records" :fields="fields">
+    <GTable :items="props.records" :fields="fields">
         <template v-slot:cell(elapsedTime)="row">
-            <span :title="row.item.date">{{ row.value }}</span>
+            <span :title="row.item.date.toLocaleString()">{{ row.value }}</span>
         </template>
 
         <template v-slot:cell(format)="row">
@@ -61,7 +63,7 @@ function copyDownloadLink(record: ExportRecord) {
         <template v-slot:cell(expires)="row">
             <span v-if="row.item.hasExpired">Expired</span>
 
-            <span v-else-if="row.item.expirationDate" :title="row.item.expirationDate">
+            <span v-else-if="row.item.expirationDate" :title="row.item.expirationDate.toLocaleString()">
                 {{ row.item.expirationElapsedTime }}
             </span>
 
@@ -131,5 +133,5 @@ function copyDownloadLink(record: ExportRecord) {
                 </GButton>
             </GButtonGroup>
         </template>
-    </BTable>
+    </GTable>
 </template>

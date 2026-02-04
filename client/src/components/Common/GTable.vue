@@ -155,7 +155,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     id: () => useUid("g-table-").value,
-    actions: () => [],
+    actions: undefined,
     bordered: false,
     clickableRows: false,
     containerClass: "",
@@ -291,7 +291,17 @@ function getCellValue(item: T, field: TableField) {
 }
 
 /**
- * Get alignment class for a field
+ * Get text alignment class for header labels
+ */
+function getTextAlignmentClass(align?: FieldAlignment) {
+    if (!align || align === "left") {
+        return "";
+    }
+    return `text-${align}`;
+}
+
+/**
+ * Get alignment class for body cells
  */
 function getAlignmentClass(align?: FieldAlignment) {
     if (!align || align === "left") {
@@ -378,22 +388,23 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                 :key="field.key"
                                 :class="[
                                     field.headerClass,
-                                    getAlignmentClass(field.align),
                                     { 'g-table-sortable': field.sortable },
                                     { 'g-table-sorted': sortBy === field.key },
                                     { 'hide-on-small': field.hideOnSmall },
                                 ]"
                                 :style="field.width ? { width: field.width } : undefined"
                                 @click="onHeaderClick(field)">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <slot :name="`head(${field.key})`" :field="field">
-                                        <span>{{ field.label || field.key }}</span>
-                                    </slot>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1" :class="getTextAlignmentClass(field.align)">
+                                        <slot :name="`head(${field.key})`" :field="field">
+                                            {{ field.label || field.key }}
+                                        </slot>
+                                    </div>
                                     <FontAwesomeIcon
                                         v-if="field.sortable && getSortIcon(field)"
                                         :icon="getSortIcon(field)"
                                         :class="{ 'text-muted': sortBy !== field.key }"
-                                        class="ml-1" />
+                                        class="ml-1 flex-shrink-0" />
                                 </div>
                             </th>
 
