@@ -104,10 +104,10 @@ interface Props {
     overlayLoading?: boolean;
 
     /**
-     * Whether to disable local sorting (will only emit sort-changed event)
-     * @default false
+     * Whether to use local sorting (client-side) or rely on external sorting (server-side)
+     * @default true
      */
-    noLocalSorting?: boolean;
+    localSorting?: boolean;
 
     /**
      * Whether to show striped rows
@@ -173,7 +173,7 @@ const props = withDefaults(defineProps<Props>(), {
     loadingMessage: "Loading...",
     loadMoreLoading: false,
     loadMoreMessage: "Loading more...",
-    noLocalSorting: false,
+    localSorting: true,
     overlayLoading: false,
     selectable: false,
     selectedItems: () => [],
@@ -221,7 +221,7 @@ const localItems = computed(() => {
     const items = props.items || [];
 
     // If local sorting is disabled, return items as-is
-    if (props.noLocalSorting) {
+    if (!props.localSorting) {
         return items;
     }
 

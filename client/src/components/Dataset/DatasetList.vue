@@ -296,7 +296,7 @@ onMounted(() => {
                 selectable
                 show-select-all
                 no-sort-reset
-                no-local-sorting
+                :local-sorting="false"
                 :fields="fields"
                 :items="rows"
                 :sort-by="sortBy"
