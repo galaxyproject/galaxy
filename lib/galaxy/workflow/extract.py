@@ -44,6 +44,13 @@ from .steps import (
 # Type alias for history content items
 HistoryContentItem = Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]
 
+# Type alias for tool input parameter values (param name -> string value)
+ToolInputs = dict[str, Any]
+
+# Type alias for data input associations (hid, input_name) pairs linking
+# history items to their corresponding tool input parameters
+DataInputAssociations = list[tuple[int, str]]
+
 log = logging.getLogger(__name__)
 
 WARNING_SOME_DATASETS_NOT_READY = "Some datasets still queued or running were ignored"
@@ -412,7 +419,7 @@ class WorkflowSummary:
         return hda
 
 
-def step_inputs(trans: ProvidesHistoryContext, job: Job) -> tuple[dict[str, Any], list[tuple[int, str]]]:
+def step_inputs(trans: ProvidesHistoryContext, job: Job) -> tuple[ToolInputs, DataInputAssociations]:
     tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
     assert tool is not None, f"Tool {job.tool_id} (version {job.tool_version}) not found"
     param_values = tool.get_param_values(
@@ -423,7 +430,7 @@ def step_inputs(trans: ProvidesHistoryContext, job: Job) -> tuple[dict[str, Any]
     return tool_inputs, associations
 
 
-def __cleanup_param_values(inputs: dict[str, Any], values: dict[str, Any]) -> list[tuple[int, str]]:
+def __cleanup_param_values(inputs: ToolInputs, values: ToolInputs) -> DataInputAssociations:
     """
     Remove 'Data' values from `param_values`, along with metadata cruft,
     but track the associations.

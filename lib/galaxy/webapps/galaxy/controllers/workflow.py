@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from markupsafe import escape
 
@@ -187,10 +188,10 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         job_ids=None,
         dataset_ids=None,
         dataset_collection_ids=None,
-        workflow_name: str | None = None,
+        workflow_name: Optional[str] = None,
         dataset_names=None,
         dataset_collection_names=None,
-        history_id: str | None = None,
+        history_id: Optional[str] = None,
         **kwargs,
     ) -> str:
         user = trans.get_user()
