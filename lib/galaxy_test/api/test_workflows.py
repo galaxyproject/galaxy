@@ -1112,6 +1112,71 @@ steps:
         workflow_dict = self.workflow_populator.download_workflow(workflow_id)
         assert workflow_dict["steps"]["0"]["label"] == "new_label"
 
+    def test_refactor_specific_version(self):
+        """Test that refactoring can target a specific workflow version."""
+        # Create initial workflow (version 0) with label "test_input"
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  test_input: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: test_input
+""")
+
+        # Download and verify initial state (version 0)
+        workflow_v0 = self.workflow_populator.download_workflow(workflow_id, version=0)
+        assert workflow_v0["steps"]["0"]["label"] == "test_input"
+
+        # Refactor (without version param) to create version 1 with label "v1_label"
+        actions_v1 = [
+            {"action_type": "update_step_label", "step": {"order_index": 0}, "label": "v1_label"},
+        ]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions_v1)
+        refactor_response.raise_for_status()
+
+        # Verify we now have 2 versions
+        versions_response = self._get(f"workflows/{workflow_id}/versions")
+        versions_response.raise_for_status()
+        versions = versions_response.json()
+        assert len(versions) == 2
+
+        # Verify version 0 still has original label
+        workflow_v0_check = self.workflow_populator.download_workflow(workflow_id, version=0)
+        assert workflow_v0_check["steps"]["0"]["label"] == "test_input"
+
+        # Verify version 1 (latest) has the refactored label
+        workflow_v1 = self.workflow_populator.download_workflow(workflow_id)
+        assert workflow_v1["steps"]["0"]["label"] == "v1_label"
+
+        # Now refactor version 0 specifically (not latest) with a different label
+        actions_from_v0 = [
+            {"action_type": "update_step_label", "step": {"order_index": 0}, "label": "refactored_from_v0"},
+        ]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions_from_v0, version=0)
+        refactor_response.raise_for_status()
+
+        # The refactor response should show the label applied to v0's original label
+        refactor_result = refactor_response.json()
+        assert refactor_result["workflow"]["steps"]["0"]["label"] == "refactored_from_v0"
+
+        # We should now have 3 versions
+        versions_response = self._get(f"workflows/{workflow_id}/versions")
+        versions_response.raise_for_status()
+        versions = versions_response.json()
+        assert len(versions) == 3
+
+        # The latest version (version 2) should have the label from refactoring v0
+        # This proves version=0 was used as the base, not version 1
+        workflow_latest = self.workflow_populator.download_workflow(workflow_id)
+        assert workflow_latest["steps"]["0"]["label"] == "refactored_from_v0"
+
+        # Version 1 should still have its label unchanged
+        workflow_v1_check = self.workflow_populator.download_workflow(workflow_id, version=1)
+        assert workflow_v1_check["steps"]["0"]["label"] == "v1_label"
+
     def test_refactor_tool_state_upgrade(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
