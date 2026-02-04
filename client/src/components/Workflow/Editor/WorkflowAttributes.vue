@@ -263,7 +263,11 @@ Acceptable format:
     computed: {
         /** Determines if the current version is not the latest */
         canSwitchToLatestVersion() {
-            return this.versions?.length > 1 && this.version !== this.versions[this.versions.length - 1].version;
+            return (
+                this.versions?.length > 1 &&
+                this.version !== null &&
+                this.version !== this.versions[this.versions.length - 1].version
+            );
         },
         creatorAsList() {
             let creator = this.creator;
