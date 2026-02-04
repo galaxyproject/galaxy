@@ -7,9 +7,8 @@ import { computed, ref, watch } from "vue";
 import { type CreateNewCollectionPayload, type HDCASummary, type HistoryItemSummary, isHDCA } from "@/api";
 import { createHistoryDatasetCollectionInstanceFull, type SampleSheetCollectionType } from "@/api/datasetCollections";
 import type { ExtendedCollectionType } from "@/components/Form/Elements/FormData/types";
-import { useCollectionBuilderItemsStore } from "@/stores/collectionBuilderItemsStore";
+import { useHistoryDatasets } from "@/composables/useHistoryDatasets";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
-import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { orList } from "@/utils/strings";
 import { stateIsTerminal } from "@/utils/utils";
@@ -62,20 +61,17 @@ const createCollectionError = ref<string | null>(null);
 const createdCollection = ref<any>(null);
 
 // History items variables
-const historyItemsError = ref<string | null>(null);
-const collectionItemsStore = useCollectionBuilderItemsStore();
-const historyStore = useHistoryStore();
-const history = computed(() => historyStore.getHistoryById(props.historyId));
-const historyId = computed(() => props.historyId);
-const localFilterText = computed(() => props.filterText || "");
-const historyUpdateTime = computed(() => history.value?.update_time);
-const isFetchingItems = computed(() => collectionItemsStore.isFetching[localFilterText.value]);
-const historyDatasets = computed(() => {
-    if (collectionItemsStore.cachedDatasetsForFilterText) {
-        return collectionItemsStore.cachedDatasetsForFilterText[localFilterText.value] || [];
-    } else {
-        return [];
-    }
+const {
+    datasets: historyDatasets,
+    isFetching: isFetchingItems,
+    error: historyItemsError,
+    initialFetchDone: initialFetch,
+    history,
+} = useHistoryDatasets({
+    historyId: () => props.historyId,
+    filterText: () => props.filterText || "",
+    enabled: () => localShowToggle.value,
+    immediate: false,
 });
 const pairedOrUnpairedSupportedCollectionType = computed<SupportedPairedOrPairedBuilderCollectionTypes | null>(() => {
     if (
@@ -87,34 +83,11 @@ const pairedOrUnpairedSupportedCollectionType = computed<SupportedPairedOrPaired
     }
 });
 
-/** Flag for the initial fetch of history items */
-const initialFetch = ref(false);
-
 /** Whether a list of items was selected to create a collection from */
 const fromSelection = computed(() => !!props.selectedItems?.length);
 
 /** Items to create the collection from */
 const creatorItems = computed(() => (fromSelection.value ? props.selectedItems : historyDatasets.value));
-
-watch(
-    () => localShowToggle.value,
-    async (show) => {
-        if (show) {
-            await fetchHistoryDatasets();
-            if (!initialFetch.value) {
-                initialFetch.value = true;
-            }
-        }
-    },
-    { immediate: true },
-);
-
-// Fetch items when history ID or update time changes, only if localShowToggle is true
-watch([historyId, historyUpdateTime, localFilterText], async () => {
-    if (localShowToggle.value) {
-        await fetchHistoryDatasets();
-    }
-});
 
 // If there is a change in `historyDatasets`, but we have selected items, we should update the selected items
 watch(
@@ -201,20 +174,6 @@ watch(
         }
     },
 );
-
-async function fetchHistoryDatasets() {
-    const { error } = await collectionItemsStore.fetchDatasetsForFiltertext(
-        historyId.value,
-        historyUpdateTime.value,
-        localFilterText.value,
-    );
-    if (error) {
-        historyItemsError.value = error;
-        console.error("Error fetching history items:", historyItemsError.value);
-    } else {
-        historyItemsError.value = null;
-    }
-}
 
 function hideCreator() {
     localShowToggle.value = false;
