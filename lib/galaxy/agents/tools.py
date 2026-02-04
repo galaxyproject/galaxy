@@ -280,12 +280,12 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 content = self._format_recommendation_response(recommendation)
                 suggestions = self._create_suggestions(recommendation)
 
-                return AgentResponse(
+                return self._build_response(
                     content=content,
                     confidence=ConfidenceLevel.HIGH,
-                    agent_type=self.agent_type,
+                    method="fast_path_exact_match",
+                    query=query,
                     suggestions=suggestions,
-                    metadata={"method": "fast_path_exact_match"},
                     reasoning=f"Directly matched tool name '{exact_match['name']}'.",
                 )
         except (AttributeError, KeyError, TypeError) as e:
@@ -313,12 +313,12 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                     # Model returned text instead of structured output (e.g., clarifying question)
                     # Return the text response directly
                     content = extract_result_content(result)
-                    return AgentResponse(
+                    return self._build_response(
                         content=content,
                         confidence=ConfidenceLevel.MEDIUM,
-                        agent_type=self.agent_type,
-                        suggestions=[],
-                        metadata={"method": "text_fallback"},
+                        method="text_fallback",
+                        result=result,
+                        query=query,
                     )
 
                 log.info(f"Tool recommendation result: primary_tools={recommendation.primary_tools}")
@@ -329,17 +329,18 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                     recommendation.confidence.lower() if recommendation.confidence else "medium"
                 )
 
-                return AgentResponse(
+                return self._build_response(
                     content=content,
                     confidence=confidence,
-                    agent_type=self.agent_type,
+                    method="structured",
+                    result=result,
+                    query=query,
                     suggestions=suggestions,
-                    metadata={
+                    agent_data={
                         "num_tools_found": len(recommendation.primary_tools),
                         "has_alternatives": bool(recommendation.alternative_tools),
                         "has_workflow": bool(recommendation.workflow_suggestion),
                         "search_keywords": recommendation.search_keywords,
-                        "method": "structured",
                     },
                     reasoning=recommendation.reasoning,
                 )
@@ -348,13 +349,14 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 response_text = extract_result_content(result)
                 parsed_result = self._parse_simple_response(response_text)
 
-                return AgentResponse(
+                return self._build_response(
                     content=parsed_result.get("content", response_text),
                     confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
-                    agent_type=self.agent_type,
+                    method="simple_text",
+                    result=result,
+                    query=query,
                     suggestions=parsed_result.get("suggestions", []),
-                    metadata={
-                        "method": "simple_text",
+                    agent_data={
                         "has_alternatives": parsed_result.get("has_alternatives", False),
                     },
                 )

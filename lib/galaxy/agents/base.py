@@ -519,6 +519,7 @@ class BaseGalaxyAgent(ABC):
         agent_data: Optional[dict[str, Any]] = None,
         fallback: bool = False,
         error: Optional[str] = None,
+        reasoning: Optional[str] = None,
     ) -> AgentResponse:
         """
         Build an AgentResponse with metadata filled in.
@@ -531,6 +532,7 @@ class BaseGalaxyAgent(ABC):
             agent_type=self.agent_type,
             suggestions=suggestions or [],
             metadata=self._build_metadata(method, result, query, agent_data, fallback, error),
+            reasoning=reasoning,
         )
 
     def _supports_structured_output(self) -> bool:
