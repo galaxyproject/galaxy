@@ -121,7 +121,7 @@ def test_reset_verbose_returns_changeset_details(
     assert len(result.changeset_details) >= 1
     for detail in result.changeset_details:
         assert detail.changeset_revision
-        assert detail.action in ["created", "updated", "skipped", "unchanged", "pending"]
+        assert detail.record_operation in [None, "created", "updated"]
 
 
 def test_reset_without_verbose_omits_details(

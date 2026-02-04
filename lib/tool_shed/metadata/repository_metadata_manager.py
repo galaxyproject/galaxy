@@ -525,7 +525,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         repository_metadata = repository_metadata_by_changeset_revision(
             self.app.model, self.repository.id, changeset_revision
         )
-        record_operation = "updated" if repository_metadata is not None else "created"
+        record_operation: Literal["created", "updated"] = "updated" if repository_metadata is not None else "created"
         if repository_metadata:
             repository_metadata.metadata = metadata_dict
             repository_metadata.downloadable = downloadable

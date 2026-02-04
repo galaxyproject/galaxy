@@ -533,6 +533,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
 
         # 2. RepositoryMetadata - bismark (with invalid_tools)
         bismark_repo = populator.setup_bismark_repo()
+        assert not isinstance(bismark_repo, str)  # type narrowing for mypy
         bismark_response = self.api_interactor.get(
             f"repositories/{bismark_repo.id}/metadata?downloadable_only=false"
         )
@@ -703,7 +704,7 @@ Now with improved help text!
 
         print(f"\nFixtures written to: {output_dir}")
         print("Files generated:")
-        for f in sorted(os.listdir(output_dir)):
-            filepath = os.path.join(output_dir, f)
+        for filename in sorted(os.listdir(output_dir)):
+            filepath = os.path.join(output_dir, filename)
             size = os.path.getsize(filepath)
-            print(f"  - {f} ({size} bytes)")
+            print(f"  - {filename} ({size} bytes)")
