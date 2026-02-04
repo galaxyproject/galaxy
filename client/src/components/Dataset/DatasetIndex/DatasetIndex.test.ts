@@ -182,8 +182,6 @@ describe("DatasetIndex", () => {
         });
 
         await flushPromises();
-        await wrapper.vm.$nextTick();
-        await flushPromises();
 
         const gTable = wrapper.find("gtable-stub");
         const errorDiv = wrapper.find("div");
