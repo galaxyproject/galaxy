@@ -86,8 +86,6 @@ describe("DatasetIndex", () => {
         });
 
         await flushPromises();
-        await wrapper.vm.$nextTick();
-        await flushPromises();
 
         expect(wrapper.text()).toContain("is not a directory!");
         const gTable = wrapper.find("gtable-stub");
