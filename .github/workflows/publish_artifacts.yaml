@@ -38,7 +38,7 @@ jobs:
       - name: Read Node.js version
         id: node-version
         run: echo "version=$(cat client/.node_version)" >> $GITHUB_OUTPUT
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ steps.node-version.outputs.version }}
           cache: 'yarn'
@@ -46,6 +46,9 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: build client
         run: yarn && yarn build-production
+        working-directory: 'client'
+      # Ensure npm 11.5.1 or later for trusted publishing
+      - run: npm install -g npm@latest
         working-directory: 'client'
       - name: publish client
         if: "!github.event.release.prerelease"
