@@ -62,6 +62,10 @@ class WebElementProtocol(Protocol):
         """Check if the element is enabled (not disabled)."""
         ...
 
+    def is_selected(self) -> bool:
+        """Check if element is selected (for checkboxes, radio buttons, options)."""
+        ...
+
     def submit(self) -> None:
         """Submit a form element."""
         ...
