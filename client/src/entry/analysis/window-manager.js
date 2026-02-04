@@ -33,7 +33,7 @@ export class WindowManager {
         const x = this.counter * margin;
         const y = (this.counter % layout) * margin;
         this.counter++;
-        WinBox.new({
+        const win = WinBox.new({
             index: index,
             title: options.title || "Window",
             url: url,
@@ -43,6 +43,7 @@ export class WindowManager {
                 this.counter--;
             },
         });
+        win.focus();
     }
 
     /** Called before closing all windows. */
