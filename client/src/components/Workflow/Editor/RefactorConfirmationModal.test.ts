@@ -12,6 +12,13 @@ vi.mock("@/api/workflows", () => ({
     refactor: vi.fn(),
 }));
 
+const mockConfirm = vi.fn();
+vi.mock("@/composables/confirmDialog", () => ({
+    useConfirmDialog: () => ({
+        confirm: mockConfirm,
+    }),
+}));
+
 const localVue = getLocalVue();
 const TEST_WORKFLOW_ID = "test123";
 const TEST_ACTION_TYPE = "upgrade_subworkflow";
@@ -21,10 +28,12 @@ describe("RefactorConfirmationModal.vue", () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        mockConfirm.mockReset();
         wrapper = shallowMount(RefactorConfirmationModal as object, {
             propsData: {
                 refactorActions: [],
                 workflowId: TEST_WORKFLOW_ID,
+                versions: [],
             },
             localVue,
         });
@@ -113,5 +122,82 @@ describe("RefactorConfirmationModal.vue", () => {
         expect(vi.mocked(refactor).mock.calls.length).toBe(1);
 
         expect(wrapper.findComponent(GModal).props().show).toBeTruthy();
+    });
+
+    it("should show confirm dialog when refactoring a non-latest version", async () => {
+        mockConfirm.mockResolvedValue(true);
+        vi.mocked(refactor).mockResolvedValue({
+            action_executions: [],
+        } as unknown as RefactorResponse);
+
+        const versions = [
+            { version: 0, update_time: "2024-01-01", steps: 5 },
+            { version: 1, update_time: "2024-01-02", steps: 6 },
+        ];
+
+        await wrapper.setProps({
+            versions,
+            version: 0, // Not the latest (latest is version 1)
+            refactorActions: [{ action_type: TEST_ACTION_TYPE }],
+        });
+        await flushPromises();
+
+        // Confirm dialog should have been called because we're on an older version
+        expect(mockConfirm).toHaveBeenCalledTimes(1);
+        expect(mockConfirm).toHaveBeenCalledWith(
+            expect.stringContaining("not the latest version"),
+            expect.objectContaining({
+                title: "Confirm Refactor on Older Version",
+            }),
+        );
+
+        // After confirming, refactor should proceed
+        expect(vi.mocked(refactor)).toHaveBeenCalled();
+    });
+
+    it("should not call refactor if user cancels the non-latest version confirm dialog", async () => {
+        mockConfirm.mockResolvedValue(false);
+
+        const versions = [
+            { version: 0, update_time: "2024-01-01", steps: 5 },
+            { version: 1, update_time: "2024-01-02", steps: 6 },
+        ];
+
+        await wrapper.setProps({
+            versions,
+            version: 0, // Not the latest
+            refactorActions: [{ action_type: TEST_ACTION_TYPE }],
+        });
+        await flushPromises();
+
+        // Confirm dialog should have been called
+        expect(mockConfirm).toHaveBeenCalledTimes(1);
+
+        // Refactor should NOT have been called because user cancelled
+        expect(vi.mocked(refactor)).not.toHaveBeenCalled();
+    });
+
+    it("should not show confirm dialog when refactoring the latest version", async () => {
+        vi.mocked(refactor).mockResolvedValue({
+            action_executions: [],
+        } as unknown as RefactorResponse);
+
+        const versions = [
+            { version: 0, update_time: "2024-01-01", steps: 5 },
+            { version: 1, update_time: "2024-01-02", steps: 6 },
+        ];
+
+        await wrapper.setProps({
+            versions,
+            version: 1, // This is the latest version
+            refactorActions: [{ action_type: TEST_ACTION_TYPE }],
+        });
+        await flushPromises();
+
+        // Confirm dialog should NOT have been called for latest version
+        expect(mockConfirm).not.toHaveBeenCalled();
+
+        // Refactor should proceed directly
+        expect(vi.mocked(refactor)).toHaveBeenCalled();
     });
 });
