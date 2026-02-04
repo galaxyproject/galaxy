@@ -110,8 +110,6 @@ describe("DatasetIndex", () => {
         });
 
         await flushPromises();
-        await wrapper.vm.$nextTick();
-        await flushPromises();
 
         expect(wrapper.text()).toContain("nonexistent.txt");
         expect(wrapper.text()).toContain("is not found!");
