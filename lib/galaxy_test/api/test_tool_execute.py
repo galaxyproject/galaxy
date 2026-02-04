@@ -7,7 +7,9 @@ keep things like testing other tool APIs in ./test_tools.py (index, search, tool
 files, etc..).
 """
 
+import copy
 from dataclasses import dataclass
+from typing import Any
 
 import pytest
 
@@ -599,6 +601,63 @@ def test_map_over_data_param_with_list_of_lists(target_history: TargetHistory, r
     execute.assert_creates_implicit_collection(0)
 
 
+@requires_tool_id("gx_data")
+def test_job_cache_with_dataset_hash(target_history: TargetHistory, required_tool: RequiredTool):
+    hda = target_history.with_dataset("1\t2\t3", "dataset1")
+    execute = required_tool.execute().with_inputs({"parameter": hda.src_dict})
+    execute._assert_executed_ok()
+    new_hda = target_history.with_dataset("1\t2\t3", "dataset1")
+    execute = required_tool.execute(use_cached_job=True).with_inputs({"parameter": new_hda.src_dict})
+    execution = execute.assert_has_single_job
+    assert execution.final_details["copied_from_job_id"]
+
+
+@requires_tool_id("gx_data")
+def test_job_cache_with_extra_files(target_history: TargetHistory, required_tool: RequiredTool) -> None:
+    # Upload a composite dataset (velvet) which creates extra files
+    velvet_upload_request: dict[str, Any] = {
+        "src": "composite",
+        "ext": "velvet",
+        "composite": {
+            "items": [
+                {"src": "pasted", "paste_content": "sequences content"},
+                {"src": "pasted", "paste_content": "roadmaps content"},
+                {"src": "pasted", "paste_content": "log content"},
+            ]
+        },
+    }
+
+    # Upload first velvet dataset - access the private _dataset_populator
+    velvet1_hda = target_history._dataset_populator.fetch_hda(target_history.id, velvet_upload_request, wait=True)
+    velvet1 = {"src": "hda", "id": velvet1_hda["id"]}
+
+    # Run gx_data tool on the first velvet dataset
+    _ = required_tool.execute().with_inputs({"parameter": velvet1}).assert_has_single_job
+
+    # Upload the same velvet dataset a second time
+    velvet2_hda = target_history._dataset_populator.fetch_hda(target_history.id, velvet_upload_request, wait=True)
+    velvet2 = {"src": "hda", "id": velvet2_hda["id"]}
+
+    # Run gx_data on the second velvet dataset with job cache enabled
+    job = required_tool.execute(use_cached_job=True).with_inputs({"parameter": velvet2}).assert_has_single_job
+
+    # Job cache should be used when all hashes match
+    assert job.final_details["copied_from_job_id"]
+
+    # Upload a third velvet dataset with modified content in one of the extra files
+    velvet_modified_request = copy.deepcopy(velvet_upload_request)
+    velvet_modified_request["composite"]["items"][1]["paste_content"] = "roadmaps content MODIFIED"
+
+    velvet3_hda = target_history._dataset_populator.fetch_hda(target_history.id, velvet_modified_request, wait=True)
+    velvet3 = {"src": "hda", "id": velvet3_hda["id"]}
+
+    # Run gx_data on the third velvet dataset with job cache enabled
+    job3 = required_tool.execute(use_cached_job=True).with_inputs({"parameter": velvet3}).assert_has_single_job
+
+    # Job cache should NOT be used when hashes don't match completely
+    assert not job3.final_details["copied_from_job_id"]
+
+
 @requires_tool_id("gx_repeat_boolean_min")
 def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, required_tool: RequiredTool):
     # we have a tool test for this but I wanted to verify it wasn't just the
@@ -723,14 +782,36 @@ def test_null_to_text_tool_with_validation(required_tool: RequiredTool, tool_inp
     required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""})).assert_fails()
 
 
-@requires_tool_id("cat|cat1")
-def test_deferred_basic(required_tool: RequiredTool, target_history: TargetHistory):
-    has_src_dict = target_history.with_deferred_dataset_for_test_file("1.bed", ext="bed")
+def _run_deferred(
+    required_tool: RequiredTool,
+    target_history: TargetHistory,
+    use_cached_job: bool = False,
+    expect_cached_job: bool = False,
+    include_correct_hash: bool = True,
+) -> None:
+    has_src_dict = target_history.with_deferred_dataset_for_test_file(
+        "1.bed", ext="bed", include_correct_hash=include_correct_hash
+    )
     inputs = {
         "input1": has_src_dict.src_dict,
     }
-    output = required_tool.execute().with_inputs(inputs).assert_has_single_job.with_single_output
+    job = required_tool.execute(use_cached_job=use_cached_job).with_inputs(inputs).assert_has_single_job
+    output = job.with_single_output
     output.assert_contains("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
+    if use_cached_job:
+        assert bool(job.final_details["copied_from_job_id"]) == expect_cached_job
+
+
+@requires_tool_id("cat|cat1")
+def test_deferred_with_cached_input(required_tool: RequiredTool, target_history: TargetHistory) -> None:
+    # Basic deferred dataset
+    _run_deferred(required_tool, target_history)
+    # Should just work because input is deferred
+    _run_deferred(required_tool, target_history, use_cached_job=True, expect_cached_job=True)
+    # Should fail to use the cached job because we don't have a source hash for deduplicating materialized dataset
+    _run_deferred(
+        required_tool, target_history, use_cached_job=True, expect_cached_job=False, include_correct_hash=False
+    )
 
 
 @requires_tool_id("metadata_bam")

@@ -173,6 +173,68 @@ def safe_aliased(model_class: type[T], name: str) -> type[T]:
     return aliased(model_class, name=safe_label_or_none(name))
 
 
+def has_same_hash(
+    stmt: "Select[tuple[int]]", a: type[model.HistoryDatasetAssociation], b: type[model.HistoryDatasetAssociation]
+) -> "Select[tuple[int]]":
+    a_hash = aliased(model.DatasetHash)
+    b_hash = aliased(model.DatasetHash)
+    b_hash_total = aliased(model.DatasetHash)
+
+    # Join b directly, checking for either direct dataset match or hash match
+    # The hash match uses a correlated subquery to avoid the expensive cartesian product
+    stmt = stmt.join(
+        b,
+        or_(
+            # Direct dataset match
+            b.dataset_id == a.dataset_id,
+            # Hash match: b's dataset has hashes that match all of a's hashes
+            # For composite datasets, this means matching the primary file hash AND all extra file hashes
+            # For regular datasets, this means matching the single primary file hash
+            b.dataset_id.in_(
+                select(b_hash.dataset_id)
+                .select_from(a_hash)
+                .join(
+                    b_hash,
+                    and_(
+                        a_hash.hash_function == b_hash.hash_function,
+                        a_hash.hash_value == b_hash.hash_value,
+                        # Match extra_files_path: both NULL or both the same path
+                        or_(
+                            and_(
+                                a_hash.extra_files_path.is_(None),
+                                b_hash.extra_files_path.is_(None),
+                            ),
+                            a_hash.extra_files_path == b_hash.extra_files_path,
+                        ),
+                    ),
+                )
+                .where(a_hash.dataset_id == a.dataset_id)
+                # Group by b's dataset_id and ensure all of a's hashes are matched
+                .group_by(b_hash.dataset_id)
+                .having(
+                    and_(
+                        # Number of matched hashes equals total hashes in A
+                        func.count(b_hash.id)
+                        == select(func.count(model.DatasetHash.id))
+                        .where(model.DatasetHash.dataset_id == a.dataset_id)
+                        .correlate(a)
+                        .scalar_subquery(),
+                        # Total hashes in B equals total hashes in A (ensures no extra hashes in B)
+                        select(func.count(b_hash_total.id))
+                        .where(b_hash_total.dataset_id == b_hash.dataset_id)
+                        .scalar_subquery()
+                        == select(func.count(model.DatasetHash.id))
+                        .where(model.DatasetHash.dataset_id == a.dataset_id)
+                        .correlate(a)
+                        .scalar_subquery(),
+                    )
+                )
+            ),
+        ),
+    )
+    return stmt
+
+
 class JobManager:
     def __init__(self, app: StructuredApp):
         self.app = app
@@ -794,7 +856,8 @@ class JobSearch:
         used_ids.append(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         # b is the HDA used for the job
-        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
+        stmt = stmt.join(b, a.dataset_id == b.id)
+        stmt = has_same_hash(stmt, b, c)
         name_condition = []
         hda_history_join_conditions = [
             e.history_dataset_association_id == b.id,
