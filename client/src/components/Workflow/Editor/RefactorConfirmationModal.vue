@@ -15,10 +15,12 @@ interface Props {
     workflowId: string;
     title?: string;
     message?: string;
+    version?: number;
 }
 const props = withDefaults(defineProps<Props>(), {
     title: "Issues reworking this workflow",
     message: "Please review the following potential issues...",
+    version: undefined,
 });
 
 const emit = defineEmits<{
@@ -51,7 +53,7 @@ watch(show, (newShow) => {
 async function dryRun() {
     emit("onWorkflowMessage", "Pre-checking requested workflow changes (dry run)...", "progress");
     try {
-        const data = await refactor(props.workflowId, props.refactorActions, "editor", true);
+        const data = await refactor(props.workflowId, props.refactorActions, "editor", true, props.version);
         onDryRunResponse(data);
     } catch (response) {
         onError(response as string);
@@ -80,7 +82,7 @@ async function executeRefactoring() {
     show.value = false;
     emit("onWorkflowMessage", "Applying requested workflow changes...", "progress");
     try {
-        const data = await refactor(props.workflowId, props.refactorActions, "editor", false);
+        const data = await refactor(props.workflowId, props.refactorActions, "editor", false, props.version);
         emit("onRefactor", data);
     } catch (response) {
         onError(response as string);

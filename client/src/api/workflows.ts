@@ -110,7 +110,13 @@ export async function getWorkflowInfo(workflowId: string, version?: number, inst
     return data;
 }
 
-export async function refactor(id: string, actions: RefactorRequestAction[], style: string, dryRun = false) {
+export async function refactor(
+    id: string,
+    actions: RefactorRequestAction[],
+    style: string,
+    dryRun = false,
+    version?: number,
+) {
     const { data, error } = await GalaxyApi().PUT("/api/workflows/{workflow_id}/refactor", {
         params: {
             path: { workflow_id: id },
@@ -119,6 +125,7 @@ export async function refactor(id: string, actions: RefactorRequestAction[], sty
             actions: actions,
             style: style,
             dry_run: dryRun,
+            version: version,
         },
     });
     if (error) {

@@ -8430,7 +8430,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
         self.workflows = listify(workflow)
         self.hidden = hidden
 
-    def get_internal_version(self, version):
+    def get_internal_version(self, version: Optional[int] = None):
         if version is None:
             return self.latest_workflow
         if len(self.workflows) <= version:
