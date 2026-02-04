@@ -44,9 +44,6 @@ describe("DatasetIndex", () => {
 
         // Wait for async computedAsync to resolve
         await flushPromises();
-        await new Promise((resolve) => setTimeout(resolve, 10));
-        await wrapper.vm.$nextTick();
-        await flushPromises();
 
         // Table renders (shallowMount converts it to anonymous-stub)
         const gTable = wrapper.find("#g-table-0");
