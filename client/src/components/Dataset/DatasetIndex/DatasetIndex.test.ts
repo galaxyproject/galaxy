@@ -62,8 +62,6 @@ describe("DatasetIndex", () => {
         });
 
         await flushPromises();
-        await wrapper.vm.$nextTick();
-        await flushPromises();
 
         expect(wrapper.text()).toContain("Dataset is not composite!");
         const gTable = wrapper.find("gtable-stub");
