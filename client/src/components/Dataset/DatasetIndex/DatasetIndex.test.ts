@@ -136,9 +136,6 @@ describe("DatasetIndex", () => {
         });
 
         await flushPromises();
-        await new Promise((resolve) => setTimeout(resolve, 10));
-        await wrapper.vm.$nextTick();
-        await flushPromises();
 
         const html = wrapper.html();
         expect(html).toContain("fields");
