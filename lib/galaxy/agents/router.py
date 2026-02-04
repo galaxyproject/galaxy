@@ -237,7 +237,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
                         metadata["handoff_info"] = handoff_data["handoff_info"]
                     return AgentResponse(
                         content=handoff_data["content"],
-                        confidence=handoff_data.get("confidence", ConfidenceLevel.MEDIUM),
+                        confidence=ConfidenceLevel(handoff_data.get("confidence", "medium")),
                         agent_type=handoff_data.get("agent_type", self.agent_type),
                         suggestions=handoff_data.get("suggestions", []),
                         metadata=metadata,

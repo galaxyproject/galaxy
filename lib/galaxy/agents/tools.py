@@ -325,14 +325,9 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 content = self._format_recommendation_response(recommendation)
                 suggestions = self._create_suggestions(recommendation)
 
-                # Convert string confidence to enum
-                conf_str = recommendation.confidence.lower() if recommendation.confidence else "medium"
-                if conf_str == "high":
-                    confidence = ConfidenceLevel.HIGH
-                elif conf_str == "low":
-                    confidence = ConfidenceLevel.LOW
-                else:
-                    confidence = ConfidenceLevel.MEDIUM
+                confidence = ConfidenceLevel(
+                    recommendation.confidence.lower() if recommendation.confidence else "medium"
+                )
 
                 return AgentResponse(
                     content=content,
@@ -436,13 +431,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
             # Only add suggestions if we have a valid tool_id AND the tool exists
             if tool_id and self._verify_tool_exists(tool_id):
-                conf_value = recommendation.confidence.lower()
-                if conf_value == "high":
-                    action_confidence = ConfidenceLevel.HIGH
-                elif conf_value == "low":
-                    action_confidence = ConfidenceLevel.LOW
-                else:
-                    action_confidence = ConfidenceLevel.MEDIUM
+                action_confidence = ConfidenceLevel(recommendation.confidence.lower())
                 suggestions.append(
                     ActionSuggestion(
                         action_type=ActionType.TOOL_RUN,

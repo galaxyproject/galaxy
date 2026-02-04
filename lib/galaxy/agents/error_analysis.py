@@ -241,7 +241,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
 
                 return self._build_response(
                     content=content,
-                    confidence=analysis_result.confidence,
+                    confidence=ConfidenceLevel(analysis_result.confidence),
                     method="structured",
                     result=result,
                     query=query,
@@ -376,15 +376,18 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         if not content_parts:
             content_parts = [normalized_text]  # Fallback to full response
 
+        conf_str = confidence.group(1).lower() if confidence else "medium"
+        confidence_level = ConfidenceLevel(conf_str)
+
         return {
             "content": "\n\n".join(content_parts),
-            "confidence": confidence.group(1).lower() if confidence else "medium",
+            "confidence": confidence_level,
             "error_category": error_type.group(1).strip() if error_type else "unknown",
             "suggestions": [
                 ActionSuggestion(
                     action_type=ActionType.CONTACT_SUPPORT,
                     description="Get additional help if this doesn't resolve the issue",
-                    confidence="medium",
+                    confidence=ConfidenceLevel.MEDIUM,
                     priority=2,
                 )
             ],

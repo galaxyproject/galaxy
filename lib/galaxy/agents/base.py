@@ -310,7 +310,7 @@ class BaseGalaxyAgent(ABC):
         if validation_error:
             return AgentResponse(
                 content=validation_error,
-                confidence="low",
+                confidence=ConfidenceLevel.LOW,
                 agent_type=self.agent_type,
                 suggestions=[],
                 metadata={"validation_error": True},
