@@ -1,8 +1,9 @@
 """
-Copy of https://github.com/tiangolo/fastapi/blob/master/fastapi/openapi/utils.py with changes from https://github.com/tiangolo/fastapi/pull/10903
+Copy of fastapi/openapi/utils.py from https://github.com/fastapi/fastapi/pull/13918
 """
 
 from collections.abc import Sequence
+from inspect import signature
 from typing import (
     Any,
     Optional,
@@ -10,11 +11,17 @@ from typing import (
 )
 
 from fastapi import routing
-from fastapi._compat import (
-    GenerateJsonSchema,
-    get_compat_model_name_map,
-    get_definitions,
-)
+
+try:
+    from fastapi._compat import (  # type: ignore[attr-defined]
+        get_flat_models_from_fields,
+        get_model_name_map,
+    )
+except ImportError:
+    # FastAPI <0.128.4
+    get_flat_models_from_fields = None
+    from fastapi._compat import get_compat_model_name_map
+
 from fastapi.encoders import jsonable_encoder
 from fastapi.openapi.constants import REF_TEMPLATE
 from fastapi.openapi.models import OpenAPI
@@ -22,7 +29,10 @@ from fastapi.openapi.utils import (
     get_fields_from_routes,
     get_openapi_path,
 )
+from pydantic.json_schema import GenerateJsonSchema
 from starlette.routing import BaseRoute
+
+from ._compat import get_definitions
 
 
 def get_openapi(
@@ -40,6 +50,7 @@ def get_openapi(
     contact: Optional[dict[str, Union[str, Any]]] = None,
     license_info: Optional[dict[str, Union[str, Any]]] = None,
     separate_input_output_schemas: bool = True,
+    external_docs: Optional[dict[str, Any]] = None,
     schema_generator: Optional[GenerateJsonSchema] = None,
 ) -> dict[str, Any]:
     info: dict[str, Any] = {"title": title, "version": version}
@@ -61,7 +72,11 @@ def get_openapi(
     webhook_paths: dict[str, dict[str, Any]] = {}
     operation_ids: set[str] = set()
     all_fields = get_fields_from_routes(list(routes or []) + list(webhooks or []))
-    model_name_map = get_compat_model_name_map(all_fields)
+    if get_flat_models_from_fields:
+        flat_models = get_flat_models_from_fields(all_fields, known_models=set())
+        model_name_map = get_model_name_map(flat_models)
+    else:
+        model_name_map = get_compat_model_name_map(all_fields)
     schema_generator = schema_generator or GenerateJsonSchema(ref_template=REF_TEMPLATE)
     field_mapping, definitions = get_definitions(
         fields=all_fields,
@@ -69,15 +84,19 @@ def get_openapi(
         model_name_map=model_name_map,
         separate_input_output_schemas=separate_input_output_schemas,
     )
+    get_openapi_path_args = {}
+    if "schema_generator" in signature(get_openapi_path).parameters:
+        # FastAPI <0.119.0
+        get_openapi_path_args["schema_generator"] = schema_generator
     for route in routes or []:
         if isinstance(route, routing.APIRoute):
             result = get_openapi_path(
                 route=route,
                 operation_ids=operation_ids,
-                schema_generator=schema_generator,
                 model_name_map=model_name_map,
                 field_mapping=field_mapping,
                 separate_input_output_schemas=separate_input_output_schemas,
+                **get_openapi_path_args,
             )
             if result:
                 path, security_schemes, path_definitions = result
@@ -92,10 +111,10 @@ def get_openapi(
             result = get_openapi_path(
                 route=webhook,
                 operation_ids=operation_ids,
-                schema_generator=schema_generator,
                 model_name_map=model_name_map,
                 field_mapping=field_mapping,
                 separate_input_output_schemas=separate_input_output_schemas,
+                **get_openapi_path_args,
             )
             if result:
                 path, security_schemes, path_definitions = result
@@ -114,4 +133,6 @@ def get_openapi(
         output["webhooks"] = webhook_paths
     if tags:
         output["tags"] = tags
+    if external_docs:
+        output["externalDocs"] = external_docs
     return jsonable_encoder(OpenAPI(**output), by_alias=True, exclude_none=True)
