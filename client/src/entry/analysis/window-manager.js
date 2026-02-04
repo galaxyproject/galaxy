@@ -12,6 +12,7 @@ export class WindowManager {
         options = options || {};
         this.counter = 0;
         this.active = false;
+        this.zIndexInitialized = false;
     }
 
     /** Return window masthead tab props */
@@ -28,13 +29,12 @@ export class WindowManager {
     }
 
     /** Add and display a new window based on options. */
-    add(options, layout = 10, margin = 20, index = 850) {
+    add(options, layout = 10, margin = 20) {
         const url = this._build_url(withPrefix(options.url), { hide_panels: true, hide_masthead: true });
         const x = this.counter * margin;
         const y = (this.counter % layout) * margin;
         this.counter++;
-        const win = WinBox.new({
-            index: index,
+        const params = {
             title: options.title || "Window",
             url: url,
             x: x,
@@ -42,8 +42,15 @@ export class WindowManager {
             onclose: () => {
                 this.counter--;
             },
-        });
-        win.focus();
+        };
+        // Set z-index floor on the first window only to position above
+        // Galaxy UI (masthead is z-index 900). Subsequent windows omit
+        // index so WinBox auto-increments correctly.
+        if (!this.zIndexInitialized) {
+            params.index = 850;
+            this.zIndexInitialized = true;
+        }
+        WinBox.new(params);
     }
 
     /** Called before closing all windows. */
