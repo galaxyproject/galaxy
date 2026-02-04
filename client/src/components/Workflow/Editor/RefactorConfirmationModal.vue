@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import {
     refactor,
     type RefactorRequestAction,
     type RefactorResponse,
     type RefactorResponseActionExecution,
+    type WorkflowVersion,
 } from "@/api/workflows";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 
 import GModal from "@/components/BaseComponents/GModal.vue";
 
 interface Props {
     refactorActions: RefactorRequestAction[];
+    versions: WorkflowVersion[];
     workflowId: string;
     title?: string;
     message?: string;
@@ -33,6 +36,16 @@ const emit = defineEmits<{
 const show = ref(props.refactorActions.length > 0);
 const confirmActionExecutions = ref<RefactorResponseActionExecution[]>([]);
 
+const { confirm } = useConfirmDialog();
+
+/** Determines if the current version is not the latest */
+const isNotLatestVersion = computed(
+    () =>
+        (props.version === 0 || props.version) &&
+        props.versions.length > 1 &&
+        props.version !== props.versions[props.versions.length - 1]?.version,
+);
+
 watch(
     () => props.refactorActions,
     (newActions) => {
@@ -51,6 +64,20 @@ watch(show, (newShow) => {
 });
 
 async function dryRun() {
+    if (isNotLatestVersion.value) {
+        const contDryRun = await confirm(
+            `This workflow is not the latest version. A refactor will be attempted on the specified "Version ${props.version! + 1}". Do you wish to continue?`,
+            {
+                title: "Confirm Refactor on Older Version",
+                okTitle: `Yes, refactor "Version ${props.version! + 1}"`,
+                cancelTitle: "No, cancel refactor",
+            },
+        );
+        if (!contDryRun) {
+            return;
+        }
+    }
+
     emit("onWorkflowMessage", "Pre-checking requested workflow changes (dry run)...", "progress");
     try {
         const data = await refactor(props.workflowId, props.refactorActions, "editor", true, props.version);

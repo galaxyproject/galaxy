@@ -39,6 +39,13 @@ export type WorkflowSummary = {
     show_in_tool_panel: boolean;
 };
 
+// TODO: Use schema type once `/api/workflows/{workflow_id}/versions` is typed.
+export interface WorkflowVersion {
+    steps: number;
+    update_time: string;
+    version: number;
+}
+
 export type AnyWorkflow = WorkflowSummary | StoredWorkflowDetailed;
 
 type SortBy = "create_time" | "update_time" | "name";

@@ -3,12 +3,7 @@ import { format, parseISO } from "date-fns";
 import { computed } from "vue";
 import Multiselect from "vue-multiselect";
 
-// TODO: Use schema type once `/api/workflows/{workflow_id}/versions` is typed.
-interface WorkflowVersion {
-    steps: number;
-    update_time: string;
-    version: number;
-}
+import type { WorkflowVersion } from "@/api/workflows";
 
 const props = defineProps<{
     version: number;

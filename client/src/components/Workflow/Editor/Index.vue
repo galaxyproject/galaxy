@@ -8,6 +8,7 @@
         <RefactorConfirmationModal
             :workflow-id="id"
             :version="version"
+            :versions="versions"
             :refactor-actions="refactorActions"
             @onWorkflowError="onWorkflowError"
             @onWorkflowMessage="onWorkflowMessage"
