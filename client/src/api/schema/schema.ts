@@ -7099,7 +7099,7 @@ export interface components {
          * @description Types of actions agents can suggest.
          * @enum {string}
          */
-        ActionType: "tool_run" | "documentation" | "contact_support" | "view_external" | "save_tool" | "refine_query";
+        ActionType: "tool_run" | "save_tool" | "contact_support" | "view_external" | "documentation";
         /** AddInputAction */
         AddInputAction: {
             /**
@@ -7298,8 +7298,6 @@ export interface components {
              * @description Main response content
              */
             content: string;
-            /** @description Handoff information if response was delegated */
-            handoff?: components["schemas"]["HandoffInfo"] | null;
             /**
              * Metadata
              * @description Additional metadata
@@ -14808,27 +14806,6 @@ export interface components {
              * @default 0
              */
             waiting: number;
-        };
-        /**
-         * HandoffInfo
-         * @description Information about agent-to-agent handoffs.
-         */
-        HandoffInfo: {
-            /**
-             * Reason
-             * @description Reason for the handoff
-             */
-            reason?: string | null;
-            /**
-             * Source Agent
-             * @description Agent that initiated the handoff
-             */
-            source_agent: string;
-            /**
-             * Target Agent
-             * @description Agent that received the handoff
-             */
-            target_agent: string;
         };
         /**
          * HashFunctionNameEnum
