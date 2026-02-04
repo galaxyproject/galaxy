@@ -17,7 +17,6 @@ from pydantic_ai import Agent
 from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
-    ActionType,
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
@@ -383,14 +382,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             "content": "\n\n".join(content_parts),
             "confidence": confidence_level,
             "error_category": error_type.group(1).strip() if error_type else "unknown",
-            "suggestions": [
-                ActionSuggestion(
-                    action_type=ActionType.CONTACT_SUPPORT,
-                    description="Get additional help if this doesn't resolve the issue",
-                    confidence=ConfidenceLevel.MEDIUM,
-                    priority=2,
-                )
-            ],
+            "suggestions": [],
         }
 
     def _get_fallback_content(self) -> str:
