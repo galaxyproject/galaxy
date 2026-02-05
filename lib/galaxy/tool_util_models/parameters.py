@@ -615,23 +615,7 @@ class DataCollectionElementInternalJson(DataInternalJson):
     columns: Optional[List[Any]] = None  # for sample_sheet elements
 
 
-class DataCollectionInternalJson(RootModel):
-    root: Dict[str, DataInternalJson]
-
-
-class RecursiveDataCollectionInternalJson(RootModel):
-    root: Dict[str, Union[DataInternalJson, "RecursiveDataCollectionInternalJson"]]
-
-
-RecursiveDataCollectionInternalJson.model_rebuild()
-
-
-class DataCollectionPaired(StrictModel):
-    forward: DataInternalJson
-    reverse: DataInternalJson
-
-
-# New normalized collection runtime models with metadata
+# Collection runtime models with metadata
 class DataCollectionInternalJsonBase(StrictModel):
     """Base model for collection runtime representations with metadata."""
     class_: Annotated[Literal["Collection"], Field(alias="class")]
