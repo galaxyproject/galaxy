@@ -6,6 +6,7 @@ conditions (e.g., corrupted metadata) that can't be created through normal API u
 Unlike pure API tests in test_shed_repositories.py, these tests verify the API
 correctly handles edge cases that require backend manipulation to reproduce.
 """
+
 import copy
 from dataclasses import dataclass
 
@@ -116,23 +117,21 @@ class TestRepositoriesIntegration(ShedApiTestCase):
         before = result["repository_metadata_before"]
         after = result["repository_metadata_after"]
 
-        assert metadata_contains_path(before, fixture.corrupted_path), (
-            f"Expected before snapshot to contain corrupted path '{fixture.corrupted_path}'"
-        )
-        assert not metadata_contains_path(after, fixture.corrupted_path), (
-            "After snapshot should not contain corrupted path"
-        )
-        assert metadata_has_valid_paths(after), (
-            "Expected after snapshot to contain fixed path"
-        )
+        assert metadata_contains_path(
+            before, fixture.corrupted_path
+        ), f"Expected before snapshot to contain corrupted path '{fixture.corrupted_path}'"
+        assert not metadata_contains_path(
+            after, fixture.corrupted_path
+        ), "After snapshot should not contain corrupted path"
+        assert metadata_has_valid_paths(after), "Expected after snapshot to contain fixed path"
 
         # Verify DB still has corrupted data (dry_run shouldn't persist)
         sa_session = test_db_util.sa_session()
         sa_session.expire_all()
         metadata_revision = sa_session.get(model.RepositoryMetadata, fixture.metadata_revision_id)
-        assert metadata_revision.metadata["tools"][0]["tool_config"] == fixture.corrupted_path, (
-            "dry_run should not have modified the database"
-        )
+        assert (
+            metadata_revision.metadata["tools"][0]["tool_config"] == fixture.corrupted_path
+        ), "dry_run should not have modified the database"
 
     @skip_if_api_v1
     def test_reset_metadata_fixes_corrupted_path_when_not_dry_run(self):
@@ -153,15 +152,10 @@ class TestRepositoriesIntegration(ShedApiTestCase):
         # Verify DB now has fixed path
         sa_session = test_db_util.sa_session()
         sa_session.expire_all()
-        stmt = (
-            select(model.RepositoryMetadata)
-            .where(model.RepositoryMetadata.repository_id == fixture.db_repo.id)
-        )
+        stmt = select(model.RepositoryMetadata).where(model.RepositoryMetadata.repository_id == fixture.db_repo.id)
         revisions = sa_session.scalars(stmt).all()
         assert len(revisions) >= 1
 
         # Build metadata dict from DB revisions for reuse of helper
         db_metadata = {str(rev.id): rev.metadata for rev in revisions if rev.metadata}
-        assert metadata_has_valid_paths(db_metadata), (
-            "Expected reset to fix the corrupted tool_config path"
-        )
+        assert metadata_has_valid_paths(db_metadata), "Expected reset to fix the corrupted tool_config path"

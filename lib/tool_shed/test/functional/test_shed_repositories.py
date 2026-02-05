@@ -534,15 +534,11 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         # 2. RepositoryMetadata - bismark (with invalid_tools)
         bismark_repo = populator.setup_bismark_repo()
         assert not isinstance(bismark_repo, str)  # type narrowing for mypy
-        bismark_response = self.api_interactor.get(
-            f"repositories/{bismark_repo.id}/metadata?downloadable_only=false"
-        )
+        bismark_response = self.api_interactor.get(f"repositories/{bismark_repo.id}/metadata?downloadable_only=false")
         api_asserts.assert_status_code_is_ok(bismark_response)
         bismark_metadata = bismark_response.json()
         # Verify it has invalid_tools
-        has_invalid = any(
-            rev.get("invalid_tools") for rev in bismark_metadata.values()
-        )
+        has_invalid = any(rev.get("invalid_tools") for rev in bismark_metadata.values())
         assert has_invalid, "bismark should have invalid_tools"
 
         with open(os.path.join(output_dir, "repository_metadata_bismark.json"), "w") as f:
@@ -601,10 +597,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert unchanged_reset_data["dry_run"] is True
         assert unchanged_reset_data["changeset_details"] is not None
         # Verify we got an "equal" comparison - this is the whole point of this fixture
-        has_equal = any(
-            d.get("comparison_result") == "equal"
-            for d in unchanged_reset_data["changeset_details"]
-        )
+        has_equal = any(d.get("comparison_result") == "equal" for d in unchanged_reset_data["changeset_details"])
         assert has_equal, "column_maker_unchanged should produce 'equal' comparison_result"
 
         with open(os.path.join(output_dir, "reset_metadata_unchanged.json"), "w") as f:
@@ -623,10 +616,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert subset_reset_data["dry_run"] is True
         assert subset_reset_data["changeset_details"] is not None
         # Verify we got a "subset" comparison - this is the whole point of this fixture
-        has_subset = any(
-            d.get("comparison_result") == "subset"
-            for d in subset_reset_data["changeset_details"]
-        )
+        has_subset = any(d.get("comparison_result") == "subset" for d in subset_reset_data["changeset_details"])
         assert has_subset, "column_maker_subset should produce 'subset' comparison_result"
 
         with open(os.path.join(output_dir, "reset_metadata_subset.json"), "w") as f:
@@ -694,8 +684,7 @@ Now with improved help text!
             assert direct_push_reset_data["changeset_details"] is not None
             # Verify we got a "created" record_operation - this is the whole point of this fixture
             has_created = any(
-                d.get("record_operation") == "created"
-                for d in direct_push_reset_data["changeset_details"]
+                d.get("record_operation") == "created" for d in direct_push_reset_data["changeset_details"]
             )
             assert has_created, "direct_push should produce 'created' record_operation"
 

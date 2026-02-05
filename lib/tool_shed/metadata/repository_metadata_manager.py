@@ -919,8 +919,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                                         comparison_result=comparison,
                                         record_operation=record_operation,
                                         has_tools="tools" in (metadata_dict or {}),
-                                        has_repository_dependencies="repository_dependencies"
-                                        in (metadata_dict or {}),
+                                        has_repository_dependencies="repository_dependencies" in (metadata_dict or {}),
                                         has_tool_dependencies="tool_dependencies" in (metadata_dict or {}),
                                     )
                                 )
@@ -937,8 +936,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                                     numeric_revision=numeric_rev,
                                     comparison_result=self.INITIAL,
                                     has_tools="tools" in (self.metadata_dict or {}),
-                                    has_repository_dependencies="repository_dependencies"
-                                    in (self.metadata_dict or {}),
+                                    has_repository_dependencies="repository_dependencies" in (self.metadata_dict or {}),
                                     has_tool_dependencies="tool_dependencies" in (self.metadata_dict or {}),
                                 )
                             )

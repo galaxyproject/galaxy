@@ -305,9 +305,7 @@ class FastAPIRepositories:
         dry_run: bool = DryRunQueryParam,
         verbose: bool = VerboseQueryParam,
     ) -> ResetMetadataOnRepositoryResponse:
-        return reset_metadata_on_repository(
-            trans, encoded_repository_id, dry_run=dry_run, verbose=verbose
-        )
+        return reset_metadata_on_repository(trans, encoded_repository_id, dry_run=dry_run, verbose=verbose)
 
     @router.post(
         "/api/repositories/reset_metadata_on_repositories",

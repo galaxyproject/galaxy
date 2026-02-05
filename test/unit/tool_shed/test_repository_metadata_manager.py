@@ -62,9 +62,7 @@ def test_reset_dm_with_uninstallable_revisions(
     assert len(new_repository.downloadable_revisions) == 2
 
 
-def test_reset_dry_run_does_not_persist(
-    provides_repositories: ProvidesRepositoriesContext, new_repository: Repository
-):
+def test_reset_dry_run_does_not_persist(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):
     """Verify dry_run=True doesn't modify DB."""
     shed_app = provides_repositories.app
     upload_directories_to_repository(provides_repositories, new_repository, "column_maker")
@@ -113,9 +111,7 @@ def test_reset_verbose_returns_changeset_details(
         persist=False,
     )
     repo_path = new_repository.repo_path(app=shed_app)
-    result = rmm.reset_all_metadata_on_repository_in_tool_shed(
-        repository_clone_url=repo_path, verbose=True
-    )
+    result = rmm.reset_all_metadata_on_repository_in_tool_shed(repository_clone_url=repo_path, verbose=True)
 
     assert result.changeset_details is not None
     assert len(result.changeset_details) >= 1
@@ -139,16 +135,12 @@ def test_reset_without_verbose_omits_details(
         persist=False,
     )
     repo_path = new_repository.repo_path(app=shed_app)
-    result = rmm.reset_all_metadata_on_repository_in_tool_shed(
-        repository_clone_url=repo_path, verbose=False
-    )
+    result = rmm.reset_all_metadata_on_repository_in_tool_shed(repository_clone_url=repo_path, verbose=False)
 
     assert result.changeset_details is None
 
 
-def test_reset_dry_run_with_gaps(
-    provides_repositories: ProvidesRepositoriesContext, new_repository: Repository
-):
+def test_reset_dry_run_with_gaps(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):
     """Test dry_run with repo that has uninstallable revisions."""
     shed_app = provides_repositories.app
     upload_directories_to_repository(provides_repositories, new_repository, "column_maker_with_download_gaps")
@@ -194,11 +186,9 @@ def test_reset_metadata_fixes_tool_config_path(
 
     original_tool_config = tools[0]["tool_config"]
     # Verify it's an absolute path based on repo_path
-    assert original_tool_config.startswith(repo_path), (
-        f"Expected tool_config to start with repo_path.\n"
-        f"  tool_config: {original_tool_config}\n"
-        f"  repo_path: {repo_path}"
-    )
+    assert original_tool_config.startswith(
+        repo_path
+    ), f"Expected tool_config to start with repo_path.\n  tool_config: {original_tool_config}\n  repo_path: {repo_path}"
 
     # 2. Corrupt the tool_config path (simulate repo location change)
     corrupted_path = "/old/wrong/path/column_maker.xml"
@@ -339,8 +329,6 @@ def test_reset_metadata_dry_run_shows_visual_diff(
     provides_repositories.sa_session.expire_all()
     metadata_revision = new_repository.metadata_revisions[0]
     db_tool_config = metadata_revision.metadata["tools"][0]["tool_config"]
-    assert db_tool_config == corrupted_path, (
-        f"dry_run should not modify database.\n"
-        f"  Expected: {corrupted_path}\n"
-        f"  Got: {db_tool_config}"
-    )
+    assert (
+        db_tool_config == corrupted_path
+    ), f"dry_run should not modify database.\n  Expected: {corrupted_path}\n  Got: {db_tool_config}"

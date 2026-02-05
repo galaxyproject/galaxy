@@ -478,9 +478,7 @@ def get_repository_revision_metadata_dict(
     def safe_encode_id(id_value):
         return app.security.encode_id(id_value) if id_value is not None else None
 
-    metadata_dict = metadata.to_dict(
-        value_mapper={"id": safe_encode_id, "repository_id": safe_encode_id}
-    )
+    metadata_dict = metadata.to_dict(value_mapper={"id": safe_encode_id, "repository_id": safe_encode_id})
     metadata_dict["repository"] = repository.to_dict(
         value_mapper={"id": app.security.encode_id, "user_id": app.security.encode_id}
     )
@@ -520,9 +518,7 @@ def reset_metadata_on_repository(
 ) -> ResetMetadataOnRepositoryResponse:
     app: ToolShedApp = trans.app
 
-    def handle_repository(
-        trans, start_time, repository, dry_run: bool, verbose: bool, clone_url: Optional[str] = None
-    ):
+    def handle_repository(trans, start_time, repository, dry_run: bool, verbose: bool, clone_url: Optional[str] = None):
         results: dict = dict(start_time=start_time, repository_status=[], dry_run=dry_run)
         regenerated_metadata = {}
         try:
@@ -547,9 +543,7 @@ def reset_metadata_on_repository(
                 results["status"] = "warning"
             else:
                 action_desc = "Would reset" if dry_run else "Successfully reset"
-                message = (
-                    f"{action_desc} metadata on repository {repository.name} owned by {repository.user.username}"
-                )
+                message = f"{action_desc} metadata on repository {repository.name} owned by {repository.user.username}"
                 results["status"] = "ok"
         except Exception as e:
             message = (
@@ -568,10 +562,14 @@ def reset_metadata_on_repository(
         # Capture before state if verbose
         metadata_before = None
         if verbose:
-            as_dict = get_repository_metadata_dict_for_repository(app, repository, recursive=False, downloadable_only=False)
+            as_dict = get_repository_metadata_dict_for_repository(
+                app, repository, recursive=False, downloadable_only=False
+            )
             metadata_before = RepositoryMetadataPreview(root=as_dict)
 
-        results, regenerated_metadata = handle_repository(trans, start_time, repository, dry_run, verbose, repository_clone_url)
+        results, regenerated_metadata = handle_repository(
+            trans, start_time, repository, dry_run, verbose, repository_clone_url
+        )
 
         # Capture after state if verbose - use regenerated metadata for accurate diff
         metadata_after = None
