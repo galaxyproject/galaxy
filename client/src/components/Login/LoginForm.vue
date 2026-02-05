@@ -243,7 +243,7 @@ function returnToLogin() {
                                 <span v-if="!connectExternalProvider">
                                     Don't have an account?
                                     <GLink
-                                        v-if="allowUserCreation || disableLocalAccounts"
+                                        v-if="allowUserCreation && !disableLocalAccounts"
                                         id="register-toggle"
                                         to="/register/start">
                                         Register here.
