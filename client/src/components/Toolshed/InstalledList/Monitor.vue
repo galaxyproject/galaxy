@@ -9,11 +9,13 @@
 
             <GTable :items="items" :fields="fields" hide-header class="m-2">
                 <template v-slot:cell(name)="row">
-                    <b-link @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </b-link>
+                    <GLink @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </GLink>
                 </template>
+
                 <template v-slot:cell(status)="row">
                     <b>Status: </b><span>{{ row.item.status }}</span>
                 </template>
+
                 <template v-slot:cell(actions)="row">
                     <InstallationActions
                         class="float-right"
@@ -34,6 +36,7 @@ import Vue from "vue";
 import { Services } from "../services";
 
 import InstallationActions from "../RepositoryDetails/InstallationActions.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import GCard from "@/components/Common/GCard.vue";
 import GTable from "@/components/Common/GTable.vue";
 
@@ -42,6 +45,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         GCard,
+        GLink,
         GTable,
         InstallationActions,
     },
