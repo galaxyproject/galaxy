@@ -20,28 +20,29 @@
                         </span>
                     </b-link>
                 </div>
+
                 <Monitor v-if="showMonitor" @onQuery="onQuery" />
-                <b-table
+
+                <GTable
                     id="repository-table"
-                    striped
                     :fields="fields"
-                    :sort-by="sortBy"
                     :items="repositories"
                     :filter="filter"
                     @filtered="filtered">
-                    <template v-slot:cell(name)="row">
-                        <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
-                            <div v-if="!isLatest(row.item)">
+                    <template v-slot:cell(name)="{ item, toggleDetails }">
+                        <b-link href="#" role="button" class="font-weight-bold" @click.prevent="toggleDetails">
+                            <div v-if="!isLatest(item)">
                                 <b-badge variant="danger" class="mb-2"> Newer version available! </b-badge>
                             </div>
-                            <div class="name">{{ row.item.name }}</div>
+                            <div class="name">{{ item.name }}</div>
                         </b-link>
-                        <div>{{ row.item.description }}</div>
+                        <div>{{ item.description }}</div>
                     </template>
-                    <template v-slot:row-details="row">
-                        <RepositoryDetails :repo="row.item" />
+                    <template v-slot:row-details="{ item }">
+                        <RepositoryDetails :repo="item" />
                     </template>
-                </b-table>
+                </GTable>
+
                 <div v-if="showNotFound">
                     No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
                     >.
@@ -51,6 +52,7 @@
         </div>
     </div>
 </template>
+
 <script>
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
@@ -61,12 +63,14 @@ import { Services } from "../services";
 
 import RepositoryDetails from "./Details.vue";
 import Monitor from "./Monitor.vue";
+import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GTable,
         LoadingSpan,
         Monitor,
         RepositoryDetails,
@@ -86,7 +90,6 @@ export default {
             nRepositories: 0,
             repositories: [],
             showMonitor: false,
-            sortBy: "name",
         };
     },
     computed: {
@@ -110,13 +113,12 @@ export default {
             const fields = [
                 {
                     key: "name",
+                    label: "Name",
                     sortable: true,
-                    sortByFormatted: (value, key, item) => {
-                        return `${this.isLatest(item)}_${value}`;
-                    },
                 },
                 {
                     key: "owner",
+                    label: "Owner",
                     sortable: true,
                 },
             ];
