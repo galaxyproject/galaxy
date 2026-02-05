@@ -17,6 +17,7 @@ from galaxy.tool_util.parameters import (
     ToolParameterBundleModel,
     validate_internal_job,
     validate_internal_landing_request,
+    validate_job_runtime,
     validate_internal_request,
     validate_internal_request_dereferenced,
     validate_landing_request,
@@ -107,6 +108,8 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
         "landing_request_internal_invalid": _assert_internal_landing_requests_invalid,
         "job_internal_valid": _assert_internal_jobs_validate,
         "job_internal_invalid": _assert_internal_jobs_invalid,
+        "job_runtime_valid": _assert_job_runtimes_validate,
+        "job_runtime_invalid": _assert_job_runtimes_invalid,
         "test_case_xml_valid": _assert_test_cases_validate,
         "test_case_xml_invalid": _assert_test_cases_invalid,
         "test_case_json_valid": _assert_test_case_jsons_validate,
@@ -126,6 +129,7 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
         _assert_internal_requests_validate(parameter_bundle, combos["request_valid"])
     if "request_internal_invalid" not in combos and "request_invalid" in combos:
         _assert_internal_requests_invalid(parameter_bundle, combos["request_invalid"])
+
 
 
 def _for_each(test: Callable, parameters: ToolParameterBundleModel, requests: List[RawStateDict]) -> None:
@@ -169,6 +173,9 @@ _assert_internal_request_dereferenced_validates, _assert_internal_request_derefe
 _assert_internal_job_validates, _assert_internal_job_invalid = model_assertion_function_factory(
     validate_internal_job, "internal job description"
 )
+_assert_job_runtime_validates, _assert_job_runtime_invalid = model_assertion_function_factory(
+    validate_job_runtime, "job runtime"
+)
 _assert_test_case_validates, _assert_test_case_invalid = model_assertion_function_factory(
     validate_test_case, "XML derived test case"
 )
@@ -198,6 +205,8 @@ _assert_internal_requests_dereferenced_validate = partial(_for_each, _assert_int
 _assert_internal_requests_dereferenced_invalid = partial(_for_each, _assert_internal_request_dereferenced_invalid)
 _assert_internal_jobs_validate = partial(_for_each, _assert_internal_job_validates)
 _assert_internal_jobs_invalid = partial(_for_each, _assert_internal_job_invalid)
+_assert_job_runtimes_validate = partial(_for_each, _assert_job_runtime_validates)
+_assert_job_runtimes_invalid = partial(_for_each, _assert_job_runtime_invalid)
 _assert_test_cases_validate = partial(_for_each, _assert_test_case_validates)
 _assert_test_cases_invalid = partial(_for_each, _assert_test_case_invalid)
 _assert_test_case_jsons_validate = partial(_for_each, _assert_test_case_json_validates)

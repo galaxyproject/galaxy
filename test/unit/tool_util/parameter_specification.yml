@@ -1193,6 +1193,14 @@ gx_data:
    # url parameters should be dereferrenced into datasets by this point...
    - parameter: {src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", "ext": "txt"}
    - {}
+  job_runtime_valid:
+   - parameter: {class: File, basename: "f.txt", location: "step_input://0",
+      path: "/tmp/f.txt", nameroot: "f", nameext: ".txt", format: "txt", size: 100}
+  job_runtime_invalid:
+   - parameter: {src: hda, id: 7}
+   - parameter: null
+   - {}
+   - parameter: {class: File}
   test_case_xml_valid:
    - parameter: {class: File, path: foo.bed}
    - parameter: {class: File, location: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"}
@@ -1255,6 +1263,14 @@ gx_data_optional:
    - parameter: null
    - parameter: {src: hda, id: 5}
   job_internal_invalid:
+   - {}
+  job_runtime_valid:
+   - parameter: {class: File, basename: "f.txt", location: "step_input://0",
+      path: "/tmp/f.txt", nameroot: "f", nameext: ".txt", format: "txt", size: 100}
+   - parameter: null
+  job_runtime_invalid:
+   - parameter: {src: hda, id: 7}
+   - parameter: {class: File}
    - {}
   workflow_step_valid:
    - {}
@@ -1333,6 +1349,19 @@ gx_data_multiple:
    - parameter: [{src: hda, id: 5}, {src: hda, id: 6}]
   job_internal_invalid:
    - {}
+  job_runtime_valid:
+   - parameter:
+      - {class: File, basename: "f1.txt", location: "step_input://0",
+         path: "/tmp/f1.txt", nameroot: "f1", nameext: ".txt", format: "txt", size: 100}
+   - parameter:
+      - {class: File, basename: "f1.txt", location: "step_input://0",
+         path: "/tmp/f1.txt", nameroot: "f1", nameext: ".txt", format: "txt", size: 100}
+      - {class: File, basename: "f2.txt", location: "step_input://1",
+         path: "/tmp/f2.txt", nameroot: "f2", nameext: ".txt", format: "txt", size: 200}
+  job_runtime_invalid:
+   - parameter: {src: hda, id: 5}
+   - parameter: null
+   - {}
 
 gx_data_multiple_optional:
   request_valid:
@@ -1377,6 +1406,14 @@ gx_data_multiple_optional:
    - parameter: [{src: hda, id: 5}, {src: hda, id: 6}]
    - parameter: null
   job_internal_invalid:
+   - {}
+  job_runtime_valid:
+   - parameter:
+      - {class: File, basename: "f1.txt", location: "step_input://0",
+         path: "/tmp/f1.txt", nameroot: "f1", nameext: ".txt", format: "txt", size: 100}
+   - parameter: null
+  job_runtime_invalid:
+   - parameter: {src: hda, id: 5}
    - {}
 
 gx_data_collection:
@@ -1498,6 +1535,52 @@ gx_data_collection:
     - parameter: {src: hdca, id: abcdabcd}
     - parameter: null
     - {}
+  job_runtime_valid:
+    - parameter:
+        class: Collection
+        name: test_list
+        collection_type: list
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    - parameter:
+        class: Collection
+        name: test_paired
+        collection_type: paired
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          reverse:
+            class: File
+            element_identifier: reverse
+            basename: "r.txt"
+            location: "step_input://1"
+            path: "/tmp/r.txt"
+            nameroot: "r"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
+    - parameter: null
 
 gx_data_collection_optional:
   request_valid:
@@ -1543,6 +1626,27 @@ gx_data_collection_optional:
     - parameter: null
   job_internal_invalid:
     - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    - parameter:
+        class: Collection
+        name: test_list
+        collection_type: list
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    - parameter: null
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - parameter: {class: Collection}
     - {}
 
 gx_conditional_boolean:
@@ -2122,6 +2226,93 @@ gx_group_tag_multiple:
   - { ref_parameter: { src: hdca, id: 123}, parameter: null }
 
 
+
+gx_data_collection_list:
+  request_valid:
+    - parameter: {src: hdca, id: abcdabcd}
+  request_invalid:
+    - parameter: {src: hdca, id: 7}
+    - parameter: null
+    - {}
+  request_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  request_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - parameter: null
+    - {}
+  job_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  job_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    - parameter:
+        class: Collection
+        name: test_list
+        collection_type: list
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
+
+gx_data_collection_paired:
+  request_valid:
+    - parameter: {src: hdca, id: abcdabcd}
+  request_invalid:
+    - parameter: {src: hdca, id: 7}
+    - parameter: null
+    - {}
+  request_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  request_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - parameter: null
+    - {}
+  job_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  job_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    - parameter:
+        class: Collection
+        name: test_paired
+        collection_type: paired
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          reverse:
+            class: File
+            element_identifier: reverse
+            basename: "r.txt"
+            location: "step_input://1"
+            path: "/tmp/r.txt"
+            nameroot: "r"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
 
 cwl_int:
   request_valid:
