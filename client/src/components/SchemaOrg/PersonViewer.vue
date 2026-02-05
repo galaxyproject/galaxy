@@ -6,7 +6,7 @@
             :placement="hoverPlacement"
             :target="$refs['button'] || 'works-lazily'"
             title="Person">
-            <b-table striped :items="items"> </b-table>
+            <GTable :items="items" :fields="fields" />
         </b-popover>
         <span v-if="name">
             <meta v-if="person.name" itemprop="name" :content="person.name" />
@@ -45,9 +45,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import ThingViewerMixin from "./ThingViewerMixin";
 
+import GTable from "@/components/Common/GTable.vue";
+
 export default {
     components: {
         FontAwesomeIcon,
+        GTable,
     },
     mixins: [ThingViewerMixin],
     props: {
@@ -66,6 +69,10 @@ export default {
             faExternalLinkAlt,
             implicitMicrodataProperties: ["name", "givenName", "email", "familyName", "url", "identifier"],
             thing: this.person,
+            fields: [
+                { key: "attribute", label: "Attribute" },
+                { key: "value", label: "Value" },
+            ],
         };
     },
     computed: {
