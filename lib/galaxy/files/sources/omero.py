@@ -495,7 +495,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         if self._try_download_original_file(image, native_path):
             return
 
-        self._export_pixel_data(image, native_path)
+        self._export_as_tiff(image, native_path)
 
     def _try_download_original_file(self, image, native_path: str) -> bool:
         """Attempt to download the original imported file. Returns True if successful.
@@ -522,13 +522,6 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         with open(native_path, "wb") as f:
             for chunk in orig_file.getFileInChunks():
                 f.write(chunk)
-
-    def _export_pixel_data(self, image, native_path: str):
-        """Export pixel data as TIFF or fallback to thumbnail."""
-        try:
-            self._export_as_tiff(image, native_path)
-        except Exception:
-            self._export_as_thumbnail(image, native_path)
 
     def _export_as_tiff(self, image, native_path: str):
         """Export all Z-planes and channels of the image as a multi-dimensional TIFF.
@@ -557,12 +550,6 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
 
         # Write as TIFF with proper axis metadata
         tifffile.imwrite(native_path, image_array, metadata={"axes": "ZCYX"})
-
-    def _export_as_thumbnail(self, image, native_path: str):
-        """Export the rendered thumbnail as final fallback."""
-        img_data = image.getThumbnail()
-        with open(native_path, "wb") as f:
-            f.write(img_data)
 
     def _write_from(
         self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[OmeroFileSourceConfiguration]
