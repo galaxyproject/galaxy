@@ -9,7 +9,9 @@
 
             <GTable :items="items" :fields="fields" hide-header class="m-2">
                 <template v-slot:cell(name)="row">
-                    <GLink @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </GLink>
+                    <GLink tooltip title="Show all repositories with this name" @click="onQuery(row.item.name)">
+                        {{ row.item.name }} ({{ row.item.owner }})
+                    </GLink>
                 </template>
 
                 <template v-slot:cell(status)="row">
