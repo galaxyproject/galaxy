@@ -1,57 +1,61 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Organization">
         <FontAwesomeIcon ref="button" :icon="faBuilding" />
-        <b-popover
-            triggers="click blur"
-            :placement="hoverPlacement"
-            :target="$refs['button'] || 'works-lazily'"
-            title="Organization">
+
+        <BPopover triggers="click blur" :target="$refs['button'] || 'works-lazily'" title="Organization">
             <GTable :items="items" :fields="fields" />
-        </b-popover>
+        </BPopover>
+
         <span v-if="name">
             <span itemprop="name">{{ name }}</span>
             <span v-if="email">
-                (<span itemprop="email" :content="organization.email">{{ email }}</span
-                >)
+                (
+                <span itemprop="email" :content="organization.email">
+                    {{ email }}
+                </span>
+                )
             </span>
         </span>
         <span v-else-if="email" itemprop="email" :content="organization.email">
             {{ email }}
         </span>
-        <a v-if="url" v-b-tooltip.hover title="Organization URL" :href="url" target="_blank">
+
+        <GLink v-if="url" v-b-tooltip.hover title="Organization URL" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
             <FontAwesomeIcon :icon="faExternalLinkAlt" />
-        </a>
+        </GLink>
+
         <meta
             v-for="attribute in explicitMetaAttributes"
             :key="attribute.attribute"
             :itemprop="attribute.attribute"
             :content="attribute.value" />
-        <slot name="buttons"></slot>
+
+        <slot name="buttons" />
     </span>
 </template>
 
 <script>
 import { faBuilding, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BPopover } from "bootstrap-vue";
 
 import ThingViewerMixin from "./ThingViewerMixin";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
+        BPopover,
         FontAwesomeIcon,
+        GLink,
         GTable,
     },
     mixins: [ThingViewerMixin],
     props: {
         organization: {
             type: Object,
-        },
-        hoverPlacement: {
-            type: String,
-            default: "left",
         },
     },
     data() {
