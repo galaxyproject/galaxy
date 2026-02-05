@@ -15,8 +15,6 @@ from sqlalchemy import (
     select,
 )
 
-from tool_shed_client.schema import ChangesetMetadataStatus
-
 from galaxy import util
 from galaxy.tool_shed.metadata.metadata_generator import (
     BaseMetadataGenerator,
@@ -45,6 +43,7 @@ from tool_shed.webapp.model import (
     User,
 )
 from tool_shed.webapp.model.db import get_repository_by_name_and_owner
+from tool_shed_client.schema import ChangesetMetadataStatus
 
 log = logging.getLogger(__name__)
 

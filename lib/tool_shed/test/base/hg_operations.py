@@ -11,7 +11,6 @@ import subprocess
 from urllib.parse import urlparse
 
 from galaxy.util import unicodify
-
 from tool_shed.util import hg_util
 
 

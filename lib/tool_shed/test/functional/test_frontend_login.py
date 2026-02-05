@@ -5,7 +5,6 @@ from ..base.api import skip_if_api_v1
 from ..base.playwrightbrowser import Locators
 from ..base.playwrighttestcase import PlaywrightTestCase
 
-
 TEST_PASSWORD = "testpass"
 
 

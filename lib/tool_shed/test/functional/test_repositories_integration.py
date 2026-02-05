@@ -14,7 +14,6 @@ from sqlalchemy import select
 from galaxy_test.base import api_asserts
 from tool_shed.test.base import test_db_util
 from tool_shed.webapp import model
-
 from ..base.api import (
     ShedApiTestCase,
     skip_if_api_v1,
