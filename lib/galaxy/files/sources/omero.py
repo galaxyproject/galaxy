@@ -6,7 +6,8 @@ from typing import (
     Union,
 )
 
-from PIL import Image as PILImage
+import numpy as np
+import tifffile
 
 from galaxy.exceptions import (
     AuthenticationFailed,
@@ -530,27 +531,32 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             self._export_as_thumbnail(image, native_path)
 
     def _export_as_tiff(self, image, native_path: str):
-        """Export all Z-planes of the image as a multi-page TIFF.
+        """Export all Z-planes and channels of the image as a multi-dimensional TIFF.
 
-        Exports the first channel (C=0) and first timepoint (T=0) across all Z-planes.
-        This preserves the full Z-stack for 3D analysis while keeping the export manageable.
+        Exports all channels (C) and Z-planes at the first timepoint (T=0).
+        The image is saved with ZCYX axis ordering, which is the standard format
+        expected by Galaxy's image handling tools.
+
+        This method preserves multichannel information that would otherwise be lost
+        when downloading from servers like IDR that restrict original file access.
         """
-
         pixels = image.getPrimaryPixels()
         size_z = image.getSizeZ()
+        size_c = image.getSizeC()
+        size_y = image.getSizeY()
+        size_x = image.getSizeX()
 
-        planes = []
+        # Create array with shape (Z, C, Y, X) to hold all planes
+        image_array = np.zeros((size_z, size_c, size_y, size_x), dtype=pixels.getPlane(0, 0, 0).dtype)
+
+        # Fetch all Z-planes and channels from OMERO
         for z in range(size_z):
-            plane_data = pixels.getPlane(z, 0, 0)
-            planes.append(PILImage.fromarray(plane_data))
+            for c in range(size_c):
+                plane_data = pixels.getPlane(z, c, 0)  # z, channel, timepoint
+                image_array[z, c, :, :] = plane_data
 
-        if planes:
-            planes[0].save(
-                native_path,
-                format="TIFF",
-                save_all=True,
-                append_images=planes[1:] if len(planes) > 1 else [],
-            )
+        # Write as TIFF with proper axis metadata
+        tifffile.imwrite(native_path, image_array, metadata={"axes": "ZCYX"})
 
     def _export_as_thumbnail(self, image, native_path: str):
         """Export the rendered thumbnail as final fallback."""
