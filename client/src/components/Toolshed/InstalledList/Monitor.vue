@@ -5,12 +5,8 @@
         </b-alert>
         <b-card v-if="showItems" no-body class="my-2">
             <h2 class="m-3 h-text">Currently installing...</h2>
-            <b-table
-                class="mx-3 mb-0"
-                sticky-header
-                thead-class="installation-monitor-header"
-                :items="items"
-                :fields="fields">
+
+            <GTable :items="items" :fields="fields" hide-header class="m-2">
                 <template v-slot:cell(name)="row">
                     <b-link @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </b-link>
                 </template>
@@ -23,11 +19,13 @@
                         :status="row.item.status"
                         @onUninstall="uninstallRepository(row.item)" />
                 </template>
-            </b-table>
+            </GTable>
         </b-card>
+
         <b-alert v-if="showEmpty" variant="info" show> Currently there are no installing repositories. </b-alert>
     </div>
 </template>
+
 <script>
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
@@ -35,11 +33,13 @@ import Vue from "vue";
 import { Services } from "../services";
 
 import InstallationActions from "../RepositoryDetails/InstallationActions.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        GTable,
         InstallationActions,
     },
     data() {
@@ -48,7 +48,20 @@ export default {
             loading: true,
             error: null,
             items: [],
-            fields: ["name", "status", "actions"],
+            fields: [
+                {
+                    key: "name",
+                    label: "Name",
+                },
+                {
+                    key: "status",
+                    label: "Status",
+                },
+                {
+                    key: "actions",
+                    label: "Actions",
+                },
+            ],
         };
     },
     computed: {
@@ -103,8 +116,3 @@ export default {
     },
 };
 </script>
-<style>
-.installation-monitor-header {
-    display: none;
-}
-</style>
