@@ -1,8 +1,8 @@
 <template>
     <div>
-        <b-alert v-if="error" variant="danger" show>
+        <BAlert v-if="error" variant="danger" show>
             {{ error }}
-        </b-alert>
+        </BAlert>
 
         <GCard v-if="showItems" class="my-2">
             <h2 class="m-3 h-text">Currently installing...</h2>
@@ -27,13 +27,12 @@
             </GTable>
         </GCard>
 
-        <b-alert v-if="showEmpty" variant="info" show> Currently there are no installing repositories. </b-alert>
+        <BAlert v-if="showEmpty" variant="info" show> Currently there are no installing repositories. </BAlert>
     </div>
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
+import { BAlert } from "bootstrap-vue";
 
 import { Services } from "../services";
 
@@ -42,10 +41,9 @@ import GLink from "@/components/BaseComponents/GLink.vue";
 import GCard from "@/components/Common/GCard.vue";
 import GTable from "@/components/Common/GTable.vue";
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
+        BAlert,
         GCard,
         GLink,
         GTable,
