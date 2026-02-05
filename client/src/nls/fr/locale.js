@@ -266,7 +266,7 @@ export default {
     Save: "Sauvegarde",
     Permissions: "Permissions",
     Datatypes: "Formats de données",
-    Convert: "Converssion",
+    Convert: "Conversion",
     Attributes: "Attributs",
     // ---------------------------------------------------------------------------- dataset-li-edit
     Visualization: "Visualisation",
@@ -285,19 +285,23 @@ export default {
     Tours: "Visite",
     // ---------------------------------------------------------------------------- user-preferences
     "Click here to sign out of all sessions.": "Cliquez ici pour vous déconnecter de toutes les sessions.",
-    "Add or remove custom builds using history datasets.": "Ajouter ou supprimer les génomes de référence en utilisant des jeux de données de l'historique.",
+    "Add or remove custom builds using history datasets.":
+        "Ajouter ou supprimer les génomes de référence en utilisant des jeux de données de l'historique.",
     "Associate OpenIDs with your account.": "Associer des identifiants OpenIDs à votre compte.",
-    "Customize your Toolbox by displaying or omitting sets of Tools.": "Personnalisez votre boîte à outils en affichant ou en omettant des ensembles d'outils.",
+    "Customize your Toolbox by displaying or omitting sets of Tools.":
+        "Personnalisez votre boîte à outils en affichant ou en omettant des ensembles d'outils.",
     "Access your current API key or create a new one.": "Accédez à votre clé d'API ou en créer une nouvelle.",
-    "Enable or disable the communication feature to chat with other users.": "Activez ou désactivez la fonction de communication pour discuter avec d'autres utilisateurs.",
+    "Enable or disable the communication feature to chat with other users.":
+        "Activez ou désactivez la fonction de communication pour discuter avec d'autres utilisateurs.",
     "Allows you to change your login credentials.": "Vous permet de modifier vos identifiants de connexion.",
     "User preferences": "Préférences d'utilisateur",
     "Sign out": "Se déconnecter",
     "Manage custom builds": "Gérer les génomes personnalisés",
     "Manage OpenIDs": "Gérer les identifiants OpenIDs",
     "Manage Toolbox filters": "Gérer les filtres de la boîte à outils",
-    "Manage API Key": "Gérer vôtre clé d'API",
-    "Set dataset permissions for new histories": "Définir les autorisations d'utilisation des jeux de données pour les nouveaux historiques",
+    "Manage API Key": "Gérer votre clé d'API",
+    "Set dataset permissions for new histories":
+        "Définir les autorisations d'utilisation des jeux de données pour les nouveaux historiques",
     "Change communication settings": "Changer les paramètres de communication",
     "Change Password": "Changer le mot de passe",
     "Manage Information": "Gérer l'information",
@@ -330,7 +334,8 @@ export default {
     "Copy and insert individual steps": "Copier et insérer les étapes individuelles",
     Warning: "Attention",
     // ---------------------------------------------------------------------------- workflow-forms
-    "An email notification will be sent when the job has completed.": "Un courriel de notification vous sera envoyé lorsque la tâche sera terminée.",
+    "An email notification will be sent when the job has completed.":
+        "Un courriel de notification vous sera envoyé lorsque la tâche sera terminée.",
     "Add a step label.": "Ajouter une étiquette d'étape.",
     "Assign columns": "Assigner des colonnes",
     // ---------------------------------------------------------------------------- form-repeat
@@ -359,17 +364,17 @@ export default {
     "Choose FTP files": "Choisissez des fichiers FTP",
     "Choose local files": "Choisissez de fichiers locaux",
     // ---------------------------------------------------------------------------- composite-row
-    Select: "Selectionner",
+    Select: "Sélectionner",
     // ---------------------------------------------------------------------------- list-of-pairs-collection-creator
     "Create a collection of paired datasets": "Créer une collection d'ensembles de données appariés",
     // ---------------------------------------------------------------------------- history-panel
     "View all histories": "Voir tous les historiques",
-    "History options": "Options d'hitorique",
+    "History options": "Options d'historique",
     "Refresh history": "Rafraichir l'historique",
     // ---------------------------------------------------------------------------- admin-panel
     "View error logs": "Voir les journaux d'erreur",
     "View lineage": "Voir le lignage",
-    "Manage dependencies": "Gérer les dépendences",
+    "Manage dependencies": "Gérer les dépendances",
     "Manage allowlist": "Gérer la liste verte",
     "Manage metadata": "Gérer les métadonnées",
     "Manage tools": "Gérer les outils",
@@ -404,11 +409,11 @@ export default {
     "Add parameter to tree": "Ajouter le paramètre à l'arbre",
     Remove: "Supprimer",
     // ---------------------------------------------------------------------------- visualization
-    "Select datasets for new tracks": "Selectionner les jeux de données pour une nouvelle piste",
+    "Select datasets for new tracks": "Sélectionner les jeux de données pour une nouvelle piste",
     Libraries: "Bibliothèques",
     // ---------------------------------------------------------------------------- phyloviz
     "Zoom out": "Dézoomer",
-    "Zoom in": "Zommer",
+    "Zoom in": "Zoomer",
     "Phyloviz Help": "Aide Phyloviz",
     "Save visualization": "Sauvegarder la visualisation",
     "PhyloViz Settings": "Paramètres de Phyloviz",
@@ -417,7 +422,7 @@ export default {
     "Filtering Dataset": "Filtrage du jeu de données",
     "Filter Dataset": "Filtrer le jeu de données",
     // ---------------------------------------------------------------------------- tracks
-    "Show individual tracks": "Afficher des pistes inidividuelles",
+    "Show individual tracks": "Afficher des pistes individuelles",
     "Trackster Error": "Erreur Trackster",
     "Tool parameter space visualization": "Visualisation de l'espace des paramètres de l'outil",
     Tool: "Outil",
@@ -449,7 +454,8 @@ export default {
     "Multiple datasets": "Plusieurs jeux de données",
     "Single dataset": "Jeu de données unique",
     // ---------------------------------------------------------------------------- upload-button
-    "Download from URL or upload files from disk": "Télécharger depuis une URL ou téléverser des fichiers depuis le disque",
+    "Download from URL or upload files from disk":
+        "Télécharger depuis une URL ou téléverser des fichiers depuis le disque",
     // ---------------------------------------------------------------------------- workflow_editor_tests
     "tool tooltip": "Info-bulle de l'outil",
     // ----------------------------------------------------------------------------
