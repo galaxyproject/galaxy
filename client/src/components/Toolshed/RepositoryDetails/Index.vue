@@ -243,8 +243,7 @@ function stopWatchingRepository() {
                         </template>
                         <template v-slot:cell(status)="row">
                             <template v-if="row.item.status">
-                                <LoadingSpan v-if="!isFinalState(row.item.status)" />
-                                {{ row.item.status }}
+                                <LoadingSpan v-if="!isFinalState(row.item.status)" :message="row.item.status" />
                             </template>
                             <template v-else> - </template>
                         </template>
