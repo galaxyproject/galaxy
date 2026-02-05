@@ -18,6 +18,7 @@ from galaxy.tool_util_models.parameters import (
     create_job_runtime_model,
     DataCollectionParameterModel,
     DataCollectionRequest,
+    DataCollectionRequestInternal,
     DataColumnParameterModel,
     DataInternalJson,
     DataParameterModel,
@@ -532,12 +533,14 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
 
 
 DatasetToRuntimeJson = Callable[[DataRequestInternalDereferencedT], DataInternalJson]
+CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], Any]
 
 
 def runtimeify(
     internal_state: JobInternalToolState,
     input_models: ToolParameterBundle,
     adapt_dataset: DatasetToRuntimeJson,
+    adapt_collection: Optional[CollectionToRuntimeJson] = None,
 ) -> JobRuntimeToolState:
 
     def adapt_dict(value: dict):
@@ -555,8 +558,13 @@ def runtimeify(
             else:
                 return adapt_dict(value)
         elif isinstance(parameter, DataCollectionParameterModel):
+            if value is None:
+                return VISITOR_NO_REPLACEMENT
+            if adapt_collection is None:
+                raise NotImplementedError("Collection adapter required for DataCollectionParameterModel")
             assert isinstance(value, dict), str(value)
-            raise NotImplementedError("DataCollectionParameterModel runtime adaptation not implemented yet.")
+            collection_request = DataCollectionRequestInternal(**value)
+            return adapt_collection(collection_request, parameter.collection_type)
         else:
             return VISITOR_NO_REPLACEMENT
 

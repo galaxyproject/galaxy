@@ -4,7 +4,7 @@ name: collection_paired_test_y
 version: "0.1.0"
 container: busybox
 shell_command: |
-  cat '$(inputs.f1.forward.path)' '$(inputs.f1.reverse.path)' >> out1.txt
+  cat '$(inputs.f1.elements.forward.path)' '$(inputs.f1.elements.reverse.path)' >> out1.txt
   echo 'Collection name: $(inputs.f1.name)'
 inputs:
   - name: f1
