@@ -6,7 +6,6 @@ from typing import (
     Union,
 )
 
-import numpy as np
 import tifffile
 
 from galaxy.exceptions import (
@@ -524,14 +523,13 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
                 f.write(chunk)
 
     def _export_as_tiff(self, image, native_path: str):
-        """Export all Z-planes and channels of the image as a multi-dimensional TIFF.
+        """Export all Z-planes and channels of the image as a multi-dimensional OME-TIFF.
 
         Exports all channels (C) and Z-planes at the first timepoint (T=0).
-        The image is saved with ZCYX axis ordering, which is the standard format
-        expected by Galaxy's image handling tools.
+        Uses generator-based streaming to minimize memory usage - the full shape
+        is declared upfront but planes are fetched and written one at a time.
 
-        This method preserves multichannel information that would otherwise be lost
-        when downloading from servers like IDR that restrict original file access.
+        Memory usage: O(Y*X) per plane instead of O(Z*C*Y*X) for entire image.
         """
         pixels = image.getPrimaryPixels()
         size_z = image.getSizeZ()
@@ -539,17 +537,27 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         size_y = image.getSizeY()
         size_x = image.getSizeX()
 
-        # Create array with shape (Z, C, Y, X) to hold all planes
-        image_array = np.zeros((size_z, size_c, size_y, size_x), dtype=pixels.getPlane(0, 0, 0).dtype)
+        # Get dtype from first plane sample
+        first_plane = pixels.getPlane(0, 0, 0)
+        dtype = first_plane.dtype
 
-        # Fetch all Z-planes and channels from OMERO
-        for z in range(size_z):
-            for c in range(size_c):
-                plane_data = pixels.getPlane(z, c, 0)  # z, channel, timepoint
-                image_array[z, c, :, :] = plane_data
+        def plane_generator():
+            """Generator yielding 2D planes in ZCYX order (Z outer, C inner)."""
+            for z in range(size_z):
+                for c in range(size_c):
+                    if z == 0 and c == 0:
+                        # First plane already fetched for dtype detection
+                        yield first_plane
+                    else:
+                        yield pixels.getPlane(z, c, 0)
 
-        # Write as TIFF with proper axis metadata
-        tifffile.imwrite(native_path, image_array, metadata={"axes": "ZCYX"})
+        with tifffile.TiffWriter(native_path, bigtiff=True, ome=True) as tif:
+            tif.write(
+                data=plane_generator(),
+                shape=(size_z, size_c, size_y, size_x),
+                dtype=dtype,
+                metadata={"axes": "ZCYX"},
+            )
 
     def _write_from(
         self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[OmeroFileSourceConfiguration]
