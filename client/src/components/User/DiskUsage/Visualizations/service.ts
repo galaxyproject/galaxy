@@ -139,7 +139,6 @@ export async function undeleteDatasetById(datasetId: string): Promise<ItemSizeSu
     return data as unknown as ItemSizeSummary;
 }
 
-export async function purgeDatasetById(datasetId: string): Promise<PurgeableItemSizeSummary> {
-    const data = await purgeDataset(datasetId);
-    return data as unknown as PurgeableItemSizeSummary;
+export async function purgeDatasetById(datasetId: string): Promise<void> {
+    await purgeDataset(datasetId);
 }

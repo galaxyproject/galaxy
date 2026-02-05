@@ -65,9 +65,9 @@ export function useDatasetsToDisplay() {
             return;
         }
         try {
-            const result = await purgeDatasetById(datasetId);
+            await purgeDatasetById(datasetId);
             const dataset = datasetsSizeSummaryMap.get(datasetId);
-            if (dataset && result) {
+            if (dataset) {
                 datasetsSizeSummaryMap.delete(datasetId);
                 successToast(localize("Dataset permanently deleted successfully."));
                 reloadData();

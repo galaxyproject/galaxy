@@ -65,6 +65,7 @@ watch(
         props.valueFormatter,
     ],
     () => {
+        clearStaleSelection();
         // make sure v-if to conditionally display the div we're rendering this in
         // is available in the DOM before actually doing the rendering. Without
         // nextTick you cannot go from empty data -> chart when tweaking filtering
@@ -75,6 +76,16 @@ watch(
         });
     },
 );
+
+function clearStaleSelection() {
+    if (selectedDataPoint.value) {
+        const stillExists = props.data.some((d) => d.id === selectedDataPoint.value?.id);
+        if (!stillExists) {
+            selectedDataPoint.value = undefined;
+            emit("selection-changed", undefined);
+        }
+    }
+}
 
 function renderBarChart() {
     chartBars.value = drawChart();
