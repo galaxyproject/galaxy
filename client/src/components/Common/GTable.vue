@@ -62,6 +62,12 @@ interface Props {
     fields?: TableField[];
 
     /**
+     * Filter string to filter items
+     * @default ""
+     */
+    filter?: string;
+
+    /**
      * Whether to show hover effect on rows
      * @default true
      */
@@ -102,6 +108,12 @@ interface Props {
      * @default false
      */
     overlayLoading?: boolean;
+
+    /**
+     * Whether to use local filtering (client-side) or rely on external filtering (server-side)
+     * @default true
+     */
+    localFiltering?: boolean;
 
     /**
      * Whether to use local sorting (client-side) or rely on external sorting (server-side)
@@ -167,12 +179,14 @@ const props = withDefaults(defineProps<Props>(), {
     containerClass: "",
     emptyState: () => ({ message: "No data available" }),
     fields: () => [],
+    filter: "",
     hover: true,
     items: () => [],
     loading: false,
     loadingMessage: "Loading...",
     loadMoreLoading: false,
     loadMoreMessage: "Loading more...",
+    localFiltering: true,
     localSorting: true,
     overlayLoading: false,
     selectable: false,
@@ -189,6 +203,12 @@ const props = withDefaults(defineProps<Props>(), {
  * Events emitted by the GTable component
  */
 const emit = defineEmits<{
+    /**
+     * Emitted when items are filtered
+     * @event filtered
+     */
+    (e: "filtered", filteredItems: T[]): void;
+
     /**
      * Emitted when sort changes
      * @event sort-changed
@@ -219,11 +239,28 @@ const sortDesc = ref<boolean>(props.sortDesc || true);
 const expandedRows = ref<Set<number>>(new Set());
 
 const localItems = computed(() => {
-    const items = props.items || [];
+    let items = props.items || [];
 
     // If local sorting is disabled, return items as-is
     if (!props.localSorting) {
         return items;
+    }
+
+    // Apply local filtering if enabled and filter string is provided
+    if (props.localFiltering && props.filter && props.filter.trim() !== "") {
+        const filterLower = props.filter.toLowerCase().trim();
+        items = items.filter((item) => {
+            // Search through all field values
+            return Object.values(item).some((value) => {
+                if (value == null) {
+                    return false;
+                }
+                return String(value).toLowerCase().includes(filterLower);
+            });
+        });
+
+        // Emit filtered event with the filtered items
+        emit("filtered", items);
     }
 
     // If no sort field is set, return items as-is
