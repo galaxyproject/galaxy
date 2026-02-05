@@ -1083,8 +1083,19 @@ class UserToolEvaluator(ToolEvaluator):
             from galaxy.tool_util.parameters.convert import runtimeify
             from galaxy.tools.runtime import setup_for_runtimeify
 
-            hda_references, adapt_datasets = setup_for_runtimeify(self.app, compute_environment, input_datasets)
-            job_runtime_state = runtimeify(validated_tool_state, self.tool, adapt_datasets)
+            # Get input collections from job for collection parameter support
+            input_dataset_collections = {
+                assoc.name: assoc.dataset_collection
+                for assoc in self.job.input_dataset_collections
+            }
+            # Also include DCE associations for subcollection mapping
+            for assoc in self.job.input_dataset_collection_elements:
+                input_dataset_collections[assoc.name] = assoc.dataset_collection_element
+
+            hda_references, adapt_datasets, adapt_collections = setup_for_runtimeify(
+                self.app, compute_environment, input_datasets, input_dataset_collections
+            )
+            job_runtime_state = runtimeify(validated_tool_state, self.tool, adapt_datasets, adapt_collections)
             cwl_style_inputs = job_runtime_state.input_state
         else:
             from galaxy.workflow.modules import to_cwl

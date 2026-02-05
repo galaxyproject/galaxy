@@ -375,6 +375,8 @@ DataSrcT = Literal["hda", "ldda"]
 MultiDataSrcT = Literal["hda", "ldda", "hdca"]
 # @jmchilton you meant CollectionSrcT - fix that at some point please.
 CollectionStrT = Literal["hdca"]
+# Internal collection source type - includes dce for subcollection mapping
+CollectionInternalSrcT = Literal["hdca", "dce"]
 
 TestCaseDataSrcT = Literal["File"]
 
@@ -607,6 +609,12 @@ class DataInternalJson(StrictModel):
     size: int
 
 
+class DataCollectionElementInternalJson(DataInternalJson):
+    """A file within a collection element - adds collection-specific metadata."""
+    element_identifier: str
+    columns: Optional[List[Any]] = None  # for sample_sheet elements
+
+
 class DataCollectionInternalJson(RootModel):
     root: Dict[str, DataInternalJson]
 
@@ -621,6 +629,45 @@ RecursiveDataCollectionInternalJson.model_rebuild()
 class DataCollectionPaired(StrictModel):
     forward: DataInternalJson
     reverse: DataInternalJson
+
+
+# New normalized collection runtime models with metadata
+class DataCollectionInternalJsonBase(StrictModel):
+    """Base model for collection runtime representations with metadata."""
+    class_: Annotated[Literal["Collection"], Field(alias="class")]
+    name: Optional[str]  # None for raw DatasetCollection inputs
+    collection_type: str
+    tags: List[str] = []
+    # Special metadata fields (optional, type-dependent)
+    column_definitions: Optional[List[Dict[str, Any]]] = None  # for sample_sheet
+    fields: Optional[List[Dict[str, Any]]] = None  # for record
+    has_single_item: Optional[bool] = None  # for paired_or_unpaired
+    columns: Optional[List[Any]] = None  # for sample_sheet elements
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class DataCollectionPairedElements(StrictModel):
+    forward: DataCollectionElementInternalJson
+    reverse: DataCollectionElementInternalJson
+
+
+class DataCollectionPairedRuntime(DataCollectionInternalJsonBase):
+    """Paired collection runtime representation."""
+    elements: DataCollectionPairedElements
+
+
+class DataCollectionListRuntime(DataCollectionInternalJsonBase):
+    """List collection runtime representation."""
+    elements: List[DataCollectionElementInternalJson]
+
+
+class DataCollectionNestedRuntime(DataCollectionInternalJsonBase):
+    """Nested collection runtime representation (list:paired, etc.)."""
+    elements: Union[List["DataCollectionNestedRuntime"], Dict[str, Union[DataCollectionElementInternalJson, "DataCollectionNestedRuntime"]]]
+
+
+DataCollectionNestedRuntime.model_rebuild()
 
 
 DataRequestInternal: Type = cast(
@@ -782,7 +829,13 @@ DataCollectionRequestOrCollectionUri: Type = union_type([DataCollectionRequest, 
 
 
 class DataCollectionRequestInternal(StrictModel):
-    src: CollectionStrT
+    """Internal request for a collection - tracks source type.
+
+    src can be:
+    - "hdca": Direct collection input (HistoryDatasetCollectionAssociation)
+    - "dce": Subcollection mapping (DatasetCollectionElement)
+    """
+    src: CollectionInternalSrcT
     id: StrictInt
 
 
@@ -884,26 +937,22 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def py_type_internal_json(self) -> Type:
+        # Return normalized collection runtime models with metadata
         if self.collection_type == "list":
-            return optional_if_needed(list_type(DataInternalJson), self.optional)
+            return optional_if_needed(DataCollectionListRuntime, self.optional)
+        elif self.collection_type == "paired":
+            return optional_if_needed(DataCollectionPairedRuntime, self.optional)
         elif self.collection_type:
-            base_type: Optional[Type] = None
-            for subtype in reversed(self.collection_type.split(":")):
-                if subtype == "paired":
-                    base_type = DataCollectionPaired
-                elif subtype == "list":
-                    if base_type is None:
-                        base_type = Dict[str, DataInternalJson]
-                    else:
-                        base_type = Dict[str, base_type]  # type: ignore[valid-type]  # we use this at runtime to build pydantic model
-                else:
-                    raise Exception(f"unknown subtype '{subtype}' in collection_type '{self.collection_type}'")
+            # Nested types like "list:paired"
+            return optional_if_needed(DataCollectionNestedRuntime, self.optional)
         else:
-            base_type = union_type(
-                [list_type(DataInternalJson), DataCollectionPaired, RecursiveDataCollectionInternalJson]
-            )
-        assert base_type
-        return optional_if_needed(base_type, self.optional)
+            # Unknown collection_type - union of all runtime types
+            base_type = union_type([
+                DataCollectionListRuntime,
+                DataCollectionPairedRuntime,
+                DataCollectionNestedRuntime
+            ])
+            return optional_if_needed(base_type, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         if state_representation in ["request", "relaxed_request"]:
