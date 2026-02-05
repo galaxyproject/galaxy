@@ -10,9 +10,7 @@
             <span itemprop="name">{{ name }}</span>
             <span v-if="email">
                 (
-                <span itemprop="email" :content="organization.email">
-                    {{ email }}
-                </span>
+                <span itemprop="email" :content="organization.email">{{ email }}</span>
                 )
             </span>
         </span>
@@ -20,7 +18,7 @@
             {{ email }}
         </span>
 
-        <GLink v-if="url" v-b-tooltip.hover title="Organization URL" :href="url" target="_blank">
+        <GLink v-if="url" v-b-tooltip.hover tooltip title="Organization URL" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
             <FontAwesomeIcon :icon="faExternalLinkAlt" />
         </GLink>
