@@ -4,21 +4,23 @@
         <div v-else>
             <LoadingSpan v-if="loading" message="Loading installed repositories" />
             <div v-else>
-                <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+                <BAlert :variant="messageVariant" :show="showMessage">{{ message }}</BAlert>
+
                 <div class="m-1">
                     <span class="installed-message text-muted">
                         {{ repositories.length }} repositories installed on this instance.
                     </span>
-                    <b-link class="font-weight-bold" @click="toggleMonitor">
+
+                    <GLink class="font-weight-bold" @click="toggleMonitor">
                         <span v-if="showMonitor">
-                            <span class="fa fa-angle-double-up" />
+                            <FontAwesomeIcon :icon="faAngleDoubleUp" />
                             <span>Hide installation progress.</span>
                         </span>
                         <span v-else>
-                            <span class="fa fa-angle-double-down" />
+                            <FontAwesomeIcon :icon="faAngleDoubleDown" />
                             <span>Show installation progress.</span>
                         </span>
-                    </b-link>
+                    </GLink>
                 </div>
 
                 <Monitor v-if="showMonitor" @onQuery="onQuery" />
@@ -30,14 +32,17 @@
                     :filter="filter"
                     @filtered="filtered">
                     <template v-slot:cell(name)="{ item, toggleDetails }">
-                        <b-link href="#" role="button" class="font-weight-bold" @click.prevent="toggleDetails">
+                        <GLink class="font-weight-bold" @click.prevent="toggleDetails">
                             <div v-if="!isLatest(item)">
-                                <b-badge variant="danger" class="mb-2"> Newer version available! </b-badge>
+                                <BBadge variant="danger" class="mb-2"> Newer version available! </BBadge>
                             </div>
+
                             <div class="name">{{ item.name }}</div>
-                        </b-link>
+                        </GLink>
+
                         <div>{{ item.description }}</div>
                     </template>
+
                     <template v-slot:row-details="{ item }">
                         <RepositoryDetails :repo="item" />
                     </template>
@@ -54,8 +59,9 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
+import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BBadge } from "bootstrap-vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -63,13 +69,16 @@ import { Services } from "../services";
 
 import RepositoryDetails from "./Details.vue";
 import Monitor from "./Monitor.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
+        BAlert,
+        BBadge,
+        FontAwesomeIcon,
+        GLink,
         GTable,
         LoadingSpan,
         Monitor,
@@ -83,6 +92,8 @@ export default {
     },
     data() {
         return {
+            faAngleDoubleDown,
+            faAngleDoubleUp,
             error: null,
             loading: true,
             message: null,
