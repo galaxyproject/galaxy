@@ -74,6 +74,12 @@ interface Props {
     hover?: boolean;
 
     /**
+     * Whether to hide the table header
+     * @default false
+     */
+    hideHeader?: boolean;
+
+    /**
      * Table data items
      * @default []
      */
@@ -181,6 +187,7 @@ const props = withDefaults(defineProps<Props>(), {
     fields: () => [],
     filter: "",
     hover: true,
+    hideHeader: false,
     items: () => [],
     loading: false,
     loadingMessage: "Loading...",
@@ -473,7 +480,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 </script>
 
 <template>
-    <div :id="`g-table-container-${props.id}`" class="w-100" :class="containerClass">
+    <div :id="`g-table-container-${props.id}`" :class="containerClass">
         <!-- Table wrapper -->
         <BOverlay :show="overlayLoading" rounded="sm" class="position-relative w-100">
             <div :id="`g-table-wrapper-${props.id}`" class="position-relative w-100">
@@ -486,7 +493,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                         { 'table-bordered': bordered },
                         tableClass,
                     ]">
-                    <thead>
+                    <thead v-if="!props.hideHeader">
                         <tr>
                             <th v-if="selectable" class="g-table-select-column">
                                 <slot name="head-select">
