@@ -85,7 +85,10 @@ export function useFileDrop({
             switch (event.type) {
                 case "dragover":
                     event.preventDefault();
-                    idleTimer = setTimeout(() => (currentState.value = "idle"), idleTime);
+                    idleTimer = setTimeout(() => {
+                        currentState.value = "idle";
+                        isFileOverDropZone.value = false;
+                    }, idleTime);
                     break;
                 case "drop":
                     event.preventDefault();
