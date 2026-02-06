@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ref } from "vue";
 
-import { useFormState } from "./useFormState";
+import { useFormState } from "./useFormState.ts";
 
 function makeConditionalInputs() {
     return [

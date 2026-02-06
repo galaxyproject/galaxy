@@ -14,105 +14,74 @@
         :on-change-form="onChangeForm"
         :workflow-building-mode="workflowBuildingMode"
         :workflow-run="workflowRun"
-        :active-node-id="activeNodeId"
+        :active-node-id="activeNodeId ?? undefined"
         :sync-with-graph="syncWithGraph"
-        :steps-not-matching-request="stepsNotMatchingRequest"
+        :steps-not-matching-request="stepsNotMatchingRequest ?? undefined"
         @stop-flagging="emit('stop-flagging')"
         @update:active-node-id="updateActiveNode" />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { getCurrentInstance, toRef, watch } from "vue";
 
+import type { FormData, FormInputNode, FormMessages } from "./composables/useFormState";
 import { useFormState } from "./composables/useFormState";
 
 import FormInputs from "./FormInputs.vue";
 
-const props = defineProps({
-    id: {
-        type: String,
-        default: null,
-    },
-    inputs: {
-        type: Array,
-        required: true,
-    },
-    errors: {
-        type: Object,
-        default: null,
-    },
-    loading: {
-        type: Boolean,
-        default: false,
-    },
-    prefix: {
-        type: String,
-        default: "",
-    },
-    sustainRepeats: {
-        type: Boolean,
-        default: false,
-    },
-    sustainConditionals: {
-        type: Boolean,
-        default: false,
-    },
-    collapsedEnableText: {
-        type: String,
-        default: "Enable",
-    },
-    collapsedDisableText: {
-        type: String,
-        default: "Disable",
-    },
-    collapsedEnableIcon: {
-        type: Object,
-        default: () => faCaretSquareDown,
-    },
-    collapsedDisableIcon: {
-        type: Object,
-        default: () => faCaretSquareUp,
-    },
-    validationScrollTo: {
-        type: Array,
-        default: null,
-    },
-    replaceParams: {
-        type: Object,
-        default: null,
-    },
-    warnings: {
-        type: Object,
-        default: null,
-    },
-    workflowBuildingMode: {
-        type: Boolean,
-        default: false,
-    },
-    workflowRun: {
-        type: Boolean,
-        default: false,
-    },
-    allowEmptyValueOnRequiredInput: {
-        type: Boolean,
-        default: false,
-    },
-    activeNodeId: {
-        type: Number,
-        default: null,
-    },
-    syncWithGraph: {
-        type: Boolean,
-        default: false,
-    },
-    stepsNotMatchingRequest: {
-        type: Array,
-        default: null,
-    },
+interface Props {
+    id?: string | null;
+    inputs: FormInputNode[];
+    errors?: FormMessages | null;
+    loading?: boolean;
+    prefix?: string;
+    sustainRepeats?: boolean;
+    sustainConditionals?: boolean;
+    collapsedEnableText?: string;
+    collapsedDisableText?: string;
+    collapsedEnableIcon?: IconDefinition;
+    collapsedDisableIcon?: IconDefinition;
+    validationScrollTo?: [string, string] | null;
+    replaceParams?: Record<string, unknown> | null;
+    warnings?: FormMessages | null;
+    workflowBuildingMode?: boolean;
+    workflowRun?: boolean;
+    allowEmptyValueOnRequiredInput?: boolean;
+    activeNodeId?: number | null;
+    syncWithGraph?: boolean;
+    stepsNotMatchingRequest?: number[] | null;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    id: null,
+    errors: null,
+    loading: false,
+    prefix: "",
+    sustainRepeats: false,
+    sustainConditionals: false,
+    collapsedEnableText: "Enable",
+    collapsedDisableText: "Disable",
+    collapsedEnableIcon: () => faCaretSquareDown,
+    collapsedDisableIcon: () => faCaretSquareUp,
+    validationScrollTo: null,
+    replaceParams: null,
+    warnings: null,
+    workflowBuildingMode: false,
+    workflowRun: false,
+    allowEmptyValueOnRequiredInput: false,
+    activeNodeId: null,
+    syncWithGraph: false,
+    stepsNotMatchingRequest: null,
 });
 
-const emit = defineEmits(["onChange", "onValidation", "stop-flagging", "update:active-node-id"]);
+const emit = defineEmits<{
+    (e: "onChange", formData: FormData, refreshOnChange?: boolean): void;
+    (e: "onValidation", validation: [string, string] | null): void;
+    (e: "stop-flagging"): void;
+    (e: "update:active-node-id", id: number): void;
+}>();
 
 const {
     formInputs,
@@ -135,7 +104,7 @@ const {
 // to access $el for scrollToElement. Acceptable given the constraint.
 const instance = getCurrentInstance();
 
-function onChange(refreshOnChange) {
+function onChange(refreshOnChange?: boolean): void {
     rebuildIndex();
     const params = buildFormData();
     if (JSON.stringify(params) != JSON.stringify(formData.value)) {
@@ -145,11 +114,11 @@ function onChange(refreshOnChange) {
     }
 }
 
-function onChangeForm() {
+function onChangeForm(): void {
     onChange(true);
 }
 
-function onHighlight(val, silent = false) {
+function onHighlight(val: [string, string] | null | undefined, silent = false): void {
     if (val && val.length == 2) {
         const inputId = val[0];
         const message = val[1];
@@ -160,20 +129,20 @@ function onHighlight(val, silent = false) {
     }
 }
 
-function scrollToElement(elementId) {
+function scrollToElement(elementId: string | number): void {
     const el = instance?.proxy?.$el?.querySelector(`[id='form-element-${elementId}']`);
     if (el) {
         const centerPanel = document.querySelector("#center");
         if (centerPanel) {
             el.scrollIntoView({ behavior: "smooth", block: "center" });
             if (props.syncWithGraph && props.activeNodeId !== elementId) {
-                updateActiveNode(elementId);
+                updateActiveNode(elementId as number);
             }
         }
     }
 }
 
-function updateActiveNode(activeNodeId) {
+function updateActiveNode(activeNodeId: number): void {
     emit("update:active-node-id", activeNodeId);
 }
 
@@ -194,7 +163,7 @@ applyErrors(props.errors);
 watch(
     () => props.activeNodeId,
     () => {
-        scrollToElement(props.activeNodeId);
+        scrollToElement(props.activeNodeId!);
     }
 );
 
@@ -242,8 +211,10 @@ watch(
 watch(
     () => props.replaceParams,
     () => {
-        const refreshOnChange = doReplaceParams(props.replaceParams);
-        onChange(refreshOnChange);
+        if (props.replaceParams) {
+            const refreshOnChange = doReplaceParams(props.replaceParams);
+            onChange(refreshOnChange);
+        }
     },
     { flush: "sync" }
 );

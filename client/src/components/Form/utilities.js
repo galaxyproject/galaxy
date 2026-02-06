@@ -6,7 +6,7 @@ import { isDefined, isValidNumber } from "@/utils/validation";
  * @param{dict}   inputs    - Nested dictionary of input elements
  * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
  */
-export function visitInputs(inputs, callback, prefix, context) {
+export function visitInputs(inputs, callback, prefix = "", context = undefined) {
     context = Object.assign({}, context);
     _.each(inputs, (input) => {
         if (input && input.type && input.name) {
@@ -51,7 +51,7 @@ export function visitInputs(inputs, callback, prefix, context) {
  * @param{Function} callback  - Called with each input node and its name
  * @param{String}   prefix    - Key prefix for nested param name construction
  */
-export function visitAllInputs(inputs, callback, prefix) {
+export function visitAllInputs(inputs, callback, prefix = "") {
     for (var key in inputs) {
         var node = inputs[key];
         node.name = node.name || key;
