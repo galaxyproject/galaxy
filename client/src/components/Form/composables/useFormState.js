@@ -2,6 +2,9 @@ import { computed, ref, set } from "vue";
 
 import { matchInputs, validateInputs, visitAllInputs, visitInputs } from "../utilities";
 
+// Fields owned by the client (clone), never copied from server response into attributes.
+const CLIENT_OWNED_FIELDS = new Set(["value", "error", "warning"]);
+
 /**
  * Composable for form state management.
  * Handles cloning, indexing, attribute sync, errors, warnings, and validation.
@@ -20,8 +23,11 @@ export function useFormState(options = {}) {
 
     function cloneInputs(inputs) {
         formInputs.value = JSON.parse(JSON.stringify(inputs));
+        // set() required here: error and warning are genuinely new properties
+        // on freshly cloned plain objects that Vue 2.7 hasn't observed yet.
         visitAllInputs(formInputs.value, (input) => {
             set(input, "error", null);
+            set(input, "warning", null);
         });
         rebuildIndex();
     }
@@ -34,24 +40,41 @@ export function useFormState(options = {}) {
         formIndex.value = index;
     }
 
+    /**
+     * Pure computation — builds a flat {paramName: value} dict from the active
+     * params in formIndex. Does NOT mutate formData; the caller is responsible
+     * for assigning formData.value when appropriate.
+     */
     function buildFormData() {
         const params = {};
         Object.entries(formIndex.value).forEach(([key, input]) => {
             params[key] = input.value;
         });
-        formData.value = params;
         return params;
     }
 
+    /**
+     * Patches input.attributes on clone nodes from the server response.
+     * Only copies server-owned fields; value, error, and warning are excluded
+     * to maintain the separation between server state (attributes) and client
+     * state (the clone's own properties).
+     */
     function syncServerAttributes(newInputs) {
         const newAttributes = {};
         visitAllInputs(newInputs, (input, name) => {
             newAttributes[name] = input;
         });
         visitAllInputs(formInputs.value, (input, name) => {
-            const newValue = newAttributes[name];
-            if (newValue != undefined) {
-                set(input, "attributes", newValue);
+            const serverNode = newAttributes[name];
+            if (serverNode != undefined) {
+                const attrs = {};
+                for (const key in serverNode) {
+                    if (!CLIENT_OWNED_FIELDS.has(key)) {
+                        attrs[key] = serverNode[key];
+                    }
+                }
+                // set() required: attributes is a genuinely new property on clone nodes.
+                set(input, "attributes", attrs);
             }
         });
     }
@@ -78,23 +101,33 @@ export function useFormState(options = {}) {
     function setError(inputId, message) {
         const input = formIndex.value[inputId];
         if (input) {
-            set(input, "error", message);
+            // Plain assignment: error property exists from cloneInputs initialization.
+            input.error = message;
         }
     }
 
     function setWarning(inputId, message) {
         const input = formIndex.value[inputId];
         if (input) {
-            set(input, "warning", message);
+            // Plain assignment: warning property exists from cloneInputs initialization.
+            input.warning = message;
         }
     }
 
     function resetErrors() {
         Object.values(formIndex.value).forEach((input) => {
-            set(input, "error", null);
+            // Plain assignment: error property exists from cloneInputs initialization.
+            input.error = null;
         });
     }
 
+    /**
+     * Known debt: replaceParams and client-side default selection (FormSelect,
+     * FormData auto-selecting first option) are indistinguishable from user edits.
+     * Both flow through v-model → onChange → formData. The system has no concept
+     * of "inferred default" vs "user intent". This is existing behavior inherited
+     * from the Options API implementation, not introduced by this refactor.
+     */
     function replaceParams(params) {
         let refreshOnChange = false;
         Object.entries(params).forEach(([key, value]) => {

@@ -52,7 +52,7 @@ describe("useFormState", () => {
         }).not.toThrow();
     });
 
-    it("I2: syncServerAttributes only sets input.attributes", () => {
+    it("I2: syncServerAttributes only copies server-owned fields", () => {
         const { cloneInputs, formInputs, syncServerAttributes } = useFormState();
         cloneInputs(makeConditionalInputs());
 
@@ -60,21 +60,29 @@ describe("useFormState", () => {
         const textInput = formInputs.value[0];
         const valueBefore = textInput.value;
         const errorBefore = textInput.error;
+        const warningBefore = textInput.warning;
 
-        // Create server response with different value
+        // Create server response with different value, options, and error
         const serverInputs = makeConditionalInputs();
         serverInputs[0].value = "server_value";
         serverInputs[0].options = [["opt1", "opt1"]];
+        serverInputs[0].error = "server_error";
+        serverInputs[0].warning = "server_warning";
 
         syncServerAttributes(serverInputs);
 
-        // Only attributes changed
+        // Server-owned fields are in attributes
         expect(textInput.attributes).toBeDefined();
-        expect(textInput.attributes.value).toEqual("server_value");
-        // Original value preserved
+        expect(textInput.attributes.options).toEqual([["opt1", "opt1"]]);
+        expect(textInput.attributes.name).toEqual("text_field");
+        // Client-owned fields excluded from attributes
+        expect(textInput.attributes.value).toBeUndefined();
+        expect(textInput.attributes.error).toBeUndefined();
+        expect(textInput.attributes.warning).toBeUndefined();
+        // Clone's own properties preserved
         expect(textInput.value).toEqual(valueBefore);
-        // Error unchanged
         expect(textInput.error).toEqual(errorBefore);
+        expect(textInput.warning).toEqual(warningBefore);
     });
 
     it("I4: formIndex contains active params only", () => {
@@ -90,9 +98,8 @@ describe("useFormState", () => {
     });
 
     it("I5: errors apply only to active params", () => {
-        const { cloneInputs, buildFormData, applyErrors, formIndex } = useFormState();
+        const { cloneInputs, applyErrors, formIndex } = useFormState();
         cloneInputs(makeConditionalInputs());
-        buildFormData();
 
         applyErrors({
             text_field: "error on text",
@@ -106,19 +113,25 @@ describe("useFormState", () => {
         expect(formIndex.value["cond|in_b"]).toBeUndefined();
     });
 
-    it("I3: formData is updated exclusively by buildFormData", () => {
+    it("I3: buildFormData is a pure computation over formIndex", () => {
         const { cloneInputs, formData, buildFormData } = useFormState();
         cloneInputs(makeConditionalInputs());
 
-        // Before buildFormData, formData is empty
+        // formData starts empty; buildFormData does not mutate it
         expect(formData.value).toEqual({});
 
-        buildFormData();
-        expect(formData.value).toEqual({
+        const result = buildFormData();
+        // buildFormData returns the params but does not assign formData.value
+        expect(formData.value).toEqual({});
+        expect(result).toEqual({
             text_field: "hello",
             "cond|sel": "a",
             "cond|in_a": "va",
         });
+
+        // Caller assigns formData.value explicitly
+        formData.value = result;
+        expect(formData.value).toEqual(result);
     });
 
     it("syncServerAttributes patches all conditional cases", () => {
@@ -143,7 +156,7 @@ describe("useFormState", () => {
     it("conditional switch updates formIndex and formData", () => {
         const { cloneInputs, formInputs, rebuildIndex, buildFormData, formIndex, formData } = useFormState();
         cloneInputs(makeConditionalInputs());
-        buildFormData();
+        formData.value = buildFormData();
 
         expect(formIndex.value["cond|in_a"]).toBeDefined();
         expect(formIndex.value["cond|in_b"]).toBeUndefined();
@@ -152,7 +165,7 @@ describe("useFormState", () => {
         // Switch conditional
         formInputs.value[1].test_param.value = "b";
         rebuildIndex();
-        buildFormData();
+        formData.value = buildFormData();
 
         expect(formIndex.value["cond|in_a"]).toBeUndefined();
         expect(formIndex.value["cond|in_b"]).toBeDefined();
@@ -172,10 +185,10 @@ describe("useFormState", () => {
     });
 
     it("validation computed reacts to formData changes", () => {
-        const { cloneInputs, buildFormData, formInputs, rebuildIndex, validation } = useFormState();
+        const { cloneInputs, buildFormData, formInputs, rebuildIndex, formData, validation } = useFormState();
         const inputs = [{ name: "required_field", type: "text", value: "has_value" }];
         cloneInputs(inputs);
-        buildFormData();
+        formData.value = buildFormData();
 
         // Valid — has value
         expect(validation.value).toBeNull();
@@ -183,7 +196,7 @@ describe("useFormState", () => {
         // Set value to null (required field)
         formInputs.value[0].value = null;
         rebuildIndex();
-        buildFormData();
+        formData.value = buildFormData();
 
         expect(validation.value).toEqual(["required_field", "Please provide a value for this option."]);
     });
@@ -191,12 +204,12 @@ describe("useFormState", () => {
     it("allowEmptyValueOnRequiredInput option is respected", () => {
         // allowEmptyValueOnRequiredInput=true means empty string IS treated as invalid
         const allow = ref(true);
-        const { cloneInputs, buildFormData, formInputs, rebuildIndex, validation } = useFormState({
+        const { cloneInputs, buildFormData, formInputs, rebuildIndex, formData, validation } = useFormState({
             allowEmptyValueOnRequiredInput: allow,
         });
         const inputs = [{ name: "field", type: "text", value: "" }];
         cloneInputs(inputs);
-        buildFormData();
+        formData.value = buildFormData();
 
         // With allow=true, empty string on required field triggers error
         expect(validation.value).toEqual(["field", "Please provide a value for this option."]);
@@ -205,25 +218,49 @@ describe("useFormState", () => {
         allow.value = false;
         formInputs.value[0].value = "";
         rebuildIndex();
-        buildFormData();
+        formData.value = buildFormData();
         expect(validation.value).toBeNull();
 
         // Null always fails regardless of the flag
         formInputs.value[0].value = null;
         rebuildIndex();
-        buildFormData();
+        formData.value = buildFormData();
         expect(validation.value).toEqual(["field", "Please provide a value for this option."]);
     });
 
-    it("R6: cloneInputs sets error=null on all cases including inactive", () => {
+    it("R6: cloneInputs sets error and warning to null on all cases including inactive", () => {
         const { cloneInputs, formInputs } = useFormState();
         const inputs = makeConditionalInputs();
-        // Pre-set errors on inputs
+        // Pre-set errors and warnings on inputs
         inputs[1].cases[1].inputs[0].error = "stale error";
+        inputs[1].cases[1].inputs[0].warning = "stale warning";
         cloneInputs(inputs);
 
-        // Error should be cleared even on inactive case
+        // Both should be cleared even on inactive case
         const caseBInput = formInputs.value[1].cases[1].inputs[0];
         expect(caseBInput.error).toBeNull();
+        expect(caseBInput.warning).toBeNull();
+    });
+
+    /**
+     * Known debt: replaceParams and client-side default selection (FormSelect,
+     * FormData auto-selecting first option when value===null) flow through the
+     * same v-model → onChange path as user edits. The system does not distinguish
+     * "inferred default" from "user intent". This is existing behavior inherited
+     * from the Options API implementation.
+     */
+    it("known debt: replaceParams is indistinguishable from user edits", () => {
+        const { cloneInputs, formIndex, replaceParams, buildFormData, formData } = useFormState();
+        cloneInputs(makeConditionalInputs());
+        formData.value = buildFormData();
+
+        const before = { ...formData.value };
+        replaceParams({ text_field: "programmatic_value" });
+        formData.value = buildFormData();
+
+        // The replaced value appears in formData identically to a user edit.
+        // There is no metadata distinguishing the source of the change.
+        expect(formData.value["text_field"]).toEqual("programmatic_value");
+        expect(before["text_field"]).toEqual("hello");
     });
 });

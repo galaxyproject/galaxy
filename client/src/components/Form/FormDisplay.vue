@@ -131,14 +131,17 @@ const {
     allowEmptyValueOnRequiredInput: toRef(props, "allowEmptyValueOnRequiredInput"),
 });
 
+// getCurrentInstance is fragile but required in Vue 2.7 Composition API
+// to access $el for scrollToElement. Acceptable given the constraint.
 const instance = getCurrentInstance();
 
 function onChange(refreshOnChange) {
     rebuildIndex();
     const params = buildFormData();
     if (JSON.stringify(params) != JSON.stringify(formData.value)) {
+        formData.value = params;
         resetErrors();
-        emit("onChange", formData.value, refreshOnChange);
+        emit("onChange", params, refreshOnChange);
     }
 }
 
@@ -175,13 +178,19 @@ function updateActiveNode(activeNodeId) {
 }
 
 // --- Initialization (replaces created() hook) ---
+// Bootstrap: runs during setup before watchers are active.
+// Emits initial formData so the parent has submittable data immediately.
 cloneInputs(props.inputs);
-buildFormData();
+formData.value = buildFormData();
 emit("onChange", formData.value);
 applyWarnings(props.warnings);
 applyErrors(props.errors);
 
 // --- Watchers ---
+// All watchers use flush: "sync" to match Options API synchronous watcher timing.
+// This ensures attribute sync, error application, and formData emission happen
+// in the same tick as the prop change. Performance note: sync flush bypasses
+// Vue's batching; acceptable here since these watchers do lightweight work.
 watch(
     () => props.activeNodeId,
     () => {
@@ -193,7 +202,7 @@ watch(
     () => props.id,
     () => {
         cloneInputs(props.inputs);
-        buildFormData();
+        formData.value = buildFormData();
         emit("onChange", formData.value);
         applyWarnings(props.warnings);
         applyErrors(props.errors);
