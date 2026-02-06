@@ -1,5 +1,5 @@
-import { ref } from "vue";
 import { describe, expect, it } from "vitest";
+import { ref } from "vue";
 
 import { useFormState } from "./useFormState";
 
@@ -250,7 +250,7 @@ describe("useFormState", () => {
      * from the Options API implementation.
      */
     it("known debt: replaceParams is indistinguishable from user edits", () => {
-        const { cloneInputs, formIndex, replaceParams, buildFormData, formData } = useFormState();
+        const { cloneInputs, replaceParams, buildFormData, formData } = useFormState();
         cloneInputs(makeConditionalInputs());
         formData.value = buildFormData();
 
