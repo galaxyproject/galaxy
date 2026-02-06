@@ -2,7 +2,9 @@
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import type { CardBadge } from "@/components/Common/GCard.types";
 import { useConfig } from "@/composables/config";
+import { useUploadStagingCounts } from "@/composables/upload/useUploadStaging";
 
 import type { UploadMethodConfig } from "./types";
 import { useAllUploadMethods } from "./uploadMethodRegistry";
@@ -30,6 +32,7 @@ const query = ref("");
 const searchInputClass = computed(() => (props.searchTeleportTarget ? "my-2" : props.inPanel ? "my-2" : "mb-3"));
 
 const allUploadMethods = useAllUploadMethods();
+const stagedCountsByMode = useUploadStagingCounts();
 
 const availableMethods = computed(() => {
     if (!isConfigLoaded.value) {
@@ -64,6 +67,22 @@ function selectUploadMethod(method: UploadMethodConfig) {
 function updateQuery(newQuery: string) {
     query.value = newQuery;
 }
+
+function getStagingBadges(method: UploadMethodConfig): CardBadge[] {
+    const count = stagedCountsByMode.value[method.id] ?? 0;
+    if (count === 0) {
+        return [];
+    }
+    return [
+        {
+            id: `staged-${method.id}`,
+            label: String(count),
+            title: `${count} upload item${count === 1 ? "" : "s"} staged and pending submission`,
+            variant: "primary",
+            type: "badge",
+        },
+    ];
+}
 </script>
 
 <template>
@@ -95,6 +114,7 @@ function updateQuery(newQuery: string) {
                         :full-description="true"
                         :description="method.description"
                         :title-icon="{ icon: method.icon, class: 'text-primary', size: 'lg' }"
+                        :badges="getStagingBadges(method)"
                         :data-method-id="method.id"
                         @click="selectUploadMethod(method)" />
                 </template>

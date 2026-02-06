@@ -1,4 +1,5 @@
-import { onMounted, type Ref, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, onMounted, type Ref, watch } from "vue";
 
 import type { UploadMethod } from "@/components/Panels/Upload/types";
 import { type StagedUploadItem, useUploadStagingStore } from "@/stores/uploadStagingStore";
@@ -45,4 +46,16 @@ export function useUploadStaging<T extends StagedUploadItem>(
     return {
         clear,
     };
+}
+
+export function useUploadStagingCounts() {
+    const { itemsByMode } = storeToRefs(useUploadStagingStore());
+
+    return computed<Partial<Record<UploadMethod, number>>>(() => {
+        const counts: Partial<Record<UploadMethod, number>> = {};
+        for (const [mode, items] of Object.entries(itemsByMode.value)) {
+            counts[mode as UploadMethod] = items?.length ?? 0;
+        }
+        return counts;
+    });
 }
