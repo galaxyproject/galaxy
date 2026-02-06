@@ -1,45 +1,52 @@
 <template>
     <div>
-        <b-alert v-if="error" variant="danger" show>
+        <BAlert v-if="error" variant="danger" show>
             {{ error }}
-        </b-alert>
-        <b-card v-if="showItems" no-body class="my-2">
+        </BAlert>
+
+        <GCard v-if="showItems" class="my-2">
             <h2 class="m-3 h-text">Currently installing...</h2>
-            <b-table
-                class="mx-3 mb-0"
-                sticky-header
-                thead-class="installation-monitor-header"
-                :items="items"
-                :fields="fields">
+
+            <GTable :items="items" :fields="fields" hide-header class="m-2">
                 <template v-slot:cell(name)="row">
-                    <b-link @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </b-link>
+                    <GLink tooltip title="Show all repositories with this name" @click="onQuery(row.item.name)">
+                        {{ row.item.name }} ({{ row.item.owner }})
+                    </GLink>
                 </template>
+
                 <template v-slot:cell(status)="row">
                     <b>Status: </b><span>{{ row.item.status }}</span>
                 </template>
+
                 <template v-slot:cell(actions)="row">
                     <InstallationActions
                         class="float-right"
                         :status="row.item.status"
                         @onUninstall="uninstallRepository(row.item)" />
                 </template>
-            </b-table>
-        </b-card>
-        <b-alert v-if="showEmpty" variant="info" show> Currently there are no installing repositories. </b-alert>
+            </GTable>
+        </GCard>
+
+        <BAlert v-if="showEmpty" variant="info" show> Currently there are no installing repositories. </BAlert>
     </div>
 </template>
+
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
+import { BAlert } from "bootstrap-vue";
 
 import { Services } from "../services";
 
 import InstallationActions from "../RepositoryDetails/InstallationActions.vue";
-
-Vue.use(BootstrapVue);
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GCard from "@/components/Common/GCard.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
+        BAlert,
+        GCard,
+        GLink,
+        GTable,
         InstallationActions,
     },
     data() {
@@ -48,7 +55,20 @@ export default {
             loading: true,
             error: null,
             items: [],
-            fields: ["name", "status", "actions"],
+            fields: [
+                {
+                    key: "name",
+                    label: "Name",
+                },
+                {
+                    key: "status",
+                    label: "Status",
+                },
+                {
+                    key: "actions",
+                    label: "Actions",
+                },
+            ],
         };
     },
     computed: {
@@ -103,8 +123,3 @@ export default {
     },
 };
 </script>
-<style>
-.installation-monitor-header {
-    display: none;
-}
-</style>

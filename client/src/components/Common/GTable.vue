@@ -62,10 +62,22 @@ interface Props {
     fields?: TableField[];
 
     /**
+     * Filter string to filter items
+     * @default ""
+     */
+    filter?: string;
+
+    /**
      * Whether to show hover effect on rows
      * @default true
      */
     hover?: boolean;
+
+    /**
+     * Whether to hide the table header
+     * @default false
+     */
+    hideHeader?: boolean;
 
     /**
      * Table data items
@@ -102,6 +114,12 @@ interface Props {
      * @default false
      */
     overlayLoading?: boolean;
+
+    /**
+     * Whether to use local filtering (client-side) or rely on external filtering (server-side)
+     * @default true
+     */
+    localFiltering?: boolean;
 
     /**
      * Whether to use local sorting (client-side) or rely on external sorting (server-side)
@@ -167,12 +185,15 @@ const props = withDefaults(defineProps<Props>(), {
     containerClass: "",
     emptyState: () => ({ message: "No data available" }),
     fields: () => [],
+    filter: "",
     hover: true,
+    hideHeader: false,
     items: () => [],
     loading: false,
     loadingMessage: "Loading...",
     loadMoreLoading: false,
     loadMoreMessage: "Loading more...",
+    localFiltering: true,
     localSorting: true,
     overlayLoading: false,
     selectable: false,
@@ -189,6 +210,12 @@ const props = withDefaults(defineProps<Props>(), {
  * Events emitted by the GTable component
  */
 const emit = defineEmits<{
+    /**
+     * Emitted when items are filtered
+     * @event filtered
+     */
+    (e: "filtered", filteredItems: T[]): void;
+
     /**
      * Emitted when sort changes
      * @event sort-changed
@@ -216,13 +243,31 @@ const emit = defineEmits<{
 
 const sortBy = ref<string>(props.sortBy || "update_time");
 const sortDesc = ref<boolean>(props.sortDesc || true);
+const expandedRows = ref<Set<number>>(new Set());
 
 const localItems = computed(() => {
-    const items = props.items || [];
+    let items = props.items || [];
 
     // If local sorting is disabled, return items as-is
     if (!props.localSorting) {
         return items;
+    }
+
+    // Apply local filtering if enabled and filter string is provided
+    if (props.localFiltering && props.filter && props.filter.trim() !== "") {
+        const filterLower = props.filter.toLowerCase().trim();
+        items = items.filter((item) => {
+            // Search through all field values
+            return Object.values(item).some((value) => {
+                if (value == null) {
+                    return false;
+                }
+                return String(value).toLowerCase().includes(filterLower);
+            });
+        });
+
+        // Emit filtered event with the filtered items
+        emit("filtered", items);
     }
 
     // If no sort field is set, return items as-is
@@ -342,6 +387,26 @@ function onRowSelect(item: T, index: number) {
 }
 
 /**
+ * Check if row details are expanded
+ */
+function isRowExpanded(index: number) {
+    return expandedRows.value.has(index);
+}
+
+/**
+ * Toggle row details expansion
+ */
+function toggleRowDetails(index: number) {
+    if (isRowExpanded(index)) {
+        expandedRows.value.delete(index);
+    } else {
+        expandedRows.value.add(index);
+    }
+    // Trigger reactivity
+    expandedRows.value = new Set(expandedRows.value);
+}
+
+/**
  * Get cell value with optional formatter
  */
 function getCellValue(item: T, field: TableField) {
@@ -415,7 +480,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 </script>
 
 <template>
-    <div :id="`g-table-container-${props.id}`" class="w-100" :class="containerClass">
+    <div :id="`g-table-container-${props.id}`" :class="containerClass">
         <!-- Table wrapper -->
         <BOverlay :show="overlayLoading" rounded="sm" class="position-relative w-100">
             <div :id="`g-table-wrapper-${props.id}`" class="position-relative w-100">
@@ -428,7 +493,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                         { 'table-bordered': bordered },
                         tableClass,
                     ]">
-                    <thead>
+                    <thead v-if="!props.hideHeader">
                         <tr>
                             <th v-if="selectable" class="g-table-select-column">
                                 <slot name="head-select">
@@ -479,87 +544,106 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                     </thead>
 
                     <tbody v-if="localItems.length > 0">
-                        <tr
-                            v-for="(item, index) in localItems"
-                            :id="getRowId(props.id, index)"
-                            :key="index"
-                            :class="{
-                                'g-table-row-clickable': clickableRows,
-                                'g-table-row-selected': isRowSelected(index),
-                            }"
-                            @click="onRowClick(item, index, $event)">
-                            <!-- Selection checkbox column -->
-                            <td v-if="selectable" class="g-table-select-column">
-                                <BFormCheckbox
-                                    :id="`${getRowId(props.id, index)}-select`"
-                                    v-b-tooltip.hover.noninteractive
-                                    :checked="isRowSelected(index)"
-                                    title="Select for bulk actions"
-                                    @click.stop
-                                    @change="onRowSelect(item, index)" />
-                            </td>
+                        <template v-for="(item, index) in localItems">
+                            <template>
+                                <tr
+                                    :id="getRowId(props.id, index)"
+                                    :key="`tr` + index"
+                                    :class="{
+                                        'g-table-row-clickable': clickableRows,
+                                        'g-table-row-selected': isRowSelected(index),
+                                    }"
+                                    @click="onRowClick(item, index, $event)">
+                                    <!-- Selection checkbox column -->
+                                    <td v-if="selectable" class="g-table-select-column">
+                                        <BFormCheckbox
+                                            :id="`${getRowId(props.id, index)}-select`"
+                                            v-b-tooltip.hover.noninteractive
+                                            :checked="isRowSelected(index)"
+                                            title="Select for bulk actions"
+                                            @click.stop
+                                            @change="onRowSelect(item, index)" />
+                                    </td>
 
-                            <!-- Data columns -->
-                            <td
-                                v-for="(field, fieldIndex) in props.fields"
-                                :id="getCellId(props.id, field.key, index)"
-                                :key="field.key"
-                                :class="[
-                                    field.cellClass,
-                                    field.class,
-                                    getAlignmentClass(field.align),
-                                    { 'hide-on-small': field.hideOnSmall },
-                                ]">
-                                <template v-if="fieldIndex === 0 && getStatusIcon(item, index)">
-                                    <FontAwesomeIcon
-                                        v-if="getStatusIcon(item, index)"
-                                        v-b-tooltip.hover.noninteractive
-                                        v-bind="getIconProps(item, index)"
-                                        fixed-width />
-                                </template>
-
-                                <slot :name="`cell(${field.key})`" :value="item[field.key]" :item="item" :index="index">
-                                    <span>{{ getCellValue(item, field) }}</span>
-                                </slot>
-                            </td>
-
-                            <!-- Actions column -->
-                            <td v-if="props.actions" class="g-table-actions-column">
-                                <slot name="actions" :item="item" :index="index">
-                                    <BDropdown
-                                        v-b-tooltip.hover.noninteractive
-                                        no-caret
-                                        right
-                                        title="More actions"
-                                        variant="link"
-                                        size="lg"
-                                        toggle-class="text-decoration-none p-0"
-                                        @click.stop>
-                                        <template v-slot:button-content>
-                                            <FontAwesomeIcon :icon="faEllipsisV" fixed-width />
+                                    <!-- Data columns -->
+                                    <td
+                                        v-for="(field, fieldIndex) in props.fields"
+                                        :id="getCellId(props.id, field.key, index)"
+                                        :key="field.key"
+                                        :class="[
+                                            field.cellClass,
+                                            field.class,
+                                            getAlignmentClass(field.align),
+                                            { 'hide-on-small': field.hideOnSmall },
+                                        ]">
+                                        <template v-if="fieldIndex === 0 && getStatusIcon(item, index)">
+                                            <FontAwesomeIcon
+                                                v-if="getStatusIcon(item, index)"
+                                                v-b-tooltip.hover.noninteractive
+                                                v-bind="getIconProps(item, index)"
+                                                fixed-width />
                                         </template>
 
-                                        <template v-for="ac in props.actions">
-                                            <BDropdownItem
-                                                v-if="ac.visible ?? true"
-                                                :id="ac.id"
-                                                :key="ac.id"
-                                                :disabled="ac.disabled"
-                                                :size="ac.size || 'sm'"
-                                                :variant="ac.variant || 'link'"
-                                                :to="ac.to"
-                                                :title="ac.title"
-                                                :href="ac.href"
-                                                :target="ac.externalLink ? '_blank' : undefined"
-                                                @click.stop="ac.handler && ac.handler(item, index)">
-                                                <FontAwesomeIcon v-if="ac.icon" :icon="ac.icon" fixed-width />
-                                                {{ ac.label }}
-                                            </BDropdownItem>
-                                        </template>
-                                    </BDropdown>
-                                </slot>
-                            </td>
-                        </tr>
+                                        <slot
+                                            :name="`cell(${field.key})`"
+                                            :value="item[field.key]"
+                                            :item="item"
+                                            :index="index"
+                                            :toggle-details="() => toggleRowDetails(index)">
+                                            <span>{{ getCellValue(item, field) }}</span>
+                                        </slot>
+                                    </td>
+
+                                    <!-- Actions column -->
+                                    <td v-if="props.actions" class="g-table-actions-column">
+                                        <slot name="actions" :item="item" :index="index">
+                                            <BDropdown
+                                                v-b-tooltip.hover.noninteractive
+                                                no-caret
+                                                right
+                                                title="More actions"
+                                                variant="link"
+                                                size="lg"
+                                                toggle-class="text-decoration-none p-0"
+                                                @click.stop>
+                                                <template v-slot:button-content>
+                                                    <FontAwesomeIcon :icon="faEllipsisV" fixed-width />
+                                                </template>
+
+                                                <template v-for="ac in props.actions">
+                                                    <BDropdownItem
+                                                        v-if="ac.visible ?? true"
+                                                        :id="ac.id"
+                                                        :key="ac.id"
+                                                        :disabled="ac.disabled"
+                                                        :size="ac.size || 'sm'"
+                                                        :variant="ac.variant || 'link'"
+                                                        :to="ac.to"
+                                                        :title="ac.title"
+                                                        :href="ac.href"
+                                                        :target="ac.externalLink ? '_blank' : undefined"
+                                                        @click.stop="ac.handler && ac.handler(item, index)">
+                                                        <FontAwesomeIcon v-if="ac.icon" :icon="ac.icon" fixed-width />
+                                                        {{ ac.label }}
+                                                    </BDropdownItem>
+                                                </template>
+                                            </BDropdown>
+                                        </slot>
+                                    </td>
+                                </tr>
+                            </template>
+
+                            <!-- Row details expansion -->
+                            <tr v-if="isRowExpanded(index)" :key="`details-${index}`" class="g-table-details-row">
+                                <td :colspan="props.fields.length + (selectable ? 1 : 0) + (props.actions ? 1 : 0)">
+                                    <slot
+                                        name="row-details"
+                                        :item="item"
+                                        :index="index"
+                                        :toggle-details="() => toggleRowDetails(index)" />
+                                </td>
+                            </tr>
+                        </template>
                     </tbody>
                 </table>
 
@@ -615,6 +699,10 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 
             &.g-table-row-selected {
                 background-color: $brand-light;
+            }
+
+            &.g-table-details-row {
+                background-color: lighten($brand-light, 0.3);
             }
         }
 

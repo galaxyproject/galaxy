@@ -34,7 +34,7 @@ describe("RepositoryDetails", () => {
 
         const localVue = getLocalVue();
         const pinia = createPinia();
-        const wrapper = shallowMount(Index, {
+        const wrapper = shallowMount(Index as object, {
             propsData: {
                 repo: {
                     id: "id",
@@ -47,7 +47,7 @@ describe("RepositoryDetails", () => {
             localVue,
             pinia,
         });
-        expect(wrapper.find(".loading-message").text()).toBe("Loading repository details...");
+        expect(wrapper.find("loadingspan-stub").attributes("message")).toBe("Loading repository details");
         await flushPromises();
         expect(wrapper.findAll(".alert").length).toBe(0);
     });

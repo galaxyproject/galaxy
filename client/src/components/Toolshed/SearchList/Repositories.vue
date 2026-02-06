@@ -1,30 +1,27 @@
 <template>
     <div>
-        <b-table id="shed-search-results" striped :items="repositories" :fields="fields">
-            <template v-slot:cell(name)="row">
-                <b-link href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
-                    {{ row.item.name }}
-                </b-link>
-                <div>{{ row.item.description }}</div>
-            </template>
-            <template v-slot:row-details="row">
-                <RepositoryDetails :repo="row.item" :toolshed-url="toolshedUrl" />
-            </template>
-        </b-table>
         <div v-if="noResultsFound" class="unavailable-message">No matching repositories found.</div>
+
         <LoadingSpan v-if="pageLoading" message="Loading repositories" />
+        <GTable v-else id="shed-search-results" :items="repositories" :fields="fields">
+            <template v-slot:cell(name)="{ item, toggleDetails }">
+                <GLink href="#" @click.prevent="toggleDetails">{{ item.name }}</GLink>
+                <div>{{ item.description }}</div>
+            </template>
+            <template v-slot:row-details="{ item }">
+                <RepositoryDetails :repo="item" :toolshed-url="toolshedUrl" />
+            </template>
+        </GTable>
     </div>
 </template>
-<script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 
+<script>
 import { Services } from "../services";
 
-import RepositoryDetails from "../RepositoryDetails/Index.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-Vue.use(BootstrapVue);
+import RepositoryDetails from "@/components/Toolshed/RepositoryDetails/Index.vue";
 
 const READY = 0;
 const LOADING = 1;
@@ -32,6 +29,8 @@ const COMPLETE = 2;
 export default {
     components: {
         LoadingSpan,
+        GLink,
+        GTable,
         RepositoryDetails,
     },
     props: {
@@ -52,10 +51,10 @@ export default {
         return {
             repositories: [],
             fields: [
-                { key: "name" },
-                { key: "owner", label: "Owner" },
-                { key: "times_downloaded", label: "Downloaded" },
-                { key: "last_updated", label: "Updated" },
+                { key: "name", label: "Name", sortable: true },
+                { key: "owner", label: "Owner", sortable: true },
+                { key: "times_downloaded", label: "Downloaded", sortable: true },
+                { key: "last_updated", label: "Updated", sortable: true },
             ],
             page: 1,
             pageSize: 50,

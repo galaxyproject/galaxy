@@ -1,4 +1,6 @@
 <script setup>
+import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 
 import { useResourceWatcher } from "@/composables/resourceWatcher";
@@ -10,6 +12,8 @@ import { Services } from "../services";
 import InstallationActions from "./InstallationActions.vue";
 import InstallationSettings from "./InstallationSettings.vue";
 import RepositoryTools from "./RepositoryTools.vue";
+import GTable from "@/components/Common/GTable.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps({
     repo: {
@@ -31,8 +35,6 @@ const repositoryWatcher = useResourceWatcher(loadInstalledRepositories, {
     enableBackgroundPolling: false,
 });
 
-const repoChecked = "fa fa-check text-success";
-const repoUnchecked = "fa fa-times text-danger";
 const repoFields = [
     { key: "numeric_revision", label: "Revision" },
     { key: "tools", label: "Tools and Versions" },
@@ -219,35 +221,31 @@ function stopWatchingRepository() {
             <b-link :href="repo.repository_url" target="_blank">Show additional details and dependencies.</b-link>
         </div>
         <div>
-            <span v-if="loading">
-                <span class="fa fa-spinner fa-spin" />
-                <span class="loading-message">Loading repository details...</span>
-            </span>
+            <LoadingSpan v-if="loading" message="Loading repository details" />
             <div v-else>
                 <b-alert v-if="error" variant="danger" show>
                     {{ error }}
                 </b-alert>
                 <div v-else class="border rounded">
-                    <b-table borderless :items="repoTable" :fields="repoFields" class="text-center m-0">
-                        <template v-slot:cell(numeric_revision)="data">
-                            <span class="font-weight-bold">{{ data.value }}</span>
+                    <GTable borderless :items="repoTable" :fields="repoFields" class="text-center m-0">
+                        <template v-slot:cell(numeric_revision)="row">
+                            <span class="font-weight-bold">{{ row.value }}</span>
                         </template>
-                        <template v-slot:cell(tools)="data">
-                            <RepositoryTools :tools="data.value" />
+                        <template v-slot:cell(tools)="row">
+                            <RepositoryTools :tools="row.value" />
                         </template>
-                        <template v-slot:cell(profile)="data">
-                            {{ data.value ? `+${data.value}` : "-" }}
+                        <template v-slot:cell(profile)="row">
+                            {{ row.value ? `+${row.value}` : "-" }}
                         </template>
-                        <template v-slot:cell(missing_test_components)="data">
-                            <span v-if="!data.value" :class="repoChecked" />
-                            <span v-else :class="repoUnchecked" />
+                        <template v-slot:cell(missing_test_components)="row">
+                            <FontAwesomeIcon v-if="!row.value" :icon="faCheck" class="text-success" />
+                            <FontAwesomeIcon v-else :icon="faTimes" class="text-danger" />
                         </template>
                         <template v-slot:cell(status)="row">
-                            <span v-if="row.item.status">
-                                <span v-if="!isFinalState(row.item.status)" class="fa fa-spinner fa-spin" />
-                                {{ row.item.status }}
-                            </span>
-                            <span v-else> - </span>
+                            <template v-if="row.item.status">
+                                <LoadingSpan v-if="!isFinalState(row.item.status)" :message="row.item.status" />
+                            </template>
+                            <template v-else> - </template>
                         </template>
                         <template v-slot:cell(actions)="row">
                             <InstallationActions
@@ -257,7 +255,8 @@ function stopWatchingRepository() {
                                 @onUninstall="uninstallRepository(row.item)"
                                 @onReset="resetRepository(row.item)" />
                         </template>
-                    </b-table>
+                    </GTable>
+
                     <InstallationSettings
                         v-if="showSettings && selectedChangeset"
                         :repo="repo"

@@ -4,44 +4,50 @@
         <div v-else>
             <LoadingSpan v-if="loading" message="Loading installed repositories" />
             <div v-else>
-                <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+                <BAlert :variant="messageVariant" :show="showMessage">{{ message }}</BAlert>
+
                 <div class="m-1">
                     <span class="installed-message text-muted">
                         {{ repositories.length }} repositories installed on this instance.
                     </span>
-                    <b-link class="font-weight-bold" @click="toggleMonitor">
+
+                    <GLink class="font-weight-bold" @click="toggleMonitor">
                         <span v-if="showMonitor">
-                            <span class="fa fa-angle-double-up" />
+                            <FontAwesomeIcon :icon="faAngleDoubleUp" />
                             <span>Hide installation progress.</span>
                         </span>
                         <span v-else>
-                            <span class="fa fa-angle-double-down" />
+                            <FontAwesomeIcon :icon="faAngleDoubleDown" />
                             <span>Show installation progress.</span>
                         </span>
-                    </b-link>
+                    </GLink>
                 </div>
+
                 <Monitor v-if="showMonitor" @onQuery="onQuery" />
-                <b-table
+
+                <GTable
                     id="repository-table"
-                    striped
                     :fields="fields"
-                    :sort-by="sortBy"
                     :items="repositories"
                     :filter="filter"
                     @filtered="filtered">
-                    <template v-slot:cell(name)="row">
-                        <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
-                            <div v-if="!isLatest(row.item)">
-                                <b-badge variant="danger" class="mb-2"> Newer version available! </b-badge>
+                    <template v-slot:cell(name)="{ item, toggleDetails }">
+                        <GLink class="font-weight-bold" @click.prevent="toggleDetails">
+                            <div v-if="!isLatest(item)">
+                                <BBadge variant="danger" class="mb-2"> Newer version available! </BBadge>
                             </div>
-                            <div class="name">{{ row.item.name }}</div>
-                        </b-link>
-                        <div>{{ row.item.description }}</div>
+
+                            <div class="name">{{ item.name }}</div>
+                        </GLink>
+
+                        <div>{{ item.description }}</div>
                     </template>
-                    <template v-slot:row-details="row">
-                        <RepositoryDetails :repo="row.item" />
+
+                    <template v-slot:row-details="{ item }">
+                        <RepositoryDetails :repo="item" />
                     </template>
-                </b-table>
+                </GTable>
+
                 <div v-if="showNotFound">
                     No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
                     >.
@@ -51,9 +57,11 @@
         </div>
     </div>
 </template>
+
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
+import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BBadge } from "bootstrap-vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -61,12 +69,17 @@ import { Services } from "../services";
 
 import RepositoryDetails from "./Details.vue";
 import Monitor from "./Monitor.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {
+        BAlert,
+        BBadge,
+        FontAwesomeIcon,
+        GLink,
+        GTable,
         LoadingSpan,
         Monitor,
         RepositoryDetails,
@@ -79,6 +92,8 @@ export default {
     },
     data() {
         return {
+            faAngleDoubleDown,
+            faAngleDoubleUp,
             error: null,
             loading: true,
             message: null,
@@ -86,7 +101,6 @@ export default {
             nRepositories: 0,
             repositories: [],
             showMonitor: false,
-            sortBy: "name",
         };
     },
     computed: {
@@ -110,13 +124,12 @@ export default {
             const fields = [
                 {
                     key: "name",
+                    label: "Name",
                     sortable: true,
-                    sortByFormatted: (value, key, item) => {
-                        return `${this.isLatest(item)}_${value}`;
-                    },
                 },
                 {
                     key: "owner",
+                    label: "Owner",
                     sortable: true,
                 },
             ];
