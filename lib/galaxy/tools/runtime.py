@@ -4,6 +4,7 @@ from typing import (
     Dict,
     Optional,
     TYPE_CHECKING,
+    Union,
 )
 
 from galaxy.model import (
@@ -19,6 +20,11 @@ from galaxy.tool_util_models.parameters import (
     DataInternalJson,
     DataRequestInternalDereferencedT,
     DataRequestInternalHda,
+    DataCollectionListRuntime,
+    DataCollectionNestedRuntime,
+    DataCollectionPairedRuntime,
+    DataCollectionPairedOrUnpairedRuntime,
+    DataCollectionRecordRuntime,
 )
 
 if TYPE_CHECKING:
@@ -27,8 +33,15 @@ if TYPE_CHECKING:
 
 
 # Type aliases for callbacks
+CollectionRuntimeT = Union[
+    DataCollectionListRuntime,
+    DataCollectionPairedRuntime,
+    DataCollectionRecordRuntime,
+    DataCollectionPairedOrUnpairedRuntime,
+    DataCollectionNestedRuntime,
+]
 DatasetToRuntimeJson = Callable[[DataRequestInternalDereferencedT], DataInternalJson]
-CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], Dict[str, Any]]
+CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], CollectionRuntimeT]
 
 # Input dataset collections dict type
 InpDataCollectionsDictT = Dict[str, Any]
@@ -93,7 +106,7 @@ def setup_for_runtimeify(
     def adapt_collection(
         value: DataCollectionRequestInternal,
         collection_type: Optional[str],
-    ) -> Dict[str, Any]:
+    ) -> CollectionRuntimeT:
         """Convert a collection request to runtime representation.
 
         Args:
@@ -124,7 +137,7 @@ def _adapt_from_hdca(
     hdca: HistoryDatasetCollectionAssociation,
     adapt_dataset: DatasetToRuntimeJson,
     compute_environment: Optional["ComputeEnvironment"],
-) -> Dict[str, Any]:
+) -> CollectionRuntimeT:
     """Adapt an HDCA (direct collection input scenario)."""
     return collection_to_runtime(
         hdca.collection,
@@ -139,7 +152,7 @@ def _adapt_from_dce(
     dce: DatasetCollectionElement,
     adapt_dataset: DatasetToRuntimeJson,
     compute_environment: Optional["ComputeEnvironment"],
-) -> Dict[str, Any]:
+) -> CollectionRuntimeT:
     """Adapt a DatasetCollectionElement (subcollection mapping scenario).
 
     Note: Only auto-propagated tags are available in this scenario.
@@ -156,6 +169,40 @@ def _adapt_from_dce(
 
 
 def collection_to_runtime(
+    collection: DatasetCollection,
+    name: Optional[str],
+    tags: list[str],
+    adapt_dataset: DatasetToRuntimeJson,
+    compute_environment: Optional["ComputeEnvironment"],
+    columns: Optional[list] = None,
+) -> CollectionRuntimeT:
+    """Convert DatasetCollection to validated typed runtime model."""
+    raw = _build_collection_runtime_dict(collection, name, tags, adapt_dataset, compute_environment, columns)
+    return _validate_collection_runtime_dict(raw)
+
+
+def _validate_collection_runtime_dict(raw: Dict[str, Any]) -> CollectionRuntimeT:
+    """Parse raw dict into appropriate typed collection runtime model."""
+    ct = raw.get("collection_type", "")
+    if ct == "paired":
+        return DataCollectionPairedRuntime.model_validate(raw)
+    elif ct == "record":
+        return DataCollectionRecordRuntime.model_validate(raw)
+    elif ct == "paired_or_unpaired":
+        return DataCollectionPairedOrUnpairedRuntime.model_validate(raw)
+    elif not ct or ":" in ct:
+        # Nested types (list:paired, etc.) or unknown
+        return DataCollectionNestedRuntime.model_validate(raw)
+    else:
+        # Simple list-like types (list, sample_sheet, record, paired_or_unpaired, etc.)
+        # For list/sample_sheet: elements is List[DataCollectionElementInternalJson]
+        if is_list_like(ct):
+            return DataCollectionListRuntime.model_validate(raw)
+        else:
+            return DataCollectionNestedRuntime.model_validate(raw)
+
+
+def _build_collection_runtime_dict(
     collection: DatasetCollection,
     name: Optional[str],
     tags: list[str],
@@ -217,7 +264,7 @@ def _element_to_runtime(
 ) -> Dict[str, Any]:
     """Convert a single collection element to runtime representation."""
     if element.is_collection:
-        return collection_to_runtime(
+        return _build_collection_runtime_dict(
             element.child_collection,
             name=element.element_identifier,
             tags=list(element.auto_propagated_tags) if element.auto_propagated_tags else [],

@@ -564,7 +564,8 @@ def runtimeify(
                 raise NotImplementedError("Collection adapter required for DataCollectionParameterModel")
             assert isinstance(value, dict), str(value)
             collection_request = DataCollectionRequestInternal(**value)
-            return adapt_collection(collection_request, parameter.collection_type)
+            result = adapt_collection(collection_request, parameter.collection_type)
+            return result.model_dump(by_alias=True)
         else:
             return VISITOR_NO_REPLACEMENT
 

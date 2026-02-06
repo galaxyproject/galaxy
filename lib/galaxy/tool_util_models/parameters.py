@@ -646,9 +646,40 @@ class DataCollectionListRuntime(DataCollectionInternalJsonBase):
     elements: List[DataCollectionElementInternalJson]
 
 
+class DataCollectionRecordRuntime(DataCollectionInternalJsonBase):
+    """Record collection runtime representation."""
+    elements: Dict[str, Union[DataCollectionElementInternalJson, "DataCollectionNestedRuntime"]]
+
+
+class DataCollectionRecordRuntime(DataCollectionInternalJsonBase):
+    """Record collection runtime representation."""
+    elements: Dict[str, Union[DataCollectionElementInternalJson, "DataCollectionNestedRuntime"]]
+
+
+class DataCollectionPairedOrUnpairedRuntime(DataCollectionInternalJsonBase):
+    """Paired or Unpaired collection runtime representation."""
+    elements: Dict[str, DataCollectionElementInternalJson]
+
+
 class DataCollectionNestedRuntime(DataCollectionInternalJsonBase):
     """Nested collection runtime representation (list:paired, etc.)."""
-    elements: Union[List["DataCollectionNestedRuntime"], Dict[str, Union[DataCollectionElementInternalJson, "DataCollectionNestedRuntime"]]]
+    elements: Union[
+        List[Union[
+            "DataCollectionListRuntime",
+            "DataCollectionPairedRuntime",
+            "DataCollectionRecordRuntime",
+            "DataCollectionPairedOrUnpairedRuntime",
+            "DataCollectionNestedRuntime",
+        ]],
+        Dict[str, Union[
+            DataCollectionElementInternalJson,
+            "DataCollectionListRuntime",
+            "DataCollectionPairedRuntime",
+            "DataCollectionRecordRuntime",
+            "DataCollectionPairedOrUnpairedRuntime",
+            "DataCollectionNestedRuntime",
+        ]]
+    ]
 
 
 DataCollectionNestedRuntime.model_rebuild()
