@@ -5,6 +5,7 @@ from datetime import (
 )
 from typing import (
     Optional,
+    Union,
 )
 
 from pydantic import BaseModel
@@ -121,11 +122,11 @@ class StoreExportTracker:
             if export.export_metadata:
                 # Access dict directly - JSONType handles deserialization
                 # however old records might be JSON strings.
-                export_metadata = (
-                    json.loads(export.export_metadata)
-                    if isinstance(export.export_metadata, str)  # type: ignore[unreachable]
-                    else export.export_metadata
-                )
+                metadata_value: Union[str, dict] = export.export_metadata
+                if isinstance(metadata_value, str):
+                    export_metadata = json.loads(metadata_value)
+                else:
+                    export_metadata = metadata_value
                 stored_user_id = export_metadata.get("request_data", {}).get("user_id")
                 if stored_user_id == encoded_user_id:
                     user_exports.append(export)
