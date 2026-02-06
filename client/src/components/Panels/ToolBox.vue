@@ -10,6 +10,7 @@ import { useToolRouting } from "@/composables/route";
 import { useFavoriteSearchResults, useToolPanelFavorites } from "@/composables/toolPanelFavorites";
 import type { Tool, ToolSection as ToolSectionType, ToolSectionLabel } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import { PANEL_LABEL_IDS } from "./panelViews";
@@ -29,7 +30,9 @@ import GButton from "../BaseComponents/GButton.vue";
 import ToolSearch from "./Common/ToolSearch.vue";
 import ToolSection from "./Common/ToolSection.vue";
 
+const LOGIN_ROUTE = "/login/start";
 const SECTION_IDS_TO_EXCLUDE = ["expression_tools"]; // if this isn't the Workflow Editor panel
+const TOOLS_LIST_ROUTE = "/tools/list";
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
 const { routeToTool } = useToolRouting();
@@ -52,6 +55,8 @@ const props = withDefaults(defineProps<Props>(), {
     showFavorites: false,
     favoritesDefault: false,
 });
+
+const { isAnonymous } = storeToRefs(useUserStore());
 
 const query = ref("");
 const queryPending = ref(false);
@@ -143,7 +148,6 @@ const {
 // Use composable for search results filtering
 const { favoriteResults, nonFavoriteResults, hasMixedResults } = useFavoriteSearchResults(results, favoriteToolIdSet);
 
-const toolsListRoute = "/tools/list";
 const toolsCount = computed(() => toolsList.value.length);
 const showEmptyFavorites = computed(() => props.favoritesDefault && !query.value && favoriteToolIds.value.length === 0);
 
@@ -414,16 +418,30 @@ function onLabelToggle(labelId: string) {
                     <div v-for="(panel, key) in localPanel" :key="key">
                         <div v-if="panel?.id === PANEL_LABEL_IDS.FAVORITES_EMPTY_ALERT" class="tool-panel-empty">
                             <BAlert variant="info" show>
-                                You haven't favorited any tools yet. Search the toolbox or use
-                                <GButton
-                                    class="ml-1"
-                                    size="small"
-                                    color="blue"
-                                    :to="toolsListRoute"
-                                    data-description="discover-tools">
-                                    Discover Tools
-                                </GButton>
-                                to explore {{ toolsCount }} community curated tools.
+                                <template v-if="!isAnonymous">
+                                    You haven't favorited any tools yet. Search the toolbox or use
+                                    <GButton
+                                        class="ml-1"
+                                        size="small"
+                                        color="blue"
+                                        :to="TOOLS_LIST_ROUTE"
+                                        data-description="discover-tools">
+                                        Discover Tools
+                                    </GButton>
+                                    to explore {{ toolsCount }} community curated tools.
+                                </template>
+                                <template v-else>
+                                    You need to
+                                    <GButton
+                                        class="ml-1"
+                                        size="small"
+                                        color="blue"
+                                        :to="LOGIN_ROUTE"
+                                        data-description="login button">
+                                        Login
+                                    </GButton>
+                                    to favorite tools and have them appear in this section.
+                                </template>
                             </BAlert>
                         </div>
                         <ToolSection
