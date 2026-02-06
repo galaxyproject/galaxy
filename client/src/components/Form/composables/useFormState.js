@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, ref, set } from "vue";
 
 import { matchInputs, validateInputs, visitAllInputs, visitInputs } from "../utilities";
 
@@ -21,7 +21,7 @@ export function useFormState(options = {}) {
     function cloneInputs(inputs) {
         formInputs.value = JSON.parse(JSON.stringify(inputs));
         visitAllInputs(formInputs.value, (input) => {
-            input.error = null;
+            set(input, "error", null);
         });
         rebuildIndex();
     }
@@ -51,7 +51,7 @@ export function useFormState(options = {}) {
         visitAllInputs(formInputs.value, (input, name) => {
             const newValue = newAttributes[name];
             if (newValue != undefined) {
-                input.attributes = newValue;
+                set(input, "attributes", newValue);
             }
         });
     }
@@ -78,20 +78,20 @@ export function useFormState(options = {}) {
     function setError(inputId, message) {
         const input = formIndex.value[inputId];
         if (input) {
-            input.error = message;
+            set(input, "error", message);
         }
     }
 
     function setWarning(inputId, message) {
         const input = formIndex.value[inputId];
         if (input) {
-            input.warning = message;
+            set(input, "warning", message);
         }
     }
 
     function resetErrors() {
         Object.values(formIndex.value).forEach((input) => {
-            input.error = null;
+            set(input, "error", null);
         });
     }
 
