@@ -59,7 +59,7 @@ class LegacyVersion(_BaseVersion):
         self._version = str(version)
 
     @property
-    def _key(self) -> LegacyCmpKey:
+    def _key(self) -> LegacyCmpKey:  # type: ignore[override,unused-ignore]
         return _legacy_cmpkey(self._version)
 
     def __str__(self) -> str:
