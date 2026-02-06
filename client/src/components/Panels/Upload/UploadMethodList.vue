@@ -80,6 +80,7 @@ function getStagingBadges(method: UploadMethodConfig): CardBadge[] {
             title: `${count} upload item${count === 1 ? "" : "s"} staged and pending submission`,
             variant: "primary",
             type: "badge",
+            handler: () => selectUploadMethod(method),
         },
     ];
 }
