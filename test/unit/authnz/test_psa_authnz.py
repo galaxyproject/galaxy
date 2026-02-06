@@ -377,8 +377,25 @@ def test_sync_user_profile_skips_when_account_interface_enabled():
     app_config = SimpleNamespace(enable_account_interface=True)
     app = SimpleNamespace(config=app_config, user_manager=manager)
     trans = SimpleNamespace(app=app, sa_session=session)
-    strategy = SimpleNamespace(config={"GALAXY_TRANS": trans})
+    strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "FIXED_DELEGATED_AUTH": True})
     user = SimpleNamespace(id=1, preferences={})
+    details = {"email": "new@example.com", "username": "newname"}
+
+    sync_user_profile(strategy=strategy, details=details, user=user)
+
+    manager.update_email.assert_not_called()
+    manager.update_username.assert_not_called()
+    session.commit.assert_not_called()
+
+
+def test_sync_user_profile_skips_when_fixed_delegated_auth_disabled():
+    manager = MagicMock()
+    session = MagicMock()
+    app_config = SimpleNamespace(enable_account_interface=False)
+    app = SimpleNamespace(config=app_config, user_manager=manager)
+    trans = SimpleNamespace(app=app, sa_session=session)
+    strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "FIXED_DELEGATED_AUTH": False})
+    user = SimpleNamespace(id=2, preferences={})
     details = {"email": "new@example.com", "username": "newname"}
 
     sync_user_profile(strategy=strategy, details=details, user=user)
@@ -394,7 +411,7 @@ def test_sync_user_profile_updates_when_account_interface_disabled():
     app_config = SimpleNamespace(enable_account_interface=False)
     app = SimpleNamespace(config=app_config, user_manager=manager)
     trans = SimpleNamespace(app=app, sa_session=session)
-    strategy = SimpleNamespace(config={"GALAXY_TRANS": trans})
+    strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "FIXED_DELEGATED_AUTH": True})
     user = SimpleNamespace(id=2, preferences={})
     details = {"email": "new@example.com", "username": "newname"}
 

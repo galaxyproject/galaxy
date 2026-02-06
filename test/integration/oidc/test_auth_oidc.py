@@ -507,6 +507,7 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
         config["enable_oidc"] = True
         config["oidc_config_file"] = os.path.join(os.path.dirname(__file__), "oidc_config.xml")
         config["oidc_backends_config_file"] = cls.backend_config_file
+        config["enable_account_interface"] = False
         # fixed_delegated_auth will be automatically computed as True when:
         # - There is exactly one OIDC provider (keycloak)
         # - There are no other authenticators configured
@@ -522,9 +523,9 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
         - if fixed_delegated_auth: user = existing_user
         - redirect to login_redirect_url (root)
         """
-        # Pre-create a Galaxy user with matching email
+        # Pre-create a Galaxy user with matching email and username
         sa_session = self._app.model.session
-        user = model.User(email="gxyuser_fixed_auth@galaxy.org", username="fixed_auth_user")
+        user = model.User(email="gxyuser_fixed_auth@galaxy.org", username="gxyuser_fixed_auth")
         user.set_password_cleartext("test123")
         sa_session.add(user)
         try:
@@ -547,7 +548,10 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
         response = self._get("users/current")
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser_fixed_auth@galaxy.org"
-        assert response.json()["username"] == "fixed_auth_user"
+        assert response.json()["username"] == "gxyuser_fixed_auth"
+        response = self._get("users/current/profile_updates")
+        self._assert_status_code_is(response, 200)
+        assert set(response.json().get("updates", [])) == {"email", "username"}
 
     def test_fixed_delegated_auth_with_new_user_creates_account(self):
         """
@@ -569,6 +573,85 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
         response = self._get("users/current")
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser_brand_new@galaxy.org"
+
+    def test_fixed_delegated_auth_updates_profile_on_association(self):
+        """
+        Test: fixed_delegated_auth=True, existing user with matching email but different username
+        Expected: Username is updated from OIDC and reported in profile_updates
+        """
+        # Pre-create a Galaxy user with matching email but a different username
+        sa_session = self._app.model.session
+        user = model.User(email="gxyuser_fixed_auth@galaxy.org", username="stale_username")
+        user.set_password_cleartext("test123")
+        sa_session.add(user)
+        try:
+            sa_session.commit()
+        except Exception:
+            pass
+
+        # Login via OIDC without being logged into Galaxy first (association)
+        _, response = self._login_via_keycloak("gxyuser_fixed_auth", KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+
+        parsed_url = parse.urlparse(response.url)
+        assert "user/external_ids" not in parsed_url.path
+
+        # Verify user is logged in and username is updated to OIDC preferred username
+        response = self._get("users/current")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "gxyuser_fixed_auth@galaxy.org"
+        assert response.json()["username"] == "gxyuser_fixed_auth"
+
+        # Verify profile updates include username
+        response = self._get("users/current/profile_updates")
+        self._assert_status_code_is(response, 200)
+        assert "username" in response.json().get("updates", [])
+
+    def test_fixed_delegated_auth_updates_profile_on_repeat_login(self):
+        """
+        Test: fixed_delegated_auth=True, user associated, local username changes, next login re-syncs
+        Expected: Username is updated from OIDC and reported in profile_updates
+        """
+        # Pre-create a Galaxy user with matching email and username
+        sa_session = self._app.model.session
+        user = model.User(email="gxyuser_fixed_auth@galaxy.org", username="gxyuser_fixed_auth")
+        user.set_password_cleartext("test123")
+        sa_session.add(user)
+        try:
+            sa_session.commit()
+        except Exception:
+            pass
+
+        # First login to associate
+        _, response = self._login_via_keycloak("gxyuser_fixed_auth", KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+        parsed_url = parse.urlparse(response.url)
+        assert "user/external_ids" not in parsed_url.path
+
+        # First login reports profile updates
+        response = self._get("users/current/profile_updates")
+        self._assert_status_code_is(response, 200)
+        assert set(response.json().get("updates", [])) == {"email", "username"}
+
+        # Clear any transactional state before mutating the user
+        sa_session.rollback()
+        user = sa_session.query(model.User).filter_by(email="gxyuser_fixed_auth@galaxy.org").one()
+
+        # Mutate local username after association
+        user.username = "stale_username"
+        sa_session.add(user)
+        sa_session.commit()
+
+        # Second login should re-sync username
+        _, response = self._login_via_keycloak("gxyuser_fixed_auth", KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+        parsed_url = parse.urlparse(response.url)
+        assert "user/external_ids" not in parsed_url.path
+
+        response = self._get("users/current")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["username"] == "gxyuser_fixed_auth"
+
+        response = self._get("users/current/profile_updates")
+        self._assert_status_code_is(response, 200)
+        assert "username" in response.json().get("updates", [])
 
 
 class TestWithoutFixedDelegatedAuth(AbstractTestCases.BaseKeycloakIntegrationTestCase):

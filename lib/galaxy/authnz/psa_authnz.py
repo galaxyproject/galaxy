@@ -756,6 +756,10 @@ def sync_user_profile(strategy=None, details=None, user=None, **kwargs):
     if trans.app.config.enable_account_interface:
         log.debug("OIDC sync_user_profile skipped: account interface enabled.")
         return
+    fixed_delegated_auth = strategy.config.get("FIXED_DELEGATED_AUTH", False)
+    if not fixed_delegated_auth:
+        log.debug("OIDC sync_user_profile skipped: fixed_delegated_auth disabled.")
+        return
     manager = getattr(trans.app, "user_manager", None) or user_managers.UserManager(trans.app)
     updates: list[str] = []
     # Update email and keep private role in sync
