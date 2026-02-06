@@ -58,7 +58,7 @@ class SshFilesSource(PyFilesystem2FilesSource[SshFileSourceTemplateConfiguration
             host=config.host,
             user=config.user,
             passwd=config.passwd,
-            pkey=config.pkey,
+            pkey=config.pkey if config.pkey else None,
             port=config.port,
             timeout=config.timeout,
             compress=config.compress,
