@@ -67,6 +67,8 @@ const bulk = useBulkUploadOperations(selectedFiles, effectiveExtensions);
 
 const { isReadyToUpload } = useUploadReadyState(hasFiles, collectionState);
 
+const showDragOverlay = computed(() => hasFiles.value && isFileOverDropZone.value);
+
 const tableFields = [
     {
         key: "name",
@@ -114,7 +116,7 @@ function onDrop(evt: DragEvent) {
     }
 }
 
-const { isFileOverDropZone } = useFileDrop(dropZoneElement, onDrop, () => {}, false);
+const { isFileOverDropZone } = useFileDrop(dropZoneElement, onDrop, () => {}, false, 10000, true);
 
 function addFiles(files: FileList | File[] | null) {
     if (!files) {
@@ -313,6 +315,14 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 </div>
             </div>
 
+            <!-- Drag-over overlay -->
+            <div v-show="showDragOverlay" class="drag-overlay">
+                <div class="drag-overlay-content">
+                    <FontAwesomeIcon :icon="faCloudUploadAlt" class="drag-overlay-icon" />
+                    <p class="drag-overlay-text">Drop files to add them to the list</p>
+                </div>
+            </div>
+
             <!-- Hidden file input -->
             <label for="local-file-input" class="sr-only">Select files to upload</label>
             <input
@@ -348,6 +358,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
     justify-content: center;
     overflow: hidden;
     min-height: 0;
+    position: relative;
 
     &.drop-zone-active {
         border-color: $brand-primary;
@@ -421,5 +432,46 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
 .file-list-actions {
     @include upload-list-actions;
+}
+
+.drag-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 101;
+    pointer-events: none;
+    background-color: rgba($brand-primary, 0.15);
+    border: 2px solid $brand-primary;
+    border-radius: $border-radius-large;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+
+    &.v-leave-active {
+        transition: opacity 0.1s ease;
+    }
+}
+
+.drag-overlay-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    user-select: none;
+}
+
+.drag-overlay-icon {
+    font-size: 3rem;
+    color: $brand-primary;
+    margin-bottom: 0.75rem;
+    display: block;
+}
+
+.drag-overlay-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: $brand-primary;
+    margin: 0;
 }
 </style>
