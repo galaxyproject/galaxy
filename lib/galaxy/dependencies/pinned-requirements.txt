@@ -206,7 +206,7 @@ pyasn1-modules==0.4.2
 pycparser==3.0 ; (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy') or (implementation_name == 'pypy' and platform_python_implementation == 'PyPy')
 pycryptodome==3.23.0
 pydantic==2.12.5
-pydantic-ai==1.44.0
+pydantic-ai==1.56.0
 pydantic-ai-slim==1.44.0
 pydantic-core==2.41.5
 pydantic-evals==1.44.0
