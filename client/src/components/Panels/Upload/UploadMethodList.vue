@@ -76,7 +76,7 @@ function updateQuery(newQuery: string) {
                 @change="updateQuery" />
         </Teleport>
 
-        <div class="flex-grow-1 overflow-hidden">
+        <div class="flex-grow-1">
             <ScrollList
                 :item-key="(method) => method.id"
                 :in-panel="inPanel"
