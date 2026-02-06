@@ -1,9 +1,8 @@
 import type { ComputedRef, Ref } from "vue";
 import { computed, ref, set } from "vue";
 
-import { matchInputs, validateInputs, visitAllInputs, visitInputs } from "../utilities";
-
 import type { FormParameterValue } from "../parameterTypes";
+import { matchInputs, validateInputs, visitAllInputs, visitInputs } from "../utilities";
 
 /** A single input node in the nested form tree (leaf, conditional, repeat, or section). */
 export interface FormInputNode {
@@ -15,7 +14,7 @@ export interface FormInputNode {
     attributes?: Record<string, unknown>;
     options?: unknown[];
     label?: string;
-    help?: string;
+    help?: string | null;
     help_format?: string;
     optional?: boolean;
     refresh_on_change?: boolean;
@@ -31,7 +30,6 @@ export interface FormInputNode {
     cache?: FormInputNode[][];
     inputs?: FormInputNode[];
     expanded?: boolean;
-    [key: string]: unknown;
 }
 
 /** Flat dictionary mapping paramName → value, ready for submission. */
@@ -82,11 +80,9 @@ export function useFormState(options: UseFormStateOptions = {}): UseFormStateRet
     const formData = ref<FormData>({});
 
     const validation = computed<[string, string] | null>(() => {
-        return validateInputs(
-            formIndex.value,
-            formData.value,
-            allowEmptyValueOnRequiredInput.value
-        ) as [string, string] | null;
+        return validateInputs(formIndex.value, formData.value, allowEmptyValueOnRequiredInput.value) as
+            | [string, string]
+            | null;
     });
 
     function cloneInputs(inputs: FormInputNode[]): void {
@@ -136,9 +132,10 @@ export function useFormState(options: UseFormStateOptions = {}): UseFormStateRet
             const serverNode = newAttributes[name];
             if (serverNode != undefined) {
                 const attrs: Record<string, unknown> = {};
-                for (const key in serverNode) {
+                const raw = serverNode as unknown as Record<string, unknown>;
+                for (const key in raw) {
                     if (!CLIENT_OWNED_FIELDS.has(key)) {
-                        attrs[key] = serverNode[key];
+                        attrs[key] = raw[key];
                     }
                 }
                 // set() required: attributes is a genuinely new property on clone nodes.

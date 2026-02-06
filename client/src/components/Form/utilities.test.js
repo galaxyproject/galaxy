@@ -521,11 +521,7 @@ describe("form component utilities", () => {
             ];
             const allNames = [];
             visitAllInputs(inputs, (node, name) => allNames.push(name));
-            expect(allNames).toEqual([
-                "rep_0|nested_cond|sel",
-                "rep_0|nested_cond|leaf_x",
-                "rep_0|nested_cond|leaf_y",
-            ]);
+            expect(allNames).toEqual(["rep_0|nested_cond|sel", "rep_0|nested_cond|leaf_x", "rep_0|nested_cond|leaf_y"]);
         });
     });
 });

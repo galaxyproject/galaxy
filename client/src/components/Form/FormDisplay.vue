@@ -22,8 +22,8 @@
 </template>
 
 <script setup lang="ts">
-import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import { getCurrentInstance, toRef, watch } from "vue";
 
 import type { FormData, FormInputNode, FormMessages } from "./composables/useFormState";
@@ -51,7 +51,7 @@ interface Props {
     allowEmptyValueOnRequiredInput?: boolean;
     activeNodeId?: number | null;
     syncWithGraph?: boolean;
-    stepsNotMatchingRequest?: number[] | null;
+    stepsNotMatchingRequest?: string[] | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -164,7 +164,7 @@ watch(
     () => props.activeNodeId,
     () => {
         scrollToElement(props.activeNodeId!);
-    }
+    },
 );
 
 watch(
@@ -175,7 +175,7 @@ watch(
         emit("onChange", formData.value);
         applyWarnings(props.warnings);
         applyErrors(props.errors);
-    }
+    },
 );
 
 watch(
@@ -184,7 +184,7 @@ watch(
         syncServerAttributes(props.inputs);
         onChangeForm();
     },
-    { flush: "sync" }
+    { flush: "sync" },
 );
 
 watch(
@@ -192,20 +192,24 @@ watch(
     () => {
         onHighlight(props.validationScrollTo);
     },
-    { flush: "sync" }
+    { flush: "sync" },
 );
 
-watch(validation, () => {
-    onHighlight(validation.value, true);
-    emit("onValidation", validation.value);
-}, { flush: "sync" });
+watch(
+    validation,
+    () => {
+        onHighlight(validation.value, true);
+        emit("onValidation", validation.value);
+    },
+    { flush: "sync" },
+);
 
 watch(
     () => props.errors,
     () => {
         applyErrors(props.errors);
     },
-    { flush: "sync" }
+    { flush: "sync" },
 );
 
 watch(
@@ -216,7 +220,7 @@ watch(
             onChange(refreshOnChange);
         }
     },
-    { flush: "sync" }
+    { flush: "sync" },
 );
 
 watch(
@@ -224,6 +228,6 @@ watch(
     () => {
         applyWarnings(props.warnings);
     },
-    { flush: "sync" }
+    { flush: "sync" },
 );
 </script>
