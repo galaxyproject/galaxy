@@ -2,6 +2,7 @@ import { createLocalVue, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import Categories from "./Categories.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 
 vi.mock("../services", () => ({
     Services: class Services {
@@ -35,8 +36,11 @@ describe("Categories", () => {
                 toolshedUrl: "toolshedUrl",
             },
             localVue,
+            stubs: {
+                LoadingSpan: true,
+            },
         });
-        expect(wrapper.find(".loading-message").text()).toBe("Loading categories...");
+        expect(wrapper.find("loadingspan-stub").attributes("message")).toBe("Loading categories");
     });
 
     it("test categories table", async () => {
@@ -46,12 +50,17 @@ describe("Categories", () => {
                 toolshedUrl: "toolshedUrl",
             },
             localVue,
+            stubs: {
+                GLink,
+            },
         });
         await localVue.nextTick();
-        const links = wrapper.findAll("a");
+        const links = wrapper.findAllComponents(GLink);
         expect(links.length).toBe(2);
-        expect(links.at(0).text()).toBe("name_0");
-        expect(links.at(1).text()).toBe("name_1");
+
+        expect(links.at(0).text()).toContain("name_0");
+        expect(links.at(1).text()).toContain("name_1");
+
         const rows = wrapper.findAll("tr");
         expect(rows.length).toBe(3);
         const cells = rows.at(1).findAll("td");
