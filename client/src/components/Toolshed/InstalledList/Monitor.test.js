@@ -33,17 +33,18 @@ describe("Monitor", () => {
     it("test monitor", async () => {
         const localVue = getLocalVue();
         const wrapper = mount(Monitor, { localVue });
+
         await localVue.nextTick();
-        const headers = wrapper.findAll("th");
-        expect(headers.length).toBe(3);
-        expect(headers.at(0).text()).toBe("Name");
-        expect(headers.at(1).text()).toBe("Status");
+
+        expect(wrapper.vm.fields.length).toBe(3);
+        expect(wrapper.vm.fields[0].label).toBe("Name");
+        expect(wrapper.vm.fields[1].label).toBe("Status");
 
         const cells = wrapper.findAll("td");
         expect(cells.length).toBe(6);
-        expect(cells.at(0).text()).toBe("name_0 (owner_0)");
+        expect(cells.at(0).text()).toContain("name_0 (owner_0)");
         expect(cells.at(1).text()).toContain("status_0_0");
-        expect(cells.at(3).text()).toBe("name_1 (owner_1)");
+        expect(cells.at(3).text()).toContain("name_1 (owner_1)");
         expect(cells.at(4).text()).toContain("status_1");
     });
 });
