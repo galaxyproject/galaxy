@@ -9,11 +9,11 @@ set -e
 THIS_DIRECTORY="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 
 if command -v uv >/dev/null; then
-    VENV_CMD="$(command -v uv) venv --python python3.9"
+    VENV_CMD="$(command -v uv) venv --python python3.10"
     PIP_CMD="$(command -v uv) pip"
     FREEZE_OPTIONS=''
 else
-    VENV_CMD='python3.9 -m venv'
+    VENV_CMD='python3.10 -m venv'
     PIP_CMD='python -m pip'
     FREEZE_OPTIONS='-l'
 fi
