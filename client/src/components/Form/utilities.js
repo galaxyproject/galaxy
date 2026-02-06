@@ -45,6 +45,40 @@ export function visitInputs(inputs, callback, prefix, context) {
     }
 }
 
+/** Visits ALL inputs including every conditional case (not just the active one).
+ * Used for syncing server attributes to all conditional branches.
+ * @param{Array}    inputs    - Nested array of input elements
+ * @param{Function} callback  - Called with each input node and its name
+ * @param{String}   prefix    - Key prefix for nested param name construction
+ */
+export function visitAllInputs(inputs, callback, prefix) {
+    for (var key in inputs) {
+        var node = inputs[key];
+        node.name = node.name || key;
+        var name = prefix ? `${prefix}|${node.name}` : node.name;
+        switch (node.type) {
+            case "repeat":
+                _.each(node.cache, (cache, j) => {
+                    visitAllInputs(cache, callback, `${name}_${j}`);
+                });
+                break;
+            case "conditional":
+                if (node.test_param) {
+                    callback(node.test_param, `${name}|${node.test_param.name}`);
+                    for (var i = 0; i < node.cases.length; i++) {
+                        visitAllInputs(node.cases[i].inputs, callback, name);
+                    }
+                }
+                break;
+            case "section":
+                visitAllInputs(node.inputs, callback, name);
+                break;
+            default:
+                callback(node, name);
+        }
+    }
+}
+
 /** Matches conditional values to selected cases.
  * @param{dict}   input     - Definition of conditional input parameter
  * @param{dict}   value     - Current value

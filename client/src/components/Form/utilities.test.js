@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import toolModel from "./test-data/tool";
-import { matchCase, matchInputs, validateInputs, visitInputs } from "./utilities";
+import { matchCase, matchInputs, validateInputs, visitAllInputs, visitInputs } from "./utilities";
 
 function visitInputsString(inputs) {
     let results = "";
@@ -428,5 +428,104 @@ describe("form component utilities", () => {
         values = { required_field: "" };
         result = validateInputs(index, values, true);
         expect(result).toEqual(["required_field", "Please provide a value for this option."]);
+    });
+
+    describe("visitAllInputs", () => {
+        it("traversal order matches visitInputs for non-conditional inputs", () => {
+            const inputs = [
+                { name: "a", type: "text", value: "a" },
+                {
+                    name: "r",
+                    type: "repeat",
+                    cache: [
+                        [
+                            { name: "x", type: "text", value: "x" },
+                            { name: "y", type: "text", value: "y" },
+                        ],
+                    ],
+                    inputs: [
+                        { name: "x", type: "text", value: "x" },
+                        { name: "y", type: "text", value: "y" },
+                    ],
+                },
+                {
+                    name: "s",
+                    type: "section",
+                    inputs: [
+                        { name: "p", type: "text", value: "p" },
+                        { name: "q", type: "text", value: "q" },
+                    ],
+                },
+            ];
+            const visitOrder = [];
+            const allOrder = [];
+            visitInputs(inputs, (node, name) => visitOrder.push(name));
+            visitAllInputs(inputs, (node, name) => allOrder.push(name));
+            expect(allOrder).toEqual(visitOrder);
+        });
+
+        it("visits all conditional cases, not just the active one", () => {
+            const inputs = [
+                {
+                    name: "cond",
+                    type: "conditional",
+                    test_param: { name: "tp", type: "select", value: "a" },
+                    cases: [
+                        {
+                            value: "a",
+                            inputs: [{ name: "in_a", type: "text", value: "va" }],
+                        },
+                        {
+                            value: "b",
+                            inputs: [{ name: "in_b", type: "text", value: "vb" }],
+                        },
+                    ],
+                },
+            ];
+            const visitNames = [];
+            const allNames = [];
+            visitInputs(inputs, (node, name) => visitNames.push(name));
+            visitAllInputs(inputs, (node, name) => allNames.push(name));
+            // visitInputs only visits active case (a)
+            expect(visitNames).toEqual(["cond|tp", "cond|in_a"]);
+            // visitAllInputs visits both cases
+            expect(allNames).toEqual(["cond|tp", "cond|in_a", "cond|in_b"]);
+        });
+
+        it("visits nested conditional inside repeat", () => {
+            const inputs = [
+                {
+                    name: "rep",
+                    type: "repeat",
+                    cache: [
+                        [
+                            {
+                                name: "nested_cond",
+                                type: "conditional",
+                                test_param: { name: "sel", type: "select", value: "x" },
+                                cases: [
+                                    {
+                                        value: "x",
+                                        inputs: [{ name: "leaf_x", type: "text", value: "1" }],
+                                    },
+                                    {
+                                        value: "y",
+                                        inputs: [{ name: "leaf_y", type: "text", value: "2" }],
+                                    },
+                                ],
+                            },
+                        ],
+                    ],
+                    inputs: [],
+                },
+            ];
+            const allNames = [];
+            visitAllInputs(inputs, (node, name) => allNames.push(name));
+            expect(allNames).toEqual([
+                "rep_0|nested_cond|sel",
+                "rep_0|nested_cond|leaf_x",
+                "rep_0|nested_cond|leaf_y",
+            ]);
+        });
     });
 });
