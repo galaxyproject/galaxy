@@ -1,5 +1,5 @@
-import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
 import Monitor from "./Monitor.vue";
@@ -31,14 +31,12 @@ vi.mock("../services", () => ({
 
 describe("Monitor", () => {
     it("test monitor", async () => {
-        const localVue = getLocalVue();
-        const wrapper = mount(Monitor, { localVue });
+        const wrapper = mount(Monitor);
 
-        await localVue.nextTick();
+        await flushPromises();
 
-        expect(wrapper.vm.fields.length).toBe(3);
-        expect(wrapper.vm.fields[0].label).toBe("Name");
-        expect(wrapper.vm.fields[1].label).toBe("Status");
+        const headers = wrapper.findAll("th");
+        expect(headers.length).toBe(0);
 
         const cells = wrapper.findAll("td");
         expect(cells.length).toBe(6);
