@@ -451,6 +451,9 @@ class AWSBatchJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                         # TODO: This is where any cleanup would occur
                         self.handle_stop()
                         return
+                    if not hasattr(async_job_state, "job_id"):
+                        log.warning(f"Received invalid job state object in monitor queue: {type(async_job_state)}")
+                        continue
                     self.watched.append(async_job_state)
             except Empty:
                 pass
