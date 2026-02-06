@@ -40,9 +40,10 @@ class TestWorkflowExtractionSelenium(SeleniumTestCase, WorkflowStructureAssertio
         return cat1_jobs[0]["id"]
 
     def setup_mapped_collection_history(self, history_id: str) -> tuple:
-        """Create paired collection and run random_lines mapped over it.
+        """Create paired collection and run random_lines mapped over it twice.
 
-        Returns: (hdca, job_id1, job_id2)
+        Returns: (hdca, all_job_ids) where all_job_ids is list of 4 job IDs
+        (2 jobs per batch run over paired collection with 2 elements).
         """
         hdca = self.dataset_collection_populator.create_pair_in_history(
             history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
@@ -52,14 +53,14 @@ class TestWorkflowExtractionSelenium(SeleniumTestCase, WorkflowStructureAssertio
         inputs1 = {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}, "num_lines": 2}
         run1 = self.dataset_populator.run_tool("random_lines1", inputs1, history_id)
         implicit_hdca1 = run1["implicit_collections"][0]
-        job_id1 = run1["jobs"][0]["id"]
+        job_ids_run1 = [j["id"] for j in run1["jobs"]]
 
         inputs2 = {"input": {"batch": True, "values": [{"src": "hdca", "id": implicit_hdca1["id"]}]}, "num_lines": 1}
         run2 = self.dataset_populator.run_tool("random_lines1", inputs2, history_id)
-        job_id2 = run2["jobs"][0]["id"]
+        job_ids_run2 = [j["id"] for j in run2["jobs"]]
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return hdca, job_id1, job_id2
+        return hdca, job_ids_run1 + job_ids_run2
 
     def setup_copied_cat1_history(self, history_id: str) -> Optional[str]:
         """Run cat1 in one history, copy outputs to given history.
@@ -205,8 +206,6 @@ test_data:
         """Count number of checked job checkboxes."""
         return len(self.find_elements_by_selector('input[name="job_ids"]:checked'))
 
-    # --- Tier 1: Basic Functionality Tests ---
-
     @selenium_test
     @managed_history
     def test_extract_form_loads(self):
@@ -230,36 +229,37 @@ test_data:
     @selenium_test
     @managed_history
     def test_extract_form_validation(self):
-        """Test form validation: empty name, no jobs selected."""
+        """Test form validation: no jobs selected creates workflow with only inputs."""
         history_id = self.current_history_id()
-        hdca, job_id1, job_id2 = self.setup_mapped_collection_history(history_id)
+        hdca, all_job_ids = self.setup_mapped_collection_history(history_id)
 
         self.navigate_to_workflow_extraction()
 
-        # Verify initial state
-        assert self.count_job_checkboxes() >= 2, "Expected at least 2 job checkboxes"
-        initial_checked = self.count_checked_job_checkboxes()
-        assert initial_checked >= 2, f"Expected at least 2 checked, got {initial_checked}"
+        # Verify initial state: 4 jobs (2 per batch run over paired collection)
+        assert self.count_job_checkboxes() == 4, "Expected exactly 4 job checkboxes"
+        assert self.count_checked_job_checkboxes() == 4, "Expected all 4 jobs checked initially"
 
-        # Test: uncheck all jobs
-        self.extract_workflow_toggle_job(job_id1)
-        self.extract_workflow_toggle_job(job_id2)
+        # Uncheck ALL jobs
+        for job_id in all_job_ids:
+            self.extract_workflow_toggle_job(job_id)
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        unchecked_count = self.count_checked_job_checkboxes()
-        assert unchecked_count == initial_checked - 2, f"Expected 2 fewer checked, got {unchecked_count}"
+        assert self.count_checked_job_checkboxes() == 0, "Expected 0 jobs checked after unchecking all"
 
         self.screenshot("workflow_extract_no_jobs_selected")
 
-        # Submit with no jobs - should still work (creates empty workflow)
+        # Submit with no jobs - should still work (creates workflow with only input step)
         workflow_name = "Selenium Empty Selection"
         self.extract_workflow_set_name(workflow_name)
         self.extract_workflow_submit()
         self.switch_to_default_content()
 
-        # Verify workflow was created (may be empty or have just inputs)
+        # Verify workflow was created with only input step (no tool steps)
         workflow = self.get_workflow_by_name(workflow_name)
         assert workflow is not None, "Expected workflow to be created even with no jobs selected"
+        self.assert_steps_of_type(workflow, "tool", expected_len=0)
+        # Should have 1 collection input step from the paired collection
+        self.assert_steps_of_type(workflow, "data_collection_input", expected_len=1)
 
     @skip_without_tool("cat1")
     @selenium_test
@@ -271,14 +271,14 @@ test_data:
 
         self.navigate_to_workflow_extraction()
 
-        # Verify jobs are listed
+        # Verify exactly 1 job listed (cat1 workflow has 1 tool step)
         job_count = self.count_job_checkboxes()
-        assert job_count >= 1, f"Expected at least 1 job checkbox, found {job_count}"
+        assert job_count == 1, f"Expected exactly 1 job checkbox, found {job_count}"
         self.screenshot("workflow_extract_with_jobs")
 
-        # Verify checkboxes start checked
+        # Verify checkbox starts checked
         initial_checked = self.find_elements_by_selector('input[name="job_ids"]:checked')
-        assert len(initial_checked) >= 1, "Expected at least 1 checked job checkbox"
+        assert len(initial_checked) == 1, f"Expected 1 checked job checkbox, found {len(initial_checked)}"
 
         # Toggle checkbox off
         self.extract_workflow_toggle_job(cat1_job_id)
@@ -308,23 +308,28 @@ test_data:
     def test_extract_toggle_job_subset(self):
         """Toggle some jobs off, verify only selected jobs create workflow steps."""
         history_id = self.current_history_id()
-        hdca, job_id1, job_id2 = self.setup_mapped_collection_history(history_id)
+        hdca, all_job_ids = self.setup_mapped_collection_history(history_id)
 
         self.navigate_to_workflow_extraction()
 
-        # Verify both jobs checked initially
-        assert self.count_checked_job_checkboxes() >= 2, "Expected at least 2 checked jobs"
+        # Verify all 4 jobs checked initially
+        assert self.count_checked_job_checkboxes() == 4, "Expected 4 checked jobs"
         self.screenshot("workflow_extract_job_subset_initial")
 
-        # Toggle off first job
-        self.extract_workflow_toggle_job(job_id1)
+        # Toggle off jobs from first tool run (first 2 job IDs)
+        jobs_from_run1 = all_job_ids[:2]
+        for job_id in jobs_from_run1:
+            self.extract_workflow_toggle_job(job_id)
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        # Verify first job unchecked, second still checked
-        job1_checkbox = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id1}"]')
-        job2_checkbox = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id2}"]')
-        assert not job1_checkbox.is_selected(), "Expected job1 unchecked"
-        assert job2_checkbox.is_selected(), "Expected job2 still checked"
+        # Verify first run's jobs unchecked, second run's jobs still checked
+        for job_id in jobs_from_run1:
+            checkbox = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id}"]')
+            assert not checkbox.is_selected(), f"Expected job {job_id} unchecked"
+        jobs_from_run2 = all_job_ids[2:]
+        for job_id in jobs_from_run2:
+            checkbox = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id}"]')
+            assert checkbox.is_selected(), f"Expected job {job_id} still checked"
 
         self.screenshot("workflow_extract_job_subset_toggled")
 
@@ -334,7 +339,7 @@ test_data:
         self.extract_workflow_submit()
         self.switch_to_default_content()
 
-        # Verify extracted workflow has 2 steps (1 input + 1 tool), not 3
+        # Verify extracted workflow has 2 steps (1 input + 1 tool from second run only)
         workflow = self.get_workflow_by_name(workflow_name)
         assert len(workflow["steps"]) == 2, f"Expected 2 steps (1 input + 1 tool), got {len(workflow['steps'])}"
 
@@ -348,14 +353,14 @@ test_data:
 
         self.navigate_to_workflow_extraction()
 
-        # Verify at least 1 job checkbox visible
+        # Verify exactly 1 job checkbox visible (copied cat1 workflow has 1 tool step)
         job_count = self.count_job_checkboxes()
-        assert job_count >= 1, f"Expected at least 1 job checkbox, found {job_count}"
+        assert job_count == 1, f"Expected exactly 1 job checkbox, found {job_count}"
         self.screenshot("workflow_extract_copied_inputs")
 
-        # Verify job checkbox exists and is checked
+        # Verify job checkbox is checked
         initial_checked = self.count_checked_job_checkboxes()
-        assert initial_checked >= 1, "Expected at least 1 checked job checkbox"
+        assert initial_checked == 1, f"Expected 1 checked job checkbox, found {initial_checked}"
 
         # Extract and verify structure
         workflow_name = "Selenium Copied Inputs"
@@ -366,23 +371,24 @@ test_data:
         workflow = self.get_workflow_by_name(workflow_name)
         self.assert_cat1_workflow_structure(workflow)
 
-    # --- Tier 3: Collection Tests ---
-
     @skip_without_tool("random_lines1")
     @selenium_test
     @managed_history
     def test_extract_with_collection_input(self):
         """Extract workflow with collection mapped over."""
         history_id = self.current_history_id()
-        hdca, job_id1, job_id2 = self.setup_mapped_collection_history(history_id)
+        hdca, all_job_ids = self.setup_mapped_collection_history(history_id)
 
         workflow = self.extract_workflow_and_download(
             "Selenium Collection Workflow", "workflow_extract_with_collection"
         )
 
-        # Should have 3 steps (input + 2 tool steps)
+        # Should have 3 steps (1 collection input + 2 tool steps)
         assert len(workflow["steps"]) == 3
         self.assert_input_step_collection_type(workflow, "paired")
+        tool_steps = self.assert_steps_of_type(workflow, "tool", expected_len=2)
+        tool_ids = {step["tool_id"] for step in tool_steps}
+        assert tool_ids == {"random_lines1"}, f"Expected only random_lines1 tools, got {tool_ids}"
 
     @skip_without_tool("random_lines1")
     @skip_without_tool("multi_data_param")
@@ -395,9 +401,9 @@ test_data:
 
         self.navigate_to_workflow_extraction()
 
-        # Verify 2 tool jobs visible
+        # Verify 3 jobs: 2 from random_lines1 mapped over paired + 1 from multi_data_param reduce
         job_count = self.count_job_checkboxes()
-        assert job_count >= 2, f"Expected at least 2 job checkboxes, found {job_count}"
+        assert job_count == 3, f"Expected exactly 3 job checkboxes, found {job_count}"
         self.screenshot("workflow_extract_reduce_collection")
 
         workflow_name = "Selenium Reduce Collection"
@@ -424,7 +430,9 @@ test_data:
 
         self.navigate_to_workflow_extraction()
 
-        # Verify 3+ tool jobs visible
+        # Verify at least 3 tool jobs visible (cat1, collection_split_on_column, cat_list).
+        # Using >= because WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION structure may vary
+        # and additional jobs could be present depending on workflow fixture evolution.
         job_count = self.count_job_checkboxes()
         assert job_count >= 3, f"Expected at least 3 job checkboxes, found {job_count}"
         self.screenshot("workflow_extract_output_collections")
@@ -448,7 +456,9 @@ test_data:
 
         self.navigate_to_workflow_extraction()
 
-        # Verify 1+ tool jobs visible
+        # Verify at least 1 tool job visible. Using >= because the exact number depends
+        # on the default test data structure for list:paired collections, which creates
+        # one cat1 job per list element (typically 2, but may vary).
         job_count = self.count_job_checkboxes()
         assert job_count >= 1, f"Expected at least 1 job checkbox, found {job_count}"
         self.screenshot("workflow_extract_nested_collection")
