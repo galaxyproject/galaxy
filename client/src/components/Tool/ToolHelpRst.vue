@@ -25,17 +25,19 @@ const { formattedContent } = useFormattedToolHelp(props.content);
     }
 
     &:deep(h4) {
+        font-size: $h4-font-size;
+        font-weight: normal;
+        text-decoration: underline;
+    }
+
+    &:deep(h5) {
         font-size: $h5-font-size;
         font-weight: bold;
     }
 
-    &:deep(h5) {
-        font-size: $h6-font-size;
-        font-weight: bold;
-    }
-
     &:deep(h6) {
-        font-size: $h6-font-size;
+        font-size: $h5-font-size;
+        font-weight: normal;
         text-decoration: underline;
     }
 }
