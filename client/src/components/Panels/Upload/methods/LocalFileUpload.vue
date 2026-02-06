@@ -116,7 +116,14 @@ function onDrop(evt: DragEvent) {
     }
 }
 
-const { isFileOverDropZone } = useFileDrop(dropZoneElement, onDrop, () => {}, false, 10000, true);
+const { isFileOverDropZone } = useFileDrop({
+    dropZone: dropZoneElement,
+    onDrop,
+    onDropCancel: () => {},
+    solo: false,
+    idleTime: 10000,
+    ignoreChildrenOnLeave: true,
+});
 
 function addFiles(files: FileList | File[] | null) {
     if (!files) {

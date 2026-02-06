@@ -12,7 +12,12 @@ import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToast } from "@/composables/toast";
 
 const modalContentElement = ref(null);
-const { isFileOverDocument, isFileOverDropZone } = useFileDrop(modalContentElement, onDrop, onDropCancel, true);
+const { isFileOverDocument, isFileOverDropZone } = useFileDrop({
+    dropZone: modalContentElement,
+    onDrop,
+    onDropCancel,
+    solo: true,
+});
 
 const modalClass = computed(() => {
     if (isFileOverDropZone.value) {

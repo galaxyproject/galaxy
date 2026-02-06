@@ -3,23 +3,33 @@ import { computed, type Ref, ref, unref } from "vue";
 
 export type FileDropHandler = (event: DragEvent) => void;
 
+export interface FileDropOptions {
+    /** Element which files should be dropped on. */
+    dropZone: MaybeRefOrGetter<EventTarget | null | undefined>;
+    /** Callback function called when drop occurs. */
+    onDrop: Ref<FileDropHandler> | FileDropHandler;
+    /** Callback function called when drop cancelled. */
+    onDropCancel: Ref<FileDropHandler> | FileDropHandler;
+    /** When true, only reacts if no modal is open. */
+    solo: MaybeRefOrGetter<boolean>;
+    /** How long to wait until state resets (ms). By default, 800ms. */
+    idleTime?: number;
+    /** When true, dragging over child elements keeps isFileOverDropZone true. Default is false. */
+    ignoreChildrenOnLeave?: boolean;
+}
+
 /**
  * Custom File-Drop composable
- * @param dropZone Element which files should be dropped on
- * @param onDrop callback function called when drop occurs
- * @param onDropCancel callback function called when drop cancelled
- * @param solo when true, only reacts if no modal is open
- * @param idleTime how long to wait until state resets
- * @param ignoreChildrenOnLeave when true, dragging over child elements keeps isFileOverDropZone true
+ * @param options configuration for file-drop handling
  */
-export function useFileDrop(
-    dropZone: MaybeRefOrGetter<EventTarget | null | undefined>,
-    onDrop: Ref<FileDropHandler> | FileDropHandler,
-    onDropCancel: Ref<FileDropHandler> | FileDropHandler,
-    solo: MaybeRefOrGetter<boolean>,
+export function useFileDrop({
+    dropZone,
+    onDrop,
+    onDropCancel,
+    solo,
     idleTime = 800,
     ignoreChildrenOnLeave = false,
-) {
+}: FileDropOptions) {
     /** returns true if any other more specific file drop target is on the screen and should
      *  supersede the global file drop or if an existing modal is present and should likewise
      *  take precedent.
