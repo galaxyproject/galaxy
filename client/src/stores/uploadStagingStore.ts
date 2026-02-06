@@ -27,12 +27,19 @@ export const useUploadStagingStore = defineStore("uploadStagingStore", () => {
     }
 
     function setItems<T extends StagedUploadItem>(mode: UploadMethod, items: T[]) {
-        // always store a new array reference so reactivity triggers
+        // Ensure the key exists (Vue 2 key reactivity) with a one-time object replacement.
+        if (!(mode in itemsByMode.value)) {
+            itemsByMode.value = { ...itemsByMode.value, [mode]: [] };
+        }
+        // Always store a new array reference so reactivity triggers.
         itemsByMode.value[mode] = [...items];
     }
 
     function clearItems(mode: UploadMethod) {
-        delete itemsByMode.value[mode];
+        if (!(mode in itemsByMode.value)) {
+            return;
+        }
+        itemsByMode.value[mode] = [];
     }
 
     return {
