@@ -1,9 +1,11 @@
+import json
 from datetime import (
     datetime,
     timedelta,
 )
 from typing import (
     Optional,
+    Union,
 )
 
 from pydantic import BaseModel
@@ -119,7 +121,13 @@ class StoreExportTracker:
         for export in all_exports:
             if export.export_metadata:
                 # Access dict directly - JSONType handles deserialization
-                stored_user_id = export.export_metadata.get("request_data", {}).get("user_id")
+                # however old records might be JSON strings.
+                metadata_value: Union[str, dict] = export.export_metadata
+                if isinstance(metadata_value, str):
+                    export_metadata = json.loads(metadata_value)
+                else:
+                    export_metadata = metadata_value
+                stored_user_id = export_metadata.get("request_data", {}).get("user_id")
                 if stored_user_id == encoded_user_id:
                     user_exports.append(export)
                     if limit and len(user_exports) >= limit:
