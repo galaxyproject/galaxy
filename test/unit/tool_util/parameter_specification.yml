@@ -47,6 +47,11 @@ gx_int:
   job_internal_invalid:
    - parameter: null
    - {}
+  job_runtime_valid:
+   - parameter: 5
+  job_runtime_invalid:
+   - parameter: null
+   - {}
   landing_request_valid:
     - {}
     - parameter: 5
@@ -104,6 +109,11 @@ gx_boolean:
    - parameter: false
   job_internal_invalid:
    - {}
+  job_runtime_valid:
+   - parameter: true
+   - parameter: false
+  job_runtime_invalid:
+   - {}
   landing_request_valid:
     - {}
     - parameter: true
@@ -149,6 +159,11 @@ gx_boolean_user:
    - parameter: true
    - parameter: false
   job_internal_invalid:
+   - {}
+  job_runtime_valid:
+   - parameter: true
+   - parameter: false
+  job_runtime_invalid:
    - {}
   landing_request_valid:
     - {}
@@ -208,6 +223,11 @@ gx_int_optional:
    - parameter: null
   job_internal_invalid:
    - {}
+  job_runtime_valid:
+   - parameter: 5
+   - parameter: null
+  job_runtime_invalid:
+   - {}
   test_case_xml_valid:
   - parameter: null
   landing_request_valid:
@@ -253,6 +273,10 @@ gx_int_required: &gx_int_required
   job_internal_valid:
    - parameter: 5
   job_internal_invalid:
+   - {}
+  job_runtime_valid:
+   - parameter: 5
+  job_runtime_invalid:
    - {}
   # and actual request will require a value but the landing only needs to specify parameters
   # of interest - forcing users to make the rest of the selections.
@@ -332,6 +356,11 @@ gx_text_empty_validation:
   job_internal_invalid:
   - {}
   - parameter: ''
+  job_runtime_valid:
+  - parameter: foobar
+  job_runtime_invalid:
+  - {}
+  - parameter: ''
   workflow_step_linked_valid:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
@@ -373,6 +402,14 @@ gx_text:
     - parameter: ''
     - parameter: null
   job_internal_invalid:
+    - {}
+    - parameter: { "moo": "cow" }
+  job_runtime_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - parameter: null
+  job_runtime_invalid:
     - {}
     - parameter: { "moo": "cow" }
   workflow_step_valid:
@@ -493,6 +530,14 @@ gx_text_default:
   job_internal_invalid:
     - {}
     - parameter: { "moo": "cow" }
+  job_runtime_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - parameter: null
+  job_runtime_invalid:
+    - {}
+    - parameter: { "moo": "cow" }
   workflow_step_valid:
     - parameter: moocow
     - parameter: 'some spaces'
@@ -573,6 +618,11 @@ gx_select:
   - parameter: 'ex2'
   job_internal_invalid:
   - {}
+  job_runtime_valid:
+  - parameter: '--ex1'
+  - parameter: 'ex2'
+  job_runtime_invalid:
+  - {}
   test_case_xml_valid:
   - parameter: 'ex2'
   - parameter: '--ex1'
@@ -633,6 +683,13 @@ gx_select_optional:
   - parameter: 'ex2'
   - parameter: null
   job_internal_invalid:
+  - parameter: 'invalid'
+  - {}
+  job_runtime_valid:
+  - parameter: '--ex1'
+  - parameter: 'ex2'
+  - parameter: null
+  job_runtime_invalid:
   - parameter: 'invalid'
   - {}
   test_case_xml_valid:
@@ -698,6 +755,12 @@ gx_select_multiple:
   job_internal_invalid:
   - {}
   - parameter: "--ex1"
+  job_runtime_valid:
+  - parameter: ["--ex1"]
+  - parameter: null
+  job_runtime_invalid:
+  - {}
+  - parameter: "--ex1"
   workflow_step_invalid:
   - parameter: ["Ex1"]
   - parameter: {}
@@ -748,6 +811,10 @@ gx_select_no_options_validation:
   - parameter: "--ex1"
   job_internal_invalid:
   - {}
+  job_runtime_valid:
+  - parameter: "--ex1"
+  job_runtime_invalid:
+  - {}
 
 gx_genomebuild:
   request_valid:
@@ -772,6 +839,10 @@ gx_genomebuild:
   job_internal_valid:
   - parameter: hg19
   job_internal_invalid:
+  - {}
+  job_runtime_valid:
+  - parameter: hg19
+  job_runtime_invalid:
   - {}
 
 gx_genomebuild_optional:
@@ -799,6 +870,10 @@ gx_genomebuild_optional:
   - parameter: null
   job_internal_invalid:
   - {}
+  job_runtime_valid:
+  - parameter: null
+  job_runtime_invalid:
+  - {}
 
 gx_genomebuild_multiple:
   request_valid:
@@ -812,6 +887,11 @@ gx_genomebuild_multiple:
   - parameter: ["hg18", hg19"]
   - parameter: null
   job_internal_invalid:
+  - {}
+  job_runtime_valid:
+  - parameter: ["hg18", hg19"]
+  - parameter: null
+  job_runtime_invalid:
   - {}
 
 gx_directory_uri:
@@ -838,6 +918,13 @@ gx_directory_uri:
   - parameter: "gxfiles://foobar/"
   - parameter: "gxfiles://foobar"
   job_internal_invalid:
+  - parameter: "justsomestring"
+  - parameter: true
+  - parameter: null
+  job_runtime_valid:
+  - parameter: "gxfiles://foobar/"
+  - parameter: "gxfiles://foobar"
+  job_runtime_invalid:
   - parameter: "justsomestring"
   - parameter: true
   - parameter: null
@@ -889,6 +976,12 @@ gx_hidden:
     - parameter: 'some spaces'
     - parameter: ''
   job_internal_invalid:
+    - {}
+  job_runtime_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+  job_runtime_invalid:
     - {}
   workflow_step_valid:
     - parameter: moocow
@@ -979,6 +1072,14 @@ gx_float:
    - parameter: "5"
    - parameter: "5.0"
    - parameter: null
+  job_runtime_valid:
+   - parameter: 5
+   - parameter: 5.0
+  job_runtime_invalid:
+   - {}
+   - parameter: "5"
+   - parameter: "5.0"
+   - parameter: null
   landing_request_valid:
     - {}
     - parameter: 5
@@ -1037,6 +1138,14 @@ gx_float_optional:
    - parameter: 5.0
    - parameter: null
   job_internal_invalid:
+   - {}
+   - parameter: "5"
+   - parameter: "5.0"
+  job_runtime_valid:
+   - parameter: 5
+   - parameter: 5.0
+   - parameter: null
+  job_runtime_invalid:
    - {}
    - parameter: "5"
    - parameter: "5.0"
@@ -1716,6 +1825,20 @@ gx_conditional_boolean:
         test_parameter: true
     - conditional_parameter:
         boolean_parameter: true
+  job_runtime_valid:
+    - conditional_parameter:
+        test_parameter: true
+        integer_parameter: 1
+    - conditional_parameter:
+        test_parameter: false
+        boolean_parameter: false
+  job_runtime_invalid:
+    - {}
+    - conditional_parameter: {}
+    - conditional_parameter:
+        test_parameter: true
+    - conditional_parameter:
+        boolean_parameter: true
 
 gx_conditional_boolean_checked:
   request_valid:
@@ -1828,6 +1951,19 @@ gx_conditional_select:
       integer_parameter: 1
   - conditional_parameter: null
   - conditional_parameter: {}
+  job_runtime_valid:
+  - conditional_parameter:
+      test_parameter: a
+      integer_parameter: 1
+  - conditional_parameter:
+      test_parameter: b
+      boolean_parameter: true
+  job_runtime_invalid:
+  - {}
+  - conditional_parameter:
+      integer_parameter: 1
+  - conditional_parameter: null
+  - conditional_parameter: {}
 
 gx_repeat_boolean:
   request_valid:
@@ -1873,6 +2009,16 @@ gx_repeat_boolean:
   job_internal_invalid:
     - parameter: [{}]
     - parameter: [{}, {}]
+  job_runtime_valid:
+    - parameter:
+      - { boolean_parameter: true }
+    - parameter: []
+    - parameter:
+      - { boolean_parameter: true }
+      - { boolean_parameter: false }
+  job_runtime_invalid:
+    - parameter: [{}]
+    - parameter: [{}, {}]
 
 
 gx_repeat_boolean_min:
@@ -1904,6 +2050,13 @@ gx_repeat_boolean_min:
       - { boolean_parameter: true }
       - { boolean_parameter: false }
   job_internal_invalid:
+    - parameter: [{}, {}]
+    - parameter: []
+  job_runtime_valid:
+    - parameter:
+      - { boolean_parameter: true }
+      - { boolean_parameter: false }
+  job_runtime_invalid:
     - parameter: [{}, {}]
     - parameter: []
   test_case_xml_valid:
@@ -2015,6 +2168,11 @@ gx_section_boolean:
   job_internal_invalid:
     - {}
     - parameter: { boolean_parameter: 4 }
+  job_runtime_valid:
+    - parameter: { boolean_parameter: true }
+  job_runtime_invalid:
+    - {}
+    - parameter: { boolean_parameter: 4 }
 
 
 gx_section_data:
@@ -2052,6 +2210,11 @@ gx_drill_down_exact:
   job_internal_invalid:
   - parameter: c
   - {}
+  job_runtime_valid:
+  - parameter: aa
+  job_runtime_invalid:
+  - parameter: c
+  - {}
 
 gx_drill_down_exact_with_selection:
   request_valid:
@@ -2068,6 +2231,12 @@ gx_drill_down_exact_with_selection:
   job_internal_valid:
   - parameter: aa
   job_internal_invalid:
+  - parameter: c
+  - parameter: null
+  - {}
+  job_runtime_valid:
+  - parameter: aa
+  job_runtime_invalid:
   - parameter: c
   - parameter: null
   - {}
