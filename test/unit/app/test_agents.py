@@ -38,6 +38,7 @@ from galaxy.agents import (
     GalaxyAgentDependencies,
     QueryRouterAgent,
 )
+from galaxy.schema.agents import ConfidenceLevel
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util.unittest_utils import pytestmark_live_llm
 
@@ -195,7 +196,7 @@ class TestAgentUnitMocked:
         assert suggestions == []
 
     def test_error_analysis_suggestions_with_admin_required(self):
-        """Test error analysis doesn't create suggestions yet (future work)."""
+        """When requires_admin=True, should suggest contacting support."""
         from galaxy.agents.error_analysis import (
             ErrorAnalysisAgent,
             ErrorAnalysisResult,
@@ -213,8 +214,9 @@ class TestAgentUnitMocked:
         agent = ErrorAnalysisAgent(self.deps)
         suggestions = agent._create_suggestions(analysis)
 
-        # Currently returns empty - CONTACT_SUPPORT not wired up yet
-        assert suggestions == []
+        assert len(suggestions) == 1
+        assert suggestions[0].action_type.value == "contact_support"
+        assert suggestions[0].confidence == ConfidenceLevel.HIGH
 
     @pytest.mark.skip(reason="TestModel API changed in pydantic-ai, needs update for new version")
     @pytest.mark.asyncio

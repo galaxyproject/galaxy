@@ -16,6 +16,7 @@ from typing import (
     Optional,
 )
 
+from pydantic import ValidationError
 from pydantic_ai import (
     Agent,
     RunContext,
@@ -242,8 +243,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
                         suggestions=handoff_data.get("suggestions", []),
                         metadata=metadata,
                     )
-            except (json.JSONDecodeError, TypeError, KeyError):
-                pass  # Not a handoff response, continue with normal processing
+            except (json.JSONDecodeError, TypeError, KeyError, ValidationError):
+                pass  # Not a handoff response or malformed suggestions, continue normally
 
             # Direct response from router - use helper for consistent metadata
             return self._build_response(

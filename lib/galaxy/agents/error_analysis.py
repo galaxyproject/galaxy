@@ -17,6 +17,7 @@ from pydantic_ai import Agent
 from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
+    ActionType,
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
@@ -322,12 +323,20 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
 
         Only creates suggestions for concrete, executable Galaxy actions.
         General guidance (solution steps, alternatives) is in the response content.
-
-        Currently returns empty - future work could add:
-        - CONTACT_SUPPORT with pre-filled context when requires_admin=True
-        - TOOL_RUN with specific tool_id if we can suggest rerunning with different params
         """
-        return []
+        suggestions = []
+
+        if analysis.requires_admin:
+            suggestions.append(
+                ActionSuggestion(
+                    action_type=ActionType.CONTACT_SUPPORT,
+                    description="Contact Galaxy administrator for assistance",
+                    confidence=ConfidenceLevel.HIGH,
+                    priority=1,
+                )
+            )
+
+        return suggestions
 
     def _get_simple_system_prompt(self) -> str:
         """Simple system prompt for models without structured output."""

@@ -15,14 +15,6 @@ from pydantic import (
 )
 
 
-class TokenUsage(BaseModel):
-    """Token usage information from LLM calls."""
-
-    input_tokens: int = Field(default=0, description="Number of input tokens")
-    output_tokens: int = Field(default=0, description="Number of output tokens")
-    total_tokens: int = Field(default=0, description="Total tokens used")
-
-
 class ConfidenceLevel(str, Enum):
     """Confidence levels for agent responses."""
 

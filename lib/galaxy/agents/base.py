@@ -511,7 +511,7 @@ class BaseGalaxyAgent(ABC):
     def _build_response(
         self,
         content: str,
-        confidence: Union[str, ConfidenceLevel],
+        confidence: ConfidenceLevel,
         method: str,
         result: Any = None,
         query: Optional[str] = None,

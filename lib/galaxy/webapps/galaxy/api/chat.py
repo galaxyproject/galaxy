@@ -217,7 +217,13 @@ class ChatAPI:
                     result["exchange_id"] = exchange_id
                 else:
                     # Create new exchange for first message
-                    exchange = self.chat_manager.create_general_chat(trans, query_text, result, agent_type)
+                    # Serialize agent_response for JSON storage
+                    agent_resp = result.get("agent_response")
+                    storable_result = {
+                        "response": result.get("response", ""),
+                        "agent_response": agent_resp.model_dump() if agent_resp else None,
+                    }
+                    exchange = self.chat_manager.create_general_chat(trans, query_text, storable_result, agent_type)
                     result["exchange_id"] = exchange.id
 
             result["processing_time"] = time.time() - start_time
