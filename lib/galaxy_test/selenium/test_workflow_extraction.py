@@ -206,6 +206,11 @@ test_data:
         """Count number of checked job checkboxes."""
         return len(self.find_elements_by_selector('input[name="job_ids"]:checked'))
 
+    def get_job_checkbox_values(self) -> list:
+        """Get all job checkbox values (job IDs) from the rendered UI."""
+        checkboxes = self.find_elements_by_selector('input[name="job_ids"]')
+        return [cb.get_attribute("value") for cb in checkboxes]
+
     @selenium_test
     @managed_history
     def test_extract_form_loads(self):
@@ -231,7 +236,7 @@ test_data:
     def test_extract_form_validation(self):
         """Test form validation: no jobs selected creates workflow with only inputs."""
         history_id = self.current_history_id()
-        hdca, all_job_ids = self.setup_mapped_collection_history(history_id)
+        self.setup_mapped_collection_history(history_id)
 
         self.navigate_to_workflow_extraction()
 
@@ -239,8 +244,9 @@ test_data:
         assert self.count_job_checkboxes() == 2, "Expected exactly 2 job checkboxes"
         assert self.count_checked_job_checkboxes() == 2, "Expected both jobs checked initially"
 
-        # Uncheck ALL jobs
-        for job_id in all_job_ids:
+        # Uncheck ALL jobs using IDs from rendered checkboxes
+        rendered_job_ids = self.get_job_checkbox_values()
+        for job_id in rendered_job_ids:
             self.extract_workflow_toggle_job(job_id)
         self.sleep_for(self.wait_types.UX_RENDER)
 
@@ -308,7 +314,7 @@ test_data:
     def test_extract_toggle_job_subset(self):
         """Toggle some jobs off, verify only selected jobs create workflow steps."""
         history_id = self.current_history_id()
-        hdca, all_job_ids = self.setup_mapped_collection_history(history_id)
+        self.setup_mapped_collection_history(history_id)
 
         self.navigate_to_workflow_extraction()
 
@@ -316,17 +322,18 @@ test_data:
         assert self.count_checked_job_checkboxes() == 2, "Expected 2 checked jobs"
         self.screenshot("workflow_extract_job_subset_initial")
 
-        # Toggle off first job (from first tool run)
-        job_id_run1 = all_job_ids[0]
-        self.extract_workflow_toggle_job(job_id_run1)
+        # Get job IDs from rendered checkboxes and toggle off first one
+        rendered_job_ids = self.get_job_checkbox_values()
+        job_id_first = rendered_job_ids[0]
+        job_id_second = rendered_job_ids[1]
+        self.extract_workflow_toggle_job(job_id_first)
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        # Verify first run's job unchecked, second run's job still checked
-        job_id_run2 = all_job_ids[1]
-        checkbox1 = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id_run1}"]')
-        checkbox2 = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id_run2}"]')
-        assert not checkbox1.is_selected(), f"Expected job {job_id_run1} unchecked"
-        assert checkbox2.is_selected(), f"Expected job {job_id_run2} still checked"
+        # Verify first job unchecked, second job still checked
+        checkbox1 = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id_first}"]')
+        checkbox2 = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id_second}"]')
+        assert not checkbox1.is_selected(), f"Expected job {job_id_first} unchecked"
+        assert checkbox2.is_selected(), f"Expected job {job_id_second} still checked"
 
         self.screenshot("workflow_extract_job_subset_toggled")
 
@@ -374,7 +381,7 @@ test_data:
     def test_extract_with_collection_input(self):
         """Extract workflow with collection mapped over."""
         history_id = self.current_history_id()
-        hdca, all_job_ids = self.setup_mapped_collection_history(history_id)
+        self.setup_mapped_collection_history(history_id)
 
         workflow = self.extract_workflow_and_download(
             "Selenium Collection Workflow", "workflow_extract_with_collection"
