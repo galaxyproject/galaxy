@@ -91,9 +91,6 @@ jobs:
       # Ensure npm 11.5.1 or later for trusted publishing
       - run: npm install -g npm@latest
         working-directory: 'client'
-      # Ensure npm 11.5.1 or later for trusted publishing
-      - run: npm install -g npm@latest
-        working-directory: 'client'
       - name: publish client
         if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
         run: npm publish --provenance --access public
