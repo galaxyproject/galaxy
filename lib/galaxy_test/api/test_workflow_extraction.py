@@ -231,8 +231,11 @@ test_data:
             workflow_id = response.json()["id"]
             workflow = self.workflow_populator.download_workflow(workflow_id)
             assert workflow
-            # TODO: after adding request models we should be able to recover implicit collection job requests.
-            # assert len(workflow["steps"]) == 4
+            # TODO https://github.com/galaxyproject/galaxy/issues/21788
+            # Empty collection filtering causes no jobs to run, so extraction
+            # fails to recover implicit collection job requests. Currently extracts 0 steps.
+            # Expected: 4 steps (2 inputs + 2 tools: __FILTER_FROM_FILE__ + cat1)
+            assert len(workflow["steps"]) == 0
 
     @skip_without_tool("cat_collection")
     def test_subcollection_mapping(self, history_id):
@@ -294,14 +297,23 @@ steps:
         )
         job1_id = self._job_id_for_tool(jobs_summary.jobs, "cat_list")
         job2_id = self._job_id_for_tool(jobs_summary.jobs, "collection_creates_dynamic_nested")
-        self._extract_and_download_workflow(
+        downloaded_workflow = self._extract_and_download_workflow(
             history_id,
             reimport_as="test_extract_workflows_with_subcollection_reduction",
             dataset_collection_ids=["1"],
             job_ids=[job1_id, job2_id],
         )
-        # TODO: refactor workflow extraction to not rely on HID, so we can actually properly connect
-        # this workflow
+        # TODO https://github.com/galaxyproject/galaxy/issues/21789
+        # Extraction creates spurious input collection and misconnects cat_list to it
+        # instead of properly connecting cat_list to collection_creates_dynamic_nested.
+        # Current behavior: 3 steps (1 collection input + 2 tools), cat_list wrongly connected to input.
+        # Expected behavior: 2 tool steps properly connected to each other.
+        self.__check_workflow(
+            downloaded_workflow,
+            step_count=3,
+            data_collection_input_count=1,
+            tool_ids=["collection_creates_dynamic_nested", "cat_list"],
+        )
 
     @skip_without_tool("collection_split_on_column")
     def test_extract_workflow_with_output_collections(self, history_id):
@@ -436,7 +448,9 @@ test_data:
         )
 
         # 1 input step + 1 cat1 tool (NOT including cat1 from History A)
-        self.__check_workflow(downloaded_workflow, step_count=2, data_input_count=1, tool_ids=["cat1"])
+        self.__check_workflow(
+            downloaded_workflow, step_count=2, data_input_count=1, tool_ids=["cat1"], verify_connected=True
+        )
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
@@ -456,7 +470,9 @@ test_data:
         )
 
         # Lineage preserved: input step + cat1 tool step
-        self.__check_workflow(downloaded_workflow, step_count=2, data_input_count=1, tool_ids=["cat1"])
+        self.__check_workflow(
+            downloaded_workflow, step_count=2, data_input_count=1, tool_ids=["cat1"], verify_connected=True
+        )
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
@@ -488,7 +504,9 @@ test_data:
         )
 
         # input + cat1 + cat1 (full chain preserved)
-        self.__check_workflow(downloaded_workflow, step_count=3, data_input_count=1, tool_ids=["cat1"])
+        self.__check_workflow(
+            downloaded_workflow, step_count=3, data_input_count=1, tool_ids=["cat1"], verify_connected=True
+        )
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
@@ -517,7 +535,9 @@ test_data:
         )
 
         # Pipeline 1: full lineage (input + tool), Pipeline 2: output2 as input
-        self.__check_workflow(downloaded_workflow, step_count=3, data_input_count=2, tool_ids=["cat1"])
+        self.__check_workflow(
+            downloaded_workflow, step_count=3, data_input_count=2, tool_ids=["cat1"], verify_connected=True
+        )
 
     def _job_id_for_tool(self, jobs, tool_id):
         return self._job_for_tool(jobs, tool_id)["id"]
