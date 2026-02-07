@@ -108,6 +108,9 @@ const activities = computed({
             if (activity.id === "interactivetools" && !config.value?.interactivetools_enable) {
                 return false;
             }
+            if (activity.id === "chatgxy" && !config.value?.llm_api_configured) {
+                return false;
+            }
             return true;
         });
     },
@@ -116,7 +119,8 @@ const activities = computed({
         const filteredOut = storeActivities.value.filter(
             (activity) =>
                 (activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value) ||
-                (activity.id === "interactivetools" && !config.value?.interactivetools_enable),
+                (activity.id === "interactivetools" && !config.value?.interactivetools_enable) ||
+                (activity.id === "chatgxy" && !config.value?.llm_api_configured),
         );
         storeActivities.value = [...newActivities, ...filteredOut];
     },
