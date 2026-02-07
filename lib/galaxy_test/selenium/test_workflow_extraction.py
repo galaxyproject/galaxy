@@ -42,8 +42,8 @@ class TestWorkflowExtractionSelenium(SeleniumTestCase, WorkflowStructureAssertio
     def setup_mapped_collection_history(self, history_id: str) -> tuple:
         """Create paired collection and run random_lines mapped over it twice.
 
-        Returns: (hdca, all_job_ids) where all_job_ids is list of 4 job IDs
-        (2 jobs per batch run over paired collection with 2 elements).
+        Returns: (hdca, all_job_ids) where all_job_ids is list of 2 job IDs
+        (1 job per batch run - batch creates single job processing entire collection).
         """
         hdca = self.dataset_collection_populator.create_pair_in_history(
             history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
@@ -235,9 +235,9 @@ test_data:
 
         self.navigate_to_workflow_extraction()
 
-        # Verify initial state: 4 jobs (2 per batch run over paired collection)
-        assert self.count_job_checkboxes() == 4, "Expected exactly 4 job checkboxes"
-        assert self.count_checked_job_checkboxes() == 4, "Expected all 4 jobs checked initially"
+        # Verify initial state: 2 jobs (1 per batch run over collection)
+        assert self.count_job_checkboxes() == 2, "Expected exactly 2 job checkboxes"
+        assert self.count_checked_job_checkboxes() == 2, "Expected both jobs checked initially"
 
         # Uncheck ALL jobs
         for job_id in all_job_ids:
@@ -312,24 +312,21 @@ test_data:
 
         self.navigate_to_workflow_extraction()
 
-        # Verify all 4 jobs checked initially
-        assert self.count_checked_job_checkboxes() == 4, "Expected 4 checked jobs"
+        # Verify both jobs checked initially
+        assert self.count_checked_job_checkboxes() == 2, "Expected 2 checked jobs"
         self.screenshot("workflow_extract_job_subset_initial")
 
-        # Toggle off jobs from first tool run (first 2 job IDs)
-        jobs_from_run1 = all_job_ids[:2]
-        for job_id in jobs_from_run1:
-            self.extract_workflow_toggle_job(job_id)
+        # Toggle off first job (from first tool run)
+        job_id_run1 = all_job_ids[0]
+        self.extract_workflow_toggle_job(job_id_run1)
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        # Verify first run's jobs unchecked, second run's jobs still checked
-        for job_id in jobs_from_run1:
-            checkbox = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id}"]')
-            assert not checkbox.is_selected(), f"Expected job {job_id} unchecked"
-        jobs_from_run2 = all_job_ids[2:]
-        for job_id in jobs_from_run2:
-            checkbox = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id}"]')
-            assert checkbox.is_selected(), f"Expected job {job_id} still checked"
+        # Verify first run's job unchecked, second run's job still checked
+        job_id_run2 = all_job_ids[1]
+        checkbox1 = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id_run1}"]')
+        checkbox2 = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id_run2}"]')
+        assert not checkbox1.is_selected(), f"Expected job {job_id_run1} unchecked"
+        assert checkbox2.is_selected(), f"Expected job {job_id_run2} still checked"
 
         self.screenshot("workflow_extract_job_subset_toggled")
 
@@ -401,9 +398,9 @@ test_data:
 
         self.navigate_to_workflow_extraction()
 
-        # Verify 3 jobs: 2 from random_lines1 mapped over paired + 1 from multi_data_param reduce
+        # Verify 2 jobs: 1 from random_lines1 mapped over paired + 1 from multi_data_param reduce
         job_count = self.count_job_checkboxes()
-        assert job_count == 3, f"Expected exactly 3 job checkboxes, found {job_count}"
+        assert job_count == 2, f"Expected exactly 2 job checkboxes, found {job_count}"
         self.screenshot("workflow_extract_reduce_collection")
 
         workflow_name = "Selenium Reduce Collection"
