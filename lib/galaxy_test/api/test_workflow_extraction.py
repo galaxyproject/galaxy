@@ -650,11 +650,6 @@ test_data:
                 wait_on_history_length=history_length,
                 export_kwds={},
             )
-            # wait a little more for those jobs, todo fix to wait for history imported false or
-            # for a specific number of jobs...
-            import time
-
-            time.sleep(1)
 
             if "reimport_jobs_ids" in extract_payload:
                 new_history_job_ids = extract_payload["reimport_jobs_ids"](new_history_id)
