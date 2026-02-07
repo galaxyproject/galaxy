@@ -651,11 +651,6 @@ class DataCollectionRecordRuntime(DataCollectionInternalJsonBase):
     elements: Dict[str, Union[DataCollectionElementInternalJson, "DataCollectionNestedRuntime"]]
 
 
-class DataCollectionRecordRuntime(DataCollectionInternalJsonBase):
-    """Record collection runtime representation."""
-    elements: Dict[str, Union[DataCollectionElementInternalJson, "DataCollectionNestedRuntime"]]
-
-
 class DataCollectionPairedOrUnpairedRuntime(DataCollectionInternalJsonBase):
     """Paired or Unpaired collection runtime representation."""
     elements: Dict[str, DataCollectionElementInternalJson]
@@ -957,15 +952,23 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
             return optional_if_needed(DataCollectionListRuntime, self.optional)
         elif self.collection_type == "paired":
             return optional_if_needed(DataCollectionPairedRuntime, self.optional)
+        elif self.collection_type == "record":
+            return optional_if_needed(DataCollectionRecordRuntime, self.optional)
+        elif self.collection_type == "paired_or_unpaired":
+            return optional_if_needed(DataCollectionPairedOrUnpairedRuntime, self.optional)
+        elif self.collection_type == "sample_sheet":
+            return optional_if_needed(DataCollectionListRuntime, self.optional)
         elif self.collection_type:
-            # Nested types like "list:paired"
+            # Nested types like "list:paired", "sample_sheet:paired", etc.
             return optional_if_needed(DataCollectionNestedRuntime, self.optional)
         else:
             # Unknown collection_type - union of all runtime types
             base_type = union_type([
                 DataCollectionListRuntime,
                 DataCollectionPairedRuntime,
-                DataCollectionNestedRuntime
+                DataCollectionRecordRuntime,
+                DataCollectionPairedOrUnpairedRuntime,
+                DataCollectionNestedRuntime,
             ])
             return optional_if_needed(base_type, self.optional)
 
