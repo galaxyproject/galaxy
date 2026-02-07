@@ -9320,7 +9320,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     uuid: Mapped[Optional[Union[UUID]]] = mapped_column(UUIDType())
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
-    on_complete: Mapped[Optional[list]] = mapped_column(JSONType)
+    on_complete: Mapped[Optional[list]] = mapped_column(JSON)
 
     history = relationship("History", back_populates="workflow_invocations")
     input_parameters = relationship("WorkflowRequestInputParameter", back_populates="workflow_invocation")
