@@ -13,7 +13,7 @@ import { gunzipSync } from "node:zlib";
  * 2. Replace production bundle URLs with Vite dev server entry points
  * 3. Remove production CSS (Vite injects CSS via JS in dev mode)
  *
- * This allows `GALAXY_URL=https://usegalaxy.org yarn develop` to work with
+ * This allows `GALAXY_URL=https://usegalaxy.org pnpm develop` to work with
  * full HMR support without any server-side changes.
  */
 
