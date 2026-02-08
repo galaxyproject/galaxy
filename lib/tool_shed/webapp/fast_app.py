@@ -59,7 +59,7 @@ api_tags_metadata = [
 
 # Set this if asset handling should be sent to vite.
 # Run vite with:
-#   yarn dev
+#   pnpm dev
 # Start tool shed with:
 #   TOOL_SHED_VITE_PORT=4040 TOOL_SHED_API_VERSION=v2 ./run_tool_shed.sh
 TOOL_SHED_VITE_PORT: Optional[str] = os.environ.get("TOOL_SHED_VITE_PORT", None)

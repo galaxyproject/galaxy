@@ -21,7 +21,7 @@
 This wrapper script largely serves as a point documentation and convenience for
 running Galaxy's Python tests. All Python tests shipped with Galaxy can be run with
 pytest directly. Galaxy's client unit tests can be run with make client-test
-or yarn directly as documented in detail in client/README.md.
+or pnpm directly as documented in detail in client/README.md.
 
 The main test types are as follows:
 
