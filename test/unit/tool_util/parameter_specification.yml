@@ -2433,6 +2433,33 @@ gx_data_collection_list:
   job_runtime_invalid:
     - parameter: {src: hdca, id: 5}
     - {}
+    # Cross-type: paired-shaped data should be rejected by list type
+    - parameter:
+        class: Collection
+        name: wrong_type
+        collection_type: paired
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          reverse:
+            class: File
+            element_identifier: reverse
+            basename: "r.txt"
+            location: "step_input://1"
+            path: "/tmp/r.txt"
+            nameroot: "r"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
 
 gx_data_collection_paired:
   request_valid:
@@ -2482,6 +2509,39 @@ gx_data_collection_paired:
   job_runtime_invalid:
     - parameter: {src: hdca, id: 5}
     - {}
+    # Cross-type: list-shaped data should be rejected by paired type
+    - parameter:
+        class: Collection
+        name: wrong_type
+        collection_type: list
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Missing reverse element
+    - parameter:
+        class: Collection
+        name: incomplete_paired
+        collection_type: paired
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
 
 cwl_int:
   request_valid:
