@@ -54,8 +54,8 @@ export function visitInputs(inputs, callback, prefix = "", context = undefined) 
 export function visitAllInputs(inputs, callback, prefix = "") {
     for (var key in inputs) {
         var node = inputs[key];
-        node.name = node.name || key;
-        var name = prefix ? `${prefix}|${node.name}` : node.name;
+        var nodeName = node.name || key;
+        var name = prefix ? `${prefix}|${nodeName}` : nodeName;
         switch (node.type) {
             case "repeat":
                 _.each(node.cache, (cache, j) => {

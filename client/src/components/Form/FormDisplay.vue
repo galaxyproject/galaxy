@@ -163,7 +163,9 @@ applyErrors(props.errors);
 watch(
     () => props.activeNodeId,
     () => {
-        scrollToElement(props.activeNodeId!);
+        if (props.activeNodeId != null) {
+            scrollToElement(props.activeNodeId);
+        }
     },
 );
 
