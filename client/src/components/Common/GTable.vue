@@ -618,7 +618,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     <!-- Data columns -->
                                     <td
                                         v-for="(field, fieldIndex) in props.fields"
-                                        :id="getCellId(props.id, field.key, index)"
+                                        :id="getCellId(props.id, field.key, getGlobalIndex(paginatedIndex))"
                                         :key="field.key"
                                         :class="[
                                             field.cellClass,
