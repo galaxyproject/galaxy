@@ -19,10 +19,9 @@ class TestTutorialMode(SeleniumTestCase):
         self.screenshot("tutorial_mode_0_1")
 
         # Access inside the frame
-        self.switch_to_frame("gtn-embed")
-        self.wait_for_selector_visible("#top-navbar")
-        self.screenshot("tutorial_mode_0_2")
-        self.switch_to_default_content()
+        with self.in_frame("gtn-embed"):
+            self.wait_for_selector_visible("#top-navbar")
+            self.screenshot("tutorial_mode_0_2")
 
     def _ensure_tutorial_mode_available(self):
         """Skip a test if the webhook GTN doesn't appear."""

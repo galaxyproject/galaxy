@@ -404,22 +404,25 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             self.remove_local_storage(key)
 
     @contextlib.contextmanager
-    def main_panel(self):
-        """Decorator to operate within the context of Galaxy's main frame."""
+    def in_frame(self, frame_reference: Union[str, int, Any] = "frame"):
+        """Context manager to operate within the context of an iframe."""
         try:
-            self.switch_to_main_panel()
+            self.switch_to_frame(frame_reference)
             yield
         finally:
             self.switch_to_default_content()
 
     @contextlib.contextmanager
+    def main_panel(self):
+        """Decorator to operate within the context of Galaxy's main frame."""
+        with self.in_frame(GALAXY_MAIN_FRAME_ID):
+            yield
+
+    @contextlib.contextmanager
     def visualization_panel(self):
         """Decorator to operate within the context of Galaxy's visualization frame."""
-        try:
-            self.switch_to_frame(GALAXY_VISUALIZATION_FRAME_ID)
+        with self.in_frame(GALAXY_VISUALIZATION_FRAME_ID):
             yield
-        finally:
-            self.switch_to_default_content()
 
     def api_get(self, endpoint, data=None, raw=False):
         data = data or {}
