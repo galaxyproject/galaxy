@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BForm, BFormInput, BModal } from "bootstrap-vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import { updateWorkflow } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
@@ -11,7 +11,6 @@ import Heading from "@/components/Common/Heading.vue";
 interface Props {
     id: string;
     name: string;
-    show: boolean;
 }
 
 const props = defineProps<Props>();
@@ -22,7 +21,8 @@ const emit = defineEmits<{
 }>();
 
 const nameModel = ref(props.name);
-const workflowNameInput = ref<HTMLInputElement | null>(null);
+
+const nameRemainsSame = computed(() => nameModel.value === props.name);
 
 async function onRename(newName: string) {
     try {
@@ -34,15 +34,19 @@ async function onRename(newName: string) {
         emit("close");
     }
 }
+
+function onClose() {
+    emit("close");
+}
 </script>
 
 <template>
     <BModal
-        :visible="show"
-        :ok-disabled="!nameModel"
+        visible
         :ok-title="localize('Rename')"
+        :ok-disabled="nameRemainsSame"
         @ok="onRename(nameModel)"
-        @hide="$emit('close')">
+        @hide="onClose">
         <template v-slot:modal-title>
             <Heading h2 inline size="sm"> Rename workflow: {{ localize(name) }}</Heading>
         </template>
