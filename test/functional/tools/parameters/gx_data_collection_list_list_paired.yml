@@ -1,0 +1,19 @@
+class: GalaxyTool
+id: gx_data_collection_list_list_paired
+name: gx_data_collection_list_list_paired
+version: "1.0.0"
+profile: "25.0"
+container: busybox
+shell_command: |
+  echo "Collection type: $(inputs.parameter.collection_type)" > output.txt
+  echo "Name: $(inputs.parameter.name)" >> output.txt
+inputs:
+  - name: parameter
+    type: data_collection
+    collection_type: "list:list:paired"
+    label: Input deeply nested list of list of paired collections
+outputs:
+  - name: output
+    type: data
+    format: txt
+    from_work_dir: output.txt
