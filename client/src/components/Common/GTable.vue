@@ -50,6 +50,12 @@ interface Props {
     containerClass?: string | string[];
 
     /**
+     * Current page number for pagination (1-based)
+     * @default undefined
+     */
+    currentPage?: number;
+
+    /**
      * Empty state configuration
      * @default { message: "No data available" }
      */
@@ -128,6 +134,12 @@ interface Props {
     localSorting?: boolean;
 
     /**
+     * Number of items per page for pagination
+     * @default undefined
+     */
+    perPage?: number;
+
+    /**
      * Whether to show striped rows
      * @default true
      */
@@ -189,6 +201,7 @@ const props = withDefaults(defineProps<Props>(), {
     bordered: false,
     clickableRows: false,
     containerClass: "",
+    currentPage: undefined,
     emptyState: () => ({ message: "No data available" }),
     fields: () => [],
     filter: "",
@@ -202,6 +215,7 @@ const props = withDefaults(defineProps<Props>(), {
     localFiltering: true,
     localSorting: true,
     overlayLoading: false,
+    perPage: undefined,
     selectable: false,
     selectedItems: () => [],
     showSelectAll: false,
@@ -257,6 +271,15 @@ const stickyHeaderMaxHeight = computed(() => {
         return undefined;
     }
     return props.stickyHeader === true ? "300px" : props.stickyHeader;
+});
+
+const paginatedLocalItems = computed(() => {
+    if (!props.currentPage || !props.perPage) {
+        return localItems.value;
+    }
+
+    const startIndex = (props.currentPage - 1) * props.perPage;
+    return localItems.value.slice(startIndex, startIndex + props.perPage);
 });
 
 const localItems = computed(() => {
@@ -343,6 +366,16 @@ const indeterminateSelected = computed(() => {
 const allSelected = computed(() => {
     return props.selectable && localItems.value.length > 0 && props.selectedItems.length === localItems.value.length;
 });
+
+/**
+ * Get the global index for a paginated item
+ */
+function getGlobalIndex(paginatedIndex: number): number {
+    if (!props.currentPage || !props.perPage) {
+        return paginatedIndex;
+    }
+    return (props.currentPage - 1) * props.perPage + paginatedIndex;
+}
 
 /**
  * Handle column header click for sorting
@@ -560,26 +593,26 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                         </tr>
                     </thead>
 
-                    <tbody v-if="localItems.length > 0">
-                        <template v-for="(item, index) in localItems">
+                    <tbody v-if="paginatedLocalItems.length > 0">
+                        <template v-for="(item, paginatedIndex) in paginatedLocalItems">
                             <template>
                                 <tr
-                                    :id="getRowId(props.id, index)"
-                                    :key="`tr` + index"
+                                    :id="getRowId(props.id, getGlobalIndex(paginatedIndex))"
+                                    :key="`tr` + getGlobalIndex(paginatedIndex)"
                                     :class="{
                                         'g-table-row-clickable': clickableRows,
-                                        'g-table-row-selected': isRowSelected(index),
+                                        'g-table-row-selected': isRowSelected(getGlobalIndex(paginatedIndex)),
                                     }"
-                                    @click="onRowClick(item, index, $event)">
+                                    @click="onRowClick(item, getGlobalIndex(paginatedIndex), $event)">
                                     <!-- Selection checkbox column -->
                                     <td v-if="selectable" class="g-table-select-column">
                                         <BFormCheckbox
-                                            :id="`${getRowId(props.id, index)}-select`"
+                                            :id="`${getRowId(props.id, getGlobalIndex(paginatedIndex))}-select`"
                                             v-b-tooltip.hover.noninteractive
-                                            :checked="isRowSelected(index)"
+                                            :checked="isRowSelected(getGlobalIndex(paginatedIndex))"
                                             title="Select for bulk actions"
                                             @click.stop
-                                            @change="onRowSelect(item, index)" />
+                                            @change="onRowSelect(item, getGlobalIndex(paginatedIndex))" />
                                     </td>
 
                                     <!-- Data columns -->
@@ -593,11 +626,14 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                             getAlignmentClass(field.align),
                                             { 'hide-on-small': field.hideOnSmall },
                                         ]">
-                                        <template v-if="fieldIndex === 0 && getStatusIcon(item, index)">
+                                        <template
+                                            v-if="
+                                                fieldIndex === 0 && getStatusIcon(item, getGlobalIndex(paginatedIndex))
+                                            ">
                                             <FontAwesomeIcon
-                                                v-if="getStatusIcon(item, index)"
+                                                v-if="getStatusIcon(item, getGlobalIndex(paginatedIndex))"
                                                 v-b-tooltip.hover.noninteractive
-                                                v-bind="getIconProps(item, index)"
+                                                v-bind="getIconProps(item, getGlobalIndex(paginatedIndex))"
                                                 fixed-width />
                                         </template>
 
@@ -605,15 +641,15 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                             :name="`cell(${field.key})`"
                                             :value="item[field.key]"
                                             :item="item"
-                                            :index="index"
-                                            :toggle-details="() => toggleRowDetails(index)">
+                                            :index="getGlobalIndex(paginatedIndex)"
+                                            :toggle-details="() => toggleRowDetails(getGlobalIndex(paginatedIndex))">
                                             <span>{{ getCellValue(item, field) }}</span>
                                         </slot>
                                     </td>
 
                                     <!-- Actions column -->
                                     <td v-if="props.actions" class="g-table-actions-column">
-                                        <slot name="actions" :item="item" :index="index">
+                                        <slot name="actions" :item="item" :index="getGlobalIndex(paginatedIndex)">
                                             <BDropdown
                                                 v-b-tooltip.hover.noninteractive
                                                 no-caret
@@ -639,7 +675,10 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                                         :title="ac.title"
                                                         :href="ac.href"
                                                         :target="ac.externalLink ? '_blank' : undefined"
-                                                        @click.stop="ac.handler && ac.handler(item, index)">
+                                                        @click.stop="
+                                                            ac.handler &&
+                                                            ac.handler(item, getGlobalIndex(paginatedIndex))
+                                                        ">
                                                         <FontAwesomeIcon v-if="ac.icon" :icon="ac.icon" fixed-width />
                                                         {{ ac.label }}
                                                     </BDropdownItem>
@@ -651,13 +690,16 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                             </template>
 
                             <!-- Row details expansion -->
-                            <tr v-if="isRowExpanded(index)" :key="`details-${index}`" class="g-table-details-row">
+                            <tr
+                                v-if="isRowExpanded(getGlobalIndex(paginatedIndex))"
+                                :key="`details-${getGlobalIndex(paginatedIndex)}`"
+                                class="g-table-details-row">
                                 <td :colspan="props.fields.length + (selectable ? 1 : 0) + (props.actions ? 1 : 0)">
                                     <slot
                                         name="row-details"
                                         :item="item"
-                                        :index="index"
-                                        :toggle-details="() => toggleRowDetails(index)" />
+                                        :index="getGlobalIndex(paginatedIndex)"
+                                        :toggle-details="() => toggleRowDetails(getGlobalIndex(paginatedIndex))" />
                                 </td>
                             </tr>
                         </template>
