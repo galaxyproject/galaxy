@@ -71,8 +71,8 @@ const {
     historyId: () => props.historyId,
     filterText: () => props.filterText || "",
     enabled: () => localShowToggle.value,
-    immediate: false,
 });
+
 const pairedOrUnpairedSupportedCollectionType = computed<SupportedPairedOrPairedBuilderCollectionTypes | null>(() => {
     if (
         ["list:paired", "list:list", "list:paired_or_unpaired", "list:list:paired"].indexOf(props.collectionType) !== -1
@@ -225,6 +225,7 @@ defineExpose({ redrawCreator });
                 </div>
             </Heading>
         </template>
+
         <BAlert v-if="isFetchingItems && !initialFetch" variant="info" show>
             <LoadingSpan :message="localize('Loading items')" />
         </BAlert>
