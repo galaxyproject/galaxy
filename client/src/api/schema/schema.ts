@@ -15109,7 +15109,7 @@ export interface components {
              * Tags
              * @description The tags of the topic.
              */
-            tags: string[];
+            tags: components["schemas"]["HelpForumTag"][];
             /**
              * Tags Descriptions
              * @description The descriptions of the tags of the topic.

@@ -22,6 +22,12 @@ class HelpTempBaseModel(Model):
     model_config = ConfigDict(extra="allow")
 
 
+class HelpForumTag(HelpTempBaseModel):
+    """Model for a tag in the help forum."""
+
+    pass
+
+
 class HelpForumPost(HelpTempBaseModel):
     """Model for a post in the help forum."""
 
@@ -59,7 +65,7 @@ class HelpForumTopic(Model):
     archived: Annotated[bool, Field(description="Whether the topic is archived.")]
     bookmarked: Annotated[Optional[bool], Field(default=None, description="Whether the topic is bookmarked.")]
     liked: Annotated[Optional[bool], Field(default=None, description="Whether the topic is liked.")]
-    tags: Annotated[list[str], Field(description="The tags of the topic.")]
+    tags: Annotated[list[HelpForumTag], Field(description="The tags of the topic.")]
     tags_descriptions: Annotated[
         Optional[Any], Field(default=None, description="The descriptions of the tags of the topic.")
     ]
@@ -75,12 +81,6 @@ class HelpForumUser(HelpTempBaseModel):
 
 class HelpForumCategory(HelpTempBaseModel):
     """Model for a category in the help forum."""
-
-    pass
-
-
-class HelpForumTag(HelpTempBaseModel):
-    """Model for a tag in the help forum."""
 
     pass
 
