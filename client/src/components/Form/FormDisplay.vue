@@ -14,9 +14,9 @@
         :on-change-form="onChangeForm"
         :workflow-building-mode="workflowBuildingMode"
         :workflow-run="workflowRun"
-        :active-node-id="activeNodeId ?? undefined"
+        :active-node-id="activeNodeId"
         :sync-with-graph="syncWithGraph"
-        :steps-not-matching-request="stepsNotMatchingRequest ?? undefined"
+        :steps-not-matching-request="stepsNotMatchingRequest"
         @stop-flagging="emit('stop-flagging')"
         @update:active-node-id="updateActiveNode" />
 </template>
@@ -49,9 +49,9 @@ interface Props {
     workflowBuildingMode?: boolean;
     workflowRun?: boolean;
     allowEmptyValueOnRequiredInput?: boolean;
-    activeNodeId?: number | null;
+    activeNodeId?: number;
     syncWithGraph?: boolean;
-    stepsNotMatchingRequest?: string[] | null;
+    stepsNotMatchingRequest?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -70,9 +70,7 @@ const props = withDefaults(defineProps<Props>(), {
     workflowBuildingMode: false,
     workflowRun: false,
     allowEmptyValueOnRequiredInput: false,
-    activeNodeId: null,
     syncWithGraph: false,
-    stepsNotMatchingRequest: null,
 });
 
 const emit = defineEmits<{
