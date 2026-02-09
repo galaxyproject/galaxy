@@ -297,6 +297,14 @@
   <tool file="parameters/gx_data_multiple_user.yml" />
   <tool file="parameters/gx_select_multiple_one_default_user.yml" />
   <tool file="parameters/gx_data_collection_list_or_paired.yml" />
+  <tool file="parameters/gx_data_collection_record.yml" />
+  <tool file="parameters/gx_data_collection_sample_sheet.yml" />
+  <tool file="parameters/gx_data_collection_paired_or_unpaired.yml" />
+  <tool file="parameters/gx_data_collection_list_paired.yml" />
+  <tool file="parameters/gx_data_collection_list_list.yml" />
+  <tool file="parameters/gx_data_collection_list_list_paired.yml" />
+  <tool file="parameters/gx_data_collection_list_or_record.yml" />
+  <tool file="parameters/gx_data_collection_paired_or_pou.yml" />
 
   <section id="filter" name="For Tours">
     <tool file="for_tours/filtering.xml" />
