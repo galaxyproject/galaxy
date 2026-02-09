@@ -2,53 +2,50 @@
     <BCard body-class="p-0">
         <BCardHeader v-if="!embedded">
             <span class="float-right">
-                <BButton
-                    v-b-tooltip.hover
+                <GButton
                     :href="downloadUrl"
-                    variant="link"
-                    size="sm"
-                    role="button"
+                    tooltip
+                    transparent
+                    color="blue"
+                    size="small"
                     title="Download Dataset"
-                    type="button"
                     class="py-0 px-1">
-                    <span class="fa fa-download" />
-                </BButton>
+                    <FontAwesomeIcon :icon="faDownload" fixed-width />
+                </GButton>
 
-                <BButton
-                    v-b-tooltip.hover
+                <GButton
                     :href="importUrl"
-                    role="button"
-                    variant="link"
+                    tooltip
+                    transparent
+                    color="blue"
+                    size="small"
                     title="Import Dataset"
-                    type="button"
                     class="py-0 px-1">
-                    <span class="fa fa-file-import" />
-                </BButton>
+                    <FontAwesomeIcon :icon="faFileImport" fixed-width />
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="expandable && expanded"
-                    v-b-tooltip.hover
-                    href="#"
-                    role="button"
-                    variant="link"
+                    tooltip
+                    transparent
+                    color="blue"
+                    size="small"
                     title="Collapse"
-                    type="button"
                     class="py-0 px-1"
                     @click="onExpand">
-                    <span class="fa fa-angle-double-up" />
-                </BButton>
-                <BButton
+                    <FontAwesomeIcon :icon="faAngleDoubleUp" fixed-width />
+                </GButton>
+                <GButton
                     v-else-if="expandable"
-                    v-b-tooltip.hover
-                    href="#"
-                    role="button"
-                    variant="link"
+                    tooltip
+                    transparent
+                    color="blue"
+                    size="small"
                     title="Expand"
-                    type="button"
                     class="py-0 px-1"
                     @click="onExpand">
-                    <span class="fa fa-angle-double-down" />
-                </BButton>
+                    <FontAwesomeIcon :icon="faAngleDoubleDown" fixed-width />
+                </GButton>
             </span>
 
             <span>
@@ -105,7 +102,9 @@
 </template>
 
 <script setup lang="ts">
-import { BButton, BCard, BCardBody, BCardHeader, BEmbed, BPagination } from "bootstrap-vue";
+import { faAngleDoubleDown, faAngleDoubleUp, faDownload, faFileImport } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BCard, BCardBody, BCardHeader, BEmbed, BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
@@ -116,6 +115,7 @@ import { useDatasetTextContentStore } from "@/stores/datasetTextContentStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import HistoryDatasetAsImage from "./HistoryDatasetAsImage.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
