@@ -108,7 +108,6 @@ describe("FormDisplay", () => {
         await wrapper.setProps({
             errors: { text_name: "error_message_2" },
         });
-        await wrapper.vm.$nextTick();
         expect(error.text()).toEqual("error_message_2");
     });
 
