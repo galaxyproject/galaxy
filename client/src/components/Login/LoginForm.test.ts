@@ -112,6 +112,18 @@ describe("LoginForm", () => {
         await flushPromises();
     });
 
+    it("hides register link when local accounts are disabled", async () => {
+        const wrapper = await mountLoginForm();
+
+        await wrapper.setProps({
+            allowUserCreation: true,
+            disableLocalAccounts: true,
+        });
+
+        expect(wrapper.findAll(SELECTORS.REGISTER_TOGGLE).length).toBe(0);
+        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBeTruthy();
+    });
+
     it("connect external provider", async () => {
         const external_email = "test@test.com";
         const provider_id = "test_provider";
