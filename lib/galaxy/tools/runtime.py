@@ -16,6 +16,7 @@ from galaxy.model import (
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util_models.parameters import (
+    build_collection_model_for_type,
     DataCollectionRequestInternal,
     DataInternalJson,
     DataRequestInternalDereferencedT,
@@ -205,7 +206,11 @@ def _validate_collection_runtime_dict(raw: Dict[str, Any]) -> CollectionRuntimeT
     elif ct == "paired_or_unpaired":
         return DataCollectionPairedOrUnpairedRuntime.model_validate(raw)
     elif ":" in ct:
-        # Nested types - route by outer structure
+        # Try dynamic model for precise inner type validation
+        dynamic_model = build_collection_model_for_type(ct)
+        if dynamic_model is not None:
+            return dynamic_model.model_validate(raw)
+        # Fallback to generic nested models
         first_segment = ct.split(":")[0]
         if first_segment in ("list", "sample_sheet"):
             return DataCollectionNestedListRuntime.model_validate(raw)
