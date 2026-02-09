@@ -1,8 +1,8 @@
 <template>
-    <b-card body-class="p-0">
-        <b-card-header v-if="!embedded">
+    <BCard body-class="p-0">
+        <BCardHeader v-if="!embedded">
             <span class="float-right">
-                <b-button
+                <BButton
                     v-b-tooltip.hover
                     :href="downloadUrl"
                     variant="link"
@@ -12,8 +12,9 @@
                     type="button"
                     class="py-0 px-1">
                     <span class="fa fa-download" />
-                </b-button>
-                <b-button
+                </BButton>
+
+                <BButton
                     v-b-tooltip.hover
                     :href="importUrl"
                     role="button"
@@ -22,8 +23,9 @@
                     type="button"
                     class="py-0 px-1">
                     <span class="fa fa-file-import" />
-                </b-button>
-                <b-button
+                </BButton>
+
+                <BButton
                     v-if="expandable && expanded"
                     v-b-tooltip.hover
                     href="#"
@@ -34,8 +36,8 @@
                     class="py-0 px-1"
                     @click="onExpand">
                     <span class="fa fa-angle-double-up" />
-                </b-button>
-                <b-button
+                </BButton>
+                <BButton
                     v-else-if="expandable"
                     v-b-tooltip.hover
                     href="#"
@@ -46,14 +48,16 @@
                     class="py-0 px-1"
                     @click="onExpand">
                     <span class="fa fa-angle-double-down" />
-                </b-button>
+                </BButton>
             </span>
+
             <span>
                 <span>Dataset:</span>
                 <span class="font-weight-light">{{ metaContent?.name || "..." }}</span>
             </span>
-        </b-card-header>
-        <b-card-body>
+        </BCardHeader>
+
+        <BCardBody>
             <div v-if="metaError">{{ metaError }}</div>
             <LoadingSpan v-else-if="!metaType" message="Loading Metadata" />
             <LoadingSpan v-else-if="dataLoading" message="Loading Dataset" />
@@ -61,7 +65,7 @@
             <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
             <div v-else-if="!datatypesMapper">Datatypes not loaded.</div>
             <div v-else>
-                <b-embed
+                <BEmbed
                     v-if="datatypesMapper.isSubTypeOfAny(metaType, ['pdf', 'html'])"
                     type="iframe"
                     aspect="16by9"
@@ -81,7 +85,7 @@
                             :current-page="currentPage"
                             :fields="getFields(metaContent)"
                             :items="getItems(dataContent.item_data, metaContent)" />
-                        <b-pagination
+                        <BPagination
                             v-model="currentPage"
                             align="center"
                             :total-rows="getItems(dataContent.item_data, metaContent).length"
@@ -93,13 +97,15 @@
                     </pre>
                 </div>
                 <div v-else>No content found.</div>
-                <b-link v-if="dataContent?.truncated" :href="dataContent?.item_url"> Show More... </b-link>
+
+                <GLink v-if="dataContent?.truncated" :href="dataContent?.item_url"> Show More... </GLink>
             </div>
-        </b-card-body>
-    </b-card>
+        </BCardBody>
+    </BCard>
 </template>
 
 <script setup lang="ts">
+import { BButton, BCard, BCardBody, BCardHeader, BEmbed, BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
@@ -110,6 +116,7 @@ import { useDatasetTextContentStore } from "@/stores/datasetTextContentStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import HistoryDatasetAsImage from "./HistoryDatasetAsImage.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
