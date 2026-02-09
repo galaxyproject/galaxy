@@ -48,7 +48,7 @@ interface Props {
     warnings?: FormMessages | null;
     workflowBuildingMode?: boolean;
     workflowRun?: boolean;
-    allowEmptyValueOnRequiredInput?: boolean;
+    rejectEmptyRequiredInputs?: boolean;
     activeNodeId?: number;
     syncWithGraph?: boolean;
     stepsNotMatchingRequest?: string[];
@@ -69,7 +69,7 @@ const props = withDefaults(defineProps<Props>(), {
     warnings: null,
     workflowBuildingMode: false,
     workflowRun: false,
-    allowEmptyValueOnRequiredInput: false,
+    rejectEmptyRequiredInputs: false,
     syncWithGraph: false,
 });
 
@@ -94,7 +94,7 @@ const {
     resetErrors,
     replaceParams: doReplaceParams,
 } = useFormState({
-    allowEmptyValueOnRequiredInput: toRef(props, "allowEmptyValueOnRequiredInput"),
+    rejectEmptyRequiredInputs: toRef(props, "rejectEmptyRequiredInputs"),
 });
 
 // getCurrentInstance is fragile but required in Vue 2.7 Composition API

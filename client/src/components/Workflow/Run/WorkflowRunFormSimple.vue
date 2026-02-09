@@ -606,7 +606,7 @@ onBeforeMount(() => {
                         </template>
                         <FormDisplay
                             :inputs="formInputs"
-                            :allow-empty-value-on-required-input="true"
+                            :reject-empty-required-inputs="true"
                             :sync-with-graph="showGraph"
                             :active-node-id="computedActiveNodeId"
                             workflow-run

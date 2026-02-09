@@ -241,7 +241,7 @@ function runValidator(validator, value) {
  * @param{dict}   index     - Index of input elements
  * @param{dict}   values    - Dictionary of parameter values
  */
-export function validateInputs(index, values, allowEmptyValueOnRequiredInput = false) {
+export function validateInputs(index, values, rejectEmptyRequiredInputs = false) {
     let batchN = -1;
     let batchSrc = null;
     for (const inputId in index) {
@@ -254,7 +254,7 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
             continue;
         }
         if (isRequired && inputDef.type != "hidden") {
-            if (!isDefined(inputValue) || (allowEmptyValueOnRequiredInput && inputValue === "")) {
+            if (!isDefined(inputValue) || (rejectEmptyRequiredInputs && inputValue === "")) {
                 return [inputId, "Please provide a value for this option."];
             }
         }

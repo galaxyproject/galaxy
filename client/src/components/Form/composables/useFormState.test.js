@@ -201,21 +201,20 @@ describe("useFormState", () => {
         expect(validation.value).toEqual(["required_field", "Please provide a value for this option."]);
     });
 
-    it("allowEmptyValueOnRequiredInput option is respected", () => {
-        // allowEmptyValueOnRequiredInput=true means empty string IS treated as invalid
-        const allow = ref(true);
+    it("rejectEmptyRequiredInputs option is respected", () => {
+        const reject = ref(true);
         const { cloneInputs, buildFormData, formInputs, rebuildIndex, formData, validation } = useFormState({
-            allowEmptyValueOnRequiredInput: allow,
+            rejectEmptyRequiredInputs: reject,
         });
         const inputs = [{ name: "field", type: "text", value: "" }];
         cloneInputs(inputs);
         formData.value = buildFormData();
 
-        // With allow=true, empty string on required field triggers error
+        // With reject=true, empty string on required field triggers error
         expect(validation.value).toEqual(["field", "Please provide a value for this option."]);
 
-        // With allow=false, empty string passes validation
-        allow.value = false;
+        // With reject=false, empty string passes validation
+        reject.value = false;
         formInputs.value[0].value = "";
         rebuildIndex();
         formData.value = buildFormData();

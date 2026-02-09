@@ -43,7 +43,7 @@ export type FormMessages = Record<string, unknown>;
 
 /** Options for the useFormState composable. */
 export interface UseFormStateOptions {
-    allowEmptyValueOnRequiredInput?: Ref<boolean>;
+    rejectEmptyRequiredInputs?: Ref<boolean>;
 }
 
 /** Return type of the useFormState composable. */
@@ -73,14 +73,14 @@ const CLIENT_OWNED_FIELDS = new Set(["value", "error", "warning"]);
  * Contains no DOM references or side effects.
  */
 export function useFormState(options: UseFormStateOptions = {}): UseFormStateReturn {
-    const { allowEmptyValueOnRequiredInput = ref(false) } = options;
+    const { rejectEmptyRequiredInputs = ref(false) } = options;
 
     const formInputs = ref<FormInputNode[]>([]);
     const formIndex = ref<FormIndex>({});
     const formData = ref<FormData>({});
 
     const validation = computed<[string, string] | null>(() => {
-        return validateInputs(formIndex.value, formData.value, allowEmptyValueOnRequiredInput.value) as
+        return validateInputs(formIndex.value, formData.value, rejectEmptyRequiredInputs.value) as
             | [string, string]
             | null;
     });
