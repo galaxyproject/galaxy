@@ -48,6 +48,7 @@ from typing_extensions import (
 from ._base import ToolSourceBaseModel
 from ._types import (
     cast_as_type,
+    dict_type,
     expand_annotation,
     is_optional,
     list_type,
@@ -757,7 +758,7 @@ def build_collection_model_for_type(collection_type: str) -> Optional[Type]:
     if is_list_like:
         elements_type = list_type(inner_model)
     else:
-        elements_type = Dict[str, inner_model]
+        elements_type = dict_type(str, inner_model)
 
     safe_name = f"DynamicCollection_{'_'.join(collection_type.split(':'))}"
 
@@ -1098,31 +1099,20 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         """Map a single collection type to its runtime model and tag.
 
         Returns tuple of (model, tag) for use in discriminated unions.
+        Uses build_collection_model_for_type which handles both leaf and nested types
+        via _LEAF_COLLECTION_MODELS lookup + recursive dynamic model generation.
         """
-        if ct == "list":
-            return (DataCollectionListRuntime, 'list')
-        elif ct == "paired":
-            return (DataCollectionPairedRuntime, 'paired')
-        elif ct == "record":
-            return (DataCollectionRecordRuntime, 'record')
-        elif ct == "paired_or_unpaired":
-            return (DataCollectionPairedOrUnpairedRuntime, 'paired_or_unpaired')
-        elif ct == "sample_sheet":
-            return (DataCollectionSampleSheetRuntime, 'sample_sheet')
-        elif ":" in ct:
-            # Try dynamic model for precise inner type validation
-            dynamic_model = build_collection_model_for_type(ct)
-            if dynamic_model is not None:
-                return (dynamic_model, ct)
-            # Fallback to generic nested models
+        model = build_collection_model_for_type(ct)
+        if model is not None:
+            return (model, ct)
+        if ":" in ct:
+            # Fallback to generic nested models for unknown nested types
             first_segment = ct.split(":")[0]
             if first_segment in ("list", "sample_sheet"):
                 return (DataCollectionNestedListRuntime, 'nested_list')
             else:
                 return (DataCollectionNestedRecordRuntime, 'nested_record')
-        else:
-            # Unknown single type - return None to signal fallback needed
-            return (None, None)
+        return (None, None)
 
     @property
     def py_type_internal_json(self) -> Type:

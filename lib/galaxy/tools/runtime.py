@@ -4,7 +4,6 @@ from typing import (
     Dict,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from galaxy.model import (
@@ -17,6 +16,7 @@ from galaxy.model import (
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util_models.parameters import (
     build_collection_model_for_type,
+    DataCollectionInternalJsonBase,
     DataCollectionRequestInternal,
     DataInternalJson,
     DataRequestInternalDereferencedT,
@@ -36,17 +36,8 @@ if TYPE_CHECKING:
 
 
 # Type aliases for callbacks
-CollectionRuntimeT = Union[
-    DataCollectionListRuntime,
-    DataCollectionSampleSheetRuntime,
-    DataCollectionPairedRuntime,
-    DataCollectionRecordRuntime,
-    DataCollectionPairedOrUnpairedRuntime,
-    DataCollectionNestedListRuntime,
-    DataCollectionNestedRecordRuntime,
-]
 DatasetToRuntimeJson = Callable[[DataRequestInternalDereferencedT], DataInternalJson]
-CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], CollectionRuntimeT]
+CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], DataCollectionInternalJsonBase]
 
 # Input dataset collections dict type
 InpDataCollectionsDictT = Dict[str, Any]
@@ -111,7 +102,7 @@ def setup_for_runtimeify(
     def adapt_collection(
         value: DataCollectionRequestInternal,
         collection_type: Optional[str],
-    ) -> CollectionRuntimeT:
+    ) -> DataCollectionInternalJsonBase:
         """Convert a collection request to runtime representation.
 
         Args:
@@ -142,7 +133,7 @@ def _adapt_from_hdca(
     hdca: HistoryDatasetCollectionAssociation,
     adapt_dataset: DatasetToRuntimeJson,
     compute_environment: Optional["ComputeEnvironment"],
-) -> CollectionRuntimeT:
+) -> DataCollectionInternalJsonBase:
     """Adapt an HDCA (direct collection input scenario)."""
     return collection_to_runtime(
         hdca.collection,
@@ -157,7 +148,7 @@ def _adapt_from_dce(
     dce: DatasetCollectionElement,
     adapt_dataset: DatasetToRuntimeJson,
     compute_environment: Optional["ComputeEnvironment"],
-) -> CollectionRuntimeT:
+) -> DataCollectionInternalJsonBase:
     """Adapt a DatasetCollectionElement (subcollection mapping scenario).
 
     Note: Only auto-propagated tags are available in this scenario.
@@ -180,45 +171,31 @@ def collection_to_runtime(
     adapt_dataset: DatasetToRuntimeJson,
     compute_environment: Optional["ComputeEnvironment"],
     columns: Optional[list] = None,
-) -> CollectionRuntimeT:
+) -> DataCollectionInternalJsonBase:
     """Convert DatasetCollection to validated typed runtime model."""
     raw = _build_collection_runtime_dict(collection, name, tags, adapt_dataset, compute_environment, columns)
     return _validate_collection_runtime_dict(raw)
 
 
-def _validate_collection_runtime_dict(raw: Dict[str, Any]) -> CollectionRuntimeT:
+def _validate_collection_runtime_dict(raw: Dict[str, Any]) -> DataCollectionInternalJsonBase:
     """Parse raw dict into appropriate typed collection runtime model.
 
-    Routes to the correct model based on collection_type, enforcing that
-    the element structure matches what the collection_type claims.
+    Routes to the correct model based on collection_type via build_collection_model_for_type,
+    which handles both leaf types and nested types with precise inner type validation.
     """
     ct = raw.get("collection_type", "")
-
-    # Simple types - exact match with Literal enforcement
-    if ct == "list":
-        return DataCollectionListRuntime.model_validate(raw)
-    elif ct == "sample_sheet":
-        return DataCollectionSampleSheetRuntime.model_validate(raw)
-    elif ct == "paired":
-        return DataCollectionPairedRuntime.model_validate(raw)
-    elif ct == "record":
-        return DataCollectionRecordRuntime.model_validate(raw)
-    elif ct == "paired_or_unpaired":
-        return DataCollectionPairedOrUnpairedRuntime.model_validate(raw)
-    elif ":" in ct:
-        # Try dynamic model for precise inner type validation
-        dynamic_model = build_collection_model_for_type(ct)
-        if dynamic_model is not None:
-            return dynamic_model.model_validate(raw)
-        # Fallback to generic nested models
+    model = build_collection_model_for_type(ct)
+    if model is not None:
+        return model.model_validate(raw)
+    # Fallback for unknown types
+    if ":" in ct:
         first_segment = ct.split(":")[0]
         if first_segment in ("list", "sample_sheet"):
             return DataCollectionNestedListRuntime.model_validate(raw)
         else:
             return DataCollectionNestedRecordRuntime.model_validate(raw)
-    else:
-        # Unknown type - try list (historical behavior)
-        return DataCollectionListRuntime.model_validate(raw)
+    # Unknown single type - try list (historical behavior)
+    return DataCollectionListRuntime.model_validate(raw)
 
 
 def _build_collection_runtime_dict(
