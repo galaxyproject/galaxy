@@ -666,7 +666,8 @@ def exception_indicates_not_clickable(exception):
 
 
 def exception_indicates_stale_element(exception):
-    return "stale" in str(exception)
+    exception_str = str(exception)
+    return "stale" in exception_str or "not attached to the DOM" in exception_str
 
 
 __all__ = (

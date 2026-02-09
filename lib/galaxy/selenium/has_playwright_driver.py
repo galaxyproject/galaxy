@@ -849,16 +849,23 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         state to track the current frame.
         """
         if isinstance(frame_reference, str):
-            # Find frame by name or id
-            # Try as name attribute first
+            # Find frame by name or id (matching Selenium's switch_to.frame behavior)
             frame = self.page.frame(name=frame_reference)
-            if frame is None:
-                # Try as frame locator by name attribute selector
-                frame_locator = self.page.frame_locator(f"[name='{frame_reference}']")
-                # Store the frame locator for future use
-                self._current_frame = frame_locator
-            else:
+            if frame is not None:
                 self._current_frame = frame
+            else:
+                # Selenium also matches by id — locate the iframe element and
+                # resolve its content Frame so downstream code (axe_eval, etc.)
+                # gets a proper Frame object rather than a FrameLocator.
+                selector = f"iframe[name='{frame_reference}'], iframe[id='{frame_reference}']"
+                iframe_el = self.page.query_selector(selector)
+                if iframe_el is not None:
+                    self._current_frame = iframe_el.content_frame()
+                else:
+                    # Last resort: use a FrameLocator (limited API)
+                    self._current_frame = self.page.frame_locator(
+                        f"[name='{frame_reference}'], [id='{frame_reference}']"
+                    )
         elif isinstance(frame_reference, int):
             # Get frame by index
             frames = self.page.frames
