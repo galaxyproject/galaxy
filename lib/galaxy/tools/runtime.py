@@ -21,10 +21,12 @@ from galaxy.tool_util_models.parameters import (
     DataRequestInternalDereferencedT,
     DataRequestInternalHda,
     DataCollectionListRuntime,
-    DataCollectionNestedRuntime,
+    DataCollectionNestedListRuntime,
+    DataCollectionNestedRecordRuntime,
     DataCollectionPairedRuntime,
     DataCollectionPairedOrUnpairedRuntime,
     DataCollectionRecordRuntime,
+    DataCollectionSampleSheetRuntime,
 )
 
 if TYPE_CHECKING:
@@ -35,10 +37,12 @@ if TYPE_CHECKING:
 # Type aliases for callbacks
 CollectionRuntimeT = Union[
     DataCollectionListRuntime,
+    DataCollectionSampleSheetRuntime,
     DataCollectionPairedRuntime,
     DataCollectionRecordRuntime,
     DataCollectionPairedOrUnpairedRuntime,
-    DataCollectionNestedRuntime,
+    DataCollectionNestedListRuntime,
+    DataCollectionNestedRecordRuntime,
 ]
 DatasetToRuntimeJson = Callable[[DataRequestInternalDereferencedT], DataInternalJson]
 CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], CollectionRuntimeT]
@@ -182,24 +186,34 @@ def collection_to_runtime(
 
 
 def _validate_collection_runtime_dict(raw: Dict[str, Any]) -> CollectionRuntimeT:
-    """Parse raw dict into appropriate typed collection runtime model."""
+    """Parse raw dict into appropriate typed collection runtime model.
+
+    Routes to the correct model based on collection_type, enforcing that
+    the element structure matches what the collection_type claims.
+    """
     ct = raw.get("collection_type", "")
-    if ct == "paired":
+
+    # Simple types - exact match with Literal enforcement
+    if ct == "list":
+        return DataCollectionListRuntime.model_validate(raw)
+    elif ct == "sample_sheet":
+        return DataCollectionSampleSheetRuntime.model_validate(raw)
+    elif ct == "paired":
         return DataCollectionPairedRuntime.model_validate(raw)
     elif ct == "record":
         return DataCollectionRecordRuntime.model_validate(raw)
     elif ct == "paired_or_unpaired":
         return DataCollectionPairedOrUnpairedRuntime.model_validate(raw)
-    elif not ct or ":" in ct:
-        # Nested types (list:paired, etc.) or unknown
-        return DataCollectionNestedRuntime.model_validate(raw)
-    else:
-        # Simple list-like types (list, sample_sheet, record, paired_or_unpaired, etc.)
-        # For list/sample_sheet: elements is List[DataCollectionElementInternalJson]
-        if is_list_like(ct):
-            return DataCollectionListRuntime.model_validate(raw)
+    elif ":" in ct:
+        # Nested types - route by outer structure
+        first_segment = ct.split(":")[0]
+        if first_segment in ("list", "sample_sheet"):
+            return DataCollectionNestedListRuntime.model_validate(raw)
         else:
-            return DataCollectionNestedRuntime.model_validate(raw)
+            return DataCollectionNestedRecordRuntime.model_validate(raw)
+    else:
+        # Unknown type - try list (historical behavior)
+        return DataCollectionListRuntime.model_validate(raw)
 
 
 def _build_collection_runtime_dict(

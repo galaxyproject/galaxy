@@ -1,0 +1,50 @@
+class: GalaxyTool
+id: gx_data_collection_list_or_paired
+name: gx_data_collection_list_or_paired
+version: "1.0.0"
+container: busybox
+shell_command: |
+  echo "Collection type: $(inputs.parameter.collection_type)" > output.txt
+  echo "Name: $(inputs.parameter.name)" >> output.txt
+inputs:
+  - name: parameter
+    type: data_collection
+    collection_type: list,paired
+    label: Input list or paired collection
+outputs:
+  - name: output
+    type: data
+    format: txt
+    from_work_dir: output.txt
+tests:
+  - inputs:
+      parameter:
+        class: Collection
+        collection_type: list
+        name: test_list
+        elements:
+          - identifier: f1
+            class: File
+            path: simple_line.txt
+    outputs:
+      output:
+        asserts:
+          - has_line:
+              line: "Collection type: list"
+  - inputs:
+      parameter:
+        class: Collection
+        collection_type: paired
+        name: test_paired
+        elements:
+          - identifier: forward
+            class: File
+            path: simple_line.txt
+          - identifier: reverse
+            class: File
+            path: simple_line_alternative.txt
+    outputs:
+      output:
+        asserts:
+          - has_line:
+              line: "Collection type: paired"
