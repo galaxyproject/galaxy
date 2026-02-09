@@ -292,7 +292,7 @@ jobs:
           fi
 
       - name: Send Slack notification
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v2.1.1
         with:
           webhook: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
