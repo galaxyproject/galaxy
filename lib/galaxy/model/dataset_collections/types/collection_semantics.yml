@@ -9,7 +9,7 @@
 
     Any significantly sophisticated workflow language will have ways to collect data
     into arrays or vectors or dictionaries and apply operations across this data (mapping)
-    or reduce the dimensionality of this data (reductions). Typically, this explicitly
+    or reduce the dimensionality of this data (reductions). Typically, this is explicitly
     annotated with map functions or for loops. Galaxy however is designed to be a point
     and click interface for connecting steps and running tools. It is important that steps
     just connect and just do the most natural thing - and this is what Galaxy does.
@@ -42,7 +42,7 @@
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_collection"
-        wf_editor: "accepts paired data -> data connection"
+        workflow_editor: "accepts paired data -> data connection"
 
 - example:
     label: BASIC_MAPPING_PAIRED_OR_UNPAIRED_PAIRED
@@ -56,7 +56,7 @@
     then: "tool(i=mapOver(C)) ~> {o: collection<paired_or_unpaired,{forward=tool(i=d_f)[o], reverse=tool(i=d_r)[o]}>}"
     tests:
         tool_runtime:
-            api_test: "test_tool_execute.py::test_map_over_data_with_paired_or_unpaired_unpaired"
+            api_test: "test_tool_execute.py::test_map_over_data_with_paired_or_unpaired_paired"
         workflow_editor: "accepts paired_or_unpaired data -> data connection"
 
 - example:
@@ -71,7 +71,7 @@
     then: "tool(i=mapOver(C)) ~> {o: collection<paired_or_unpaired,{unpaired=tool(i=d_u)[o]}>}"
     tests:
         tool_runtime:
-            api_test: "test_tool_execute.py::test_map_over_data_with_paired_or_unpaired_paired"
+            api_test: "test_tool_execute.py::test_map_over_data_with_paired_or_unpaired_unpaired"
         workflow_editor: "accepts paired_or_unpaired data -> data connection"
 
 - example:
@@ -83,7 +83,7 @@
         out: {o: dataset}
     - collections:
         C: [list, {i1: "d_1", ..., in: "d_n"}]
-    then: "tool(i=mapOver(C)) ~> {o: collection<list,{i1=tool(i=d_1)[o],...,in=tool(i=d_n)[o]]}>}"
+    then: "tool(i=mapOver(C)) ~> {o: collection<list,{i1=tool(i=d_1)[o],...,in=tool(i=d_n)[o]}>}"
     tests:
         workflow_editor: "accepts collection data -> data connection"
 
@@ -168,7 +168,7 @@
     - collections:
         C1: ["list", {i1: d1_1, ..., in: d1_n}]
         C2: ["list", {i1: d2_1, ..., in: d2_n}]
-    then: "tool(i=mapOver(C1), i2=mapOver(C2)) ~> {o: collection<list,{i1=tool(i=d1_1, i2=d2_1)[o],...,in=tool(i=d1_n, i2=d2_n)[o]]}>}"
+    then: "tool(i=mapOver(C1), i2=mapOver(C2)) ~> {o: collection<list,{i1=tool(i=d1_1, i2=d2_1)[o],...,in=tool(i=d1_n, i2=d2_n)[o]}>}"
     tests:
         tool_runtime:
             api_test: test_tools.py::TestToolsApi::test_map_over_two_collections
@@ -181,7 +181,7 @@
 
     Tools that consume collections and output datasets effectively
     reduce the dimension of the Galaxy data structure. When used at runtime
-    this is often referred to a "reduction" in the code.
+    this is often referred to as a "reduction" in the code.
 
 - example:
     label: COLLECTION_INPUT_PAIRED
@@ -201,7 +201,7 @@
 - example:
     label: COLLECTION_INPUT_LIST
     assumptions:
-    - datasets: ["d1,...,dn"]
+    - datasets: ["d_1,...,d_n"]
     - tool:
         in: {i: "collection<list>"}
         out: {o: dataset}
@@ -300,7 +300,7 @@
     then: "tool(i=C) == tool(i=[d_1,...,d_n])"
     tests:
         tool_runtime:
-            api_test: "test_tools.py::TestToolsApi::test_tools.py::test_reduce_collections"
+            api_test: "test_tools.py::TestToolsApi::test_reduce_collections"
         workflow_editor: "treats multi data input as list input"
 
 - doc: |
@@ -329,7 +329,7 @@
         in: {i: "dataset<multiple=true>"}
         out: {o: dataset}
     - collections:
-        C: [paired_or_unpaired,{forward=d_f, reverse=d_r}]
+        C: [paired_or_unpaired, {forward: d_f, reverse: d_r}]
     then: "tool(i=C)"
     is_valid: false
     tests:
@@ -356,7 +356,7 @@
         workflow_editor: "accepts list:paired -> paired connection"
 
 - doc: |
-    The natural extension of multiple data input parameters consuming list collections as describe
+    The natural extension of multiple data input parameters consuming list collections as described
     above when discussing reductions is that nested lists of lists (``list:list``) can be mapped
     over a multiple data input parameter. Each nested list will be reduced by this operation but the
     results will be mapped over. The result will be a list with the same structure as the outer list
@@ -371,7 +371,7 @@
         out: {o: dataset}
     - collections:
         C: ["list:list", {o1: {inner: d_1}, ..., "on": {inner: d_n}}]
-    then: "tool(i=mapOver(C, 'list')) ~> {o: collection<list,{o1: tool(i=[d_1])[o]},...,on: tool(i=[d_n])[o]}>}"
+    then: "tool(i=mapOver(C, 'list')) ~> {o: collection<list,{o1: tool(i=[d_1])[o],...,on: tool(i=[d_n])[o]}>}"
     tests:
         workflow_editor: "maps list:list over multi data input"
 
@@ -388,7 +388,7 @@
         in: {i: "dataset<multiple=true>"}
         out: {o: dataset}
     - collections:
-        C: [list:paired, {forward: d_f, reverse: d_r}]
+        C: ["list:paired", {el1: {forward: d_f, reverse: d_r}}]
     then: "tool(i=mapOver(C, 'paired'))"
     is_valid: false
     tests:
@@ -402,7 +402,7 @@
         in: {i: "dataset<multiple=true>"}
         out: {o: dataset}
     - collections:
-        C: ["list:paired_or_unpaired", {forward: d_f, reverse: d_r}]
+        C: ["list:paired_or_unpaired", {el1: {forward: d_f, reverse: d_r}}]
     then: "tool(i=mapOver(C, 'paired_or_unpaired'))"
     is_valid: false
     tests:
@@ -437,7 +437,7 @@
 
 - doc: |
 
-    This inverse of this doesn't work intentionally. In some ways a ``paired`` collection
+    The inverse of this doesn't work intentionally. In some ways a ``paired`` collection
     acts as a ``paired_or_unpaired`` collection but a ``paired_or_unpaired`` is not a paired
     collection. This makes a lot of sense in terms of tools - a tool consuming a ``paired``
     dataset expects to find both a ``forward`` and ``reverse`` element but these may not exist
@@ -451,7 +451,7 @@
         in: {i: "collection<paired>"}
         out: {o: dataset}
     - collections:
-        C: [paired_or_unpaired, {forward=d_f, reverse: d_r}]
+        C: [paired_or_unpaired, {forward: d_f, reverse: d_r}]
     then: "tool(i=C) is invalid"
     tests:
         workflow_editor: "rejects paired_or_unpaired -> paired connection"
@@ -485,7 +485,7 @@
         in: {i: "collection<paired>"}
         out: {o: dataset}
     - collections:
-        C: [list:paired_or_unpaired, {el: {forward: f, reverse: r}}]
+        C: ["list:paired_or_unpaired", {el: {forward: d_f, reverse: d_r}}]
     then: "tool(i=mapOver(C)) is invalid"
     tests:
         workflow_editor: "rejects list:paired_or_unpaired -> paired connection"
@@ -498,7 +498,7 @@
         in: {i: "collection<list>"}
         out: {o: dataset}
     - collections:
-        C: [list:paired_or_unpaired, {el: {forward: f, reverse: r}}]
+        C: ["list:paired_or_unpaired", {el: {forward: d_f, reverse: d_r}}]
     then: "tool(i=mapOver(C)) is invalid"
     tests:
         workflow_editor: "rejects list:paired_or_unpaired -> list connection"
@@ -529,7 +529,7 @@
     - collections:
         C: [list, {i1: d_1, ..., in: d_n}]
     - "C_AS_UNPAIRED_i = CollectionInstance<paired_or_unpaired,{unpaired=di}> for i from 1...n"
-    then: "tool(i=mapOver(C, 'single_datasets')) ~> {o: collection<list,{i1=tool(i=C_AS_UNPAIRED_1)[o],...,in=tool(i=C_AS_UNPAIRED_n)[o]]}>}"
+    then: "tool(i=mapOver(C, 'single_datasets')) ~> {o: collection<list,{i1=tool(i=C_AS_UNPAIRED_1)[o],...,in=tool(i=C_AS_UNPAIRED_n)[o]}>}"
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_paired_or_unpaired_with_list"
@@ -554,7 +554,7 @@
         workflow_editor: "accepts list:list -> list:paired_or_unpaired connection"
 
 - doc: |
-    Due only implementation time, the special casing of allowing paired_or_unpaired
+    Due only to implementation time, the special casing of allowing paired_or_unpaired
     act as both datasets and paired collections only works when it is the deepest
     collection type. So while list:paired can be consumed by a list:paired_or_unpaired
     input, a paired:list cannot be consumed by a paired_or_unpaired:list input though

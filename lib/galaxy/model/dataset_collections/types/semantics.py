@@ -117,7 +117,8 @@ class ExampleEntry(BaseModel):
 YAMLRootModel = RootModel[list[Union[DocEntry, ExampleEntry]]]
 
 
-WORDS_TO_TEXTIFY = ["list", "forward", "reverse", "mapOver"]
+WORDS_TO_TEXTIFY = ["list", "forward", "reverse", "mapOver", "collection", "dataset", "inner"]
+_POU_PLACEHOLDER = "\x00POU\x00"
 
 
 def expression_to_latex(expression: str, wrap: bool = True):
@@ -125,7 +126,11 @@ def expression_to_latex(expression: str, wrap: bool = True):
     expression = expression.replace("~>", "\\mapsto")
     expression = expression.replace("{", "\\left\\{")
     expression = expression.replace("}", "\\right\\}")
-    expression = expression.replace("paired_or_unpaired", "paired\\_or\\_unpaired")
+    expression = expression.replace("single_datasets", "\\text{single\\_datasets}")
+    expression = expression.replace("paired_or_unpaired", _POU_PLACEHOLDER)
+    expression = expression.replace("unpaired", "\\text{unpaired}")
+    expression = expression.replace("paired", "\\text{paired}")
+    expression = expression.replace(_POU_PLACEHOLDER, "\\text{paired\\_or\\_unpaired}")
     for word in WORDS_TO_TEXTIFY:
         expression = expression.replace(word, "\\text{" + word + "}")
     if wrap:
