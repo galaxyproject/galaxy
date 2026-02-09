@@ -22,11 +22,11 @@ const emit = defineEmits<{
 
 const nameModel = ref(props.name);
 
-const nameRemainsSame = computed(() => nameModel.value === props.name);
+const nameRemainsSame = computed(() => nameModel.value.trim() === props.name.trim());
 
 async function onRename(newName: string) {
     try {
-        await updateWorkflow(props.id, { name: newName });
+        await updateWorkflow(props.id, { name: newName.trim() });
         Toast.success("Workflow renamed");
     } catch (e) {
         Toast.error("Failed to rename workflow");
