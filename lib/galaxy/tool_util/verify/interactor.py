@@ -744,15 +744,15 @@ class GalaxyInteractorApi:
             for key, value in resource_parameters.items():
                 inputs_tree[f"__job_resource|{key}"] = value
 
-        # Build credentials context from test credentials
-        credentials_context = None
+        # Build direct credentials from test credentials
+        direct_credentials = None
         if testdef.credentials:
-            credentials_context = {}
+            direct_credentials = {}
             for cred in testdef.credentials:
                 cred_name = cred["name"]
                 variables = {var["name"]: var["value"] for var in cred.get("variables", [])}
                 secrets = {sec["name"]: sec["value"] for sec in cred.get("secrets", [])}
-                credentials_context[cred_name] = {"variables": variables, "secrets": secrets}
+                direct_credentials[cred_name] = {"variables": variables, "secrets": secrets}
 
         submit_response = None
         for _ in range(DEFAULT_TOOL_TEST_WAIT):
@@ -762,7 +762,7 @@ class GalaxyInteractorApi:
                 tool_input=inputs_tree,
                 tool_version=testdef.tool_version,
                 use_legacy_api=submit_with_legacy_api,
-                credentials_context=credentials_context,
+                direct_credentials=direct_credentials,
             )
             if _are_tool_inputs_not_ready(submit_response):
                 print("Tool inputs not ready yet")
@@ -995,7 +995,7 @@ class GalaxyInteractorApi:
         files: Optional[dict] = None,
         tool_version: Optional[str] = None,
         use_legacy_api: bool = True,
-        credentials_context: Optional[dict] = None,
+        direct_credentials: Optional[dict] = None,
     ):
         extra_data = extra_data or {}
         if use_legacy_api:
@@ -1006,16 +1006,16 @@ class GalaxyInteractorApi:
                 tool_version=tool_version,
                 **extra_data,
             )
-            if credentials_context:
-                data["credentials_context"] = dumps(credentials_context)
+            if direct_credentials:
+                data["direct_credentials"] = dumps(direct_credentials)
             return self._post("tools", files=files, data=data)
         else:
             assert files is None
             data = dict(
                 history_id=history_id, tool_id=tool_id, inputs=tool_input, tool_version=tool_version, **extra_data
             )
-            if credentials_context:
-                data["credentials_context"] = credentials_context
+            if direct_credentials:
+                data["direct_credentials"] = direct_credentials
             submit_tool_request_response = self._post("jobs", data=data, json=True)
             return submit_tool_request_response
 

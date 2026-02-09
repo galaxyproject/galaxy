@@ -354,6 +354,7 @@ class ToolsService(ServiceBase):
         )
         preferred_object_store_id = payload.get("preferred_object_store_id")
         credentials_context_raw = payload.get("credentials_context")
+        direct_credentials_raw = payload.get("direct_credentials")
         input_format = str(payload.get("input_format", "legacy"))
         if input_format not in get_args(InputFormatT):
             raise exceptions.RequestParameterInvalidException(f"input_format invalid {input_format}")
@@ -362,38 +363,47 @@ class ToolsService(ServiceBase):
             incoming["__data_manager_mode"] = payload["data_manager_mode"]
         tags = payload.get("__tags")
 
-        # Handle credentials_context - can be either:
-        # - JSON string (legacy API)
-        # - dict (direct mode with embedded values)
-        # - list (vault mode Pydantic model structure)
+        # Handle credentials_context - two separate parameters:
+        # 1. credentials_context: vault-based credentials (list structure)
+        # 2. direct_credentials: embedded credentials (dict structure)
         credentials_context: Optional[VaultCredentialsContext | DirectCredentialsContext] = None
-        if credentials_context_raw:
-            # Parse JSON string if needed
+
+        # Ensure both are not provided simultaneously
+        if credentials_context_raw and direct_credentials_raw:
+            raise exceptions.RequestParameterInvalidException(
+                "Cannot specify both 'credentials_context' and 'direct_credentials' parameters"
+            )
+
+        if direct_credentials_raw:
+            # Parse JSON string if needed (legacy API)
+            if isinstance(direct_credentials_raw, str):
+                import json
+
+                direct_credentials_raw = json.loads(direct_credentials_raw)
+
+            # Direct mode - convert dict to DirectCredentialsContext
+            # Expected format: {service_name: {variables: {name: value}, secrets: {name: value}}}
+            direct_services = []
+            for service_name, creds in direct_credentials_raw.items():
+                variables = [
+                    DirectCredentialValue(name=name, value=value) for name, value in creds.get("variables", {}).items()
+                ]
+                secrets = [
+                    DirectCredentialValue(name=name, value=value) for name, value in creds.get("secrets", {}).items()
+                ]
+                direct_services.append(
+                    DirectServiceCredentialsContext(name=service_name, variables=variables, secrets=secrets)
+                )
+            credentials_context = DirectCredentialsContext(root=direct_services)
+        elif credentials_context_raw:
+            # Parse JSON string if needed (legacy API)
             if isinstance(credentials_context_raw, str):
                 import json
 
                 credentials_context_raw = json.loads(credentials_context_raw)
 
-            if isinstance(credentials_context_raw, dict):
-                # Direct mode - convert dict to DirectCredentialsContext
-                # Expected format: {service_name: {variables: {name: value}, secrets: {name: value}}}
-                direct_services = []
-                for service_name, creds in credentials_context_raw.items():
-                    variables = [
-                        DirectCredentialValue(name=name, value=value)
-                        for name, value in creds.get("variables", {}).items()
-                    ]
-                    secrets = [
-                        DirectCredentialValue(name=name, value=value)
-                        for name, value in creds.get("secrets", {}).items()
-                    ]
-                    direct_services.append(
-                        DirectServiceCredentialsContext(name=service_name, variables=variables, secrets=secrets)
-                    )
-                credentials_context = DirectCredentialsContext(root=direct_services)
-            else:
-                # Vault mode - wrap in Pydantic model
-                credentials_context = VaultCredentialsContext(root=credentials_context_raw)
+            # Vault mode - wrap in Pydantic model
+            credentials_context = VaultCredentialsContext(root=credentials_context_raw)
 
         vars = tool.handle_input(
             trans,

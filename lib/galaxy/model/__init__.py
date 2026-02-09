@@ -2828,8 +2828,8 @@ class JobCredentialsContextAssociation(Base, RepresentById):
 class JobDirectCredentials(Base, RepresentById):
     """Stores direct credentials provided for tool execution without vault access.
 
-    Direct credentials are typically used during tool testing where credentials
-    are provided as embedded values rather than retrieved from the vault.
+    Direct credentials contain embedded values rather than references
+    to credentials stored in the vault.
     """
 
     __tablename__ = "job_direct_credentials"
