@@ -171,6 +171,12 @@ interface Props {
     statusIcon?: (item: T, index: number) => RowIcon | undefined;
 
     /**
+     * Whether to use sticky header with optional max height (e.g. "300px")
+     * @default false
+     */
+    stickyHeader?: boolean | string;
+
+    /**
      * Additional CSS classes for the table element
      * @default ""
      */
@@ -203,6 +209,7 @@ const props = withDefaults(defineProps<Props>(), {
     sortDesc: false,
     striped: true,
     statusIcon: undefined,
+    stickyHeader: false,
     tableClass: "",
 });
 
@@ -244,6 +251,13 @@ const emit = defineEmits<{
 const sortBy = ref<string>(props.sortBy || "update_time");
 const sortDesc = ref<boolean>(props.sortDesc || true);
 const expandedRows = ref<Set<number>>(new Set());
+
+const stickyHeaderMaxHeight = computed(() => {
+    if (!props.stickyHeader) {
+        return undefined;
+    }
+    return props.stickyHeader === true ? "300px" : props.stickyHeader;
+});
 
 const localItems = computed(() => {
     let items = props.items || [];
@@ -483,7 +497,10 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
     <div :id="`g-table-container-${props.id}`" :class="containerClass">
         <!-- Table wrapper -->
         <BOverlay :show="overlayLoading" rounded="sm" class="position-relative w-100">
-            <div :id="`g-table-wrapper-${props.id}`" class="position-relative w-100">
+            <div
+                :id="`g-table-wrapper-${props.id}`"
+                class="position-relative w-100"
+                :class="{ 'g-table-sticky-header': props.stickyHeader }">
                 <table
                     :id="`g-table-${props.id}`"
                     class="g-table table w-100 mb-0"
@@ -661,6 +678,12 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 @import "@/style/scss/_breakpoints.scss";
 
 // Essential custom styles that cannot be replaced with utility classes
+
+.g-table-sticky-header {
+    overflow-y: auto;
+    max-height: v-bind(stickyHeaderMaxHeight);
+}
+
 .g-table {
     thead th {
         position: sticky;
