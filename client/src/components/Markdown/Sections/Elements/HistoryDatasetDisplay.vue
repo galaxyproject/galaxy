@@ -181,7 +181,7 @@ const getFields = (metaContent: Dataset): TableField[] => {
     for (let i = 0; i < columnCount; i++) {
         fields.push({
             key: `${i}`,
-            label: columnNames[i] || i,
+            label: columnNames[i] || String(i),
             sortable: true,
         });
     }
