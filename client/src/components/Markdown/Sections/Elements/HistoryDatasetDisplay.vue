@@ -114,11 +114,11 @@ import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatasetTextContentStore } from "@/stores/datasetTextContentStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
-import HistoryDatasetAsImage from "./HistoryDatasetAsImage.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import HistoryDatasetAsImage from "@/components/Markdown/Sections/Elements/HistoryDatasetAsImage.vue";
 
 interface Dataset {
     name?: string;
