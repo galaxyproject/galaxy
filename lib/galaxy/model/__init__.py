@@ -4527,7 +4527,7 @@ class Dataset(Base, StorableObject, Serializable):
 
     def ensure_shareable(self):
         if not self.shareable:
-            raise Exception(CANNOT_SHARE_PRIVATE_DATASET_MESSAGE)
+            raise galaxy.exceptions.MessageException(CANNOT_SHARE_PRIVATE_DATASET_MESSAGE)
 
     def get_file_name(self, sync_cache: bool = True) -> str:
         if self.purged:
@@ -5931,7 +5931,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
         if not self.dataset.shareable:
-            raise Exception("Attempting to share a non-shareable dataset.")
+            raise Exception(CANNOT_SHARE_PRIVATE_DATASET_MESSAGE)
 
         if replace_dataset:
             # The replace_dataset param ( when not None ) refers to a LibraryDataset that
@@ -9320,7 +9320,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     uuid: Mapped[Optional[Union[UUID]]] = mapped_column(UUIDType())
     history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
-    on_complete: Mapped[Optional[list]] = mapped_column(JSONType)
+    on_complete: Mapped[Optional[list]] = mapped_column(JSON)
 
     history = relationship("History", back_populates="workflow_invocations")
     input_parameters = relationship("WorkflowRequestInputParameter", back_populates="workflow_invocation")

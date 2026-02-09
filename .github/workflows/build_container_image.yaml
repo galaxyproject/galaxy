@@ -169,9 +169,6 @@ jobs:
           --set persistence.accessMode="ReadWriteOnce" \
           --set resources.requests.memory=0Mi,resources.requests.cpu=0m \
           --set image.tag=${{ needs.build.outputs.tag }} \
-          --set webHandlers.startupProbe.initialDelaySeconds=120 \
-          --set webHandlers.startupProbe.periodSeconds=15 \
-          --set webHandlers.startupProbe.failureThreshold=72 \
           --wait \
           --timeout=1200s
       - name: Debug deployment on failure
@@ -278,3 +275,73 @@ jobs:
           branch: update-galaxy-${{ needs.build.outputs.version }}
           delete-branch: true
           labels: patch
+
+  notify-failure:
+    name: Notify Slack on failure
+    runs-on: ubuntu-latest
+    needs: [build, smoke-test]
+    if: ${{ always() && (needs.build.result == 'failure' || needs.smoke-test.result == 'failure') }}
+    steps:
+      - name: Determine which job failed
+        id: failure-info
+        run: |
+          if [[ "${{ needs.build.result }}" == "failure" ]]; then
+            echo "failed_job=Docker image build" >> $GITHUB_OUTPUT
+          elif [[ "${{ needs.smoke-test.result }}" == "failure" ]]; then
+            echo "failed_job=Smoke test" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":x: *Build Container Image Failed*",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ":x: Build Container Image Failed",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch/Tag:*\n${{ github.ref_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Failed Job:*\n${{ steps.failure-info.outputs.failed_job }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Triggered by:*\n${{ github.actor }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Workflow Run",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }

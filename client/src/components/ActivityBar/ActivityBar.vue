@@ -102,14 +102,26 @@ const { activities: storeActivities, isSideBarOpen, sidePanelWidth } = storeToRe
 
 const activities = computed({
     get() {
-        return storeActivities.value.filter(
-            (activity) => activity.id !== "user-defined-tools" || canUseUnprivilegedTools.value,
-        );
+        return storeActivities.value.filter((activity) => {
+            if (activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value) {
+                return false;
+            }
+            if (activity.id === "interactivetools" && !config.value?.interactivetools_enable) {
+                return false;
+            }
+            if (activity.id === "chatgxy" && !config.value?.llm_api_configured) {
+                return false;
+            }
+            return true;
+        });
     },
     set(newActivities: Activity[]) {
         // Find any filtered-out activities and add them back
         const filteredOut = storeActivities.value.filter(
-            (activity) => activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value,
+            (activity) =>
+                (activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value) ||
+                (activity.id === "interactivetools" && !config.value?.interactivetools_enable) ||
+                (activity.id === "chatgxy" && !config.value?.llm_api_configured),
         );
         storeActivities.value = [...newActivities, ...filteredOut];
     },

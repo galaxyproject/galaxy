@@ -3,6 +3,7 @@ import { dispatchEvent, getLocalVue, mockUnprivilegedToolsRequest } from "@tests
 import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useActivityStore } from "@/stores/activityStore";
@@ -10,9 +11,11 @@ import { useEventStore } from "@/stores/eventStore";
 
 import mountTarget from "./ActivityBar.vue";
 
-vi.mock("composables/config", () => ({
+const mockConfig = ref({});
+
+vi.mock("@/composables/config", () => ({
     useConfig: vi.fn(() => ({
-        config: {},
+        config: mockConfig,
         isConfigLoaded: true,
     })),
 }));
@@ -48,6 +51,7 @@ describe("ActivityBar", () => {
     let wrapper;
 
     beforeEach(async () => {
+        mockConfig.value = {};
         const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         activityStore = useActivityStore("default");
         eventStore = useEventStore();
@@ -82,5 +86,36 @@ describe("ActivityBar", () => {
         dispatchEvent(bar, "dragenter");
         const emittedEvent = wrapper.emitted()["dragstart"][0][0];
         expect(emittedEvent.to).toBe("/workflows/run?id=workflow-id");
+    });
+
+    describe("interactivetools visibility", () => {
+        async function mountWithInteractiveToolsConfig(enabled, activityBarId) {
+            mockConfig.value = { interactivetools_enable: enabled };
+            const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+            const testStore = useActivityStore(activityBarId);
+            testStore.setAll([
+                testActivity("1"),
+                testActivity("interactivetools", { id: "interactivetools", title: "Interactive Tools" }),
+                testActivity("3"),
+            ]);
+            mockUnprivilegedToolsRequest(server, http);
+            const testWrapper = shallowMount(mountTarget, {
+                localVue,
+                pinia,
+                propsData: { activityBarId },
+            });
+            await testWrapper.vm.$nextTick();
+            return testWrapper;
+        }
+
+        it("hides interactivetools activity when interactivetools_enable is false", async () => {
+            const testWrapper = await mountWithInteractiveToolsConfig(false, "it-test-hide");
+            expect(testWrapper.findAll("[id='interactivetools']").length).toBe(0);
+        });
+
+        it("shows interactivetools activity when interactivetools_enable is true", async () => {
+            const testWrapper = await mountWithInteractiveToolsConfig(true, "it-test-show");
+            expect(testWrapper.findAll("[id='interactivetools']").length).toBe(1);
+        });
     });
 });
