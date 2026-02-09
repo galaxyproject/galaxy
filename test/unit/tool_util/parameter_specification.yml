@@ -2460,6 +2460,23 @@ gx_data_collection_list:
             nameext: ".txt"
             format: "txt"
             size: 100
+    # Structure mismatch: collection_type=list but elements is object
+    - parameter:
+        class: Collection
+        name: list_wrong_structure
+        collection_type: list
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
 
 gx_data_collection_paired:
   request_valid:
@@ -2539,6 +2556,140 @@ gx_data_collection_paired:
             location: "step_input://0"
             path: "/tmp/f.txt"
             nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Structure mismatch: collection_type=paired but elements is array
+    - parameter:
+        class: Collection
+        name: paired_wrong_structure
+        collection_type: paired
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+
+gx_data_collection_list_or_paired:
+  request_valid:
+    - parameter: {src: hdca, id: abcdabcd}
+  request_invalid:
+    - parameter: {src: hdca, id: 7}
+    - parameter: null
+    - {}
+  request_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  request_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - parameter: null
+    - {}
+  job_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  job_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    # List collection is valid
+    - parameter:
+        class: Collection
+        name: test_list
+        collection_type: list
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Paired collection is also valid
+    - parameter:
+        class: Collection
+        name: test_paired
+        collection_type: paired
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          reverse:
+            class: File
+            element_identifier: reverse
+            basename: "r.txt"
+            location: "step_input://1"
+            path: "/tmp/r.txt"
+            nameroot: "r"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
+    # Record collection type should be rejected (not list or paired)
+    - parameter:
+        class: Collection
+        name: wrong_type
+        collection_type: record
+        tags: []
+        elements:
+          field1:
+            class: File
+            element_identifier: field1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Structure mismatch: collection_type=list but elements is object (paired structure)
+    # With discriminated unions, this should be properly rejected
+    - parameter:
+        class: Collection
+        name: list_wrong_structure
+        collection_type: list
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Structure mismatch: collection_type=paired but elements is array (list structure)
+    # With discriminated unions, this should be properly rejected
+    - parameter:
+        class: Collection
+        name: paired_wrong_structure
+        collection_type: paired
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
             nameext: ".txt"
             format: "txt"
             size: 100

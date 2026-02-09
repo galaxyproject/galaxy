@@ -4,9 +4,10 @@ from galaxy.model import DatasetCollection, DatasetCollectionElement, HistoryDat
 from galaxy.tool_util_models.parameters import (
     DataCollectionPairedRuntime,
     DataCollectionListRuntime,
-    DataCollectionNestedRuntime,
+    DataCollectionNestedListRuntime,
     DataCollectionRecordRuntime,
     DataCollectionPairedOrUnpairedRuntime,
+    DataCollectionSampleSheetRuntime,
     DataInternalJson,
 )
 from galaxy.tools.runtime import collection_to_runtime
@@ -120,7 +121,7 @@ def test_collection_to_runtime_nested(mock_adapt_dataset):
         compute_environment=None
     )
     
-    assert isinstance(runtime, DataCollectionNestedRuntime)
+    assert isinstance(runtime, DataCollectionNestedListRuntime)
     assert runtime.collection_type == "list:paired"
     assert len(runtime.elements) == 1
     
@@ -179,8 +180,8 @@ def test_collection_to_runtime_sample_sheet(mock_adapt_dataset):
         compute_environment=None
     )
     
-    # Should use DataCollectionListRuntime but preserve metadata
-    assert isinstance(runtime, DataCollectionListRuntime)
+    # Should use DataCollectionSampleSheetRuntime to preserve metadata
+    assert isinstance(runtime, DataCollectionSampleSheetRuntime)
     assert runtime.collection_type == "sample_sheet"
     assert runtime.column_definitions is not None
     assert runtime.elements[0].columns == ["treatment"]
