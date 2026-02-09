@@ -71,10 +71,10 @@
                     :dataset-id="datasetId" />
                 <div v-else-if="dataContent?.item_data">
                     <div v-if="datatypesMapper.isSubTypeOfAny(metaType, ['tabular'])">
-                        <b-table
+                        <GTable
                             id="tabular-dataset-table"
+                            class="mb-2"
                             sticky-header
-                            thead-tr-class="sticky-top"
                             striped
                             hover
                             :per-page="perPage"
@@ -103,12 +103,14 @@
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
+import type { TableField } from "@/components/Common/GTable.types";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatasetTextContentStore } from "@/stores/datasetTextContentStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
 import HistoryDatasetAsImage from "./HistoryDatasetAsImage.vue";
+import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Dataset {
@@ -165,8 +167,8 @@ const metaContent = computed(() => getDataset(props.datasetId) as Dataset);
 const metaError = computed(() => getDatasetError(props.datasetId));
 const metaType = computed(() => metaContent.value?.extension);
 
-const getFields = (metaContent: Dataset) => {
-    const fields = [];
+const getFields = (metaContent: Dataset): TableField[] => {
+    const fields: TableField[] = [];
     const columnNames = metaContent.metadata_column_names || [];
     const columnCount = metaContent.metadata_columns || 0;
     for (let i = 0; i < columnCount; i++) {
@@ -180,7 +182,7 @@ const getFields = (metaContent: Dataset) => {
 };
 
 const getItems = (textData: string, metaData: Dataset) => {
-    const tableData: any[] = [];
+    const tableData: Record<string, string>[] = [];
     const delimiter = metaData.metadata_delimiter || "\t";
     const comments = metaData.metadata_comment_lines || 0;
     const lines = textData.split("\n");
