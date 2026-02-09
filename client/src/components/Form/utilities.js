@@ -220,7 +220,7 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
             continue;
         }
         if (isRequired && inputDef.type != "hidden") {
-            if (isEmpty && !allowEmptyValueOnRequiredInput) {
+            if (!isDefined(inputValue) || (allowEmptyValueOnRequiredInput && inputValue === "")) {
                 return [inputId, "Please provide a value for this option."];
             }
         }

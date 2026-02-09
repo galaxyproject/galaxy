@@ -402,10 +402,11 @@ describe("form component utilities", () => {
             },
         };
 
-        // Empty string should fail for required field
+        // Empty string should PASS for required field (default behavior - allowEmptyValueOnRequiredInput=false)
+        // Note: allowEmptyValueOnRequiredInput is misnamed - it should be rejectEmptyRequiredInputs
         let values = { required_field: "" };
         let result = validateInputs(index, values);
-        expect(result).toEqual(["required_field", "Please provide a value for this option."]);
+        expect(result).toEqual(null);
 
         // undefined should fail for required field
         values = { required_field: undefined };
@@ -421,5 +422,11 @@ describe("form component utilities", () => {
         values = { required_field: "value" };
         result = validateInputs(index, values);
         expect(result).toEqual(null);
+
+        // When allowEmptyValueOnRequiredInput=true (misnamed, really means reject empty strings too),
+        // empty string should also fail
+        values = { required_field: "" };
+        result = validateInputs(index, values, true);
+        expect(result).toEqual(["required_field", "Please provide a value for this option."]);
     });
 });

@@ -55,7 +55,11 @@ async function handleForceSubmit() {
         <div v-else>
             <FormCard :title="title">
                 <template v-slot:body>
-                    <FormDisplay :inputs="inputs" @onChange="onChange" @onValidation="onValidation" />
+                    <FormDisplay
+                        :inputs="inputs"
+                        :allow-empty-value-on-required-input="true"
+                        @onChange="onChange"
+                        @onValidation="onValidation" />
                 </template>
             </FormCard>
             <div class="mt-3">
