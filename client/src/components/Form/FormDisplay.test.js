@@ -103,7 +103,6 @@ describe("FormDisplay", () => {
         await wrapper.setProps({
             validationScrollTo: ["text_name", "error_message"],
         });
-        await wrapper.vm.$nextTick();
         const error = wrapper.find(".ui-form-error-text");
         expect(error.text()).toEqual("error_message");
         await wrapper.setProps({
