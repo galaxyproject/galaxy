@@ -180,7 +180,7 @@ class BaseJobRunner:
                 except Exception:
                     log.exception(f"({job_id}) Unhandled exception calling {name}")
                     if not isinstance(arg, JobState):
-                        job_state = JobState(job_wrapper=arg, job_destination={})
+                        job_state = JobState(job_wrapper=arg, job_destination=JobDestination())
                     else:
                         job_state = arg
                     if method != self.fail_job:
