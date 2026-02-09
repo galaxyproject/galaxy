@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import type { TableField } from "@/components/Common/GTable.types";
 import { UrlDataProvider } from "@/components/providers/UrlDataProvider.js";
 
+import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface HistoryDatasetAsTableProps {
@@ -44,8 +46,8 @@ const contentClass = computed(() => {
     }
 });
 
-function getFields(metaData: any) {
-    const fields = [];
+function getFields(metaData: any): TableField[] {
+    const fields: TableField[] = [];
     const columnNames = metaData.metadata_column_names || [];
     const columnCount = metaData.metadata_columns;
     for (let i = 0; i < columnCount; i++) {
@@ -58,15 +60,15 @@ function getFields(metaData: any) {
     return fields;
 }
 
-function getItems(textData: any, metaData: any) {
-    const tableData: object[] = [];
+function getItems(textData: string, metaData: any) {
+    const tableData: Record<string, string>[] = [];
     const delimiter: string = metaData.metadata_delimiter || "\t";
     const comments: number = metaData.metadata_comment_lines || 0;
     const lines = textData.split("\n");
     lines.forEach((line: string, i: number) => {
         if (i >= comments) {
             const tabs = line.split(delimiter);
-            const rowData: string[] = [];
+            const rowData: Record<string, string> = {};
             let hasData = false;
             tabs.forEach((cellData: string, j: number) => {
                 const cellDataTrimmed = cellData.trim();
@@ -100,9 +102,9 @@ function getItems(textData: any, metaData: any) {
                             :url="metaUrl">
                             <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
                             <div v-else-if="metaError">{{ metaError }}</div>
-                            <b-table
+                            <GTable
                                 v-else
-                                :thead-class="props.showColumnHeaders ? '' : 'd-none'"
+                                :hide-header="!props.showColumnHeaders"
                                 striped
                                 hover
                                 :fields="getFields(metaData)"
