@@ -364,7 +364,7 @@ history_storage:
     top_datasets_by_size: "[data-description='chart history top datasets by size']"
     dataset_by_size: "[data-description='chart history top datasets by size'] rect[data-label='${name}']"
     dataset_by_size_delete: '#g-card-action-delete-selected-item-actions-dataset'
-    confirm_delete: '.confirm-delete-dataset-dialog .btn-danger'
+    confirm_delete: '.modal.show .confirm-delete-dataset-dialog .btn-danger'
 
 storage_dashboard:
   selectors:
