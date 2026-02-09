@@ -32,7 +32,7 @@ import { useFormState } from "./composables/useFormState";
 import FormInputs from "./FormInputs.vue";
 
 interface Props {
-    id?: string | null;
+    id?: string;
     inputs: FormInputNode[];
     errors?: FormMessages | null;
     loading?: boolean;
@@ -55,7 +55,6 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    id: null,
     errors: null,
     loading: false,
     prefix: "",
