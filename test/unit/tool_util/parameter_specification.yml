@@ -2694,6 +2694,1021 @@ gx_data_collection_list_or_paired:
             format: "txt"
             size: 100
 
+gx_data_collection_record:
+  request_valid:
+    - parameter: {src: hdca, id: abcdabcd}
+  request_invalid:
+    - parameter: {src: hdca, id: 7}
+    - parameter: null
+    - {}
+  request_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  request_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - parameter: null
+    - {}
+  job_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  job_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    - parameter:
+        class: Collection
+        name: test_record
+        collection_type: record
+        tags: []
+        elements:
+          field1:
+            class: File
+            element_identifier: field1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          field2:
+            class: File
+            element_identifier: field2
+            basename: "f2.txt"
+            location: "step_input://1"
+            path: "/tmp/f2.txt"
+            nameroot: "f2"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
+    # Cross-type: list-shaped data should be rejected by record type
+    - parameter:
+        class: Collection
+        name: wrong_type
+        collection_type: list
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Structure mismatch: collection_type=record but elements is array
+    - parameter:
+        class: Collection
+        name: record_wrong_structure
+        collection_type: record
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+
+gx_data_collection_sample_sheet:
+  request_valid:
+    - parameter: {src: hdca, id: abcdabcd}
+  request_invalid:
+    - parameter: {src: hdca, id: 7}
+    - parameter: null
+    - {}
+  request_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  request_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - parameter: null
+    - {}
+  job_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  job_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    # Basic sample_sheet with column_definitions
+    - parameter:
+        class: Collection
+        name: test_sample_sheet
+        collection_type: sample_sheet
+        tags: []
+        column_definitions:
+          - {name: "condition", type: "str"}
+        elements:
+          - class: File
+            element_identifier: sample1
+            columns: ["treatment"]
+            basename: "s1.txt"
+            location: "step_input://0"
+            path: "/tmp/s1.txt"
+            nameroot: "s1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          - class: File
+            element_identifier: sample2
+            columns: ["control"]
+            basename: "s2.txt"
+            location: "step_input://1"
+            path: "/tmp/s2.txt"
+            nameroot: "s2"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Multiple column types
+    - parameter:
+        class: Collection
+        name: test_sample_sheet_multi
+        collection_type: sample_sheet
+        tags: []
+        column_definitions:
+          - {name: "condition", type: "str"}
+          - {name: "replicate", type: "int"}
+          - {name: "concentration", type: "float"}
+        elements:
+          - class: File
+            element_identifier: sample1
+            columns: ["treatment", 1, 0.5]
+            basename: "s1.txt"
+            location: "step_input://0"
+            path: "/tmp/s1.txt"
+            nameroot: "s1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
+    # Cross-type: paired-shaped data should be rejected by sample_sheet type
+    - parameter:
+        class: Collection
+        name: wrong_type
+        collection_type: paired
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          reverse:
+            class: File
+            element_identifier: reverse
+            basename: "r.txt"
+            location: "step_input://1"
+            path: "/tmp/r.txt"
+            nameroot: "r"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Structure mismatch: collection_type=sample_sheet but elements is object
+    - parameter:
+        class: Collection
+        name: sample_sheet_wrong_structure
+        collection_type: sample_sheet
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+
+gx_data_collection_paired_or_unpaired:
+  request_valid:
+    - parameter: {src: hdca, id: abcdabcd}
+  request_invalid:
+    - parameter: {src: hdca, id: 7}
+    - parameter: null
+    - {}
+  request_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  request_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - parameter: null
+    - {}
+  job_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  job_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    # Paired mode (forward/reverse)
+    - parameter:
+        class: Collection
+        name: test_pou_paired
+        collection_type: paired_or_unpaired
+        tags: []
+        has_single_item: false
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          reverse:
+            class: File
+            element_identifier: reverse
+            basename: "r.txt"
+            location: "step_input://1"
+            path: "/tmp/r.txt"
+            nameroot: "r"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Unpaired mode (single element)
+    - parameter:
+        class: Collection
+        name: test_pou_unpaired
+        collection_type: paired_or_unpaired
+        tags: []
+        has_single_item: true
+        elements:
+          unpaired:
+            class: File
+            element_identifier: unpaired
+            basename: "u.txt"
+            location: "step_input://0"
+            path: "/tmp/u.txt"
+            nameroot: "u"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
+    # Cross-type: list-shaped data should be rejected
+    - parameter:
+        class: Collection
+        name: wrong_type
+        collection_type: list
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Structure mismatch: collection_type=paired_or_unpaired but elements is array
+    - parameter:
+        class: Collection
+        name: pou_wrong_structure
+        collection_type: paired_or_unpaired
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+
+gx_data_collection_list_paired:
+  request_valid:
+    - parameter: {src: hdca, id: abcdabcd}
+  request_invalid:
+    - parameter: {src: hdca, id: 7}
+    - parameter: null
+    - {}
+  request_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  request_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - parameter: null
+    - {}
+  job_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  job_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    # Valid list:paired - array of paired collections
+    - parameter:
+        class: Collection
+        name: test_list_paired
+        collection_type: "list:paired"
+        tags: []
+        elements:
+          - class: Collection
+            name: sample1
+            collection_type: paired
+            tags: []
+            elements:
+              forward:
+                class: File
+                element_identifier: forward
+                basename: "s1_f.txt"
+                location: "step_input://0"
+                path: "/tmp/s1_f.txt"
+                nameroot: "s1_f"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+              reverse:
+                class: File
+                element_identifier: reverse
+                basename: "s1_r.txt"
+                location: "step_input://1"
+                path: "/tmp/s1_r.txt"
+                nameroot: "s1_r"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+          - class: Collection
+            name: sample2
+            collection_type: paired
+            tags: []
+            elements:
+              forward:
+                class: File
+                element_identifier: forward
+                basename: "s2_f.txt"
+                location: "step_input://2"
+                path: "/tmp/s2_f.txt"
+                nameroot: "s2_f"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+              reverse:
+                class: File
+                element_identifier: reverse
+                basename: "s2_r.txt"
+                location: "step_input://3"
+                path: "/tmp/s2_r.txt"
+                nameroot: "s2_r"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
+    # Wrong outer type: should be list:paired not just paired
+    - parameter:
+        class: Collection
+        name: wrong_outer_type
+        collection_type: paired
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          reverse:
+            class: File
+            element_identifier: reverse
+            basename: "r.txt"
+            location: "step_input://1"
+            path: "/tmp/r.txt"
+            nameroot: "r"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Wrong outer structure: list:paired but outer elements is object
+    - parameter:
+        class: Collection
+        name: wrong_outer_structure
+        collection_type: "list:paired"
+        tags: []
+        elements:
+          sample1:
+            class: Collection
+            name: sample1
+            collection_type: paired
+            tags: []
+            elements:
+              forward:
+                class: File
+                element_identifier: forward
+                basename: "f.txt"
+                location: "step_input://0"
+                path: "/tmp/f.txt"
+                nameroot: "f"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+              reverse:
+                class: File
+                element_identifier: reverse
+                basename: "r.txt"
+                location: "step_input://1"
+                path: "/tmp/r.txt"
+                nameroot: "r"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+    # Inner structure mismatch: inner collection_type=paired but inner elements is array
+    - parameter:
+        class: Collection
+        name: inner_structure_mismatch
+        collection_type: "list:paired"
+        tags: []
+        elements:
+          - class: Collection
+            name: sample1
+            collection_type: paired
+            tags: []
+            elements:
+              - class: File
+                element_identifier: f1
+                basename: "f1.txt"
+                location: "step_input://0"
+                path: "/tmp/f1.txt"
+                nameroot: "f1"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+    # Inner type mismatch: inner collection_type=list but should be paired
+    - parameter:
+        class: Collection
+        name: wrong_inner_type
+        collection_type: "list:paired"
+        tags: []
+        elements:
+          - class: Collection
+            name: batch1
+            collection_type: list
+            tags: []
+            elements:
+              - class: File
+                element_identifier: f1
+                basename: "f1.txt"
+                location: "step_input://0"
+                path: "/tmp/f1.txt"
+                nameroot: "f1"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+
+gx_data_collection_list_list:
+  request_valid:
+    - parameter: {src: hdca, id: abcdabcd}
+  request_invalid:
+    - parameter: {src: hdca, id: 7}
+    - parameter: null
+    - {}
+  request_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  request_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - parameter: null
+    - {}
+  job_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  job_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    # Valid list:list - array of list collections
+    - parameter:
+        class: Collection
+        name: test_list_list
+        collection_type: "list:list"
+        tags: []
+        elements:
+          - class: Collection
+            name: batch1
+            collection_type: list
+            tags: []
+            elements:
+              - class: File
+                element_identifier: f1
+                basename: "b1_f1.txt"
+                location: "step_input://0"
+                path: "/tmp/b1_f1.txt"
+                nameroot: "b1_f1"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+              - class: File
+                element_identifier: f2
+                basename: "b1_f2.txt"
+                location: "step_input://1"
+                path: "/tmp/b1_f2.txt"
+                nameroot: "b1_f2"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+          - class: Collection
+            name: batch2
+            collection_type: list
+            tags: []
+            elements:
+              - class: File
+                element_identifier: f1
+                basename: "b2_f1.txt"
+                location: "step_input://2"
+                path: "/tmp/b2_f1.txt"
+                nameroot: "b2_f1"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
+    # Wrong outer type: should be list:list not just list
+    - parameter:
+        class: Collection
+        name: wrong_outer_type
+        collection_type: list
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Inner structure mismatch: inner collection_type=list but inner elements is object
+    - parameter:
+        class: Collection
+        name: inner_structure_mismatch
+        collection_type: "list:list"
+        tags: []
+        elements:
+          - class: Collection
+            name: batch1
+            collection_type: list
+            tags: []
+            elements:
+              field1:
+                class: File
+                element_identifier: field1
+                basename: "f1.txt"
+                location: "step_input://0"
+                path: "/tmp/f1.txt"
+                nameroot: "f1"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+    # Inner type mismatch: inner collection_type=paired but should be list
+    - parameter:
+        class: Collection
+        name: wrong_inner_type
+        collection_type: "list:list"
+        tags: []
+        elements:
+          - class: Collection
+            name: batch1
+            collection_type: paired
+            tags: []
+            elements:
+              forward:
+                class: File
+                element_identifier: forward
+                basename: "f.txt"
+                location: "step_input://0"
+                path: "/tmp/f.txt"
+                nameroot: "f"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+              reverse:
+                class: File
+                element_identifier: reverse
+                basename: "r.txt"
+                location: "step_input://1"
+                path: "/tmp/r.txt"
+                nameroot: "r"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+
+gx_data_collection_list_list_paired:
+  request_valid:
+    - parameter: {src: hdca, id: abcdabcd}
+  request_invalid:
+    - parameter: {src: hdca, id: 7}
+    - parameter: null
+    - {}
+  request_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  request_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - parameter: null
+    - {}
+  job_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  job_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    # Valid list:list:paired - 3 levels deep
+    - parameter:
+        class: Collection
+        name: test_list_list_paired
+        collection_type: "list:list:paired"
+        tags: []
+        elements:
+          - class: Collection
+            name: batch1
+            collection_type: "list:paired"
+            tags: []
+            elements:
+              - class: Collection
+                name: sample1
+                collection_type: paired
+                tags: []
+                elements:
+                  forward:
+                    class: File
+                    element_identifier: forward
+                    basename: "b1_s1_f.txt"
+                    location: "step_input://0"
+                    path: "/tmp/b1_s1_f.txt"
+                    nameroot: "b1_s1_f"
+                    nameext: ".txt"
+                    format: "txt"
+                    size: 100
+                  reverse:
+                    class: File
+                    element_identifier: reverse
+                    basename: "b1_s1_r.txt"
+                    location: "step_input://1"
+                    path: "/tmp/b1_s1_r.txt"
+                    nameroot: "b1_s1_r"
+                    nameext: ".txt"
+                    format: "txt"
+                    size: 100
+              - class: Collection
+                name: sample2
+                collection_type: paired
+                tags: []
+                elements:
+                  forward:
+                    class: File
+                    element_identifier: forward
+                    basename: "b1_s2_f.txt"
+                    location: "step_input://2"
+                    path: "/tmp/b1_s2_f.txt"
+                    nameroot: "b1_s2_f"
+                    nameext: ".txt"
+                    format: "txt"
+                    size: 100
+                  reverse:
+                    class: File
+                    element_identifier: reverse
+                    basename: "b1_s2_r.txt"
+                    location: "step_input://3"
+                    path: "/tmp/b1_s2_r.txt"
+                    nameroot: "b1_s2_r"
+                    nameext: ".txt"
+                    format: "txt"
+                    size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
+    # Depth mismatch: inner is paired but should be list:paired
+    - parameter:
+        class: Collection
+        name: depth_mismatch
+        collection_type: "list:list:paired"
+        tags: []
+        elements:
+          - class: Collection
+            name: batch1
+            collection_type: paired
+            tags: []
+            elements:
+              forward:
+                class: File
+                element_identifier: forward
+                basename: "f.txt"
+                location: "step_input://0"
+                path: "/tmp/f.txt"
+                nameroot: "f"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+              reverse:
+                class: File
+                element_identifier: reverse
+                basename: "r.txt"
+                location: "step_input://1"
+                path: "/tmp/r.txt"
+                nameroot: "r"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+    # Wrong inner type at depth: inner is list:list but should be list:paired
+    - parameter:
+        class: Collection
+        name: wrong_inner_type_at_depth
+        collection_type: "list:list:paired"
+        tags: []
+        elements:
+          - class: Collection
+            name: batch1
+            collection_type: "list:list"
+            tags: []
+            elements:
+              - class: Collection
+                name: inner1
+                collection_type: list
+                tags: []
+                elements:
+                  - class: File
+                    element_identifier: f1
+                    basename: "f1.txt"
+                    location: "step_input://0"
+                    path: "/tmp/f1.txt"
+                    nameroot: "f1"
+                    nameext: ".txt"
+                    format: "txt"
+                    size: 100
+
+gx_data_collection_list_or_record:
+  request_valid:
+    - parameter: {src: hdca, id: abcdabcd}
+  request_invalid:
+    - parameter: {src: hdca, id: 7}
+    - parameter: null
+    - {}
+  request_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  request_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - parameter: null
+    - {}
+  job_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  job_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    # List collection is valid
+    - parameter:
+        class: Collection
+        name: test_list
+        collection_type: list
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Record collection is also valid
+    - parameter:
+        class: Collection
+        name: test_record
+        collection_type: record
+        tags: []
+        elements:
+          field1:
+            class: File
+            element_identifier: field1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          field2:
+            class: File
+            element_identifier: field2
+            basename: "f2.txt"
+            location: "step_input://1"
+            path: "/tmp/f2.txt"
+            nameroot: "f2"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
+    # Paired collection type should be rejected (not list or record)
+    - parameter:
+        class: Collection
+        name: wrong_type
+        collection_type: paired
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          reverse:
+            class: File
+            element_identifier: reverse
+            basename: "r.txt"
+            location: "step_input://1"
+            path: "/tmp/r.txt"
+            nameroot: "r"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Structure mismatch: collection_type=list but elements is object
+    - parameter:
+        class: Collection
+        name: list_wrong_structure
+        collection_type: list
+        tags: []
+        elements:
+          field1:
+            class: File
+            element_identifier: field1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Structure mismatch: collection_type=record but elements is array
+    - parameter:
+        class: Collection
+        name: record_wrong_structure
+        collection_type: record
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+
+gx_data_collection_paired_or_pou:
+  request_valid:
+    - parameter: {src: hdca, id: abcdabcd}
+  request_invalid:
+    - parameter: {src: hdca, id: 7}
+    - parameter: null
+    - {}
+  request_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  request_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - parameter: null
+    - {}
+  job_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  job_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    # Paired collection is valid
+    - parameter:
+        class: Collection
+        name: test_paired
+        collection_type: paired
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          reverse:
+            class: File
+            element_identifier: reverse
+            basename: "r.txt"
+            location: "step_input://1"
+            path: "/tmp/r.txt"
+            nameroot: "r"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # paired_or_unpaired collection is also valid (paired mode)
+    - parameter:
+        class: Collection
+        name: test_pou_paired
+        collection_type: paired_or_unpaired
+        tags: []
+        has_single_item: false
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          reverse:
+            class: File
+            element_identifier: reverse
+            basename: "r.txt"
+            location: "step_input://1"
+            path: "/tmp/r.txt"
+            nameroot: "r"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # paired_or_unpaired collection is also valid (unpaired mode)
+    - parameter:
+        class: Collection
+        name: test_pou_unpaired
+        collection_type: paired_or_unpaired
+        tags: []
+        has_single_item: true
+        elements:
+          unpaired:
+            class: File
+            element_identifier: unpaired
+            basename: "u.txt"
+            location: "step_input://0"
+            path: "/tmp/u.txt"
+            nameroot: "u"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
+    # List collection type should be rejected (not paired or paired_or_unpaired)
+    - parameter:
+        class: Collection
+        name: wrong_type
+        collection_type: list
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # Structure mismatch: collection_type=paired but elements is array
+    - parameter:
+        class: Collection
+        name: paired_wrong_structure
+        collection_type: paired
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+
 cwl_int:
   request_valid:
     - parameter: 5

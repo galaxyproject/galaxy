@@ -1,6 +1,7 @@
 # attempt to model requires_value...
 # conditional can descend...
 from abc import abstractmethod
+from functools import lru_cache
 from typing import (
     Any,
     Callable,
@@ -721,6 +722,66 @@ DataCollectionNestedListRuntime.model_rebuild()
 DataCollectionNestedRecordRuntime.model_rebuild()
 
 
+_LEAF_COLLECTION_MODELS: Dict[str, Type] = {
+    "list": DataCollectionListRuntime,
+    "paired": DataCollectionPairedRuntime,
+    "record": DataCollectionRecordRuntime,
+    "paired_or_unpaired": DataCollectionPairedOrUnpairedRuntime,
+    "sample_sheet": DataCollectionSampleSheetRuntime,
+}
+
+
+@lru_cache(maxsize=128)
+def build_collection_model_for_type(collection_type: str) -> Optional[Type]:
+    """Dynamically generate a Pydantic model for a specific collection_type.
+
+    Simple types -> existing static model.
+    Nested types -> model with Literal[collection_type] and
+    elements narrowed to exact inner model.
+    Unknown single-segment types -> None (caller decides fallback).
+    """
+    if collection_type in _LEAF_COLLECTION_MODELS:
+        return _LEAF_COLLECTION_MODELS[collection_type]
+
+    if ":" not in collection_type:
+        return None
+
+    outer_segment, inner_type = collection_type.split(":", 1)
+    inner_model = build_collection_model_for_type(inner_type)
+
+    if inner_model is None:
+        return None
+
+    is_list_like = outer_segment in ("list", "sample_sheet")
+
+    if is_list_like:
+        elements_type = list_type(inner_model)
+    else:
+        elements_type = Dict[str, inner_model]
+
+    safe_name = f"DynamicCollection_{'_'.join(collection_type.split(':'))}"
+
+    model = create_model(
+        safe_name,
+        __base__=DataCollectionInternalJsonBase,
+        collection_type=(Literal[collection_type], ...),
+        elements=(elements_type, ...),
+    )
+
+    return model
+
+
+def _collection_type_discriminator(v: Any) -> str:
+    """Return the full collection_type string for discriminated union routing.
+
+    Used for subset unions (comma-separated types) where tags may be dynamic
+    model collection_type strings like "list:paired".
+    """
+    if isinstance(v, dict):
+        return v.get('collection_type', '')
+    return getattr(v, 'collection_type', '')
+
+
 def collection_runtime_discriminator(v: Any) -> str:
     """Discriminator function for collection runtime unions.
 
@@ -1049,7 +1110,11 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         elif ct == "sample_sheet":
             return (DataCollectionSampleSheetRuntime, 'sample_sheet')
         elif ":" in ct:
-            # Nested types like "list:paired", "sample_sheet:paired", etc.
+            # Try dynamic model for precise inner type validation
+            dynamic_model = build_collection_model_for_type(ct)
+            if dynamic_model is not None:
+                return (dynamic_model, ct)
+            # Fallback to generic nested models
             first_segment = ct.split(":")[0]
             if first_segment in ("list", "sample_sheet"):
                 return (DataCollectionNestedListRuntime, 'nested_list')
@@ -1084,9 +1149,11 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
                     base_type = tagged_types[0].__origin__  # Get unwrapped type
                 else:
                     # Multiple types - build discriminated union
+                    # Use _collection_type_discriminator which returns full collection_type,
+                    # matching both simple tags ("list") and dynamic tags ("list:paired")
                     subset_union = Annotated[
                         Union[tuple(tagged_types)],
-                        Discriminator(collection_runtime_discriminator)
+                        Discriminator(_collection_type_discriminator)
                     ]
                     base_type = subset_union
                 return optional_if_needed(base_type, self.optional)

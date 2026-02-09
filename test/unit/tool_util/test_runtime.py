@@ -2,6 +2,8 @@ import pytest
 from pydantic import ValidationError
 from galaxy.model import DatasetCollection, DatasetCollectionElement, HistoryDatasetAssociation
 from galaxy.tool_util_models.parameters import (
+    build_collection_model_for_type,
+    DataCollectionInternalJsonBase,
     DataCollectionPairedRuntime,
     DataCollectionListRuntime,
     DataCollectionNestedListRuntime,
@@ -121,7 +123,7 @@ def test_collection_to_runtime_nested(mock_adapt_dataset):
         compute_environment=None
     )
     
-    assert isinstance(runtime, DataCollectionNestedListRuntime)
+    assert isinstance(runtime, DataCollectionInternalJsonBase)
     assert runtime.collection_type == "list:paired"
     assert len(runtime.elements) == 1
     
@@ -216,3 +218,105 @@ def test_collection_to_runtime_paired_or_unpaired(mock_adapt_dataset):
     
     assert isinstance(runtime_unpaired, DataCollectionPairedOrUnpairedRuntime)
     assert runtime_unpaired.elements["unpaired"].class_ == "File"
+
+
+# --- Dynamic model factory tests ---
+
+_FILE_ELEMENT = {
+    "class": "File",
+    "element_identifier": "f1",
+    "basename": "f1.txt",
+    "location": "step_input://0",
+    "path": "/tmp/f1.txt",
+    "nameroot": "f1",
+    "nameext": ".txt",
+    "format": "txt",
+    "size": 100,
+}
+
+
+def test_build_collection_model_returns_static_for_leaf():
+    assert build_collection_model_for_type("list") is DataCollectionListRuntime
+    assert build_collection_model_for_type("paired") is DataCollectionPairedRuntime
+    assert build_collection_model_for_type("record") is DataCollectionRecordRuntime
+
+
+def test_build_collection_model_returns_none_for_unknown():
+    assert build_collection_model_for_type("unknown_type") is None
+
+
+def test_dynamic_model_accepts_correct_inner_type():
+    model = build_collection_model_for_type("list:paired")
+    result = model.model_validate({
+        "class": "Collection", "name": "good",
+        "collection_type": "list:paired", "tags": [],
+        "elements": [{
+            "class": "Collection", "name": "p1",
+            "collection_type": "paired", "tags": [],
+            "elements": {
+                "forward": {**_FILE_ELEMENT, "element_identifier": "forward"},
+                "reverse": {**_FILE_ELEMENT, "element_identifier": "reverse", "basename": "r.txt",
+                            "location": "step_input://1", "path": "/tmp/r.txt", "nameroot": "r"},
+            },
+        }],
+    })
+    assert result.collection_type == "list:paired"
+    assert isinstance(result.elements[0], DataCollectionPairedRuntime)
+
+
+def test_dynamic_model_rejects_wrong_inner_type():
+    model = build_collection_model_for_type("list:paired")
+    with pytest.raises(ValidationError):
+        model.model_validate({
+            "class": "Collection", "name": "bad",
+            "collection_type": "list:paired", "tags": [],
+            "elements": [{
+                "class": "Collection", "name": "l1",
+                "collection_type": "list", "tags": [],
+                "elements": [_FILE_ELEMENT],
+            }],
+        })
+
+
+def test_dynamic_model_rejects_wrong_collection_type_literal():
+    model = build_collection_model_for_type("list:paired")
+    with pytest.raises(ValidationError):
+        model.model_validate({
+            "class": "Collection", "name": "bad",
+            "collection_type": "list:list", "tags": [], "elements": [],
+        })
+
+
+def test_dynamic_model_rejects_depth_mismatch():
+    model = build_collection_model_for_type("list:list:paired")
+    # Inner is "paired" (depth 1) but should be "list:paired" (depth 2)
+    with pytest.raises(ValidationError):
+        model.model_validate({
+            "class": "Collection", "name": "bad",
+            "collection_type": "list:list:paired", "tags": [],
+            "elements": [{
+                "class": "Collection", "name": "p1",
+                "collection_type": "paired", "tags": [],
+                "elements": {
+                    "forward": {**_FILE_ELEMENT, "element_identifier": "forward"},
+                    "reverse": {**_FILE_ELEMENT, "element_identifier": "reverse", "basename": "r.txt",
+                                "location": "step_input://1", "path": "/tmp/r.txt", "nameroot": "r"},
+                },
+            }],
+        })
+
+
+def test_dynamic_model_json_schema_precise():
+    """JSON Schema for list:paired shows elements as array of paired, not Union."""
+    model = build_collection_model_for_type("list:paired")
+    schema = model.model_json_schema()
+    # elements should reference paired model, NOT anyOf with all types
+    elements_schema = schema["properties"]["elements"]
+    schema_str = str(elements_schema)
+    assert "anyOf" not in schema_str
+
+
+def test_dynamic_model_caching():
+    m1 = build_collection_model_for_type("list:paired")
+    m2 = build_collection_model_for_type("list:paired")
+    assert m1 is m2
