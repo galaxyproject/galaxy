@@ -123,14 +123,13 @@ def test_collection_to_runtime_nested(mock_adapt_dataset):
         compute_environment=None
     )
     
-    assert isinstance(runtime, DataCollectionInternalJsonBase)
+    expected_model = build_collection_model_for_type("list:paired")
+    assert isinstance(runtime, expected_model)
+    assert type(runtime).__name__ == "DynamicCollection_list_paired"
     assert runtime.collection_type == "list:paired"
     assert len(runtime.elements) == 1
-    
+
     inner = runtime.elements[0]
-    
-    # It should be a paired runtime because that's what we put in
-    # With the updated nested model, Pydantic should match the inner dict to DataCollectionPairedRuntime
     assert isinstance(inner, DataCollectionPairedRuntime)
     assert inner.elements.forward.class_ == "File"
 
@@ -320,3 +319,116 @@ def test_dynamic_model_caching():
     m1 = build_collection_model_for_type("list:paired")
     m2 = build_collection_model_for_type("list:paired")
     assert m1 is m2
+
+
+# --- Step 2: E2E list:list:paired (gap #1) ---
+
+def test_collection_to_runtime_deeply_nested(mock_adapt_dataset):
+    """End-to-end: list:list:paired through collection_to_runtime pipeline."""
+    paired_data = ["paired", [("forward", "hda1"), ("reverse", "hda2")]]
+    list_paired_data = ["list:paired", [("p1", paired_data)]]
+    collection = create_model_collection("list:list:paired", [("batch1", list_paired_data)])
+
+    runtime = collection_to_runtime(
+        collection,
+        name="test_deeply_nested",
+        tags=[],
+        adapt_dataset=mock_adapt_dataset,
+        compute_environment=None,
+    )
+
+    expected_model = build_collection_model_for_type("list:list:paired")
+    assert isinstance(runtime, expected_model)
+    assert runtime.collection_type == "list:list:paired"
+    assert len(runtime.elements) == 1
+
+    middle = runtime.elements[0]
+    expected_middle = build_collection_model_for_type("list:paired")
+    assert isinstance(middle, expected_middle)
+    assert middle.collection_type == "list:paired"
+    assert len(middle.elements) == 1
+
+    inner = middle.elements[0]
+    assert isinstance(inner, DataCollectionPairedRuntime)
+    assert inner.elements.forward.class_ == "File"
+
+
+# --- Step 3: record:* nested dynamic models (gap #2) ---
+
+def test_dynamic_model_record_paired_accepts_correct():
+    """record:paired dynamic model: dict of paired collections."""
+    model = build_collection_model_for_type("record:paired")
+    assert model is not None
+    result = model.model_validate({
+        "class": "Collection", "name": "rec",
+        "collection_type": "record:paired", "tags": [],
+        "elements": {
+            "sample_a": {
+                "class": "Collection", "name": "sample_a",
+                "collection_type": "paired", "tags": [],
+                "elements": {
+                    "forward": {**_FILE_ELEMENT, "element_identifier": "forward"},
+                    "reverse": {**_FILE_ELEMENT, "element_identifier": "reverse",
+                                "basename": "r.txt", "location": "step_input://1",
+                                "path": "/tmp/r.txt", "nameroot": "r"},
+                },
+            },
+        },
+    })
+    assert result.collection_type == "record:paired"
+    assert isinstance(result.elements["sample_a"], DataCollectionPairedRuntime)
+
+
+def test_dynamic_model_record_paired_rejects_wrong_inner():
+    """record:paired rejects inner collection with wrong type (list instead of paired)."""
+    model = build_collection_model_for_type("record:paired")
+    with pytest.raises(ValidationError):
+        model.model_validate({
+            "class": "Collection", "name": "bad_rec",
+            "collection_type": "record:paired", "tags": [],
+            "elements": {
+                "sample_a": {
+                    "class": "Collection", "name": "sample_a",
+                    "collection_type": "list", "tags": [],
+                    "elements": [_FILE_ELEMENT],
+                },
+            },
+        })
+
+
+# --- Step 4: Unknown nested segments return None (gap #5) ---
+
+def test_build_collection_model_returns_none_for_unknown_nested():
+    assert build_collection_model_for_type("list:unknown_type") is None
+    assert build_collection_model_for_type("record:unknown") is None
+    assert build_collection_model_for_type("list:list:unknown") is None
+
+
+# --- Step 5: Empty dict elements on record-like dynamic model (gap #6) ---
+
+def test_dynamic_model_record_paired_empty_elements():
+    """Empty dict elements on a record-like dynamic model should validate."""
+    model = build_collection_model_for_type("record:paired")
+    result = model.model_validate({
+        "class": "Collection", "name": "empty_rec",
+        "collection_type": "record:paired", "tags": [],
+        "elements": {},
+    })
+    assert result.elements == {}
+
+
+# --- Step 6: JSON schema for deeply nested models (gap #7) ---
+
+def test_dynamic_model_json_schema_deeply_nested():
+    """JSON Schema for list:list:paired has 3 levels, no anyOf at any level."""
+    model = build_collection_model_for_type("list:list:paired")
+    schema = model.model_json_schema()
+    # Outer elements: array of list:paired models
+    elements_schema = schema["properties"]["elements"]
+    schema_str = str(elements_schema)
+    assert "anyOf" not in schema_str
+
+    # Should have definitions for multiple distinct models (at least the inner dynamic + leaf)
+    defs = schema.get("$defs", {})
+    assert len(defs) >= 2
+    assert any("list_paired" in k for k in defs.keys())

@@ -304,6 +304,8 @@
   <tool file="parameters/gx_data_collection_list_list.yml" />
   <tool file="parameters/gx_data_collection_list_list_paired.yml" />
   <tool file="parameters/gx_data_collection_list_or_record.yml" />
+  <tool file="parameters/gx_data_collection_list_paired_or_list_list.yml" />
+  <tool file="parameters/gx_data_collection_list_or_list_paired.yml" />
   <tool file="parameters/gx_data_collection_paired_or_pou.yml" />
 
   <section id="filter" name="For Tours">
