@@ -109,9 +109,11 @@ def test_collection_to_runtime_nested(mock_adapt_dataset):
     )
 
     expected_model = build_collection_model_for_type("list:paired")
+    assert expected_model is not None
     assert isinstance(runtime, expected_model)
     assert type(runtime).__name__ == "DynamicCollection_list_paired"
     assert runtime.collection_type == "list:paired"
+    assert hasattr(runtime, "elements")
     assert len(runtime.elements) == 1
 
     inner = runtime.elements[0]
@@ -219,6 +221,7 @@ def test_build_collection_model_returns_none_for_unknown():
 
 def test_dynamic_model_accepts_correct_inner_type():
     model = build_collection_model_for_type("list:paired")
+    assert model is not None
     result = model.model_validate(
         {
             "class": "Collection",
@@ -252,6 +255,7 @@ def test_dynamic_model_accepts_correct_inner_type():
 
 def test_dynamic_model_rejects_wrong_inner_type():
     model = build_collection_model_for_type("list:paired")
+    assert model is not None
     with pytest.raises(ValidationError):
         model.model_validate(
             {
@@ -274,6 +278,7 @@ def test_dynamic_model_rejects_wrong_inner_type():
 
 def test_dynamic_model_rejects_wrong_collection_type_literal():
     model = build_collection_model_for_type("list:paired")
+    assert model is not None
     with pytest.raises(ValidationError):
         model.model_validate(
             {
@@ -288,6 +293,7 @@ def test_dynamic_model_rejects_wrong_collection_type_literal():
 
 def test_dynamic_model_rejects_depth_mismatch():
     model = build_collection_model_for_type("list:list:paired")
+    assert model is not None
     # Inner is "paired" (depth 1) but should be "list:paired" (depth 2)
     with pytest.raises(ValidationError):
         model.model_validate(
@@ -322,6 +328,7 @@ def test_dynamic_model_rejects_depth_mismatch():
 def test_dynamic_model_json_schema_precise():
     """JSON Schema for list:paired shows elements as array of paired, not Union."""
     model = build_collection_model_for_type("list:paired")
+    assert model is not None
     schema = model.model_json_schema()
     # elements should reference paired model, NOT anyOf with all types
     elements_schema = schema["properties"]["elements"]
@@ -353,13 +360,17 @@ def test_collection_to_runtime_deeply_nested(mock_adapt_dataset):
     )
 
     expected_model = build_collection_model_for_type("list:list:paired")
+    assert expected_model is not None
     assert isinstance(runtime, expected_model)
     assert runtime.collection_type == "list:list:paired"
+    assert hasattr(runtime, "elements")
     assert len(runtime.elements) == 1
 
     middle = runtime.elements[0]
     expected_middle = build_collection_model_for_type("list:paired")
+    assert expected_middle is not None
     assert isinstance(middle, expected_middle)
+    assert hasattr(middle, "elements")
     assert middle.collection_type == "list:paired"
     assert len(middle.elements) == 1
 
@@ -409,6 +420,7 @@ def test_dynamic_model_record_paired_accepts_correct():
 def test_dynamic_model_record_paired_rejects_wrong_inner():
     """record:paired rejects inner collection with wrong type (list instead of paired)."""
     model = build_collection_model_for_type("record:paired")
+    assert model is not None
     with pytest.raises(ValidationError):
         model.model_validate(
             {
@@ -444,6 +456,7 @@ def test_build_collection_model_returns_none_for_unknown_nested():
 def test_dynamic_model_record_paired_empty_elements():
     """Empty dict elements on a record-like dynamic model should validate."""
     model = build_collection_model_for_type("record:paired")
+    assert model is not None
     result = model.model_validate(
         {
             "class": "Collection",
@@ -462,6 +475,7 @@ def test_dynamic_model_record_paired_empty_elements():
 def test_dynamic_model_json_schema_deeply_nested():
     """JSON Schema for list:list:paired has 3 levels, no anyOf at any level."""
     model = build_collection_model_for_type("list:list:paired")
+    assert model is not None
     schema = model.model_json_schema()
     # Outer elements: array of list:paired models
     elements_schema = schema["properties"]["elements"]

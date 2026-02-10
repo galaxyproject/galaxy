@@ -3,6 +3,7 @@ from typing import (
     Any,
     Optional,
     TYPE_CHECKING,
+    Union,
 )
 
 from galaxy.model import (
@@ -34,8 +35,9 @@ if TYPE_CHECKING:
 DatasetToRuntimeJson = Callable[[DataRequestInternalDereferencedT], DataInternalJson]
 CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], DataCollectionInternalJsonBase]
 
-# Input dataset collections dict type
-InpDataCollectionsDictT = dict[str, Any]
+# Input dataset collections dict type - values are HDCAs (from job.input_dataset_collections)
+# or DCEs (from job.input_dataset_collection_elements for subcollection mapping).
+InpDataCollectionsDictT = dict[str, Union[HistoryDatasetCollectionAssociation, DatasetCollectionElement]]
 
 
 def is_list_like(collection_type: str) -> bool:

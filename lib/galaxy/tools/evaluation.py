@@ -1084,9 +1084,9 @@ class UserToolEvaluator(ToolEvaluator):
             from galaxy.tools.runtime import setup_for_runtimeify
 
             # Get input collections from job for collection parameter support
-            input_dataset_collections = {
-                assoc.name: assoc.dataset_collection for assoc in self.job.input_dataset_collections
-            }
+            input_dataset_collections: dict[
+                str, model.HistoryDatasetCollectionAssociation | model.DatasetCollectionElement
+            ] = {assoc.name: assoc.dataset_collection for assoc in self.job.input_dataset_collections}
             # Also include DCE associations for subcollection mapping
             for assoc in self.job.input_dataset_collection_elements:
                 input_dataset_collections[assoc.name] = assoc.dataset_collection_element
