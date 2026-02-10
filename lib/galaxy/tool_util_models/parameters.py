@@ -7,6 +7,7 @@ from typing import (
     Callable,
     cast,
     Dict,
+    get_args,
     Iterable,
     List,
     Mapping,
@@ -835,18 +836,21 @@ def collection_runtime_discriminator(v: Any) -> str:
         return "list"
 
 
-CollectionRuntimeDiscriminated: Type = Annotated[
-    Union[
-        Annotated[DataCollectionListRuntime, Tag("list")],
-        Annotated[DataCollectionSampleSheetRuntime, Tag("sample_sheet")],
-        Annotated[DataCollectionPairedRuntime, Tag("paired")],
-        Annotated[DataCollectionRecordRuntime, Tag("record")],
-        Annotated[DataCollectionPairedOrUnpairedRuntime, Tag("paired_or_unpaired")],
-        Annotated[DataCollectionNestedListRuntime, Tag("nested_list")],
-        Annotated[DataCollectionNestedRecordRuntime, Tag("nested_record")],
+CollectionRuntimeDiscriminated: Type = cast(
+    Type,
+    Annotated[
+        Union[
+            Annotated[DataCollectionListRuntime, Tag("list")],
+            Annotated[DataCollectionSampleSheetRuntime, Tag("sample_sheet")],
+            Annotated[DataCollectionPairedRuntime, Tag("paired")],
+            Annotated[DataCollectionRecordRuntime, Tag("record")],
+            Annotated[DataCollectionPairedOrUnpairedRuntime, Tag("paired_or_unpaired")],
+            Annotated[DataCollectionNestedListRuntime, Tag("nested_list")],
+            Annotated[DataCollectionNestedRecordRuntime, Tag("nested_record")],
+        ],
+        Discriminator(collection_runtime_discriminator),
     ],
-    Discriminator(collection_runtime_discriminator),
-]
+)
 
 
 DataRequestInternal: Type = cast(
@@ -1155,14 +1159,15 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
 
             if tagged_types:
                 if len(tagged_types) == 1:
-                    # Single type - no union needed
-                    base_type = tagged_types[0].__origin__  # Get unwrapped type
+                    # Single type - no union needed, unwrap Annotated to get base model
+                    base_type: Type = get_args(tagged_types[0])[0]
                 else:
                     # Multiple types - build discriminated union
                     # Use _collection_type_discriminator which returns full collection_type,
                     # matching both simple tags ("list") and dynamic tags ("list:paired")
-                    subset_union = Annotated[Union[tuple(tagged_types)], Discriminator(_collection_type_discriminator)]
-                    base_type = subset_union
+                    base_type = cast(
+                        Type, Annotated[Union[tuple(tagged_types)], Discriminator(_collection_type_discriminator)]
+                    )
                 return optional_if_needed(base_type, self.optional)
             # Fall through to full union if no models matched
 

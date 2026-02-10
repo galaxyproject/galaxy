@@ -362,19 +362,17 @@ class YamlToolSource(ToolSource):
 
 
 def __parse_test_inputs(i: int, test_inputs: Union[list, dict]) -> ToolSourceTestInputs:
-    inputs = test_inputs
-    if is_dict(inputs):
-        new_inputs = []
-        for key, value in inputs.items():
-            new_inputs.append({"name": key, "value": value, "attributes": {}})
-        inputs = new_inputs
+    inputs: list = test_inputs if isinstance(test_inputs, list) else []
+    if isinstance(test_inputs, dict):
+        for key, value in test_inputs.items():
+            inputs.append({"name": key, "value": value, "attributes": {}})
     for input in inputs:
         if is_dict(input["value"]) and "class" in input["value"] and input["value"]["class"] == "Collection":
-            collection_def = JsonTestCollectionDefDict(input["value"])
+            collection_def = cast(JsonTestCollectionDefDict, input["value"])
             attrib = input.setdefault("attributes", {})
             attrib["collection"] = collection_def
 
-    return inputs
+    return cast(ToolSourceTestInputs, inputs)
 
 
 def _parse_test(i: int, test_dict: dict) -> ToolSourceTest:
@@ -426,7 +424,7 @@ def _parse_test(i: int, test_dict: dict) -> ToolSourceTest:
     test_dict["expect_failure"] = test_dict.get("expect_failure", False)
     test_dict["expect_test_failure"] = test_dict.get("expect_test_failure", False)
     test_dict["value_state_representation"] = "test_case_json"
-    return test_dict
+    return cast(ToolSourceTest, test_dict)
 
 
 def to_test_assert_list(assertions) -> AssertionList:

@@ -2016,11 +2016,9 @@ def expanded_inputs_from_json(expanded_inputs_json: ExpandedToolInputsJsonified)
     loaded_inputs: ExpandedToolInputs = {}
     for key, value in expanded_inputs_json.items():
         if isinstance(value, dict) and value.get("model_class"):
-            collection_def_dict = cast(XmlTestCollectionDefDict, value)
-            loaded_inputs[key] = TestCollectionDef.from_dict(collection_def_dict)
+            loaded_inputs[key] = TestCollectionDef.from_dict(cast(XmlTestCollectionDefDict, value))
         elif isinstance(value, dict) and value.get("class") == "Collection":
-            collection_def_dict = cast(JsonTestCollectionDefDict, value)
-            loaded_inputs[key] = TestCollectionDef.from_dict(collection_def_dict)
+            loaded_inputs[key] = TestCollectionDef.from_dict(cast(JsonTestCollectionDefDict, value))
         else:
             loaded_inputs[key] = value
     return loaded_inputs

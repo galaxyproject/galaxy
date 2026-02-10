@@ -151,6 +151,7 @@ def _adapt_from_dce(
     Note: Only auto-propagated tags are available in this scenario.
     Full HDCA tags are on the parent collection, not passed to individual jobs.
     """
+    assert dce.child_collection is not None
     return collection_to_runtime(
         dce.child_collection,
         name=dce.element_identifier,
@@ -221,7 +222,7 @@ def _build_collection_runtime_dict(
     if elements_list_like:
         # List-like: elements is array
         elements: Any = []
-        for dce in sorted(collection.elements, key=lambda e: e.element_index):
+        for dce in sorted(collection.elements, key=lambda e: e.element_index or 0):
             elements.append(_element_to_runtime(dce, adapt_dataset, compute_environment))
     else:
         # Record-like: elements is object
@@ -257,6 +258,7 @@ def _element_to_runtime(
 ) -> dict[str, Any]:
     """Convert a single collection element to runtime representation."""
     if element.is_collection:
+        assert element.child_collection is not None
         return _build_collection_runtime_dict(
             element.child_collection,
             name=element.element_identifier,
@@ -267,6 +269,7 @@ def _element_to_runtime(
         )
     else:
         hda = element.element_object
+        assert hda is not None
         request = DataRequestInternalHda(src="hda", id=hda.id)
         result = adapt_dataset(request).model_dump()
         # Rename class_ back to class for JSON output
