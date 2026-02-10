@@ -439,12 +439,12 @@ Example configuration for EBI SRA downloads:
   id: ebi_aspera
   label: "EBI Aspera Downloads"
   doc: "High-speed downloads from EBI SRA using Aspera FASP protocol"
-  ascp_path: "ascp"  # Path to ascp binary
+  ascp_path: "ascp" # Path to ascp binary
   user: "era-fasp"
   host: "fasp.sra.ebi.ac.uk"
   port: 33001
-  rate_limit: "300m"  # Transfer rate limit (e.g., "300m" for 300 Mbps)
-  disable_encryption: true  # Disable encryption for maximum speed
+  rate_limit: "300m" # Transfer rate limit (e.g., "300m" for 300 Mbps)
+  disable_encryption: true # Disable encryption for maximum speed
   # Retry and resume configuration (optional)
   max_retries: 3
   retry_base_delay: 2.0
@@ -459,11 +459,11 @@ Example configuration for EBI SRA downloads:
   ssh_key_passphrase: sample_passphrase
 ```
 
-The plugin is **download-only** and supports automatic retry with exponential backoff for transient 
+The plugin is **download-only** and supports automatic retry with exponential backoff for transient
 network errors and can resume interrupted transfers. Both `ascp://` and `fasp://` URL schemes are supported.
 
-**SSH Key Configuration Note:** The plugin requires SSH key content (not file paths) because Galaxy jobs often 
-run on clusters that don't mount Galaxy's root or configuration directories. The configuration block is copied 
+**SSH Key Configuration Note:** The plugin requires SSH key content (not file paths) because Galaxy jobs often
+run on clusters that don't mount Galaxy's root or configuration directories. The configuration block is copied
 to the job's directory, but referenced key paths wouldn't be accessible.
 
 **Note:** The plugin does not support browsing directories or uploading files (`writable: false`, `browsable: false`).
