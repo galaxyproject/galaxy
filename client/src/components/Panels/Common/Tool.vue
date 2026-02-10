@@ -76,7 +76,7 @@ function onClick(evt: MouseEvent) {
 <style scoped>
 .toolTitle {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     overflow-wrap: anywhere;
 }
 .tool-link {
