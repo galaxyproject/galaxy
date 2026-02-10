@@ -123,8 +123,8 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             @on-workflow-card-click="(...args) => emit('on-workflow-card-click', ...args)" />
 
         <WorkflowRename
+            v-if="showRename"
             :id="modalOptions.rename.id"
-            :show="showRename"
             :name="modalOptions.rename.name"
             @close="onRenameClose" />
 
