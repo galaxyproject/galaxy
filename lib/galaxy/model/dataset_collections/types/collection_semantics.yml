@@ -38,7 +38,24 @@
         out: {o: dataset}
     - collections:
         C: [paired, {forward: d_f, reverse: d_r}]
-    then: "tool(i=mapOver(C)) ~> {o: collection<paired,{forward=tool(i=d_f)[o], reverse=tool(i=d_r)[o]}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C}
+        produces:
+            o:
+                type: collection
+                collection_type: paired
+                elements:
+                    forward:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d_f}}}
+                        output: o
+                    reverse:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d_r}}}
+                        output: o
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_collection"
@@ -53,7 +70,24 @@
         out: {o: dataset}
     - collections:
         C: [paired_or_unpaired, {forward: d_f, reverse: d_r}]
-    then: "tool(i=mapOver(C)) ~> {o: collection<paired_or_unpaired,{forward=tool(i=d_f)[o], reverse=tool(i=d_r)[o]}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C}
+        produces:
+            o:
+                type: collection
+                collection_type: paired_or_unpaired
+                elements:
+                    forward:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d_f}}}
+                        output: o
+                    reverse:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d_r}}}
+                        output: o
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_data_with_paired_or_unpaired_paired"
@@ -68,7 +102,20 @@
         out: {o: dataset}
     - collections:
         C: [paired_or_unpaired, {unpaired: d_u}]
-    then: "tool(i=mapOver(C)) ~> {o: collection<paired_or_unpaired,{unpaired=tool(i=d_u)[o]}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C}
+        produces:
+            o:
+                type: collection
+                collection_type: paired_or_unpaired
+                elements:
+                    unpaired:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d_u}}}
+                        output: o
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_data_with_paired_or_unpaired_unpaired"
@@ -83,7 +130,25 @@
         out: {o: dataset}
     - collections:
         C: [list, {i1: "d_1", ..., in: "d_n"}]
-    then: "tool(i=mapOver(C)) ~> {o: collection<list,{i1=tool(i=d_1)[o],...,in=tool(i=d_n)[o]}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C}
+        produces:
+            o:
+                type: collection
+                collection_type: list
+                elements:
+                    i1:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d_1}}}
+                        output: o
+                    "...": {type: ellipsis}
+                    in:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d_n}}}
+                        output: o
     tests:
         workflow_editor: "accepts collection data -> data connection"
 
@@ -100,7 +165,31 @@
         out: {o: dataset}
     - collections:
         C: ["list:list", {o1: {inner: d_1}, ..., "on": {inner: d_n}}]
-    then: "tool(i=mapOver(C)) ~> {o: collection<list:list,{o1={inner=tool(i=d_1)[o]}},...,{on={inner=tool(i=d_n)[o]}}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C}
+        produces:
+            o:
+                type: collection
+                collection_type: "list:list"
+                elements:
+                    o1:
+                        type: nested_elements
+                        elements:
+                            inner:
+                                type: tool_output_ref
+                                invocation: {inputs: {i: {type: dataset, ref: d_1}}}
+                                output: o
+                    "...": {type: ellipsis}
+                    "on":
+                        type: nested_elements
+                        elements:
+                            inner:
+                                type: tool_output_ref
+                                invocation: {inputs: {i: {type: dataset, ref: d_n}}}
+                                output: o
     tests:
         tool_runtime:
             api_test: "test_tools.py::TestToolsApi::test_map_over_nested_collections"
@@ -115,7 +204,27 @@
         out: {o: dataset}
     - collections:
         C: ["list:paired_or_unpaired", {el1: {forward: d_f, reverse: d_r}}]
-    then: "tool(i=mapOver(C)) ~> {o: collection<list:paired_or_unpaired,{el1={forward=tool(i=d_f)[o],reverse=tool(i=d_r)[o]}}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C}
+        produces:
+            o:
+                type: collection
+                collection_type: "list:paired_or_unpaired"
+                elements:
+                    el1:
+                        type: nested_elements
+                        elements:
+                            forward:
+                                type: tool_output_ref
+                                invocation: {inputs: {i: {type: dataset, ref: d_f}}}
+                                output: o
+                            reverse:
+                                type: tool_output_ref
+                                invocation: {inputs: {i: {type: dataset, ref: d_r}}}
+                                output: o
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_data_with_list_paired_or_unpaired"
@@ -136,7 +245,26 @@
         out: {o: dataset}
     - collections:
         C: ["list", {i1: d_1, ..., in: d_n}]
-    then: "tool(i=mapOver(C),i2=d_o) ~> {o: collection<list,{i1=tool(i=d_1, i2=d_o)[o],...,in=tool(i=d_n, i2=d_o)[o]}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C}
+                i2: {type: dataset, ref: d_o}
+        produces:
+            o:
+                type: collection
+                collection_type: list
+                elements:
+                    i1:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d_1}, i2: {type: dataset, ref: d_o}}}
+                        output: o
+                    "...": {type: ellipsis}
+                    in:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d_n}, i2: {type: dataset, ref: d_o}}}
+                        output: o
     tests:
         tool_runtime:
             api_test: "test_tools.py::TestToolsApi::test_map_over_collected_and_individual_datasets"
@@ -168,7 +296,26 @@
     - collections:
         C1: ["list", {i1: d1_1, ..., in: d1_n}]
         C2: ["list", {i1: d2_1, ..., in: d2_n}]
-    then: "tool(i=mapOver(C1), i2=mapOver(C2)) ~> {o: collection<list,{i1=tool(i=d1_1, i2=d2_1)[o],...,in=tool(i=d1_n, i2=d2_n)[o]}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C1}
+                i2: {type: map_over, collection: C2}
+        produces:
+            o:
+                type: collection
+                collection_type: list
+                elements:
+                    i1:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d1_1}, i2: {type: dataset, ref: d2_1}}}
+                        output: o
+                    "...": {type: ellipsis}
+                    in:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d1_n}, i2: {type: dataset, ref: d2_n}}}
+                        output: o
     tests:
         tool_runtime:
             api_test: test_tools.py::TestToolsApi::test_map_over_two_collections
@@ -192,9 +339,15 @@
         out: {o: dataset}
     - collections:
         C: [paired, {forward: d_f, reverse: d_r}]
-    then: "tool(i=C) -> {o: dataset}"
+    then:
+        type: reduction
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+        produces:
+            o: {type: dataset}
     tests:
-        tool_runtime: 
+        tool_runtime:
             tool: collection_paired_test
         workflow_editor: "accepts paired -> paired connection"
 
@@ -207,7 +360,13 @@
         out: {o: dataset}
     - collections:
         C: [list, {el1: d_1, ..., eln: d_n}]
-    then: "tool(i=C) -> {o: dataset}"
+    then:
+        type: reduction
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+        produces:
+            o: {type: dataset}
     tests:
         workflow_editor: "accepts list -> list connection"
 
@@ -220,7 +379,13 @@
         out: {o: dataset}
     - collections:
         C: [paired_or_unpaired, {forward: d_f, reverse: d_r}]
-    then: "tool(i=C) -> {o: dataset}"
+    then:
+        type: reduction
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+        produces:
+            o: {type: dataset}
     tests:
         tool_runtime:
             tool: collection_paired_or_unpaired
@@ -235,7 +400,13 @@
         out: {o: dataset}
     - collections:
         C: ["list:paired_or_unpaired", {el1: {forward: d_f, reverse: d_r}}]
-    then: "tool(i=C) -> {o: dataset}"
+    then:
+        type: reduction
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+        produces:
+            o: {type: dataset}
     tests:
         tool_runtime:
             tool: collection_list_paired_or_unpaired
@@ -250,11 +421,15 @@
     assumptions:
     - datasets: [d_f, d_r]
     - tool:
-        in: {i: "collection<list>"} 
+        in: {i: "collection<list>"}
         out: {o: dataset}
     - collections:
         C: [paired, {forward: d_f, reverse: d_r}]
-    then: "tool(i=C)"
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
     is_valid: false
     tests:
         workflow_editor: "rejects connecting paired -> list"
@@ -264,11 +439,15 @@
     assumptions:
     - datasets: ["d_1,...,d_n"]
     - tool:
-        in: {i: "collection<paired>"} 
+        in: {i: "collection<paired>"}
         out: {o: dataset}
     - collections:
         C: [list, {i1: d_1, ..., in: d_n}]
-    then: "tool(i=C)"
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
     is_valid: false
     tests:
         workflow_editor: "rejects connecting list -> paired"
@@ -282,7 +461,11 @@
         out: {o: dataset}
     - collections:
         C: ["paired:paired", {forward: {forward: d_f, reverse: d_r}, reverse: {forward: d_f, reverse: d_r}}]
-    then: "tool(i=C)"
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
     is_valid: false
     tests:
         workflow_editor: "rejects paired:paired -> list:paired connection"
@@ -296,7 +479,11 @@
         out: {o: dataset}
     - collections:
         C: ["paired:paired", {forward: {forward: d_f, reverse: d_r}, reverse: {forward: d_f, reverse: d_r}}]
-    then: "tool(i=C)"
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
     is_valid: false
     tests:
         workflow_editor: "rejects paired:paired -> list:paired_or_unpaired connection"
@@ -315,7 +502,14 @@
         out: {o: dataset}
     - collections:
         C: [list, {i1: d_1, ..., in: d_n}]
-    then: "tool(i=C) == tool(i=[d_1,...,d_n])"
+    then:
+        type: equivalence
+        left:
+            inputs:
+                i: {type: collection, ref: C}
+        right:
+            inputs:
+                i: {type: dataset_list, refs: ["d_1", "...", "d_n"]}
     tests:
         tool_runtime:
             api_test: "test_tools.py::TestToolsApi::test_reduce_collections"
@@ -329,12 +523,16 @@
     label: PAIRED_REDUCTION_INVALID
     assumptions:
     - datasets: [d_f, d_r]
-    - tool: 
+    - tool:
         in: {i: "dataset<multiple=true>"}
         out: {o: dataset}
     - collections:
         C: [paired, {forward: d_f, reverse: d_r}]
-    then: "tool(i=C)"
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
     is_valid: false
     tests:
         workflow_editor: "rejects paired input on multi-data input"
@@ -343,12 +541,16 @@
     label: PAIRED_OR_UNPAIRED_REDUCTION_INVALID
     assumptions:
     - datasets: [d_f, d_r]
-    - tool: 
+    - tool:
         in: {i: "dataset<multiple=true>"}
         out: {o: dataset}
     - collections:
         C: [paired_or_unpaired, {forward: d_f, reverse: d_r}]
-    then: "tool(i=C)"
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
     is_valid: false
     tests:
         workflow_editor: "rejects paired_or_unpaired input on multi-data input"
@@ -367,7 +569,20 @@
     - collections:
         C: ["list:paired", {el1: {forward: d_f, reverse: d_r}}]
         "C\\_PAIRED": [paired, {forward: d_f,reverse: d_r}]
-    then: "tool(i=mapOver(C, 'paired')) ~> {o: collection<list,{el1: tool(i=C\\_PAIRED)[o]}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C, sub_collection_type: paired}
+        produces:
+            o:
+                type: collection
+                collection_type: list
+                elements:
+                    el1:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: collection, ref: "C\\_PAIRED"}}}
+                        output: o
     tests:
         tool_runtime:
             api_test: "test_tools.py::TestToolsApi::test_subcollection_mapping"
@@ -389,7 +604,25 @@
         out: {o: dataset}
     - collections:
         C: ["list:list", {o1: {inner: d_1}, ..., "on": {inner: d_n}}]
-    then: "tool(i=mapOver(C, 'list')) ~> {o: collection<list,{o1: tool(i=[d_1])[o],...,on: tool(i=[d_n])[o]}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C, sub_collection_type: list}
+        produces:
+            o:
+                type: collection
+                collection_type: list
+                elements:
+                    o1:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset_list, refs: ["d_1"]}}}
+                        output: o
+                    "...": {type: ellipsis}
+                    "on":
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset_list, refs: ["d_n"]}}}
+                        output: o
     tests:
         workflow_editor: "maps list:list over multi data input"
 
@@ -402,12 +635,16 @@
     label: LIST_PAIRED_REDUCTION_INVALID
     assumptions:
     - datasets: [d_f, d_r]
-    - tool: 
+    - tool:
         in: {i: "dataset<multiple=true>"}
         out: {o: dataset}
     - collections:
         C: ["list:paired", {el1: {forward: d_f, reverse: d_r}}]
-    then: "tool(i=mapOver(C, 'paired'))"
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C, sub_collection_type: paired}
     is_valid: false
     tests:
         workflow_editor: "rejects list:paired input on multi-data input"
@@ -416,12 +653,16 @@
     label: LIST_PAIRED_OR_UNPAIRED_REDUCTION_INVALID
     assumptions:
     - datasets: [d_f, d_r]
-    - tool: 
+    - tool:
         in: {i: "dataset<multiple=true>"}
         out: {o: dataset}
     - collections:
         C: ["list:paired_or_unpaired", {el1: {forward: d_f, reverse: d_r}}]
-    then: "tool(i=mapOver(C, 'paired_or_unpaired'))"
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C, sub_collection_type: paired_or_unpaired}
     is_valid: false
     tests:
         workflow_editor: "rejects list:paired_or_unpaired input on multi-data input"
@@ -447,7 +688,14 @@
     - collections:
         C: [paired, {forward: d_f, reverse: d_r}]
     - "C_AS_MIXED = CollectionInstance<paired_or_unpaired, {forward: d_f, reverse: d_r}>"
-    then: "tool(i=C) == tool(i=C_AS_MIXED)"
+    then:
+        type: equivalence
+        left:
+            inputs:
+                i: {type: collection, ref: C}
+        right:
+            inputs:
+                i: {type: collection, ref: C_AS_MIXED}
     tests:
         tool_runtime:
             tool: collection_paired_or_unpaired
@@ -470,7 +718,12 @@
         out: {o: dataset}
     - collections:
         C: [paired_or_unpaired, {forward: d_f, reverse: d_r}]
-    then: "tool(i=C) is invalid"
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+    is_valid: false
     tests:
         workflow_editor: "rejects paired_or_unpaired -> paired connection"
 
@@ -491,7 +744,14 @@
     - collections:
         C: ["list:paired", {el: {forward: d_f, reverse: d_r}}]
         C_AS_MIXED: ["list:paired_or_unpaired", {el: {forward: d_f, reverse: d_r}}]
-    then: "tool(i=mapOver(C)) == tool(i=mapOver(C_AS_MIXED))"
+    then:
+        type: equivalence
+        left:
+            inputs:
+                i: {type: map_over, collection: C}
+        right:
+            inputs:
+                i: {type: map_over, collection: C_AS_MIXED}
     tests:
         workflow_editor: "accepts list:paired -> paired_or_unpaired connection"
 
@@ -504,7 +764,12 @@
         out: {o: dataset}
     - collections:
         C: ["list:paired_or_unpaired", {el: {forward: d_f, reverse: d_r}}]
-    then: "tool(i=mapOver(C)) is invalid"
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C}
+    is_valid: false
     tests:
         workflow_editor: "rejects list:paired_or_unpaired -> paired connection"
 
@@ -517,7 +782,12 @@
         out: {o: dataset}
     - collections:
         C: ["list:paired_or_unpaired", {el: {forward: d_f, reverse: d_r}}]
-    then: "tool(i=mapOver(C)) is invalid"
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C}
+    is_valid: false
     tests:
         workflow_editor: "rejects list:paired_or_unpaired -> list connection"
 
@@ -536,7 +806,14 @@
     - collections:
         C: ["list:list:paired", {o1: {el1: {forward: d_f, reverse: d_r}}}]
         C_AS_MIXED: ["list:list:paired_or_unpaired", {o1: {el1: {forward: d_f, reverse: d_r}}}]
-    then: "tool(i=mapOver(C)) == tool(i=mapOver(C_AS_MIXED))"
+    then:
+        type: equivalence
+        left:
+            inputs:
+                i: {type: map_over, collection: C}
+        right:
+            inputs:
+                i: {type: map_over, collection: C_AS_MIXED}
     tests:
         workflow_editor: "accepts list:list:paired -> paired_or_unpaired connection"
 
@@ -556,7 +833,25 @@
     - collections:
         C: [list, {i1: d_1, ..., in: d_n}]
     - "C_AS_UNPAIRED_i = CollectionInstance<paired_or_unpaired,{unpaired=di}> for i from 1...n"
-    then: "tool(i=mapOver(C, 'single_datasets')) ~> {o: collection<list,{i1=tool(i=C_AS_UNPAIRED_1)[o],...,in=tool(i=C_AS_UNPAIRED_n)[o]}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C, sub_collection_type: single_datasets}
+        produces:
+            o:
+                type: collection
+                collection_type: list
+                elements:
+                    i1:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: collection, ref: C_AS_UNPAIRED_1}}}
+                        output: o
+                    "...": {type: ellipsis}
+                    in:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: collection, ref: C_AS_UNPAIRED_n}}}
+                        output: o
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_paired_or_unpaired_with_list"
@@ -580,7 +875,31 @@
     - collections:
         C: ["list:list", {o1: {inner: d_1}, ..., "on": {inner: d_n}}]
     - "C_AS_UNPAIRED_j = CollectionInstance<paired_or_unpaired,{unpaired=dj}> for each dataset dj in C"
-    then: "tool(i=mapOver(C, 'single_datasets')) ~> {o: collection<list:list,{o1={inner=tool(i=C_AS_UNPAIRED_1)[o]},...,on={inner=tool(i=C_AS_UNPAIRED_n)[o]}}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C, sub_collection_type: single_datasets}
+        produces:
+            o:
+                type: collection
+                collection_type: "list:list"
+                elements:
+                    o1:
+                        type: nested_elements
+                        elements:
+                            inner:
+                                type: tool_output_ref
+                                invocation: {inputs: {i: {type: collection, ref: C_AS_UNPAIRED_1}}}
+                                output: o
+                    "...": {type: ellipsis}
+                    "on":
+                        type: nested_elements
+                        elements:
+                            inner:
+                                type: tool_output_ref
+                                invocation: {inputs: {i: {type: collection, ref: C_AS_UNPAIRED_n}}}
+                                output: o
     tests:
         workflow_editor: "accepts list:list -> paired_or_unpaired connection"
 
@@ -594,7 +913,25 @@
     - collections:
         C: ["list:list", {o1: {inner: d_1}, ..., "on": {inner: d_n}}]
     - "C_AS_LPU_i = inner list of C at position i, treated as list:paired_or_unpaired via single_datasets"
-    then: "tool(i=mapOver(C, 'list:paired_or_unpaired')) ~> {o: collection<list,{o1=tool(i=C_AS_LPU_1)[o],...,on=tool(i=C_AS_LPU_n)[o]}>}"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C, sub_collection_type: "list:paired_or_unpaired"}
+        produces:
+            o:
+                type: collection
+                collection_type: list
+                elements:
+                    o1:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: collection, ref: C_AS_LPU_1}}}
+                        output: o
+                    "...": {type: ellipsis}
+                    "on":
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: collection, ref: C_AS_LPU_n}}}
+                        output: o
     tests:
         workflow_editor: "accepts list:list -> list:paired_or_unpaired connection"
 
