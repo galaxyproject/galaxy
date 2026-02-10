@@ -16,13 +16,13 @@ from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util_models.parameters import (
     build_collection_model_for_type,
     DataCollectionInternalJsonBase,
+    DataCollectionListRuntime,
+    DataCollectionNestedListRuntime,
+    DataCollectionNestedRecordRuntime,
     DataCollectionRequestInternal,
     DataInternalJson,
     DataRequestInternalDereferencedT,
     DataRequestInternalHda,
-    DataCollectionListRuntime,
-    DataCollectionNestedListRuntime,
-    DataCollectionNestedRecordRuntime,
 )
 
 if TYPE_CHECKING:

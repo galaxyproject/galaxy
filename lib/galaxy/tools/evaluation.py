@@ -1085,8 +1085,7 @@ class UserToolEvaluator(ToolEvaluator):
 
             # Get input collections from job for collection parameter support
             input_dataset_collections = {
-                assoc.name: assoc.dataset_collection
-                for assoc in self.job.input_dataset_collections
+                assoc.name: assoc.dataset_collection for assoc in self.job.input_dataset_collections
             }
             # Also include DCE associations for subcollection mapping
             for assoc in self.job.input_dataset_collection_elements:

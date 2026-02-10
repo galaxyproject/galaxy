@@ -613,6 +613,7 @@ class DataInternalJson(StrictModel):
 
 class DataCollectionElementInternalJson(DataInternalJson):
     """A file within a collection element - adds collection-specific metadata."""
+
     element_identifier: str
     columns: Optional[List[Any]] = None  # for sample_sheet elements
 
@@ -620,6 +621,7 @@ class DataCollectionElementInternalJson(DataInternalJson):
 # Collection runtime models with metadata
 class DataCollectionInternalJsonBase(StrictModel):
     """Base model for collection runtime representations with metadata."""
+
     class_: Annotated[Literal["Collection"], Field(alias="class")]
     name: Optional[str]  # None for raw DatasetCollection inputs
     collection_type: str
@@ -640,83 +642,100 @@ class DataCollectionPairedElements(StrictModel):
 
 class DataCollectionPairedRuntime(DataCollectionInternalJsonBase):
     """Paired collection runtime representation."""
+
     collection_type: Literal["paired"]
     elements: DataCollectionPairedElements
 
 
 class DataCollectionListRuntime(DataCollectionInternalJsonBase):
     """List collection runtime representation."""
+
     collection_type: Literal["list"]
     elements: List[DataCollectionElementInternalJson]
 
 
 class DataCollectionSampleSheetRuntime(DataCollectionInternalJsonBase):
     """Sample sheet collection runtime representation."""
+
     collection_type: Literal["sample_sheet"]
     elements: List[DataCollectionElementInternalJson]
 
 
 class DataCollectionRecordRuntime(DataCollectionInternalJsonBase):
     """Record collection runtime representation."""
+
     collection_type: Literal["record"]
-    elements: Dict[str, Union[DataCollectionElementInternalJson, "DataCollectionNestedListRuntime", "DataCollectionNestedRecordRuntime"]]
+    elements: Dict[
+        str,
+        Union[
+            DataCollectionElementInternalJson, "DataCollectionNestedListRuntime", "DataCollectionNestedRecordRuntime"
+        ],
+    ]
 
 
 class DataCollectionPairedOrUnpairedRuntime(DataCollectionInternalJsonBase):
     """Paired or Unpaired collection runtime representation."""
+
     collection_type: Literal["paired_or_unpaired"]
     elements: Dict[str, DataCollectionElementInternalJson]
 
 
 class DataCollectionNestedListRuntime(DataCollectionInternalJsonBase):
     """Nested collection with list-like outer structure (list:*, sample_sheet:*)."""
+
     collection_type: str
 
-    @field_validator('collection_type')
+    @field_validator("collection_type")
     @classmethod
     def must_be_nested_list_like(cls, v: str) -> str:
-        if ':' not in v:
+        if ":" not in v:
             raise ValueError(f'Nested collection_type must contain ":", got "{v}"')
-        first_segment = v.split(':')[0]
-        if first_segment not in ('list', 'sample_sheet'):
+        first_segment = v.split(":")[0]
+        if first_segment not in ("list", "sample_sheet"):
             raise ValueError(f'Outer type must be list-like (list, sample_sheet), got "{first_segment}"')
         return v
 
-    elements: List[Union[
-        "DataCollectionListRuntime",
-        "DataCollectionSampleSheetRuntime",
-        "DataCollectionPairedRuntime",
-        "DataCollectionRecordRuntime",
-        "DataCollectionPairedOrUnpairedRuntime",
-        "DataCollectionNestedListRuntime",
-        "DataCollectionNestedRecordRuntime",
-    ]]
+    elements: List[
+        Union[
+            "DataCollectionListRuntime",
+            "DataCollectionSampleSheetRuntime",
+            "DataCollectionPairedRuntime",
+            "DataCollectionRecordRuntime",
+            "DataCollectionPairedOrUnpairedRuntime",
+            "DataCollectionNestedListRuntime",
+            "DataCollectionNestedRecordRuntime",
+        ]
+    ]
 
 
 class DataCollectionNestedRecordRuntime(DataCollectionInternalJsonBase):
     """Nested collection with record-like outer structure (paired:*, record:*)."""
+
     collection_type: str
 
-    @field_validator('collection_type')
+    @field_validator("collection_type")
     @classmethod
     def must_be_nested_record_like(cls, v: str) -> str:
-        if ':' not in v:
+        if ":" not in v:
             raise ValueError(f'Nested collection_type must contain ":", got "{v}"')
-        first_segment = v.split(':')[0]
-        if first_segment in ('list', 'sample_sheet'):
+        first_segment = v.split(":")[0]
+        if first_segment in ("list", "sample_sheet"):
             raise ValueError(f'Outer type must be record-like, got list-like "{first_segment}"')
         return v
 
-    elements: Dict[str, Union[
-        DataCollectionElementInternalJson,
-        "DataCollectionListRuntime",
-        "DataCollectionSampleSheetRuntime",
-        "DataCollectionPairedRuntime",
-        "DataCollectionRecordRuntime",
-        "DataCollectionPairedOrUnpairedRuntime",
-        "DataCollectionNestedListRuntime",
-        "DataCollectionNestedRecordRuntime",
-    ]]
+    elements: Dict[
+        str,
+        Union[
+            DataCollectionElementInternalJson,
+            "DataCollectionListRuntime",
+            "DataCollectionSampleSheetRuntime",
+            "DataCollectionPairedRuntime",
+            "DataCollectionRecordRuntime",
+            "DataCollectionPairedOrUnpairedRuntime",
+            "DataCollectionNestedListRuntime",
+            "DataCollectionNestedRecordRuntime",
+        ],
+    ]
 
 
 DataCollectionNestedListRuntime.model_rebuild()
@@ -779,8 +798,8 @@ def _collection_type_discriminator(v: Any) -> str:
     model collection_type strings like "list:paired".
     """
     if isinstance(v, dict):
-        return v.get('collection_type', '')
-    return getattr(v, 'collection_type', '')
+        return v.get("collection_type", "")
+    return getattr(v, "collection_type", "")
 
 
 def collection_runtime_discriminator(v: Any) -> str:
@@ -789,44 +808,44 @@ def collection_runtime_discriminator(v: Any) -> str:
     Routes validation to the correct model based on collection_type pattern.
     """
     if isinstance(v, dict):
-        ct = v.get('collection_type', '')
+        ct = v.get("collection_type", "")
     else:
-        ct = getattr(v, 'collection_type', '')
+        ct = getattr(v, "collection_type", "")
 
     # Simple types - exact match
-    if ct == 'list':
-        return 'list'
-    elif ct == 'paired':
-        return 'paired'
-    elif ct == 'record':
-        return 'record'
-    elif ct == 'paired_or_unpaired':
-        return 'paired_or_unpaired'
-    elif ct == 'sample_sheet':
-        return 'sample_sheet'
-    elif ':' in ct:
+    if ct == "list":
+        return "list"
+    elif ct == "paired":
+        return "paired"
+    elif ct == "record":
+        return "record"
+    elif ct == "paired_or_unpaired":
+        return "paired_or_unpaired"
+    elif ct == "sample_sheet":
+        return "sample_sheet"
+    elif ":" in ct:
         # Nested types - route by outer structure
-        first_segment = ct.split(':')[0]
-        if first_segment in ('list', 'sample_sheet'):
-            return 'nested_list'
+        first_segment = ct.split(":")[0]
+        if first_segment in ("list", "sample_sheet"):
+            return "nested_list"
         else:
-            return 'nested_record'
+            return "nested_record"
     else:
         # Unknown type - default to list (matches historical behavior)
-        return 'list'
+        return "list"
 
 
 CollectionRuntimeDiscriminated: Type = Annotated[
     Union[
-        Annotated[DataCollectionListRuntime, Tag('list')],
-        Annotated[DataCollectionSampleSheetRuntime, Tag('sample_sheet')],
-        Annotated[DataCollectionPairedRuntime, Tag('paired')],
-        Annotated[DataCollectionRecordRuntime, Tag('record')],
-        Annotated[DataCollectionPairedOrUnpairedRuntime, Tag('paired_or_unpaired')],
-        Annotated[DataCollectionNestedListRuntime, Tag('nested_list')],
-        Annotated[DataCollectionNestedRecordRuntime, Tag('nested_record')],
+        Annotated[DataCollectionListRuntime, Tag("list")],
+        Annotated[DataCollectionSampleSheetRuntime, Tag("sample_sheet")],
+        Annotated[DataCollectionPairedRuntime, Tag("paired")],
+        Annotated[DataCollectionRecordRuntime, Tag("record")],
+        Annotated[DataCollectionPairedOrUnpairedRuntime, Tag("paired_or_unpaired")],
+        Annotated[DataCollectionNestedListRuntime, Tag("nested_list")],
+        Annotated[DataCollectionNestedRecordRuntime, Tag("nested_record")],
     ],
-    Discriminator(collection_runtime_discriminator)
+    Discriminator(collection_runtime_discriminator),
 ]
 
 
@@ -995,6 +1014,7 @@ class DataCollectionRequestInternal(StrictModel):
     - "hdca": Direct collection input (HistoryDatasetCollectionAssociation)
     - "dce": Subcollection mapping (DatasetCollectionElement)
     """
+
     src: CollectionInternalSrcT
     id: StrictInt
 
@@ -1109,9 +1129,9 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
             # Fallback to generic nested models for unknown nested types
             first_segment = ct.split(":")[0]
             if first_segment in ("list", "sample_sheet"):
-                return (DataCollectionNestedListRuntime, 'nested_list')
+                return (DataCollectionNestedListRuntime, "nested_list")
             else:
-                return (DataCollectionNestedRecordRuntime, 'nested_record')
+                return (DataCollectionNestedRecordRuntime, "nested_record")
         return (None, None)
 
     @property
@@ -1141,10 +1161,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
                     # Multiple types - build discriminated union
                     # Use _collection_type_discriminator which returns full collection_type,
                     # matching both simple tags ("list") and dynamic tags ("list:paired")
-                    subset_union = Annotated[
-                        Union[tuple(tagged_types)],
-                        Discriminator(_collection_type_discriminator)
-                    ]
+                    subset_union = Annotated[Union[tuple(tagged_types)], Discriminator(_collection_type_discriminator)]
                     base_type = subset_union
                 return optional_if_needed(base_type, self.optional)
             # Fall through to full union if no models matched

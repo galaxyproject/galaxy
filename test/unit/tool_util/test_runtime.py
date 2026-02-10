@@ -1,16 +1,22 @@
 import pytest
 from pydantic import ValidationError
-from galaxy.model import DatasetCollection, DatasetCollectionElement, HistoryDatasetAssociation
+
+from galaxy.model import (
+    DatasetCollection,
+    DatasetCollectionElement,
+    HistoryDatasetAssociation,
+)
 from galaxy.tool_util_models.parameters import (
     build_collection_model_for_type,
-    DataCollectionPairedRuntime,
     DataCollectionListRuntime,
-    DataCollectionRecordRuntime,
     DataCollectionPairedOrUnpairedRuntime,
+    DataCollectionPairedRuntime,
+    DataCollectionRecordRuntime,
     DataCollectionSampleSheetRuntime,
     DataInternalJson,
 )
 from galaxy.tools.runtime import collection_to_runtime
+
 
 @pytest.fixture
 def mock_adapt_dataset():
@@ -28,41 +34,31 @@ def mock_adapt_dataset():
                 "nameext": "txt",
             }
         )
+
     return adapt
+
 
 def create_model_collection(collection_type, elements_data):
     # Create collection using real model
     collection = DatasetCollection(collection_type=collection_type)
-    
+
     # Manually initialize list for in-memory relationship if needed
     if not hasattr(collection, "elements"):
         collection.elements = []
 
     for i, (name, content) in enumerate(elements_data):
-        if isinstance(content, list): # Nested collection [type, elements]
-             child_collection = create_model_collection(content[0], content[1])
-             dce = DatasetCollectionElement(
-                 collection=collection,
-                 element_identifier=name,
-                 element_index=i,
-                 element=child_collection
-             )
-        else: # HDA
-             hda = HistoryDatasetAssociation(
-                 create_dataset=True, 
-                 flush=False,
-                 name=content
-             )
-             hda.id = i + 100 # Fake ID for testing
-             # Also satisfy accessing hda.dataset.created_from_basename or hda.name in generic adapt if needed
-             hda.dataset.id = i + 1000
-             
-             dce = DatasetCollectionElement(
-                 collection=collection,
-                 element_identifier=name,
-                 element_index=i,
-                 element=hda
-             )
+        if isinstance(content, list):  # Nested collection [type, elements]
+            child_collection = create_model_collection(content[0], content[1])
+            dce = DatasetCollectionElement(
+                collection=collection, element_identifier=name, element_index=i, element=child_collection
+            )
+        else:  # HDA
+            hda = HistoryDatasetAssociation(create_dataset=True, flush=False, name=content)
+            hda.id = i + 100  # Fake ID for testing
+            # Also satisfy accessing hda.dataset.created_from_basename or hda.name in generic adapt if needed
+            hda.dataset.id = i + 1000
+
+            dce = DatasetCollectionElement(collection=collection, element_identifier=name, element_index=i, element=hda)
 
         # SA relationship may handle append if active, but let's check.
         # If we double-append, we get duplicates.
@@ -70,57 +66,48 @@ def create_model_collection(collection_type, elements_data):
         # Safe approach: check if in list
         if dce not in collection.elements:
             collection.elements.append(dce)
-        
+
     return collection
+
 
 def test_collection_to_runtime_paired(mock_adapt_dataset):
     # Paired collection
     collection = create_model_collection("paired", [("forward", "hda1"), ("reverse", "hda2")])
-    
+
     runtime = collection_to_runtime(
-        collection,
-        name="test_paired",
-        tags=["t1"],
-        adapt_dataset=mock_adapt_dataset,
-        compute_environment=None
+        collection, name="test_paired", tags=["t1"], adapt_dataset=mock_adapt_dataset, compute_environment=None
     )
-    
+
     assert isinstance(runtime, DataCollectionPairedRuntime)
     assert runtime.collection_type == "paired"
     # DataCollectionPairedRuntime.elements is an object with forward/reverse fields
     assert runtime.elements.forward.class_ == "File"
     assert runtime.elements.reverse.class_ == "File"
 
+
 def test_collection_to_runtime_list(mock_adapt_dataset):
     # List collection
     collection = create_model_collection("list", [("e1", "hda1"), ("e2", "hda2")])
-    
+
     runtime = collection_to_runtime(
-        collection,
-        name="test_list",
-        tags=[],
-        adapt_dataset=mock_adapt_dataset,
-        compute_environment=None
+        collection, name="test_list", tags=[], adapt_dataset=mock_adapt_dataset, compute_environment=None
     )
-    
+
     assert isinstance(runtime, DataCollectionListRuntime)
     assert runtime.collection_type == "list"
     assert len(runtime.elements) == 2
     assert runtime.elements[0].element_identifier == "e1"
 
+
 def test_collection_to_runtime_nested(mock_adapt_dataset):
     # Nested list:paired
     paired_data = ["paired", [("forward", "hda1"), ("reverse", "hda2")]]
     collection = create_model_collection("list:paired", [("p1", paired_data)])
-    
+
     runtime = collection_to_runtime(
-        collection,
-        name="test_nested",
-        tags=[],
-        adapt_dataset=mock_adapt_dataset,
-        compute_environment=None
+        collection, name="test_nested", tags=[], adapt_dataset=mock_adapt_dataset, compute_environment=None
     )
-    
+
     expected_model = build_collection_model_for_type("list:paired")
     assert isinstance(runtime, expected_model)
     assert type(runtime).__name__ == "DynamicCollection_list_paired"
@@ -131,37 +118,32 @@ def test_collection_to_runtime_nested(mock_adapt_dataset):
     assert isinstance(inner, DataCollectionPairedRuntime)
     assert inner.elements.forward.class_ == "File"
 
+
 def test_collection_to_runtime_invalid_paired(mock_adapt_dataset):
     # Paired collection missing reverse
     collection = create_model_collection("paired", [("forward", "hda1")])
-    
+
     # Should raise ValidationError because DataCollectionPairedRuntime requires forward and reverse
     with pytest.raises(ValidationError):
         collection_to_runtime(
-            collection,
-            name="bad_paired",
-            tags=[],
-            adapt_dataset=mock_adapt_dataset,
-            compute_environment=None
+            collection, name="bad_paired", tags=[], adapt_dataset=mock_adapt_dataset, compute_environment=None
         )
+
 
 def test_collection_to_runtime_record(mock_adapt_dataset):
     # Record collection
     collection = create_model_collection("record", [("f1", "hda1"), ("f2", "hda2")])
     collection.fields = [{"name": "f1", "type": "File"}, {"name": "f2", "type": "File"}]
-    
+
     runtime = collection_to_runtime(
-        collection,
-        name="test_record",
-        tags=[],
-        adapt_dataset=mock_adapt_dataset,
-        compute_environment=None
+        collection, name="test_record", tags=[], adapt_dataset=mock_adapt_dataset, compute_environment=None
     )
-    
+
     assert isinstance(runtime, DataCollectionRecordRuntime)
     assert runtime.collection_type == "record"
     assert runtime.elements["f1"].class_ == "File"
     assert runtime.elements["f2"].class_ == "File"
+
 
 def test_collection_to_runtime_sample_sheet(mock_adapt_dataset):
     # Sample sheet -> List runtime
@@ -172,47 +154,40 @@ def test_collection_to_runtime_sample_sheet(mock_adapt_dataset):
         ele.columns = ["treatment"]
 
     runtime = collection_to_runtime(
-        collection,
-        name="test_sheet",
-        tags=[],
-        adapt_dataset=mock_adapt_dataset,
-        compute_environment=None
+        collection, name="test_sheet", tags=[], adapt_dataset=mock_adapt_dataset, compute_environment=None
     )
-    
+
     # Should use DataCollectionSampleSheetRuntime to preserve metadata
     assert isinstance(runtime, DataCollectionSampleSheetRuntime)
     assert runtime.collection_type == "sample_sheet"
     assert runtime.column_definitions is not None
     assert runtime.elements[0].columns == ["treatment"]
 
+
 def test_collection_to_runtime_paired_or_unpaired(mock_adapt_dataset):
     # Paired mode
     collection = create_model_collection("paired_or_unpaired", [("forward", "hda1"), ("reverse", "hda2")])
     collection.has_single_item = False
-    
+
     runtime = collection_to_runtime(
-        collection,
-        name="test_pou_paired",
-        tags=[],
-        adapt_dataset=mock_adapt_dataset,
-        compute_environment=None
+        collection, name="test_pou_paired", tags=[], adapt_dataset=mock_adapt_dataset, compute_environment=None
     )
-    
+
     assert isinstance(runtime, DataCollectionPairedOrUnpairedRuntime)
     assert runtime.elements["forward"].class_ == "File"
-    
+
     # Unpaired mode
     collection_unpaired = create_model_collection("paired_or_unpaired", [("unpaired", "hda3")])
     collection_unpaired.has_single_item = True
-    
+
     runtime_unpaired = collection_to_runtime(
         collection_unpaired,
         name="test_pou_unpaired",
         tags=[],
         adapt_dataset=mock_adapt_dataset,
-        compute_environment=None
+        compute_environment=None,
     )
-    
+
     assert isinstance(runtime_unpaired, DataCollectionPairedOrUnpairedRuntime)
     assert runtime_unpaired.elements["unpaired"].class_ == "File"
 
@@ -244,19 +219,33 @@ def test_build_collection_model_returns_none_for_unknown():
 
 def test_dynamic_model_accepts_correct_inner_type():
     model = build_collection_model_for_type("list:paired")
-    result = model.model_validate({
-        "class": "Collection", "name": "good",
-        "collection_type": "list:paired", "tags": [],
-        "elements": [{
-            "class": "Collection", "name": "p1",
-            "collection_type": "paired", "tags": [],
-            "elements": {
-                "forward": {**_FILE_ELEMENT, "element_identifier": "forward"},
-                "reverse": {**_FILE_ELEMENT, "element_identifier": "reverse", "basename": "r.txt",
-                            "location": "step_input://1", "path": "/tmp/r.txt", "nameroot": "r"},
-            },
-        }],
-    })
+    result = model.model_validate(
+        {
+            "class": "Collection",
+            "name": "good",
+            "collection_type": "list:paired",
+            "tags": [],
+            "elements": [
+                {
+                    "class": "Collection",
+                    "name": "p1",
+                    "collection_type": "paired",
+                    "tags": [],
+                    "elements": {
+                        "forward": {**_FILE_ELEMENT, "element_identifier": "forward"},
+                        "reverse": {
+                            **_FILE_ELEMENT,
+                            "element_identifier": "reverse",
+                            "basename": "r.txt",
+                            "location": "step_input://1",
+                            "path": "/tmp/r.txt",
+                            "nameroot": "r",
+                        },
+                    },
+                }
+            ],
+        }
+    )
     assert result.collection_type == "list:paired"
     assert isinstance(result.elements[0], DataCollectionPairedRuntime)
 
@@ -264,43 +253,70 @@ def test_dynamic_model_accepts_correct_inner_type():
 def test_dynamic_model_rejects_wrong_inner_type():
     model = build_collection_model_for_type("list:paired")
     with pytest.raises(ValidationError):
-        model.model_validate({
-            "class": "Collection", "name": "bad",
-            "collection_type": "list:paired", "tags": [],
-            "elements": [{
-                "class": "Collection", "name": "l1",
-                "collection_type": "list", "tags": [],
-                "elements": [_FILE_ELEMENT],
-            }],
-        })
+        model.model_validate(
+            {
+                "class": "Collection",
+                "name": "bad",
+                "collection_type": "list:paired",
+                "tags": [],
+                "elements": [
+                    {
+                        "class": "Collection",
+                        "name": "l1",
+                        "collection_type": "list",
+                        "tags": [],
+                        "elements": [_FILE_ELEMENT],
+                    }
+                ],
+            }
+        )
 
 
 def test_dynamic_model_rejects_wrong_collection_type_literal():
     model = build_collection_model_for_type("list:paired")
     with pytest.raises(ValidationError):
-        model.model_validate({
-            "class": "Collection", "name": "bad",
-            "collection_type": "list:list", "tags": [], "elements": [],
-        })
+        model.model_validate(
+            {
+                "class": "Collection",
+                "name": "bad",
+                "collection_type": "list:list",
+                "tags": [],
+                "elements": [],
+            }
+        )
 
 
 def test_dynamic_model_rejects_depth_mismatch():
     model = build_collection_model_for_type("list:list:paired")
     # Inner is "paired" (depth 1) but should be "list:paired" (depth 2)
     with pytest.raises(ValidationError):
-        model.model_validate({
-            "class": "Collection", "name": "bad",
-            "collection_type": "list:list:paired", "tags": [],
-            "elements": [{
-                "class": "Collection", "name": "p1",
-                "collection_type": "paired", "tags": [],
-                "elements": {
-                    "forward": {**_FILE_ELEMENT, "element_identifier": "forward"},
-                    "reverse": {**_FILE_ELEMENT, "element_identifier": "reverse", "basename": "r.txt",
-                                "location": "step_input://1", "path": "/tmp/r.txt", "nameroot": "r"},
-                },
-            }],
-        })
+        model.model_validate(
+            {
+                "class": "Collection",
+                "name": "bad",
+                "collection_type": "list:list:paired",
+                "tags": [],
+                "elements": [
+                    {
+                        "class": "Collection",
+                        "name": "p1",
+                        "collection_type": "paired",
+                        "tags": [],
+                        "elements": {
+                            "forward": {**_FILE_ELEMENT, "element_identifier": "forward"},
+                            "reverse": {
+                                **_FILE_ELEMENT,
+                                "element_identifier": "reverse",
+                                "basename": "r.txt",
+                                "location": "step_input://1",
+                                "path": "/tmp/r.txt",
+                                "nameroot": "r",
+                            },
+                        },
+                    }
+                ],
+            }
+        )
 
 
 def test_dynamic_model_json_schema_precise():
@@ -320,6 +336,7 @@ def test_dynamic_model_caching():
 
 
 # --- Step 2: E2E list:list:paired (gap #1) ---
+
 
 def test_collection_to_runtime_deeply_nested(mock_adapt_dataset):
     """End-to-end: list:list:paired through collection_to_runtime pipeline."""
@@ -353,26 +370,38 @@ def test_collection_to_runtime_deeply_nested(mock_adapt_dataset):
 
 # --- Step 3: record:* nested dynamic models (gap #2) ---
 
+
 def test_dynamic_model_record_paired_accepts_correct():
     """record:paired dynamic model: dict of paired collections."""
     model = build_collection_model_for_type("record:paired")
     assert model is not None
-    result = model.model_validate({
-        "class": "Collection", "name": "rec",
-        "collection_type": "record:paired", "tags": [],
-        "elements": {
-            "sample_a": {
-                "class": "Collection", "name": "sample_a",
-                "collection_type": "paired", "tags": [],
-                "elements": {
-                    "forward": {**_FILE_ELEMENT, "element_identifier": "forward"},
-                    "reverse": {**_FILE_ELEMENT, "element_identifier": "reverse",
-                                "basename": "r.txt", "location": "step_input://1",
-                                "path": "/tmp/r.txt", "nameroot": "r"},
+    result = model.model_validate(
+        {
+            "class": "Collection",
+            "name": "rec",
+            "collection_type": "record:paired",
+            "tags": [],
+            "elements": {
+                "sample_a": {
+                    "class": "Collection",
+                    "name": "sample_a",
+                    "collection_type": "paired",
+                    "tags": [],
+                    "elements": {
+                        "forward": {**_FILE_ELEMENT, "element_identifier": "forward"},
+                        "reverse": {
+                            **_FILE_ELEMENT,
+                            "element_identifier": "reverse",
+                            "basename": "r.txt",
+                            "location": "step_input://1",
+                            "path": "/tmp/r.txt",
+                            "nameroot": "r",
+                        },
+                    },
                 },
             },
-        },
-    })
+        }
+    )
     assert result.collection_type == "record:paired"
     assert isinstance(result.elements["sample_a"], DataCollectionPairedRuntime)
 
@@ -381,20 +410,27 @@ def test_dynamic_model_record_paired_rejects_wrong_inner():
     """record:paired rejects inner collection with wrong type (list instead of paired)."""
     model = build_collection_model_for_type("record:paired")
     with pytest.raises(ValidationError):
-        model.model_validate({
-            "class": "Collection", "name": "bad_rec",
-            "collection_type": "record:paired", "tags": [],
-            "elements": {
-                "sample_a": {
-                    "class": "Collection", "name": "sample_a",
-                    "collection_type": "list", "tags": [],
-                    "elements": [_FILE_ELEMENT],
+        model.model_validate(
+            {
+                "class": "Collection",
+                "name": "bad_rec",
+                "collection_type": "record:paired",
+                "tags": [],
+                "elements": {
+                    "sample_a": {
+                        "class": "Collection",
+                        "name": "sample_a",
+                        "collection_type": "list",
+                        "tags": [],
+                        "elements": [_FILE_ELEMENT],
+                    },
                 },
-            },
-        })
+            }
+        )
 
 
 # --- Step 4: Unknown nested segments return None (gap #5) ---
+
 
 def test_build_collection_model_returns_none_for_unknown_nested():
     assert build_collection_model_for_type("list:unknown_type") is None
@@ -404,18 +440,24 @@ def test_build_collection_model_returns_none_for_unknown_nested():
 
 # --- Step 5: Empty dict elements on record-like dynamic model (gap #6) ---
 
+
 def test_dynamic_model_record_paired_empty_elements():
     """Empty dict elements on a record-like dynamic model should validate."""
     model = build_collection_model_for_type("record:paired")
-    result = model.model_validate({
-        "class": "Collection", "name": "empty_rec",
-        "collection_type": "record:paired", "tags": [],
-        "elements": {},
-    })
+    result = model.model_validate(
+        {
+            "class": "Collection",
+            "name": "empty_rec",
+            "collection_type": "record:paired",
+            "tags": [],
+            "elements": {},
+        }
+    )
     assert result.elements == {}
 
 
 # --- Step 6: JSON schema for deeply nested models (gap #7) ---
+
 
 def test_dynamic_model_json_schema_deeply_nested():
     """JSON Schema for list:list:paired has 3 levels, no anyOf at any level."""

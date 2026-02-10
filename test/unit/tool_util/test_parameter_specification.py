@@ -17,9 +17,9 @@ from galaxy.tool_util.parameters import (
     ToolParameterBundleModel,
     validate_internal_job,
     validate_internal_landing_request,
-    validate_job_runtime,
     validate_internal_request,
     validate_internal_request_dereferenced,
+    validate_job_runtime,
     validate_landing_request,
     validate_relaxed_request,
     validate_request,
@@ -129,7 +129,6 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
         _assert_internal_requests_validate(parameter_bundle, combos["request_valid"])
     if "request_internal_invalid" not in combos and "request_invalid" in combos:
         _assert_internal_requests_invalid(parameter_bundle, combos["request_invalid"])
-
 
 
 def _for_each(test: Callable, parameters: ToolParameterBundleModel, requests: List[RawStateDict]) -> None:

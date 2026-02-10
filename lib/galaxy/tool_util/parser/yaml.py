@@ -33,9 +33,9 @@ from galaxy.tool_util_models.parameters import (
 )
 from galaxy.tool_util_models.tool_source import (
     HelpContent,
+    JsonTestCollectionDefDict,
     XrefDict,
     YamlTemplateConfigFile,
-    JsonTestCollectionDefDict,
 )
 from galaxy.util import listify
 from .interface import (

@@ -109,7 +109,9 @@ def parse_tool_test_descriptions(
                 )
             )
         else:
-            test = _description_from_tool_source(tool_source, raw_test_dict, i, tool_guid, request_and_schema, validation_skipped_reason)
+            test = _description_from_tool_source(
+                tool_source, raw_test_dict, i, tool_guid, request_and_schema, validation_skipped_reason
+            )
         tests.append(test)
     return tests
 
