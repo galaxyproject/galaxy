@@ -275,11 +275,29 @@
 
 - example:
     label: COLLECTION_INPUT_LIST_PAIRED_NOT_CONSUMES_PAIRED_PAIRED
+    assumptions:
+    - datasets: [d_f, d_r]
+    - tool:
+        in: {i: "collection<list:paired>"}
+        out: {o: dataset}
+    - collections:
+        C: ["paired:paired", {forward: {forward: d_f, reverse: d_r}, reverse: {forward: d_f, reverse: d_r}}]
+    then: "tool(i=C)"
+    is_valid: false
     tests:
         workflow_editor: "rejects paired:paired -> list:paired connection"
 
 - example:
     label: COLLECTION_INPUT_LIST_PAIRED_OR_NOT_PAIRED_NOT_CONSUMES_PAIRED_PAIRED
+    assumptions:
+    - datasets: [d_f, d_r]
+    - tool:
+        in: {i: "collection<list:paired_or_unpaired>"}
+        out: {o: dataset}
+    - collections:
+        C: ["paired:paired", {forward: {forward: d_f, reverse: d_r}, reverse: {forward: d_f, reverse: d_r}}]
+    then: "tool(i=C)"
+    is_valid: false
     tests:
         workflow_editor: "rejects paired:paired -> list:paired_or_unpaired connection"
 
@@ -510,6 +528,15 @@
 
 - example:
     label: MAPPING_LIST_LIST_PAIRED_OVER_PAIRED_OR_UNPAIRED
+    assumptions:
+    - datasets: [d_f, d_r]
+    - tool:
+        in: {i: "collection<paired_or_unpaired>"}
+        out: {o: dataset}
+    - collections:
+        C: ["list:list:paired", {o1: {el1: {forward: d_f, reverse: d_r}}}]
+        C_AS_MIXED: ["list:list:paired_or_unpaired", {o1: {el1: {forward: d_f, reverse: d_r}}}]
+    then: "tool(i=mapOver(C)) == tool(i=mapOver(C_AS_MIXED))"
     tests:
         workflow_editor: "accepts list:list:paired -> paired_or_unpaired connection"
 
@@ -545,11 +572,29 @@
 
 - example:
     label: MAPPING_LIST_LIST_OVER_PAIRED_OR_UNPAIRED
+    assumptions:
+    - datasets: ["d_1,...,d_n"]
+    - tool:
+        in: {i: "collection<paired_or_unpaired>"}
+        out: {o: dataset}
+    - collections:
+        C: ["list:list", {o1: {inner: d_1}, ..., "on": {inner: d_n}}]
+    - "C_AS_UNPAIRED_j = CollectionInstance<paired_or_unpaired,{unpaired=dj}> for each dataset dj in C"
+    then: "tool(i=mapOver(C, 'single_datasets')) ~> {o: collection<list:list,{o1={inner=tool(i=C_AS_UNPAIRED_1)[o]},...,on={inner=tool(i=C_AS_UNPAIRED_n)[o]}}>}"
     tests:
         workflow_editor: "accepts list:list -> paired_or_unpaired connection"
 
 - example:
     label: MAPPING_LIST_LIST_OVER_LIST_PAIRED_OR_UNPAIRED
+    assumptions:
+    - datasets: ["d_1,...,d_n"]
+    - tool:
+        in: {i: "collection<list:paired_or_unpaired>"}
+        out: {o: dataset}
+    - collections:
+        C: ["list:list", {o1: {inner: d_1}, ..., "on": {inner: d_n}}]
+    - "C_AS_LPU_i = inner list of C at position i, treated as list:paired_or_unpaired via single_datasets"
+    then: "tool(i=mapOver(C, 'list:paired_or_unpaired')) ~> {o: collection<list,{o1=tool(i=C_AS_LPU_1)[o],...,on=tool(i=C_AS_LPU_n)[o]}>}"
     tests:
         workflow_editor: "accepts list:list -> list:paired_or_unpaired connection"
 
