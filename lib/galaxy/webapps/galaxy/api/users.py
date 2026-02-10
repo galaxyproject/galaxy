@@ -708,26 +708,6 @@ class FastAPIUsers:
                 raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
         return self.service.user_to_detailed_model(user_to_update)
 
-    @router.get(
-        "/api/users/current/profile_updates",
-        name="get_profile_updates",
-        summary="Return and clear recent profile updates applied from external auth.",
-    )
-    def profile_updates(self, trans: ProvidesUserContext = DependsOnTrans) -> dict[str, list[str]]:
-        updates: list[str] = []
-        if trans.user and trans.user.preferences:
-            raw_updates = trans.user.preferences.get("profile_updates")
-            if raw_updates:
-                try:
-                    updates = json.loads(raw_updates)
-                except Exception:
-                    updates = []
-                # clear after reading
-                del trans.user.preferences["profile_updates"]
-                trans.sa_session.add(trans.user)
-                trans.sa_session.commit()
-        return {"updates": updates}
-
     @router.post(
         "/api/users/{user_id}/send_activation_email",
         name="send_activation_email",

@@ -508,11 +508,22 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
         config["oidc_config_file"] = os.path.join(os.path.dirname(__file__), "oidc_config.xml")
         config["oidc_backends_config_file"] = cls.backend_config_file
         config["enable_account_interface"] = False
+        config["enable_notification_system"] = True
         # fixed_delegated_auth will be automatically computed as True when:
         # - There is exactly one OIDC provider (keycloak)
         # - There are no other authenticators configured
         # Use empty auth_config_file to ensure no authenticators are loaded
         config["auth_config_file"] = os.path.join(os.path.dirname(__file__), "auth_conf_empty.xml")
+
+    def _get_profile_update_notifications(self):
+        response = self._get("notifications")
+        self._assert_status_code_is(response, 200)
+        notifications = response.json()
+        return [
+            n
+            for n in notifications
+            if n.get("source") == "oidc" and n.get("content", {}).get("subject") == "Profile updated"
+        ]
 
     def test_fixed_delegated_auth_with_existing_user_auto_associates(self):
         """
@@ -549,9 +560,8 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser_fixed_auth@galaxy.org"
         assert response.json()["username"] == "gxyuser_fixed_auth"
-        response = self._get("users/current/profile_updates")
-        self._assert_status_code_is(response, 200)
-        assert set(response.json().get("updates", [])) == {"email", "username"}
+        notifications = self._get_profile_update_notifications()
+        assert notifications, "Expected profile update notification"
 
     def test_fixed_delegated_auth_with_new_user_creates_account(self):
         """
@@ -577,7 +587,7 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
     def test_fixed_delegated_auth_updates_profile_on_association(self):
         """
         Test: fixed_delegated_auth=True, existing user with matching email but different username
-        Expected: Username is updated from OIDC and reported in profile_updates
+        Expected: Username is updated from OIDC and notification is created
         """
         # Pre-create a Galaxy user with matching email but a different username
         sa_session = self._app.model.session
@@ -601,15 +611,16 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
         assert response.json()["email"] == "gxyuser_fixed_auth@galaxy.org"
         assert response.json()["username"] == "gxyuser_fixed_auth"
 
-        # Verify profile updates include username
-        response = self._get("users/current/profile_updates")
-        self._assert_status_code_is(response, 200)
-        assert "username" in response.json().get("updates", [])
+        notifications = self._get_profile_update_notifications()
+        assert notifications, "Expected profile update notification"
+        message = notifications[0]["content"]["message"]
+        assert "email address" in message
+        assert "public name" in message
 
     def test_fixed_delegated_auth_updates_profile_on_repeat_login(self):
         """
         Test: fixed_delegated_auth=True, user associated, local username changes, next login re-syncs
-        Expected: Username is updated from OIDC and reported in profile_updates
+        Expected: Username is updated from OIDC and notification is created
         """
         # Pre-create a Galaxy user with matching email and username
         sa_session = self._app.model.session
@@ -626,10 +637,8 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
         parsed_url = parse.urlparse(response.url)
         assert "user/external_ids" not in parsed_url.path
 
-        # First login reports profile updates
-        response = self._get("users/current/profile_updates")
-        self._assert_status_code_is(response, 200)
-        assert set(response.json().get("updates", [])) == {"email", "username"}
+        notifications = self._get_profile_update_notifications()
+        assert notifications, "Expected profile update notification"
 
         # Clear any transactional state before mutating the user
         sa_session.rollback()
@@ -649,9 +658,8 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
         self._assert_status_code_is(response, 200)
         assert response.json()["username"] == "gxyuser_fixed_auth"
 
-        response = self._get("users/current/profile_updates")
-        self._assert_status_code_is(response, 200)
-        assert "username" in response.json().get("updates", [])
+        notifications = self._get_profile_update_notifications()
+        assert notifications, "Expected profile update notification"
 
 
 class TestWithoutFixedDelegatedAuth(AbstractTestCases.BaseKeycloakIntegrationTestCase):

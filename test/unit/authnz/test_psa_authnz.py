@@ -1,5 +1,4 @@
 import base64
-import json
 import secrets
 import uuid
 from collections import defaultdict
@@ -10,7 +9,10 @@ from datetime import (
 )
 from types import SimpleNamespace
 from typing import Optional
-from unittest.mock import MagicMock
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import jwt
 import pytest
@@ -374,52 +376,58 @@ def test_oidc_config_custom_auth_pipeline_and_extra(mock_oidc_config_file, mock_
 def test_sync_user_profile_skips_when_account_interface_enabled():
     manager = MagicMock()
     session = MagicMock()
-    app_config = SimpleNamespace(enable_account_interface=True)
-    app = SimpleNamespace(config=app_config, user_manager=manager)
+    app_config = SimpleNamespace(enable_account_interface=True, enable_notification_system=True)
+    app = SimpleNamespace(config=app_config, user_manager=manager, notification_manager=SimpleNamespace())
     trans = SimpleNamespace(app=app, sa_session=session)
     strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "FIXED_DELEGATED_AUTH": True})
     user = SimpleNamespace(id=1, preferences={})
     details = {"email": "new@example.com", "username": "newname"}
 
-    sync_user_profile(strategy=strategy, details=details, user=user)
+    with patch("galaxy.webapps.galaxy.services.notifications.NotificationService.send_notification_internal") as notify:
+        sync_user_profile(strategy=strategy, details=details, user=user)
 
     manager.update_email.assert_not_called()
     manager.update_username.assert_not_called()
     session.commit.assert_not_called()
+    notify.assert_not_called()
 
 
 def test_sync_user_profile_skips_when_fixed_delegated_auth_disabled():
     manager = MagicMock()
     session = MagicMock()
-    app_config = SimpleNamespace(enable_account_interface=False)
-    app = SimpleNamespace(config=app_config, user_manager=manager)
+    app_config = SimpleNamespace(enable_account_interface=False, enable_notification_system=True)
+    app = SimpleNamespace(config=app_config, user_manager=manager, notification_manager=SimpleNamespace())
     trans = SimpleNamespace(app=app, sa_session=session)
     strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "FIXED_DELEGATED_AUTH": False})
     user = SimpleNamespace(id=2, preferences={})
     details = {"email": "new@example.com", "username": "newname"}
 
-    sync_user_profile(strategy=strategy, details=details, user=user)
+    with patch("galaxy.webapps.galaxy.services.notifications.NotificationService.send_notification_internal") as notify:
+        sync_user_profile(strategy=strategy, details=details, user=user)
 
     manager.update_email.assert_not_called()
     manager.update_username.assert_not_called()
     session.commit.assert_not_called()
+    notify.assert_not_called()
 
 
 def test_sync_user_profile_updates_when_account_interface_disabled():
     manager = MagicMock()
     session = MagicMock()
-    app_config = SimpleNamespace(enable_account_interface=False)
-    app = SimpleNamespace(config=app_config, user_manager=manager)
+    app_config = SimpleNamespace(enable_account_interface=False, enable_notification_system=True)
+    notification_manager = SimpleNamespace(notifications_enabled=True)
+    app = SimpleNamespace(config=app_config, user_manager=manager, notification_manager=notification_manager)
     trans = SimpleNamespace(app=app, sa_session=session)
     strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "FIXED_DELEGATED_AUTH": True})
     user = SimpleNamespace(id=2, preferences={})
     details = {"email": "new@example.com", "username": "newname"}
 
-    sync_user_profile(strategy=strategy, details=details, user=user)
+    with patch("galaxy.webapps.galaxy.services.notifications.NotificationService.send_notification_internal") as notify:
+        sync_user_profile(strategy=strategy, details=details, user=user)
 
     manager.update_email.assert_called_once_with(
         trans, user, "new@example.com", commit=False, send_activation_email=False
     )
     manager.update_username.assert_called_once_with(trans, user, "newname", commit=False)
-    assert json.loads(user.preferences["profile_updates"]) == ["email", "username"]
-    assert session.commit.call_count == 2
+    assert session.commit.call_count == 1
+    notify.assert_called_once()
