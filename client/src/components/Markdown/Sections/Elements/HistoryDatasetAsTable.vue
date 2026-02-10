@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { BCard, BCardFooter, BCardTitle } from "bootstrap-vue";
 import { computed } from "vue";
 
+import type { TableField } from "@/components/Common/GTable.types";
 import { UrlDataProvider } from "@/components/providers/UrlDataProvider.js";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface HistoryDatasetAsTableProps {
@@ -44,8 +48,8 @@ const contentClass = computed(() => {
     }
 });
 
-function getFields(metaData: any) {
-    const fields = [];
+function getFields(metaData: any): TableField[] {
+    const fields: TableField[] = [];
     const columnNames = metaData.metadata_column_names || [];
     const columnCount = metaData.metadata_columns;
     for (let i = 0; i < columnCount; i++) {
@@ -58,15 +62,15 @@ function getFields(metaData: any) {
     return fields;
 }
 
-function getItems(textData: any, metaData: any) {
-    const tableData: object[] = [];
+function getItems(textData: string, metaData: any) {
+    const tableData: Record<string, string>[] = [];
     const delimiter: string = metaData.metadata_delimiter || "\t";
     const comments: number = metaData.metadata_comment_lines || 0;
     const lines = textData.split("\n");
     lines.forEach((line: string, i: number) => {
         if (i >= comments) {
             const tabs = line.split(delimiter);
-            const rowData: string[] = [];
+            const rowData: Record<string, string> = {};
             let hasData = false;
             tabs.forEach((cellData: string, j: number) => {
                 const cellDataTrimmed = cellData.trim();
@@ -85,39 +89,39 @@ function getItems(textData: any, metaData: any) {
 </script>
 
 <template>
-    <b-card :no-body="props.compact">
-        <b-card-title v-if="title">
+    <BCard :no-body="props.compact">
+        <BCardTitle v-if="title">
             <b>{{ title }}</b>
-        </b-card-title>
+        </BCardTitle>
+
         <UrlDataProvider v-slot="{ result: itemContent, loading, error }" :url="itemUrl">
             <LoadingSpan v-if="loading" message="Loading Dataset" />
             <div v-else-if="error">{{ error }}</div>
             <div v-else :class="contentClass">
                 <div v-if="itemContent.item_data">
-                    <div>
-                        <UrlDataProvider
-                            v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
-                            :url="metaUrl">
-                            <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
-                            <div v-else-if="metaError">{{ metaError }}</div>
-                            <b-table
-                                v-else
-                                :thead-class="props.showColumnHeaders ? '' : 'd-none'"
-                                striped
-                                hover
-                                :fields="getFields(metaData)"
-                                :items="getItems(itemContent.item_data, metaData)" />
-                        </UrlDataProvider>
-                    </div>
+                    <UrlDataProvider
+                        v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
+                        :url="metaUrl">
+                        <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
+                        <div v-else-if="metaError">{{ metaError }}</div>
+                        <GTable
+                            v-else
+                            :hide-header="!props.showColumnHeaders"
+                            striped
+                            hover
+                            :fields="getFields(metaData)"
+                            :items="getItems(itemContent.item_data, metaData)" />
+                    </UrlDataProvider>
                 </div>
                 <div v-else>No content found.</div>
-                <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
+
+                <GLink v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </GLink>
             </div>
         </UrlDataProvider>
-        <b-card-footer v-if="footer">
+        <BCardFooter v-if="footer">
             {{ footer }}
-        </b-card-footer>
-    </b-card>
+        </BCardFooter>
+    </BCard>
 </template>
 
 <style scoped>

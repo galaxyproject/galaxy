@@ -92,13 +92,13 @@ describe("History Text Dataset Display", () => {
 
     it("should expand dataset", async () => {
         await mountTarget();
-        const expandBTN = wrapper.find('.btn[title="Expand"]');
+        const expandBTN = wrapper.find('button[data-title="Expand"]');
         expect(expandBTN.exists()).toBe(true);
         expect(wrapper.find(".embedded-dataset").exists()).toBe(true);
 
         await expandBTN.trigger("click");
 
-        expect(wrapper.find('.btn[title="Collapse"]').exists()).toBe(true);
+        expect(wrapper.find('button[data-title="Collapse"]').exists()).toBe(true);
         expect(wrapper.find(".embedded-dataset-expanded").exists()).toBe(true);
     });
 });
