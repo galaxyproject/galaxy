@@ -596,7 +596,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         def history_has_hid(driver=None):
             hids = get_hids()
-            return any(h == hid for h in hids)
+            # Return True or None (not False) so wait_on keeps polling
+            # wait_on treats any non-None value as success, including False
+            return True if any(h == hid for h in hids) else None
 
         timeout = self.wait_length(wait_type=WAIT_TYPES.JOB_COMPLETION)
         try:
