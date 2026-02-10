@@ -4,20 +4,35 @@ from pydantic import ValidationError
 
 from galaxy.model.dataset_collections.types.semantics import (
     CollectionDefinition,
+    CollectionInput,
+    CollectionOutput,
     DatasetsDeclaration,
+    DatasetInput,
+    DatasetListInput,
+    DatasetOutput,
     DocEntry,
+    EllipsisMarker,
+    EquivalenceThen,
     Example,
     ExampleEntry,
     ExampleTests,
+    InvalidThen,
+    MapOverInput,
+    MapOverThen,
+    NestedElements,
+    ReductionThen,
     ToolDefinition,
+    ToolInvocation,
+    ToolOutputRef,
     ToolRuntimeApi,
     ToolRuntimeFramework,
     YAMLRootModel,
     arg_parser,
     check,
     collect_docs_with_examples,
-    elements_to_latex,
+    _assumption_elements_to_latex,
     expression_to_latex,
+    generate_docs,
     validate_api_test_refs,
     validate_tool_refs,
     validate_workflow_editor_refs,
@@ -93,21 +108,21 @@ def test_expression_to_latex_wrap_false():
 
 
 
-def test_elements_to_latex_single_none():
-    result = elements_to_latex({"a": None})
+def test_assumption_elements_to_latex_single_none():
+    result = _assumption_elements_to_latex({"a": None})
     assert "a" in result
     assert "\\left\\{" in result
     assert "\\right\\}" in result
 
 
-def test_elements_to_latex_nested_dict():
-    result = elements_to_latex({"outer": {"inner": None}})
+def test_assumption_elements_to_latex_nested_dict():
+    result = _assumption_elements_to_latex({"outer": {"inner": None}})
     assert "\\text{ outer }" in result
     assert "inner" in result
 
 
-def test_elements_to_latex_multiple_keys():
-    result = elements_to_latex({"a": None, "b": None})
+def test_assumption_elements_to_latex_multiple_keys():
+    result = _assumption_elements_to_latex({"a": None, "b": None})
     assert "a" in result
     assert "b" in result
     assert "," in result
@@ -156,10 +171,13 @@ def test_collect_doc_with_no_examples():
     assert examples == []
 
 
+_SIMPLE_THEN = {"type": "invalid", "invocation": {"inputs": {"i": {"type": "collection", "ref": "C"}}}}
+
+
 def test_collect_doc_with_examples():
     root = _make_root([
         {"doc": "Doc"},
-        {"example": {"label": "EX1", "then": "a -> b"}},
+        {"example": {"label": "EX1", "then": _SIMPLE_THEN}},
     ])
     result = collect_docs_with_examples(root)
     assert len(result) == 1
@@ -172,7 +190,7 @@ def test_collect_example_without_then_excluded():
     root = _make_root([
         {"doc": "Doc"},
         {"example": {"label": "NO_THEN"}},
-        {"example": {"label": "HAS_THEN", "then": "x -> y"}},
+        {"example": {"label": "HAS_THEN", "then": _SIMPLE_THEN}},
     ])
     result = collect_docs_with_examples(root)
     _, examples = result[0]
@@ -183,9 +201,9 @@ def test_collect_example_without_then_excluded():
 def test_collect_multiple_doc_sections():
     root = _make_root([
         {"doc": "Doc1"},
-        {"example": {"label": "EX1", "then": "a"}},
+        {"example": {"label": "EX1", "then": _SIMPLE_THEN}},
         {"doc": "Doc2"},
-        {"example": {"label": "EX2", "then": "b"}},
+        {"example": {"label": "EX2", "then": _SIMPLE_THEN}},
     ])
     result = collect_docs_with_examples(root)
     assert len(result) == 2
@@ -333,3 +351,275 @@ def test_check_returns_no_errors():
     """check() against current YAML should return empty error list."""
     errors = check()
     assert errors == []
+
+
+# --- Structured Then Expression Model Tests ---
+
+
+def test_invalid_then_collection_input():
+    """InvalidThen with collection input: tool(i=C)"""
+    then = InvalidThen(
+        type="invalid",
+        invocation=ToolInvocation(inputs={"i": CollectionInput(type="collection", ref="C")}),
+    )
+    assert then.as_latex() == expression_to_latex("tool(i=C)", wrap=False)
+
+
+def test_invalid_then_map_over_with_sub_collection():
+    """InvalidThen with mapOver sub-collection: tool(i=mapOver(C, 'paired'))"""
+    then = InvalidThen(
+        type="invalid",
+        invocation=ToolInvocation(
+            inputs={"i": MapOverInput(type="map_over", collection="C", sub_collection_type="paired")}
+        ),
+    )
+    assert then.as_latex() == expression_to_latex("tool(i=mapOver(C, 'paired'))", wrap=False)
+
+
+def test_invalid_then_map_over_paired_or_unpaired():
+    """InvalidThen with mapOver paired_or_unpaired sub-collection."""
+    then = InvalidThen(
+        type="invalid",
+        invocation=ToolInvocation(
+            inputs={"i": MapOverInput(type="map_over", collection="C", sub_collection_type="paired_or_unpaired")}
+        ),
+    )
+    assert then.as_latex() == expression_to_latex("tool(i=mapOver(C, 'paired_or_unpaired'))", wrap=False)
+
+
+def test_invalid_then_map_over_no_sub_collection():
+    """InvalidThen with bare mapOver: tool(i=mapOver(C))"""
+    then = InvalidThen(
+        type="invalid",
+        invocation=ToolInvocation(
+            inputs={"i": MapOverInput(type="map_over", collection="C")}
+        ),
+    )
+    assert then.as_latex() == expression_to_latex("tool(i=mapOver(C))", wrap=False)
+
+
+def test_reduction_then():
+    """ReductionThen: tool(i=C) -> {o: dataset}"""
+    then = ReductionThen(
+        type="reduction",
+        invocation=ToolInvocation(inputs={"i": CollectionInput(type="collection", ref="C")}),
+        produces={"o": DatasetOutput(type="dataset")},
+    )
+    assert then.as_latex() == expression_to_latex("tool(i=C) -> {o: dataset}", wrap=False)
+
+
+def test_equivalence_then_list_reduction():
+    """EquivalenceThen: tool(i=C) == tool(i=[d_1,...,d_n])"""
+    then = EquivalenceThen(
+        type="equivalence",
+        left=ToolInvocation(inputs={"i": CollectionInput(type="collection", ref="C")}),
+        right=ToolInvocation(inputs={"i": DatasetListInput(type="dataset_list", refs=["d_1", "...", "d_n"])}),
+    )
+    assert then.as_latex() == expression_to_latex("tool(i=C) == tool(i=[d_1,...,d_n])", wrap=False)
+
+
+def test_equivalence_then_collection_refs():
+    """EquivalenceThen: tool(i=C) == tool(i=C_AS_MIXED)"""
+    then = EquivalenceThen(
+        type="equivalence",
+        left=ToolInvocation(inputs={"i": CollectionInput(type="collection", ref="C")}),
+        right=ToolInvocation(inputs={"i": CollectionInput(type="collection", ref="C_AS_MIXED")}),
+    )
+    assert then.as_latex() == expression_to_latex("tool(i=C) == tool(i=C_AS_MIXED)", wrap=False)
+
+
+def test_map_over_then_paired():
+    """MapOverThen for BASIC_MAPPING_PAIRED pattern."""
+    then = MapOverThen(
+        type="map_over",
+        invocation=ToolInvocation(inputs={"i": MapOverInput(type="map_over", collection="C")}),
+        produces={
+            "o": CollectionOutput(
+                type="collection",
+                collection_type="paired",
+                elements={
+                    "forward": ToolOutputRef(
+                        type="tool_output_ref",
+                        invocation=ToolInvocation(inputs={"i": DatasetInput(type="dataset", ref="d_f")}),
+                        output="o",
+                    ),
+                    "reverse": ToolOutputRef(
+                        type="tool_output_ref",
+                        invocation=ToolInvocation(inputs={"i": DatasetInput(type="dataset", ref="d_r")}),
+                        output="o",
+                    ),
+                },
+            )
+        },
+    )
+    result = then.as_latex()
+    assert "\\text{mapOver}(C)" in result
+    assert "\\text{paired}" in result
+    assert "\\mapsto" in result
+    assert "tool(i=d_f)[o]" in result
+    assert "tool(i=d_r)[o]" in result
+
+
+def test_map_over_then_sub_collection():
+    """MapOverThen for sub-collection mapping (MAPPING_LIST_PAIRED_OVER_PAIRED)."""
+    then = MapOverThen(
+        type="map_over",
+        invocation=ToolInvocation(
+            inputs={"i": MapOverInput(type="map_over", collection="C", sub_collection_type="paired")}
+        ),
+        produces={
+            "o": CollectionOutput(
+                type="collection",
+                collection_type="list",
+                elements={
+                    "el1": ToolOutputRef(
+                        type="tool_output_ref",
+                        invocation=ToolInvocation(
+                            inputs={"i": CollectionInput(type="collection", ref="C\\_PAIRED")}
+                        ),
+                        output="o",
+                    ),
+                },
+            )
+        },
+    )
+    result = then.as_latex()
+    assert "\\text{mapOver}(C, '\\text{paired}')" in result
+    assert "\\text{list}" in result
+    assert "C\\_PAIRED" in result
+
+
+def test_pydantic_parse_invalid_then_yaml():
+    """Structured InvalidThen parses from dict (simulating YAML load)."""
+    data = {
+        "type": "invalid",
+        "invocation": {"inputs": {"i": {"type": "collection", "ref": "C"}}},
+    }
+    then = InvalidThen.model_validate(data)
+    assert isinstance(then.invocation.inputs["i"], CollectionInput)
+    assert then.invocation.inputs["i"].ref == "C"
+
+
+def test_pydantic_parse_reduction_then_yaml():
+    """Structured ReductionThen parses from dict."""
+    data = {
+        "type": "reduction",
+        "invocation": {"inputs": {"i": {"type": "collection", "ref": "C"}}},
+        "produces": {"o": {"type": "dataset"}},
+    }
+    then = ReductionThen.model_validate(data)
+    assert isinstance(then.produces["o"], DatasetOutput)
+
+
+def test_example_accepts_structured_then():
+    """Example model accepts structured then expression."""
+    data = {
+        "label": "TEST",
+        "then": {
+            "type": "invalid",
+            "invocation": {"inputs": {"i": {"type": "collection", "ref": "C"}}},
+        },
+        "is_valid": False,
+    }
+    ex = Example.model_validate(data)
+    assert isinstance(ex.then, InvalidThen)
+    assert ex.is_valid is False
+
+
+def test_example_rejects_string_then():
+    """Example model no longer accepts string then after migration."""
+    with pytest.raises(ValidationError):
+        Example(label="TEST", then="tool(i=C) -> {o: dataset}")
+
+
+# --- Smoke Tests (Steps 3-4) ---
+
+
+def test_all_then_as_latex_succeeds():
+    """Every then expression produces valid LaTeX without error."""
+    root = _load_root_model()
+    for entry in root.root:
+        if isinstance(entry, ExampleEntry) and entry.example.then:
+            latex = entry.example.then.as_latex()
+            assert isinstance(latex, str)
+            assert len(latex) > 0, f"{entry.example.label} produced empty LaTeX"
+
+
+def test_generate_docs_succeeds():
+    """generate_docs() runs to completion without errors."""
+    generate_docs()
+
+
+# --- Unit Tests for Uncovered Models (Step 5) ---
+
+
+def test_ellipsis_marker_as_latex():
+    m = EllipsisMarker(type="ellipsis")
+    assert m.as_latex() == "..."
+
+
+def test_dataset_list_input_as_latex():
+    d = DatasetListInput(type="dataset_list", refs=["d_1", "...", "d_n"])
+    assert d.as_latex() == "[d_1,...,d_n]"
+
+
+def test_nested_elements_as_latex():
+    ne = NestedElements.model_validate({
+        "type": "nested_elements",
+        "elements": {
+            "forward": {
+                "type": "tool_output_ref",
+                "invocation": {"inputs": {"i": {"type": "dataset", "ref": "d_f"}}},
+                "output": "o",
+            },
+            "reverse": {
+                "type": "tool_output_ref",
+                "invocation": {"inputs": {"i": {"type": "dataset", "ref": "d_r"}}},
+                "output": "o",
+            },
+        },
+    })
+    result = ne.as_latex()
+    assert "\\text{forward}=" in result
+    assert "\\text{reverse}=" in result
+    assert "tool(i=d_f)[o]" in result
+
+
+def test_collection_output_with_ellipsis_as_latex():
+    co = CollectionOutput.model_validate({
+        "type": "collection",
+        "collection_type": "list",
+        "elements": {
+            "el1": {
+                "type": "tool_output_ref",
+                "invocation": {"inputs": {"i": {"type": "dataset", "ref": "d_1"}}},
+                "output": "o",
+            },
+            "...": {"type": "ellipsis"},
+            "eln": {
+                "type": "tool_output_ref",
+                "invocation": {"inputs": {"i": {"type": "dataset", "ref": "d_n"}}},
+                "output": "o",
+            },
+        },
+    })
+    result = co.as_latex()
+    assert "\\text{list}" in result
+    assert ",...," in result
+
+
+def test_map_over_input_compound_sub_collection_type():
+    mi = MapOverInput(type="map_over", collection="C", sub_collection_type="list:paired_or_unpaired")
+    result = mi.as_latex()
+    assert "\\text{list}:\\text{paired\\_or\\_unpaired}" in result
+
+
+def test_map_over_then_produces_dataset():
+    then = MapOverThen(
+        type="map_over",
+        invocation=ToolInvocation(inputs={"i": MapOverInput(type="map_over", collection="C")}),
+        produces={"o": DatasetOutput(type="dataset")},
+    )
+    result = then.as_latex()
+    assert "\\mapsto" in result
+    assert "\\text{dataset}" in result

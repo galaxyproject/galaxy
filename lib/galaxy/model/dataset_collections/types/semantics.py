@@ -9,7 +9,9 @@ import re
 import sys
 from io import StringIO
 from typing import (
+    Annotated,
     Any,
+    Literal,
     NamedTuple,
     Optional,
     Union,
@@ -76,14 +78,14 @@ class ToolDeclaration(BaseModel):
         return self.tool.as_latex()
 
 
-def elements_to_latex(elements: dict[str, Any]):
+def _assumption_elements_to_latex(elements: dict[str, Any]):
     elements_as_strings = []
     for identifier, value in elements.items():
         if value is None:
             elements_as_strings.append(identifier)
         else:
             if isinstance(value, dict):
-                value_str = elements_to_latex(value)
+                value_str = _assumption_elements_to_latex(value)
             else:
                 value_str = str(value)
             elements_as_strings.append(f"\\text{{ {identifier} }}={value_str}")
@@ -97,7 +99,7 @@ class CollectionDefinition(NamedTuple):
 
     def as_latex(self) -> str:
         collection_type = self.collection_type.replace("_", "\\_")
-        return f"\\text{{CollectionInstance<}}{collection_type},{elements_to_latex(self.elements)}\\text{{>}}"
+        return f"\\text{{CollectionInstance<}}{collection_type},{_assumption_elements_to_latex(self.elements)}\\text{{>}}"
 
 
 class CollectionDeclarations(BaseModel):
@@ -107,10 +109,185 @@ class CollectionDeclarations(BaseModel):
 Expression = Union[str, DatasetsDeclaration, ToolDeclaration, CollectionDeclarations]
 
 
+# --- Structured Then Expression Models ---
+
+
+def _latex_type_word(word: str) -> str:
+    if word == "paired_or_unpaired":
+        return "\\text{paired\\_or\\_unpaired}"
+    if word == "single_datasets":
+        return "\\text{single\\_datasets}"
+    return "\\text{" + word + "}"
+
+
+def _latex_collection_type(ct: str) -> str:
+    return ":".join(_latex_type_word(p) for p in ct.split(":"))
+
+
+def _output_elements_to_latex(elements: dict) -> str:
+    parts = []
+    for key, value in elements.items():
+        if key == "...":
+            parts.append("...")
+        else:
+            parts.append(f"\\text{{{key}}}={value.as_latex()}")
+    # Join without spaces around ellipsis entries
+    result = ""
+    for i, part in enumerate(parts):
+        if i > 0:
+            if part == "..." or parts[i - 1] == "...":
+                result += ","
+            else:
+                result += ", "
+        result += part
+    return "\\left\\{" + result + "\\right\\}"
+
+
+def _produces_to_latex(produces: dict) -> str:
+    parts = []
+    for key, value in produces.items():
+        parts.append(f"{key}: {value.as_latex()}")
+    return "\\left\\{" + ", ".join(parts) + "\\right\\}"
+
+
+class DatasetInput(BaseModel):
+    type: Literal["dataset"]
+    ref: str
+
+    def as_latex(self) -> str:
+        return self.ref
+
+
+class MapOverInput(BaseModel):
+    type: Literal["map_over"]
+    collection: str
+    sub_collection_type: Optional[str] = None
+
+    def as_latex(self) -> str:
+        if self.sub_collection_type:
+            sct = _latex_collection_type(self.sub_collection_type)
+            return f"\\text{{mapOver}}({self.collection}, '{sct}')"
+        return f"\\text{{mapOver}}({self.collection})"
+
+
+class CollectionInput(BaseModel):
+    type: Literal["collection"]
+    ref: str
+
+    def as_latex(self) -> str:
+        return self.ref
+
+
+class DatasetListInput(BaseModel):
+    type: Literal["dataset_list"]
+    refs: list[str]
+
+    def as_latex(self) -> str:
+        return "[" + ",".join(self.refs) + "]"
+
+
+InputBinding = Annotated[Union[DatasetInput, MapOverInput, CollectionInput, DatasetListInput], Field(discriminator="type")]
+
+
+class ToolInvocation(BaseModel):
+    inputs: dict[str, InputBinding]
+
+    def as_latex(self) -> str:
+        args = ", ".join(f"{k}={v.as_latex()}" for k, v in self.inputs.items())
+        return f"tool({args})"
+
+
+class DatasetOutput(BaseModel):
+    type: Literal["dataset"]
+
+    def as_latex(self) -> str:
+        return "\\text{dataset}"
+
+
+class EllipsisMarker(BaseModel):
+    type: Literal["ellipsis"]
+
+    def as_latex(self) -> str:
+        return "..."
+
+
+class ToolOutputRef(BaseModel):
+    type: Literal["tool_output_ref"]
+    invocation: ToolInvocation
+    output: str
+
+    def as_latex(self) -> str:
+        return f"{self.invocation.as_latex()}[{self.output}]"
+
+
+class NestedElements(BaseModel):
+    type: Literal["nested_elements"]
+    elements: dict[str, "OutputBinding"]
+
+    def as_latex(self) -> str:
+        return _output_elements_to_latex(self.elements)
+
+
+OutputBinding = Annotated[Union[DatasetOutput, EllipsisMarker, ToolOutputRef, NestedElements], Field(discriminator="type")]
+NestedElements.model_rebuild()
+
+
+class CollectionOutput(BaseModel):
+    type: Literal["collection"]
+    collection_type: str
+    elements: dict[str, OutputBinding]
+
+    def as_latex(self) -> str:
+        ct = _latex_collection_type(self.collection_type)
+        el = _output_elements_to_latex(self.elements)
+        return f"\\text{{collection}}<{ct},{el}>"
+
+
+OutputSpec = Annotated[Union[DatasetOutput, CollectionOutput], Field(discriminator="type")]
+
+
+class MapOverThen(BaseModel):
+    type: Literal["map_over"]
+    invocation: ToolInvocation
+    produces: dict[str, OutputSpec]
+
+    def as_latex(self) -> str:
+        return f"{self.invocation.as_latex()} \\mapsto {_produces_to_latex(self.produces)}"
+
+
+class ReductionThen(BaseModel):
+    type: Literal["reduction"]
+    invocation: ToolInvocation
+    produces: dict[str, OutputSpec]
+
+    def as_latex(self) -> str:
+        return f"{self.invocation.as_latex()} \\rightarrow {_produces_to_latex(self.produces)}"
+
+
+class EquivalenceThen(BaseModel):
+    type: Literal["equivalence"]
+    left: ToolInvocation
+    right: ToolInvocation
+
+    def as_latex(self) -> str:
+        return f"{self.left.as_latex()} == {self.right.as_latex()}"
+
+
+class InvalidThen(BaseModel):
+    type: Literal["invalid"]
+    invocation: ToolInvocation
+
+    def as_latex(self) -> str:
+        return self.invocation.as_latex()
+
+
+ThenExpression = Annotated[Union[MapOverThen, ReductionThen, EquivalenceThen, InvalidThen], Field(discriminator="type")]
+
+
 class Example(BaseModel):
     label: str
     assumptions: Optional[list[Expression]] = None
-    then: Optional[str] = None
+    then: Optional[ThenExpression] = None
     is_valid: bool = True
     tests: Optional[ExampleTests] = None
 
@@ -312,8 +489,9 @@ def generate_docs():
                     validity_str = ""
                     if not example.is_valid:
                         validity_str = "\\text{ is invalid}"
+                    then_latex = example.then.as_latex()
                     markdown_content.write(
-                        f"\n\nthen\n\n$${expression_to_latex(example.then, wrap=False)}{validity_str}$$\n\n"
+                        f"\n\nthen\n\n$${then_latex}{validity_str}$$\n\n"
                     )
                 markdown_content.write(":::\n\n")
             markdown_content.write("\n\n</details><br>\n\n")
