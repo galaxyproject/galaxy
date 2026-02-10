@@ -74,7 +74,7 @@ class ToolRunner(BaseUIController):
             return __tool_404__()
         # FIXME: Tool class should define behavior
         if tool.tool_type in ["default", "interactivetool"]:
-            return trans.response.send_redirect(url_for(controller="root", tool_id=tool_id))
+            return trans.response.send_redirect(url_for(f"/?tool_id={tool_id}"))
 
         # execute tool without displaying form
         # (used for datasource tools, but note that data_source_async tools
@@ -156,7 +156,7 @@ class ToolRunner(BaseUIController):
                 job_id = trans.security.encode_id(job.id)
             else:
                 raise Exception(f"Failed to get job information for dataset hid {data.hid}")
-        return trans.response.send_redirect(url_for(controller="root", job_id=job_id))
+        return trans.response.send_redirect(url_for(f"/?job_id={job_id}"))
 
     @web.expose
     def data_source_redirect(self, trans, tool_id=None):
