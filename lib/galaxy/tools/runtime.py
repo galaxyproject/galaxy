@@ -1,7 +1,6 @@
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
-    Dict,
     Optional,
     TYPE_CHECKING,
 )
@@ -24,10 +23,6 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionListRuntime,
     DataCollectionNestedListRuntime,
     DataCollectionNestedRecordRuntime,
-    DataCollectionPairedRuntime,
-    DataCollectionPairedOrUnpairedRuntime,
-    DataCollectionRecordRuntime,
-    DataCollectionSampleSheetRuntime,
 )
 
 if TYPE_CHECKING:
@@ -40,7 +35,7 @@ DatasetToRuntimeJson = Callable[[DataRequestInternalDereferencedT], DataInternal
 CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], DataCollectionInternalJsonBase]
 
 # Input dataset collections dict type
-InpDataCollectionsDictT = Dict[str, Any]
+InpDataCollectionsDictT = dict[str, Any]
 
 
 def is_list_like(collection_type: str) -> bool:
@@ -70,11 +65,11 @@ def setup_for_runtimeify(
     hdas_by_id = {d.id: (d, i) for (i, d) in enumerate(input_datasets.values()) if d is not None}
 
     # Build separate lookups for HDCAs and DCEs
-    hdcas_by_id: Dict[int, HistoryDatasetCollectionAssociation] = {}
-    dces_by_id: Dict[int, DatasetCollectionElement] = {}
+    hdcas_by_id: dict[int, HistoryDatasetCollectionAssociation] = {}
+    dces_by_id: dict[int, DatasetCollectionElement] = {}
 
     if input_dataset_collections:
-        for name, value in input_dataset_collections.items():
+        for _name, value in input_dataset_collections.items():
             if isinstance(value, HistoryDatasetCollectionAssociation):
                 hdcas_by_id[value.id] = value
             elif isinstance(value, DatasetCollectionElement):
@@ -177,7 +172,7 @@ def collection_to_runtime(
     return _validate_collection_runtime_dict(raw)
 
 
-def _validate_collection_runtime_dict(raw: Dict[str, Any]) -> DataCollectionInternalJsonBase:
+def _validate_collection_runtime_dict(raw: dict[str, Any]) -> DataCollectionInternalJsonBase:
     """Parse raw dict into appropriate typed collection runtime model.
 
     Routes to the correct model based on collection_type via build_collection_model_for_type,
@@ -205,7 +200,7 @@ def _build_collection_runtime_dict(
     adapt_dataset: DatasetToRuntimeJson,
     compute_environment: Optional["ComputeEnvironment"],
     columns: Optional[list] = None,  # from parent DCE for sample_sheet elements
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Convert DatasetCollection to runtime representation.
 
     Args:
@@ -232,7 +227,7 @@ def _build_collection_runtime_dict(
         for dce in collection.elements:
             elements[dce.element_identifier] = _element_to_runtime(dce, adapt_dataset, compute_environment)
 
-    result: Dict[str, Any] = {
+    result: dict[str, Any] = {
         "class": "Collection",
         "name": name,
         "collection_type": collection.collection_type,
@@ -257,7 +252,7 @@ def _element_to_runtime(
     element: DatasetCollectionElement,
     adapt_dataset: DatasetToRuntimeJson,
     compute_environment: Optional["ComputeEnvironment"],
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Convert a single collection element to runtime representation."""
     if element.is_collection:
         return _build_collection_runtime_dict(

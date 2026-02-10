@@ -46,7 +46,6 @@ from .interface import (
     PagesSource,
     ToolSource,
     ToolSourceTest,
-    ToolSourceTestInput,
     ToolSourceTestInputs,
     ToolSourceTests,
 )
