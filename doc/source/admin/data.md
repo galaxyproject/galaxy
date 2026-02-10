@@ -763,6 +763,19 @@ on the simple minio example.
 
 Template variables can include optional validators to enforce constraints on user input. Validators ensure that users provide valid values when configuring file sources or object stores, providing clear error messages when validation fails.
 
+### Required vs optional template variables and secrets
+
+When defining `variables` and `secrets` in file source (and object store) templates, Galaxy follows **explicit rules**:
+
+- Variables and secrets are **required by default**.
+- A variable or secret is optional **only if** `optional: true` is explicitly set.
+- Defining a `default` value **does not** make a field optional.
+- Default values are applied **only** for variables or secrets marked as `optional: true`.
+- Validators are evaluated **only when a value is provided**; omitted optional fields are not validated.
+- Default values **are validated** when they are applied (i.e. for `optional: true` fields with a default).
+
+This explicit model avoids implicit behavior and makes template intent clear and predictable.
+
 ### Validator Types
 
 Galaxy supports three types of validators that can be applied to template variables:
