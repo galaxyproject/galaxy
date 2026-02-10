@@ -3,19 +3,25 @@ import yaml
 from pydantic import ValidationError
 
 from galaxy.model.dataset_collections.types.semantics import (
+    _assumption_elements_to_latex,
+    arg_parser,
+    check,
+    collect_docs_with_examples,
     CollectionDefinition,
     CollectionInput,
     CollectionOutput,
-    DatasetsDeclaration,
     DatasetInput,
     DatasetListInput,
     DatasetOutput,
+    DatasetsDeclaration,
     DocEntry,
     EllipsisMarker,
     EquivalenceThen,
     Example,
     ExampleEntry,
     ExampleTests,
+    expression_to_latex,
+    generate_docs,
     InvalidThen,
     MapOverInput,
     MapOverThen,
@@ -26,32 +32,22 @@ from galaxy.model.dataset_collections.types.semantics import (
     ToolOutputRef,
     ToolRuntimeApi,
     ToolRuntimeFramework,
-    YAMLRootModel,
-    arg_parser,
-    check,
-    collect_docs_with_examples,
-    _assumption_elements_to_latex,
-    expression_to_latex,
-    generate_docs,
     validate_api_test_refs,
     validate_tool_refs,
     validate_workflow_editor_refs,
+    YAMLRootModel,
 )
 from galaxy.util.resources import resource_string
 
 
-
 def _load_root_model() -> YAMLRootModel:
-    raw = yaml.safe_load(
-        resource_string("galaxy.model.dataset_collections.types", "collection_semantics.yml")
-    )
+    raw = yaml.safe_load(resource_string("galaxy.model.dataset_collections.types", "collection_semantics.yml"))
     return YAMLRootModel.model_validate(raw)
 
 
 def test_yaml_loads_and_parses():
     root = _load_root_model()
     assert len(root.root) > 0
-
 
 
 def test_all_entries_are_doc_or_example():
@@ -66,7 +62,6 @@ def test_has_both_doc_and_example_entries():
     has_example = any(isinstance(e, ExampleEntry) for e in root.root)
     assert has_doc
     assert has_example
-
 
 
 @pytest.mark.parametrize(
@@ -107,7 +102,6 @@ def test_expression_to_latex_wrap_false():
     assert not result.startswith("$ ")
 
 
-
 def test_assumption_elements_to_latex_single_none():
     result = _assumption_elements_to_latex({"a": None})
     assert "a" in result
@@ -126,7 +120,6 @@ def test_assumption_elements_to_latex_multiple_keys():
     assert "a" in result
     assert "b" in result
     assert "," in result
-
 
 
 def test_datasets_declaration_as_latex_single():
@@ -157,7 +150,6 @@ def test_collection_definition_as_latex():
     assert "reverse" in result
 
 
-
 def _make_root(entries: list) -> YAMLRootModel:
     return YAMLRootModel.model_validate(entries)
 
@@ -175,10 +167,12 @@ _SIMPLE_THEN = {"type": "invalid", "invocation": {"inputs": {"i": {"type": "coll
 
 
 def test_collect_doc_with_examples():
-    root = _make_root([
-        {"doc": "Doc"},
-        {"example": {"label": "EX1", "then": _SIMPLE_THEN}},
-    ])
+    root = _make_root(
+        [
+            {"doc": "Doc"},
+            {"example": {"label": "EX1", "then": _SIMPLE_THEN}},
+        ]
+    )
     result = collect_docs_with_examples(root)
     assert len(result) == 1
     _, examples = result[0]
@@ -187,11 +181,13 @@ def test_collect_doc_with_examples():
 
 
 def test_collect_example_without_then_excluded():
-    root = _make_root([
-        {"doc": "Doc"},
-        {"example": {"label": "NO_THEN"}},
-        {"example": {"label": "HAS_THEN", "then": _SIMPLE_THEN}},
-    ])
+    root = _make_root(
+        [
+            {"doc": "Doc"},
+            {"example": {"label": "NO_THEN"}},
+            {"example": {"label": "HAS_THEN", "then": _SIMPLE_THEN}},
+        ]
+    )
     result = collect_docs_with_examples(root)
     _, examples = result[0]
     assert len(examples) == 1
@@ -199,19 +195,20 @@ def test_collect_example_without_then_excluded():
 
 
 def test_collect_multiple_doc_sections():
-    root = _make_root([
-        {"doc": "Doc1"},
-        {"example": {"label": "EX1", "then": _SIMPLE_THEN}},
-        {"doc": "Doc2"},
-        {"example": {"label": "EX2", "then": _SIMPLE_THEN}},
-    ])
+    root = _make_root(
+        [
+            {"doc": "Doc1"},
+            {"example": {"label": "EX1", "then": _SIMPLE_THEN}},
+            {"doc": "Doc2"},
+            {"example": {"label": "EX2", "then": _SIMPLE_THEN}},
+        ]
+    )
     result = collect_docs_with_examples(root)
     assert len(result) == 2
     assert result[0][0].doc == "Doc1"
     assert result[1][0].doc == "Doc2"
     assert len(result[0][1]) == 1
     assert len(result[1][1]) == 1
-
 
 
 def test_arg_parser_default():
@@ -229,7 +226,6 @@ def test_arg_parser_check_short_flag():
     assert args.check is True
 
 
-
 def test_example_tests_rejects_unknown_keys():
     with pytest.raises(ValidationError):
         ExampleTests(**{"wf_editor": "some value"})
@@ -238,7 +234,6 @@ def test_example_tests_rejects_unknown_keys():
 def test_example_tests_accepts_valid_keys():
     et = ExampleTests(workflow_editor="some test description")
     assert et.workflow_editor == "some test description"
-
 
 
 def _extract_examples(root: YAMLRootModel) -> list[Example]:
@@ -257,9 +252,7 @@ def test_validate_api_test_refs_bad_file():
     """Mutated api_test ref with nonexistent file should be caught."""
     ex = Example(
         label="BAD_FILE",
-        tests=ExampleTests(
-            tool_runtime=ToolRuntimeApi(api_test="nonexistent_file.py::some_func")
-        ),
+        tests=ExampleTests(tool_runtime=ToolRuntimeApi(api_test="nonexistent_file.py::some_func")),
     )
     errors = validate_api_test_refs([ex])
     assert len(errors) == 1
@@ -270,9 +263,7 @@ def test_validate_api_test_refs_bad_function():
     """Mutated api_test ref with real file but nonexistent function should be caught."""
     ex = Example(
         label="BAD_FUNC",
-        tests=ExampleTests(
-            tool_runtime=ToolRuntimeApi(api_test="test_tool_execute.py::nonexistent_function")
-        ),
+        tests=ExampleTests(tool_runtime=ToolRuntimeApi(api_test="test_tool_execute.py::nonexistent_function")),
     )
     errors = validate_api_test_refs([ex])
     assert len(errors) == 1
@@ -283,14 +274,11 @@ def test_validate_api_test_refs_bad_method():
     """Mutated api_test ref with real class but nonexistent method should be caught."""
     ex = Example(
         label="BAD_METHOD",
-        tests=ExampleTests(
-            tool_runtime=ToolRuntimeApi(api_test="test_tools.py::TestToolsApi::nonexistent_method")
-        ),
+        tests=ExampleTests(tool_runtime=ToolRuntimeApi(api_test="test_tools.py::TestToolsApi::nonexistent_method")),
     )
     errors = validate_api_test_refs([ex])
     assert len(errors) == 1
     assert "nonexistent_method" in errors[0]
-
 
 
 def test_validate_tool_refs_clean():
@@ -305,14 +293,11 @@ def test_validate_tool_refs_bad_tool():
     """Nonexistent tool XML should be caught."""
     ex = Example(
         label="BAD_TOOL",
-        tests=ExampleTests(
-            tool_runtime=ToolRuntimeFramework(tool="nonexistent_tool_xyz")
-        ),
+        tests=ExampleTests(tool_runtime=ToolRuntimeFramework(tool="nonexistent_tool_xyz")),
     )
     errors = validate_tool_refs([ex])
     assert len(errors) == 1
     assert "nonexistent_tool_xyz" in errors[0]
-
 
 
 def test_validate_workflow_editor_refs_clean():
@@ -332,7 +317,6 @@ def test_validate_workflow_editor_refs_bad_ref():
     errors = validate_workflow_editor_refs([ex])
     assert len(errors) == 1
     assert "totally nonexistent test description xyz" in errors[0]
-
 
 
 def test_all_tested_examples_have_then():
@@ -391,9 +375,7 @@ def test_invalid_then_map_over_no_sub_collection():
     """InvalidThen with bare mapOver: tool(i=mapOver(C))"""
     then = InvalidThen(
         type="invalid",
-        invocation=ToolInvocation(
-            inputs={"i": MapOverInput(type="map_over", collection="C")}
-        ),
+        invocation=ToolInvocation(inputs={"i": MapOverInput(type="map_over", collection="C")}),
     )
     assert then.as_latex() == expression_to_latex("tool(i=mapOver(C))", wrap=False)
 
@@ -474,9 +456,7 @@ def test_map_over_then_sub_collection():
                 elements={
                     "el1": ToolOutputRef(
                         type="tool_output_ref",
-                        invocation=ToolInvocation(
-                            inputs={"i": CollectionInput(type="collection", ref="C\\_PAIRED")}
-                        ),
+                        invocation=ToolInvocation(inputs={"i": CollectionInput(type="collection", ref="C\\_PAIRED")}),
                         output="o",
                     ),
                 },
@@ -564,21 +544,23 @@ def test_dataset_list_input_as_latex():
 
 
 def test_nested_elements_as_latex():
-    ne = NestedElements.model_validate({
-        "type": "nested_elements",
-        "elements": {
-            "forward": {
-                "type": "tool_output_ref",
-                "invocation": {"inputs": {"i": {"type": "dataset", "ref": "d_f"}}},
-                "output": "o",
+    ne = NestedElements.model_validate(
+        {
+            "type": "nested_elements",
+            "elements": {
+                "forward": {
+                    "type": "tool_output_ref",
+                    "invocation": {"inputs": {"i": {"type": "dataset", "ref": "d_f"}}},
+                    "output": "o",
+                },
+                "reverse": {
+                    "type": "tool_output_ref",
+                    "invocation": {"inputs": {"i": {"type": "dataset", "ref": "d_r"}}},
+                    "output": "o",
+                },
             },
-            "reverse": {
-                "type": "tool_output_ref",
-                "invocation": {"inputs": {"i": {"type": "dataset", "ref": "d_r"}}},
-                "output": "o",
-            },
-        },
-    })
+        }
+    )
     result = ne.as_latex()
     assert "\\text{forward}=" in result
     assert "\\text{reverse}=" in result
@@ -586,23 +568,25 @@ def test_nested_elements_as_latex():
 
 
 def test_collection_output_with_ellipsis_as_latex():
-    co = CollectionOutput.model_validate({
-        "type": "collection",
-        "collection_type": "list",
-        "elements": {
-            "el1": {
-                "type": "tool_output_ref",
-                "invocation": {"inputs": {"i": {"type": "dataset", "ref": "d_1"}}},
-                "output": "o",
+    co = CollectionOutput.model_validate(
+        {
+            "type": "collection",
+            "collection_type": "list",
+            "elements": {
+                "el1": {
+                    "type": "tool_output_ref",
+                    "invocation": {"inputs": {"i": {"type": "dataset", "ref": "d_1"}}},
+                    "output": "o",
+                },
+                "...": {"type": "ellipsis"},
+                "eln": {
+                    "type": "tool_output_ref",
+                    "invocation": {"inputs": {"i": {"type": "dataset", "ref": "d_n"}}},
+                    "output": "o",
+                },
             },
-            "...": {"type": "ellipsis"},
-            "eln": {
-                "type": "tool_output_ref",
-                "invocation": {"inputs": {"i": {"type": "dataset", "ref": "d_n"}}},
-                "output": "o",
-            },
-        },
-    })
+        }
+    )
     result = co.as_latex()
     assert "\\text{list}" in result
     assert ",...," in result

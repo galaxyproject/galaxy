@@ -2,8 +2,8 @@
 
 # how to use this function...
 # PYTHONPATH=lib python lib/galaxy/model/dataset_collections/types/semantics.py
-import ast
 import argparse
+import ast
 import os
 import re
 import sys
@@ -99,7 +99,9 @@ class CollectionDefinition(NamedTuple):
 
     def as_latex(self) -> str:
         collection_type = self.collection_type.replace("_", "\\_")
-        return f"\\text{{CollectionInstance<}}{collection_type},{_assumption_elements_to_latex(self.elements)}\\text{{>}}"
+        return (
+            f"\\text{{CollectionInstance<}}{collection_type},{_assumption_elements_to_latex(self.elements)}\\text{{>}}"
+        )
 
 
 class CollectionDeclarations(BaseModel):
@@ -186,7 +188,9 @@ class DatasetListInput(BaseModel):
         return "[" + ",".join(self.refs) + "]"
 
 
-InputBinding = Annotated[Union[DatasetInput, MapOverInput, CollectionInput, DatasetListInput], Field(discriminator="type")]
+InputBinding = Annotated[
+    Union[DatasetInput, MapOverInput, CollectionInput, DatasetListInput], Field(discriminator="type")
+]
 
 
 class ToolInvocation(BaseModel):
@@ -228,7 +232,9 @@ class NestedElements(BaseModel):
         return _output_elements_to_latex(self.elements)
 
 
-OutputBinding = Annotated[Union[DatasetOutput, EllipsisMarker, ToolOutputRef, NestedElements], Field(discriminator="type")]
+OutputBinding = Annotated[
+    Union[DatasetOutput, EllipsisMarker, ToolOutputRef, NestedElements], Field(discriminator="type")
+]
 NestedElements.model_rebuild()
 
 
@@ -428,7 +434,13 @@ def validate_workflow_editor_refs(examples: list["Example"]) -> list[str]:
     errors: list[str] = []
     test_file = os.path.join(
         galaxy_directory(),
-        "client", "src", "components", "Workflow", "Editor", "modules", "terminals.test.ts",
+        "client",
+        "src",
+        "components",
+        "Workflow",
+        "Editor",
+        "modules",
+        "terminals.test.ts",
     )
     if not os.path.exists(test_file):
         return [f"workflow editor test file not found: {test_file}"]
@@ -440,7 +452,7 @@ def validate_workflow_editor_refs(examples: list["Example"]) -> list[str]:
             continue
         desc = ex.tests.workflow_editor
         if desc not in it_descriptions:
-            errors.append(f"[{ex.label}] workflow_editor test not found: \"{desc}\"")
+            errors.append(f'[{ex.label}] workflow_editor test not found: "{desc}"')
     return errors
 
 
@@ -490,9 +502,7 @@ def generate_docs():
                     if not example.is_valid:
                         validity_str = "\\text{ is invalid}"
                     then_latex = example.then.as_latex()
-                    markdown_content.write(
-                        f"\n\nthen\n\n$${then_latex}{validity_str}$$\n\n"
-                    )
+                    markdown_content.write(f"\n\nthen\n\n$${then_latex}{validity_str}$$\n\n")
                 markdown_content.write(":::\n\n")
             markdown_content.write("\n\n</details><br>\n\n")
         markdown_content.write("\n\n")
