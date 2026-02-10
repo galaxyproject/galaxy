@@ -317,6 +317,18 @@ def test_validate_workflow_editor_refs_bad_ref():
 
 
 
+def test_all_tested_examples_have_then():
+    """Every example with test references should also have a then expression."""
+    root = _load_root_model()
+    missing = []
+    for entry in root.root:
+        if isinstance(entry, ExampleEntry):
+            ex = entry.example
+            if ex.tests and not ex.then:
+                missing.append(ex.label)
+    assert missing == [], f"Examples with tests but no then: {missing}"
+
+
 def test_check_returns_no_errors():
     """check() against current YAML should return empty error list."""
     errors = check()
