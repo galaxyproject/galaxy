@@ -143,7 +143,7 @@ class BaseJobRunner:
                         alive = True
                     yield thread
 
-    def run_next(self):
+    def run_next(self) -> None:
         """Run the next item in the work queue (a job waiting to run)"""
         while self._should_stop is False:
             with self.app.model.session():  # Create a Session instance and ensure it's closed.
@@ -180,7 +180,7 @@ class BaseJobRunner:
                 except Exception:
                     log.exception(f"({job_id}) Unhandled exception calling {name}")
                     if not isinstance(arg, JobState):
-                        job_state = JobState(job_wrapper=arg, job_destination={})
+                        job_state = JobState(job_wrapper=arg, job_destination=JobDestination())
                     else:
                         job_state = arg
                     if method != self.fail_job:
