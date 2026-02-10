@@ -56,7 +56,14 @@ function itemToX(item: components["schemas"]["WorkflowJobMetric"]) {
         return item.tool_id;
     } else if (groupBy.value === "step_id") {
         // Handle both int (top-level) and string (subworkflow) step indices
-        const stepDisplay = typeof item.step_index === "number" ? item.step_index + 1 : item.step_index;
+        // API returns 0-based indices, display as 1-based
+        const stepDisplay =
+            typeof item.step_index === "number"
+                ? item.step_index + 1
+                : item.step_index
+                      .split(".")
+                      .map((part) => String(parseInt(part) + 1))
+                      .join(".");
         return `${stepDisplay}: ${item.step_label || item.tool_id}`;
     } else {
         throw Error("Cannot happen");
