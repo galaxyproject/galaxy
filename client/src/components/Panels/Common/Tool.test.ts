@@ -13,7 +13,7 @@ const localVue = getLocalVue();
 describe("Tool", () => {
     test("test tool", () => {
         const pinia = createTestingPinia({ createSpy: vi.fn });
-        const wrapper = mount(Tool, {
+        const wrapper = mount(Tool as object, {
             propsData: {
                 tool: {
                     id: "test_tool",
@@ -27,11 +27,11 @@ describe("Tool", () => {
         nameElement.trigger("click");
         expect(wrapper.emitted().onClick).toBeDefined();
         const labelsElement = wrapper.find(".labels");
-        expect(labelsElement.children).toBeUndefined();
+        expect(labelsElement.element.children.length).toBe(0);
     });
     test("test tool hide name, test description", () => {
         const pinia = createTestingPinia({ createSpy: vi.fn });
-        const wrapper = mount(Tool, {
+        const wrapper = mount(Tool as object, {
             propsData: {
                 tool: {
                     id: "test_tool",
@@ -51,7 +51,7 @@ describe("Tool", () => {
 
     test("favorite button is focusable for keyboard navigation", async () => {
         const pinia = createTestingPinia({ createSpy: vi.fn });
-        const wrapper = mount(Tool, {
+        const wrapper = mount(Tool as object, {
             propsData: {
                 tool: {
                     id: "test_tool",
@@ -68,7 +68,7 @@ describe("Tool", () => {
 
         const favoriteButton = wrapper.find('.tool-favorite-button-hover[data-tool-id="test_tool"]');
         expect(favoriteButton.exists()).toBe(true);
-        favoriteButton.element.focus();
+        (favoriteButton.element as HTMLElement).focus();
         expect(document.activeElement).toBe(favoriteButton.element);
 
         wrapper.destroy();
