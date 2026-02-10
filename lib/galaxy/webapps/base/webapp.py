@@ -390,7 +390,13 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                         self.user = None
                         self.galaxy_session = None
                     else:
-                        self.response.send_redirect(url_for("/login"))
+                        self.response.send_redirect(
+                            url_for(
+                                "/login/start",
+                                message="You have been logged out due to inactivity. Please log in again to continue using Galaxy.",
+                                status="info",
+                            )
+                        )
                 else:
                     self.galaxy_session.last_action = now
                     self.sa_session.add(self.galaxy_session)
