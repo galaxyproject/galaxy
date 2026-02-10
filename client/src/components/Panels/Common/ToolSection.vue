@@ -16,7 +16,6 @@ import ToolPanelLinks from "./ToolPanelLinks.vue";
 const emit = defineEmits<{
     (e: "onClick", tool: ToolType, evt: Event): void;
     (e: "onFilter", filter: string): void;
-    (e: "onOperation", tool: any, evt: Event): void;
     (e: "onLabelToggle", labelId: string): void;
 }>();
 
@@ -27,8 +26,6 @@ interface Props {
     queryFilter?: string;
     disableFilter?: boolean;
     hideName?: boolean;
-    operationTitle?: string;
-    operationIcon?: string;
     expanded?: boolean;
     sortItems?: boolean;
     hasFilterButton?: boolean;
@@ -41,8 +38,6 @@ const props = withDefaults(defineProps<Props>(), {
     queryFilter: "",
     disableFilter: false,
     hideName: false,
-    operationTitle: "",
-    operationIcon: "",
     expanded: false,
     sortItems: true,
     hasFilterButton: false,
@@ -152,9 +147,6 @@ function checkFilter() {
 function onClick(tool: ToolType, evt: Event) {
     emit("onClick", tool, evt);
 }
-function onOperation(tool: any, evt: Event) {
-    emit("onOperation", tool, evt);
-}
 function onLabelToggle(labelId: string) {
     emit("onLabelToggle", labelId);
 }
@@ -210,10 +202,7 @@ function getCollapsedState(id: string): boolean | undefined {
                         class="ml-2"
                         :tool="el"
                         :hide-name="hideName"
-                        :operation-title="operationTitle"
-                        :operation-icon="operationIcon"
                         :show-favorite-button="props.showFavoriteButton || searchActive"
-                        @onOperation="onOperation"
                         @onClick="onClick" />
                 </template>
             </div>
@@ -228,10 +217,7 @@ function getCollapsedState(id: string): boolean | undefined {
         v-else-if="isTool(props.category)"
         :tool="props.category"
         :hide-name="hideName"
-        :operation-title="operationTitle"
-        :operation-icon="operationIcon"
         :show-favorite-button="props.showFavoriteButton || searchActive"
-        @onOperation="onOperation"
         @onClick="onClick" />
 </template>
 

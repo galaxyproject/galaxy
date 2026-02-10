@@ -28,31 +28,6 @@ describe("Tool", () => {
         expect(wrapper.emitted().onClick).toBeDefined();
         const labelsElement = wrapper.find(".labels");
         expect(labelsElement.children).toBeUndefined();
-        const operationElement = wrapper.find(".operation");
-        expect(operationElement.classes()).toEqual(expect.arrayContaining(["operation"]));
-        operationElement.trigger("click");
-        expect(wrapper.emitted().onOperation).toBeDefined();
-    });
-    test("test tool operation", () => {
-        const pinia = createTestingPinia({ createSpy: vi.fn });
-        const wrapper = mount(Tool, {
-            propsData: {
-                tool: {
-                    id: "test_tool",
-                    name: "name",
-                },
-                operationIcon: "operationIconClass",
-                operationTitle: "operationTitle",
-            },
-            localVue,
-            pinia,
-        });
-        const nameElement = wrapper.findAll(".name");
-        expect(nameElement.at(0).text()).toBe("name");
-        const operationElement = wrapper.find(".operation");
-        expect(operationElement.classes()).toEqual(expect.arrayContaining(["operationIconClass"]));
-        const title = operationElement.attributes("title");
-        expect(title).toBe("operationTitle");
     });
     test("test tool hide name, test description", () => {
         const pinia = createTestingPinia({ createSpy: vi.fn });

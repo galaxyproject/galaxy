@@ -11,22 +11,17 @@ import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue
 
 interface Props {
     tool: ToolType;
-    operationTitle?: string;
-    operationIcon?: string;
     hideName?: boolean;
     showFavoriteButton?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    operationTitle: "",
-    operationIcon: "",
     hideName: false,
     showFavoriteButton: false,
 });
 
 const emit = defineEmits<{
     (e: "onClick", tool: ToolType, evt: MouseEvent): void;
-    (e: "onOperation", tool: ToolType, evt: MouseEvent | KeyboardEvent): void;
 }>();
 
 const toolStore = useToolStore();
@@ -41,11 +36,6 @@ const toolTarget = computed(() => toolStore.getTargetById(props.tool.id));
 function onClick(evt: MouseEvent) {
     ariaAlert(`${props.tool.name} selected from panel`);
     emit("onClick", props.tool, evt);
-}
-
-function onOperation(evt: MouseEvent | KeyboardEvent) {
-    ariaAlert(`${props.tool.name} operation selected from panel`);
-    emit("onOperation", props.tool, evt);
 }
 </script>
 
@@ -73,14 +63,6 @@ function onOperation(evt: MouseEvent | KeyboardEvent) {
             </span>
             <span v-if="!props.hideName" class="name font-weight-bold">{{ props.tool.name }}</span>
             <span class="description">{{ props.tool.description }}</span>
-            <span
-                v-b-tooltip.hover
-                :class="['operation', 'float-right', props.operationIcon]"
-                role="button"
-                tabindex="0"
-                :title="props.operationTitle"
-                @keydown.enter.prevent="onOperation"
-                @click.stop.prevent="onOperation" />
         </a>
         <ToolFavoriteButton
             v-if="props.showFavoriteButton || isFavorite"
