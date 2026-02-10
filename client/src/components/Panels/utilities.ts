@@ -14,6 +14,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { orderBy } from "lodash";
 
+import { isTool, isToolSection } from "@/api/tools";
 import type { FilterSettings as ToolFilters, Tool, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
 import levenshteinDistance from "@/utils/levenshtein";
 
@@ -71,7 +72,7 @@ const FILTER_KEYS = {
 const STRING_REPLACEMENTS: string[] = [" ", "-", "\\(", "\\)", "'", ":", `"`];
 const MINIMUM_DL_LENGTH = 5; // for Demerau-Levenshtein distance
 const MINIMUM_WORD_MATCH = 2; // for word match
-const UNSECTIONED_SECTION = {
+const UNSECTIONED_SECTION: ToolSection = {
     // to return a section for unsectioned tools
     model_class: "ToolSection",
     id: "unsectioned",
@@ -243,25 +244,28 @@ export function getValidToolsInCurrentView(
 export function getValidToolsInEachSection(
     validToolIdsInCurrentView: string[],
     currentPanel: Record<string, Tool | ToolSection>,
-) {
+): Array<[string, Tool | ToolSection]> {
     // use a set for fast membership lookup
     const idSet = new Set(validToolIdsInCurrentView);
     return Object.entries(currentPanel).map(([id, section]) => {
-        const validatedSection = { ...section } as ToolSection;
-        // assign sectionTools to avoid repeated getter access
-        const sectionTools = validatedSection.tools;
-        if (sectionTools && Array.isArray(sectionTools)) {
-            // filter on valid tools and panel labels in this section
-            validatedSection.tools = sectionTools.filter((toolId) => {
-                if (typeof toolId === "string" && idSet.has(toolId)) {
-                    return true;
-                } else if (typeof toolId !== "string") {
-                    // is a special case where there is a label within a section
-                    return true;
-                }
-            });
+        if (isToolSection(section)) {
+            const validatedSection = { ...section };
+            // assign sectionTools to avoid repeated getter access
+            const sectionTools = validatedSection.tools;
+            if (sectionTools && Array.isArray(sectionTools)) {
+                // filter on valid tools and panel labels in this section
+                validatedSection.tools = sectionTools.filter((toolId) => {
+                    if (typeof toolId === "string" && idSet.has(toolId)) {
+                        return true;
+                    } else if (typeof toolId !== "string") {
+                        // is a special case where there is a label within a section
+                        return true;
+                    }
+                });
+            }
+            return [id, validatedSection];
         }
-        return [id, validatedSection];
+        return [id, section];
     });
 }
 
@@ -272,20 +276,18 @@ export function getValidToolsInEachSection(
  * @returns a `currentPanel` object containing sections/tools/labels that meet required conditions
  */
 export function getValidPanelItems(
-    items: (string | ToolSection)[][],
+    items: Array<[string, ToolSection | Tool]>,
     validToolIdsInCurrentView: string[],
     excludedSectionIds: string[] = [],
 ) {
     const validEntries = items.filter(([id, item]) => {
-        id = id as string;
-        item = item as Tool | ToolSection;
-        if (isToolObject(item as Tool) && validToolIdsInCurrentView.includes(id)) {
+        if (isTool(item) && validToolIdsInCurrentView.includes(id)) {
             // is a `Tool` and is in `localToolsById`
             return true;
-        } else if (item.tools === undefined) {
+        } else if (!isToolSection(item)) {
             // is neither a `Tool` nor a `ToolSection`, maybe a `ToolSectionLabel`
             return true;
-        } else if (item.tools && item.tools.length > 0 && !excludedSectionIds.includes(id)) {
+        } else if ("tools" in item && item.tools?.length && !excludedSectionIds.includes(id)) {
             // is a `ToolSection` with tools; is not an excluded section
             return true;
         } else {
@@ -483,12 +485,9 @@ export function createSortedResultPanel(matchedTools: SearchMatch[], currentPane
             const sections = Object.keys(currentPanel);
             for (const section of sections) {
                 let toolAdded = false;
-                const existingPanelItem = section ? currentPanel[section] : undefined;
-                if (existingPanelItem && section) {
-                    if (
-                        (existingPanelItem as ToolSection).tools &&
-                        (existingPanelItem as ToolSection).tools?.includes(match.id)
-                    ) {
+                const existingPanelItem = currentPanel[section];
+                if (existingPanelItem) {
+                    if ("tools" in existingPanelItem && existingPanelItem.tools?.includes(match.id)) {
                         // it has tools so is a section, and it has the tool we're looking for
 
                         // if we haven't seen this section yet, create it in the resultPanel
@@ -500,7 +499,7 @@ export function createSortedResultPanel(matchedTools: SearchMatch[], currentPane
                         existingSection.tools?.push(match.id);
                         acc[section] = existingSection;
                         toolAdded = true;
-                    } else if (isToolObject(existingPanelItem as Tool) && existingPanelItem.id === match.id) {
+                    } else if (isTool(existingPanelItem) && existingPanelItem.id === match.id) {
                         // it is a tool, and it is the tool we're looking for
 
                         // put in it the "Unsectioned Tools" section (if it doesn't exist, create it)
@@ -561,21 +560,6 @@ function closestSubstring(query: string, actualStr: string) {
         }
     }
     return null;
-}
-
-export function isToolObject(tool: Tool | ToolSection | ToolSectionLabel) {
-    // toolbox overhaul with typing will simplify this dramatically...
-    // Right now, our shorthand is that tools have no 'text', and don't match
-    // the model_class of the section/label.
-    if (
-        !(tool as ToolSectionLabel).text &&
-        tool.model_class !== "ToolSectionLabel" &&
-        tool.model_class !== "ToolSection" &&
-        (tool as ToolSection).tools === undefined
-    ) {
-        return true;
-    }
-    return false;
 }
 
 // given array and a substring, get the closest matching term for substring

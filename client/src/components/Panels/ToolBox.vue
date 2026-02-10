@@ -8,7 +8,7 @@ import { computed, type ComputedRef, type Ref, ref, watch } from "vue";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToolRouting } from "@/composables/route";
 import { useFavoriteSearchResults, useToolPanelFavorites } from "@/composables/toolPanelFavorites";
-import type { Tool, ToolSection as ToolSectionType, ToolSectionLabel } from "@/stores/toolStore";
+import type { Tool, ToolPanelItem, ToolSection as ToolSectionType } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -132,8 +132,6 @@ const localSectionsById = computed(() => {
     ) as Record<string, Tool | ToolSectionType>;
 });
 
-type PanelItem = Tool | ToolSectionType | ToolSectionLabel;
-
 // Use composable for favorites and recent tools management
 const {
     favoritesCollapsed,
@@ -189,14 +187,14 @@ const searchPanelSections = computed(() => {
 
 const toolsList = computed(() => Object.values(localToolsById.value));
 
-const flatResultsPanel = computed<Record<string, PanelItem> | null>(() => {
+const flatResultsPanel = computed<Record<string, ToolPanelItem> | null>(() => {
     if (!hasResults.value) {
         return null;
     }
     if (!hasMixedResults.value) {
-        return filterTools(localToolsById.value, results.value) as Record<string, PanelItem>;
+        return filterTools(localToolsById.value, results.value) as Record<string, ToolPanelItem>;
     }
-    const entries: Array<[string, PanelItem]> = [];
+    const entries: Array<[string, ToolPanelItem]> = [];
     entries.push([
         PANEL_LABEL_IDS.FAVORITES_RESULTS_LABEL,
         buildToolLabel(PANEL_LABEL_IDS.FAVORITES_RESULTS_LABEL, localize("Favorites")),
@@ -212,11 +210,11 @@ const flatResultsPanel = computed<Record<string, PanelItem> | null>(() => {
     return Object.fromEntries(entries);
 });
 
-const favoritesDefaultPanel = computed<Record<string, PanelItem> | null>(() => {
+const favoritesDefaultPanel = computed<Record<string, ToolPanelItem> | null>(() => {
     if (!props.favoritesDefault || query.value) {
         return null;
     }
-    const entries: Array<[string, PanelItem]> = [];
+    const entries: Array<[string, ToolPanelItem]> = [];
     const favorites = favoriteToolIdsInPanel.value;
     const recents = recentToolIdsToShow.value;
 
@@ -278,7 +276,7 @@ const sectionedResultsPanel = computed<Record<string, Tool | ToolSectionType> | 
  * If we have results for search, we show tools in sections or just tools,
  * based on whether `showSections` is true or false
  */
-const localPanel: ComputedRef<Record<string, PanelItem> | null> = computed(() => {
+const localPanel: ComputedRef<Record<string, ToolPanelItem> | null> = computed(() => {
     if (props.favoritesDefault && !query.value) {
         return favoritesDefaultPanel.value || {};
     }

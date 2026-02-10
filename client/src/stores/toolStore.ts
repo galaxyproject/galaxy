@@ -37,6 +37,7 @@ export interface Panel {
     searchable: boolean;
 }
 
+// TODO: Once the backend models are typed, we will replace these with the generated types from the schema.
 export interface Tool {
     model_class: string;
     id: string;
@@ -64,10 +65,11 @@ export interface Tool {
         changeset_revision: string;
         tool_shed: string;
     };
+    help?: string;
 }
 
 export interface ToolSection {
-    model_class: string;
+    model_class: "ToolSection";
     id: string;
     name: string;
     title?: string;
@@ -75,17 +77,19 @@ export interface ToolSection {
     description?: string;
     links?: Record<string, string>;
     tools?: (string | ToolSectionLabel)[];
-    elems?: (Tool | ToolSection)[];
+    elems?: (Tool | ToolSection)[]; // TODO: Are we sure that a `ToolSection` can have `ToolSection` children?
 }
 
 export interface ToolSectionLabel {
-    model_class: string;
+    model_class: "ToolSectionLabel";
     id: string;
     text: string;
     version?: string;
     description?: string | null;
     links?: Record<string, string> | null;
 }
+
+export type ToolPanelItem = Tool | ToolSection | ToolSectionLabel;
 
 export type ToolHelpData = {
     help?: string;

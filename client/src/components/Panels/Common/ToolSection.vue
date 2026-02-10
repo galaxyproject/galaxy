@@ -4,8 +4,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventBus } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
+import { isTool, isToolSection, isToolSectionLabel } from "@/api/tools";
 import { useConfig } from "@/composables/config";
-import { type Tool as ToolType, type ToolSection, type ToolSectionLabel, useToolStore } from "@/stores/toolStore";
+import { type Tool as ToolType, type ToolPanelItem, useToolStore } from "@/stores/toolStore";
 import ariaAlert from "@/utils/ariaAlert";
 
 import Tool from "./Tool.vue";
@@ -13,7 +14,7 @@ import ToolPanelLabel from "./ToolPanelLabel.vue";
 import ToolPanelLinks from "./ToolPanelLinks.vue";
 
 const emit = defineEmits<{
-    (e: "onClick", tool: any, evt: Event): void;
+    (e: "onClick", tool: ToolType, evt: Event): void;
     (e: "onFilter", filter: string): void;
     (e: "onOperation", tool: any, evt: Event): void;
     (e: "onLabelToggle", labelId: string): void;
@@ -22,14 +23,12 @@ const emit = defineEmits<{
 const eventBus = useEventBus<string>("open-tool-section");
 
 interface Props {
-    category: ToolSection | ToolType | ToolSectionLabel;
+    category: ToolPanelItem;
     queryFilter?: string;
     disableFilter?: boolean;
     hideName?: boolean;
     operationTitle?: string;
     operationIcon?: string;
-    toolKey?: string;
-    sectionName?: string;
     expanded?: boolean;
     sortItems?: boolean;
     hasFilterButton?: boolean;
@@ -44,8 +43,6 @@ const props = withDefaults(defineProps<Props>(), {
     hideName: false,
     operationTitle: "",
     operationIcon: "",
-    toolKey: "",
-    sectionName: "default",
     expanded: false,
     sortItems: true,
     hasFilterButton: false,
@@ -57,38 +54,39 @@ const props = withDefaults(defineProps<Props>(), {
 const { config, isConfigLoaded } = useConfig();
 const toolStore = useToolStore();
 
+/**
+ * We can have sections of 2 types:
+ * 1. Sections with `elems` property, which is an array of tools and sections.
+ * 2. Sections with `tools` property, which is an array of tool IDs (strings) and section labels.
+ *    In this case, we need to resolve the tool IDs to get the actual tools.
+ */
 const elems = computed(() => {
-    if (toolSection.value.elems !== undefined && toolSection.value.elems.length > 0) {
-        return toolSection.value.elems.filter((el) => el !== null && el !== undefined);
-    }
-    if (toolSection.value.tools !== undefined && toolSection.value.tools.length > 0) {
-        return toolSection.value.tools
-            .map((toolId) => {
-                const tool = toolStore.getToolForId(toolId as string);
-                if (!tool && typeof toolId !== "string") {
-                    return toolId as ToolSectionLabel;
-                } else {
-                    return tool;
-                }
-            })
-            .filter((el) => el !== null && el !== undefined);
+    if (isToolSection(props.category)) {
+        if (props.category.elems !== undefined && props.category.elems.length > 0) {
+            // This section has `elems`, we can return it as is.
+            return props.category.elems;
+        }
+        if (props.category.tools !== undefined && props.category.tools.length > 0) {
+            return props.category.tools
+                .map((toolOrLabel) => {
+                    if (typeof toolOrLabel === "string") {
+                        // This is a tool ID, we need to resolve it to get the actual `Tool`.
+                        return toolStore.getToolForId(toolOrLabel) || null;
+                    } else {
+                        // This is a `ToolSectionLabel`, we can return it as is.
+                        return toolOrLabel;
+                    }
+                })
+                .filter((el) => el !== null);
+        }
     }
     return [];
 });
 
-const toolSection = computed(() => props.category as ToolSection);
-const toolSectionLabel = computed(() => props.category as ToolSectionLabel);
-
-const name = computed(() => toolSection.value.title || toolSection.value.name);
-const isSection = computed(() => toolSection.value.tools !== undefined || toolSection.value.elems !== undefined);
-const hasElements = computed(() => elems.value.length > 0);
-const title = computed(() => props.category.description || undefined);
-const links = computed(() => toolSection.value.links || {});
-
 const opened = ref(props.expanded || checkFilter());
 const sectionToggleIcon = computed(() => (opened.value ? faChevronDown : faChevronRight));
 
-const sortedElements = computed(() => {
+const sortedElements = computed<Array<[string, ToolPanelItem]>>(() => {
     // If this.config.sortTools is true, sort the tools alphabetically
     // When administrators have manually inserted labels we respect
     // the order set and hope for the best from the integrated
@@ -98,12 +96,12 @@ const sortedElements = computed(() => {
         isConfigLoaded.value &&
         config.value.toolbox_auto_sort === true &&
         props.sortItems === true &&
-        !elems.value.some((el) => (el as ToolSectionLabel).text !== undefined && (el as ToolSectionLabel).text !== "")
+        !elems.value.some((el) => isToolSectionLabel(el) && el.text !== "")
     ) {
         const elements = [...elems.value];
         const sorted = elements.sort((a, b) => {
-            const aNameLower = (a as ToolSection).name.toLowerCase();
-            const bNameLower = (b as ToolSection).name.toLowerCase();
+            const aNameLower = "name" in a ? a.name.toLowerCase() : "";
+            const bNameLower = "name" in b ? b.name.toLowerCase() : "";
             if (aNameLower > bNameLower) {
                 return 1;
             } else if (aNameLower < bNameLower) {
@@ -128,9 +126,9 @@ watch(
 watch(
     () => opened.value,
     (newVal: boolean, oldVal: boolean) => {
-        if (newVal !== oldVal) {
+        if (newVal !== oldVal && isToolSection(props.category)) {
             const currentState = newVal ? "opened" : "closed";
-            ariaAlert(`${name.value} tools menu ${currentState}`);
+            ariaAlert(`${props.category.name} tools menu ${currentState}`);
         }
     },
 );
@@ -144,14 +142,14 @@ onUnmounted(() => {
 });
 
 function openToolSection(sectionId: string) {
-    if (isSection.value && sectionId == props.category?.id) {
+    if (isToolSection(props.category) && sectionId == props.category?.id) {
         toggleMenu(true);
     }
 }
 function checkFilter() {
     return !props.disableFilter && !!props.queryFilter;
 }
-function onClick(tool: any, evt: Event) {
+function onClick(tool: ToolType, evt: Event) {
     emit("onClick", tool, evt);
 }
 function onOperation(tool: any, evt: Event) {
@@ -169,11 +167,11 @@ function getCollapsedState(id: string): boolean | undefined {
 </script>
 
 <template>
-    <div v-if="isSection && hasElements" class="tool-panel-section">
+    <div v-if="isToolSection(props.category) && elems.length > 0" class="tool-panel-section">
         <div
             v-b-tooltip.topright.hover.noninteractive
-            :class="['toolSectionTitle', `tool-menu-section-${sectionName}`, 'tool-panel-divider']"
-            :title="title">
+            class="toolSectionTitle tool-panel-divider"
+            :title="props.category.description || undefined">
             <a
                 class="title-link tool-panel-divider-link"
                 href="javascript:void(0)"
@@ -183,15 +181,15 @@ function getCollapsedState(id: string): boolean | undefined {
                 <span class="tool-panel-divider-text">
                     <FontAwesomeIcon :icon="sectionToggleIcon" class="tool-panel-divider-toggle" />
                     <span class="name">
-                        {{ name }}
+                        {{ props.category.title || props.category.name }}
                     </span>
-                    <ToolPanelLinks :links="links" />
+                    <ToolPanelLinks v-if="props.category.links" :links="props.category.links" />
                     <button
-                        v-if="isSection && props.hasFilterButton"
+                        v-if="props.hasFilterButton"
                         v-b-tooltip.hover.noninteractive.bottom
                         title="Show full section"
                         class="inline-icon-button"
-                        @click.stop="emit('onFilter', `section:${toolSection.name}`)">
+                        @click.stop="emit('onFilter', `section:${props.category.name}`)">
                         <FontAwesomeIcon :icon="faFilter" />
                     </button>
                 </span>
@@ -201,17 +199,16 @@ function getCollapsedState(id: string): boolean | undefined {
             <div v-if="opened" data-description="opened tool panel section">
                 <template v-for="[key, el] in sortedElements">
                     <ToolPanelLabel
-                        v-if="toolSectionLabel.text || el.model_class === 'ToolSectionLabel'"
+                        v-if="isToolSectionLabel(el)"
                         :key="`label-${key}`"
                         :definition="el"
                         :collapsed="getCollapsedState(el.id)"
                         @toggle="onLabelToggle" />
                     <Tool
-                        v-else
+                        v-else-if="isTool(el)"
                         :key="`tool-${key}`"
                         class="ml-2"
                         :tool="el"
-                        :tool-key="toolKey"
                         :hide-name="hideName"
                         :operation-title="operationTitle"
                         :operation-icon="operationIcon"
@@ -222,22 +219,20 @@ function getCollapsedState(id: string): boolean | undefined {
             </div>
         </transition>
     </div>
-    <div v-else>
-        <ToolPanelLabel
-            v-if="toolSectionLabel.text"
-            :definition="toolSectionLabel"
-            :collapsed="getCollapsedState(toolSectionLabel.id)"
-            @toggle="onLabelToggle" />
-        <Tool
-            v-else
-            :tool="category"
-            :hide-name="hideName"
-            :operation-title="operationTitle"
-            :operation-icon="operationIcon"
-            :show-favorite-button="props.showFavoriteButton || searchActive"
-            @onOperation="onOperation"
-            @onClick="onClick" />
-    </div>
+    <ToolPanelLabel
+        v-else-if="isToolSectionLabel(props.category)"
+        :definition="props.category"
+        :collapsed="getCollapsedState(props.category.id)"
+        @toggle="onLabelToggle" />
+    <Tool
+        v-else-if="isTool(props.category)"
+        :tool="props.category"
+        :hide-name="hideName"
+        :operation-title="operationTitle"
+        :operation-icon="operationIcon"
+        :show-favorite-button="props.showFavoriteButton || searchActive"
+        @onOperation="onOperation"
+        @onClick="onClick" />
 </template>
 
 <style lang="scss" scoped>

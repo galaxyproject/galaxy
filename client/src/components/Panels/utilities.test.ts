@@ -36,7 +36,7 @@ const tempToolPanel = {
             id: "fasta/fastq",
             name: "FASTA/FASTQ",
         },
-    },
+    } as unknown as Record<string, ToolSection>,
 };
 const tempToolsList = {
     tools: {

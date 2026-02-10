@@ -88,7 +88,7 @@ function onKeydown(event: KeyboardEvent) {
                 @click.stop="clearRecentTools">
                 <FontAwesomeIcon :icon="faBroom" />
             </GButton>
-            <ToolPanelLinks :links="definition.links || undefined" />
+            <ToolPanelLinks v-if="definition.links" :links="definition.links" />
         </span>
     </div>
 </template>
