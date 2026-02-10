@@ -118,7 +118,8 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                 conda_activate
             fi
             if command -v uv >/dev/null; then
-                uv venv "$GALAXY_VIRTUAL_ENV"
+                # Ensure uv uses the active conda python to avoid picking a different interpreter on PATH.
+                uv venv --python "${CONDA_PREFIX}/bin/python" "$GALAXY_VIRTUAL_ENV"
             else
                 python3 -m venv "$GALAXY_VIRTUAL_ENV"
             fi
