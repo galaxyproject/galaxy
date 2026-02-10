@@ -38,7 +38,7 @@
         out: {o: dataset}
     - collections:
         C: [paired, {forward: d_f, reverse: d_r}]
-    then: "tool(i=mapOver(C)) ~> {o: collection<paired, {forward=tool(i=d_f)[o], reverse=tool(i=d_r)[o]}> }"
+    then: "tool(i=mapOver(C)) ~> {o: collection<paired,{forward=tool(i=d_f)[o], reverse=tool(i=d_r)[o]}>}"
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_collection"
@@ -349,7 +349,7 @@
     - collections:
         C: ["list:paired", {el1: {forward: d_f, reverse: d_r}}]
         "C\\_PAIRED": [paired, {forward: d_f,reverse: d_r}]
-    then: "tool(i=mapOver(C, 'paired')) ~> {o: collection<list, {el1: tool(i=C\\_PAIRED)[o]}>}"
+    then: "tool(i=mapOver(C, 'paired')) ~> {o: collection<list,{el1: tool(i=C\\_PAIRED)[o]}>}"
     tests:
         tool_runtime:
             api_test: "test_tools.py::TestToolsApi::test_subcollection_mapping"
