@@ -15,7 +15,13 @@ import {
 import { orderBy } from "lodash";
 
 import { isTool, isToolSection } from "@/api/tools";
-import type { FilterSettings as ToolFilters, Tool, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
+import type {
+    FilterSettings as ToolFilters,
+    Tool,
+    ToolPanelItem,
+    ToolSection,
+    ToolSectionLabel,
+} from "@/stores/toolStore";
 import levenshteinDistance from "@/utils/levenshtein";
 
 export const FAVORITES_KEYS = ["#favs", "#favorites", "#favourites"];
@@ -243,8 +249,8 @@ export function getValidToolsInCurrentView(
 /** Looks in each section of `currentPanel` and filters `section.tools` on `validToolIdsInCurrentView` */
 export function getValidToolsInEachSection(
     validToolIdsInCurrentView: string[],
-    currentPanel: Record<string, Tool | ToolSection>,
-): Array<[string, Tool | ToolSection]> {
+    currentPanel: Record<string, ToolPanelItem>,
+): Array<[string, ToolPanelItem]> {
     // use a set for fast membership lookup
     const idSet = new Set(validToolIdsInCurrentView);
     return Object.entries(currentPanel).map(([id, section]) => {
@@ -276,7 +282,7 @@ export function getValidToolsInEachSection(
  * @returns a `currentPanel` object containing sections/tools/labels that meet required conditions
  */
 export function getValidPanelItems(
-    items: Array<[string, ToolSection | Tool]>,
+    items: Array<[string, ToolPanelItem]>,
     validToolIdsInCurrentView: string[],
     excludedSectionIds: string[] = [],
 ) {

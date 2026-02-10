@@ -115,7 +115,7 @@ export const useToolStore = defineStore("toolStore", () => {
     const searchWorker = ref<Worker | undefined>(undefined);
     const toolsById = shallowRef<Record<string, Tool>>({});
     const toolResults = ref<Record<string, string[]>>({});
-    const toolSections = ref<Record<string, Record<string, Tool | ToolSection>>>({});
+    const toolSections = ref<Record<string, Record<string, ToolPanelItem>>>({});
     const fetchedHelpIds = ref<Set<string>>(new Set());
     const helpDataCached = ref<Record<string, ToolHelpData>>({});
 
@@ -326,7 +326,7 @@ export const useToolStore = defineStore("toolStore", () => {
         );
     }
 
-    function saveToolSections(panelView: string, newPanel: { [id: string]: ToolSection | Tool }) {
+    function saveToolSections(panelView: string, newPanel: { [id: string]: ToolPanelItem }) {
         Vue.set(toolSections.value, panelView, newPanel);
     }
 
