@@ -2740,6 +2740,11 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
         super().validate(value, trans=trans)
         if not value:
             return  # value is not set yet, do not validate
+        # Skip file source validation in workflow building mode to allow workflows
+        # referencing removed file sources to be exported/viewed. Users can then
+        # download and edit them. Validation still occurs during tool execution.
+        if trans.workflow_building_mode:
+            return
         file_source_path = trans.app.file_sources.get_file_source_path(value)
         file_source = file_source_path.file_source
         if file_source is None:
