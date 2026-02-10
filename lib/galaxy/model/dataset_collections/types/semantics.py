@@ -2,8 +2,10 @@
 
 # how to use this function...
 # PYTHONPATH=lib python lib/galaxy/model/dataset_collections/types/semantics.py
+import ast
 import argparse
 import os
+import re
 import sys
 from io import StringIO
 from typing import (
@@ -16,6 +18,7 @@ from typing import (
 import yaml
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     RootModel,
 )
@@ -43,6 +46,8 @@ ToolRuntimeTest = Union[ToolRuntimeApi, ToolRuntimeFramework]
 
 
 class ExampleTests(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     tool_runtime: Optional[ToolRuntimeTest] = None
     workflow_editor: Optional[str] = None
 
@@ -170,9 +175,96 @@ def main(argv=None) -> None:
     generate_docs()
 
 
-def check():
-    # todo
-    pass
+def _load_examples() -> list["Example"]:
+    semantics_yaml = yaml.safe_load(
+        resource_string("galaxy.model.dataset_collections.types", "collection_semantics.yml")
+    )
+    root = YAMLRootModel.model_validate(semantics_yaml)
+    return [e.example for e in root.root if isinstance(e, ExampleEntry)]
+
+
+def check() -> list[str]:
+    examples = _load_examples()
+    errors: list[str] = []
+    errors.extend(validate_api_test_refs(examples))
+    errors.extend(validate_tool_refs(examples))
+    errors.extend(validate_workflow_editor_refs(examples))
+    return errors
+
+
+def validate_api_test_refs(examples: list["Example"]) -> list[str]:
+    errors: list[str] = []
+    api_test_dir = os.path.join(galaxy_directory(), "lib", "galaxy_test", "api")
+    for ex in examples:
+        if not ex.tests or not ex.tests.tool_runtime:
+            continue
+        if not isinstance(ex.tests.tool_runtime, ToolRuntimeApi):
+            continue
+        ref = ex.tests.tool_runtime.api_test
+        parts = ref.split("::")
+        filename = parts[0]
+        filepath = os.path.join(api_test_dir, filename)
+        if not os.path.exists(filepath):
+            errors.append(f"[{ex.label}] api_test file not found: {filename}")
+            continue
+        with open(filepath) as f:
+            tree = ast.parse(f.read(), filename=filepath)
+        if len(parts) == 2:
+            func_name = parts[1]
+            found = any(
+                isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == func_name
+                for node in ast.walk(tree)
+            )
+            if not found:
+                errors.append(f"[{ex.label}] api_test function not found: {ref}")
+        elif len(parts) == 3:
+            class_name, method_name = parts[1], parts[2]
+            found = False
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef) and node.name == class_name:
+                    found = any(
+                        isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child.name == method_name
+                        for child in node.body
+                    )
+                    break
+            if not found:
+                errors.append(f"[{ex.label}] api_test method not found: {ref}")
+    return errors
+
+
+def validate_tool_refs(examples: list["Example"]) -> list[str]:
+    errors: list[str] = []
+    tools_dir = os.path.join(galaxy_directory(), "test", "functional", "tools")
+    for ex in examples:
+        if not ex.tests or not ex.tests.tool_runtime:
+            continue
+        if not isinstance(ex.tests.tool_runtime, ToolRuntimeFramework):
+            continue
+        tool_id = ex.tests.tool_runtime.tool
+        tool_path = os.path.join(tools_dir, f"{tool_id}.xml")
+        if not os.path.exists(tool_path):
+            errors.append(f"[{ex.label}] framework tool XML not found: {tool_id}.xml")
+    return errors
+
+
+def validate_workflow_editor_refs(examples: list["Example"]) -> list[str]:
+    errors: list[str] = []
+    test_file = os.path.join(
+        galaxy_directory(),
+        "client", "src", "components", "Workflow", "Editor", "modules", "terminals.test.ts",
+    )
+    if not os.path.exists(test_file):
+        return [f"workflow editor test file not found: {test_file}"]
+    with open(test_file) as f:
+        content = f.read()
+    it_descriptions = set(re.findall(r'it\(["\'](.+?)["\']\s*,', content))
+    for ex in examples:
+        if not ex.tests or not ex.tests.workflow_editor:
+            continue
+        desc = ex.tests.workflow_editor
+        if desc not in it_descriptions:
+            errors.append(f"[{ex.label}] workflow_editor test not found: \"{desc}\"")
+    return errors
 
 
 def generate_docs():
