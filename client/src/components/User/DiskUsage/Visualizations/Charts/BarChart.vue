@@ -130,7 +130,7 @@ function onNewView(view: View) {
 </script>
 
 <template>
-    <BCard class="mb-3">
+    <BCard class="mb-3" header-class="p-0">
         <template v-slot:header>
             <h4 class="text-center my-1">
                 <slot name="title">
