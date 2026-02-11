@@ -302,6 +302,12 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             directory_contents = sorted(os.listdir(config_directory))
             directory_config_files = [config_file for config_file in directory_contents if config_file.endswith(".xml")]
             config_filenames.extend(directory_config_files)
+
+        # Pre-parse tool XML sources in parallel if enabled
+        parallel_tool_loading = getattr(self.app.config, "parallel_tool_loading", False)
+        if parallel_tool_loading:
+            self._preload_tool_sources_parallel(config_filenames)
+
         for config_filename in config_filenames:
             if not self.can_load_config_file(config_filename):
                 continue
@@ -318,7 +324,62 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                     raise
             except Exception:
                 log.exception("Error loading tools defined in config %s", config_filename)
+
+        # Clear pre-loaded tool sources cache to free memory
+        self._clear_preloaded_tool_sources()
+
         log.debug("Reading tools from config files finished %s", execution_timer)
+
+    def _preload_tool_sources_parallel(self, config_filenames: List[str]) -> None:
+        """No-op. Subclasses may override to pre-parse tool XML sources in parallel."""
+        pass
+
+    def _clear_preloaded_tool_sources(self) -> None:
+        """No-op. Subclasses may override to clear pre-loaded tool sources cache."""
+        pass
+
+    def _collect_tool_paths_for_preload(self, config_filenames: List[str]) -> List[str]:
+        """Best-effort collection of tool file paths for parallel pre-parsing.
+
+        This method collects tool paths from top-level tools and tools one level
+        deep in sections. Deeply nested sections are not traversed. This is
+        intentional - tools not collected here will still be parsed on-demand
+        during normal loading. This is an optimization, not a complete enumeration.
+        """
+        tool_paths: List[str] = []
+        for config_filename in config_filenames:
+            if not self.can_load_config_file(config_filename):
+                continue
+            try:
+                tool_conf_source = get_toolbox_parser(config_filename)
+                tool_path = tool_conf_source.parse_tool_path()
+                tool_path = self.__resolve_tool_path(tool_path, config_filename)
+
+                for item in tool_conf_source.parse_items():
+                    item = ensure_tool_conf_item(item)
+                    if item.type == "tool":
+                        path_template = item.get("file")
+                        if path_template:
+                            template_kwds = self._path_template_kwds()
+                            path = string.Template(path_template).safe_substitute(**template_kwds)
+                            concrete_path = os.path.join(tool_path, path)
+                            if os.path.exists(concrete_path):
+                                tool_paths.append(concrete_path)
+                    elif item.type == "section":
+                        # Collect tools from within sections
+                        for section_elem in item.items:
+                            section_elem = ensure_tool_conf_item(section_elem)
+                            if section_elem.type == "tool":
+                                path_template = section_elem.get("file")
+                                if path_template:
+                                    template_kwds = self._path_template_kwds()
+                                    path = string.Template(path_template).safe_substitute(**template_kwds)
+                                    concrete_path = os.path.join(tool_path, path)
+                                    if os.path.exists(concrete_path):
+                                        tool_paths.append(concrete_path)
+            except Exception:
+                log.exception(f"Error collecting tools from config {config_filename}")
+        return tool_paths
 
     def _init_tools_from_config(self, config_filename: str) -> None:
         """
