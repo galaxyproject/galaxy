@@ -606,6 +606,23 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/api/tools/{tool_id}/versions/{tool_version}/tool_source": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Return the expanded tool document as a string. */
+        get: operations["tools__tool_source"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/api/users": {
         parameters: {
             query?: never
@@ -5118,6 +5135,49 @@ export interface operations {
         }
     }
     tools__parameter_test_case_xml_schema: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+                tool_id: string
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    tools__tool_source: {
         parameters: {
             query?: never
             header?: never

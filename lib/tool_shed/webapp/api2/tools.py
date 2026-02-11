@@ -16,6 +16,7 @@ from tool_shed.context import SessionRequestContext
 from tool_shed.managers.tools import (
     parsed_tool_model_cached_for,
     search,
+    tool_source_for,
 )
 from tool_shed.managers.trs import (
     get_tool,
@@ -196,3 +197,20 @@ class FastAPITools:
     ) -> Response:
         parsed_tool = parsed_tool_model_cached_for(trans, tool_id, tool_version)
         return json_schema_response_for_tool_state_model(TestCaseToolState, parsed_tool.inputs)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/tool_source",
+        operation_id="tools__tool_source",
+        summary="Return the expanded tool document as a string.",
+    )
+    def tool_source(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        tool_id: str = TOOL_ID_PATH_PARAM,
+        tool_version: str = TOOL_VERSION_PATH_PARAM,
+    ) -> Response:
+        source, _ = tool_source_for(trans, tool_id, tool_version)
+        return Response(
+            content=source.to_string(),
+            headers={"language": source.language},
+        )

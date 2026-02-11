@@ -76,3 +76,17 @@ class TestShedToolsApi(ShedApiTestCase):
         url = f"tools/{encoded_tool_id}/versions/1.1.0/parameter_request_schema"
         tool_response = self.api_interactor.get(url)
         tool_response.raise_for_status()
+
+    @skip_if_api_v1
+    def test_tool_source(self):
+        populator = self.populator
+        repository = populator.setup_column_maker_repo(prefix="toolsource")
+        tool_id = populator.tool_guid(self, repository, "Add_a_column1")
+        tool_shed_base, encoded_tool_id = encode_identifier(tool_id)
+        url = f"tools/{encoded_tool_id}/versions/1.1.0/tool_source"
+        tool_response = self.api_interactor.get(url)
+        tool_response.raise_for_status()
+        assert tool_response.headers["language"] == "xml"
+        content = tool_response.text
+        assert "Add_a_column1" in content
+        assert "<tool " in content
