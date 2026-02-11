@@ -5,7 +5,7 @@ import { nextTick } from "vue";
 import { onMounted, onUnmounted, type PropType, watch } from "vue";
 
 import { FAVORITES_KEYS, searchTools } from "@/components/Panels/utilities";
-import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
+import { type Tool, type ToolPanelItem, type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 import _l from "@/utils/localization";
 
@@ -36,7 +36,7 @@ const props = defineProps({
         required: true,
     },
     currentPanel: {
-        type: Object as PropType<Record<string, Tool | ToolSection>>,
+        type: Object as PropType<Record<string, ToolPanelItem>>,
         required: true,
     },
     useWorker: {
@@ -62,7 +62,7 @@ const { searchWorker } = storeToRefs(toolStore);
 interface RequestPayload {
     tools: Tool[];
     query: string;
-    currentPanel: Record<string, Tool | ToolSection>;
+    currentPanel: Record<string, ToolPanelItem>;
 }
 
 interface SearchEventQuery {

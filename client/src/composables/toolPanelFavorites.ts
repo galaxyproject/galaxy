@@ -62,6 +62,7 @@ export function useFavoriteSearchResults(
 ): {
     favoriteResults: ComputedRef<string[]>;
     nonFavoriteResults: ComputedRef<string[]>;
+    /** `true` if there are both favorite and non-favorite results */
     hasMixedResults: ComputedRef<boolean>;
 } {
     const favoriteResults = computed(() => results.value.filter((id) => favoriteToolIdSet.value.has(id)));

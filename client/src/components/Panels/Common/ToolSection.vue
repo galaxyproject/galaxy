@@ -9,6 +9,8 @@ import { useConfig } from "@/composables/config";
 import { type Tool as ToolType, type ToolPanelItem, useToolStore } from "@/stores/toolStore";
 import ariaAlert from "@/utils/ariaAlert";
 
+import { PANEL_LABEL_IDS } from "../panelViews";
+
 import Tool from "./Tool.vue";
 import ToolPanelLabel from "./ToolPanelLabel.vue";
 import ToolPanelLinks from "./ToolPanelLinks.vue";
@@ -31,7 +33,11 @@ interface Props {
     hasFilterButton?: boolean;
     searchActive?: boolean;
     showFavoriteButton?: boolean;
-    collapsedLabels?: Record<string, boolean>;
+    collapsedLabels?: {
+        [PANEL_LABEL_IDS.FAVORITES_LABEL]: boolean;
+        [PANEL_LABEL_IDS.FAVORITES_RESULTS_LABEL]: boolean;
+        [PANEL_LABEL_IDS.RECENT_TOOLS_LABEL]: boolean;
+    } | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -43,7 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
     hasFilterButton: false,
     searchActive: false,
     showFavoriteButton: false,
-    collapsedLabels: () => ({}),
+    collapsedLabels: null,
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -154,7 +160,15 @@ function toggleMenu(nextState = !opened.value) {
     opened.value = nextState;
 }
 function getCollapsedState(id: string): boolean | undefined {
-    return typeof props.collapsedLabels[id] === "boolean" ? props.collapsedLabels[id] : undefined;
+    const validStateLabels = [
+        PANEL_LABEL_IDS.FAVORITES_LABEL,
+        PANEL_LABEL_IDS.FAVORITES_RESULTS_LABEL,
+        PANEL_LABEL_IDS.RECENT_TOOLS_LABEL,
+    ] as const;
+    if (validStateLabels.includes(id as (typeof validStateLabels)[number])) {
+        return props.collapsedLabels ? props.collapsedLabels[id as (typeof validStateLabels)[number]] : undefined;
+    }
+    return undefined;
 }
 </script>
 

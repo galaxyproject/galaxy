@@ -250,7 +250,7 @@ describe("test helpers in tool searching utilities", () => {
 
 describe("getValidToolsInEachSection", () => {
     it("filters section tools to only include valid tool IDs", () => {
-        const validIds = ["__FILTER_FAILED_DATASETS__", "__ZIP_COLLECTION__", "liftOver1"];
+        const validIds = new Set(["__FILTER_FAILED_DATASETS__", "__ZIP_COLLECTION__", "liftOver1"]);
         const entries = getValidToolsInEachSection(validIds, toolsListInPanel);
 
         const collectionOps = entries.find(([id]) => id === "collection_operations");
@@ -265,7 +265,7 @@ describe("getValidToolsInEachSection", () => {
     });
 
     it("removes all tools from a section when none are valid", () => {
-        const validIds = ["liftOver1"];
+        const validIds = new Set(["liftOver1"]);
         const entries = getValidToolsInEachSection(validIds, toolsListInPanel);
 
         const collectionOps = entries.find(([id]) => id === "collection_operations");
@@ -288,7 +288,7 @@ describe("getValidToolsInEachSection", () => {
                 tools: ["tool_a", label as unknown as string, "tool_b"],
             } as ToolSection,
         };
-        const validIds = ["tool_a"];
+        const validIds = new Set(["tool_a"]);
         const entries = getValidToolsInEachSection(validIds, panel);
 
         const section = entries.find(([id]) => id === "test_section");
@@ -301,7 +301,7 @@ describe("getValidToolsInEachSection", () => {
     });
 
     it("passes through items without a tools array unchanged", () => {
-        const entries = getValidToolsInEachSection([], toolsListInPanel);
+        const entries = getValidToolsInEachSection(new Set(), toolsListInPanel);
 
         // testlabel1 is a ToolSectionLabel with no tools array
         const labelEntry = entries.find(([id]) => id === "testlabel1");
@@ -321,14 +321,14 @@ describe("getValidToolsInEachSection", () => {
             } as ToolSection,
         };
         const originalTools = [...(panel["sec"] as ToolSection).tools!];
-        getValidToolsInEachSection(["tool_x"], panel);
+        getValidToolsInEachSection(new Set(["tool_x"]), panel);
 
         // the original section should not be modified
         expect((panel["sec"] as ToolSection).tools).toEqual(originalTools);
     });
 
     it("returns entries in the same order as the panel", () => {
-        const entries = getValidToolsInEachSection(["__UNZIP_COLLECTION__", "liftOver1"], toolsListInPanel);
+        const entries = getValidToolsInEachSection(new Set(["__UNZIP_COLLECTION__", "liftOver1"]), toolsListInPanel);
         const ids = entries.map(([id]) => id);
         expect(ids).toEqual(["collection_operations", "liftOver", "testlabel1"]);
     });
@@ -337,7 +337,7 @@ describe("getValidToolsInEachSection", () => {
 describe("getValidPanelItems", () => {
     it("keeps sections with valid tools and removes empty sections", () => {
         // First pass: filter tools in sections
-        const validIds = ["__FILTER_FAILED_DATASETS__", "liftOver1"];
+        const validIds = new Set(["__FILTER_FAILED_DATASETS__", "liftOver1"]);
         const sectionEntries = getValidToolsInEachSection(validIds, toolsListInPanel);
 
         const result = getValidPanelItems(sectionEntries, validIds);
@@ -349,7 +349,7 @@ describe("getValidPanelItems", () => {
     });
 
     it("removes sections whose tools are all filtered out", () => {
-        const validIds = ["liftOver1"];
+        const validIds = new Set(["liftOver1"]);
         const sectionEntries = getValidToolsInEachSection(validIds, toolsListInPanel);
 
         const result = getValidPanelItems(sectionEntries, validIds);
@@ -359,7 +359,7 @@ describe("getValidPanelItems", () => {
     });
 
     it("excludes sections by excludedSectionIds", () => {
-        const validIds = ["__FILTER_FAILED_DATASETS__", "liftOver1"];
+        const validIds = new Set(["__FILTER_FAILED_DATASETS__", "liftOver1"]);
         const sectionEntries = getValidToolsInEachSection(validIds, toolsListInPanel);
 
         const result = getValidPanelItems(sectionEntries, validIds, ["liftOver"]);
@@ -368,7 +368,7 @@ describe("getValidPanelItems", () => {
     });
 
     it("keeps ToolSectionLabels (items without tools property)", () => {
-        const validIds = ["liftOver1"];
+        const validIds = new Set(["liftOver1"]);
         const sectionEntries = getValidToolsInEachSection(validIds, toolsListInPanel);
 
         const result = getValidPanelItems(sectionEntries, validIds);
@@ -398,7 +398,7 @@ describe("getValidPanelItems", () => {
             ],
         ];
 
-        const result = getValidPanelItems(items, ["standalone_tool"]);
+        const result = getValidPanelItems(items, new Set(["standalone_tool"]));
         expect(result["standalone_tool"]).toBeDefined();
         expect(result["some_section"]).toBeDefined();
     });
@@ -406,8 +406,8 @@ describe("getValidPanelItems", () => {
     it("pipeline: getValidToolsInEachSection → getValidPanelItems mirrors ToolBox.vue usage", () => {
         // Simulates the localSectionsById computed in ToolBox.vue
         const allToolIds = toolsList.map((t) => t.id);
-        const sectionEntries = getValidToolsInEachSection(allToolIds, toolsListInPanel);
-        const result = getValidPanelItems(sectionEntries, allToolIds);
+        const sectionEntries = getValidToolsInEachSection(new Set(allToolIds), toolsListInPanel);
+        const result = getValidPanelItems(sectionEntries, new Set(allToolIds));
 
         // All sections with tools should be present
         expect(result["collection_operations"]).toBeDefined();
@@ -421,8 +421,8 @@ describe("getValidPanelItems", () => {
 
     it("pipeline with exclusions: excludes specified section ids", () => {
         const allToolIds = toolsList.map((t) => t.id);
-        const sectionEntries = getValidToolsInEachSection(allToolIds, toolsListInPanel);
-        const result = getValidPanelItems(sectionEntries, allToolIds, ["collection_operations"]);
+        const sectionEntries = getValidToolsInEachSection(new Set(allToolIds), toolsListInPanel);
+        const result = getValidPanelItems(sectionEntries, new Set(allToolIds), ["collection_operations"]);
 
         expect(result["collection_operations"]).toBeUndefined();
         expect(result["liftOver"]).toBeDefined();
@@ -430,8 +430,8 @@ describe("getValidPanelItems", () => {
     });
 
     it("returns empty object when all sections are excluded or empty", () => {
-        const sectionEntries = getValidToolsInEachSection([], toolsListInPanel);
-        const result = getValidPanelItems(sectionEntries, []);
+        const sectionEntries = getValidToolsInEachSection(new Set(), toolsListInPanel);
+        const result = getValidPanelItems(sectionEntries, new Set());
 
         // Only the label should remain (no tools property)
         expect(result["collection_operations"]).toBeUndefined();

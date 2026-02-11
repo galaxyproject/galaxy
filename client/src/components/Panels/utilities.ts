@@ -52,18 +52,17 @@ export function buildToolEntries(toolIds: string[], toolsById: Record<string, To
 
 /** Filter panel to only include tools matching the provided tool IDs */
 export function filterPanelByToolIds(
-    panel: Record<string, Tool | ToolSection>,
+    panel: Record<string, ToolPanelItem>,
     toolIds: Set<string>,
 ): Record<string, Tool | ToolSection> {
     const filtered: Record<string, Tool | ToolSection> = {};
     for (const [key, item] of Object.entries(panel)) {
-        const section = item as ToolSection;
-        if (section.tools) {
-            const tools = section.tools.filter((toolId) => typeof toolId === "string" && toolIds.has(toolId));
+        if ("tools" in item && item?.tools) {
+            const tools = item.tools.filter((toolId) => typeof toolId === "string" && toolIds.has(toolId));
             if (tools.length > 0) {
-                filtered[key] = { ...section, tools };
+                filtered[key] = { ...item, tools };
             }
-        } else if ((item as Tool).id && toolIds.has((item as Tool).id)) {
+        } else if (isTool(item) && toolIds.has(item.id)) {
             filtered[key] = item;
         }
     }
@@ -217,13 +216,16 @@ export function filterTools(toolsById: Record<string, Tool>, results: string[]) 
     return filteredTools;
 }
 
-/** Returns a `toolsById` object containing tools that meet required conditions
- * based on params.
- * @param toolsById - object of tools, keyed by id
- * @param isWorkflowPanel - whether or not the ToolPanel is in Workflow Editor
- * @param excludedSectionIds - ids for sections whose tools will be excluded
+/** Returns a `toolsById` object containing tools that meet required conditions such as:
+ * - Not `hidden`
+ * - Not `disabled`
+ * - If in workflow editor panel, only tools that are `is_workflow_compatible`
+ * - Not in an excluded section (if `excludedSectionIds` provided)
+ * @param toolsById object of tools, keyed by id
+ * @param isWorkflowPanel whether or not the ToolPanel is in Workflow Editor
+ * @param excludedSectionIds ids for sections whose tools will be excluded
  */
-export function getValidToolsInCurrentView(
+export function getVisibleTools(
     toolsById: Record<string, Tool>,
     isWorkflowPanel = false,
     excludedSectionIds: string[] = [],
@@ -248,11 +250,9 @@ export function getValidToolsInCurrentView(
 
 /** Looks in each section of `currentPanel` and filters `section.tools` on `validToolIdsInCurrentView` */
 export function getValidToolsInEachSection(
-    validToolIdsInCurrentView: string[],
+    validToolIdsInCurrentView: Set<string>,
     currentPanel: Record<string, ToolPanelItem>,
 ): Array<[string, ToolPanelItem]> {
-    // use a set for fast membership lookup
-    const idSet = new Set(validToolIdsInCurrentView);
     return Object.entries(currentPanel).map(([id, section]) => {
         if (isToolSection(section)) {
             const validatedSection = { ...section };
@@ -261,7 +261,7 @@ export function getValidToolsInEachSection(
             if (sectionTools && Array.isArray(sectionTools)) {
                 // filter on valid tools and panel labels in this section
                 validatedSection.tools = sectionTools.filter((toolId) => {
-                    if (typeof toolId === "string" && idSet.has(toolId)) {
+                    if (typeof toolId === "string" && validToolIdsInCurrentView.has(toolId)) {
                         return true;
                     } else if (typeof toolId !== "string") {
                         // is a special case where there is a label within a section
@@ -283,11 +283,11 @@ export function getValidToolsInEachSection(
  */
 export function getValidPanelItems(
     items: Array<[string, ToolPanelItem]>,
-    validToolIdsInCurrentView: string[],
+    validToolIdsInCurrentView: Set<string>,
     excludedSectionIds: string[] = [],
 ) {
     const validEntries = items.filter(([id, item]) => {
-        if (isTool(item) && validToolIdsInCurrentView.includes(id)) {
+        if (isTool(item) && validToolIdsInCurrentView.has(id)) {
             // is a `Tool` and is in `localToolsById`
             return true;
         } else if (!isToolSection(item)) {
@@ -321,7 +321,7 @@ export function getValidPanelItems(
 export function searchTools(
     tools: Tool[],
     query: string,
-    currentPanel: Record<string, Tool | ToolSection>,
+    currentPanel: Record<string, ToolPanelItem>,
 ): {
     results: string[];
     resultPanel: Record<string, Tool | ToolSection>;
@@ -481,7 +481,7 @@ export function searchObjectsByKeys<T extends { id: string }>(
  * - idResults: array of tool ids that match the query
  * - resultPanel: a ToolPanel with only the results
  */
-export function createSortedResultPanel(matchedTools: SearchMatch[], currentPanel: Record<string, Tool | ToolSection>) {
+export function createSortedResultPanel(matchedTools: SearchMatch[], currentPanel: Record<string, ToolPanelItem>) {
     const idResults: string[] = [];
     // creating a sectioned results object ({section_id: [tool ids], ...}), keeping
     // track unique ids of each tool, and also sorting by indexed order of keys
@@ -510,11 +510,10 @@ export function createSortedResultPanel(matchedTools: SearchMatch[], currentPane
 
                         // put in it the "Unsectioned Tools" section (if it doesn't exist, create it)
                         const unsectionedId = UNSECTIONED_SECTION.id;
-                        let unsectionedSection = acc[unsectionedId] as ToolSection;
-                        if (!unsectionedSection) {
-                            unsectionedSection = { ...UNSECTIONED_SECTION };
-                            unsectionedSection.tools = [];
-                        }
+                        const unsectionedSection: ToolSection =
+                            acc[unsectionedId] && isToolSection(acc[unsectionedId])
+                                ? acc[unsectionedId]
+                                : buildToolSection(unsectionedId, UNSECTIONED_SECTION.name, []);
                         unsectionedSection.tools?.push(match.id);
                         acc[unsectionedId] = unsectionedSection;
                         toolAdded = true;
