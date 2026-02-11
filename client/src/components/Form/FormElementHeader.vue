@@ -2,13 +2,9 @@
 import { faCheck, faExclamation, faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
-import { computed, ref } from "vue";
-
-import { useUid } from "@/composables/utils/uid";
+import { computed } from "vue";
 
 import type { FormParameterTypes } from "./parameterTypes";
-
-import FormDataExtensions from "./Elements/FormData/FormDataExtensions.vue";
 
 const props = defineProps<{
     type?: FormParameterTypes;
@@ -16,19 +12,7 @@ const props = defineProps<{
     id: string;
     isEmpty: boolean;
     isOptional: boolean;
-    extensions?: string[];
 }>();
-
-// Rendering formats
-const formatsVisible = ref(false);
-const formatsButtonId = useUid("form-element-formats-");
-const renderFormats = computed(
-    () =>
-        props.type &&
-        ["data", "data_collection"].includes(props.type) &&
-        props.extensions?.length &&
-        props.extensions.indexOf("data") < 0,
-);
 
 const populatedClass = computed<string>(() => {
     if (props.hasAlert || (props.isEmpty && !props.isOptional)) {
@@ -55,14 +39,6 @@ const badgeData = computed(() => {
 
 <template>
     <div class="d-flex align-items-center flex-gapx-1">
-        <FormDataExtensions
-            v-if="renderFormats"
-            class="mr-1"
-            popover
-            minimal
-            :extensions="props.extensions || []"
-            :formats-button-id="formatsButtonId"
-            :formats-visible.sync="formatsVisible" />
         <slot name="badges" />
         <BBadge
             v-if="badgeData.message && props.type !== 'boolean'"

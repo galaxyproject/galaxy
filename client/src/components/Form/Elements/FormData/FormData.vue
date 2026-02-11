@@ -886,29 +886,21 @@ const noOptionsWarningMessage = computed(() => {
         @dragover.prevent
         @drop.prevent="onDrop">
         <div class="d-flex flex-gapx-1">
-            <div class="d-flex flex-column">
-                <FormDataContextButtons
-                    :variant="variant"
-                    :current-field="currentField"
-                    :can-browse="canBrowse"
-                    :loading="props.loading"
-                    :workflow-run="props.workflowRun"
-                    :collection-types="props.collectionTypes"
-                    :current-source="currentSource || undefined"
-                    :is-populated="currentValue && currentValue.length > 0"
-                    show-field-options
-                    :show-view-create-options="props.workflowRun && !usingSimpleSelect"
-                    :workflow-tab.sync="workflowTab"
-                    @create-collection-type="handleCollectionTypeChange"
-                    @on-browse="onBrowse"
-                    @set-current-field="(value) => (currentField = value)" />
-
-                <FormDataExtensions
-                    v-if="restrictsExtensions && !props.workflowRun"
-                    :extensions="props.extensions"
-                    :formats-button-id="formatsButtonId"
-                    :formats-visible.sync="formatsVisible" />
-            </div>
+            <FormDataContextButtons
+                :variant="variant"
+                :current-field="currentField"
+                :can-browse="canBrowse"
+                :loading="props.loading"
+                :workflow-run="props.workflowRun"
+                :collection-types="props.collectionTypes"
+                :current-source="currentSource || undefined"
+                :is-populated="currentValue && currentValue.length > 0"
+                show-field-options
+                :show-view-create-options="props.workflowRun && !usingSimpleSelect"
+                :workflow-tab.sync="workflowTab"
+                @create-collection-type="handleCollectionTypeChange"
+                @on-browse="onBrowse"
+                @set-current-field="(value) => (currentField = value)" />
 
             <div class="w-100 d-flex flex-gapx-1">
                 <FormSelect
@@ -958,6 +950,13 @@ const noOptionsWarningMessage = computed(() => {
                 :workflow-tab.sync="workflowTab"
                 @create-collection-type="handleCollectionTypeChange" />
         </div>
+
+        <FormDataExtensions
+            v-if="restrictsExtensions"
+            class="mt-1"
+            :extensions="props.extensions"
+            :formats-button-id="formatsButtonId"
+            :formats-visible.sync="formatsVisible" />
 
         <div :class="{ 'd-flex justify-content-between': props.workflowRun }">
             <div v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
