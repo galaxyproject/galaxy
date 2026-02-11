@@ -78,13 +78,13 @@ const FILTER_KEYS = {
 const STRING_REPLACEMENTS: string[] = [" ", "-", "\\(", "\\)", "'", ":", `"`];
 const MINIMUM_DL_LENGTH = 5; // for Demerau-Levenshtein distance
 const MINIMUM_WORD_MATCH = 2; // for word match
-const UNSECTIONED_SECTION: ToolSection = {
+export const UNSECTIONED_SECTION: ToolSection = {
     // to return a section for unsectioned tools
     model_class: "ToolSection",
     id: "unsectioned",
     name: "Unsectioned Tools",
     description: "Tools that don't appear under any section in the unsearched panel",
-};
+} as const;
 
 export interface SearchCommonKeys {
     [key: string]: number | undefined;

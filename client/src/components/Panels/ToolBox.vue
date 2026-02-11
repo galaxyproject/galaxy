@@ -24,6 +24,7 @@ import {
     getValidPanelItems,
     getValidToolsInCurrentView,
     getValidToolsInEachSection,
+    UNSECTIONED_SECTION,
 } from "./utilities";
 
 import GButton from "../BaseComponents/GButton.vue";
@@ -449,7 +450,8 @@ function onLabelToggle(labelId: string) {
                             :has-filter-button="
                                 hasResults &&
                                 currentPanelView === 'default' &&
-                                panelItem.id !== PANEL_LABEL_IDS.FAVORITES_RESULTS_SECTION
+                                panelItem.id !== PANEL_LABEL_IDS.FAVORITES_RESULTS_SECTION &&
+                                panelItem.id !== UNSECTIONED_SECTION.id
                             "
                             :search-active="hasResults"
                             :show-favorite-button="recentToolIdsToShowSet.has(panelItem.id)"
