@@ -83,7 +83,7 @@ eval-type-backport==0.3.1
 exceptiongroup==1.3.1
 executing==2.2.1
 fakeredis==2.33.0
-fastapi==0.128.3
+fastapi==0.128.8
 fastavro==1.12.1 ; sys_platform != 'emscripten'
 fastmcp==2.14.5
 filelock==3.20.3
