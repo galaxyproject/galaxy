@@ -42,6 +42,14 @@ galaxy.jobs.runners.condor module
    :undoc-members:
    :show-inheritance:
 
+galaxy.jobs.runners.htcondor module
+-----------------------------------
+
+.. automodule:: galaxy.jobs.runners.htcondor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.jobs.runners.drmaa module
 --------------------------------
 
