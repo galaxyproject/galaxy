@@ -15,6 +15,7 @@
     writable:
       label: Allow Galaxy to export data to eLabFTW?
       type: boolean
+      optional: true
       default: true
       help: |
         Allow Galaxy to write data to this eLabFTW instance. Set it to "Yes" if you want to export data from Galaxy to

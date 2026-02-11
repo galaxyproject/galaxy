@@ -16,11 +16,13 @@
           label: Server Host
           type: string
           help: Host of the OMERO Server to connect to. For example, to connect to the IDR use idr.openmicroscopy.org.
+          optional: true
           default: idr.openmicroscopy.org
       port:
           label: Port
           type: integer
           help: Port used to connect to the OMERO server.
+          optional: true
           default: 4064
       username:
           label: Username

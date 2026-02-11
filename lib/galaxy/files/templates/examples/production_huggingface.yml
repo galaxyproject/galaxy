@@ -8,6 +8,7 @@
       endpoint:
           label: Hugging Face Hub Endpoint
           type: string
+          optional: true
           help: |
               Custom endpoint of the Hugging Face Hub you are connecting to. This should be the full URL including the protocol (http or https) and the domain name.
               You can leave this blank to use the default Hugging Face Hub endpoint (https://huggingface.co).

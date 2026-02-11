@@ -217,6 +217,7 @@ LIBRARY_FTP_WITH_DEFAULT_SFTP_PORT = """
     port:
       type: integer
       help: Port used to connect to the SFTP server.
+      optional: true
       default: 22
   secrets:
     password:

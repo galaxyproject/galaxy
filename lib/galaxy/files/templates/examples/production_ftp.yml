@@ -25,12 +25,14 @@
     writable:
       label: Writable?
       type: boolean
+      optional: true
       default: false
       help: Is this an FTP server you have permission to write to?
     port:
       label: FTP Port
       type: integer
       help: Port used to connect to the FTP server.
+      optional: true
       default: 21
   secrets:
     password:
