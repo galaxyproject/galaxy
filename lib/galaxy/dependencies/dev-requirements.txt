@@ -115,7 +115,7 @@ owlrl==7.1.4
 packaging==25.0
 pathspec==1.0.4
 pfzy==0.3.4
-pillow==12.1.0
+pillow==12.1.1
 pkce==1.0.3
 platformdirs==4.5.1
 playwright==1.58.0
