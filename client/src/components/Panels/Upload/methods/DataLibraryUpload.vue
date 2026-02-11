@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faDatabase, faFile, faFolder, faLock, faPlus, faShieldAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BFormCheckbox, BPagination, BTable } from "bootstrap-vue";
+import { BAlert, BFormCheckbox, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import type {
@@ -13,6 +13,7 @@ import type {
 } from "@/api/libraries";
 import { getFolderContents, getLibraries, isLibraryFile } from "@/api/libraries";
 import type { BreadcrumbItem } from "@/components/Common";
+import type { TableField } from "@/components/Common/GTable.types";
 import { Model } from "@/components/FilesDialog/model";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
@@ -30,6 +31,7 @@ import type { LibraryDatasetItem } from "../types/uploadItem";
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbNavigation from "@/components/Common/BreadcrumbNavigation.vue";
+import GTable from "@/components/Common/GTable.vue";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
@@ -266,6 +268,20 @@ function onItemClick(item: SelectionItem) {
 }
 
 /**
+ * Handle library row click
+ */
+function onLibraryRowClick(event: { item: LibrarySummary }) {
+    selectLibrary(event.item);
+}
+
+/**
+ * Handle browser row click
+ */
+function onBrowserRowClick(event: { item: SelectionItem }) {
+    onItemClick(event.item);
+}
+
+/**
  * Load all accessible libraries
  */
 async function loadLibraries() {
@@ -483,13 +499,12 @@ function startUpload() {
     urlTracker.reset();
 }
 
-const libraryFields = [
+const libraryFields: TableField[] = [
     {
         key: "name",
         label: "Name",
         sortable: true,
-        thStyle: { width: "auto" },
-        tdClass: "align-middle",
+        align: "center",
     },
     {
         key: "synopsis",
@@ -500,80 +515,85 @@ const libraryFields = [
         key: "description",
         label: "Description",
         sortable: false,
-        thStyle: { width: "auto" },
-        tdClass: "align-middle",
+        align: "center",
     },
 ];
 
 // Browser table fields
-const browserFields = [
+const browserFields: TableField[] = [
     {
         key: "select",
         label: "",
-        thStyle: { width: "25px" },
-        tdClass: "align-middle",
+        width: "25px",
+        align: "center",
     },
     {
         key: "permission",
         label: "",
         sortable: false,
-        thStyle: { width: "20px" },
-        tdClass: "align-middle text-center",
+        width: "20px",
+        align: "center",
     },
     {
         key: "type",
         label: "",
         sortable: false,
-        thStyle: { width: "20px" },
-        tdClass: "align-middle text-center",
+        width: "20px",
+        align: "center",
     },
     {
         key: "name",
         label: "Name",
         sortable: true,
-        thStyle: { minWidth: "200px" },
-        tdClass: "align-middle",
+        width: "200px",
+        align: "center",
     },
     {
         key: "size",
         label: "Size",
         sortable: true,
-        thStyle: { width: "100px" },
-        tdClass: "align-middle text-right",
+        width: "100px",
+        align: "center",
     },
     {
         key: "updated",
         label: "Updated",
         sortable: true,
-        thStyle: { width: "auto", minWidth: "150px" },
-        tdClass: "align-middle text-muted",
+        width: "150px",
+        align: "center",
     },
 ];
 
 // Dataset list table fields
-const tableFields = [
+const tableFields: TableField[] = [
     {
         key: "name",
         label: "Name",
         sortable: true,
-        thStyle: { width: "auto" },
-        tdClass: "file-name-cell align-middle",
+        align: "center",
+        class: "file-name-cell",
     },
     {
         key: "extension",
         label: "Type",
         sortable: false,
-        thStyle: { minWidth: "120px", width: "120px" },
-        tdClass: "align-middle text-muted",
+        width: "120px",
+        align: "center",
     },
     {
         key: "size",
         label: "Size",
         sortable: true,
-        thStyle: { minWidth: "100px", width: "100px" },
-        tdClass: "align-middle text-right",
+        width: "100px",
+        align: "center",
     },
-    { key: "actions", label: "", sortable: false, tdClass: "text-right align-middle", thStyle: { width: "50px" } },
+    {
+        key: "actions",
+        label: "",
+        sortable: false,
+        width: "50px",
+        align: "center",
+    },
 ];
 
 /**
@@ -610,11 +630,11 @@ function mapSortKeyToApiField(key: string): SortBy {
     return mapping[key] || "name";
 }
 
-function onSortChanged(ctx: { sortBy: string; sortDesc: boolean }) {
-    const apiSortField = mapSortKeyToApiField(ctx.sortBy);
-    tableSortBy.value = ctx.sortBy; // Store table column key
+function onSortChanged(sortKey: string, isDesc: boolean) {
+    const apiSortField = mapSortKeyToApiField(sortKey);
+    tableSortBy.value = sortKey; // Store table column key
     sortBy.value = apiSortField; // Store API field name
-    sortDesc.value = ctx.sortDesc;
+    sortDesc.value = isDesc;
     currentPage.value = 1; // Reset to first page when sorting changes
 
     if (currentFolderId.value) {
@@ -696,29 +716,23 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
             <!-- Library List View -->
             <div v-if="!currentLibrary" class="browser-table-container">
-                <BTable
+                <GTable
                     v-if="!errorMessage && filteredLibraries.length > 0"
                     :items="filteredLibraries"
                     :fields="libraryFields"
-                    :busy="isBusy"
-                    striped
+                    :overlay-loading="isBusy"
                     hover
-                    small
+                    striped
                     fixed
-                    thead-class="browser-table-header"
-                    @row-clicked="selectLibrary">
-                    <template v-slot:table-busy>
-                        <div class="text-center my-2">
-                            <b-spinner small class="align-middle"></b-spinner>
-                            <strong class="ml-2">Loading...</strong>
-                        </div>
-                    </template>
-
+                    compact
+                    clickable-rows
+                    class="browser-table"
+                    @row-click="onLibraryRowClick">
                     <template v-slot:cell(name)="{ item }">
                         <FontAwesomeIcon :icon="faDatabase" class="mr-2 text-primary" />
                         <strong>{{ item.name }}</strong>
                     </template>
-                </BTable>
+                </GTable>
 
                 <!-- Empty state message when no libraries are available -->
                 <div v-else-if="!errorMessage && !isBusy" class="text-center text-muted my-5">
@@ -729,20 +743,23 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
             <!-- Folder Browser View -->
             <div v-else class="browser-table-container">
-                <BTable
+                <GTable
                     v-if="!errorMessage && browserItems.length > 0"
+                    :key="`${currentFolderId || 'root'}-${tableSortBy}-${sortDesc}`"
+                    hover
+                    striped
+                    fixed
+                    compact
+                    clickable-rows
                     :items="browserItems"
                     :fields="browserFields"
-                    :busy="isBusy"
-                    :sort-by.sync="tableSortBy"
-                    :sort-desc.sync="sortDesc"
-                    striped
-                    small
-                    hover
-                    fixed
-                    thead-class="browser-table-header"
+                    :overlay-loading="isBusy"
+                    :sort-by="tableSortBy"
+                    :sort-desc="sortDesc"
+                    :local-sorting="false"
+                    class="browser-table"
                     @sort-changed="onSortChanged"
-                    @row-clicked="onItemClick">
+                    @row-click="onBrowserRowClick">
                     <template v-slot:head(select)>
                         <BFormCheckbox
                             v-if="datasetsOnCurrentPage.length > 0"
@@ -795,14 +812,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             mode="pretty" />
                         <span v-else class="text-muted">—</span>
                     </template>
-
-                    <template v-slot:table-busy>
-                        <div class="text-center my-2">
-                            <b-spinner small class="align-middle"></b-spinner>
-                            <strong class="ml-2">Loading...</strong>
-                        </div>
-                    </template>
-                </BTable>
+                </GTable>
 
                 <!-- Empty state message when no items are available -->
                 <div v-else-if="!errorMessage && !isBusy" class="text-center text-muted my-5">
@@ -842,12 +852,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
             </div>
 
             <div ref="tableContainerRef" class="file-table-container">
-                <BTable
-                    :items="libraryDatasetItems"
-                    :fields="tableFields"
-                    small
-                    striped
-                    thead-class="file-table-header">
+                <GTable striped compact :items="libraryDatasetItems" :fields="tableFields" class="file-table">
                     <template v-slot:cell(name)="{ item }">
                         <span class="font-weight-medium">{{ item.name }}</span>
                     </template>
@@ -869,7 +874,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             <FontAwesomeIcon :icon="faTimes" />
                         </button>
                     </template>
-                </BTable>
+                </GTable>
             </div>
 
             <!-- Collection Creation Section -->
@@ -935,7 +940,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
     overflow: auto;
     min-height: 0;
 
-    :deep(.browser-table-header) {
+    :deep(.browser-table thead) {
         @include upload-table-header;
     }
 
@@ -972,7 +977,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 .file-table-container {
     @include upload-table-container;
 
-    :deep(.file-table-header) {
+    :deep(.file-table thead) {
         @include upload-table-header;
     }
 
