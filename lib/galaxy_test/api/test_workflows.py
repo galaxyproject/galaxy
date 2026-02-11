@@ -401,6 +401,43 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         response.raise_for_status()
         assert response.json()["name"] == "test_preview"
 
+    @skip_without_tool("export_remote")
+    def test_download_workflow_with_missing_file_source(self):
+        """Test that workflows referencing non-existent file sources can be downloaded.
+
+        Regression test for https://github.com/galaxyproject/galaxy/issues/21732.
+        When a file source referenced in a workflow is removed from the server configuration,
+        users should still be able to download the workflow for viewing and editing.
+        """
+        # Create a workflow with export_remote tool referencing a non-existent file source
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  export:
+    tool_id: export_remote
+    in:
+      export_type|infiles: input1
+    state:
+      export_type:
+        export_type_selector: datasets_auto
+      d_uri: "gxfiles://nonexistent_file_source/some/path"
+""")
+
+        # Download should succeed even though the file source doesn't exist
+        downloaded = self._download_workflow(workflow_id)
+        assert downloaded["a_galaxy_workflow"] == "true"
+        # Verify the tool state with the non-existent file source is preserved
+        export_step = None
+        for step in downloaded["steps"].values():
+            if step.get("tool_id") == "export_remote":
+                export_step = step
+                break
+        assert export_step is not None, "export_remote step should be in downloaded workflow"
+        tool_state = json.loads(export_step["tool_state"])
+        assert "gxfiles://nonexistent_file_source" in tool_state.get("d_uri", "")
+
     def test_delete(self):
         workflow_id = self.workflow_populator.simple_workflow("test_delete")
         workflow_name = "test_delete"
