@@ -1,5 +1,5 @@
 <template>
-    <div v-if="hasContent">
+    <div v-if="hasContent" class="tool-footer">
         <div v-if="hasCitations" class="mt-2 mb-4">
             <Heading h2 separator bold size="sm">
                 <span v-localize>References</span>
