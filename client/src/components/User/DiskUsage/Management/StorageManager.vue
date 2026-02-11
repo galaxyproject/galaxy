@@ -60,7 +60,7 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
 
         <Heading v-if="config?.enable_quotas" h2 size="sm">
             {{ localize("The storage manager only shows elements that count towards your disk quota.") }}
-            <a :href="config.quota_url" target="_blank">{{ localize("Learn more") }}</a>
+            <a :href="config.quota_url" target="_blank">{{ localize("Click here to learn more.") }}</a>
         </Heading>
 
         <div v-for="category in cleanupCategories" :key="category.id" class="mx-3 mb-4">
