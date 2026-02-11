@@ -24,36 +24,31 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <span class="float-right">
-        <GButtonGroup>
-            <GButton
-                :id="upButtonId"
-                tooltip
-                tooltip-placement="bottom"
-                title="move up"
-                :disabled="index == 0"
-                color="blue"
-                transparent
-                size="small"
-                class="ml-0"
-                @click="() => emit('swap-up')">
-                <FontAwesomeIcon :icon="faCaretUp" />
-            </GButton>
-            <GButton
-                :id="downButtonId"
-                tooltip
-                tooltip-placement="bottom"
-                :disabled="index >= numElements - 1"
-                title="move down"
-                color="blue"
-                transparent
-                size="small"
-                class="ml-0"
-                @click="() => emit('swap-down')">
-                <FontAwesomeIcon :icon="faCaretDown" />
-            </GButton>
-        </GButtonGroup>
-
+    <GButtonGroup>
+        <GButton
+            :id="upButtonId"
+            tooltip
+            tooltip-placement="bottom"
+            title="move up"
+            :disabled="index == 0"
+            color="blue"
+            transparent
+            size="small"
+            @click="() => emit('swap-up')">
+            <FontAwesomeIcon :icon="faCaretUp" />
+        </GButton>
+        <GButton
+            :id="downButtonId"
+            tooltip
+            tooltip-placement="bottom"
+            :disabled="index >= numElements - 1"
+            title="move down"
+            color="blue"
+            transparent
+            size="small"
+            @click="() => emit('swap-down')">
+            <FontAwesomeIcon :icon="faCaretDown" />
+        </GButton>
         <GButton
             :disabled="!canDelete"
             tooltip
@@ -62,9 +57,8 @@ const emit = defineEmits<{
             color="blue"
             transparent
             size="small"
-            class="ml-0"
             @click="() => emit('delete')">
             <FontAwesomeIcon :icon="faTrashAlt" />
         </GButton>
-    </span>
+    </GButtonGroup>
 </template>

@@ -151,11 +151,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
             }
         }
         .portlet-operations {
-            button {
-                margin-left: 0.25rem;
-                padding-top: 0;
-                padding-bottom: 0;
-            }
+            float: right;
         }
     }
     .portlet-buttons {
