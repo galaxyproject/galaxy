@@ -778,11 +778,11 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <template v-slot:cell(permission)="{ item }">
                         <span
-                            v-if="getPermissionIcon(item.entry)"
+                            v-if="getPermissionIcon(item.entry as AnyLibraryFolderItem)"
                             v-b-tooltip.hover
                             class="mr-2 text-muted"
-                            :title="getPermissionTitle(item.entry)">
-                            <FontAwesomeIcon :icon="getPermissionIcon(item.entry)" />
+                            :title="getPermissionTitle(item.entry as AnyLibraryFolderItem)">
+                            <FontAwesomeIcon :icon="getPermissionIcon(item.entry as AnyLibraryFolderItem)" />
                         </span>
                     </template>
 
@@ -807,8 +807,8 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <template v-slot:cell(updated)="{ item }">
                         <UtcDate
-                            v-if="item.entry && item.entry.update_time"
-                            :date="item.entry.update_time"
+                            v-if="item.entry && (item.entry as AnyLibraryFolderItem).update_time"
+                            :date="(item.entry as AnyLibraryFolderItem).update_time"
                             mode="pretty" />
                         <span v-else class="text-muted">—</span>
                     </template>
