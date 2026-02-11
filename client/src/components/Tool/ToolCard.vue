@@ -276,8 +276,9 @@ onBeforeMount(() => {
     cursor: unset;
 }
 
-.tool-card-buttons {
-    height: 2em;
+.tool-card-buttons :deep(.dropdown .btn) {
+    display: flex;
+    border: none;
 }
 
 .portlet-backdrop {
