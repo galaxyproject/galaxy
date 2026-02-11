@@ -80,6 +80,12 @@ interface Props {
     filter?: string;
 
     /**
+     * Whether to use fixed table layout (BootstrapVue `fixed`)
+     * @default false
+     */
+    fixed?: boolean;
+
+    /**
      * Whether to show hover effect on rows
      * @default true
      */
@@ -212,6 +218,7 @@ const props = withDefaults(defineProps<Props>(), {
     emptyState: () => ({ message: "No data available" }),
     fields: () => [],
     filter: "",
+    fixed: false,
     hover: true,
     hideHeader: false,
     items: () => [],
@@ -549,6 +556,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                         { 'table-hover': hover },
                         { 'table-bordered': bordered },
                         { 'g-table-compact': compact },
+                        { 'g-table-fixed': fixed },
                         tableClass,
                     ]">
                     <thead v-if="!props.hideHeader">
@@ -735,6 +743,11 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 }
 
 .g-table {
+    &.g-table-fixed {
+        table-layout: fixed;
+        width: 100%;
+    }
+
     thead th {
         position: sticky;
         top: 0;
