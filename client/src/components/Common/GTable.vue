@@ -587,12 +587,12 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     { 'g-table-sorted': sortBy === field.key },
                                     { 'hide-on-small': field.hideOnSmall },
                                 ]"
-                                :style="field.width ? { width: field.width } : undefined"
+                                :style="field.width ? { width: field.width, minWidth: field.width } : undefined"
                                 @click="onHeaderClick(field)">
                                 <div class="d-flex align-items-center">
                                     <div class="flex-grow-1" :class="getTextAlignmentClass(field.align)">
                                         <slot :name="`head(${field.key})`" :field="field">
-                                            {{ field.label || field.key }}
+                                            {{ field.label ?? field.key }}
                                         </slot>
                                     </div>
                                     <FontAwesomeIcon
