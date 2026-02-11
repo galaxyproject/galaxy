@@ -6,8 +6,6 @@ import json
 import logging
 import os
 import re
-import time
-from queue import Empty
 from typing import (
     TYPE_CHECKING,
 )
@@ -42,8 +40,6 @@ except ImportError as e:
 
 __all__ = ("AWSBatchJobRunner",)
 log = logging.getLogger(__name__)
-
-STOP_SIGNAL = object()
 
 
 class AWSBatchRunnerException(Exception):
@@ -212,6 +208,10 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             region_name=self.runner_params.get("region") or None,
         )
         self._batch_client = session.client("batch")
+
+    @property
+    def monitor_sleep_time(self):
+        return max(self.app.config.job_runner_monitor_sleep, self.MIN_QUERY_INTERVAL)
 
     def queue_job(self, job_wrapper):
         log.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
@@ -434,31 +434,6 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             self._finish_or_resubmit_job(job_state, "", fail_message)
             if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
-
-    def monitor(self):
-        """
-        Watches jobs currently in the monitor queue and deals with state
-        changes (queued to running) and job completion.
-        """
-        while True:
-            # Take any new watched jobs and put them on the monitor list
-            try:
-                while True:
-                    async_job_state = self.monitor_queue.get_nowait()
-                    if async_job_state is STOP_SIGNAL:
-                        # TODO: This is where any cleanup would occur
-                        self.handle_stop()
-                        return
-                    self.watched.append(async_job_state)
-            except Empty:
-                pass
-            # Iterate over the list of watched jobs and check state
-            try:
-                self.check_watched_items()
-            except Exception:
-                log.exception("Unhandled exception checking active jobs")
-            # Sleep a bit before the next state check
-            time.sleep(max(self.app.config.job_runner_monitor_sleep, self.MIN_QUERY_INTERVAL))
 
     def check_watched_items(self):
         done: set[str] = set()
