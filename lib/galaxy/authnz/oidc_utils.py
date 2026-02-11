@@ -6,7 +6,10 @@ authentication. These should not be used with non-OIDC backends like OAuth2.
 """
 
 import logging
-from typing import TYPE_CHECKING
+from typing import (
+    cast,
+    TYPE_CHECKING,
+)
 
 import jwt
 from social_core.backends.open_id_connect import OpenIdConnectAuth
@@ -15,7 +18,10 @@ from typing_extensions import TypeIs
 from galaxy.exceptions import MalformedContents
 
 if TYPE_CHECKING:
+    from jwt.types import Options
     from social_core.backends.base import BaseAuth
+
+    from galaxy.authnz.psa_authnz import Strategy
 
 log = logging.getLogger(__name__)
 
@@ -64,21 +70,23 @@ def decode_access_token(token_str: str, backend: OpenIdConnectAuth) -> dict:
     """
     signing_key = backend.find_valid_key(token_str)
     jwk = jwt.PyJWK(signing_key)
+    strategy = cast("Strategy", backend.strategy)
 
+    options: Options = {
+        "verify_signature": True,
+        "verify_exp": True,
+        "verify_nbf": True,
+        "verify_iat": True,
+        "verify_aud": bool(strategy.config["accepted_audiences"]),
+        "verify_iss": True,
+    }
     decoded = jwt.decode(
         token_str,
         key=jwk,
         algorithms=[jwk.algorithm_name],
-        audience=backend.strategy.config["accepted_audiences"],
+        audience=strategy.config["accepted_audiences"],
         issuer=backend.id_token_issuer(),
-        options={
-            "verify_signature": True,
-            "verify_exp": True,
-            "verify_nbf": True,
-            "verify_iat": True,
-            "verify_aud": bool(backend.strategy.config["accepted_audiences"]),
-            "verify_iss": True,
-        },
+        options=options,
     )
     return decoded
 
