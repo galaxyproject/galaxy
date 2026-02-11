@@ -413,8 +413,8 @@ function onLabelToggle(labelId: string) {
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div v-if="localPanel" class="toolMenu">
-                    <div v-for="(panel, key) in localPanel" :key="key">
-                        <div v-if="panel?.id === PANEL_LABEL_IDS.FAVORITES_EMPTY_ALERT" class="tool-panel-empty">
+                    <div v-for="(panelItem, key) in localPanel" :key="key">
+                        <div v-if="panelItem?.id === PANEL_LABEL_IDS.FAVORITES_EMPTY_ALERT" class="tool-panel-empty">
                             <BAlert variant="info" show>
                                 <template v-if="!isAnonymous">
                                     You haven't favorited any tools yet. Search the toolbox or use
@@ -443,16 +443,16 @@ function onLabelToggle(labelId: string) {
                             </BAlert>
                         </div>
                         <ToolSection
-                            v-else-if="panel"
-                            :category="panel"
+                            v-else-if="panelItem"
+                            :category="panelItem"
                             :query-filter="hasResults ? query : undefined"
                             :has-filter-button="
                                 hasResults &&
                                 currentPanelView === 'default' &&
-                                panel.id !== PANEL_LABEL_IDS.FAVORITES_RESULTS_SECTION
+                                panelItem.id !== PANEL_LABEL_IDS.FAVORITES_RESULTS_SECTION
                             "
                             :search-active="hasResults"
-                            :show-favorite-button="recentToolIdsToShowSet.has(panel.id)"
+                            :show-favorite-button="recentToolIdsToShowSet.has(panelItem.id)"
                             :collapsed-labels="collapsedLabels"
                             @onClick="onToolClick"
                             @onFilter="onSectionFilter"
