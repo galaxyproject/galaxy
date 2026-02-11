@@ -678,6 +678,15 @@ function getPermissionTitle(entry: AnyLibraryFolderItem) {
     return undefined;
 }
 
+function getItemFolderEntry(item: SelectionItem): AnyLibraryFolderItem {
+    return item.entry as AnyLibraryFolderItem;
+}
+
+function getItemUpdateTime(item: SelectionItem): string {
+    const entry = item.entry as AnyLibraryFolderItem;
+    return entry?.update_time;
+}
+
 // Initialize: load libraries (only if not showing staged items)
 onMounted(async () => {
     if (showBrowser.value) {
@@ -778,11 +787,11 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <template v-slot:cell(permission)="{ item }">
                         <span
-                            v-if="getPermissionIcon(item.entry as AnyLibraryFolderItem)"
+                            v-if="item.entry && getPermissionIcon(getItemFolderEntry(item))"
                             v-b-tooltip.hover
                             class="mr-2 text-muted"
-                            :title="getPermissionTitle(item.entry as AnyLibraryFolderItem)">
-                            <FontAwesomeIcon :icon="getPermissionIcon(item.entry as AnyLibraryFolderItem)" />
+                            :title="getPermissionTitle(getItemFolderEntry(item))">
+                            <FontAwesomeIcon :icon="getPermissionIcon(getItemFolderEntry(item))" />
                         </span>
                     </template>
 
@@ -806,10 +815,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     </template>
 
                     <template v-slot:cell(updated)="{ item }">
-                        <UtcDate
-                            v-if="item.entry && (item.entry as AnyLibraryFolderItem).update_time"
-                            :date="(item.entry as AnyLibraryFolderItem).update_time"
-                            mode="pretty" />
+                        <UtcDate v-if="getItemUpdateTime(item)" :date="getItemUpdateTime(item)" mode="pretty" />
                         <span v-else class="text-muted">—</span>
                     </template>
                 </GTable>
