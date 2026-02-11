@@ -12,6 +12,7 @@ import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary.vue";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 interface ModalDialog {
     openModal: () => void;
@@ -19,7 +20,7 @@ interface ModalDialog {
 
 const breadcrumbItems = [
     { title: "Storage Dashboard", to: { name: "StorageDashboard" } },
-    { title: "Manage your account storage", superText: "(Beta)" },
+    { title: "Manage your account storage" },
 ];
 
 const { config } = useConfig();
@@ -32,8 +33,6 @@ const refreshOperationId = ref<string>();
 
 const reviewModal = ref<ModalDialog | null>(null);
 const resultModal = ref<ModalDialog | null>(null);
-
-const issuesUrl = "https://github.com/galaxyproject/galaxy/issues";
 
 function onReviewItems(operation: CleanupOperation, totalItems: number) {
     currentOperation.value = operation;
@@ -59,18 +58,10 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
     <div>
         <BreadcrumbHeading :items="breadcrumbItems" />
 
-        <b-row class="justify-content-md-center">
-            <b-alert show dismissible variant="warning">
-                {{ localize("This feature is currently in Beta, if you find any issues please report them") }}
-                <b-link :href="issuesUrl" target="_blank">here</b-link>.
-            </b-alert>
-        </b-row>
-        <b-row class="justify-content-md-center mb-5">
-            <b-alert v-if="config?.enable_quotas" show>
-                {{ localize("The storage manager only shows elements that count towards your disk quota.") }}
-                <b-link :href="config.quota_url" target="_blank">{{ localize("Learn more") }}</b-link>
-            </b-alert>
-        </b-row>
+        <Heading v-if="config?.enable_quotas" h2 size="sm">
+            {{ localize("The storage manager only shows elements that count towards your disk quota.") }}
+            <a :href="config.quota_url" target="_blank">{{ localize("Learn more") }}</a>
+        </Heading>
 
         <div v-for="category in cleanupCategories" :key="category.id" class="mx-3 mb-4">
             <h4 class="mb-3">
