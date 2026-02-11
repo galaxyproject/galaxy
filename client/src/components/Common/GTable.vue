@@ -598,7 +598,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     <FontAwesomeIcon
                                         v-if="field.sortable && getSortIcon(field)"
                                         :icon="getSortIcon(field)"
-                                        :class="{ 'text-muted': sortBy !== field.key }"
+                                        :class="{ 'g-table-sort-icon': sortBy !== field.key }"
                                         class="ml-1 flex-shrink-0" />
                                 </div>
                             </th>
@@ -768,6 +768,10 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 
         &.g-table-sorted {
             background-color: $brand-light;
+        }
+
+        .g-table-sort-icon {
+            color: $brand-secondary;
         }
     }
 
