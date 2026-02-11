@@ -22,7 +22,11 @@
                 <i>(switch to latest)</i>
             </GLink>
             <i v-else> (latest version)</i>
-            <WorkflowVersionSelector :version="version" :versions="versions" @onVersion="onVersion" />
+            <WorkflowVersionSelector
+                v-if="version !== null && version !== undefined"
+                :version="version"
+                :versions="versions"
+                @onVersion="onVersion" />
         </div>
         <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
             <b>Parameters</b>

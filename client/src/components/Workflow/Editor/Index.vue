@@ -1124,6 +1124,11 @@ export default {
                 const versions = await getVersions(this.id);
                 this.versions = versions;
 
+                // If version is not defined, set it to the latest version
+                if (this.version === undefined || this.version === null) {
+                    this.version = versions[versions.length - 1].version;
+                }
+
                 await this._loadCurrent(this.id, data.version);
             } catch (response) {
                 this.onWorkflowError("Saving workflow failed...", response, {
