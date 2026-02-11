@@ -82,8 +82,8 @@ export default {
             dismissSecs: 4,
             dismissCountDown: 0,
             errorMessage: "",
-            fractionWarning: "This output doesn't allow fractions!",
-            negativeWarning: "This output doesn't allow negative numbers!",
+            fractionWarning: "This input doesn't allow fractions!",
+            negativeWarning: "This input doesn't allow negative numbers!",
             decimalPlaces: this.type.toLowerCase() === "integer" ? 0 : this.getNumberOfDecimals(this.value),
         };
     },
