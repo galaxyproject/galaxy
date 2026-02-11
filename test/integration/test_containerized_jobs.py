@@ -229,6 +229,73 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         """
         assert identifier == f"quay.io/local/{expected_hash}"
 
+    @skip_without_tool("secret_tool")
+    def test_credentials_passed_to_container(self) -> None:
+        """
+        Test that tool credentials are passed as environment variables into containerized environments.
+        """
+        # Create credentials for the tool
+        credentials_payload = {
+            "source_type": "tool",
+            "source_id": "secret_tool",
+            "source_version": "test",
+            "service_credential": {
+                "name": "service1",
+                "version": "v1",
+                "group": {
+                    "name": "default",
+                    "variables": [{"name": "server", "value": "http://test-server:8080"}],
+                    "secrets": [
+                        {"name": "username", "value": "test_user"},
+                        {"name": "password", "value": "test_pass"},
+                    ],
+                },
+            },
+        }
+        response = self._post("/api/users/current/credentials", data=credentials_payload, json=True)
+        self._assert_status_code_is(response, 200)
+        created_group = response.json()
+
+        # Get the user credentials to find the user_credentials_id
+        credentials_list_response = self._get("/api/users/current/credentials?source_type=tool&source_id=secret_tool")
+        self._assert_status_code_is(credentials_list_response, 200)
+        credentials_list = credentials_list_response.json()
+        assert len(credentials_list) == 1
+        user_credentials_id = credentials_list[0]["id"]
+
+        # Build credentials_context for tool execution
+        credentials_context = [
+            {
+                "user_credentials_id": user_credentials_id,
+                "name": "service1",
+                "version": "v1",
+                "selected_group": {
+                    "id": created_group["id"],
+                    "name": created_group["name"],
+                },
+            }
+        ]
+
+        # Run the containerized tool that outputs credential environment variables
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self.dataset_populator.run_tool(
+                "secret_tool", {}, history_id, credentials_context=json.dumps(credentials_context)
+            )
+            job_id = run_response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id=job_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
+
+            # Get the output - should contain the credential environment variables
+            output = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=run_response["outputs"][0]["id"]
+            )
+
+            # Verify that credential environment variables were available in the container
+            lines = output.strip().split("\n")
+            assert len(lines) == 3, f"Expected 3 lines in output, got {len(lines)}: {lines}"
+            assert lines[0] == "http://test-server:8080", f"Expected server URL in first line, got: {lines[0]}"
+            assert lines[1] == "test_user", f"Expected username in second line, got: {lines[1]}"
+            assert lines[2] == "test_pass", f"Expected password in third line, got: {lines[2]}"
+
 
 class TestMappingContainerResolver(IntegrationTestCase):
     """
