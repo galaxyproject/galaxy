@@ -183,26 +183,26 @@ onBeforeMount(() => {
                     @click="onShowObjectStoreSelect">
                     <FontAwesomeIcon :icon="faHdd" />
                 </GButton>
-                <ToolTargetPreferredObjectStorePopover
-                    v-if="allowObjectStoreSelection"
-                    :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                    :user="currentUser" />
-                <BModal
-                    id="modal-select-preferred-object-store"
-                    v-model="showPreferredObjectStoreModal"
-                    :title="storageLocationModalTitle"
-                    scrollable
-                    centered
-                    modal-class="tool-preferred-object-store-modal"
-                    title-tag="h3"
-                    size="lg"
-                    ok-only
-                    ok-title="Close">
-                    <ToolSelectPreferredObjectStore
-                        :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                        @updated="onUpdatePreferredObjectStoreId" />
-                </BModal>
             </GButtonGroup>
+            <ToolTargetPreferredObjectStorePopover
+                v-if="allowObjectStoreSelection"
+                :tool-preferred-object-store-id="toolPreferredObjectStoreId"
+                :user="currentUser" />
+            <BModal
+                id="modal-select-preferred-object-store"
+                v-model="showPreferredObjectStoreModal"
+                :title="storageLocationModalTitle"
+                scrollable
+                centered
+                modal-class="tool-preferred-object-store-modal"
+                title-tag="h3"
+                size="lg"
+                ok-only
+                ok-title="Close">
+                <ToolSelectPreferredObjectStore
+                    :tool-preferred-object-store-id="toolPreferredObjectStoreId"
+                    @updated="onUpdatePreferredObjectStoreId" />
+            </BModal>
             <slot name="buttons" />
         </template>
 
