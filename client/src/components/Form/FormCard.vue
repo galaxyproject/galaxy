@@ -3,16 +3,17 @@
         <div :tabindex="collapsible ? 0 : -1" :class="portletHeaderClasses" @keydown="onKeyDown" @click="onCollapse">
             <div class="portlet-operations">
                 <slot name="operations" />
-                <span
+                <GButton
                     v-if="collapsible"
-                    v-b-tooltip.hover.bottom
+                    tooltip
+                    tooltip-placement="bottom"
                     title="Collapse/Expand"
-                    variant="link"
-                    size="sm"
-                    class="float-right">
-                    <FontAwesomeIcon v-if="expanded" :icon="faChevronUp" class="fa-fw" />
-                    <FontAwesomeIcon v-else :icon="faChevronDown" class="fa-fw" />
-                </span>
+                    color="blue"
+                    transparent
+                    size="small"
+                    tabindex="-1">
+                    <FontAwesomeIcon :icon="expanded ? faChevronUp : faChevronDown" class="fa-fw" />
+                </GButton>
             </div>
             <span class="portlet-title">
                 <span v-if="icon && typeof icon === 'string'" :class="['portlet-title-icon fa mr-1', icon]" />
@@ -32,9 +33,12 @@
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+
 export default {
     components: {
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         title: {
