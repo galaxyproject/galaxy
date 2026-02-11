@@ -34,6 +34,11 @@ from unittest.mock import (
     patch,
 )
 
+from galaxy.agents import (
+    agent_registry,
+    GalaxyAgentDependencies,
+)
+from galaxy.agents.error_analysis import ErrorAnalysisResult
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util.unittest_utils import pytestmark_live_llm
 from galaxy_test.base.populators import (
@@ -69,11 +74,6 @@ class AgentIntegrationTestCase(IntegrationTestCase):
 
 def _create_deps_with_mock_model(self, trans, user):
     """Replacement for AgentService.create_dependencies that injects a mock model_factory."""
-    from galaxy.agents import (
-        agent_registry,
-        GalaxyAgentDependencies,
-    )
-
     toolbox = trans.app.toolbox if hasattr(trans, "app") and hasattr(trans.app, "toolbox") else None
     return GalaxyAgentDependencies(
         trans=trans,
@@ -216,8 +216,6 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
 
         # Mock error analysis
         async def mock_run(*args, **kwargs):
-            from galaxy.agents.error_analysis import ErrorAnalysisResult
-
             result = MagicMock()
             mock_analysis = ErrorAnalysisResult(
                 error_category="tool_configuration",
