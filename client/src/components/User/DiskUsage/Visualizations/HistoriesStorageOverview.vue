@@ -12,7 +12,6 @@ import { byteFormattingForChart, useDataLoading } from "./util";
 
 import BarChart from "./Charts/BarChart.vue";
 import OverviewPage from "./OverviewPage.vue";
-import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
 import WarnDeletedHistories from "./WarnDeletedHistories.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -177,13 +176,6 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                         @change="buildGraphsData()">
                     </b-form-select>
                 </template>
-                <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip
-                        v-if="data"
-                        :data="data"
-                        :is-recoverable="isRecoverableDataPoint(data)"
-                        :is-archived="isArchivedDataPoint(data)" />
-                </template>
                 <template v-slot:selection="{ data }">
                     <SelectedItemActions
                         :data="data"
@@ -205,14 +197,8 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                     )
                 "
                 :data="activeVsArchivedVsDeletedTotalSizeData"
-                v-bind="byteFormattingForChart">
-                <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip
-                        v-if="data"
-                        :data="data"
-                        :is-recoverable="isRecoverableDataPoint(data)" />
-                </template>
-            </BarChart>
+                v-bind="byteFormattingForChart" />
+
         </div>
     </OverviewPage>
 </template>

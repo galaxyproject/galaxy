@@ -9,7 +9,6 @@ import { buildTopNDatasetsBySizeData, byteFormattingForChart, useDataLoading, us
 
 import BarChart from "./Charts/BarChart.vue";
 import OverviewPage from "./OverviewPage.vue";
-import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
 import WarnDeletedDatasets from "./WarnDeletedDatasets.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -106,12 +105,6 @@ function onUndelete(datasetId: string) {
                         size="sm"
                         @change="buildGraphsData()">
                     </b-form-select>
-                </template>
-                <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip
-                        v-if="data"
-                        :data="data"
-                        :is-recoverable="isRecoverableDataPoint(data)" />
                 </template>
                 <template v-slot:selection="{ data }">
                     <SelectedItemActions

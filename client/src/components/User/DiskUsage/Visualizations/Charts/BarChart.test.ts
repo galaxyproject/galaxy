@@ -1,20 +1,37 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
 import type { DataValuePoint } from ".";
 
+import VegaWrapper from "@/components/Common/VegaWrapper.vue";
+
 import BarChart from "./BarChart.vue";
 
-// Duplicated interface from BarChart.vue because of https://github.com/vuejs/core/issues/4294
+const mockFinalize = vi.fn();
+const mockAddSignalListener = vi.fn();
+const mockResize = vi.fn(() => ({ runAsync: vi.fn() }));
+const mockView = {
+    finalize: mockFinalize,
+    resize: mockResize,
+    addSignalListener: mockAddSignalListener,
+};
+
+vi.mock("vega-embed", () => ({
+    default: vi.fn(() => Promise.resolve({ view: mockView })),
+}));
+
+vi.mock("@vueuse/core", () => ({
+    useDebounceFn: (fn: Function) => fn,
+    useResizeObserver: vi.fn(),
+}));
+
 interface BarChartProps {
     title: string;
     data: DataValuePoint[];
     description?: string;
-    width?: number;
-    height?: number;
-    enableTooltips?: boolean;
     enableSelection?: boolean;
     labelFormatter?: (dataPoint?: DataValuePoint | null) => string;
 }
@@ -36,23 +53,24 @@ function mountBarChartWrapper(props: BarChartProps) {
 
 describe("BarChart.vue", () => {
     describe("Chart Rendering", () => {
-        it("should render a bar chart when there is data", () => {
+        it("should render VegaWrapper when there is data", async () => {
             const wrapper = mountBarChartWrapper({
                 title: "Test Bar Chart",
                 data: TEST_DATA,
             });
-            expect(wrapper.find("svg").exists()).toBe(true);
+            await flushPromises();
+            expect(wrapper.findComponent(VegaWrapper as any).exists()).toBe(true);
         });
 
-        it("should not render a bar chart when there is no data", () => {
+        it("should not render VegaWrapper when there is no data", () => {
             const wrapper = mountBarChartWrapper({
                 title: "Test Bar Chart",
                 data: [],
             });
-            expect(wrapper.find("svg").exists()).toBe(false);
+            expect(wrapper.findComponent(VegaWrapper as any).exists()).toBe(false);
         });
 
-        it("should render a bar chart with the correct title", () => {
+        it("should render with the correct title", () => {
             const title = "Test Bar Chart";
             const wrapper = mountBarChartWrapper({
                 title,
@@ -61,7 +79,7 @@ describe("BarChart.vue", () => {
             expect(wrapper.find("h3").text()).toBe(title);
         });
 
-        it("should render a bar chart with the correct description", () => {
+        it("should render with the correct description", () => {
             const description = "Test description";
             const wrapper = mountBarChartWrapper({
                 title: "Test Bar Chart",
@@ -71,166 +89,43 @@ describe("BarChart.vue", () => {
             expect(wrapper.find(".chart-description").text()).toBe(description);
         });
 
-        it("should render a bar chart with the correct width and height", () => {
-            const width = 500;
-            const height = 500;
+        it("should display empty state message when there is no data", () => {
             const wrapper = mountBarChartWrapper({
                 title: "Test Bar Chart",
-                data: TEST_DATA,
-                width,
-                height,
+                data: [],
             });
-            expect(wrapper.find("svg").attributes("width")).toBe(width.toString());
-            expect(wrapper.find("svg").attributes("height")).toBe(height.toString());
+            expect(wrapper.text()).toContain("No data to display");
         });
 
-        it("should render a bar chart with the correct number of bars", () => {
+        it("should display empty state when all values are zero", () => {
             const wrapper = mountBarChartWrapper({
                 title: "Test Bar Chart",
-                data: TEST_DATA,
+                data: [
+                    { id: "id1", label: "foo", value: 0 },
+                    { id: "id2", label: "bar", value: 0 },
+                ],
             });
-            expect(wrapper.findAll(".bar").length).toBe(TEST_DATA.length);
-        });
-
-        it("should render a bar chart with the correct number of legend items", () => {
-            const wrapper = mountBarChartWrapper({
-                title: "Test Bar Chart",
-                data: TEST_DATA,
-            });
-            expect(wrapper.findAll(".legend-item").length).toBe(TEST_DATA.length);
-        });
-
-        it("should render a bar chart with the correct legend labels", () => {
-            const wrapper = mountBarChartWrapper({
-                title: "Test Bar Chart",
-                data: TEST_DATA,
-            });
-            TEST_DATA.forEach((dataPoint, index) => {
-                expect(wrapper.findAll(".legend-item").at(index).text()).toContain(dataPoint.label);
-            });
-        });
-
-        it("should refresh the bar chart and legend when the data prop changes", async () => {
-            const wrapper = mountBarChartWrapper({
-                title: "Test Bar Chart",
-                data: TEST_DATA,
-            });
-            const newTestData = [
-                ...TEST_DATA,
-                { id: "id3", label: "baz", value: 3 },
-                { id: "id4", label: "qux", value: 4 },
-            ];
-            await wrapper.setProps({
-                data: newTestData,
-            });
-            expect(wrapper.findAll(".bar").length).toBe(newTestData.length);
-            expect(wrapper.findAll(".legend-item").length).toBe(newTestData.length);
-        });
-
-        it("should refresh the bar chart and legend when the labelFormatter prop changes", async () => {
-            const wrapper = mountBarChartWrapper({
-                title: "Test Bar Chart",
-                data: TEST_DATA,
-            });
-            const newLabelFormatter = (dataPoint?: DataValuePoint | null) => {
-                return dataPoint?.label.toUpperCase() || "";
-            };
-            await wrapper.setProps({
-                labelFormatter: newLabelFormatter,
-            });
-            TEST_DATA.forEach((dataPoint, index) => {
-                expect(wrapper.findAll(".legend-item").at(index).text()).toContain(newLabelFormatter(dataPoint));
-            });
+            expect(wrapper.text()).toContain("No data to display");
         });
     });
 
-    describe("Chart Options", () => {
-        describe("Chart Tooltips", () => {
-            it("should display chart-tooltip when a bar is hovered and enableTooltips is true", async () => {
-                const wrapper = mountBarChartWrapper({
-                    title: "Test Bar Chart",
-                    data: TEST_DATA,
-                    enableTooltips: true,
-                });
-                expect(wrapper.find(".chart-tooltip").isVisible()).toBe(false);
-                await wrapper.find(".bar").trigger("mouseenter");
-                expect(wrapper.find(".chart-tooltip").isVisible()).toBe(true);
+    describe("Chart Selection", () => {
+        it("should not display selection-info initially", () => {
+            const wrapper = mountBarChartWrapper({
+                title: "Test Bar Chart",
+                data: TEST_DATA,
+                enableSelection: true,
             });
-
-            it("should not display chart-tooltip when a bar is hovered and enableTooltips is false", async () => {
-                const wrapper = mountBarChartWrapper({
-                    title: "Test Bar Chart",
-                    data: TEST_DATA,
-                    enableTooltips: false,
-                });
-                expect(wrapper.find(".chart-tooltip").isVisible()).toBe(false);
-                await wrapper.find(".bar").trigger("mouseenter");
-                expect(wrapper.find(".chart-tooltip").isVisible()).toBe(false);
-            });
-
-            it("should display the correct label in the chart-tooltip when a bar is hovered and enableTooltips is true", async () => {
-                const wrapper = mountBarChartWrapper({
-                    title: "Test Bar Chart",
-                    data: TEST_DATA,
-                    enableTooltips: true,
-                });
-                await wrapper.find(".bar").trigger("mouseenter");
-                expect(wrapper.find(".chart-tooltip").text()).toContain(TEST_DATA.at(0)?.label);
-            });
+            expect(wrapper.find(".selection-info").exists()).toBe(false);
         });
 
-        describe("Chart Selection", () => {
-            it("should display the selection-info when a bar is clicked and enableSelection is true", async () => {
-                const wrapper = mountBarChartWrapper({
-                    title: "Test Bar Chart",
-                    data: TEST_DATA,
-                    enableSelection: true,
-                });
-                await wrapper.find(".bar").trigger("click");
-                expect(wrapper.find(".selection-info").exists()).toBe(true);
+        it("should not display selection-info when enableSelection is false", () => {
+            const wrapper = mountBarChartWrapper({
+                title: "Test Bar Chart",
+                data: TEST_DATA,
+                enableSelection: false,
             });
-
-            it("should not display the selection-info when a bar is clicked and enableSelection is false", async () => {
-                const wrapper = mountBarChartWrapper({
-                    title: "Test Bar Chart",
-                    data: TEST_DATA,
-                    enableSelection: false,
-                });
-                await wrapper.find(".bar").trigger("click");
-                expect(wrapper.find(".selection-info").exists()).toBe(false);
-            });
-
-            it("should emit selection-changed event when a bar is clicked and enableSelection is true", async () => {
-                const wrapper = mountBarChartWrapper({
-                    title: "Test Bar Chart",
-                    data: TEST_DATA,
-                    enableSelection: true,
-                });
-                expect(wrapper.emitted("selection-changed")).toBeFalsy();
-                await wrapper.find(".bar").trigger("click");
-                expect(wrapper.emitted("selection-changed")).toBeTruthy();
-            });
-
-            it("should not emit selection-changed event when a bar is clicked and enableSelection is false", async () => {
-                const wrapper = mountBarChartWrapper({
-                    title: "Test Bar Chart",
-                    data: TEST_DATA,
-                    enableSelection: false,
-                });
-                expect(wrapper.emitted("selection-changed")).toBeFalsy();
-                await wrapper.find(".bar").trigger("click");
-                expect(wrapper.emitted("selection-changed")).toBeFalsy();
-            });
-
-            it("should display the correct selection info when a bar is clicked and enableSelection is true", async () => {
-                const wrapper = mountBarChartWrapper({
-                    title: "Test Bar Chart",
-                    data: TEST_DATA,
-                    enableSelection: true,
-                });
-                await wrapper.find(".bar").trigger("click");
-                expect(wrapper.find(".selection-info").text()).toContain(TEST_DATA.at(0)?.label);
-            });
+            expect(wrapper.find(".selection-info").exists()).toBe(false);
         });
     });
 });

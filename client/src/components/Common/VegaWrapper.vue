@@ -24,6 +24,10 @@ const props = withDefaults(defineProps<Props>(), {
     fillWidth: true,
 });
 
+const emit = defineEmits<{
+    (e: "new-view", view: View): void;
+}>();
+
 const chartContainer = ref<HTMLDivElement | null>(null);
 const errorMessage = ref<string>("");
 
@@ -38,10 +42,11 @@ async function embedChart() {
         if (chartContainer.value !== null) {
             const result = await embed(
                 chartContainer.value,
-                { ...toRaw(props.spec), width: "container", height: "container" } as VisualizationSpec,
+                toRaw(props.spec),
                 { renderer: "svg" },
             );
             vegaView = result.view;
+            emit("new-view", vegaView);
         }
         errorMessage.value = "";
     } catch (e: any) {

@@ -20,7 +20,6 @@ import {
 
 import BarChart from "./Charts/BarChart.vue";
 import OverviewPage from "./OverviewPage.vue";
-import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
 import WarnDeletedDatasets from "./WarnDeletedDatasets.vue";
 import FilterObjectStoreLink from "@/components/Common/FilterObjectStoreLink.vue";
@@ -204,12 +203,6 @@ function onUndelete(datasetId: string) {
                         </BForm>
                     </div>
                 </template>
-                <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip
-                        v-if="data"
-                        :data="data"
-                        :is-recoverable="isRecoverableDataPoint(data)" />
-                </template>
                 <template v-slot:selection="{ data }">
                     <SelectedItemActions
                         :data="data"
@@ -232,14 +225,8 @@ function onUndelete(datasetId: string) {
                     )
                 "
                 :data="activeVsDeletedTotalSizeData"
-                v-bind="byteFormattingForChart">
-                <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip
-                        v-if="data"
-                        :data="data"
-                        :is-recoverable="isRecoverableDataPoint(data)" />
-                </template>
-            </BarChart>
+                v-bind="byteFormattingForChart" />
+
         </div>
     </OverviewPage>
 </template>
