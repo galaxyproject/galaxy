@@ -15,16 +15,16 @@ interface BarChartProps {
     description?: string;
     enableSelection?: boolean;
     labelFormatter?: (dataPoint?: DataValuePoint | null) => string;
-    valueFormatter?: (value: number) => string;
+    yAxisLabelExpr?: string;
 }
 
 const props = withDefaults(defineProps<BarChartProps>(), {
     title: "Bar Chart",
     description: undefined,
     enableSelection: false,
+    yAxisLabelExpr: undefined,
     labelFormatter: (dataPoint?: DataValuePoint | null) =>
         dataPoint ? `${dataPoint.label}: ${dataPoint.value}` : "No data",
-    valueFormatter: (value: number) => `${value}`,
 });
 
 const emit = defineEmits<{
@@ -69,10 +69,14 @@ const vegaSpec = computed<VisualizationSpec>(() => {
             y: {
                 field: "value",
                 type: "quantitative",
-                axis: { title: null, tickCount: 5 },
+                axis: {
+                    title: null,
+                    tickCount: 5,
+                    ...(props.yAxisLabelExpr ? { labelExpr: props.yAxisLabelExpr } : {}),
+                },
             },
             color: {
-                field: "label",
+                field: "formattedValue",
                 type: "nominal",
                 sort: null,
                 legend: { title: null, orient: "right", symbolType: "circle" },

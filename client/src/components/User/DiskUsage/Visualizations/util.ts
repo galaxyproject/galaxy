@@ -6,7 +6,7 @@ import { useToast } from "@/composables/toast";
 import localize from "@/utils/localization";
 
 import type { DataValuePoint } from "./Charts";
-import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
+import { BYTES_AXIS_LABEL_EXPR, bytesLabelFormatter } from "./Charts/formatters";
 import { type ItemSizeSummary, purgeDatasetById, undeleteDatasetById } from "./service";
 
 interface DataLoader {
@@ -117,7 +117,7 @@ export function buildTopNDatasetsBySizeData(datasetsSizeSummary: ItemSizeSummary
 export const byteFormattingForChart = {
     "enable-selection": true,
     labelFormatter: bytesLabelFormatter,
-    valueFormatter: bytesValueFormatter,
+    yAxisLabelExpr: BYTES_AXIS_LABEL_EXPR,
 };
 
 export function useAdvancedFiltering() {
