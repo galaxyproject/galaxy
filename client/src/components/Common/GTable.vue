@@ -44,6 +44,12 @@ interface Props {
     clickableRows?: boolean;
 
     /**
+     * Whether to use compact table spacing (BootstrapVue `small`)
+     * @default false
+     */
+    compact?: boolean;
+
+    /**
      * Additional CSS classes for the table container
      * @default ""
      */
@@ -200,6 +206,7 @@ const props = withDefaults(defineProps<Props>(), {
     actions: undefined,
     bordered: false,
     clickableRows: false,
+    compact: false,
     containerClass: "",
     currentPage: undefined,
     emptyState: () => ({ message: "No data available" }),
@@ -541,6 +548,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                         { 'table-striped': striped },
                         { 'table-hover': hover },
                         { 'table-bordered': bordered },
+                        { 'g-table-compact': compact },
                         tableClass,
                     ]">
                     <thead v-if="!props.hideHeader">
@@ -774,6 +782,13 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
         td {
             padding: 0.75rem;
             vertical-align: middle;
+        }
+    }
+
+    &.g-table-compact {
+        thead th,
+        tbody td {
+            padding: 0.3rem;
         }
     }
 
