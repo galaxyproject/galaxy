@@ -392,11 +392,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                     else:
                         self.response.send_redirect(
                             url_for(
-                                controller="root",
-                                action="login",
-                                message="You have been logged out due to inactivity.  Please log in again to continue using Galaxy.",
+                                "/login/start",
+                                message="You have been logged out due to inactivity. Please log in again to continue using Galaxy.",
                                 status="info",
-                                use_panels=True,
                             )
                         )
                 else:
@@ -697,7 +695,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             allowed_paths = [
                 # client app route
                 # TODO: might be better as '/:username/login', '/:username/logout'
-                url_for(controller="root", action="login"),
+                url_for("/login"),
                 url_for(controller="login", action="start"),
                 # mako app routes
                 url_for(controller="user", action="login"),
@@ -714,10 +712,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             ]
             # append the welcome url to allowed paths if we'll show it at the login screen
             if self.app.config.show_welcome_with_login:
-                allowed_paths.append(url_for(controller="root", action="welcome"))
+                allowed_paths.append(url_for("/welcome"))
 
             # prevent redirect when UCSC server attempts to get dataset contents as 'anon' user
-            display_as = url_for(controller="root", action="display_as")
+            display_as = url_for("/display_as")
             if self.app.datatypes_registry.get_display_sites("ucsc") and self.request.path == display_as:
                 try:
                     host = socket.gethostbyaddr(self.environ["REMOTE_ADDR"])[0]
@@ -745,7 +743,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 return
             # redirect to root if the path is not in the list above
             if self.request.path not in allowed_paths:
-                login_url = url_for(controller="root", action="login", redirect=self.request.path)
+                login_url = url_for("/login", redirect=self.request.path)
                 self.response.send_redirect(login_url)
 
     def __create_new_session(self, prev_galaxy_session=None, user_for_new_session=None):

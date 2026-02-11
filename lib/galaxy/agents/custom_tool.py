@@ -67,10 +67,11 @@ class CustomToolAgent(BaseGalaxyAgent):
         # Check model capabilities first
         capability_error = self._validate_model_capabilities()
         if capability_error:
-            return AgentResponse(
+            return self._build_response(
                 content=capability_error,
                 confidence=ConfidenceLevel.LOW,
-                agent_type=self.agent_type,
+                method="capability_check",
+                query=query,
                 suggestions=[
                     ActionSuggestion(
                         action_type=ActionType.CONTACT_SUPPORT,
@@ -80,7 +81,8 @@ class CustomToolAgent(BaseGalaxyAgent):
                         priority=1,
                     )
                 ],
-                metadata={"error": "model_capability", "requires": "structured_output"},
+                error="model_capability",
+                agent_data={"requires": "structured_output"},
             )
 
         try:
@@ -91,24 +93,18 @@ class CustomToolAgent(BaseGalaxyAgent):
             if tool is None:
                 # Model returned text instead of structured output
                 content = extract_result_content(result)
-                return AgentResponse(
+                return self._build_response(
                     content=f"The model did not generate a valid tool definition. Response:\n\n{content}",
                     confidence=ConfidenceLevel.LOW,
-                    agent_type=self.agent_type,
-                    suggestions=[],
-                    metadata={"method": "text_fallback", "error": "invalid_structured_output"},
+                    method="text_fallback",
+                    result=result,
+                    query=query,
+                    error="invalid_structured_output",
                 )
 
             # Convert UserToolSource to YAML
             tool_dict = tool.model_dump(by_alias=True, exclude_none=True)
             tool_yaml = yaml.dump(tool_dict, default_flow_style=False, sort_keys=False)
-
-            metadata = {
-                "tool_id": tool.id,
-                "tool_name": tool.name,
-                "tool_yaml": tool_yaml,
-                "method": "structured",
-            }
 
             # Create response content
             response_content = f"""I've created a custom Galaxy tool:
@@ -135,31 +131,37 @@ The tool is ready to be saved and used in Galaxy."""
                 ),
             ]
 
-            return AgentResponse(
+            return self._build_response(
                 content=response_content,
                 confidence=ConfidenceLevel.HIGH,
-                agent_type=self.agent_type,
+                method="structured",
+                result=result,
+                query=query,
                 suggestions=suggestions,
-                metadata=metadata,
+                agent_data={
+                    "tool_id": tool.id,
+                    "tool_name": tool.name,
+                    "tool_yaml": tool_yaml,
+                },
             )
 
         except OSError as e:
             log.error(f"Tool creation network error: {e}")
-            return AgentResponse(
+            return self._build_response(
                 content=f"Failed to create tool due to network issues: {str(e)}\n\nPlease try again.",
                 confidence=ConfidenceLevel.LOW,
-                agent_type=self.agent_type,
-                suggestions=[],
-                metadata={"error": str(e)},
+                method="error",
+                query=query,
+                error=str(e),
             )
         except ValueError as e:
             log.error(f"Tool creation value error: {e}")
-            return AgentResponse(
+            return self._build_response(
                 content=f"Failed to create tool: {str(e)}\n\nPlease provide clear requirements for your tool.",
                 confidence=ConfidenceLevel.LOW,
-                agent_type=self.agent_type,
-                suggestions=[],
-                metadata={"error": str(e)},
+                method="error",
+                query=query,
+                error=str(e),
             )
         except ModelHTTPError as e:
             # Handle schema/grammar errors from model backends (vLLM, LiteLLM, etc.)
@@ -167,7 +169,7 @@ The tool is ready to be saved and used in Galaxy."""
             if "grammar" in error_str or "$defs" in error_str or "pointer" in error_str:
                 log.warning(f"Tool creation schema error (model may not support complex JSON schemas): {e}")
                 model = self._get_agent_config("model", "unknown")
-                return AgentResponse(
+                return self._build_response(
                     content=(
                         f"The model '{model}' failed to generate a tool definition due to JSON schema limitations. "
                         "This typically happens with local inference backends (vLLM, LiteLLM proxies) that don't "
@@ -176,7 +178,8 @@ The tool is ready to be saved and used in Galaxy."""
                         "(e.g., gpt-4o, claude-3-sonnet) via their native APIs."
                     ),
                     confidence=ConfidenceLevel.LOW,
-                    agent_type=self.agent_type,
+                    method="error",
+                    query=query,
                     suggestions=[
                         ActionSuggestion(
                             action_type=ActionType.CONTACT_SUPPORT,
@@ -186,21 +189,23 @@ The tool is ready to be saved and used in Galaxy."""
                             priority=1,
                         )
                     ],
-                    metadata={"error": "schema_limitation", "model": model},
+                    error="schema_limitation",
+                    agent_data={"model": model},
                 )
             raise
         except UnexpectedModelBehavior as e:
             # Handle validation failures when model can't produce valid structured output
             log.warning(f"Model failed to produce valid tool definition: {e}")
             model = self._get_agent_config("model", "unknown")
-            return AgentResponse(
+            return self._build_response(
                 content=(
                     f"The model '{model}' was unable to generate a valid tool definition after multiple attempts. "
                     "This may indicate the model doesn't fully support the required structured output format.\n\n"
                     "Try using a model with better structured output support (e.g., gpt-4o, claude-3-sonnet)."
                 ),
                 confidence=ConfidenceLevel.LOW,
-                agent_type=self.agent_type,
+                method="error",
+                query=query,
                 suggestions=[
                     ActionSuggestion(
                         action_type=ActionType.CONTACT_SUPPORT,
@@ -210,5 +215,6 @@ The tool is ready to be saved and used in Galaxy."""
                         priority=1,
                     )
                 ],
-                metadata={"error": "validation_failure", "model": model},
+                error="validation_failure",
+                agent_data={"model": model},
             )

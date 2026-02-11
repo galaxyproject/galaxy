@@ -8,6 +8,7 @@ Uses pydantic-ai output functions to either:
 - Hand off to tool_recommendation for tool discovery
 """
 
+import json
 import logging
 from pathlib import Path
 from typing import (
@@ -15,6 +16,7 @@ from typing import (
     Optional,
 )
 
+from pydantic import ValidationError
 from pydantic_ai import (
     Agent,
     RunContext,
@@ -78,6 +80,30 @@ class QueryRouterAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "router.md"
         return prompt_path.read_text()
 
+    def _serialize_handoff(self, response: AgentResponse, target_agent: str) -> str:
+        """
+        Wrap a delegated agent's response in JSON so we can pass it back through
+        the router's output function while keeping all the metadata intact.
+        """
+        return json.dumps(
+            {
+                "__handoff__": True,
+                "content": response.content,
+                "agent_type": response.agent_type,
+                "confidence": (
+                    response.confidence.value if hasattr(response.confidence, "value") else response.confidence
+                ),
+                "metadata": response.metadata,
+                "suggestions": [
+                    s.model_dump() if hasattr(s, "model_dump") else s for s in (response.suggestions or [])
+                ],
+                "handoff_info": {
+                    "source_agent": self.agent_type,
+                    "target_agent": target_agent,
+                },
+            }
+        )
+
     def _create_error_analysis_handoff(self):
         """Create output function for error analysis handoff."""
 
@@ -102,18 +128,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
             try:
                 agent = ErrorAnalysisAgent(ctx.deps)
-
-                # Pass conversation history if available
-                message_history = ctx.messages[:-1] if hasattr(ctx, "messages") and ctx.messages else None
-
-                result = await agent.agent.run(
-                    task,
-                    deps=ctx.deps,
-                    usage=ctx.usage,
-                    message_history=message_history,
-                )
-
-                return extract_result_content(result)
+                response = await agent.process(task)
+                return self._serialize_handoff(response, "error_analysis")
             except Exception as e:
                 log.error(f"Error analysis handoff failed: {e}")
                 return (
@@ -149,18 +165,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
             try:
                 agent = CustomToolAgent(ctx.deps)
-
-                # Pass conversation history if available
-                message_history = ctx.messages[:-1] if hasattr(ctx, "messages") and ctx.messages else None
-
-                result = await agent.agent.run(
-                    request,
-                    deps=ctx.deps,
-                    usage=ctx.usage,
-                    message_history=message_history,
-                )
-
-                return extract_result_content(result)
+                response = await agent.process(request)
+                return self._serialize_handoff(response, "custom_tool")
             except Exception as e:
                 log.error(f"Custom tool handoff failed: {e}")
                 return (
@@ -198,8 +204,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
             try:
                 agent = ToolRecommendationAgent(ctx.deps)
-                result = await agent.process(query)
-                return result.content
+                response = await agent.process(query)
+                return self._serialize_handoff(response, "tool_recommendation")
             except Exception as e:
                 log.error(f"Tool recommendation handoff failed: {e}")
                 return f"I encountered an issue while searching for tools. Please try again or browse the tool panel directly. Error: {e}"
@@ -221,15 +227,32 @@ class QueryRouterAgent(BaseGalaxyAgent):
             result = await self._run_with_retry(full_query)
             content = extract_result_content(result)
 
-            return AgentResponse(
+            # Check if this is a handoff response (JSON-encoded with agent info)
+            try:
+                handoff_data = json.loads(content)
+                if handoff_data.get("__handoff__"):
+                    # This was a handoff - use the delegated agent's response
+                    # Preserve handoff_info in metadata if present
+                    metadata = handoff_data.get("metadata", {})
+                    if handoff_data.get("handoff_info"):
+                        metadata["handoff_info"] = handoff_data["handoff_info"]
+                    return AgentResponse(
+                        content=handoff_data["content"],
+                        confidence=ConfidenceLevel(handoff_data.get("confidence", "medium")),
+                        agent_type=handoff_data.get("agent_type", self.agent_type),
+                        suggestions=handoff_data.get("suggestions", []),
+                        metadata=metadata,
+                    )
+            except (json.JSONDecodeError, TypeError, KeyError, ValidationError):
+                pass  # Not a handoff response or malformed suggestions, continue normally
+
+            # Direct response from router - use helper for consistent metadata
+            return self._build_response(
                 content=content,
                 confidence=ConfidenceLevel.HIGH,
-                agent_type=self.agent_type,
-                suggestions=[],
-                metadata={
-                    "method": "output_function",
-                    "query_length": len(query),
-                },
+                method="output_function",
+                result=result,
+                query=query,
             )
 
         except OSError as e:
@@ -263,45 +286,112 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         # Check for citation requests
         if any(phrase in query_lower for phrase in ["cite galaxy", "citation", "reference"]):
-            return AgentResponse(
+            return self._build_response(
                 content="""To cite Galaxy, please use: Nekrutenko, A., et al. (2024). The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update. Nucleic Acids Research. https://doi.org/10.1093/nar/gkae410
 
 For specific tools, please also cite the individual tool publications.""",
                 confidence=ConfidenceLevel.HIGH,
-                agent_type=self.agent_type,
-                suggestions=[],
-                metadata={"fallback": True, "reason": "citation_request"},
+                method="fallback",
+                query=query,
+                fallback=True,
+                agent_data={"reason": "citation_request"},
             )
 
         # Check for error-related keywords
-        error_keywords = ["error", "fail", "crash", "not work", "broken", "stderr", "exit code", "died", "killed"]
+        error_keywords = [
+            "error",
+            "fail",
+            "crash",
+            "not work",
+            "broken",
+            "stderr",
+            "exit code",
+            "died",
+            "killed",
+        ]
         if any(kw in query_lower for kw in error_keywords):
-            return AgentResponse(
+            return self._build_response(
                 content="I noticed you're asking about an error or failure. Unfortunately, I'm having trouble connecting to the AI service right now. Please try again in a moment, or check the job details panel for error information.",
                 confidence=ConfidenceLevel.LOW,
-                agent_type=self.agent_type,
-                suggestions=[],
-                metadata={"fallback": True, "reason": "error_query_service_unavailable", "error": error_msg},
+                method="fallback",
+                query=query,
+                fallback=True,
+                error=error_msg,
+                agent_data={"reason": "error_query_service_unavailable"},
             )
 
         # Check for explicit tool creation keywords
-        tool_keywords = ["create a tool", "build a tool", "make a tool", "wrap a tool", "tool wrapper"]
+        tool_keywords = [
+            "create a tool",
+            "build a tool",
+            "make a tool",
+            "wrap a tool",
+            "tool wrapper",
+        ]
         if any(kw in query_lower for kw in tool_keywords):
-            return AgentResponse(
+            return self._build_response(
                 content="I noticed you want to create a Galaxy tool. Unfortunately, I'm having trouble connecting to the AI service right now. Please try again in a moment.",
                 confidence=ConfidenceLevel.LOW,
-                agent_type=self.agent_type,
-                suggestions=[],
-                metadata={"fallback": True, "reason": "tool_creation_service_unavailable", "error": error_msg},
+                method="fallback",
+                query=query,
+                fallback=True,
+                error=error_msg,
+                agent_data={"reason": "tool_creation_service_unavailable"},
+            )
+
+        # Check for tool discovery keywords
+        tool_discovery_keywords = [
+            "what tool",
+            "which tool",
+            "find a tool",
+            "is there a tool",
+            "tool for",
+            "tool to",
+        ]
+        if any(kw in query_lower for kw in tool_discovery_keywords):
+            return self._build_response(
+                content="I noticed you're looking for a Galaxy tool. Unfortunately, I'm having trouble connecting to the AI service right now. You can browse available tools in the tool panel on the left, or search using the tool search box.",
+                confidence=ConfidenceLevel.LOW,
+                method="fallback",
+                query=query,
+                fallback=True,
+                error=error_msg,
+                agent_data={"reason": "tool_discovery_service_unavailable"},
+            )
+
+        # Check for training/tutorial keywords
+        training_keywords = [
+            "tutorial",
+            "training",
+            "learn",
+            "how do i analyze",
+            "how to analyze",
+            "rna-seq",
+            "chip-seq",
+            "variant calling",
+            "best practice",
+            "workflow for",
+        ]
+        if any(kw in query_lower for kw in training_keywords):
+            return self._build_response(
+                content="I noticed you're looking for training materials or guidance on analysis. Unfortunately, I'm having trouble connecting to the AI service right now. You can browse tutorials directly at the Galaxy Training Network: https://training.galaxyproject.org/training-material/",
+                confidence=ConfidenceLevel.LOW,
+                method="fallback",
+                query=query,
+                fallback=True,
+                error=error_msg,
+                agent_data={"reason": "training_service_unavailable"},
             )
 
         # General fallback
-        return AgentResponse(
+        return self._build_response(
             content="I'm having trouble connecting to the AI service right now. Please try again in a moment. If you have a question about Galaxy, you can also check the Galaxy Training Network (https://training.galaxyproject.org/) for tutorials and documentation.",
             confidence=ConfidenceLevel.LOW,
-            agent_type=self.agent_type,
-            suggestions=[],
-            metadata={"fallback": True, "reason": "service_unavailable", "error": error_msg},
+            method="fallback",
+            query=query,
+            fallback=True,
+            error=error_msg,
+            agent_data={"reason": "service_unavailable"},
         )
 
     def _get_simple_system_prompt(self) -> str:

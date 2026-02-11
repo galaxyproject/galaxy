@@ -907,7 +907,11 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors, Generic[T]):
             finally:
                 self.app.model.unset_request_id(scoped_id)
             # Sleep a bit before the next state check
-            time.sleep(self.app.config.job_runner_monitor_sleep)
+            time.sleep(self.monitor_sleep_time)
+
+    @property
+    def monitor_sleep_time(self):
+        return self.app.config.job_runner_monitor_sleep
 
     def monitor_job(self, job_state: T) -> None:
         self.monitor_queue.put(job_state)

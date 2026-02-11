@@ -29,6 +29,7 @@ import pytest
 
 # Skip entire module if pydantic_ai is not installed
 pydantic_ai = pytest.importorskip("pydantic_ai")
+from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
 
 from galaxy.agents import (
@@ -38,6 +39,12 @@ from galaxy.agents import (
     GalaxyAgentDependencies,
     QueryRouterAgent,
 )
+from galaxy.agents.error_analysis import ErrorAnalysisResult
+from galaxy.agents.orchestrator import (
+    AgentPlan,
+    WorkflowOrchestratorAgent,
+)
+from galaxy.schema.agents import ConfidenceLevel
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util.unittest_utils import pytestmark_live_llm
 
@@ -168,6 +175,45 @@ class TestAgentUnitMocked:
             assert info["agent_type"] == agent_type
             assert "class_name" in info
 
+    def test_error_analysis_no_suggestions_without_admin(self):
+        """Verify _create_suggestions only returns actionable suggestions.
+
+        Solution steps and alternatives are guidance, not executable actions,
+        so they shouldn't generate suggestions.
+        """
+        analysis = ErrorAnalysisResult(
+            error_category="tool_configuration",
+            error_severity="medium",
+            likely_cause="Missing input file",
+            solution_steps=["Check input", "Re-upload file"],
+            confidence="high",
+            requires_admin=False,
+        )
+
+        agent = ErrorAnalysisAgent(self.deps)
+        suggestions = agent._create_suggestions(analysis)
+
+        # No actionable suggestions when admin not required
+        assert suggestions == []
+
+    def test_error_analysis_suggestions_with_admin_required(self):
+        """When requires_admin=True, should suggest contacting support."""
+        analysis = ErrorAnalysisResult(
+            error_category="system_error",
+            error_severity="high",
+            likely_cause="Disk quota exceeded",
+            solution_steps=["Contact admin"],
+            confidence="high",
+            requires_admin=True,
+        )
+
+        agent = ErrorAnalysisAgent(self.deps)
+        suggestions = agent._create_suggestions(analysis)
+
+        assert len(suggestions) == 1
+        assert suggestions[0].action_type.value == "contact_support"
+        assert suggestions[0].confidence == ConfidenceLevel.HIGH
+
     @pytest.mark.skip(reason="TestModel API changed in pydantic-ai, needs update for new version")
     @pytest.mark.asyncio
     async def test_router_with_test_model(self):
@@ -176,8 +222,6 @@ class TestAgentUnitMocked:
         # The router now uses output functions and returns AgentResponse directly
         # rather than RoutingDecision objects
         with patch("galaxy.agents.router.QueryRouterAgent._create_agent") as mock_create:
-            from pydantic_ai import Agent
-
             # Create TestModel with predictable output
             test_model = TestModel()
             # This API no longer exists in newer pydantic-ai versions
@@ -222,11 +266,6 @@ class TestAgentUnitMocked:
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_agent_mocked(self):
         """Test WorkflowOrchestratorAgent with mocked responses."""
-        from galaxy.agents.orchestrator import (
-            AgentPlan,
-            WorkflowOrchestratorAgent,
-        )
-
         agent = WorkflowOrchestratorAgent(self.deps)
 
         # Test 1: Query that should NOT trigger orchestration (single agent)
@@ -257,11 +296,6 @@ class TestAgentUnitMocked:
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_sequential_execution(self):
         """Test orchestrator sequential workflow execution."""
-        from galaxy.agents.orchestrator import (
-            AgentPlan,
-            WorkflowOrchestratorAgent,
-        )
-
         agent = WorkflowOrchestratorAgent(self.deps)
 
         # Mock a complex plan requiring sequential orchestration
@@ -315,11 +349,6 @@ class TestAgentUnitMocked:
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_parallel_execution(self):
         """Test orchestrator parallel workflow execution."""
-        from galaxy.agents.orchestrator import (
-            AgentPlan,
-            WorkflowOrchestratorAgent,
-        )
-
         agent = WorkflowOrchestratorAgent(self.deps)
 
         # Mock parallel plan
@@ -382,8 +411,6 @@ class TestAgentUnitMocked:
 
     def _orchestrator_agent(self):
         """Helper to create a patched orchestrator agent with mocked dependencies."""
-        from galaxy.agents.orchestrator import WorkflowOrchestratorAgent
-
         agent = WorkflowOrchestratorAgent(self.deps)
         return agent
 

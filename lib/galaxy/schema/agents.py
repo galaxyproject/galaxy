@@ -11,6 +11,7 @@ from typing import (
 from pydantic import (
     BaseModel,
     Field,
+    model_validator,
 )
 
 
@@ -26,11 +27,10 @@ class ActionType(str, Enum):
     """Types of actions agents can suggest."""
 
     TOOL_RUN = "tool_run"
-    DOCUMENTATION = "documentation"
+    SAVE_TOOL = "save_tool"
     CONTACT_SUPPORT = "contact_support"
     VIEW_EXTERNAL = "view_external"
-    SAVE_TOOL = "save_tool"
-    REFINE_QUERY = "refine_query"
+    DOCUMENTATION = "documentation"
 
 
 class ActionSuggestion(BaseModel):
@@ -41,6 +41,20 @@ class ActionSuggestion(BaseModel):
     parameters: dict[str, Any] = Field(default_factory=dict, description="Parameters for the action")
     confidence: ConfidenceLevel = Field(description="Confidence in this suggestion")
     priority: int = Field(default=1, description="Priority level (1=high, 2=medium, 3=low)")
+
+    @model_validator(mode="after")
+    def validate_parameters(self) -> "ActionSuggestion":
+        """Ensure required parameters exist for each action type."""
+        if self.action_type == ActionType.TOOL_RUN:
+            if not self.parameters.get("tool_id"):
+                raise ValueError("TOOL_RUN requires 'tool_id' parameter")
+        elif self.action_type == ActionType.SAVE_TOOL:
+            if not self.parameters.get("tool_yaml"):
+                raise ValueError("SAVE_TOOL requires 'tool_yaml' parameter")
+        elif self.action_type == ActionType.VIEW_EXTERNAL:
+            if not self.parameters.get("url"):
+                raise ValueError("VIEW_EXTERNAL requires 'url' parameter")
+        return self
 
 
 class AgentResponse(BaseModel):
@@ -55,21 +69,23 @@ class AgentResponse(BaseModel):
 
 
 class AgentQueryRequest(BaseModel):
-    """Request to query an AI agent."""
+    """Request to query an AI agent.
+
+    DEPRECATED: Use /api/chat instead for new integrations.
+    """
 
     query: str = Field(description="The user's question or request")
     agent_type: str = Field(default="auto", description="Preferred agent type ('auto' for routing)")
     context: dict[str, Any] = Field(default_factory=dict, description="Additional context for the query")
-    stream: bool = Field(default=False, description="Whether to stream the response")
 
 
 class AgentQueryResponse(BaseModel):
-    """Response from an AI agent query."""
+    """Response from an AI agent query.
+
+    DEPRECATED: Use /api/chat instead for new integrations.
+    """
 
     response: AgentResponse = Field(description="The agent's response")
-    routing_info: Optional[dict[str, Any]] = Field(
-        default=None, description="Information about how the query was routed"
-    )
     processing_time: Optional[float] = Field(default=None, description="Time taken to process the query in seconds")
 
 

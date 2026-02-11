@@ -41,10 +41,6 @@ interface Message {
     agentResponse?: AgentResponse;
     suggestions?: ActionSuggestion[];
     isSystemMessage?: boolean; // Flag for welcome/placeholder messages that shouldn't have feedback
-    routingInfo?: {
-        selected_agent: string;
-        reasoning: string;
-    };
 }
 
 interface ChatHistoryItem {
@@ -81,10 +77,11 @@ interface AgentType {
 
 const agentTypes: AgentType[] = [
     { value: "auto", label: "Auto (Router)", icon: faMagic, description: "Intelligent routing" },
+    { value: "router", label: "Router", icon: faRoute, description: "Query router" },
     { value: "error_analysis", label: "Error Analysis", icon: faBug, description: "Debug tool errors" },
     { value: "custom_tool", label: "Custom Tool", icon: faPlus, description: "Create custom tools" },
     { value: "dataset_analyzer", label: "Dataset Analyzer", icon: faChartBar, description: "Analyze datasets" },
-    { value: "gtn_training", label: "Training Materials", icon: faGraduationCap, description: "Find tutorials" },
+    { value: "gtn_training", label: "GTN Training", icon: faGraduationCap, description: "Find tutorials" },
 ];
 
 // Map agent types to their icons for quick lookup
@@ -152,12 +149,16 @@ async function submitQuery() {
 
     try {
         const { data, error } = await GalaxyApi().POST("/api/chat", {
+            params: {
+                query: {
+                    agent_type: selectedAgentType.value,
+                },
+            },
             body: {
-                job_id: null,
                 query: currentQuery,
-                agent_type: selectedAgentType.value,
-                exchange_id: currentChatId.value, // Backend will load full conversation history
-            } as any,
+                context: null,
+                exchange_id: currentChatId.value,
+            },
         });
 
         if (error) {
@@ -177,14 +178,13 @@ async function submitQuery() {
             await nextTick();
             scrollToBottom();
         } else if (data) {
-            // Extract agent response if available
-            const agentResponse = (data as any)?.agent_response;
-            const content = typeof data === "string" ? data : (data as any)?.response || "No response received";
+            // Extract typed response fields
+            const agentResponse = data.agent_response as AgentResponse | undefined;
+            const content = data.response || "No response received";
 
             // Get the exchange ID if returned
-            const exchangeId = (data as any)?.exchange_id;
-            if (exchangeId) {
-                currentChatId.value = exchangeId;
+            if (data.exchange_id) {
+                currentChatId.value = data.exchange_id;
             }
 
             const assistantMessage: Message = {
@@ -195,11 +195,10 @@ async function submitQuery() {
                 agentType:
                     agentResponse?.agent_type ||
                     (selectedAgentType.value === "auto" ? "router" : selectedAgentType.value),
-                confidence: agentResponse?.confidence || (data as any)?.confidence || "medium",
+                confidence: agentResponse?.confidence || "medium",
                 feedback: null,
                 agentResponse: agentResponse,
                 suggestions: agentResponse?.suggestions || [],
-                routingInfo: (data as any)?.routing_info,
             };
             messages.value.push(assistantMessage);
 
@@ -284,7 +283,16 @@ function getAgentIcon(agentType?: string): IconDefinition {
 
 function getAgentLabel(agentType?: string) {
     const agent = agentTypes.find((a) => a.value === agentType);
-    return agent?.label || "AI Assistant";
+    return agent?.label || agentType || "AI Assistant";
+}
+
+function formatModelName(model?: string): string {
+    if (!model) {
+        return "";
+    }
+    // Extract just the model name from full paths like "openai/gpt-4" or "anthropic/claude-3"
+    const parts = model.split("/");
+    return parts[parts.length - 1] || model;
 }
 
 function getAgentResponseOrEmpty(response?: AgentResponse): AgentResponse {
@@ -542,9 +550,9 @@ function toggleHistory() {
                             <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
                             <span>{{ getAgentLabel(message.agentType) }}</span>
                             <span
-                                v-if="message.routingInfo"
+                                v-if="message.agentResponse?.metadata?.handoff_info"
                                 class="routing-badge"
-                                :title="message.routingInfo.reasoning">
+                                :title="'Routed by ' + message.agentResponse.metadata.handoff_info.source_agent">
                                 via Router
                             </span>
                         </div>
@@ -562,23 +570,43 @@ function toggleHistory() {
                                 " />
                         </div>
                         <div v-if="!message.content.startsWith('❌') && !message.isSystemMessage" class="cell-footer">
-                            <button
-                                class="feedback-btn"
-                                :disabled="message.feedback !== null"
-                                :class="{ active: message.feedback === 'up' }"
-                                title="Helpful"
-                                @click="sendFeedback(message.id, 'up')">
-                                <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
-                            </button>
-                            <button
-                                class="feedback-btn"
-                                :disabled="message.feedback !== null"
-                                :class="{ active: message.feedback === 'down' }"
-                                title="Not helpful"
-                                @click="sendFeedback(message.id, 'down')">
-                                <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
-                            </button>
-                            <span v-if="message.feedback" class="feedback-text">Thanks!</span>
+                            <div class="feedback-actions">
+                                <button
+                                    class="feedback-btn"
+                                    :disabled="message.feedback !== null"
+                                    :class="{ active: message.feedback === 'up' }"
+                                    title="Helpful"
+                                    @click="sendFeedback(message.id, 'up')">
+                                    <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
+                                </button>
+                                <button
+                                    class="feedback-btn"
+                                    :disabled="message.feedback !== null"
+                                    :class="{ active: message.feedback === 'down' }"
+                                    title="Not helpful"
+                                    @click="sendFeedback(message.id, 'down')">
+                                    <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
+                                </button>
+                                <span v-if="message.feedback" class="feedback-text">Thanks!</span>
+                            </div>
+                            <div class="response-stats">
+                                <span class="stat-item" :title="'Agent: ' + getAgentLabel(message.agentType)">
+                                    <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
+                                    {{ getAgentLabel(message.agentType) }}
+                                </span>
+                                <span
+                                    v-if="message.agentResponse?.metadata?.model"
+                                    class="stat-item"
+                                    :title="'Model: ' + message.agentResponse.metadata.model">
+                                    {{ formatModelName(message.agentResponse.metadata.model) }}
+                                </span>
+                                <span
+                                    v-if="message.agentResponse?.metadata?.total_tokens"
+                                    class="stat-item"
+                                    title="Tokens used">
+                                    {{ message.agentResponse.metadata.total_tokens }} tokens
+                                </span>
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -775,9 +803,29 @@ function toggleHistory() {
 .cell-footer {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    justify-content: space-between;
     margin-top: 0.5rem;
     padding-left: 0.25rem;
+}
+
+.feedback-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.response-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.7rem;
+    color: $text-light;
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
 }
 
 .feedback-btn {
