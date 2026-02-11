@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from yaml import safe_load
 
 from galaxy.files.templates.examples import get_example
@@ -291,19 +293,10 @@ def test_production_aws_public_bucket():
 
 
 def test_examples_parse():
-    _assert_example_parses("production_ftp.yml")
-    _assert_example_parses("production_azure.yml")
-    _assert_example_parses("production_aws_private_bucket.yml")
-    _assert_example_parses("production_aws_public_bucket.yml")
-    _assert_example_parses("production_s3fs.yml")
-    _assert_example_parses("production_dropbox.yml")
-    _assert_example_parses("s3fs_by_host_and_port.yml")
-    _assert_example_parses("templating_override.yml")
-    _assert_example_parses("admin_secrets.yml")
-    _assert_example_parses("admin_secrets_with_defaults.yml")
-    _assert_example_parses("testing_multi_version_with_secrets.yml")
-    _assert_example_parses("dropbox_client_secrets_in_vault.yml")
-    _assert_example_parses("dropbox_client_secrets_explicit.yml")
+    # Ensure every YAML example in `lib/galaxy/files/templates/examples/` parses without error
+    examples_dir = Path(__file__).resolve().parents[3] / "lib" / "galaxy" / "files" / "templates" / "examples"
+    for example_file in examples_dir.glob("*.yml"):
+        _assert_example_parses(example_file.name)
 
 
 def _assert_example_parses(filename: str):
