@@ -34,6 +34,11 @@ from unittest.mock import (
     patch,
 )
 
+from galaxy.agents import (
+    agent_registry,
+    GalaxyAgentDependencies,
+)
+from galaxy.agents.error_analysis import ErrorAnalysisResult
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util.unittest_utils import pytestmark_live_llm
 from galaxy_test.base.populators import (
@@ -69,11 +74,6 @@ class AgentIntegrationTestCase(IntegrationTestCase):
 
 def _create_deps_with_mock_model(self, trans, user):
     """Replacement for AgentService.create_dependencies that injects a mock model_factory."""
-    from galaxy.agents import (
-        agent_registry,
-        GalaxyAgentDependencies,
-    )
-
     toolbox = trans.app.toolbox if hasattr(trans, "app") and hasattr(trans.app, "toolbox") else None
     return GalaxyAgentDependencies(
         trans=trans,
@@ -198,6 +198,15 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         assert data["response"]["metadata"]["tool_id"] == "line-counter"
         assert "wc -l" in data["response"]["metadata"]["tool_yaml"]
 
+        # Verify suggestions are present and valid
+        suggestions = data["response"].get("suggestions", [])
+        assert len(suggestions) >= 1, "Custom tool should return at least one suggestion"
+        # Should have a SAVE_TOOL suggestion with required parameters
+        save_suggestions = [s for s in suggestions if s["action_type"] == "save_tool"]
+        assert len(save_suggestions) == 1, "Should have exactly one SAVE_TOOL suggestion"
+        assert save_suggestions[0]["parameters"].get("tool_yaml"), "SAVE_TOOL must have tool_yaml"
+        assert save_suggestions[0]["parameters"].get("tool_id"), "SAVE_TOOL must have tool_id"
+
     @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
     @patch("galaxy.agents.error_analysis.Agent")
     def test_query_error_analysis_agent_mocked(self, mock_agent_class):
@@ -207,8 +216,6 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
 
         # Mock error analysis
         async def mock_run(*args, **kwargs):
-            from galaxy.agents.error_analysis import ErrorAnalysisResult
-
             result = MagicMock()
             mock_analysis = ErrorAnalysisResult(
                 error_category="tool_configuration",
@@ -244,6 +251,14 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         # Should mention the error type or solution
         content = data["response"]["content"].lower()
         assert "command" in content or "samtools" in content or "not found" in content
+
+        # Suggestions are optional - only returned for actionable items like CONTACT_SUPPORT
+        # In this mock, requires_admin=False, so no suggestions expected
+        suggestions = data["response"].get("suggestions", [])
+        for suggestion in suggestions:
+            assert "action_type" in suggestion
+            assert "description" in suggestion
+            assert "confidence" in suggestion
 
 
 # ============================================================================

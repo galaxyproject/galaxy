@@ -14,6 +14,7 @@ from typing import (
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
+from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
     ActionType,
@@ -227,27 +228,28 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 if analysis_result is None:
                     # Model returned text instead of structured output
                     content = extract_result_content(result)
-                    return AgentResponse(
+                    return self._build_response(
                         content=content,
-                        confidence="medium",
-                        agent_type=self.agent_type,
-                        suggestions=[],
-                        metadata={"method": "text_fallback"},
+                        confidence=ConfidenceLevel.MEDIUM,
+                        method="text_fallback",
+                        result=result,
+                        query=query,
                     )
 
                 content = self._format_analysis_response(analysis_result)
                 suggestions = self._create_suggestions(analysis_result)
 
-                return AgentResponse(
+                return self._build_response(
                     content=content,
-                    confidence=analysis_result.confidence,
-                    agent_type=self.agent_type,
+                    confidence=ConfidenceLevel(analysis_result.confidence),
+                    method="structured",
+                    result=result,
+                    query=query,
                     suggestions=suggestions,
-                    metadata={
+                    agent_data={
                         "error_category": analysis_result.error_category,
                         "requires_admin": analysis_result.requires_admin,
                         "has_alternatives": bool(analysis_result.alternative_approaches),
-                        "method": "structured",
                     },
                 )
             else:
@@ -255,15 +257,14 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 response_text = extract_result_content(result)
                 parsed_result = self._parse_simple_response(response_text)
 
-                return AgentResponse(
+                return self._build_response(
                     content=parsed_result.get("content", response_text),
-                    confidence=parsed_result.get("confidence", "medium"),
-                    agent_type=self.agent_type,
+                    confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
+                    method="simple_text",
+                    result=result,
+                    query=query,
                     suggestions=parsed_result.get("suggestions", []),
-                    metadata={
-                        "method": "simple_text",
-                        "error_category": parsed_result.get("error_category", "unknown"),
-                    },
+                    agent_data={"error_category": parsed_result.get("error_category", "unknown")},
                 )
 
         except OSError as e:
@@ -318,38 +319,19 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         return "\n".join(parts)
 
     def _create_suggestions(self, analysis: ErrorAnalysisResult) -> list[ActionSuggestion]:
-        """Create action suggestions from analysis result."""
+        """Create action suggestions from analysis result.
+
+        Only creates suggestions for concrete, executable Galaxy actions.
+        General guidance (solution steps, alternatives) is in the response content.
+        """
         suggestions = []
 
-        # Primary solution
-        if analysis.solution_steps:
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.TOOL_RUN,
-                    description=f"Follow the {len(analysis.solution_steps)}-step solution",
-                    confidence=analysis.confidence,
-                    priority=1,
-                )
-            )
-
-        # Alternative approaches
-        for approach in analysis.alternative_approaches[:2]:  # Limit to 2 alternatives
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.TOOL_RUN,
-                    description=f"Try alternative: {approach[:100]}...",
-                    confidence="medium",
-                    priority=2,
-                )
-            )
-
-        # Admin contact if needed
         if analysis.requires_admin:
             suggestions.append(
                 ActionSuggestion(
                     action_type=ActionType.CONTACT_SUPPORT,
-                    description="Contact Galaxy administrator",
-                    confidence="high",
+                    description="Contact Galaxy administrator for assistance",
+                    confidence=ConfidenceLevel.HIGH,
                     priority=1,
                 )
             )
@@ -402,18 +384,14 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         if not content_parts:
             content_parts = [normalized_text]  # Fallback to full response
 
+        conf_str = confidence.group(1).lower() if confidence else "medium"
+        confidence_level = ConfidenceLevel(conf_str)
+
         return {
             "content": "\n\n".join(content_parts),
-            "confidence": confidence.group(1).lower() if confidence else "medium",
+            "confidence": confidence_level,
             "error_category": error_type.group(1).strip() if error_type else "unknown",
-            "suggestions": [
-                ActionSuggestion(
-                    action_type=ActionType.CONTACT_SUPPORT,
-                    description="Get additional help if this doesn't resolve the issue",
-                    confidence="medium",
-                    priority=2,
-                )
-            ],
+            "suggestions": [],
         }
 
     def _get_fallback_content(self) -> str:

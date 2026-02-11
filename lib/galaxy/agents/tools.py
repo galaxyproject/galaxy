@@ -280,12 +280,12 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 content = self._format_recommendation_response(recommendation)
                 suggestions = self._create_suggestions(recommendation)
 
-                return AgentResponse(
+                return self._build_response(
                     content=content,
                     confidence=ConfidenceLevel.HIGH,
-                    agent_type=self.agent_type,
+                    method="fast_path_exact_match",
+                    query=query,
                     suggestions=suggestions,
-                    metadata={"method": "fast_path_exact_match"},
                     reasoning=f"Directly matched tool name '{exact_match['name']}'.",
                 )
         except (AttributeError, KeyError, TypeError) as e:
@@ -313,38 +313,34 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                     # Model returned text instead of structured output (e.g., clarifying question)
                     # Return the text response directly
                     content = extract_result_content(result)
-                    return AgentResponse(
+                    return self._build_response(
                         content=content,
                         confidence=ConfidenceLevel.MEDIUM,
-                        agent_type=self.agent_type,
-                        suggestions=[],
-                        metadata={"method": "text_fallback"},
+                        method="text_fallback",
+                        result=result,
+                        query=query,
                     )
 
                 log.info(f"Tool recommendation result: primary_tools={recommendation.primary_tools}")
                 content = self._format_recommendation_response(recommendation)
                 suggestions = self._create_suggestions(recommendation)
 
-                # Convert string confidence to enum
-                conf_str = recommendation.confidence.lower() if recommendation.confidence else "medium"
-                if conf_str == "high":
-                    confidence = ConfidenceLevel.HIGH
-                elif conf_str == "low":
-                    confidence = ConfidenceLevel.LOW
-                else:
-                    confidence = ConfidenceLevel.MEDIUM
+                confidence = ConfidenceLevel(
+                    recommendation.confidence.lower() if recommendation.confidence else "medium"
+                )
 
-                return AgentResponse(
+                return self._build_response(
                     content=content,
                     confidence=confidence,
-                    agent_type=self.agent_type,
+                    method="structured",
+                    result=result,
+                    query=query,
                     suggestions=suggestions,
-                    metadata={
+                    agent_data={
                         "num_tools_found": len(recommendation.primary_tools),
                         "has_alternatives": bool(recommendation.alternative_tools),
                         "has_workflow": bool(recommendation.workflow_suggestion),
                         "search_keywords": recommendation.search_keywords,
-                        "method": "structured",
                     },
                     reasoning=recommendation.reasoning,
                 )
@@ -353,13 +349,14 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 response_text = extract_result_content(result)
                 parsed_result = self._parse_simple_response(response_text)
 
-                return AgentResponse(
+                return self._build_response(
                     content=parsed_result.get("content", response_text),
                     confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
-                    agent_type=self.agent_type,
+                    method="simple_text",
+                    result=result,
+                    query=query,
                     suggestions=parsed_result.get("suggestions", []),
-                    metadata={
-                        "method": "simple_text",
+                    agent_data={
                         "has_alternatives": parsed_result.get("has_alternatives", False),
                     },
                 )
@@ -436,13 +433,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
 
             # Only add suggestions if we have a valid tool_id AND the tool exists
             if tool_id and self._verify_tool_exists(tool_id):
-                conf_value = recommendation.confidence.lower()
-                if conf_value == "high":
-                    action_confidence = ConfidenceLevel.HIGH
-                elif conf_value == "low":
-                    action_confidence = ConfidenceLevel.LOW
-                else:
-                    action_confidence = ConfidenceLevel.MEDIUM
+                action_confidence = ConfidenceLevel(recommendation.confidence.lower())
                 suggestions.append(
                     ActionSuggestion(
                         action_type=ActionType.TOOL_RUN,
@@ -533,20 +524,23 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         if not content_parts:
             content_parts = [normalized_text]  # Fallback to full response
 
-        # Create suggestions
+        # Create suggestions - only if tool actually exists in toolbox
         suggestions = []
         if tool and tool.group(1).strip():
             tool_name = tool.group(1).strip()
             tool_id_value = tool_id.group(1).strip() if tool_id else tool_name.lower().replace(" ", "_")
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.TOOL_RUN,
-                    description=f"Run {tool_name}",
-                    parameters={"tool_id": tool_id_value, "tool_name": tool_name},
-                    confidence=confidence_level,
-                    priority=1,
+            if self._verify_tool_exists(tool_id_value):
+                suggestions.append(
+                    ActionSuggestion(
+                        action_type=ActionType.TOOL_RUN,
+                        description=f"Run {tool_name}",
+                        parameters={"tool_id": tool_id_value, "tool_name": tool_name},
+                        confidence=confidence_level,
+                        priority=1,
+                    )
                 )
-            )
+            else:
+                log.warning(f"Tool '{tool_id_value}' from simple response not found in toolbox - skipping suggestion")
 
         return {
             "content": "\n\n".join(content_parts),
