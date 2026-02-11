@@ -4047,6 +4047,142 @@ cwl_file:
    - parameter: 5
    - parameter: "5"
 
+gx_data_collection_any_y:
+  request_valid:
+    - parameter: {src: hdca, id: abcdabcd}
+  request_invalid:
+    - parameter: {src: hdca, id: 7}
+    - parameter: null
+    - {}
+  request_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  request_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - parameter: null
+    - {}
+  job_internal_valid:
+    - parameter: {src: hdca, id: 5}
+  job_internal_invalid:
+    - parameter: {src: hdca, id: abcdabcd}
+    - {}
+  job_runtime_valid:
+    # list collection
+    - parameter:
+        class: Collection
+        name: test_list
+        collection_type: list
+        tags: []
+        elements:
+          - class: File
+            element_identifier: f1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          - class: File
+            element_identifier: f2
+            basename: "f2.txt"
+            location: "step_input://1"
+            path: "/tmp/f2.txt"
+            nameroot: "f2"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # paired collection
+    - parameter:
+        class: Collection
+        name: test_paired
+        collection_type: paired
+        tags: []
+        elements:
+          forward:
+            class: File
+            element_identifier: forward
+            basename: "f.txt"
+            location: "step_input://0"
+            path: "/tmp/f.txt"
+            nameroot: "f"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          reverse:
+            class: File
+            element_identifier: reverse
+            basename: "r.txt"
+            location: "step_input://1"
+            path: "/tmp/r.txt"
+            nameroot: "r"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+    # list:paired collection
+    - parameter:
+        class: Collection
+        name: test_list_paired
+        collection_type: "list:paired"
+        tags: []
+        elements:
+          - class: Collection
+            name: sample1
+            collection_type: paired
+            tags: []
+            elements:
+              forward:
+                class: File
+                element_identifier: forward
+                basename: "s1_f.txt"
+                location: "step_input://0"
+                path: "/tmp/s1_f.txt"
+                nameroot: "s1_f"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+              reverse:
+                class: File
+                element_identifier: reverse
+                basename: "s1_r.txt"
+                location: "step_input://1"
+                path: "/tmp/s1_r.txt"
+                nameroot: "s1_r"
+                nameext: ".txt"
+                format: "txt"
+                size: 100
+    # record collection
+    - parameter:
+        class: Collection
+        name: test_record
+        collection_type: record
+        tags: []
+        elements:
+          field1:
+            class: File
+            element_identifier: field1
+            basename: "f1.txt"
+            location: "step_input://0"
+            path: "/tmp/f1.txt"
+            nameroot: "f1"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+          field2:
+            class: File
+            element_identifier: field2
+            basename: "f2.txt"
+            location: "step_input://1"
+            path: "/tmp/f2.txt"
+            nameroot: "f2"
+            nameext: ".txt"
+            format: "txt"
+            size: 100
+  job_runtime_invalid:
+    - parameter: {src: hdca, id: 5}
+    - {}
+    - parameter:
+        class: Collection
+
 cwl_directory:
   request_valid:
    - parameter: {src: hda, id: abcdabcd}
