@@ -102,7 +102,7 @@ def skip_if_container_type_unavailable(cls) -> None:
         raise unittest.SkipTest(f"Executable '{cls.container_type}' not found on PATH")
 
 
-class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
+class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases, ConfiguresDatabaseVault):
     dataset_populator: DatasetPopulator
     jobs_directory: str
     job_config_file = DOCKERIZED_JOB_CONFIG_FILE
@@ -116,6 +116,7 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
         disable_dependency_resolution(config)
+        cls._configure_database_vault(config)
 
     @classmethod
     def setUpClass(cls) -> None:
