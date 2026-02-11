@@ -1,6 +1,6 @@
 class: GalaxyTool
-id: gx_data_collection_paired_or_unpaired
-name: gx_data_collection_paired_or_unpaired
+id: gx_data_collection_paired_or_unpaired_y
+name: gx_data_collection_paired_or_unpaired_y
 version: "1.0.0"
 profile: "25.0"
 container: busybox

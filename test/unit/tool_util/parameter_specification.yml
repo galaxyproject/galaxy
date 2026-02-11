@@ -562,7 +562,7 @@ gx_text_default:
     - parameter: { "moo": "cow" }
     - parameter: {"class": 'ConnectedValue'}
 
-gx_text_length_validation: 
+gx_text_length_validation:
   request_valid:
   - parameter: "mytext"
   - parameter: "mytext123"
@@ -570,7 +570,7 @@ gx_text_length_validation:
   - parameter: "s"  # too short
   - parameter: "mytext1231231231sd"  # too long
 
-gx_text_length_validation_negate: 
+gx_text_length_validation_negate:
   request_valid:
   - parameter: "m"
   - parameter: "mytext123mocowdowees"
@@ -746,7 +746,7 @@ gx_select_multiple:
   - parameter: ["--ex1"]
   - parameter: ["ex2"]
   - {}  # could come in linked...
-  # ... hmmm? this should maybe be invalid right? 
+  # ... hmmm? this should maybe be invalid right?
   - parameter: null
   job_internal_valid:
   - parameter: ["--ex1"]
@@ -1579,7 +1579,7 @@ gx_data_collection:
   workflow_step_invalid:
   - parameter: {src: hdca, id: abcdabcd}
   - parameter: 5
-  - parameter: {}  
+  - parameter: {}
   workflow_step_linked_valid:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
@@ -1778,9 +1778,9 @@ gx_conditional_boolean:
         test_parameter: false
     # if test parameter is missing, it should be false in this case (TODO: test inverse)
     # so boolean_parameter or either type or missing should be fine.
-    - conditional_parameter: 
+    - conditional_parameter:
         boolean_parameter: true
-    - conditional_parameter: 
+    - conditional_parameter:
         boolean_parameter: false
     - conditional_parameter: {}
   request_invalid:
@@ -1792,12 +1792,12 @@ gx_conditional_boolean:
     - conditional_parameter:
         test_parameter: true
         integer_parameter: "1"
-    - conditional_parameter: 
+    - conditional_parameter:
         test_parameter: true
         integer_parameter: null
     # if test parameter is missing, it should be false in this case
     # in that case having an integer_parameter is not acceptable.
-    - conditional_parameter: 
+    - conditional_parameter:
         integer_parameter: 5
   landing_request_valid: &gx_conditional_boolean_landing_request_valid
     - {}
@@ -1852,7 +1852,7 @@ gx_conditional_boolean_checked:
   request_invalid:
     # if test parameter is missing, it should be true (it is 'checked') in this case
     # in that case having a boolean_parameter is not acceptable.
-    - conditional_parameter: 
+    - conditional_parameter:
         boolean_parameter: false
 
   job_internal_invalid:
@@ -1866,7 +1866,7 @@ gx_conditional_conditional_boolean:
         boolean_parameter: true
     - outer_conditional_parameter:
         outer_test_parameter: true
-        inner_conditional_parameter: 
+        inner_conditional_parameter:
           inner_test_parameter: true
           integer_parameter: 5
     - outer_conditional_parameter:
@@ -1931,12 +1931,12 @@ gx_conditional_select:
     - conditional_parameter:
         test_parameter: a
         integer_parameter: "1"
-    - conditional_parameter: 
+    - conditional_parameter:
         test_parameter: b
         integer_parameter: null
     # if test parameter is missing, it should be false in this case
     # in that case having an integer_parameter is not acceptable.
-    - conditional_parameter: 
+    - conditional_parameter:
         boolean_parameter: true
   job_internal_valid:
   - conditional_parameter:
@@ -2576,7 +2576,7 @@ gx_data_collection_paired:
             format: "txt"
             size: 100
 
-gx_data_collection_list_or_paired:
+gx_data_collection_list_or_paired_y:
   request_valid:
     - parameter: {src: hdca, id: abcdabcd}
   request_invalid:
@@ -2694,7 +2694,7 @@ gx_data_collection_list_or_paired:
             format: "txt"
             size: 100
 
-gx_data_collection_record:
+gx_data_collection_record_y:
   request_valid:
     - parameter: {src: hdca, id: abcdabcd}
   request_invalid:
@@ -2775,7 +2775,7 @@ gx_data_collection_record:
             format: "txt"
             size: 100
 
-gx_data_collection_sample_sheet:
+gx_data_collection_sample_sheet_y:
   request_valid:
     - parameter: {src: hdca, id: abcdabcd}
   request_invalid:
@@ -2892,7 +2892,7 @@ gx_data_collection_sample_sheet:
             format: "txt"
             size: 100
 
-gx_data_collection_paired_or_unpaired:
+gx_data_collection_paired_or_unpaired_y:
   request_valid:
     - parameter: {src: hdca, id: abcdabcd}
   request_invalid:
@@ -2993,7 +2993,7 @@ gx_data_collection_paired_or_unpaired:
             format: "txt"
             size: 100
 
-gx_data_collection_list_paired:
+gx_data_collection_list_paired_y:
   request_valid:
     - parameter: {src: hdca, id: abcdabcd}
   request_invalid:
@@ -3175,7 +3175,7 @@ gx_data_collection_list_paired:
                 format: "txt"
                 size: 100
 
-gx_data_collection_list_list:
+gx_data_collection_list_list_y:
   request_valid:
     - parameter: {src: hdca, id: abcdabcd}
   request_invalid:
@@ -3312,7 +3312,7 @@ gx_data_collection_list_list:
                 format: "txt"
                 size: 100
 
-gx_data_collection_list_list_paired:
+gx_data_collection_list_list_paired_y:
   request_valid:
     - parameter: {src: hdca, id: abcdabcd}
   request_invalid:
@@ -3455,7 +3455,7 @@ gx_data_collection_list_list_paired:
                     format: "txt"
                     size: 100
 
-gx_data_collection_list_or_record:
+gx_data_collection_list_or_record_y:
   request_valid:
     - parameter: {src: hdca, id: abcdabcd}
   request_invalid:
@@ -3581,7 +3581,7 @@ gx_data_collection_list_or_record:
             format: "txt"
             size: 100
 
-gx_data_collection_paired_or_pou:
+gx_data_collection_paired_or_pou_y:
   request_valid:
     - parameter: {src: hdca, id: abcdabcd}
   request_invalid:
@@ -3709,7 +3709,7 @@ gx_data_collection_paired_or_pou:
             format: "txt"
             size: 100
 
-gx_data_collection_list_paired_or_list_list:
+gx_data_collection_list_paired_or_list_list_y:
   request_valid:
     - parameter: {src: hdca, id: abcdabcd}
   request_invalid:
@@ -3828,7 +3828,7 @@ gx_data_collection_list_paired_or_list_list:
             format: "txt"
             size: 100
 
-gx_data_collection_list_or_list_paired:
+gx_data_collection_list_or_list_paired_y:
   request_valid:
     - parameter: {src: hdca, id: abcdabcd}
   request_invalid:
@@ -4061,4 +4061,3 @@ cwl_directory:
    - parameter: true
    - parameter: 5
    - parameter: "5"
-

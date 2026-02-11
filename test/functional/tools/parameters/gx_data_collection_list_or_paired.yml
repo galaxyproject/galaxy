@@ -1,6 +1,6 @@
 class: GalaxyTool
-id: gx_data_collection_list_or_paired
-name: gx_data_collection_list_or_paired
+id: gx_data_collection_list_or_paired_y
+name: gx_data_collection_list_or_paired_y
 version: "1.0.0"
 container: busybox
 shell_command: |

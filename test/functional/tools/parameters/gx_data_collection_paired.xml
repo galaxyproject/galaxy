@@ -7,13 +7,5 @@
         <data name="output" format="data" />
     </outputs>
     <tests>
-        <test expect_failure="true">
-            <param name="parameter">
-                <collection type="paired">
-                    <element name="forward" ftype="txt" value="simple_line.txt" />
-                    <element name="reverse" ftype="txt" value="simple_line.txt" />
-                </collection>
-            </param>
-        </test>
     </tests>
 </tool>

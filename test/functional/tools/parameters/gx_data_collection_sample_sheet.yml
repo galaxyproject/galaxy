@@ -1,6 +1,6 @@
 class: GalaxyTool
-id: gx_data_collection_sample_sheet
-name: gx_data_collection_sample_sheet
+id: gx_data_collection_sample_sheet_y
+name: gx_data_collection_sample_sheet_y
 version: "1.0.0"
 profile: "25.0"
 container: busybox
