@@ -674,7 +674,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <!-- Details column -->
                     <template v-slot:cell(details)="{ item }">
-                        <RemoteEntryMetadata v-if="item.isLeaf && item.entry" :entry="item.entry" />
+                        <RemoteEntryMetadata v-if="item.isLeaf && item.entry" :entry="item.entry as RemoteEntry" />
                         <span v-else-if="urlTracker.isAtRoot && item.details">
                             {{ item.details }}
                         </span>
