@@ -1,0 +1,66 @@
+{
+    "RepositoryRevisionMetadata": {
+        "changeset_revision": "Changeset Revision",
+        "downloadable": "Downloadable",
+        "has_repository_dependencies": "Has Repository Dependencies",
+        "id": "Id",
+        "includes_tools": "Includes Tools",
+        "includes_tools_for_display_in_tool_panel": "Includes Tools For Display In Tool Panel",
+        "invalid_tools": "Invalid Tools",
+        "malicious": "Malicious",
+        "missing_test_components": "Missing Test Components",
+        "numeric_revision": "Numeric Revision",
+        "repository_dependencies": "Repository Dependencies",
+        "repository_id": "Repository Id"
+    },
+    "RepositoryTool": {
+        "description": "Description",
+        "guid": "Guid",
+        "id": "Id",
+        "name": "Name",
+        "requirements": "Requirements",
+        "tool_config": "Tool Config",
+        "tool_type": "Tool Type",
+        "version": "Version"
+    },
+    "RepositoryDependency": {
+        "changeset_revision": "Changeset Revision",
+        "downloadable": "Downloadable",
+        "has_repository_dependencies": "Has Repository Dependencies",
+        "id": "Id",
+        "includes_tools": "Includes Tools",
+        "includes_tools_for_display_in_tool_panel": "Includes Tools For Display In Tool Panel",
+        "invalid_tools": "Invalid Tools",
+        "malicious": "Malicious",
+        "missing_test_components": "Missing Test Components",
+        "numeric_revision": "Numeric Revision",
+        "repository_dependencies": "Repository Dependencies",
+        "repository_id": "Repository Id"
+    },
+    "Repository": {
+        "create_time": "Create Time",
+        "deleted": "Deleted",
+        "deprecated": "Deprecated",
+        "description": "Description",
+        "id": "Id",
+        "long_description": "Long Description",
+        "name": "Name",
+        "owner": "Owner",
+        "private": "Private",
+        "times_downloaded": "Times Downloaded",
+        "type": "Type",
+        "update_time": "Update Time",
+        "user_id": "User Id"
+    },
+    "ChangesetMetadataStatus": {
+        "changeset_revision": "Changeset Revision",
+        "numeric_revision": "Numeric Revision"
+    },
+    "ResetMetadataOnRepositoryResponse": {
+        "repository_status": "Repository Status",
+        "start_time": "Start Time",
+        "status": "Status",
+        "stop_time": "Stop Time"
+    },
+    "RepositoryMetadata": {}
+}

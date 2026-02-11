@@ -82,6 +82,7 @@ from tool_shed_client.schema import (
     PaginatedRepositoryIndexResults,
     Repository as SchemaRepository,
     RepositoryMetadataInstallInfoDict,
+    RepositoryMetadataPreview,
     RepositoryRevisionMetadata,
     ResetMetadataOnRepositoriesRequest,
     ResetMetadataOnRepositoriesResponse,
@@ -418,9 +419,11 @@ def get_ordered_installable_revisions(
     return [revision[1] for revision in repository.installable_revisions(app, sort_revisions=True)]
 
 
-def get_repository_metadata_dict(app: ToolShedApp, id: str, recursive: bool, downloadable_only: bool) -> dict[str, Any]:
+def get_repository_metadata_dict_for_repository(
+    app: ToolShedApp, repository: Repository, recursive: bool, downloadable_only: bool
+) -> dict[str, Any]:
+    """Get metadata dict for a Repository object (vs encoded ID string)."""
     all_metadata = {}
-    repository = get_repository_in_tool_shed(app, id, eagerload_columns=[Repository.downloadable_revisions])
     for changeset, changehash in get_metadata_revisions(
         app, repository, sort_revisions=True, downloadable=downloadable_only
     ):
@@ -432,12 +435,50 @@ def get_repository_metadata_dict(app: ToolShedApp, id: str, recursive: bool, dow
     return all_metadata
 
 
+def get_repository_metadata_dict(app: ToolShedApp, id: str, recursive: bool, downloadable_only: bool) -> dict[str, Any]:
+    repository = get_repository_in_tool_shed(app, id, eagerload_columns=[Repository.downloadable_revisions])
+    return get_repository_metadata_dict_for_repository(app, repository, recursive, downloadable_only)
+
+
+def serialize_regenerated_metadata(
+    app: ToolShedApp, repository: Repository, regenerated_metadata: dict[str, "RepositoryMetadata"]
+) -> dict[str, Any]:
+    """Serialize in-memory RepositoryMetadata objects (for dry_run after snapshot).
+
+    Args:
+        app: The ToolShed app
+        repository: The repository these metadata objects belong to
+        regenerated_metadata: Dict mapping changeset_revision (hash) to RepositoryMetadata objects
+
+    Returns:
+        Dict mapping "{numeric_rev}:{changeset_hash}" to serialized metadata dicts
+    """
+    all_metadata = {}
+    hg_repo = repository.hg_repo
+
+    for changeset_hash, metadata_obj in regenerated_metadata.items():
+        # Look up numeric revision from the mercurial repo
+        try:
+            ctx = hg_repo[changeset_hash]
+            numeric_rev = ctx.rev()
+        except Exception:
+            # If we can't find the changeset, use -1 as a fallback
+            numeric_rev = -1
+
+        metadata_dict = get_repository_revision_metadata_dict(app, repository, metadata_obj, recursive=False)
+        all_metadata[f"{int(numeric_rev)}:{changeset_hash}"] = metadata_dict
+
+    return all_metadata
+
+
 def get_repository_revision_metadata_dict(
     app: ToolShedApp, repository: Repository, metadata: RepositoryMetadata, recursive: bool = False
 ):
-    metadata_dict = metadata.to_dict(
-        value_mapper={"id": app.security.encode_id, "repository_id": app.security.encode_id}
-    )
+    # Create a safe encoder that handles None IDs (for unpersisted dry-run objects)
+    def safe_encode_id(id_value):
+        return app.security.encode_id(id_value) if id_value is not None else None
+
+    metadata_dict = metadata.to_dict(value_mapper={"id": safe_encode_id, "repository_id": safe_encode_id})
     metadata_dict["repository"] = repository.to_dict(
         value_mapper={"id": app.security.encode_id, "user_id": app.security.encode_id}
     )
@@ -468,11 +509,18 @@ def readmes(app: ToolShedApp, repository: Repository, changeset_revision: str) -
     return {}
 
 
-def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> ResetMetadataOnRepositoryResponse:
+def reset_metadata_on_repository(
+    trans: ProvidesUserContext,
+    repository_id,
+    dry_run: bool = False,
+    verbose: bool = False,
+    repository_clone_url: Optional[str] = None,
+) -> ResetMetadataOnRepositoryResponse:
     app: ToolShedApp = trans.app
 
-    def handle_repository(trans, start_time, repository):
-        results = dict(start_time=start_time, repository_status=[])
+    def handle_repository(trans, start_time, repository, dry_run: bool, verbose: bool, clone_url: Optional[str] = None):
+        results: dict = dict(start_time=start_time, repository_status=[], dry_run=dry_run)
+        regenerated_metadata = {}
         try:
             rmm = repository_metadata_manager.RepositoryMetadataManager(
                 trans,
@@ -481,7 +529,12 @@ def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> R
                 updating_installed_repository=False,
                 persist=False,
             )
-            rmm.reset_all_metadata_on_repository_in_tool_shed()
+            reset_result = rmm.reset_all_metadata_on_repository_in_tool_shed(
+                repository_clone_url=clone_url, dry_run=dry_run, verbose=verbose
+            )
+            if verbose:
+                results["changeset_details"] = reset_result.changeset_details
+            regenerated_metadata = reset_result.regenerated_metadata
             rmm_invalid_file_tups = rmm.get_invalid_file_tups()
             if rmm_invalid_file_tups:
                 message = generate_message_for_invalid_tools(
@@ -489,9 +542,8 @@ def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> R
                 )
                 results["status"] = "warning"
             else:
-                message = (
-                    f"Successfully reset metadata on repository {repository.name} owned by {repository.user.username}"
-                )
+                action_desc = "Would reset" if dry_run else "Successfully reset"
+                message = f"{action_desc} metadata on repository {repository.name} owned by {repository.user.username}"
                 results["status"] = "ok"
         except Exception as e:
             message = (
@@ -500,15 +552,38 @@ def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> R
             results["status"] = "error"
         status = f"{repository.name} : {message}"
         results["repository_status"].append(status)
-        return results
+        return results, regenerated_metadata
 
     if repository_id is not None:
         repository = get_repository_in_tool_shed(app, repository_id)
         start_time = strftime("%Y-%m-%d %H:%M:%S")
-        log.debug(f"{start_time}...resetting metadata on repository {repository.name}")
-        results = handle_repository(trans, start_time, repository)
+        log.debug(f"{start_time}...resetting metadata on repository {repository.name} (dry_run={dry_run})")
+
+        # Capture before state if verbose
+        metadata_before = None
+        if verbose:
+            as_dict = get_repository_metadata_dict_for_repository(
+                app, repository, recursive=False, downloadable_only=False
+            )
+            metadata_before = RepositoryMetadataPreview(root=as_dict)
+
+        results, regenerated_metadata = handle_repository(
+            trans, start_time, repository, dry_run, verbose, repository_clone_url
+        )
+
+        # Capture after state if verbose - use regenerated metadata for accurate diff
+        metadata_after = None
+        if verbose:
+            # Use the regenerated metadata objects for the "after" snapshot
+            # This shows what was actually generated (and persisted for non-dry-run,
+            # or what would be persisted for dry-run)
+            as_dict = serialize_regenerated_metadata(app, repository, regenerated_metadata)
+            metadata_after = RepositoryMetadataPreview(root=as_dict)
+
         stop_time = strftime("%Y-%m-%d %H:%M:%S")
         results["stop_time"] = stop_time
+        results["repository_metadata_before"] = metadata_before
+        results["repository_metadata_after"] = metadata_after
     return ResetMetadataOnRepositoryResponse(**results)
 
 

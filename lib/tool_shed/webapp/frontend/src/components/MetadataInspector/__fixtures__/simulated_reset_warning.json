@@ -1,0 +1,234 @@
+{
+    "status": "warning",
+    "repository_status": [
+        "problematic_repo : Reset metadata completed with warnings on repository problematic_repo owned by simulated_user"
+    ],
+    "start_time": "2025-01-15 10:30:00",
+    "stop_time": "2025-01-15 10:30:45",
+    "dry_run": false,
+    "changeset_details": [
+        {
+            "changeset_revision": "w0w0w0w0w0w0",
+            "numeric_revision": 0,
+            "comparison_result": "initial",
+            "has_tools": true,
+            "has_repository_dependencies": false,
+            "has_tool_dependencies": false,
+            "error": null,
+            "record_operation": null
+        },
+        {
+            "changeset_revision": "w1w1w1w1w1w1",
+            "numeric_revision": 1,
+            "comparison_result": "not equal and not subset",
+            "has_tools": true,
+            "has_repository_dependencies": false,
+            "has_tool_dependencies": false,
+            "error": null,
+            "record_operation": "updated"
+        },
+        {
+            "changeset_revision": "w2w2w2w2w2w2",
+            "numeric_revision": 2,
+            "comparison_result": null,
+            "has_tools": false,
+            "has_repository_dependencies": false,
+            "has_tool_dependencies": false,
+            "error": "Invalid tool config 'broken_tool.xml': Element 'tool': The attribute 'version' is required but missing.",
+            "record_operation": null
+        },
+        {
+            "changeset_revision": "w3w3w3w3w3w3",
+            "numeric_revision": 3,
+            "comparison_result": "subset",
+            "has_tools": false,
+            "has_repository_dependencies": false,
+            "has_tool_dependencies": false,
+            "error": null,
+            "record_operation": null
+        },
+        {
+            "changeset_revision": "w4w4w4w4w4w4",
+            "numeric_revision": 4,
+            "comparison_result": "not equal and not subset",
+            "has_tools": true,
+            "has_repository_dependencies": false,
+            "has_tool_dependencies": false,
+            "error": null,
+            "record_operation": "updated"
+        }
+    ],
+    "repository_metadata_before": {
+        "0:w0w0w0w0w0w0": {
+            "id": "simwarn0000001",
+            "repository_id": "simwarn0000001",
+            "repository": {
+                "id": "simwarn0000001",
+                "name": "problematic_repo",
+                "owner": "simulated_user",
+                "type": "unrestricted",
+                "remote_repository_url": null,
+                "homepage_url": null,
+                "description": "A simulated repository that produces warnings during reset",
+                "user_id": "simwarn0000001",
+                "private": false,
+                "deleted": false,
+                "times_downloaded": 50,
+                "deprecated": false,
+                "create_time": "2025-01-01T00:00:00.000000",
+                "update_time": "2025-01-15T00:00:00.000000"
+            },
+            "repository_dependencies": [],
+            "numeric_revision": 0,
+            "changeset_revision": "w0w0w0w0w0w0",
+            "malicious": false,
+            "downloadable": true,
+            "missing_test_components": false,
+            "has_repository_dependencies": false,
+            "includes_tools": true,
+            "includes_tools_for_display_in_tool_panel": true,
+            "tools": [],
+            "invalid_tools": []
+        }
+    },
+    "repository_metadata_after": {
+        "0:w0w0w0w0w0w0": {
+            "id": "simwarn0000001",
+            "repository_id": "simwarn0000001",
+            "repository": {
+                "id": "simwarn0000001",
+                "name": "problematic_repo",
+                "owner": "simulated_user",
+                "type": "unrestricted",
+                "remote_repository_url": null,
+                "homepage_url": null,
+                "description": "A simulated repository that produces warnings during reset",
+                "user_id": "simwarn0000001",
+                "private": false,
+                "deleted": false,
+                "times_downloaded": 50,
+                "deprecated": false,
+                "create_time": "2025-01-01T00:00:00.000000",
+                "update_time": "2025-01-15T00:00:00.000000"
+            },
+            "repository_dependencies": [],
+            "numeric_revision": 0,
+            "changeset_revision": "w0w0w0w0w0w0",
+            "malicious": false,
+            "downloadable": true,
+            "missing_test_components": false,
+            "has_repository_dependencies": false,
+            "includes_tools": true,
+            "includes_tools_for_display_in_tool_panel": true,
+            "tools": [
+                {
+                    "add_to_tool_panel": true,
+                    "description": "A working tool",
+                    "guid": "toolshed.example.org/repos/simulated_user/problematic_repo/working_tool/1.0.0",
+                    "id": "working_tool",
+                    "name": "Working Tool",
+                    "profile": 16.01,
+                    "requirements": [],
+                    "tests": [],
+                    "tool_config": "working_tool.xml",
+                    "tool_type": "default",
+                    "version": "1.0.0",
+                    "version_string_cmd": null
+                }
+            ],
+            "invalid_tools": ["broken_tool.xml"]
+        },
+        "1:w1w1w1w1w1w1": {
+            "id": "simwarn0000001",
+            "repository_id": "simwarn0000001",
+            "repository": {
+                "id": "simwarn0000001",
+                "name": "problematic_repo",
+                "owner": "simulated_user",
+                "type": "unrestricted",
+                "remote_repository_url": null,
+                "homepage_url": null,
+                "description": "A simulated repository that produces warnings during reset",
+                "user_id": "simwarn0000001",
+                "private": false,
+                "deleted": false,
+                "times_downloaded": 50,
+                "deprecated": false,
+                "create_time": "2025-01-01T00:00:00.000000",
+                "update_time": "2025-01-15T00:00:00.000000"
+            },
+            "repository_dependencies": [],
+            "numeric_revision": 1,
+            "changeset_revision": "w1w1w1w1w1w1",
+            "malicious": false,
+            "downloadable": true,
+            "missing_test_components": false,
+            "has_repository_dependencies": false,
+            "includes_tools": true,
+            "includes_tools_for_display_in_tool_panel": true,
+            "tools": [
+                {
+                    "add_to_tool_panel": true,
+                    "description": "A working tool - improved",
+                    "guid": "toolshed.example.org/repos/simulated_user/problematic_repo/working_tool/1.1.0",
+                    "id": "working_tool",
+                    "name": "Working Tool",
+                    "profile": 16.01,
+                    "requirements": [],
+                    "tests": [],
+                    "tool_config": "working_tool.xml",
+                    "tool_type": "default",
+                    "version": "1.1.0",
+                    "version_string_cmd": null
+                }
+            ],
+            "invalid_tools": []
+        },
+        "4:w4w4w4w4w4w4": {
+            "id": "simwarn0000001",
+            "repository_id": "simwarn0000001",
+            "repository": {
+                "id": "simwarn0000001",
+                "name": "problematic_repo",
+                "owner": "simulated_user",
+                "type": "unrestricted",
+                "remote_repository_url": null,
+                "homepage_url": null,
+                "description": "A simulated repository that produces warnings during reset",
+                "user_id": "simwarn0000001",
+                "private": false,
+                "deleted": false,
+                "times_downloaded": 50,
+                "deprecated": false,
+                "create_time": "2025-01-01T00:00:00.000000",
+                "update_time": "2025-01-15T00:00:00.000000"
+            },
+            "repository_dependencies": [],
+            "numeric_revision": 4,
+            "changeset_revision": "w4w4w4w4w4w4",
+            "malicious": false,
+            "downloadable": true,
+            "missing_test_components": false,
+            "has_repository_dependencies": false,
+            "includes_tools": true,
+            "includes_tools_for_display_in_tool_panel": true,
+            "tools": [
+                {
+                    "add_to_tool_panel": true,
+                    "description": "A working tool - bug fixes",
+                    "guid": "toolshed.example.org/repos/simulated_user/problematic_repo/working_tool/1.2.0",
+                    "id": "working_tool",
+                    "name": "Working Tool",
+                    "profile": 16.01,
+                    "requirements": [],
+                    "tests": [],
+                    "tool_config": "working_tool.xml",
+                    "tool_type": "default",
+                    "version": "1.2.0",
+                    "version_string_cmd": null
+                }
+            ],
+            "invalid_tools": []
+        }
+    }
+}

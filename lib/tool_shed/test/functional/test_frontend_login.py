@@ -1,28 +1,9 @@
-from playwright.sync_api import (
-    expect,
-    Page,
-)
+from playwright.sync_api import expect
 
 from galaxy_test.base.api_util import random_name
 from ..base.api import skip_if_api_v1
-from ..base.playwrightbrowser import (
-    Locators,
-    PlaywrightShedBrowser,
-)
-from ..base.twilltestcase import ShedTwillTestCase
-
-
-class PlaywrightTestCase(ShedTwillTestCase):
-    @property
-    def _playwright_browser(self) -> PlaywrightShedBrowser:
-        browser = self._browser
-        assert isinstance(browser, PlaywrightShedBrowser)
-        return browser
-
-    @property
-    def _page(self) -> Page:
-        return self._playwright_browser._page
-
+from ..base.playwrightbrowser import Locators
+from ..base.playwrighttestcase import PlaywrightTestCase
 
 TEST_PASSWORD = "testpass"
 

@@ -968,6 +968,37 @@ export interface components {
             /** Repositories */
             repositories: number
         }
+        /**
+         * ChangesetMetadataStatus
+         * @description Per-changeset detail during reset metadata operation.
+         */
+        ChangesetMetadataStatus: {
+            /** Changeset Revision */
+            changeset_revision: string
+            /** Comparison Result */
+            comparison_result?: string | null
+            /** Error */
+            error?: string | null
+            /**
+             * Has Repository Dependencies
+             * @default false
+             */
+            has_repository_dependencies: boolean
+            /**
+             * Has Tool Dependencies
+             * @default false
+             */
+            has_tool_dependencies: boolean
+            /**
+             * Has Tools
+             * @default false
+             */
+            has_tools: boolean
+            /** Numeric Revision */
+            numeric_revision: number
+            /** Record Operation */
+            record_operation?: ("created" | "updated") | null
+        }
         /** Checksum */
         Checksum: {
             /**
@@ -2519,6 +2550,13 @@ export interface components {
             /** Valid Tools */
             valid_tools: components["schemas"]["ValidTool"][]
         }
+        /**
+         * RepositoryMetadataPreview
+         * @description Like RepositoryMetadata but uses RepositoryRevisionMetadataPreview for dry-run scenarios.
+         */
+        RepositoryMetadataPreview: {
+            [key: string]: components["schemas"]["RepositoryRevisionMetadataPreview"]
+        }
         /** RepositoryPermissions */
         RepositoryPermissions: {
             /** Allow Push */
@@ -2561,6 +2599,52 @@ export interface components {
             repository_dependencies: components["schemas"]["RepositoryDependency"][]
             /** Repository Id */
             repository_id: string
+            /** Tools */
+            tools?: components["schemas"]["RepositoryTool"][] | null
+        }
+        /**
+         * RepositoryRevisionMetadataPreview
+         * @description Like RepositoryRevisionMetadata but with Optional fields for dry-run/preview scenarios.
+         *
+         *     During reset_metadata dry-run, metadata objects are created in-memory but not persisted,
+         *     so they lack database IDs. The numeric_revision may also be unavailable for newly-pushed
+         *     changesets that haven't been indexed yet.
+         */
+        RepositoryRevisionMetadataPreview: {
+            /** Changeset Revision */
+            changeset_revision: string
+            /** Downloadable */
+            downloadable: boolean
+            /** Has Repository Dependencies */
+            has_repository_dependencies: boolean
+            /** Id */
+            id?: string | null
+            /** Includes Datatypes */
+            includes_datatypes?: boolean | null
+            /** Includes Tool Dependencies */
+            includes_tool_dependencies?: boolean | null
+            /** Includes Tools */
+            includes_tools: boolean
+            /** Includes Tools For Display In Tool Panel */
+            includes_tools_for_display_in_tool_panel: boolean
+            /** Includes Workflows */
+            includes_workflows?: boolean | null
+            /**
+             * Invalid Tools
+             * @default []
+             */
+            invalid_tools: string[]
+            /** Malicious */
+            malicious: boolean
+            /** Missing Test Components */
+            missing_test_components: boolean
+            /** Numeric Revision */
+            numeric_revision?: number | null
+            repository: components["schemas"]["Repository"]
+            /** Repository Dependencies */
+            repository_dependencies: components["schemas"]["RepositoryDependency"][]
+            /** Repository Id */
+            repository_id?: string | null
             /** Tools */
             tools?: components["schemas"]["RepositoryTool"][] | null
         }
@@ -2650,6 +2734,15 @@ export interface components {
         }
         /** ResetMetadataOnRepositoryResponse */
         ResetMetadataOnRepositoryResponse: {
+            /** Changeset Details */
+            changeset_details?: components["schemas"]["ChangesetMetadataStatus"][] | null
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean
+            repository_metadata_after?: components["schemas"]["RepositoryMetadataPreview"] | null
+            repository_metadata_before?: components["schemas"]["RepositoryMetadataPreview"] | null
             /** Repository Status */
             repository_status: string[]
             /** Start Time */
@@ -4761,7 +4854,12 @@ export interface operations {
     }
     repositories__reset: {
         parameters: {
-            query?: never
+            query?: {
+                /** @description Preview changes without persisting to database */
+                dry_run?: boolean
+                /** @description Return detailed per-changeset information */
+                verbose?: boolean
+            }
             header?: never
             path: {
                 /** @description The encoded database identifier of the repository. */

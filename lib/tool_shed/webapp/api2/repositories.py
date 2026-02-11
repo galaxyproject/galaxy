@@ -82,6 +82,7 @@ from . import (
     depends,
     DependsOnTrans,
     DownloadableQueryParam,
+    DryRunQueryParam,
     OptionalHexlifyParam,
     OptionalRepositoryIdParam,
     OptionalRepositoryNameParam,
@@ -103,6 +104,7 @@ from . import (
     RequiredRepositoryChangesetRevisionParam,
     Router,
     UsernameIdPathParam,
+    VerboseQueryParam,
 )
 
 log = logging.getLogger(__name__)
@@ -287,7 +289,9 @@ class FastAPIRepositories:
             ResetMetadataOnRepositoryRequest
         ),
     ) -> ResetMetadataOnRepositoryResponse:
-        return reset_metadata_on_repository(trans, request.repository_id)
+        return reset_metadata_on_repository(
+            trans, request.repository_id, dry_run=request.dry_run, verbose=request.verbose
+        )
 
     @router.post(
         "/api/repositories/{encoded_repository_id}/reset_metadata",
@@ -298,8 +302,10 @@ class FastAPIRepositories:
         self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
+        dry_run: bool = DryRunQueryParam,
+        verbose: bool = VerboseQueryParam,
     ) -> ResetMetadataOnRepositoryResponse:
-        return reset_metadata_on_repository(trans, encoded_repository_id)
+        return reset_metadata_on_repository(trans, encoded_repository_id, dry_run=dry_run, verbose=verbose)
 
     @router.post(
         "/api/repositories/reset_metadata_on_repositories",

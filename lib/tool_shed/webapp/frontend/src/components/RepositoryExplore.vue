@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { goToRepository } from "@/router"
+import { goToRepository, goToMetadataInspector } from "@/router"
 
 interface Repository {
     name: string
@@ -65,7 +65,13 @@ const buttonProperties = computed(() => {
             @click="navigate(changelog)"
         />
         <q-fab-action color="secondary" text-color="black" icon="list" label="Contents" @click="navigate(contents)" />
-        <!-- folder_zip -->
+        <q-fab-action
+            color="secondary"
+            text-color="black"
+            icon="sym_r_data_object"
+            label="Metadata"
+            @click="goToMetadataInspector(props.repository.id)"
+        />
     </q-fab>
     <q-btn-group class="q-mx-xl" dense rounded push v-else>
         <q-btn
@@ -74,6 +80,13 @@ const buttonProperties = computed(() => {
             title="Details"
             aria-label="Details"
             @click="goToRepository(props.repository.id)"
+        />
+        <q-btn
+            v-bind="buttonProperties"
+            icon="sym_r_data_object"
+            title="Metadata Inspector"
+            aria-label="Metadata Inspector"
+            @click="goToMetadataInspector(props.repository.id)"
         />
         <q-btn
             v-bind="buttonProperties"
