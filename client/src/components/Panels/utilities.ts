@@ -473,6 +473,28 @@ export function searchObjectsByKeys<T extends { id: string }>(
     };
 }
 
+function getOrCreateSection(
+    acc: Record<string, Tool | ToolSection>,
+    sectionId: string,
+    sectionName: string,
+): ToolSection {
+    return acc[sectionId] && isToolSection(acc[sectionId])
+        ? (acc[sectionId] as ToolSection)
+        : buildToolSection(sectionId, sectionName, []);
+}
+
+function addToolToSection(
+    acc: Record<string, Tool | ToolSection>,
+    sectionId: string,
+    sectionName: string,
+    toolId: string,
+): boolean {
+    const section = getOrCreateSection(acc, sectionId, sectionName);
+    section.tools?.push(toolId);
+    acc[sectionId] = section;
+    return true;
+}
+
 /**
  * Orders the matchedTools by order of keys that are being searched, and creates a resultPanel
  * @param matchedTools containing { id: tool id, order: order }
@@ -483,44 +505,32 @@ export function searchObjectsByKeys<T extends { id: string }>(
  */
 export function createSortedResultPanel(matchedTools: SearchMatch[], currentPanel: Record<string, ToolPanelItem>) {
     const idResults: string[] = [];
+
     // creating a sectioned results object ({section_id: [tool ids], ...}), keeping
     // track unique ids of each tool, and also sorting by indexed order of keys
     const resultPanel = orderBy(matchedTools, ["order"], ["desc"]).reduce(
         (acc: Record<string, Tool | ToolSection>, match: SearchMatch) => {
             // we need to search all sections in panel for this tool id
-            const sections = Object.keys(currentPanel);
-            for (const section of sections) {
+            const panelItems = Object.keys(currentPanel);
+            for (const itemId of panelItems) {
+                const existingPanelItem = currentPanel[itemId];
+                if (!existingPanelItem) {
+                    continue;
+                }
+
                 let toolAdded = false;
-                const existingPanelItem = currentPanel[section];
-                if (existingPanelItem) {
-                    if ("tools" in existingPanelItem && existingPanelItem.tools?.includes(match.id)) {
-                        // it has tools so is a section, and it has the tool we're looking for
 
-                        // if we haven't seen this section yet, create it in the resultPanel
-                        let existingSection = acc[section] as ToolSection;
-                        if (!existingSection) {
-                            existingSection = { ...existingPanelItem };
-                            existingSection.tools = [];
-                        }
-                        existingSection.tools?.push(match.id);
-                        acc[section] = existingSection;
-                        toolAdded = true;
-                    } else if (isTool(existingPanelItem) && existingPanelItem.id === match.id) {
-                        // it is a tool, and it is the tool we're looking for
+                if ("tools" in existingPanelItem && existingPanelItem.tools?.includes(match.id)) {
+                    // it has tools so is a section, and it has the tool we're looking for
+                    toolAdded = addToolToSection(acc, itemId, existingPanelItem.name, match.id);
+                } else if (isTool(existingPanelItem) && existingPanelItem.id === match.id) {
+                    // it is a tool, and it is the tool we're looking for
+                    // put it in the "Unsectioned Tools" section
+                    toolAdded = addToolToSection(acc, UNSECTIONED_SECTION.id, UNSECTIONED_SECTION.name, match.id);
+                }
 
-                        // put in it the "Unsectioned Tools" section (if it doesn't exist, create it)
-                        const unsectionedId = UNSECTIONED_SECTION.id;
-                        const unsectionedSection: ToolSection =
-                            acc[unsectionedId] && isToolSection(acc[unsectionedId])
-                                ? acc[unsectionedId]
-                                : buildToolSection(unsectionedId, UNSECTIONED_SECTION.name, []);
-                        unsectionedSection.tools?.push(match.id);
-                        acc[unsectionedId] = unsectionedSection;
-                        toolAdded = true;
-                    }
-                    if (toolAdded && !idResults.includes(match.id)) {
-                        idResults.push(match.id);
-                    }
+                if (toolAdded && !idResults.includes(match.id)) {
+                    idResults.push(match.id);
                 }
             }
             return acc;

@@ -248,6 +248,36 @@ describe("test helpers in tool searching utilities", () => {
     });
 });
 
+describe("createSortedResultPanel", () => {
+    it("orders results by descending order and groups into sections", () => {
+        const matchedTools = [
+            { id: "__FILTER_FAILED_DATASETS__", order: 1 },
+            { id: "liftOver1", order: 3 },
+            { id: "__ZIP_COLLECTION__", order: 2 },
+        ];
+        const { idResults, resultPanel } = createSortedResultPanel(matchedTools, toolsListInPanel);
+
+        // idResults should be sorted by order descending: liftOver1 (3), __ZIP_COLLECTION__ (2), __FILTER_FAILED_DATASETS__ (1)
+        expect(idResults).toEqual(["liftOver1", "__ZIP_COLLECTION__", "__FILTER_FAILED_DATASETS__"]);
+
+        // tools are grouped into their respective sections
+        const collectionOps = resultPanel["collection_operations"] as ToolSection;
+        expect(collectionOps.tools).toEqual(["__ZIP_COLLECTION__", "__FILTER_FAILED_DATASETS__"]);
+
+        const liftOver = resultPanel["liftOver"] as ToolSection;
+        expect(liftOver.tools).toEqual(["liftOver1"]);
+    });
+
+    it("does not duplicate tool ids when a tool appears in only one section", () => {
+        const matchedTools = [
+            { id: "__FILTER_FAILED_DATASETS__", order: 0 },
+            { id: "__FILTER_FAILED_DATASETS__", order: 0 },
+        ];
+        const { idResults } = createSortedResultPanel(matchedTools, toolsListInPanel);
+        expect(idResults).toEqual(["__FILTER_FAILED_DATASETS__"]);
+    });
+});
+
 describe("getValidToolsInEachSection", () => {
     it("filters section tools to only include valid tool IDs", () => {
         const validIds = new Set(["__FILTER_FAILED_DATASETS__", "__ZIP_COLLECTION__", "liftOver1"]);
