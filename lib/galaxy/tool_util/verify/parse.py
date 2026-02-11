@@ -61,7 +61,7 @@ AnyParamContext = Union["ParamContext", "RootParamContext"]
 
 
 def parse_tool_test_descriptions(
-    tool_source: ToolSource, tool_guid: Optional[str] = None, parameters: Optional[list[ToolParameterT]] = None
+    tool_source: ToolSource, tool_guid: Optional[str] = None, parameters: Optional[List[ToolParameterT]] = None
 ) -> Iterable[ToolTestDescription]:
     """
     Build ToolTestDescription objects for each test description.

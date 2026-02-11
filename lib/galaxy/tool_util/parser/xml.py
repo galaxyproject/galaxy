@@ -762,7 +762,7 @@ class XmlToolSource(ToolSource):
         return configfiles
 
     def parse_input_configfiles(self) -> Sequence[InputConfigFile]:
-        config_files: list[InputConfigFile] = []
+        config_files: List[InputConfigFile] = []
         if (conf_parent_elem := self.root.find("configfiles")) is not None:
             inputs_elem = conf_parent_elem.find("inputs")
             if inputs_elem is not None:
@@ -775,7 +775,7 @@ class XmlToolSource(ToolSource):
         return config_files
 
     def parse_file_sources(self) -> Sequence[FileSourceConfigFile]:
-        config_files: list[FileSourceConfigFile] = []
+        config_files: List[FileSourceConfigFile] = []
         if (conf_parent_elem := self.root.find("configfiles")) is not None:
             file_sources_elem = conf_parent_elem.find("file_sources")
             if file_sources_elem is not None:
