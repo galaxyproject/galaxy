@@ -8,23 +8,26 @@
 </template>
 
 <script setup lang="ts">
-import { useResizeObserver } from "@vueuse/core";
+import { useDebounceFn, useResizeObserver } from "@vueuse/core";
 import embed, { type VisualizationSpec } from "vega-embed";
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from "vue";
+import type { View } from "vega";
 
-export interface VisSpec {
+const RESIZE_DEBOUNCE_MS = 150;
+
+interface Props {
     spec: VisualizationSpec;
     fillWidth?: boolean;
 }
 
-const props = withDefaults(defineProps<VisSpec>(), {
+const props = withDefaults(defineProps<Props>(), {
     fillWidth: true,
 });
 
 const chartContainer = ref<HTMLDivElement | null>(null);
 const errorMessage = ref<string>("");
 
-let vegaView: any;
+let vegaView: View | null = null;
 
 async function embedChart() {
     try {
@@ -33,7 +36,11 @@ async function embedChart() {
             vegaView.finalize();
         }
         if (chartContainer.value !== null) {
-            const result = await embed(chartContainer.value, props.spec, { renderer: "svg" });
+            const result = await embed(
+                chartContainer.value,
+                { ...toRaw(props.spec), width: "container", height: "container" } as VisualizationSpec,
+                { renderer: "svg" },
+            );
             vegaView = result.view;
         }
         errorMessage.value = "";
@@ -44,15 +51,16 @@ async function embedChart() {
 
 watch(props, embedChart, { deep: true });
 
-useResizeObserver(chartContainer, () => {
+const debouncedResize = useDebounceFn(() => {
     if (vegaView) {
-        vegaView.resize();
+        vegaView.resize().runAsync();
     }
-});
+}, RESIZE_DEBOUNCE_MS);
+
+useResizeObserver(chartContainer, debouncedResize);
 
 onMounted(() => embedChart());
 
-// Cleanup the chart when the component is unmounted
 onBeforeUnmount(() => {
     if (vegaView) {
         vegaView.finalize();
