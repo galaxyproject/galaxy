@@ -132,11 +132,11 @@ function onNewView(view: View) {
 <template>
     <BCard class="mb-3">
         <template v-slot:header>
-            <h3 class="text-center my-1">
+            <h4 class="text-center my-1">
                 <slot name="title">
                     <b>{{ title }}</b>
                 </slot>
-            </h3>
+            </h4>
         </template>
         <slot name="options" />
         <div v-if="hasData">

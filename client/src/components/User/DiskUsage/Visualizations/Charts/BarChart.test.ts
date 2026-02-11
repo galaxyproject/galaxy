@@ -76,7 +76,7 @@ describe("BarChart.vue", () => {
                 title,
                 data: TEST_DATA,
             });
-            expect(wrapper.find("h3").text()).toBe(title);
+            expect(wrapper.find("h4").text()).toBe(title);
         });
 
         it("should render with the correct description", () => {
