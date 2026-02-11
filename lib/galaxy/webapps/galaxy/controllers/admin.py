@@ -628,7 +628,7 @@ class AdminGalaxy(controller.BaseUIController):
                     trans.handle_user_logout()
                     trans.handle_user_login(user)
                     return trans.show_message(
-                        f"You are now logged in as {user.email}, <a target=\"_top\" href=\"{url_for(controller='root')}\">return to the home page</a>",
+                        f"You are now logged in as {user.email}, <a target=\"_top\" href=\"{url_for('/')}\">return to the home page</a>",
                         use_panels=True,
                     )
             except Exception:
