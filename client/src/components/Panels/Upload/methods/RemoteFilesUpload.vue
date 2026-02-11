@@ -443,7 +443,7 @@ const browserFields: TableField[] = [
         key: "details",
         label: "Details",
         sortable: false,
-        align: "center",
+        align: "left",
     },
 ];
 

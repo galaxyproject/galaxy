@@ -504,7 +504,7 @@ const libraryFields: TableField[] = [
         key: "name",
         label: "Name",
         sortable: true,
-        align: "center",
+        align: "left",
     },
     {
         key: "synopsis",
