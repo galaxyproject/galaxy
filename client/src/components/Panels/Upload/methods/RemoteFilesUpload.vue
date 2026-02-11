@@ -573,6 +573,10 @@ function onErrorRetry() {
     load();
 }
 
+function getItemEntry(item: SelectionItem): RemoteEntry {
+    return item.entry as RemoteEntry;
+}
+
 defineExpose<UploadMethodComponent>({ startUpload });
 </script>
 
@@ -674,7 +678,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <!-- Details column -->
                     <template v-slot:cell(details)="{ item }">
-                        <RemoteEntryMetadata v-if="item.isLeaf && item.entry" :entry="item.entry as RemoteEntry" />
+                        <RemoteEntryMetadata v-if="item.isLeaf && getItemEntry(item)" :entry="getItemEntry(item)" />
                         <span v-else-if="urlTracker.isAtRoot && item.details">
                             {{ item.details }}
                         </span>
