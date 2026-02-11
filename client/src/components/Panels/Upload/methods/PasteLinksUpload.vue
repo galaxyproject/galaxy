@@ -114,6 +114,10 @@ function showUrlInput() {
     showInputArea.value = true;
 }
 
+function showUrlList() {
+    showInputArea.value = false;
+}
+
 function scrollToBottom() {
     nextTick(() => {
         if (tableContainerRef.value) {
@@ -199,15 +203,21 @@ defineExpose<UploadMethodComponent>({ startUpload });
     <div class="paste-links-upload">
         <!-- URL Input Area -->
         <div v-if="showInputArea" class="url-input-area">
-            <label for="paste-links-textarea" class="font-weight-bold mb-2">Paste URLs</label>
+            <label for="paste-links-textarea" class="font-weight-bold mb-0">
+                Paste URLs
+                <small class="text-muted ml-2">One URL per line</small>
+                <GButton v-if="hasItems" size="small" inline class="ui-link p-0 ml-2" @click="showUrlList">
+                    {{ urlItems.length }} URL(s) added
+                </GButton>
+            </label>
             <textarea
                 id="paste-links-textarea"
                 v-model="urlText"
                 class="form-control mb-2 url-textarea"
                 rows="8"
                 :placeholder="placeholder"></textarea>
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="text-muted small">One URL per line</span>
+            <div class="d-flex justify-content-end align-items-center">
+                <GButton v-if="hasItems" class="mr-2" @click="showUrlList">View Added URLs</GButton>
                 <GButton color="blue" :disabled="!urlText.trim()" @click="addUrlsFromText">
                     <FontAwesomeIcon :icon="faLink" class="mr-1" />
                     Add URLs
