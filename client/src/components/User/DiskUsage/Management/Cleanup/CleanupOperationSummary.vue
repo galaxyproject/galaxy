@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BCard, BCardText, BLink } from "bootstrap-vue";
+import { BAlert, BCard, BLink } from "bootstrap-vue";
 import { computed, onMounted, ref, watchEffect } from "vue";
 
 import localize from "@/utils/localization";
@@ -66,40 +66,24 @@ function onReviewItems() {
 </script>
 
 <template>
-    <BCard
-        :title="props.operation.name"
-        class="operation-card mx-2"
-        footer-bg-variant="white"
-        footer-border-variant="white">
-        <LoadingSpan v-if="loading" />
-        <BCardText v-if="!loading">
-            {{ operation.description }}
-        </BCardText>
-        <template v-slot:footer>
-            <div v-if="!loading">
-                <BAlert v-if="errorMessage" variant="danger" show data-test-id="error-alert">
-                    <h2 class="alert-heading h-sm">Failed to retrieve details.</h2>
-                    {{ errorMessage }}
-                </BAlert>
-                <BLink
-                    v-else-if="summary && canClearItems"
-                    href="#"
-                    class="card-link"
-                    data-test-id="review-link"
-                    @click="onReviewItems">
-                    <b>{{ localize("Review and clear") }} {{ summary.niceTotalSize }}</b>
-                </BLink>
-                <b v-else class="text-secondary" data-test-id="no-items-indicator">
-                    {{ localize("No items to clear") }}
-                </b>
-            </div>
-        </template>
+    <BCard class="d-flex flex-column">
+        <h5 class="mb-2">{{ props.operation.name }}</h5>
+        <p class="text-muted small flex-grow-1">{{ operation.description }}</p>
+        <div>
+            <LoadingSpan v-if="loading" />
+            <BAlert v-else-if="errorMessage" variant="danger" show data-test-id="error-alert">
+                {{ errorMessage }}
+            </BAlert>
+            <BLink
+                v-else-if="summary && canClearItems"
+                href="#"
+                data-test-id="review-link"
+                @click="onReviewItems">
+                <b>{{ localize("Review and clear") }} {{ summary.niceTotalSize }}</b>
+            </BLink>
+            <b v-else class="text-secondary" data-test-id="no-items-indicator">
+                {{ localize("No items to clear") }}
+            </b>
+        </div>
     </BCard>
 </template>
-
-<style scoped>
-.operation-card {
-    text-align: center;
-    width: 500px;
-}
-</style>

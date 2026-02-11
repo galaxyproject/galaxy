@@ -72,24 +72,18 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
             </b-alert>
         </b-row>
 
-        <div id="categories-panel">
-            <b-container v-for="category in cleanupCategories" :key="category.id">
-                <b-row class="justify-content-md-center mb-2">
-                    <h3>
-                        <b>{{ category.name }}</b>
-                    </h3>
-                </b-row>
-                <b-row class="justify-content-md-center mb-5">
-                    <b-card-group deck>
-                        <CleanupOperationSummary
-                            v-for="operation in category.operations"
-                            :key="operation.id"
-                            :operation="operation"
-                            :refresh-operation-id="refreshOperationId"
-                            @onReviewItems="onReviewItems" />
-                    </b-card-group>
-                </b-row>
-            </b-container>
+        <div v-for="category in cleanupCategories" :key="category.id" class="mx-3 mb-4">
+            <h4 class="mb-3">
+                <b>{{ category.name }}</b>
+            </h4>
+            <b-card-group deck>
+                <CleanupOperationSummary
+                    v-for="operation in category.operations"
+                    :key="operation.id"
+                    :operation="operation"
+                    :refresh-operation-id="refreshOperationId"
+                    @onReviewItems="onReviewItems" />
+            </b-card-group>
         </div>
 
         <ReviewCleanupDialog
