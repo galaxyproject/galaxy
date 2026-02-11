@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { faChevronDown, faChevronRight, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BTable } from "bootstrap-vue";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
+import type { TableField } from "@/components/Common/GTable.types";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
@@ -27,6 +27,7 @@ import UploadTableNameCell from "../shared/UploadTableNameCell.vue";
 import UploadTableOptionsCell from "../shared/UploadTableOptionsCell.vue";
 import UploadTableOptionsHeader from "../shared/UploadTableOptionsHeader.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 interface Props {
     method: UploadMethodConfig;
@@ -59,11 +60,12 @@ function createPasteContentItem(id: number, name: string): PasteContentItem {
         name,
         content: "",
         ...createItemDefaults(),
-        _showDetails: true,
     };
 }
 
 const pasteItems = ref<PasteContentItem[]>([createPasteContentItem(nextId++, "Pasted Dataset 1")]);
+const expandedItemIds = ref<Set<number>>(new Set());
+const rowToggleMap = ref<Map<number, () => void>>(new Map());
 const { clear: clearStaging } = useUploadStaging<PasteContentItem>(props.method.id, pasteItems);
 
 const hasItems = computed(() => pasteItems.value.some((item) => item.content.trim().length > 0));
@@ -80,6 +82,7 @@ function addPasteItem() {
     const newId = nextId++;
     pasteItems.value.push(createPasteContentItem(newId, `Pasted Dataset ${pasteItems.value.length + 1}`));
     scrollToBottom();
+    nextTick(() => expandRow(newId));
 }
 
 function scrollToBottom() {
@@ -102,6 +105,10 @@ function removeItem(id: number) {
         return;
     }
     pasteItems.value = pasteItems.value.filter((item) => item.id !== id);
+    rowToggleMap.value.delete(id);
+    const nextExpanded = new Set(expandedItemIds.value);
+    nextExpanded.delete(id);
+    expandedItemIds.value = nextExpanded;
 }
 
 function getItemSize(content: string) {
@@ -116,60 +123,134 @@ function getExpandAllToggleTitle(allExpanded: boolean): string {
     return allExpanded ? "Collapse all" : "Expand all";
 }
 
-const allExpanded = computed(() => pasteItems.value.length > 0 && pasteItems.value.every((f) => f._showDetails));
+const allExpanded = computed(
+    () => pasteItems.value.length > 0 && pasteItems.value.every((item) => expandedItemIds.value.has(item.id)),
+);
+
+function registerRowToggle(itemId: number, toggleDetails: () => void) {
+    rowToggleMap.value.set(itemId, toggleDetails);
+    return "";
+}
+
+function isExpanded(itemId: number) {
+    return expandedItemIds.value.has(itemId);
+}
+
+function setExpanded(itemId: number, expanded: boolean) {
+    const nextExpanded = new Set(expandedItemIds.value);
+    if (expanded) {
+        nextExpanded.add(itemId);
+    } else {
+        nextExpanded.delete(itemId);
+    }
+    expandedItemIds.value = nextExpanded;
+}
+
+function expandRow(itemId: number) {
+    if (isExpanded(itemId)) {
+        return;
+    }
+    const toggle = rowToggleMap.value.get(itemId);
+    if (!toggle) {
+        return;
+    }
+    setExpanded(itemId, true);
+    toggle();
+}
+
+function collapseRow(itemId: number) {
+    if (!isExpanded(itemId)) {
+        return;
+    }
+    const toggle = rowToggleMap.value.get(itemId);
+    if (!toggle) {
+        return;
+    }
+    setExpanded(itemId, false);
+    toggle();
+}
+
+function toggleRow(item: PasteContentItem, toggleDetails: () => void) {
+    const shouldExpand = !isExpanded(item.id);
+    setExpanded(item.id, shouldExpand);
+    toggleDetails();
+}
 
 function toggleAllExpanded() {
-    const newValue = !allExpanded.value;
-    pasteItems.value.forEach((f) => (f._showDetails = newValue));
+    const shouldExpand = !allExpanded.value;
+    pasteItems.value.forEach((item) => {
+        if (shouldExpand) {
+            expandRow(item.id);
+        } else {
+            collapseRow(item.id);
+        }
+    });
 }
 
 // Table configuration
-const tableFields = [
-    { key: "expand", label: "", sortable: false, tdClass: "text-center align-middle", thStyle: { width: "40px" } },
+const tableFields: TableField[] = [
+    {
+        key: "expand",
+        label: "",
+        sortable: false,
+        width: "40px",
+        align: "center",
+    },
     {
         key: "name",
         label: "Name",
         sortable: true,
-        thStyle: { width: "200px" },
-        tdClass: "paste-name-cell align-middle",
+        width: "200px",
+        class: "paste-name-cell",
     },
     {
         key: "size",
         label: "Size",
         sortable: true,
-        thStyle: { minWidth: "80px", width: "80px" },
-        tdClass: "align-middle",
+        width: "80px",
     },
     {
         key: "preview",
         label: "Content Preview",
         sortable: false,
-        thStyle: {},
-        tdClass: "align-middle preview-column",
+        align: "center",
+        class: "preview-column",
     },
     {
         key: "extension",
         label: "Type",
         sortable: false,
-        thStyle: { minWidth: "180px", width: "180px" },
-        tdClass: "align-middle",
+        width: "180px",
+        align: "center",
     },
     {
         key: "dbKey",
         label: "Reference",
         sortable: false,
-        thStyle: { minWidth: "200px", width: "200px" },
-        tdClass: "align-middle",
+        width: "200px",
+        align: "center",
+        class: "reference-column",
     },
     {
         key: "options",
         label: "Upload Settings",
         sortable: false,
-        thStyle: { width: "auto" },
-        tdClass: "align-middle",
+        align: "center",
     },
-    { key: "actions", label: "", sortable: false, tdClass: "text-right align-middle", thStyle: { width: "50px" } },
+    {
+        key: "actions",
+        label: "",
+        sortable: false,
+        width: "50px",
+        align: "center",
+    },
 ];
+
+onMounted(() => {
+    nextTick(() => {
+        pasteItems.value.forEach((item) => expandRow(item.id));
+    });
+});
 
 function startUpload() {
     const validItems = pasteItems.value.filter((item) => item.content.trim().length > 0);
@@ -183,7 +264,11 @@ function startUpload() {
     uploadQueue.enqueue(uploads, collectionConfig);
 
     // Reset to single empty item
-    pasteItems.value = [createPasteContentItem(nextId++, "Pasted Dataset 1")];
+    const newItemId = nextId++;
+    pasteItems.value = [createPasteContentItem(newItemId, "Pasted Dataset 1")];
+    rowToggleMap.value = new Map();
+    expandedItemIds.value = new Set();
+    nextTick(() => expandRow(newItemId));
     clearStaging();
     resetCollection();
 }
@@ -201,14 +286,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
             </div>
 
             <div ref="tableContainerRef" class="paste-table-container">
-                <BTable
-                    :items="pasteItems"
-                    :fields="tableFields"
-                    hover
-                    striped
-                    small
-                    fixed
-                    thead-class="paste-table-header">
+                <GTable hover compact fixed stripped :items="pasteItems" :fields="tableFields" class="paste-table">
                     <!-- Expand toggle column header -->
                     <template v-slot:head(expand)>
                         <button
@@ -222,16 +300,17 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     </template>
 
                     <!-- Expand toggle column -->
-                    <template v-slot:cell(expand)="{ toggleDetails, detailsShowing }">
+                    <template v-slot:cell(expand)="{ item, toggleDetails }">
+                        <span class="sr-only">{{ registerRowToggle(item.id, toggleDetails) }}</span>
                         <button
                             v-b-tooltip.hover.noninteractive
                             class="btn btn-link btn-sm p-0"
-                            :title="getExpandToggleTitle(detailsShowing)"
-                            :aria-label="getExpandToggleTitle(detailsShowing)"
-                            @click="toggleDetails"
-                            @keydown.enter.prevent="toggleDetails"
-                            @keydown.space.prevent="toggleDetails">
-                            <FontAwesomeIcon :icon="detailsShowing ? faChevronDown : faChevronRight" fixed-width />
+                            :title="getExpandToggleTitle(isExpanded(item.id))"
+                            :aria-label="getExpandToggleTitle(isExpanded(item.id))"
+                            @click="toggleRow(item, toggleDetails)"
+                            @keydown.enter.prevent="toggleRow(item, toggleDetails)"
+                            @keydown.space.prevent="toggleRow(item, toggleDetails)">
+                            <FontAwesomeIcon :icon="isExpanded(item.id) ? faChevronDown : faChevronRight" fixed-width />
                         </button>
                     </template>
 
@@ -251,9 +330,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             class="clickable-cell"
                             role="button"
                             tabindex="0"
-                            @click="toggleDetails"
-                            @keydown.enter.prevent="toggleDetails"
-                            @keydown.space.prevent="toggleDetails">
+                            @click="toggleRow(item, toggleDetails)"
+                            @keydown.enter.prevent="toggleRow(item, toggleDetails)"
+                            @keydown.space.prevent="toggleRow(item, toggleDetails)">
                             {{ getItemSize(item.content) }}
                         </span>
                     </template>
@@ -264,9 +343,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             class="clickable-cell"
                             role="button"
                             tabindex="0"
-                            @click="toggleDetails"
-                            @keydown.enter.prevent="toggleDetails"
-                            @keydown.space.prevent="toggleDetails">
+                            @click="toggleRow(item, toggleDetails)"
+                            @keydown.enter.prevent="toggleRow(item, toggleDetails)"
+                            @keydown.space.prevent="toggleRow(item, toggleDetails)">
                             <div v-if="item.content" class="preview-text">
                                 <span class="text-muted small font-italic">
                                     {{ item.content }}
@@ -367,7 +446,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                                 @keydown.stop></textarea>
                         </div>
                     </template>
-                </BTable>
+                </GTable>
             </div>
 
             <!-- Collection Creation Section -->
@@ -418,7 +497,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 .paste-table-container {
     @include upload-table-container;
 
-    :deep(.paste-table-header) {
+    :deep(.paste-table thead) {
         @include upload-table-header;
     }
 
