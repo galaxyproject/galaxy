@@ -22845,8 +22845,6 @@ export interface components {
         TaskState: "PENDING" | "STARTED" | "RETRY" | "FAILURE" | "SUCCESS";
         /** TemplateSecret */
         TemplateSecret: {
-            /** Default */
-            default?: string | null;
             /** Help */
             help?: string | null;
             /** Label */
