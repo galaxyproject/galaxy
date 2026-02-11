@@ -40,9 +40,10 @@ class PlaywrightElement:
         """
         Get the visible text content of the element.
 
-        Maps to Playwright's text_content() method.
+        Uses Playwright's inner_text() to match Selenium's .text behavior
+        which returns rendered text with normalized whitespace.
         """
-        content = self._element.text_content()
+        content = self._element.inner_text()
         return content.strip() if content is not None else ""
 
     def click(self) -> None:
