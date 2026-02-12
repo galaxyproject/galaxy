@@ -4,10 +4,10 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import toolsList from "@/components/ToolsView/testData/toolsList.json";
-import toolsListInPanel from "@/components/ToolsView/testData/toolsListInPanel.json";
+import toolsListUntyped from "@/components/ToolsView/testData/toolsList.json";
+import toolsListInPanelUntyped from "@/components/ToolsView/testData/toolsListInPanel.json";
 import { setMockConfig } from "@/composables/__mocks__/config";
-import { useToolStore } from "@/stores/toolStore";
+import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolBox from "./ToolBox.vue";
@@ -18,14 +18,21 @@ setMockConfig({
     toolbox_auto_sort: true,
 });
 
+const toolsList = toolsListUntyped as unknown as Tool[];
+const toolsListInPanel = toolsListInPanelUntyped as unknown as Record<string, Tool | ToolSection>;
+const EXPECTED_LABELS = ["Recent tools", "Favorites"];
+
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
 
-function toToolsById(list) {
-    return list.reduce((acc, tool) => {
-        acc[tool.id] = tool;
-        return acc;
-    }, {});
+function toToolsById(list: Tool[]) {
+    return list.reduce(
+        (acc, tool) => {
+            acc[tool.id] = tool;
+            return acc;
+        },
+        {} as Record<string, Tool>,
+    );
 }
 
 describe("ToolBox search", () => {
@@ -50,7 +57,7 @@ describe("ToolBox search", () => {
         const userStore = useUserStore();
         userStore.currentPreferences = { favorites: { tools: ["liftOver1"] } };
 
-        const wrapper = mount(ToolBox, {
+        const wrapper = mount(ToolBox as object, {
             pinia,
             localVue,
             router,
@@ -85,7 +92,7 @@ describe("ToolBox search", () => {
         const userStore = useUserStore();
         userStore.currentPreferences = { favorites: { tools: [] } };
 
-        const wrapper = mount(ToolBox, {
+        const wrapper = mount(ToolBox as object, {
             pinia,
             localVue,
             router,
@@ -122,7 +129,7 @@ describe("ToolBox search", () => {
         const userStore = useUserStore();
         userStore.currentPreferences = { favorites: { tools: ["__FILTER_FAILED_DATASETS__"] } };
 
-        const wrapper = mount(ToolBox, {
+        const wrapper = mount(ToolBox as object, {
             pinia,
             localVue,
             router,
@@ -168,7 +175,7 @@ describe("ToolBox search", () => {
         const userStore = useUserStore();
         userStore.currentPreferences = { favorites: { tools: ["__FILTER_FAILED_DATASETS__"] } };
 
-        const wrapper = mount(ToolBox, {
+        const wrapper = mount(ToolBox as object, {
             pinia,
             localVue,
             router,
@@ -192,14 +199,14 @@ describe("ToolBox search", () => {
             .findAll(".tool-panel-label")
             .wrappers.find((item) => item.text().includes("Favorites"));
         expect(favoritesLabel).toBeTruthy();
-        await favoritesLabel.trigger("click");
+        await favoritesLabel?.trigger("click");
         await flushPromises();
 
         expect(wrapper.find('[data-tool-id="__FILTER_FAILED_DATASETS__"]').exists()).toBe(false);
         expect(wrapper.find('[data-tool-id="__FILTER_EMPTY_DATASETS__"]').exists()).toBe(true);
     });
 
-    it("shows recent tools under favorites and allows clearing", async () => {
+    it("shows recent tools before favorites and allows clearing", async () => {
         const pinia = createPinia();
         setActivePinia(pinia);
 
@@ -213,7 +220,7 @@ describe("ToolBox search", () => {
         userStore.currentPreferences = { favorites: { tools: ["__FILTER_FAILED_DATASETS__"] } };
         userStore.recentTools = ["__ZIP_COLLECTION__", "__FILTER_EMPTY_DATASETS__"];
 
-        const wrapper = mount(ToolBox, {
+        const wrapper = mount(ToolBox as object, {
             pinia,
             localVue,
             router,
@@ -226,10 +233,10 @@ describe("ToolBox search", () => {
         await flushPromises();
 
         const labels = wrapper.findAll(".tool-panel-label").wrappers.map((item) => item.text());
-        expect(labels).toEqual(["Favorites", "Recent tools"]);
+        expect(labels).toEqual(EXPECTED_LABELS);
 
         const toolIds = wrapper.findAll("a[data-tool-id]").wrappers.map((item) => item.attributes("data-tool-id"));
-        expect(toolIds).toEqual(["__FILTER_FAILED_DATASETS__", "__ZIP_COLLECTION__", "__FILTER_EMPTY_DATASETS__"]);
+        expect(toolIds).toEqual(["__ZIP_COLLECTION__", "__FILTER_EMPTY_DATASETS__", "__FILTER_FAILED_DATASETS__"]);
         expect(wrapper.find('.tool-favorite-button[data-tool-id="__ZIP_COLLECTION__"]').exists()).toBe(true);
 
         await wrapper.find('[data-description="clear-recent-tools"]').trigger("click");
@@ -253,7 +260,7 @@ describe("ToolBox search", () => {
         userStore.currentPreferences = { favorites: { tools: ["__FILTER_FAILED_DATASETS__"] } };
         userStore.recentTools = ["__ZIP_COLLECTION__"];
 
-        const wrapper = mount(ToolBox, {
+        const wrapper = mount(ToolBox as object, {
             pinia,
             localVue,
             router,
@@ -272,7 +279,7 @@ describe("ToolBox search", () => {
             .findAll(".tool-panel-label")
             .wrappers.find((item) => item.text().includes("Favorites"));
         expect(favoritesLabel).toBeTruthy();
-        await favoritesLabel.trigger("click");
+        await favoritesLabel?.trigger("click");
         await flushPromises();
 
         expect(wrapper.find('[data-tool-id="__FILTER_FAILED_DATASETS__"]').exists()).toBe(false);
@@ -282,7 +289,7 @@ describe("ToolBox search", () => {
             .findAll(".tool-panel-label")
             .wrappers.find((item) => item.text().includes("Recent tools"));
         expect(recentLabel).toBeTruthy();
-        await recentLabel.trigger("click");
+        await recentLabel?.trigger("click");
         await flushPromises();
 
         expect(wrapper.find('[data-tool-id="__ZIP_COLLECTION__"]').exists()).toBe(false);
@@ -302,7 +309,7 @@ describe("ToolBox search", () => {
         userStore.currentPreferences = { favorites: { tools: [] } };
         userStore.recentTools = ["__ZIP_COLLECTION__"];
 
-        const wrapper = mount(ToolBox, {
+        const wrapper = mount(ToolBox as object, {
             pinia,
             localVue,
             router,
@@ -318,6 +325,6 @@ describe("ToolBox search", () => {
         expect(emptyState.exists()).toBe(true);
         expect(emptyState.text()).toContain("You haven't favorited any tools yet.");
         const labels = wrapper.findAll(".tool-panel-label").wrappers.map((item) => item.text());
-        expect(labels).toEqual(["Favorites", "Recent tools"]);
+        expect(labels).toEqual(EXPECTED_LABELS);
     });
 });

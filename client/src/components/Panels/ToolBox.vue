@@ -265,9 +265,18 @@ const favoritesDefaultPanel = computed<Record<string, ToolPanelItem> | null>(() 
         return null;
     }
     const entries: Array<[string, ToolPanelItem]> = [];
-    const favorites = favoriteToolIdsInPanel.value;
     const recents = recentToolIdsToShow.value;
+    const favorites = favoriteToolIdsInPanel.value;
 
+    if (recents.length > 0) {
+        entries.push([
+            PANEL_LABEL_IDS.RECENT_TOOLS_LABEL,
+            buildToolLabel(PANEL_LABEL_IDS.RECENT_TOOLS_LABEL, localize("Recent tools")),
+        ]);
+        if (!recentToolsCollapsed.value) {
+            entries.push(...buildToolEntries(recents, localToolsById.value));
+        }
+    }
     entries.push([
         PANEL_LABEL_IDS.FAVORITES_LABEL,
         buildToolLabel(PANEL_LABEL_IDS.FAVORITES_LABEL, localize("Favorites")),
@@ -280,15 +289,6 @@ const favoritesDefaultPanel = computed<Record<string, ToolPanelItem> | null>(() 
             ]);
         } else {
             entries.push(...buildToolEntries(favorites, localToolsById.value));
-        }
-    }
-    if (recents.length > 0) {
-        entries.push([
-            PANEL_LABEL_IDS.RECENT_TOOLS_LABEL,
-            buildToolLabel(PANEL_LABEL_IDS.RECENT_TOOLS_LABEL, localize("Recent tools")),
-        ]);
-        if (!recentToolsCollapsed.value) {
-            entries.push(...buildToolEntries(recents, localToolsById.value));
         }
     }
     return Object.fromEntries(entries);
