@@ -102,20 +102,17 @@ onMounted(async () => {
             </h2>
         </b-container>
         <b-container class="text-center mb-5 w-75">
-            <button
-                id="refresh-disk-usage"
-                title="Recalculate disk usage"
-                :disabled="isRefreshing"
-                variant="outline-secondary"
-                size="sm"
-                pill
-                @click="onRefresh">
-                <b-spinner v-if="isRefreshing" small />
-                <span v-else v-localize>Refresh</span>
-            </button>
-            <b-alert v-if="isRefreshing" class="refreshing-alert mt-2" variant="info" show dismissible fade>
+            <b-alert v-if="isRefreshing" variant="info" show>
+                <b-spinner small class="mr-2" />
                 <span v-localize>Recalculating disk usage... this may take some time, please check back later.</span>
             </b-alert>
+            <button
+                v-else
+                id="refresh-disk-usage"
+                title="Recalculate disk usage"
+                @click="onRefresh">
+                <span v-localize>Refresh</span>
+            </button>
         </b-container>
     </div>
 </template>
