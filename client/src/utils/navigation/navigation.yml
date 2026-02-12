@@ -639,6 +639,17 @@ registration:
       type: xpath
       selector: "//button[@name='create']"
 
+window_manager:
+  selectors:
+    _: '.winbox'
+    title: '.winbox .wb-title'
+    close_button: '.winbox .wb-close'
+    header: '.winbox .wb-header'
+    body: '.winbox .wb-body'
+    iframe: '.winbox iframe'
+    focused: '.winbox.focus'
+    focused_title: '.winbox.focus .wb-title'
+
 tool_form:
   selectors:
     tool_version: '[data-description="galaxy tool version"]'

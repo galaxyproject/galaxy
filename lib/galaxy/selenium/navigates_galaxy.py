@@ -2160,6 +2160,67 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             option_component = option_label_or_component
             option_component.wait_for_and_click()
 
+    # --- Window Manager helpers ---
+
+    def window_manager_toggle(self):
+        """Click the window manager toggle button in the masthead."""
+        self.components.masthead.window_manager.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+    def window_manager_enable(self):
+        """Enable the window manager (if not already active)."""
+        if not self.window_manager_is_active():
+            self.window_manager_toggle()
+
+    def window_manager_disable(self):
+        """Disable the window manager (if currently active)."""
+        if self.window_manager_is_active():
+            self.window_manager_toggle()
+
+    def window_manager_is_active(self) -> bool:
+        """Check if the window manager is currently enabled."""
+        return self.execute_script("return !!(window.Galaxy && window.Galaxy.frame && window.Galaxy.frame.active);")
+
+    def window_manager_window_count(self) -> int:
+        """Return number of open WinBox windows."""
+        return len(self.find_elements_by_selector(".winbox"))
+
+    def window_manager_wait_for_window_count(self, expected_count: int):
+        """Wait until the expected number of .winbox elements exist."""
+
+        def check_count(driver=None):
+            count = len(self.find_elements_by_selector(".winbox"))
+            return count == expected_count
+
+        self._wait_on(check_count, f"window count to be {expected_count}")
+
+    @contextlib.contextmanager
+    def winbox_frame(self, index=0):
+        """Context manager to switch into a WinBox iframe by index.
+
+        Usage:
+            with self.winbox_frame(0):
+                self.wait_for_selector_visible(".dataset-view")
+        """
+        iframes = self.find_elements_by_selector(".winbox iframe")
+        assert len(iframes) > index, f"Expected at least {index + 1} WinBox iframes, found {len(iframes)}"
+        try:
+            self.switch_to_frame(iframes[index])
+            yield
+        finally:
+            self.switch_to_default_content()
+
+    def window_manager_get_titles(self) -> list:
+        """Return list of window titles from all open WinBox windows."""
+        return self.execute_script(
+            "return Array.from(document.querySelectorAll('.winbox .wb-title')).map(el => el.textContent);"
+        )
+
+    def window_manager_close_all(self):
+        """Close all open WinBox windows."""
+        self.execute_script("document.querySelectorAll('.winbox .wb-close').forEach(btn => btn.click());")
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+
     # avoids problematic ID and classes on markup
     def history_element(self, attribute_value, attribute_name="data-description", scope=".history-index"):
         return self.components._.by_attribute(name=attribute_name, value=attribute_value, scope=scope)
