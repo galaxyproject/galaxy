@@ -64,7 +64,7 @@ function onKeydown(event: KeyboardEvent) {
         :tabindex="isCollapsible ? 0 : undefined"
         :title="description"
         :role="isCollapsible ? 'button' : undefined"
-        :aria-expanded="isCollapsible ? !isCollapsed : undefined"
+        :aria-expanded="isCollapsible ? (!isCollapsed ? 'true' : 'false') : undefined"
         v-on="isCollapsible ? { click: onToggle, keydown: onKeydown } : {}">
         <span class="tool-panel-label-divider-text tool-panel-divider-text">
             <FontAwesomeIcon
