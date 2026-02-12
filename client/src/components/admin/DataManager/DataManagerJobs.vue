@@ -30,19 +30,14 @@
                     </b-col>
                 </b-row>
             </b-container>
-            <b-table
-                id="jobs-table"
-                :fields="tableFields"
-                :items="tableItems"
-                :filter="filter"
-                hover
-                responsive
-                striped>
+
+            <GTable hover striped :fields="tableFields" :items="tableItems" :filter="filter">
                 <template v-slot:cell(actions)="row">
                     <GButtonGroup>
                         <GButton tooltip title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
                             <span class="fa fa-redo" />
                         </GButton>
+
                         <GButton
                             :id="'job-' + jobs[row.index]['encId']"
                             tooltip
@@ -50,6 +45,7 @@
                             :to="{ name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] } }">
                             <span class="fa fa-info-circle" />
                         </GButton>
+
                         <GButton
                             v-if="!showCommandLine"
                             outline
@@ -59,16 +55,19 @@
                         </GButton>
                     </GButtonGroup>
                 </template>
+
                 <template v-slot:row-details="row">
                     <b-card>
                         <h2 class="h-text">Command Line</h2>
+
                         <pre class="code"><code class="command-line">{{ row.item.commandLine }}</code></pre>
+
                         <template v-slot:footer>
                             <GButton class="mt-3" @click="row.toggleDetails"> Hide Info </GButton>
                         </template>
                     </b-card>
                 </template>
-            </b-table>
+            </GTable>
         </div>
     </div>
 </template>
@@ -81,12 +80,14 @@ import { getAppRoot } from "@/onload/loadConfig";
 import Alert from "@/components/Alert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
         Alert,
         GButton,
         GButtonGroup,
+        GTable,
     },
     props: {
         id: {
