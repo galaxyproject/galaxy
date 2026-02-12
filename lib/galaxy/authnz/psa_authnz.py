@@ -779,40 +779,45 @@ def sync_user_profile(strategy=None, details=None, user=None, **kwargs):
     if updates:
         trans.sa_session.add(user)
         trans.sa_session.commit()
-        if trans.app.notification_manager.notifications_enabled:
-            try:
-                from galaxy.schema.notifications import (
-                    MessageNotificationContent,
-                    NotificationCreateData,
-                    NotificationCreateRequest,
-                    NotificationRecipients,
-                    NotificationVariant,
-                    PersonalNotificationCategory,
-                )
-                from galaxy.webapps.galaxy.services.notifications import NotificationService
+        _send_oidc_profile_update_notification(trans, user, updates)
 
-                labels: dict[str, str] = {
-                    "email": "email address",
-                    "username": "public name",
-                    "fullname": "full name",
-                }
-                field_list = [labels.get(field, field) for field in updates]
-                message = f"Your profile was updated from your identity provider: {', '.join(field_list)}."
-                request = NotificationCreateRequest(
-                    recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
-                    notification=NotificationCreateData(
-                        source="oidc",
-                        category=PersonalNotificationCategory.message,
-                        variant=NotificationVariant.info,
-                        content=MessageNotificationContent(subject="Profile updated", message=message),
-                        publication_time=None,
-                        expiration_time=None,
-                    ),
-                    galaxy_url=None,
-                )
-                NotificationService(trans.app.notification_manager).send_notification_internal(request, force_sync=True)
-            except Exception as exc:
-                log.warning("OIDC profile update notification failed for user %s: %s", user.id, exc)
+
+def _send_oidc_profile_update_notification(trans, user, updates: list[str]) -> None:
+    if not trans.app.notification_manager.notifications_enabled:
+        return
+    try:
+        from galaxy.schema.notifications import (
+            MessageNotificationContent,
+            NotificationCreateData,
+            NotificationCreateRequest,
+            NotificationRecipients,
+            NotificationVariant,
+            PersonalNotificationCategory,
+        )
+        from galaxy.webapps.galaxy.services.notifications import NotificationService
+
+        labels: dict[str, str] = {
+            "email": "email address",
+            "username": "public name",
+            "fullname": "full name",
+        }
+        field_list = [labels.get(field, field) for field in updates]
+        message = f"Your profile was updated from your identity provider: {', '.join(field_list)}."
+        request = NotificationCreateRequest(
+            recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
+            notification=NotificationCreateData(
+                source="oidc",
+                category=PersonalNotificationCategory.message,
+                variant=NotificationVariant.info,
+                content=MessageNotificationContent(subject="Profile updated", message=message),
+                publication_time=None,
+                expiration_time=None,
+            ),
+            galaxy_url=None,
+        )
+        NotificationService(trans.app.notification_manager).send_notification_internal(request, force_sync=True)
+    except Exception as exc:
+        log.warning("OIDC profile update notification failed for user %s: %s", user.id, exc)
 
 
 def allowed_to_disconnect(
