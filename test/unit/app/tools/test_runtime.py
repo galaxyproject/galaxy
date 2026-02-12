@@ -15,7 +15,10 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionSampleSheetRuntime,
     DataInternalJson,
 )
-from galaxy.tools.runtime import collection_to_runtime
+from galaxy.tools.runtime import (
+    _validate_collection_runtime_dict,
+    collection_to_runtime,
+)
 
 
 @pytest.fixture
@@ -226,3 +229,17 @@ def test_collection_to_runtime_deeply_nested(mock_adapt_dataset):
     inner = middle.elements[0]
     assert isinstance(inner, DataCollectionPairedRuntime)
     assert inner.elements.forward.class_ == "File"
+
+
+def test_validate_collection_runtime_dict_rejects_unknown_leaf():
+    """Unknown leaf collection_type raises ValueError."""
+    raw = {"class": "Collection", "name": "x", "collection_type": "banana", "tags": [], "elements": []}
+    with pytest.raises(ValueError, match="Cannot build runtime model"):
+        _validate_collection_runtime_dict(raw)
+
+
+def test_validate_collection_runtime_dict_rejects_unknown_nested():
+    """Unknown nested collection_type raises ValueError."""
+    raw = {"class": "Collection", "name": "x", "collection_type": "list:banana", "tags": [], "elements": []}
+    with pytest.raises(ValueError, match="Cannot build runtime model"):
+        _validate_collection_runtime_dict(raw)

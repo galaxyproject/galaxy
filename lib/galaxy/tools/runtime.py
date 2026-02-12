@@ -17,9 +17,6 @@ from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util_models.parameters import (
     build_collection_model_for_type,
     DataCollectionInternalJsonBase,
-    DataCollectionListRuntime,
-    DataCollectionNestedListRuntime,
-    DataCollectionNestedRecordRuntime,
     DataCollectionRequestInternal,
     DataInternalJson,
     DataRequestInternalDereferencedT,
@@ -185,15 +182,7 @@ def _validate_collection_runtime_dict(raw: dict[str, Any]) -> DataCollectionInte
     model = build_collection_model_for_type(ct)
     if model is not None:
         return model.model_validate(raw)
-    # Fallback for unknown types
-    if ":" in ct:
-        first_segment = ct.split(":")[0]
-        if first_segment in ("list", "sample_sheet"):
-            return DataCollectionNestedListRuntime.model_validate(raw)
-        else:
-            return DataCollectionNestedRecordRuntime.model_validate(raw)
-    # Unknown single type - try list (historical behavior)
-    return DataCollectionListRuntime.model_validate(raw)
+    raise ValueError(f"Cannot build runtime model for collection_type: '{ct}'")
 
 
 def _build_collection_runtime_dict(

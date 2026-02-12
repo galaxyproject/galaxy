@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from galaxy.tool_util_models.parameters import (
     build_collection_model_for_type,
+    collection_runtime_discriminator,
     DataCollectionListRuntime,
     DataCollectionPairedRuntime,
     DataCollectionRecordRuntime,
@@ -249,3 +250,26 @@ def test_dynamic_model_json_schema_deeply_nested():
     defs = schema.get("$defs", {})
     assert len(defs) >= 2
     assert any("list_paired" in k for k in defs.keys())
+
+
+def test_collection_runtime_discriminator_known_types():
+    """Known leaf and nested types route correctly."""
+    assert collection_runtime_discriminator({"collection_type": "list"}) == "list"
+    assert collection_runtime_discriminator({"collection_type": "paired"}) == "paired"
+    assert collection_runtime_discriminator({"collection_type": "record"}) == "record"
+    assert collection_runtime_discriminator({"collection_type": "paired_or_unpaired"}) == "paired_or_unpaired"
+    assert collection_runtime_discriminator({"collection_type": "sample_sheet"}) == "sample_sheet"
+    assert collection_runtime_discriminator({"collection_type": "list:paired"}) == "nested_list"
+    assert collection_runtime_discriminator({"collection_type": "record:paired"}) == "nested_record"
+
+
+def test_collection_runtime_discriminator_rejects_unknown():
+    """Unknown collection_type raises ValueError instead of silently defaulting."""
+    with pytest.raises(ValueError, match="Unknown collection_type"):
+        collection_runtime_discriminator({"collection_type": "banana"})
+
+
+def test_collection_runtime_discriminator_missing_routes_to_list():
+    """Missing/empty collection_type routes to list for Pydantic schema rejection."""
+    assert collection_runtime_discriminator({"collection_type": ""}) == "list"
+    assert collection_runtime_discriminator({}) == "list"

@@ -831,9 +831,13 @@ def collection_runtime_discriminator(v: Any) -> str:
             return "nested_list"
         else:
             return "nested_record"
-    else:
-        # Unknown type - default to list (matches historical behavior)
+    elif not ct:
+        # Missing collection_type — data isn't a runtime collection dict.
+        # Route to list so Pydantic fails validation with a clear schema error
+        # rather than a discriminator error.
         return "list"
+    else:
+        raise ValueError(f"Unknown collection_type for runtime discrimination: '{ct}'")
 
 
 CollectionRuntimeDiscriminated: Type = cast(
@@ -1129,13 +1133,6 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         model = build_collection_model_for_type(ct)
         if model is not None:
             return (model, ct)
-        if ":" in ct:
-            # Fallback to generic nested models for unknown nested types
-            first_segment = ct.split(":")[0]
-            if first_segment in ("list", "sample_sheet"):
-                return (DataCollectionNestedListRuntime, "nested_list")
-            else:
-                return (DataCollectionNestedRecordRuntime, "nested_record")
         return (None, None)
 
     @property
@@ -1176,8 +1173,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         if model:
             return optional_if_needed(model, self.optional)
 
-        # Fallback for unrecognized types - use full discriminated union
-        return optional_if_needed(CollectionRuntimeDiscriminated, self.optional)
+        raise ValueError(f"Unknown collection_type for runtime model: '{self.collection_type}'")
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         if state_representation in ["request", "relaxed_request"]:
