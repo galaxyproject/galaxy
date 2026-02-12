@@ -38,6 +38,12 @@ interface Props {
     bordered?: boolean;
 
     /**
+     * Whether to place table caption at the top (above the table)
+     * @default false
+     */
+    captionTop?: boolean;
+
+    /**
      * Whether rows are clickable
      * @default false
      */
@@ -211,6 +217,7 @@ const props = withDefaults(defineProps<Props>(), {
     id: () => useUid("g-table-").value,
     actions: undefined,
     bordered: false,
+    captionTop: false,
     clickableRows: false,
     compact: false,
     containerClass: "",
@@ -557,8 +564,13 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                         { 'table-bordered': bordered },
                         { 'g-table-compact': compact },
                         { 'g-table-fixed': fixed },
+                        { 'caption-top': captionTop },
                         tableClass,
                     ]">
+                    <caption v-if="$slots['table-caption']" :class="{ 'caption-top': captionTop }">
+                        <slot name="table-caption" />
+                    </caption>
+
                     <thead v-if="!props.hideHeader">
                         <tr>
                             <th v-if="selectable" class="g-table-select-column">
@@ -828,5 +840,11 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 
 .g-table-load-more {
     border-top: 1px solid $brand-secondary;
+}
+
+.g-table.caption-top {
+    caption {
+        caption-side: top;
+    }
 }
 </style>
