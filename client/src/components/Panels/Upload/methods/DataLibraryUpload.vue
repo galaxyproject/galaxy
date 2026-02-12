@@ -731,11 +731,11 @@ defineExpose<UploadMethodComponent>({ startUpload });
             <div v-else class="browser-table-container">
                 <BTable
                     v-if="!errorMessage && browserItems.length > 0"
+                    v-model:sort-by="tableSortBy"
+                    v-model:sort-desc="sortDesc"
                     :items="browserItems"
                     :fields="browserFields"
                     :busy="isBusy"
-                    :sort-by.sync="tableSortBy"
-                    :sort-desc.sync="sortDesc"
                     striped
                     small
                     hover

@@ -39,7 +39,10 @@
                     @swap="(a, b) => repeatSwap(input, a, b)" />
             </div>
             <div v-else-if="input.type == 'section'">
-                <FormCard v-model:expanded="input.expanded" :title="localize(input.title || input.name)" :collapsible="true">
+                <FormCard
+                    v-model:expanded="input.expanded"
+                    :title="localize(input.title || input.name)"
+                    :collapsible="true">
                     <template v-slot:body>
                         <div v-if="input.help" class="my-2" data-description="section help">
                             {{ localize(input.help) }}

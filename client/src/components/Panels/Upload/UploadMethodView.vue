@@ -141,8 +141,8 @@ function handleReadyStateChange(ready: boolean) {
 
         <SelectorModal
             v-if="method && method.requiresTargetHistory"
+            v-model:show-modal="showHistorySelector"
             :histories="histories"
-            :show-modal.sync="showHistorySelector"
             title="Select a history for upload"
             @selectHistory="handleHistorySelected" />
     </div>
