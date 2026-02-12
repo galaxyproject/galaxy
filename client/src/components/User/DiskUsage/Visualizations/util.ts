@@ -112,4 +112,3 @@ export const byteFormattingForChart = {
     labelFormatter: bytesLabelFormatter,
     yAxisLabelExpr: BYTES_AXIS_LABEL_EXPR,
 };
-

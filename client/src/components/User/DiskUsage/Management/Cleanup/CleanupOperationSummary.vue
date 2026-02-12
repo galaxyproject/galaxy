@@ -74,11 +74,7 @@ function onReviewItems() {
             <BAlert v-else-if="errorMessage" variant="danger" show data-test-id="error-alert">
                 {{ errorMessage }}
             </BAlert>
-            <BLink
-                v-else-if="summary && canClearItems"
-                href="#"
-                data-test-id="review-link"
-                @click="onReviewItems">
+            <BLink v-else-if="summary && canClearItems" href="#" data-test-id="review-link" @click="onReviewItems">
                 <b>{{ localize("Review and clear") }} {{ summary.niceTotalSize }}</b>
             </BLink>
             <b v-else class="text-secondary" data-test-id="no-items-indicator">

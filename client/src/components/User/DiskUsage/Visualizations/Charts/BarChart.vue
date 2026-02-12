@@ -87,9 +87,7 @@ const vegaSpec = computed<VisualizationSpec>(() => {
                       value: 0.5,
                   }
                 : { value: 1 },
-            tooltip: [
-                { field: "formattedValue", type: "nominal", title: "Details" },
-            ],
+            tooltip: [{ field: "formattedValue", type: "nominal", title: "Details" }],
         },
     };
     return spec;

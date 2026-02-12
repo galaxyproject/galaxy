@@ -188,7 +188,6 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 "
                 :data="activeVsArchivedVsDeletedTotalSizeData"
                 v-bind="byteFormattingForChart" />
-
         </div>
     </OverviewPage>
 </template>

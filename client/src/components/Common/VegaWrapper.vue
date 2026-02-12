@@ -40,11 +40,7 @@ async function embedChart() {
             vegaView.finalize();
         }
         if (chartContainer.value !== null) {
-            const result = await embed(
-                chartContainer.value,
-                toRaw(props.spec),
-                { renderer: "svg" },
-            );
+            const result = await embed(chartContainer.value, toRaw(props.spec), { renderer: "svg" });
             vegaView = result.view;
             emit("new-view", vegaView);
         }

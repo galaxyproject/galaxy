@@ -28,9 +28,7 @@ const cards = [
     {
         key: "explore-history",
         title: localize("Explore disk usage by history"),
-        description: localize(
-            "Find out which histories or datasets take up the most space in your account.",
-        ),
+        description: localize("Find out which histories or datasets take up the most space in your account."),
         icon: "fas fa-chart-pie",
         buttonText: localize("Explore now"),
         onClick: () => router.push({ name: "HistoriesOverview" }),
@@ -38,9 +36,7 @@ const cards = [
     {
         key: "explore-storage",
         title: localize("Explore disk usage by storage"),
-        description: localize(
-            "See how space in your account is distributed across storage locations.",
-        ),
+        description: localize("See how space in your account is distributed across storage locations."),
         icon: "fas fa-hdd",
         buttonText: localize("Explore now"),
         onClick: () => router.push({ name: "ObjectStoresOverview" }),
@@ -59,7 +55,11 @@ const cards = [
         <DiskUsageSummary class="m-3" />
 
         <BCardGroup deck class="mx-3">
-            <BCard v-for="card in cards" :key="card.key" :data-description="`${card.key} card`" class="d-flex flex-column">
+            <BCard
+                v-for="card in cards"
+                :key="card.key"
+                :data-description="`${card.key} card`"
+                class="d-flex flex-column">
                 <h5 class="mb-2">
                     <i :class="card.icon" class="fa-lg mr-2" />
                     {{ card.title }}
