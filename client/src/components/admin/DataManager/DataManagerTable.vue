@@ -1,30 +1,33 @@
 <template>
     <div>
-        <b-breadcrumb v-if="dataTable && !loading" id="breadcrumb" :items="breadcrumbItems" />
+        <BBreadcrumb v-if="dataTable && !loading" id="breadcrumb" :items="breadcrumbItems" />
+
         <Alert :message="message" :variant="status" />
+
         <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
         <Alert v-else-if="loading" message="Waiting for data" status="info" />
         <Alert
             v-else-if="dataTable && !dataTable['data'].length"
             message="There are currently no entries in this tool data table."
             variant="primary" />
-        <b-container v-else-if="dataTable">
-            <b-row>
-                <b-col>
-                    <b-card id="data-table-card" flush>
+        <BContainer v-else-if="dataTable">
+            <BRow>
+                <BCol>
+                    <BCard id="data-table-card" flush>
                         <template v-slot:header>
-                            <b-container>
-                                <b-row align-v="center">
-                                    <b-col cols="auto">
+                            <BContainer>
+                                <BRow align-v="center">
+                                    <BCol cols="auto">
                                         <GButton tooltip :title="buttonLabel" @click="reload()">
-                                            <span class="fa fa-sync" />
+                                            <FontAwesomeIcon :icon="faSync" />
                                         </GButton>
-                                    </b-col>
-                                    <b-col>
+                                    </BCol>
+
+                                    <BCol>
                                         <b>{{ dataTableName }}</b>
-                                    </b-col>
-                                </b-row>
-                            </b-container>
+                                    </BCol>
+                                </BRow>
+                            </BContainer>
                         </template>
 
                         <GTable
@@ -33,15 +36,18 @@
                             striped
                             :fields="fields(dataTable['columns'])"
                             :items="dataTable['data']" />
-                    </b-card>
-                </b-col>
-            </b-row>
-        </b-container>
+                    </BCard>
+                </BCol>
+            </BRow>
+        </BContainer>
     </div>
 </template>
 
 <script>
+import { faSync } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
+import { BBreadcrumb, BCard, BCol, BContainer, BRow } from "bootstrap-vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -52,6 +58,12 @@ import GTable from "@/components/Common/GTable.vue";
 export default {
     components: {
         Alert,
+        BBreadcrumb,
+        BCard,
+        BCol,
+        BContainer,
+        BRow,
+        FontAwesomeIcon,
         GButton,
         GTable,
     },
@@ -63,6 +75,7 @@ export default {
     },
     data() {
         return {
+            faSync,
             dataTable: {},
             viewOnly: false,
             message: "",
