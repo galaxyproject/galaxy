@@ -1,62 +1,58 @@
 <template>
-    <dependency-index-wrapper
+    <DependencyIndexWrapper
         :error="error"
         :loading="loading"
         loading-message="Loading tool requirement resolution information">
         <template v-slot:header>
-            <b-row class="m-1">
-                <b-form inline>
+            <BRow class="m-1">
+                <BForm inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-resolver-type">Using resolvers of type</label>
-                    <b-form-select
+                    <BFormSelect
                         id="manage-resolver-type"
                         v-model="resolverType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="resolverTypeOptions"></b-form-select>
-                </b-form>
-            </b-row>
-            <b-row class="m-1">
-                <b-form inline>
+                        :options="resolverTypeOptions" />
+                </BForm>
+            </BRow>
+
+            <BRow class="m-1">
+                <BForm inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
-                    <b-form-select
-                        id="manage-filter-resolution"
-                        v-model="filterResolution"
-                        class="mb-2 mr-sm-2 mb-sm-0">
+                    <BFormSelect id="manage-filter-resolution" v-model="filterResolution" class="mb-2 mr-sm-2 mb-sm-0">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
-                    </b-form-select>
-                </b-form>
-            </b-row>
+                    </BFormSelect>
+                </BForm>
+            </BRow>
         </template>
 
         <template v-slot:body>
             <GTable id="requirements-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
                 <template v-slot:cell(selected)="data">
-                    <b-form-checkbox
-                        v-model="data.item.selected"
-                        @change="changeToggleCheckboxState($event)"></b-form-checkbox>
+                    <BFormCheckbox v-model="data.item.selected" @change="changeToggleCheckboxState($event)" />
                 </template>
 
                 <template v-slot:head(selected)="">
-                    <b-form-checkbox v-model="toggleState" @change="toggleSelectAll"></b-form-checkbox>
+                    <BFormCheckbox v-model="toggleState" @change="toggleSelectAll" />
                 </template>
 
                 <template v-slot:cell(requirement)="row">
-                    <requirements :requirements="row.item.requirements" />
+                    <Requirements :requirements="row.item.requirements" />
                 </template>
 
                 <template v-slot:cell(resolution)="row">
-                    <statuses :statuses="row.item.status" />
+                    <Statuses :statuses="row.item.status" />
                 </template>
 
                 <template v-slot:cell(tools)="row">
-                    <tools :tool-ids="row.item.tool_ids" />
+                    <Tools :tool-ids="row.item.tool_ids" />
                 </template>
 
                 <template v-slot:cell(tool)="row">
-                    <tool-display :tool-id="row.item.tool" />
+                    <ToolDisplay :tool-id="row.item.tool" />
                 </template>
 
                 <template v-slot:row-details="row">
@@ -66,37 +62,46 @@
         </template>
 
         <template v-slot:actions>
-            <b-row class="m-1">
+            <BRow class="m-1">
                 <GButton class="m-1" @click="installSelected">
-                    <span class="fa fa-plus" />
-                    <!-- v-bind:disabled="!hasSelection"  -->
+                    <FontAwesomeIcon :icon="faPlus" />
                     Install
                 </GButton>
+
                 <GButton class="m-1" @click="uninstallSelected">
-                    <span class="fa fa-minus" />
-                    <!-- v-bind:disabled="!hasSelection"  -->
+                    <FontAwesomeIcon :icon="faMinus" />
                     Uninstall
                 </GButton>
+
                 <GButton v-if="!expandToolIds" class="m-1" @click="setExpandToolIds(true)">
-                    <span class="fa fa-chevron-down" />
+                    <FontAwesomeIcon :icon="faChevronDown" />
                     Expand Tools
                 </GButton>
+
                 <GButton v-if="expandToolIds" class="m-1" @click="setExpandToolIds(false)">
-                    <span class="fa fa-chevron-up" />
+                    <FontAwesomeIcon :icon="faChevronUp" />
                     Group by Requirements
                 </GButton>
-            </b-row>
+            </BRow>
         </template>
-    </dependency-index-wrapper>
+    </DependencyIndexWrapper>
 </template>
 
 <script>
+import { faChevronDown, faChevronUp, faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BForm, BFormCheckbox, BFormSelect, BRow } from "bootstrap-vue";
 import _ from "underscore";
 
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 
 import ResolutionDetails from "./ResolutionDetails.vue";
+import DependencyIndexWrapper from "@/components/admin/Dependencies/DependencyIndexWrapper.vue";
+import Requirements from "@/components/admin/Dependencies/Requirements.vue";
+import Statuses from "@/components/admin/Dependencies/Statuses.vue";
+import ToolDisplay from "@/components/admin/Dependencies/ToolDisplay.vue";
+import Tools from "@/components/admin/Dependencies/Tools.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
 
@@ -115,13 +120,27 @@ RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
     components: {
-        ResolutionDetails,
+        BForm,
+        BFormCheckbox,
+        BFormSelect,
+        BRow,
+        FontAwesomeIcon,
+        DependencyIndexWrapper,
         GButton,
         GTable,
+        ResolutionDetails,
+        Requirements,
+        Statuses,
+        ToolDisplay,
+        Tools,
     },
     mixins: [DependencyIndexMixin],
     data() {
         return {
+            faChevronDown,
+            faChevronUp,
+            faMinus,
+            faPlus,
             toggleState: false,
             expandToolIds: false,
             error: null,
