@@ -48,6 +48,7 @@ if TYPE_CHECKING:
     from social_core.backends.oauth import BaseOAuth2
     from social_core.strategy import HttpResponseProtocol
 
+    from galaxy.managers.context import ProvidesAppContext
 
 log = logging.getLogger(__name__)
 
@@ -486,7 +487,7 @@ class PSAAuthnz(IdentityProvider):
             # so the authentication fails with a proper error message
             raise
 
-    def create_user(self, token, trans, login_redirect_url):
+    def create_user(self, token: str, trans: "ProvidesAppContext", login_redirect_url: str):
         """
         Create a user from a stored token (deferred user creation).
 
@@ -511,6 +512,7 @@ class PSAAuthnz(IdentityProvider):
         userinfo = jwt.decode(id_token, options={"verify_signature": False})
 
         email = userinfo.get("email")
+        assert email is not None
         username = userinfo.get("preferred_username", email)
         if "@" in username:
             username = username.split("@")[0]
