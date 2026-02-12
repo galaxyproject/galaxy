@@ -26,7 +26,7 @@ export type ListViewMode = "grid" | "list";
 
 type UserListViewPreferences = Record<string, ListViewMode>;
 
-const RECENT_TOOLS_LIMIT = 20;
+const RECENT_TOOLS_LIMIT = 10;
 
 export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<AnyUser>(null);
@@ -50,6 +50,7 @@ export const useUserStore = defineStore("userStore", () => {
     function $reset() {
         currentUser.value = null;
         currentPreferences.value = null;
+        recentTools.value = [];
         loadPromise = null;
     }
 
