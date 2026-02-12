@@ -4,7 +4,7 @@
         :error="error"
         loading-message="Loading tool dependency resolver information">
         <template v-slot:body>
-            <GTable id="unused-paths-table" striped :fields="fields" :items="items">
+            <GTable id="unused-paths-table" striped :fields="fields" :items="items" class="mb-3">
                 <template v-slot:cell(selected)="data">
                     <BFormCheckbox v-model="data.item.selected" />
                 </template>
