@@ -59,13 +59,15 @@ const cards = [
                 v-for="card in cards"
                 :key="card.key"
                 :data-description="`${card.key} card`"
-                class="d-flex flex-column">
+                body-class="d-flex flex-column">
                 <h5 class="mb-2">
                     <i :class="card.icon" class="fa-lg mr-2" />
                     {{ card.title }}
                 </h5>
                 <p class="text-muted small flex-grow-1">{{ card.description }}</p>
-                <GButton color="blue" @click="card.onClick">{{ card.buttonText }}</GButton>
+                <div>
+                    <GButton color="blue" @click="card.onClick">{{ card.buttonText }}</GButton>
+                </div>
             </BCard>
         </BCardGroup>
     </div>
