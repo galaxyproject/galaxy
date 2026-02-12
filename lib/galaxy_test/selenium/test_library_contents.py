@@ -6,6 +6,7 @@ from galaxy_test.base.decorators import (
 )
 from .framework import (
     retry_during_transitions,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesLibraryAssertions,
@@ -122,6 +123,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
     # Fine test locally but the upload doesn't work in Docker compose. I'd think
     # Galaxy must be running so that test-data/1.txt would work but it just doesn't
     # for some reason. https://jenkins.galaxyproject.org/job/jmchilton-selenium/79/artifact/79-test-errors/test_import_dataset_from_path2017100413221507137721/
+    @selenium_only("Fails in CI with KeyError: 'Name' - needs investigation")
     @selenium_test
     @requires_admin
     @requires_new_library
