@@ -1,5 +1,5 @@
 <template>
-    <div ref="outerContainer">
+    <div>
         <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
             {{ errorMessage }}
         </b-alert>
@@ -13,12 +13,12 @@ import type { View } from "vega";
 import embed, { type VisualizationSpec } from "vega-embed";
 import { nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from "vue";
 
-interface Props {
+export interface VisSpec {
     spec: VisualizationSpec;
     fillWidth?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<VisSpec>(), {
     fillWidth: true,
 });
 
@@ -26,7 +26,6 @@ const emit = defineEmits<{
     (e: "new-view", view: View): void;
 }>();
 
-const outerContainer = ref<HTMLDivElement | null>(null);
 const chartContainer = ref<HTMLDivElement | null>(null);
 const errorMessage = ref<string>("");
 
@@ -51,17 +50,15 @@ async function embedChart() {
 
 watch(props, embedChart, { deep: true });
 
-function onResize() {
-    if (vegaView && outerContainer.value) {
-        const containerWidth = outerContainer.value.clientWidth;
-        vegaView.width(containerWidth).runAsync();
+useResizeObserver(chartContainer, () => {
+    if (vegaView) {
+        vegaView.resize();
     }
-}
-
-useResizeObserver(outerContainer, onResize);
+});
 
 onMounted(() => embedChart());
 
+// Cleanup the chart when the component is unmounted
 onBeforeUnmount(() => {
     if (vegaView) {
         vegaView.finalize();
