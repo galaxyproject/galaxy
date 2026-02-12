@@ -10,10 +10,32 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from playwright.sync_api import ElementHandle
+from playwright.sync_api import (
+    ElementHandle,
+    JSHandle,
+)
 
 if TYPE_CHECKING:
+    from .has_playwright_driver import HasPlaywrightDriver
     from .web_element_protocol import WebElementProtocol
+
+
+class PlaywrightShadowRoot:
+    """Wrapper around a shadow root JSHandle that provides find_element support."""
+
+    def __init__(self, shadow_root_handle: JSHandle, driver: "HasPlaywrightDriver"):
+        self._shadow_root = shadow_root_handle
+        self._driver = driver
+
+    def find_element(self, by: str = "id", value: Optional[str] = None) -> "WebElementProtocol":
+        if value is None:
+            raise ValueError("value parameter is required")
+        selector = self._driver._selenium_locator_to_playwright_selector(by, value)
+        result_handle = self._shadow_root.evaluate_handle(f"root => root.querySelector('{selector}')")
+        element_handle = result_handle.as_element()
+        if element_handle:
+            return PlaywrightElement(element_handle, self._driver)
+        raise Exception(f"No element found in shadow root with {by}='{value}'")
 
 
 class PlaywrightElement:
@@ -24,14 +46,7 @@ class PlaywrightElement:
     WebElement API, allowing the same code to work with both backends.
     """
 
-    def __init__(self, element_handle: ElementHandle, driver):
-        """
-        Initialize PlaywrightElement wrapper.
-
-        Args:
-            element_handle: The Playwright ElementHandle to wrap
-            driver: The HasPlaywrightDriver instance (for find_element operations)
-        """
+    def __init__(self, element_handle: ElementHandle, driver: "HasPlaywrightDriver"):
         self._element = element_handle
         self._driver = driver
 
@@ -119,57 +134,29 @@ class PlaywrightElement:
         """
         self._element.evaluate("(el) => el.form ? el.form.submit() : el.submit()")
 
+    @property
+    def shadow_root(self) -> PlaywrightShadowRoot:
+        """Access the shadow root of this element, matching Selenium's WebElement.shadow_root."""
+        handle = self._element.evaluate_handle("el => el.shadowRoot")
+        return PlaywrightShadowRoot(handle, self._driver)
+
     def find_element(self, by: str = "id", value: Optional[str] = None) -> "WebElementProtocol":
-        """
-        Find a child element within this element.
-
-        Delegates to the driver's element finding logic.
-
-        Args:
-            by: The locator strategy (e.g., "id", "css selector")
-            value: The locator value
-
-        Returns:
-            A PlaywrightElement wrapping the found ElementHandle
-        """
-        # Convert the locator to Playwright selector
-        from .has_playwright_driver import HasPlaywrightDriver
-
-        if isinstance(self._driver, HasPlaywrightDriver):
-            if value is None:
-                raise ValueError("value parameter is required")
-            selector = self._driver._selenium_locator_to_playwright_selector(by, value)
-            # Use ElementHandle's query_selector to find within this element
-            found_element = self._element.query_selector(selector)
-            if found_element:
-                return PlaywrightElement(found_element, self._driver)
-            raise Exception(f"No element found with {by}='{value}'")
-
-        raise NotImplementedError("find_element within element not yet fully implemented")
+        """Find a child element within this element."""
+        if value is None:
+            raise ValueError("value parameter is required")
+        selector = self._driver._selenium_locator_to_playwright_selector(by, value)
+        found_element = self._element.query_selector(selector)
+        if found_element:
+            return PlaywrightElement(found_element, self._driver)
+        raise Exception(f"No element found with {by}='{value}'")
 
     def find_elements(self, by: str = "id", value: Optional[str] = None) -> list["WebElementProtocol"]:
-        """
-        Find all child elements matching the locator within this element.
-
-        Delegates to the driver's element finding logic.
-
-        Args:
-            by: The locator strategy (e.g., "css selector", "xpath")
-            value: The locator value
-
-        Returns:
-            List of PlaywrightElement instances
-        """
-        from .has_playwright_driver import HasPlaywrightDriver
-
-        if isinstance(self._driver, HasPlaywrightDriver):
-            if value is None:
-                raise ValueError("value parameter is required")
-            selector = self._driver._selenium_locator_to_playwright_selector(by, value)
-            found_elements = self._element.query_selector_all(selector)
-            return [PlaywrightElement(elem, self._driver) for elem in found_elements]
-
-        raise NotImplementedError("find_elements within element not yet fully implemented")
+        """Find all child elements matching the locator within this element."""
+        if value is None:
+            raise ValueError("value parameter is required")
+        selector = self._driver._selenium_locator_to_playwright_selector(by, value)
+        found_elements = self._element.query_selector_all(selector)
+        return [PlaywrightElement(elem, self._driver) for elem in found_elements]
 
     def content_frame(self):
         """
