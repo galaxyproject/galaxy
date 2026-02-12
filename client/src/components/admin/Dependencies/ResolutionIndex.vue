@@ -147,7 +147,11 @@ export default {
             loading: true,
             resolverType: null,
             resolverTypeOptions: RESOLVER_TYPE_OPTIONS,
-            baseFields: [{ key: "selected", label: "" }, { key: "requirement" }, { key: "resolution" }],
+            baseFields: [
+                { key: "selected", label: "" },
+                { key: "requirement", label: "Requirement" },
+                { key: "resolution", label: "Resolution" },
+            ],
             filterResolution: null,
             requirements: [],
         };
