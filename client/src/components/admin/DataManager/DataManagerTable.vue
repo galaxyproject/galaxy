@@ -26,12 +26,13 @@
                                 </b-row>
                             </b-container>
                         </template>
-                        <b-table
-                            :fields="fields(dataTable['columns'])"
-                            :items="dataTable['data']"
-                            small
+
+                        <GTable
+                            compact
                             hover
-                            striped />
+                            striped
+                            :fields="fields(dataTable['columns'])"
+                            :items="dataTable['data']" />
                     </b-card>
                 </b-col>
             </b-row>
@@ -46,11 +47,13 @@ import { getAppRoot } from "@/onload/loadConfig";
 
 import Alert from "@/components/Alert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
         Alert,
         GButton,
+        GTable,
     },
     props: {
         name: {
