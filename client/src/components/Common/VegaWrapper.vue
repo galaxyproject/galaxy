@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div ref="outerContainer" :style="fillWidth ? 'overflow: hidden' : undefined">
         <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
             {{ errorMessage }}
         </b-alert>
@@ -26,6 +26,7 @@ const emit = defineEmits<{
     (e: "new-view", view: View): void;
 }>();
 
+const outerContainer = ref<HTMLDivElement | null>(null);
 const chartContainer = ref<HTMLDivElement | null>(null);
 const errorMessage = ref<string>("");
 
@@ -50,9 +51,9 @@ async function embedChart() {
 
 watch(props, embedChart, { deep: true });
 
-useResizeObserver(chartContainer, () => {
-    if (vegaView) {
-        vegaView.resize();
+useResizeObserver(outerContainer, () => {
+    if (props.fillWidth && vegaView && outerContainer.value) {
+        vegaView.width(outerContainer.value.clientWidth).runAsync();
     }
 });
 
