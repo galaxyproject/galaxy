@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faChevronDown, faChevronRight, faFilter } from "@fortawesome/free-solid-svg-icons";
+import { faFilter } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventBus } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
@@ -85,7 +85,6 @@ const elems = computed(() => {
 });
 
 const opened = ref(props.expanded || checkFilter());
-const sectionToggleIcon = computed(() => (opened.value ? faChevronDown : faChevronRight));
 
 const sortedElements = computed<Array<[string, ToolPanelItem]>>(() => {
     // If this.config.sortTools is true, sort the tools alphabetically
@@ -185,7 +184,6 @@ function getCollapsedState(id: string): boolean | undefined {
                 :aria-expanded="opened"
                 @click="toggleMenu()">
                 <span class="tool-panel-divider-text">
-                    <FontAwesomeIcon :icon="sectionToggleIcon" class="tool-panel-divider-toggle" />
                     <span class="name">
                         {{ props.category.title || props.category.name }}
                     </span>
