@@ -1,5 +1,5 @@
 """
-Custom tool creation agent for Galaxy - uses UserToolSource for proper tool definitions.
+Custom tool creation agent for Galaxy.
 """
 
 import logging
@@ -33,19 +33,16 @@ log = logging.getLogger(__name__)
 
 
 class CustomToolAgent(BaseGalaxyAgent):
-    """
-    Agent that creates custom Galaxy tools using UserToolSource schema.
+    """Agent that creates custom Galaxy tools using UserToolSource schema.
 
-    This agent requires a model with structured output support to generate
-    valid Galaxy tool definitions. If the configured model doesn't support
-    structured output, it returns a helpful error message guiding the
-    operator to configure an appropriate model.
+    Requires a model with structured output support. If the configured model
+    doesn't support structured output, returns an error guiding the operator
+    to configure an appropriate model.
     """
 
     agent_type = AgentType.CUSTOM_TOOL
 
     def _requires_structured_output(self) -> bool:
-        """CustomToolAgent requires structured output for proper tool generation."""
         return True
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
@@ -58,13 +55,11 @@ class CustomToolAgent(BaseGalaxyAgent):
         )
 
     def get_system_prompt(self) -> str:
-        """System prompt for structured output."""
         prompt_path = Path(__file__).parent / "prompts" / "custom_tool_structured.md"
         return prompt_path.read_text()
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """Process tool creation request."""
-        # Check model capabilities first
         capability_error = self._validate_model_capabilities()
         if capability_error:
             return self._build_response(
@@ -86,12 +81,10 @@ class CustomToolAgent(BaseGalaxyAgent):
             )
 
         try:
-            # Run the agent to generate a UserToolSource
             result = await self._run_with_retry(query)
             tool = extract_structured_output(result, UserToolSource, log)
 
             if tool is None:
-                # Model returned text instead of structured output
                 content = extract_result_content(result)
                 return self._build_response(
                     content=f"The model did not generate a valid tool definition. Response:\n\n{content}",
@@ -102,11 +95,9 @@ class CustomToolAgent(BaseGalaxyAgent):
                     error="invalid_structured_output",
                 )
 
-            # Convert UserToolSource to YAML
             tool_dict = tool.model_dump(by_alias=True, exclude_none=True)
             tool_yaml = yaml.dump(tool_dict, default_flow_style=False, sort_keys=False)
 
-            # Create response content
             response_content = f"""I've created a custom Galaxy tool:
 
 ```yaml
@@ -120,7 +111,6 @@ class CustomToolAgent(BaseGalaxyAgent):
 
 The tool is ready to be saved and used in Galaxy."""
 
-            # Add action suggestions
             suggestions = [
                 ActionSuggestion(
                     action_type=ActionType.SAVE_TOOL,
@@ -145,26 +135,17 @@ The tool is ready to be saved and used in Galaxy."""
                 },
             )
 
-        except OSError as e:
-            log.error(f"Tool creation network error: {e}")
+        except (OSError, ValueError) as e:
+            log.error(f"Tool creation error: {e}")
             return self._build_response(
-                content=f"Failed to create tool due to network issues: {str(e)}\n\nPlease try again.",
-                confidence=ConfidenceLevel.LOW,
-                method="error",
-                query=query,
-                error=str(e),
-            )
-        except ValueError as e:
-            log.error(f"Tool creation value error: {e}")
-            return self._build_response(
-                content=f"Failed to create tool: {str(e)}\n\nPlease provide clear requirements for your tool.",
+                content=f"Failed to create tool: {str(e)}\n\nPlease try again with clear requirements.",
                 confidence=ConfidenceLevel.LOW,
                 method="error",
                 query=query,
                 error=str(e),
             )
         except ModelHTTPError as e:
-            # Handle schema/grammar errors from model backends (vLLM, LiteLLM, etc.)
+            # Schema/grammar errors from model backends (vLLM, LiteLLM, etc.)
             error_str = str(e).lower()
             if "grammar" in error_str or "$defs" in error_str or "pointer" in error_str:
                 log.warning(f"Tool creation schema error (model may not support complex JSON schemas): {e}")
@@ -194,7 +175,6 @@ The tool is ready to be saved and used in Galaxy."""
                 )
             raise
         except UnexpectedModelBehavior as e:
-            # Handle validation failures when model can't produce valid structured output
             log.warning(f"Model failed to produce valid tool definition: {e}")
             model = self._get_agent_config("model", "unknown")
             return self._build_response(
