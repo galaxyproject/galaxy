@@ -741,6 +741,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             target_card.find_element(By.CSS_SELECTOR, '[id^="g-card-extra-actions-history-"]').click()
 
         action_selector = target_card.find_element(By.CSS_SELECTOR, action_selector)
+        # Hover over parent card first to activate hover state in headless mode
+        self.action_chains().move_to_element(target_card).perform()
         self.move_to_and_click(action_selector)
 
     def edit_dataset_dbkey(self, dbkey_text):
