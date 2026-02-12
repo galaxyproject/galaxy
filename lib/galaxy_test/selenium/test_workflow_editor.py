@@ -31,6 +31,7 @@ from .framework import (
     selenium_only,
     selenium_test,
     SeleniumTestCase,
+    UsesWorkflowAssertions,
 )
 
 CHIPSEQ_COLUMNS = [
@@ -55,7 +56,7 @@ CHIPSEQ_COLUMNS = [
 ]
 
 
-class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
+class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions):
     ensure_registered = True
 
     @selenium_only("Not yet migrated to support Playwright backend")
@@ -1627,15 +1628,6 @@ steps:
         edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()
         actual_name = edit_name_element.get_attribute("value")
         assert expected_name in actual_name, f"'{expected_name}' unequal name '{actual_name}'"
-
-    @retry_assertion_during_transitions
-    def assert_wf_annotation_is(self, expected_annotation):
-        edit_annotation = self.components.workflow_editor.edit_annotation
-        edit_annotation_element = edit_annotation.wait_for_visible()
-        actual_annotation = edit_annotation_element.get_attribute("value")
-        assert (
-            expected_annotation in actual_annotation
-        ), f"'{expected_annotation}' unequal annotation '{actual_annotation}'"
 
     @retry_assertion_during_transitions
     def assert_modal_has_text(self, expected_text):

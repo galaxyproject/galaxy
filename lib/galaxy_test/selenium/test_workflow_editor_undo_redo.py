@@ -1,15 +1,14 @@
 from .framework import (
     RunsWorkflows,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
+    UsesWorkflowAssertions,
 )
 
 
-class TestWorkflowEditorUndoRedo(SeleniumTestCase, RunsWorkflows):
+class TestWorkflowEditorUndoRedo(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions):
     ensure_registered = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_change_stack_inserting_inputs(self):
         editor = self.components.workflow_editor
@@ -53,7 +52,6 @@ class TestWorkflowEditorUndoRedo(SeleniumTestCase, RunsWorkflows):
         editor.node.by_id(id=1).wait_for_present()
         editor.node.by_id(id=2).wait_for_present()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_change_stack_set_attributes(self):
         editor = self.components.workflow_editor
