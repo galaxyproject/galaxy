@@ -10,16 +10,17 @@
             striped
             caption-top
             :busy="busy"
+            clickable-rows
             class="jobs-table"
             show-empty
-            @row-clicked="toggleDetails">
+            @row-click="onRowClick($event)">
             <template v-slot:table-caption>
                 {{ tableCaption }}
             </template>
 
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading jobs" />
-                <BAlert v-else class="no-jobs" variant="info" show>
+                <BAlert v-else-if="!items || items.length === 0" class="no-jobs" variant="info" show>
                     {{ noItemsMessage }}
                 </BAlert>
             </template>
@@ -144,8 +145,8 @@ export default {
                 item._cellVariants = { state: this.translateState(item.state) };
             });
         },
-        toggleDetails(item) {
-            this.$set(item, "_showDetails", !item._showDetails);
+        onRowClick({ toggleDetails }) {
+            toggleDetails();
         },
         translateState(state) {
             const translateDict = {
