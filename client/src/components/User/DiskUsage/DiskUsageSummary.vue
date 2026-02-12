@@ -104,7 +104,7 @@ onMounted(async () => {
             </h2>
         </b-container>
         <b-container class="text-center mb-5 w-75">
-            <b-alert v-if="isRefreshing" variant="info" show>
+            <b-alert v-if="isRefreshing" class="refreshing-alert" variant="info" show>
                 <b-spinner small class="mr-2" />
                 <span v-localize>Recalculating disk usage... this may take some time, please check back later.</span>
             </b-alert>
