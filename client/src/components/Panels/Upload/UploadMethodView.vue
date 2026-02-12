@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -49,6 +50,10 @@ const targetHistoryName = computed(() => {
     return targetHistoryId.value ? historyStore.getHistoryNameById(targetHistoryId.value) : undefined;
 });
 
+const isCurrentTargetHistory = computed(() => {
+    return !!targetHistoryId.value && targetHistoryId.value === currentHistoryId.value;
+});
+
 const method = computed(() => {
     return props.methodId ? getUploadMethod(props.methodId) : null;
 });
@@ -97,6 +102,17 @@ function handleReadyStateChange(ready: boolean) {
                         Destination history:
                     </span>
                     <strong class="target-history-name">{{ targetHistoryName || "selected history" }}</strong>
+                    <BBadge
+                        v-b-tooltip.hover.noninteractive
+                        class="ml-2"
+                        :variant="isCurrentTargetHistory ? 'secondary' : 'info'"
+                        :title="
+                            isCurrentTargetHistory
+                                ? 'This is the currently active history'
+                                : 'Your uploaded data will go to this history, but it is not currently active. You can switch to it from the history panel or select a different history by clicking the change link.'
+                        ">
+                        {{ isCurrentTargetHistory ? "Current" : "Not Current" }}
+                    </BBadge>
                     <a
                         v-if="!isAnonymous"
                         href="#"
