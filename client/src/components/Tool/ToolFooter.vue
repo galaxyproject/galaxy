@@ -1,16 +1,18 @@
 <template>
-    <b-card v-if="hasContent" class="tool-footer">
-        <div v-if="hasCitations" class="mb-1">
-            <span v-localize class="footer-section-name">References</span>
-            <b-button
-                v-b-tooltip.hover
-                title="Copy all references as BibTeX"
-                style="cursor: pointer"
-                variant="link"
-                size="sm"
-                @click="copyBibtex">
-                <FontAwesomeIcon :icon="faCopy" />
-            </b-button>
+    <div v-if="hasContent" class="tool-footer">
+        <div v-if="hasCitations" class="mt-2 mb-4">
+            <Heading h2 separator bold size="sm">
+                <span v-localize>References</span>
+                <b-button
+                    v-b-tooltip.hover
+                    title="Copy all references as BibTeX"
+                    style="cursor: pointer"
+                    variant="link"
+                    size="sm"
+                    @click="copyBibtex">
+                    <FontAwesomeIcon :icon="faCopy" />
+                </b-button>
+            </Heading>
             <CitationItem
                 v-for="(citation, index) in citations"
                 :key="index"
@@ -18,26 +20,19 @@
                 :citation="citation"
                 prefix="-" />
         </div>
-        <div v-if="hasRequirements" class="mb-1">
-            <span v-localize class="footer-section-name">Requirements</span>
-            <a
-                v-b-tooltip.hover
-                title="Learn more about Galaxy Requirements"
-                href="https://galaxyproject.org/tools/requirements/"
-                target="_blank">
-                See details <FontAwesomeIcon :icon="faExternalLinkAlt" />
-            </a>
+        <div v-if="hasRequirements" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">Requirements</Heading>
             <div v-for="(requirement, index) in requirements" :key="index">
                 - {{ requirement.name }}
                 <span v-if="requirement.version"> (Version {{ requirement.version }}) </span>
             </div>
         </div>
-        <div v-if="hasLicense" class="mb-1">
-            <span v-localize class="footer-section-name">License</span>
+        <div v-if="hasLicense" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">License</Heading>
             <License :license-id="license" />
         </div>
-        <div v-if="hasReferences" class="mb-1">
-            <span v-localize class="footer-section-name">External links</span>
+        <div v-if="hasReferences" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">External links</Heading>
             <div v-for="(xref, index) in xrefs" :key="index">
                 -
                 <template v-if="xref.type == 'bio.tools'">
@@ -61,11 +56,11 @@
                 <template v-else> {{ xref.type }}: {{ xref.value }} </template>
             </div>
         </div>
-        <div v-if="hasCreators" class="mb-1">
-            <span class="font-weight-bold">Creators:</span>
+        <div v-if="hasCreators" class="mt-2 mb-4">
+            <Heading v-localize h2 separator bold size="sm">Creators</Heading>
             <Creators :creators="creators" />
         </div>
-    </b-card>
+    </div>
 </template>
 
 <script>
@@ -76,12 +71,14 @@ import { getCitations } from "@/components/Citation/services";
 import { copy } from "@/utils/clipboard";
 
 import CitationItem from "@/components/Citation/CitationItem.vue";
+import Heading from "@/components/Common/Heading.vue";
 import License from "@/components/License/License.vue";
 import Creators from "@/components/SchemaOrg/Creators.vue";
 
 export default {
     components: {
         CitationItem,
+        Heading,
         License,
         Creators,
         FontAwesomeIcon,
@@ -165,12 +162,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.footer-section-name {
-    font-weight: bold;
-}
-.footer-section-name::after {
-    content: ":";
-}
-</style>

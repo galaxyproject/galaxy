@@ -28,7 +28,7 @@ withDefaults(
     <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
     <LoadingSpan v-else-if="isLoading" />
     <div v-else>
-        <div class="position-relative">
+        <div class="position-relative pb-4">
             <div class="ui-form-header-underlay sticky-top" />
             <div class="tool-header sticky-top bg-secondary px-2 py-1 rounded">
                 <div class="d-flex justify-content-between">

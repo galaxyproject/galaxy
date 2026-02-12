@@ -347,8 +347,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
                 :type="props.type"
                 :has-alert="hasAlert"
                 :is-empty="isEmpty"
-                :is-optional="isOptional"
-                :extensions="attrs.extensions">
+                :is-optional="isOptional">
                 <template v-slot:badges>
                     <slot name="workflow-run-form-title-badges" />
                 </template>

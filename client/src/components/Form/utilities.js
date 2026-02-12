@@ -6,7 +6,7 @@ import { isDefined, isValidNumber } from "@/utils/validation";
  * @param{dict}   inputs    - Nested dictionary of input elements
  * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
  */
-export function visitInputs(inputs, callback, prefix, context) {
+export function visitInputs(inputs, callback, prefix = "", context = undefined) {
     context = Object.assign({}, context);
     _.each(inputs, (input) => {
         if (input && input.type && input.name) {
@@ -41,6 +41,40 @@ export function visitInputs(inputs, callback, prefix, context) {
                 break;
             default:
                 callback(node, name, context);
+        }
+    }
+}
+
+/** Visits ALL inputs including every conditional case (not just the active one).
+ * Used for syncing server attributes to all conditional branches.
+ * @param{Array}    inputs    - Nested array of input elements
+ * @param{Function} callback  - Called with each input node and its name
+ * @param{String}   prefix    - Key prefix for nested param name construction
+ */
+export function visitAllInputs(inputs, callback, prefix = "") {
+    for (var key in inputs) {
+        var node = inputs[key];
+        var nodeName = node.name || key;
+        var name = prefix ? `${prefix}|${nodeName}` : nodeName;
+        switch (node.type) {
+            case "repeat":
+                _.each(node.cache, (cache, j) => {
+                    visitAllInputs(cache, callback, `${name}_${j}`);
+                });
+                break;
+            case "conditional":
+                if (node.test_param) {
+                    callback(node.test_param, `${name}|${node.test_param.name}`);
+                    for (var i = 0; i < node.cases.length; i++) {
+                        visitAllInputs(node.cases[i].inputs, callback, name);
+                    }
+                }
+                break;
+            case "section":
+                visitAllInputs(node.inputs, callback, name);
+                break;
+            default:
+                callback(node, name);
         }
     }
 }
@@ -207,7 +241,7 @@ function runValidator(validator, value) {
  * @param{dict}   index     - Index of input elements
  * @param{dict}   values    - Dictionary of parameter values
  */
-export function validateInputs(index, values, allowEmptyValueOnRequiredInput = false) {
+export function validateInputs(index, values, rejectEmptyRequiredInputs = false) {
     let batchN = -1;
     let batchSrc = null;
     for (const inputId in index) {
@@ -220,7 +254,7 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
             continue;
         }
         if (isRequired && inputDef.type != "hidden") {
-            if (!isDefined(inputValue) || (allowEmptyValueOnRequiredInput && inputValue === "")) {
+            if (!isDefined(inputValue) || (rejectEmptyRequiredInputs && inputValue === "")) {
                 return [inputId, "Please provide a value for this option."];
             }
         }

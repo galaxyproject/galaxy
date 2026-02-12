@@ -183,26 +183,26 @@ onBeforeMount(() => {
                     @click="onShowObjectStoreSelect">
                     <FontAwesomeIcon :icon="faHdd" />
                 </GButton>
-                <ToolTargetPreferredObjectStorePopover
-                    v-if="allowObjectStoreSelection"
-                    :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                    :user="currentUser" />
-                <BModal
-                    id="modal-select-preferred-object-store"
-                    v-model="showPreferredObjectStoreModal"
-                    :title="storageLocationModalTitle"
-                    scrollable
-                    centered
-                    modal-class="tool-preferred-object-store-modal"
-                    title-tag="h3"
-                    size="lg"
-                    ok-only
-                    ok-title="Close">
-                    <ToolSelectPreferredObjectStore
-                        :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                        @updated="onUpdatePreferredObjectStoreId" />
-                </BModal>
             </GButtonGroup>
+            <ToolTargetPreferredObjectStorePopover
+                v-if="allowObjectStoreSelection"
+                :tool-preferred-object-store-id="toolPreferredObjectStoreId"
+                :user="currentUser" />
+            <BModal
+                id="modal-select-preferred-object-store"
+                v-model="showPreferredObjectStoreModal"
+                :title="storageLocationModalTitle"
+                scrollable
+                centered
+                modal-class="tool-preferred-object-store-modal"
+                title-tag="h3"
+                size="lg"
+                ok-only
+                ok-title="Close">
+                <ToolSelectPreferredObjectStore
+                    :tool-preferred-object-store-id="toolPreferredObjectStoreId"
+                    @updated="onUpdatePreferredObjectStoreId" />
+            </BModal>
             <slot name="buttons" />
         </template>
 
@@ -246,7 +246,9 @@ onBeforeMount(() => {
         </template>
 
         <template v-slot:footer>
-            <slot name="buttons" />
+            <div class="mt-2 mb-4">
+                <slot name="buttons" />
+            </div>
             <div v-if="props.options.help" class="mt-2 mb-4">
                 <Heading v-localize h2 separator bold size="sm">Help</Heading>
                 <ToolHelp :content="props.options.help" :format="props.options.help_format" />
@@ -276,8 +278,9 @@ onBeforeMount(() => {
     cursor: unset;
 }
 
-.tool-card-buttons {
-    height: 2em;
+.tool-card-buttons :deep(.dropdown .btn) {
+    display: flex;
+    border: none;
 }
 
 .portlet-backdrop {
