@@ -44,6 +44,12 @@ interface Props {
     clickableRows?: boolean;
 
     /**
+     * Whether to use compact table spacing (BootstrapVue `small`)
+     * @default false
+     */
+    compact?: boolean;
+
+    /**
      * Additional CSS classes for the table container
      * @default ""
      */
@@ -72,6 +78,12 @@ interface Props {
      * @default ""
      */
     filter?: string;
+
+    /**
+     * Whether to use fixed table layout (BootstrapVue `fixed`)
+     * @default false
+     */
+    fixed?: boolean;
 
     /**
      * Whether to show hover effect on rows
@@ -200,11 +212,13 @@ const props = withDefaults(defineProps<Props>(), {
     actions: undefined,
     bordered: false,
     clickableRows: false,
+    compact: false,
     containerClass: "",
     currentPage: undefined,
     emptyState: () => ({ message: "No data available" }),
     fields: () => [],
     filter: "",
+    fixed: false,
     hover: true,
     hideHeader: false,
     items: () => [],
@@ -541,6 +555,8 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                         { 'table-striped': striped },
                         { 'table-hover': hover },
                         { 'table-bordered': bordered },
+                        { 'g-table-compact': compact },
+                        { 'g-table-fixed': fixed },
                         tableClass,
                     ]">
                     <thead v-if="!props.hideHeader">
@@ -571,18 +587,18 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     { 'g-table-sorted': sortBy === field.key },
                                     { 'hide-on-small': field.hideOnSmall },
                                 ]"
-                                :style="field.width ? { width: field.width } : undefined"
+                                :style="field.width ? { width: field.width, minWidth: field.width } : undefined"
                                 @click="onHeaderClick(field)">
                                 <div class="d-flex align-items-center">
                                     <div class="flex-grow-1" :class="getTextAlignmentClass(field.align)">
                                         <slot :name="`head(${field.key})`" :field="field">
-                                            {{ field.label || field.key }}
+                                            {{ field.label ?? field.key }}
                                         </slot>
                                     </div>
                                     <FontAwesomeIcon
                                         v-if="field.sortable && getSortIcon(field)"
                                         :icon="getSortIcon(field)"
-                                        :class="{ 'text-muted': sortBy !== field.key }"
+                                        :class="{ 'g-table-sort-icon': sortBy !== field.key }"
                                         class="ml-1 flex-shrink-0" />
                                 </div>
                             </th>
@@ -727,6 +743,11 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 }
 
 .g-table {
+    &.g-table-fixed {
+        table-layout: fixed;
+        width: 100%;
+    }
+
     thead th {
         position: sticky;
         top: 0;
@@ -747,6 +768,10 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 
         &.g-table-sorted {
             background-color: $brand-light;
+        }
+
+        .g-table-sort-icon {
+            color: $brand-secondary;
         }
     }
 
@@ -774,6 +799,13 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
         td {
             padding: 0.75rem;
             vertical-align: middle;
+        }
+    }
+
+    &.g-table-compact {
+        thead th,
+        tbody td {
+            padding: 0.3rem;
         }
     }
 

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { faCloudUploadAlt, faLaptop, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import type { TableField } from "@/components/Common/GTable.types";
 import { useFileDrop } from "@/composables/fileDrop";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
@@ -28,6 +28,7 @@ import UploadTableNameCell from "../shared/UploadTableNameCell.vue";
 import UploadTableOptionsCell from "../shared/UploadTableOptionsCell.vue";
 import UploadTableOptionsHeader from "../shared/UploadTableOptionsHeader.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 interface Props {
     method: UploadMethodConfig;
@@ -69,43 +70,50 @@ const { isReadyToUpload } = useUploadReadyState(hasFiles, collectionState);
 
 const showDragOverlay = computed(() => hasFiles.value && isFileOverDropZone.value);
 
-const tableFields = [
+const tableFields: TableField[] = [
     {
         key: "name",
         label: "Name",
         sortable: true,
-        thStyle: { minWidth: "200px", width: "auto" },
-        tdClass: "file-name-cell align-middle",
+        width: "200px",
+        align: "center",
+        class: "file-name-cell",
     },
     {
         key: "size",
         label: "Size",
         sortable: true,
-        thStyle: { minWidth: "80px", width: "80px" },
-        tdClass: "align-middle",
+        width: "80px",
+        align: "center",
     },
     {
         key: "extension",
         label: "Type",
         sortable: false,
-        thStyle: { minWidth: "100px", width: "180px" },
-        tdClass: "align-middle",
+        width: "180px",
+        align: "center",
     },
     {
         key: "dbKey",
         label: "Reference",
         sortable: false,
-        thStyle: { minWidth: "100px", width: "200px" },
-        tdClass: "align-middle",
+        width: "200px",
+        align: "center",
     },
     {
         key: "options",
         label: "Upload Settings",
         sortable: false,
-        thStyle: { width: "140px" },
-        tdClass: "align-middle",
+        width: "140px",
+        align: "center",
     },
-    { key: "actions", label: "", sortable: false, tdClass: "text-right align-middle", thStyle: { width: "50px" } },
+    {
+        key: "actions",
+        label: "",
+        sortable: false,
+        width: "50px",
+        align: "center",
+    },
 ];
 
 watch(isReadyToUpload, (ready) => emit("ready", ready), { immediate: true });
@@ -205,14 +213,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 </div>
 
                 <div class="file-table-container">
-                    <BTable
-                        :items="selectedFiles"
-                        :fields="tableFields"
-                        hover
-                        striped
-                        small
-                        fixed
-                        thead-class="file-table-header">
+                    <GTable hover striped compact fixed :items="selectedFiles" :fields="tableFields" class="file-table">
                         <template v-slot:cell(name)="{ item }">
                             <UploadTableNameCell
                                 :value="item.name"
@@ -291,7 +292,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                                 <FontAwesomeIcon :icon="faTimes" />
                             </button>
                         </template>
-                    </BTable>
+                    </GTable>
                 </div>
 
                 <!-- Collection Creation Section -->
@@ -428,7 +429,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 .file-table-container {
     @include upload-table-container;
 
-    :deep(.file-table-header) {
+    :deep(.file-table thead) {
         @include upload-table-header;
     }
 

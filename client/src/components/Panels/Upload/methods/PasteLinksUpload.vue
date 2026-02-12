@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { faLink, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput, BTable } from "bootstrap-vue";
+import { BFormInput } from "bootstrap-vue";
 import { computed, nextTick, ref, watch } from "vue";
 
+import type { TableField } from "@/components/Common/GTable.types";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
@@ -27,6 +28,7 @@ import UploadTableNameCell from "../shared/UploadTableNameCell.vue";
 import UploadTableOptionsCell from "../shared/UploadTableOptionsCell.vue";
 import UploadTableOptionsHeader from "../shared/UploadTableOptionsHeader.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 interface Props {
     method: UploadMethodConfig;
@@ -131,43 +133,47 @@ function removeItem(id: number) {
     urlItems.value = urlItems.value.filter((item) => item.id !== id);
 }
 
-const tableFields = [
+const tableFields: TableField[] = [
     {
         key: "name",
         label: "Name",
         sortable: true,
-        thStyle: { width: "200px" },
-        tdClass: "url-name-cell align-middle",
+        width: "200px",
+        class: "url-name-cell",
     },
     {
         key: "url",
         label: "URL",
         sortable: false,
-        thStyle: { width: "auto" },
-        tdClass: "align-middle url-column",
+        class: "url-column",
     },
     {
         key: "extension",
         label: "Type",
         sortable: false,
-        thStyle: { minWidth: "180px", width: "180px" },
-        tdClass: "align-middle",
+        width: "180px",
+        align: "center",
     },
     {
         key: "dbKey",
         label: "Reference",
         sortable: false,
-        thStyle: { minWidth: "200px", width: "200px" },
-        tdClass: "align-middle",
+        width: "200px",
+        align: "center",
     },
     {
         key: "options",
         label: "Upload Settings",
         sortable: false,
-        thStyle: { width: "auto" },
-        tdClass: "align-middle",
+        align: "center",
     },
-    { key: "actions", label: "", sortable: false, tdClass: "text-right align-middle", thStyle: { width: "50px" } },
+    {
+        key: "actions",
+        label: "",
+        sortable: false,
+        width: "50px",
+        align: "center",
+    },
 ];
 
 function clearAll() {
@@ -234,14 +240,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
             </div>
 
             <div ref="tableContainerRef" class="url-table-container">
-                <BTable
-                    :items="urlItems"
-                    :fields="tableFields"
-                    hover
-                    striped
-                    small
-                    fixed
-                    thead-class="url-table-header">
+                <GTable hover striped fixed compact :items="urlItems" :fields="tableFields" class="url-table">
                     <!-- Name column -->
                     <template v-slot:cell(name)="{ item }">
                         <UploadTableNameCell
@@ -340,7 +339,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             <FontAwesomeIcon :icon="faTimes" />
                         </button>
                     </template>
-                </BTable>
+                </GTable>
             </div>
 
             <!-- Collection Creation Section -->
@@ -415,7 +414,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 .url-table-container {
     @include upload-table-container;
 
-    :deep(.url-table-header) {
+    :deep(.url-table thead) {
         @include upload-table-header;
     }
 

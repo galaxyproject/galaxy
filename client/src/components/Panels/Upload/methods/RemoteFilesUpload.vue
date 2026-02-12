@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { faFolder, faGlobe, faPlus, faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BFormCheckbox, BFormInput, BPagination, BTable } from "bootstrap-vue";
+import { BAlert, BFormCheckbox, BFormInput, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { browseRemoteFiles, fetchFileSources, type RemoteEntry } from "@/api/remoteFiles";
 import type { BreadcrumbItem } from "@/components/Common";
+import type { TableField } from "@/components/Common/GTable.types";
 import { Model } from "@/components/FilesDialog/model";
 import { fileSourcePluginToItem } from "@/components/FilesDialog/utilities";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
@@ -39,6 +40,7 @@ import UploadTableOptionsCell from "../shared/UploadTableOptionsCell.vue";
 import UploadTableOptionsHeader from "../shared/UploadTableOptionsHeader.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbNavigation from "@/components/Common/BreadcrumbNavigation.vue";
+import GTable from "@/components/Common/GTable.vue";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 
 interface Props {
@@ -330,6 +332,10 @@ function onItemClick(item: SelectionItem) {
     }
 }
 
+function onRowClick(event: { item: SelectionItem }) {
+    onItemClick(event.item);
+}
+
 function open(item: SelectionItem) {
     urlTracker.forward(item);
     currentPage.value = 1;
@@ -413,81 +419,86 @@ function createNewFileSource() {
 }
 
 // Browser table fields
-const browserFields = [
+const browserFields: TableField[] = [
     {
         key: "select",
         label: "",
-        thStyle: { width: "40px" },
-        tdClass: "align-middle",
+        width: "40px",
+        align: "center",
     },
     {
         key: "user",
         label: "",
         sortable: false,
-        thStyle: { width: "35px" },
-        tdClass: "align-middle text-center",
+        width: "35px",
+        align: "center",
     },
     {
         key: "name",
         label: "Name",
         sortable: false,
-        thStyle: { minWidth: "200px" },
-        tdClass: "align-middle",
+        align: "center",
     },
     {
         key: "details",
         label: "Details",
         sortable: false,
-        thStyle: { width: "auto", minWidth: "200px" },
-        tdClass: "align-middle",
+        align: "left",
     },
 ];
 
 // File list table fields
-const tableFields = [
+const tableFields: TableField[] = [
     {
         key: "name",
         label: "Name",
         sortable: true,
-        thStyle: { width: "200px" },
-        tdClass: "file-name-cell align-middle",
+        width: "200px",
+        align: "center",
+        class: "file-name-cell",
     },
     {
         key: "size",
         label: "Size",
         sortable: true,
-        thStyle: { minWidth: "80px", width: "80px" },
-        tdClass: "align-middle",
+        width: "80px",
+        align: "center",
+        class: "size-column",
     },
     {
         key: "url",
         label: "URI",
         sortable: false,
-        thStyle: { width: "auto" },
-        tdClass: "align-middle uri-column",
+        align: "center",
+        class: "uri-column",
     },
     {
         key: "extension",
         label: "Type",
         sortable: false,
-        thStyle: { minWidth: "180px", width: "180px" },
-        tdClass: "align-middle",
+        width: "180px",
+        align: "center",
     },
     {
         key: "dbKey",
         label: "Reference",
         sortable: false,
-        thStyle: { minWidth: "200px", width: "200px" },
-        tdClass: "align-middle",
+        width: "200px",
+        align: "center",
     },
     {
         key: "options",
         label: "Upload Settings",
         sortable: false,
-        thStyle: { width: "auto" },
-        tdClass: "align-middle",
+        align: "center",
     },
-    { key: "actions", label: "", sortable: false, tdClass: "text-right align-middle", thStyle: { width: "50px" } },
+    {
+        key: "actions",
+        label: "",
+        sortable: false,
+        width: "50px",
+        align: "center",
+    },
 ];
 
 function clearAll() {
@@ -562,6 +573,10 @@ function onErrorRetry() {
     load();
 }
 
+function getItemEntry(item: SelectionItem): RemoteEntry {
+    return item.entry as RemoteEntry;
+}
+
 defineExpose<UploadMethodComponent>({ startUpload });
 </script>
 
@@ -602,17 +617,18 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
             <!-- Browser table -->
             <div class="browser-table-container">
-                <BTable
+                <GTable
                     v-if="!errorMessage && (browserItems.length > 0 || isBusy)"
                     :items="browserItems"
                     :fields="browserFields"
-                    :busy="isBusy"
+                    :overlay-loading="isBusy"
                     hover
                     striped
-                    small
+                    clickable-rows
+                    compact
                     fixed
-                    thead-class="browser-table-header"
-                    @row-clicked="onItemClick">
+                    class="browser-table"
+                    @row-click="onRowClick">
                     <!-- Select column header (select all) -->
                     <template v-slot:head(select)>
                         <BFormCheckbox
@@ -662,26 +678,14 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <!-- Details column -->
                     <template v-slot:cell(details)="{ item }">
-                        <RemoteEntryMetadata v-if="item.isLeaf && item.entry" :entry="item.entry" />
+                        <RemoteEntryMetadata v-if="item.isLeaf && getItemEntry(item)" :entry="getItemEntry(item)" />
                         <span v-else-if="urlTracker.isAtRoot && item.details">
                             {{ item.details }}
                         </span>
                     </template>
 
                     <!-- Loading slot -->
-                    <template v-slot:table-busy>
-                        <div class="text-center my-2">
-                            <b-spinner small class="align-middle"></b-spinner>
-                            <strong class="ml-2">
-                                {{
-                                    supportsServerPagination
-                                        ? "Loading..."
-                                        : "Loading all files (this may take a moment)..."
-                                }}
-                            </strong>
-                        </div>
-                    </template>
-                </BTable>
+                </GTable>
 
                 <!-- Empty state message when no items are available -->
                 <div v-else-if="!errorMessage && !isBusy" class="text-center text-muted my-5">
@@ -733,14 +737,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
             </div>
 
             <div ref="tableContainerRef" class="file-table-container">
-                <BTable
-                    :items="remoteFileItems"
-                    :fields="tableFields"
-                    hover
-                    striped
-                    small
-                    fixed
-                    thead-class="file-table-header">
+                <GTable :items="remoteFileItems" :fields="tableFields" hover striped table-class="table-sm file-table">
                     <!-- Name column -->
                     <template v-slot:cell(name)="{ item }">
                         <UploadTableNameCell
@@ -838,7 +835,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                             <FontAwesomeIcon :icon="faTimes" />
                         </button>
                     </template>
-                </BTable>
+                </GTable>
             </div>
 
             <!-- Collection Creation Section -->
@@ -904,7 +901,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
     overflow: auto;
     min-height: 0;
 
-    :deep(.browser-table-header) {
+    :deep(.browser-table thead) {
         @include upload-table-header;
     }
 
@@ -941,7 +938,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 .file-table-container {
     @include upload-table-container;
 
-    :deep(.file-table-header) {
+    :deep(.file-table thead) {
         @include upload-table-header;
     }
 
