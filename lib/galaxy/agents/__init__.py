@@ -1,8 +1,7 @@
 """
 Galaxy AI Agents Module
 
-This module provides AI agent functionality built on pydantic-ai for Galaxy.
-Agents provide specialized assistance for workflows, tool errors, data quality, and more.
+Provides AI agent functionality built on pydantic-ai for Galaxy.
 """
 
 from .base import (
@@ -31,10 +30,8 @@ __all__ = [
     "HistoryAnalyzerAgent",
 ]
 
-# Global agent registry instance
 agent_registry = AgentRegistry()
 
-# Register default agents
 agent_registry.register(AgentType.ROUTER, QueryRouterAgent)
 agent_registry.register(AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent)
 agent_registry.register(AgentType.CUSTOM_TOOL, CustomToolAgent)

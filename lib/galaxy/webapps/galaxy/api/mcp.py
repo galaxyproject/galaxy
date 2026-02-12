@@ -1,12 +1,8 @@
 """
-Model Context Protocol (MCP) server integration for Galaxy.
+MCP server integration for Galaxy.
 
-This module provides MCP tools that allow AI assistants to interact
-with Galaxy programmatically. Tools are thin wrappers around the
-AgentOperationsManager which handles the operations.
-
-Uses Streamable HTTP transport (the modern MCP standard) with stateless
-mode enabled for multi-worker compatibility.
+Tools are thin wrappers around AgentOperationsManager.
+Uses Streamable HTTP transport with stateless mode for multi-worker compatibility.
 """
 
 import logging
@@ -24,35 +20,23 @@ from galaxy.work.context import WorkRequestContext
 
 logger = logging.getLogger(__name__)
 
-# Suppress noisy DEBUG logging from FastMCP's internal task queue
-# Note: FastMCP uses fakeredis by default for its task queue. If Galaxy is
-# configured with real Redis, FastMCP could potentially use it instead for
-# better performance in multi-worker deployments.
 logging.getLogger("fakeredis").setLevel(logging.WARNING)
 logging.getLogger("docket").setLevel(logging.WARNING)
 logging.getLogger("docket.worker").setLevel(logging.WARNING)
 
 
 def get_mcp_url_builder(fallback_base_url: str):
-    """
-    Get a URL builder for MCP context.
-
-    Tries to use the actual HTTP request if available, otherwise falls back
-    to using the configured Galaxy infrastructure URL.
-    """
+    """Get a URL builder, using the current HTTP request if available."""
     from fastmcp.server.http import _current_http_request
 
     from galaxy.webapps.galaxy.api import UrlBuilder
 
-    # Try to get the current HTTP request from FastMCP's context var
     request = _current_http_request.get(None)
     if request is not None:
-        # Use the real UrlBuilder with the actual request
         return UrlBuilder(request)
 
-    # Fallback: create a simple URL builder using config
     class MCPUrlBuilder:
-        """Simple URL builder for MCP context when HTTP request is not available."""
+        """Fallback URL builder when HTTP request is not available."""
 
         def __init__(self, base_url: str):
             self.base_url = base_url.rstrip("/")
@@ -61,7 +45,6 @@ def get_mcp_url_builder(fallback_base_url: str):
             qualified = path_params.pop("qualified", False)
             query_params = path_params.pop("query_params", None)
 
-            # Map route names to URL patterns
             if name == "history":
                 history_id = path_params.get("history_id", path_params.get("id", ""))
                 url = f"/api/histories/{history_id}"
@@ -88,52 +71,20 @@ def get_mcp_url_builder(fallback_base_url: str):
 
 
 def get_mcp_app(gx_app):
-    """
-    Create and configure the MCP server application.
-
-    Args:
-        gx_app: Galaxy application instance
-
-    Returns:
-        FastAPI application with MCP endpoints
-    """
-    # Enable stateless HTTP mode for multi-worker deployments
-    # This allows the MCP server to work correctly with multiple uvicorn workers
+    """Create and configure the MCP server application."""
     fastmcp_settings.stateless_http = True
 
-    # Create MCP server instance
     mcp = FastMCP("Galaxy")
 
-    # Get base URL for URL builder
     base_url = getattr(gx_app.config, "galaxy_infrastructure_url", "http://localhost:8080")
 
-    # Helper function to create AgentOperationsManager from API key
     def get_operations_manager(api_key: str, ctx: MCPContext) -> AgentOperationsManager:
-        """
-        Create AgentOperationsManager by converting API key to user context.
-
-        This looks up the user from the API key and creates a WorkRequestContext,
-        then returns an AgentOperationsManager in internal mode. This means all
-        MCP tools (both external and internal) use the same code path through
-        direct Galaxy manager calls.
-
-        Args:
-            api_key: Galaxy API key for authentication
-            ctx: MCP context providing access to the HTTP request
-
-        Returns:
-            AgentOperationsManager configured for internal mode
-
-        Raises:
-            ValueError: If API key is invalid or user not found
-        """
+        """Look up user from API key and return an AgentOperationsManager."""
         if not api_key:
             raise ValueError(
-                "API key required. You can create an API key in Galaxy "
-                "under User -> Preferences -> Manage API Key."
+                "API key required. You can create an API key in Galaxy under User -> Preferences -> Manage API Key."
             )
 
-        # Look up user from API key
         user_manager = UserManager(gx_app)
         user = user_manager.by_api_key(api_key=api_key)
 
@@ -143,29 +94,17 @@ def get_mcp_app(gx_app):
                 "You can create or view your API key in Galaxy under User -> Preferences -> Manage API Key."
             )
 
-        # Create a work context for this user with URL builder for serialization
         url_builder = get_mcp_url_builder(base_url)
         trans = WorkRequestContext(app=gx_app, user=user, url_builder=url_builder)
 
-        # Return AgentOperationsManager in internal mode
         return AgentOperationsManager(app=gx_app, trans=trans)
-
-    # Define MCP tools
-    # All tools are thin wrappers around AgentOperationsManager
 
     @mcp.tool()
     def connect(api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Verify connection to Galaxy and get server information.
+        """Verify connection to Galaxy and get server information.
 
-        This tool checks that the API key is valid and returns basic
-        information about the Galaxy server and current user.
-
-        Args:
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Server configuration, version info, and current user details
+        Checks that the API key is valid and returns basic info about
+        the Galaxy server and current user.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -176,18 +115,9 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def search_tools(query: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Search for Galaxy tools by name or keyword.
+        """Search for Galaxy tools by name or keyword.
 
-        Use this to find available tools in Galaxy. The search matches against
-        tool names, IDs, and descriptions.
-
-        Args:
-            query: Search query (tool name or keyword to search for)
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            List of matching tools with their IDs, names, and descriptions
+        Matches against tool names, IDs, and descriptions.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -198,20 +128,10 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def get_tool_details(tool_id: str, api_key: str, ctx: MCPContext, io_details: bool = False) -> dict[str, Any]:
-        """
-        Get detailed information about a specific Galaxy tool.
+        """Get detailed information about a specific Galaxy tool.
 
-        Use this to learn about a tool's parameters, inputs, outputs,
-        and how to use it. Set io_details=true to get full input/output
-        specifications needed for running the tool.
-
-        Args:
-            tool_id: Galaxy tool ID (e.g., 'Cut1' or 'toolshed.g2.bx.psu.edu/repos/...')
-            api_key: Galaxy API key for authentication
-            io_details: Include detailed input/output specifications (default: false)
-
-        Returns:
-            Tool details including parameters, inputs, outputs, and documentation
+        Set io_details=true to get full input/output specifications
+        needed for running the tool.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -222,19 +142,9 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def list_histories(api_key: str, ctx: MCPContext, limit: int = 50, offset: int = 0) -> dict[str, Any]:
-        """
-        List the current user's Galaxy histories.
+        """List the current user's Galaxy histories.
 
-        Histories are containers for datasets and analysis results in Galaxy.
-        Use this to find which history to use for running tools.
-
-        Args:
-            api_key: Galaxy API key for authentication
-            limit: Maximum number of histories to return (default: 50)
-            offset: Number of histories to skip for pagination (default: 0)
-
-        Returns:
-            List of histories with their IDs, names, and states
+        Histories are containers for datasets and analysis results.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -247,20 +157,10 @@ def get_mcp_app(gx_app):
     def run_tool(
         history_id: str, tool_id: str, inputs: dict[str, Any], api_key: str, ctx: MCPContext
     ) -> dict[str, Any]:
-        """
-        Execute a Galaxy tool.
+        """Execute a Galaxy tool.
 
-        Use get_tool_details() with io_details=true first to learn what
-        inputs the tool requires and how to format them.
-
-        Args:
-            history_id: ID of the history to run the tool in (from list_histories)
-            tool_id: ID of the tool to run (from search_tools or get_tool_details)
-            inputs: Dictionary of tool input parameters matching the tool's input schema
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Job execution information including job IDs and output dataset IDs
+        Use get_tool_details() with io_details=true first to learn
+        what inputs the tool requires.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -271,18 +171,10 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def get_job_status(job_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Get the status and details of a Galaxy job.
+        """Get the status and details of a Galaxy job.
 
-        After running a tool with run_tool(), use this to check if the job has
-        finished and whether it succeeded or failed.
-
-        Args:
-            job_id: ID of the job to check (from run_tool() response)
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Job details including state (queued/running/ok/error), tool info, and timestamps
+        Use after run_tool() to check if the job finished and whether
+        it succeeded or failed.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -293,18 +185,10 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def create_history(name: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Create a new Galaxy history.
+        """Create a new Galaxy history.
 
-        Histories are containers for datasets and analysis results. Create a new
-        history before uploading files or running analyses.
-
-        Args:
-            name: Human-readable name for the new history (e.g., 'RNA-seq Analysis')
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Created history details including ID, name, and state
+        Histories are containers for datasets and analysis results.
+        Create one before uploading files or running analyses.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -315,18 +199,10 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def get_history_details(history_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Get detailed information about a specific history.
+        """Get detailed information about a specific history.
 
-        Returns history metadata and summary statistics without loading all datasets.
-        Use get_history_contents() to get the actual datasets in a history.
-
-        Args:
-            history_id: Galaxy history ID (e.g., '1cd8e2f6b131e5aa')
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            History details including name, state, size, and dataset counts
+        Returns metadata and summary stats. Use get_history_contents()
+        to get the actual datasets.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -344,23 +220,10 @@ def get_mcp_app(gx_app):
         offset: int = 0,
         order: str = "hid-asc",
     ) -> dict[str, Any]:
-        """
-        Get paginated contents (datasets and collections) from a specific history.
+        """Get paginated contents (datasets and collections) from a history.
 
-        Args:
-            history_id: Galaxy history ID (e.g., '1cd8e2f6b131e5aa')
-            api_key: Galaxy API key for authentication
-            limit: Maximum number of items to return per page (default: 100)
-            offset: Number of items to skip for pagination (default: 0)
-            order: Sort order - options include:
-                   'hid-asc' (history ID ascending, oldest first, default)
-                   'hid-dsc' (history ID descending, newest first)
-                   'create_time-dsc' (creation time descending)
-                   'update_time-dsc' (last updated descending)
-                   'name-asc' (alphabetical by name)
-
-        Returns:
-            List of datasets/collections with pagination metadata
+        Order options: 'hid-asc', 'hid-dsc', 'create_time-dsc',
+        'update_time-dsc', 'name-asc'.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -371,16 +234,7 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def get_dataset_details(dataset_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Get detailed information about a specific dataset.
-
-        Args:
-            dataset_id: Galaxy dataset ID (e.g., 'f2db41e1fa331b3e')
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Dataset details including name, state, file size, extension, and metadata
-        """
+        """Get detailed information about a specific dataset."""
         try:
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_dataset_details(dataset_id)
@@ -398,25 +252,10 @@ def get_mcp_app(gx_app):
         dbkey: str = "?",
         file_name: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Upload a file from a URL to Galaxy.
+        """Upload a file from a URL to Galaxy.
 
-        Downloads the file from the given URL and uploads it to the specified history.
-        The upload runs as an asynchronous job; use get_job_status() to monitor progress.
-
-        Args:
-            history_id: Galaxy history ID to upload the file to
-            url: URL of the file to upload (e.g., 'https://example.com/data.fasta')
-            api_key: Galaxy API key for authentication
-            file_type: Galaxy file format name (default: 'auto' for auto-detection)
-                      Common types: 'fasta', 'fastq', 'bam', 'vcf', 'bed', 'tabular', 'txt'
-            dbkey: Database key/genome build (default: '?')
-                   Examples: 'hg38', 'mm10', 'dm6', '?'
-            file_name: Optional custom name for the uploaded dataset in Galaxy
-                      (inferred from URL if not provided)
-
-        Returns:
-            Job information including job ID and output dataset IDs
+        Runs as an async job; use get_job_status() to monitor progress.
+        Common file_types: 'fasta', 'fastq', 'bam', 'vcf', 'bed', 'tabular'.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -437,20 +276,7 @@ def get_mcp_app(gx_app):
         show_shared: bool = True,
         search: str | None = None,
     ) -> dict[str, Any]:
-        """
-        List user's workflows.
-
-        Args:
-            api_key: Galaxy API key for authentication
-            limit: Maximum number of workflows to return (default: 50)
-            offset: Number of workflows to skip for pagination (default: 0)
-            show_published: Include publicly published workflows (default: False)
-            show_shared: Include workflows shared with the user (default: True)
-            search: Optional search term to filter workflows by name
-
-        Returns:
-            List of workflows with their IDs, names, and basic metadata
-        """
+        """List user's workflows with optional filtering."""
         try:
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.list_workflows(limit, offset, show_published, show_shared, search)
@@ -460,18 +286,7 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def get_workflow_details(workflow_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Get detailed information about a specific workflow.
-
-        Returns workflow metadata, steps, inputs, and outputs.
-
-        Args:
-            workflow_id: Galaxy workflow ID (e.g., 'f2db41e1fa331b3e')
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Workflow details including name, steps, inputs, outputs, and annotations
-        """
+        """Get detailed information about a workflow including steps, inputs, and outputs."""
         try:
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_workflow_details(workflow_id)
@@ -488,22 +303,11 @@ def get_mcp_app(gx_app):
         inputs: dict[str, Any] | None = None,
         parameters: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """
-        Invoke (run) a workflow.
+        """Invoke (run) a workflow.
 
         Use get_workflow_details() first to understand required inputs.
-
-        Args:
-            workflow_id: Galaxy workflow ID to run
-            history_id: History ID where workflow outputs will be stored
-            api_key: Galaxy API key for authentication
-            inputs: Dictionary mapping workflow input labels/indices to dataset IDs
-                   Example: {'0': {'id': 'dataset_id', 'src': 'hda'}}
-            parameters: Dictionary mapping step IDs to parameter values
-                       Example: {'step_1': {'param_name': 'value'}}
-
-        Returns:
-            Workflow invocation details including invocation ID for monitoring
+        inputs maps workflow input labels/indices to dataset IDs;
+        parameters maps step IDs to parameter values.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -521,21 +325,7 @@ def get_mcp_app(gx_app):
         limit: int = 50,
         offset: int = 0,
     ) -> dict[str, Any]:
-        """
-        List workflow invocations.
-
-        Filter by workflow ID or history ID to find specific invocations.
-
-        Args:
-            api_key: Galaxy API key for authentication
-            workflow_id: Optional workflow ID to filter invocations
-            history_id: Optional history ID to filter invocations
-            limit: Maximum number of invocations to return (default: 50)
-            offset: Number of invocations to skip for pagination (default: 0)
-
-        Returns:
-            List of workflow invocations with their states and metadata
-        """
+        """List workflow invocations, optionally filtered by workflow or history."""
         try:
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_invocations(workflow_id, history_id, limit, offset)
@@ -545,16 +335,7 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def get_invocation_details(invocation_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Get detailed information about a specific workflow invocation.
-
-        Args:
-            invocation_id: Workflow invocation ID
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Invocation details including state, steps, inputs, and outputs
-        """
+        """Get detailed information about a specific workflow invocation."""
         try:
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_invocation_details(invocation_id)
@@ -564,16 +345,7 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def cancel_workflow_invocation(invocation_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Cancel a running workflow invocation.
-
-        Args:
-            invocation_id: Workflow invocation ID to cancel
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Updated invocation details with cancelled state
-        """
+        """Cancel a running workflow invocation."""
         try:
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.cancel_workflow_invocation(invocation_id)
@@ -585,19 +357,7 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def get_tool_panel(api_key: str, ctx: MCPContext, view: str | None = None) -> dict[str, Any]:
-        """
-        Get the tool panel (toolbox) structure.
-
-        Returns the hierarchical structure of tool sections and tools
-        available in this Galaxy instance.
-
-        Args:
-            api_key: Galaxy API key for authentication
-            view: Optional panel view name (uses server default if not specified)
-
-        Returns:
-            Tool panel hierarchy with sections and tools
-        """
+        """Get the tool panel (toolbox) hierarchy of sections and tools."""
         try:
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_tool_panel(view)
@@ -607,18 +367,9 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def get_tool_run_examples(tool_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Get test cases/examples showing how to run a tool.
+        """Get test cases showing how to run a tool with real inputs.
 
-        Returns the tool's test definitions which show real, working input
-        configurations. Useful for learning how to properly format tool inputs.
-
-        Args:
-            tool_id: Galaxy tool ID (e.g., 'Cut1')
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Test cases with example inputs and expected outputs
+        Useful for learning how to properly format tool inputs.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -629,19 +380,7 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def get_tool_citations(tool_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Get citation information for a tool.
-
-        Returns DOIs, BibTeX entries, and URLs for citing the tool
-        in publications.
-
-        Args:
-            tool_id: Galaxy tool ID (e.g., 'bwa')
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Tool citations including DOIs and BibTeX
-        """
+        """Get citation information (DOIs, BibTeX) for a tool."""
         try:
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_tool_citations(tool_id)
@@ -651,19 +390,10 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def search_tools_by_keywords(keywords: list[str], api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Search for tools matching multiple keywords.
+        """Search for tools matching multiple keywords, ranked by relevance.
 
-        More flexible than search_tools - provide multiple keywords
-        and get tools that match any of them, ranked by relevance.
-
-        Args:
-            keywords: List of keywords to search for
-                     (e.g., ['fastq', 'quality', 'trimming'])
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Matching tools sorted by number of keyword matches
+        More flexible than search_tools: provide multiple keywords and get
+        tools matching any of them.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -676,17 +406,9 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def get_iwc_workflows(api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Get all workflows from the IWC (Intergalactic Workflow Commission) catalog.
+        """Get all workflows from the IWC (Intergalactic Workflow Commission) catalog.
 
-        The IWC maintains a curated collection of best-practice Galaxy workflows
-        at iwc.galaxyproject.org. Use this to browse available community workflows.
-
-        Args:
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            List of IWC workflows with TRS IDs, names, descriptions, and tags
+        The IWC maintains curated best-practice Galaxy workflows at iwc.galaxyproject.org.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -697,18 +419,7 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def search_iwc_workflows(query: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Search for workflows in the IWC catalog.
-
-        Searches workflow names, descriptions, and tags for matching terms.
-
-        Args:
-            query: Search term to find in workflow names, descriptions, or tags
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Matching IWC workflows with TRS IDs, names, descriptions, and tags
-        """
+        """Search IWC workflows by name, description, or tags."""
         try:
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.search_iwc_workflows(query)
@@ -718,19 +429,10 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def import_workflow_from_iwc(trs_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Import a workflow from the IWC catalog into your Galaxy account.
+        """Import a workflow from the IWC catalog into your Galaxy account.
 
         Use get_iwc_workflows() or search_iwc_workflows() first to find
         the TRS ID of the workflow you want to import.
-
-        Args:
-            trs_id: TRS (Tool Registry Service) ID of the IWC workflow
-                   (e.g., '#workflow/github.com/iwc-workflows/sars-cov-2-variation-reporting/main')
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Imported workflow details including the new Galaxy workflow ID
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -743,19 +445,7 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def list_history_ids(api_key: str, ctx: MCPContext, limit: int = 100) -> dict[str, Any]:
-        """
-        Get a simplified list of history IDs and names.
-
-        A lightweight alternative to list_histories that returns only
-        IDs and names without full metadata.
-
-        Args:
-            api_key: Galaxy API key for authentication
-            limit: Maximum number of histories to return (default: 100)
-
-        Returns:
-            Simple list of history IDs and names
-        """
+        """Get a simplified list of history IDs and names (lighter than list_histories)."""
         try:
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.list_history_ids(limit)
@@ -767,19 +457,10 @@ def get_mcp_app(gx_app):
     def get_job_details(
         dataset_id: str, api_key: str, ctx: MCPContext, history_id: str | None = None
     ) -> dict[str, Any]:
-        """
-        Get details about the job that created a specific dataset.
+        """Get details about the job that created a specific dataset.
 
-        Useful for understanding how a dataset was generated, what tool
-        was used, and the job's execution status.
-
-        Args:
-            dataset_id: Galaxy dataset ID (e.g., 'f2db41e1fa331b3e')
-            api_key: Galaxy API key for authentication
-            history_id: Optional history ID for faster lookup
-
-        Returns:
-            Job details including tool ID, version, state, and timestamps
+        Useful for understanding how a dataset was generated and the
+        job's execution status.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -790,18 +471,9 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def download_dataset(dataset_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Get download information for a dataset.
+        """Get download URL and metadata for a dataset.
 
-        Returns a URL where the dataset can be downloaded. The dataset
-        must be in 'ok' state to be downloadable.
-
-        Args:
-            dataset_id: Galaxy dataset ID (e.g., 'f2db41e1fa331b3e')
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Download URL and dataset metadata (name, size, extension)
+        The dataset must be in 'ok' state to be downloadable.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
@@ -812,18 +484,7 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def get_server_info(api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Get detailed Galaxy server information.
-
-        Returns server version, configuration options, and capabilities.
-        Useful for understanding what features are available.
-
-        Args:
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            Server version, URL, and capability flags
-        """
+        """Get Galaxy server version, configuration, and capabilities."""
         try:
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_server_info()
@@ -833,18 +494,7 @@ def get_mcp_app(gx_app):
 
     @mcp.tool()
     def get_user(api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """
-        Get current user information.
-
-        Returns details about the authenticated user including
-        username, email, and account status.
-
-        Args:
-            api_key: Galaxy API key for authentication
-
-        Returns:
-            User details including ID, email, username, and status
-        """
+        """Get current authenticated user information."""
         try:
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_user()
@@ -852,9 +502,6 @@ def get_mcp_app(gx_app):
             logger.error(f"Failed to get user info: {str(e)}")
             raise ValueError(f"Failed to get user info: {str(e)}") from e
 
-    # Create the HTTP app for mounting using Streamable HTTP transport
-    # (SSE transport is deprecated as of MCP spec 2025-03-26)
-    # The actual mount point is determined by fast_app.py
     mcp_app = mcp.http_app()
 
     logger.info("MCP server initialized with 29 tools (Streamable HTTP)")
