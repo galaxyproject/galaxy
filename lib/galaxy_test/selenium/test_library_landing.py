@@ -2,7 +2,6 @@ from selenium.webdriver.common.by import By
 
 from .framework import (
     retry_assertion_during_transitions,
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -16,7 +15,6 @@ class TestLibraryLanding(SeleniumTestCase):
         self.admin_login()
         self.libraries_open()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_create_new_close(self):
         num_displayed_libraries = self._num_displayed_libraries()
@@ -27,7 +25,6 @@ class TestLibraryLanding(SeleniumTestCase):
         self.wait_for_overlays_cleared()
         assert self._num_displayed_libraries() == num_displayed_libraries
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_create_new(self):
         name = self._get_random_name(prefix="testcreatenew")
@@ -38,7 +35,6 @@ class TestLibraryLanding(SeleniumTestCase):
 
         self._search_for_only_with_name(name)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rename(self):
         name = self._get_random_name(prefix="testprerename")
@@ -58,7 +54,6 @@ class TestLibraryLanding(SeleniumTestCase):
 
         self._search_for_only_with_name(new_name)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_sorting(self):
         # Throw in another library to ensure filtering is working...

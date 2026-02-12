@@ -69,14 +69,15 @@ class PlaywrightElement:
         """
         Send keys to the element (type text).
 
-        Playwright requires elements to be focused before typing, so we click first.
-
-        Args:
-            *value: Text strings to type (will be concatenated)
+        Uses focus() + cursor-to-end to match Selenium's send_keys behavior
+        of appending text. Playwright's click() positions cursor at click
+        point (center of element), which would insert text mid-content.
         """
         text = "".join(str(v) for v in value)
-        # Playwright requires focus before typing
-        self._element.click()
+        self._element.focus()
+        self._element.evaluate(
+            "el => { if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length) }"
+        )
         self._element.type(text)
 
     def clear(self) -> None:
