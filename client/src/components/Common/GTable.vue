@@ -457,7 +457,7 @@ function onRowClick(item: T, index: number, event: MouseEvent | KeyboardEvent) {
         return;
     }
 
-    emit("row-click", { item, index, event });
+    emit("row-click", { item, index, event, toggleDetails: () => toggleRowDetails(index) });
 }
 
 function onSelectAll(selected: boolean) {
@@ -483,7 +483,7 @@ function isRowExpanded(index: number) {
  * Toggle row details expansion
  */
 function toggleRowDetails(index: number) {
-    if (isRowExpanded(index)) {
+    if (expandedRows.value.has(index)) {
         expandedRows.value.delete(index);
     } else {
         expandedRows.value.add(index);
