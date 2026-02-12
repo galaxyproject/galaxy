@@ -35,7 +35,7 @@
                 </BRow>
             </BContainer>
 
-            <GTable hover striped :fields="tableFields" :items="tableItems" :filter="filter">
+            <GTable id="jobs-table" hover striped :fields="tableFields" :items="tableItems" :filter="filter">
                 <template v-slot:cell(actions)="row">
                     <GButtonGroup>
                         <GButton tooltip title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
