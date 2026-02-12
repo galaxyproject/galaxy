@@ -8,14 +8,13 @@
                 <BForm inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-container-type">Resolve containers of type</label>
-
                     <BFormSelect
                         id="manage-container-type"
                         v-model="containerType"
                         class="mb-2 mr-sm-2 mb-sm-0"
                         :options="containerTypeOptions" />
-                    <label class="mr-sm-2" for="manage-resolver-type">using resolvers of type</label>
 
+                    <label class="mr-sm-2" for="manage-resolver-type">using resolvers of type</label>
                     <BFormSelect
                         id="manage-resolver-type"
                         v-model="resolverType"
@@ -27,9 +26,7 @@
             <BRow class="m-1">
                 <BForm inline>
                     <b>Filter:</b>
-
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
-
                     <BFormSelect id="manage-filter-resolution" v-model="filterResolution" class="mb-2 mr-sm-2 mb-sm-0">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
@@ -39,7 +36,6 @@
                     <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-container-type">
                         Containers of type
                     </label>
-
                     <BFormSelect
                         v-if="filterResolution != 'unresolved'"
                         id="manage-filter-container-type"
@@ -50,7 +46,6 @@
                     <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-resolver-type">
                         Resolvers of type
                     </label>
-
                     <BFormSelect
                         v-if="filterResolution != 'unresolved'"
                         id="manage-filter-resolver-type"
@@ -60,6 +55,7 @@
                 </BForm>
             </BRow>
         </template>
+
         <template v-slot:actions>
             <BRow class="m-1">
                 <GButton class="mb-2 mr-sm-2 mb-sm-0" @click="installSelected">
@@ -150,11 +146,11 @@ export default {
             loading: true,
             fields: [
                 { key: "selected", label: "" },
-                { key: "tool" },
+                { key: "tool", label: "Tool" },
                 { key: "requirement", label: "Requirements" },
-                { key: "resolution" },
-                { key: "resolver" },
-                { key: "container" },
+                { key: "resolution", label: "Resolution" },
+                { key: "resolver", label: "Resolver" },
+                { key: "container", label: "Container" },
             ],
             containerType: null,
             containerTypeOptions: [
