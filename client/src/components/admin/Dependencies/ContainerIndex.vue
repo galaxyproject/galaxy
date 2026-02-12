@@ -66,7 +66,13 @@
         </template>
 
         <template v-slot:body>
-            <GTable id="containers-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
+            <GTable
+                id="containers-table"
+                striped
+                clickable-rows
+                :fields="fields"
+                :items="items"
+                @row-click="showRowDetails($event)">
                 <template v-slot:cell(selected)="data">
                     <BFormCheckbox v-model="data.item.selected" />
                 </template>

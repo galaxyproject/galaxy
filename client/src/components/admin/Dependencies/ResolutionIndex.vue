@@ -30,7 +30,13 @@
         </template>
 
         <template v-slot:body>
-            <GTable id="requirements-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
+            <GTable
+                id="requirements-table"
+                striped
+                clickable-rows
+                :fields="fields"
+                :items="items"
+                @row-click="showRowDetails($event)">
                 <template v-slot:cell(selected)="data">
                     <BFormCheckbox v-model="data.item.selected" @change="changeToggleCheckboxState($event)" />
                 </template>

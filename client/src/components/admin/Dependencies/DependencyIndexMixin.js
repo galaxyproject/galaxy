@@ -38,10 +38,8 @@ export default {
         },
     },
     methods: {
-        showRowDetails(row, index, e) {
-            if (e.target.nodeName != "A") {
-                row._showDetails = !row._showDetails;
-            }
+        showRowDetails({ toggleDetails }) {
+            toggleDetails();
         },
         handleError(e) {
             this.error = e;
