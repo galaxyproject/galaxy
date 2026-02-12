@@ -4,12 +4,13 @@
         :error="error"
         loading-message="Loading tool dependency resolver information">
         <template v-slot:body>
-            <b-table id="unused-paths-table" striped :fields="fields" :items="items">
+            <GTable id="unused-paths-table" striped :fields="fields" :items="items">
                 <template v-slot:cell(selected)="data">
                     <b-form-checkbox v-model="data.item.selected"></b-form-checkbox>
                 </template>
-            </b-table>
+            </GTable>
         </template>
+
         <template v-slot:actions>
             <div>
                 <GButton @click="deleteSelected"> Delete Selected Environments </GButton>
@@ -17,14 +18,20 @@
         </template>
     </DependencyIndexWrapper>
 </template>
+
 <script>
 import { deletedUnusedPaths, getDependencyUnusedPaths } from "../AdminServices";
 
 import DependencyIndexWrapper from "./DependencyIndexWrapper.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 export default {
-    components: { DependencyIndexWrapper, GButton },
+    components: {
+        DependencyIndexWrapper,
+        GButton,
+        GTable,
+    },
     data() {
         return {
             error: null,
