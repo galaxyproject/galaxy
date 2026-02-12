@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { faEllipsisV, faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem, BFormCheckbox, BOverlay } from "bootstrap-vue";
+import { BAlert, BDropdown, BDropdownItem, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { BootstrapSize } from "@/components/Common";
@@ -652,7 +652,17 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                         </tr>
                     </thead>
 
-                    <tbody v-if="paginatedLocalItems.length > 0">
+                    <tbody>
+                        <tr v-if="!props.items.length">
+                            <td :colspan="(selectable ? 1 : 0) + props.fields.length + (props.actions ? 1 : 0)">
+                                <slot name="empty">
+                                    <BAlert v-if="!loading" variant="info" show class="w-100 m-0">
+                                        {{ props.emptyState?.message ?? "No data available" }}
+                                    </BAlert>
+                                </slot>
+                            </td>
+                        </tr>
+
                         <template v-for="(item, paginatedIndex) in paginatedLocalItems">
                             <template>
                                 <tr
