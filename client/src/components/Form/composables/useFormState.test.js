@@ -25,7 +25,7 @@ function makeConditionalInputs() {
 }
 
 describe("useFormState", () => {
-    it("I7: clone independence — mutating clone does not affect original", () => {
+    it("should not affect original inputs when mutating clone", () => {
         const original = makeConditionalInputs();
         const originalJson = JSON.stringify(original);
         const { cloneInputs, formInputs } = useFormState();
@@ -38,7 +38,7 @@ describe("useFormState", () => {
         expect(JSON.stringify(original)).toEqual(originalJson);
     });
 
-    it("I8: backend response preserved — frozen inputs do not throw", () => {
+    it("should not throw when cloning frozen inputs", () => {
         const inputs = makeConditionalInputs();
         const frozen = JSON.parse(JSON.stringify(inputs));
         Object.freeze(frozen);
@@ -52,7 +52,7 @@ describe("useFormState", () => {
         }).not.toThrow();
     });
 
-    it("I2: syncServerAttributes only copies server-owned fields", () => {
+    it("should only copy server-owned fields in syncServerAttributes", () => {
         const { cloneInputs, formInputs, syncServerAttributes } = useFormState();
         cloneInputs(makeConditionalInputs());
 
@@ -85,7 +85,7 @@ describe("useFormState", () => {
         expect(textInput.warning).toEqual(warningBefore);
     });
 
-    it("I4: formIndex contains active params only", () => {
+    it("should contain only active params in formIndex", () => {
         const { cloneInputs, formIndex, rebuildIndex } = useFormState();
         cloneInputs(makeConditionalInputs());
         rebuildIndex();
@@ -97,7 +97,7 @@ describe("useFormState", () => {
         expect(formIndex.value["cond|sel"]).toBeDefined();
     });
 
-    it("I5: errors apply only to active params", () => {
+    it("should apply errors only to active params", () => {
         const { cloneInputs, applyErrors, formIndex } = useFormState();
         cloneInputs(makeConditionalInputs());
 
@@ -113,7 +113,7 @@ describe("useFormState", () => {
         expect(formIndex.value["cond|in_b"]).toBeUndefined();
     });
 
-    it("I3: buildFormData is a pure computation over formIndex", () => {
+    it("should compute formData purely from formIndex without side effects", () => {
         const { cloneInputs, formData, buildFormData } = useFormState();
         cloneInputs(makeConditionalInputs());
 
@@ -134,7 +134,7 @@ describe("useFormState", () => {
         expect(formData.value).toEqual(result);
     });
 
-    it("syncServerAttributes patches all conditional cases", () => {
+    it("should patch all conditional cases in syncServerAttributes", () => {
         const { cloneInputs, formInputs, syncServerAttributes } = useFormState();
         cloneInputs(makeConditionalInputs());
 
@@ -153,7 +153,7 @@ describe("useFormState", () => {
         expect(caseBInput.attributes.options).toEqual([["col1", "col1"]]);
     });
 
-    it("conditional switch updates formIndex and formData", () => {
+    it("should update formIndex and formData on conditional switch", () => {
         const { cloneInputs, formInputs, rebuildIndex, buildFormData, formIndex, formData } = useFormState();
         cloneInputs(makeConditionalInputs());
         formData.value = buildFormData();
@@ -173,7 +173,7 @@ describe("useFormState", () => {
         expect(formData.value["cond|in_a"]).toBeUndefined();
     });
 
-    it("replaceParams updates values and returns refreshOnChange", () => {
+    it("should update values and return refreshOnChange from replaceParams", () => {
         const { cloneInputs, formIndex, replaceParams } = useFormState();
         const inputs = makeConditionalInputs();
         inputs[0].refresh_on_change = true;
@@ -184,7 +184,7 @@ describe("useFormState", () => {
         expect(refresh).toBe(true);
     });
 
-    it("validation computed reacts to formData changes", () => {
+    it("should react to formData changes in validation computed", () => {
         const { cloneInputs, buildFormData, formInputs, rebuildIndex, formData, validation } = useFormState();
         const inputs = [{ name: "required_field", type: "text", value: "has_value" }];
         cloneInputs(inputs);
@@ -201,7 +201,7 @@ describe("useFormState", () => {
         expect(validation.value).toEqual(["required_field", "Please provide a value for this option."]);
     });
 
-    it("rejectEmptyRequiredInputs option is respected", () => {
+    it("should respect the rejectEmptyRequiredInputs option", () => {
         const reject = ref(true);
         const { cloneInputs, buildFormData, formInputs, rebuildIndex, formData, validation } = useFormState({
             rejectEmptyRequiredInputs: reject,
@@ -227,7 +227,7 @@ describe("useFormState", () => {
         expect(validation.value).toEqual(["field", "Please provide a value for this option."]);
     });
 
-    it("R6: cloneInputs sets error and warning to null on all cases including inactive", () => {
+    it("should clear errors and warnings on all cases including inactive when cloning", () => {
         const { cloneInputs, formInputs } = useFormState();
         const inputs = makeConditionalInputs();
         // Pre-set errors and warnings on inputs
@@ -248,7 +248,7 @@ describe("useFormState", () => {
      * "inferred default" from "user intent". This is existing behavior inherited
      * from the Options API implementation.
      */
-    it("known debt: replaceParams is indistinguishable from user edits", () => {
+    it("should not distinguish replaceParams from user edits (known debt)", () => {
         const { cloneInputs, replaceParams, buildFormData, formData } = useFormState();
         cloneInputs(makeConditionalInputs());
         formData.value = buildFormData();

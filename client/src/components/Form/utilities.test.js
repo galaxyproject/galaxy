@@ -431,7 +431,7 @@ describe("form component utilities", () => {
     });
 
     describe("visitAllInputs", () => {
-        it("traversal order matches visitInputs for non-conditional inputs", () => {
+        it("should match visitInputs traversal order for non-conditional inputs", () => {
             const inputs = [
                 { name: "a", type: "text", value: "a" },
                 {
@@ -464,7 +464,7 @@ describe("form component utilities", () => {
             expect(allOrder).toEqual(visitOrder);
         });
 
-        it("visits all conditional cases, not just the active one", () => {
+        it("should visit all conditional cases, not just the active one", () => {
             const inputs = [
                 {
                     name: "cond",
@@ -492,7 +492,7 @@ describe("form component utilities", () => {
             expect(allNames).toEqual(["cond|tp", "cond|in_a", "cond|in_b"]);
         });
 
-        it("visits nested conditional inside repeat", () => {
+        it("should visit nested conditional inside repeat", () => {
             const inputs = [
                 {
                     name: "rep",
