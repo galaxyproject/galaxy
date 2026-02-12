@@ -6,7 +6,7 @@
         <template v-slot:body>
             <GTable id="unused-paths-table" striped :fields="fields" :items="items">
                 <template v-slot:cell(selected)="data">
-                    <b-form-checkbox v-model="data.item.selected"></b-form-checkbox>
+                    <BFormCheckbox v-model="data.item.selected" />
                 </template>
             </GTable>
         </template>
@@ -20,6 +20,8 @@
 </template>
 
 <script>
+import { BFormCheckbox } from "bootstrap-vue";
+
 import { deletedUnusedPaths, getDependencyUnusedPaths } from "../AdminServices";
 
 import DependencyIndexWrapper from "./DependencyIndexWrapper.vue";
@@ -28,6 +30,7 @@ import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
+        BFormCheckbox,
         DependencyIndexWrapper,
         GButton,
         GTable,
