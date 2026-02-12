@@ -540,7 +540,7 @@ def runtimeify(
     internal_state: JobInternalToolState,
     input_models: ToolParameterBundle,
     adapt_dataset: DatasetToRuntimeJson,
-    adapt_collection: Optional[CollectionToRuntimeJson] = None,
+    adapt_collection: CollectionToRuntimeJson,
 ) -> JobRuntimeToolState:
 
     def adapt_dict(value: dict):
@@ -560,8 +560,6 @@ def runtimeify(
         elif isinstance(parameter, DataCollectionParameterModel):
             if value is None:
                 return VISITOR_NO_REPLACEMENT
-            if adapt_collection is None:
-                raise NotImplementedError("Collection adapter required for DataCollectionParameterModel")
             assert isinstance(value, dict), str(value)
             collection_request = DataCollectionRequestInternal(**value)
             result = adapt_collection(collection_request, parameter.collection_type)
