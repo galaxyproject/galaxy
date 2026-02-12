@@ -57,7 +57,7 @@ async function handleForceSubmit() {
                 <template v-slot:body>
                     <FormDisplay
                         :inputs="inputs"
-                        :allow-empty-value-on-required-input="true"
+                        :reject-empty-required-inputs="true"
                         @onChange="onChange"
                         @onValidation="onValidation" />
                 </template>
