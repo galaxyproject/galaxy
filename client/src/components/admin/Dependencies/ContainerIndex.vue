@@ -63,37 +63,43 @@
                 </GButton>
             </b-row>
         </template>
+
         <template v-slot:body>
-            <b-table id="containers-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
+            <GTable id="containers-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
                 <template v-slot:cell(selected)="data">
                     <b-form-checkbox v-model="data.item.selected"></b-form-checkbox>
                 </template>
+
                 <template v-slot:cell(requirement)="row">
                     <requirements :requirements="row.item.requirements" />
                 </template>
+
                 <template v-slot:cell(resolution)="row">
                     <status-display :status="row.item.status" />
                 </template>
+
                 <template v-slot:cell(container)="row">
                     <container-description :container-description="row.item.status.container_description" />
                 </template>
+
                 <template v-slot:cell(resolver)="row">
                     <container-resolver :container-resolver="row.item.status.container_resolver" />
                 </template>
+
                 <template v-slot:cell(tool)="row">
                     <tool-display :tool-id="row.item.tool_id" />
                 </template>
+
                 <template v-slot:row-details="row">
                     <ContainerResolutionDetails :resolution="row.item" />
                 </template>
-            </b-table>
+            </GTable>
         </template>
     </dependency-index-wrapper>
 </template>
+
 <script>
-import BootstrapVue from "bootstrap-vue";
 import _ from "underscore";
-import Vue from "vue";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
@@ -101,14 +107,17 @@ import DependencyIndexMixin from "./DependencyIndexMixin";
 import ContainerResolutionDetails from "./ContainerResolutionDetails.vue";
 import { DESCRIPTION } from "./ContainerResolver.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
-
-Vue.use(BootstrapVue);
+import GTable from "@/components/Common/GTable.vue";
 
 const RESOLVER_TYPE_OPTIONS = _.keys(DESCRIPTION).map((resolverType) => ({ value: resolverType, text: resolverType }));
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
-    components: { ContainerResolutionDetails, GButton },
+    components: {
+        ContainerResolutionDetails,
+        GButton,
+        GTable,
+    },
     mixins: [DependencyIndexMixin],
     data() {
         return {
