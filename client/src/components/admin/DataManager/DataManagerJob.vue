@@ -30,7 +30,7 @@
                         </template>
                         <b-card v-for="(hda, i) in hdaInfo" :id="'data-card-' + i" :key="i" class="mb-4">
                             <template v-slot:header>
-                                <b-table :fields="fields" :items="[hda]" caption-top small stacked>
+                                <GTable :fields="fields" :items="[hda]" caption-top compact stacked>
                                     <template v-slot:table-caption>
                                         <b-container>
                                             <b-row align-v="center">
@@ -43,15 +43,17 @@
                                                         <span class="fa fa-info-circle" />
                                                     </GButton>
                                                 </b-col>
+
                                                 <b-col>
                                                     <b>{{ hda["name"] }}</b>
                                                 </b-col>
                                             </b-row>
                                         </b-container>
                                     </template>
-                                </b-table>
+                                </GTable>
                             </template>
-                            <b-table
+
+                            <GTable
                                 v-for="(output, j) in dataManagerOutput[i]"
                                 :key="j"
                                 :fields="outputFields(output[1][0])"
@@ -63,7 +65,7 @@
                                 <template v-slot:table-caption>
                                     Data Table: <b>{{ output[0] }}</b>
                                 </template>
-                            </b-table>
+                            </GTable>
                         </b-card>
                     </b-card>
                 </b-col>
@@ -79,11 +81,13 @@ import { getAppRoot } from "@/onload/loadConfig";
 
 import Alert from "@/components/Alert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
         Alert,
         GButton,
+        GTable,
     },
     props: {
         id: {
