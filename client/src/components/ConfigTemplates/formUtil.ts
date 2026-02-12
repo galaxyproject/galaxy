@@ -48,6 +48,7 @@ export function templateVariableFormEntry(variable: TemplateVariable, variableVa
         label: variable.label ?? variable.name,
         help: markup(variable.help || "", true),
         validators: variable.validators ?? [],
+        optional: variable.optional || false,
     };
     if (variable.type == "string") {
         const defaultValue = variable.default ?? "";
@@ -89,6 +90,7 @@ export function templateSecretFormEntry(secret: TemplateSecret): FormEntry {
         type: "password",
         help: markup(secret.help || "", true),
         value: "",
+        optional: secret.optional || false,
     };
 }
 

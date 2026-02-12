@@ -1,5 +1,7 @@
 import _ from "underscore";
 
+import { isDefined, isValidNumber } from "@/utils/validation";
+
 /** Visits tool inputs.
  * @param{dict}   inputs    - Nested dictionary of input elements
  * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
@@ -131,10 +133,10 @@ function validateLength(validator, value) {
     const valueLength = String(value).length;
     let isValid = true;
 
-    if (validator.min !== undefined && valueLength < validator.min) {
+    if (isValidNumber(validator.min) && valueLength < validator.min) {
         isValid = false;
     }
-    if (validator.max !== undefined && valueLength > validator.max) {
+    if (isValidNumber(validator.max) && valueLength > validator.max) {
         isValid = false;
     }
     if (validator.negate) {
@@ -164,10 +166,10 @@ function validateInRange(validator, value) {
 
     let isValid = true;
 
-    if (validator.min !== undefined && numericValue < validator.min) {
+    if (isValidNumber(validator.min) && numericValue < validator.min) {
         isValid = false;
     }
-    if (validator.max !== undefined && numericValue > validator.max) {
+    if (isValidNumber(validator.max) && numericValue > validator.max) {
         isValid = false;
     }
     if (validator.negate) {
@@ -208,21 +210,24 @@ function runValidator(validator, value) {
 export function validateInputs(index, values, allowEmptyValueOnRequiredInput = false) {
     let batchN = -1;
     let batchSrc = null;
-    for (const inputId in values) {
-        const inputValue = values[inputId];
+    for (const inputId in index) {
         const inputDef = index[inputId];
+        const inputValue = values[inputId];
+        const isEmpty = !isDefined(inputValue) || inputValue === "";
+        const hasValue = !isEmpty;
+        const isRequired = !inputDef.optional;
         if (!inputDef || inputDef.step_linked) {
             continue;
         }
-        if (!inputDef.optional && inputDef.type != "hidden") {
-            if (inputValue == null || (allowEmptyValueOnRequiredInput && inputValue === "")) {
+        if (isRequired && inputDef.type != "hidden") {
+            if (!isDefined(inputValue) || (allowEmptyValueOnRequiredInput && inputValue === "")) {
                 return [inputId, "Please provide a value for this option."];
             }
         }
         if (inputDef.wp_linked && inputDef.text_value == inputValue) {
             return [inputId, "Please provide a value for this workflow parameter."];
         }
-        if (inputValue && Array.isArray(inputValue.values) && inputValue.values.length == 0 && !inputDef.optional) {
+        if (inputValue && Array.isArray(inputValue.values) && inputValue.values.length == 0 && isRequired) {
             return [inputId, "Please provide data for this input."];
         }
         if (inputValue) {
@@ -260,8 +265,8 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
             }
         }
 
-        // Run custom validators if present
-        if (inputDef.validators && inputValue != null && inputValue !== "") {
+        // Run custom validators if field is required or has a value
+        if (inputDef.validators && (isRequired || hasValue)) {
             for (const validator of inputDef.validators) {
                 const validationResult = runValidator(validator, inputValue);
                 if (!validationResult.isValid) {

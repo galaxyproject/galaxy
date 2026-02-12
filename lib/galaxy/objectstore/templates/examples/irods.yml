@@ -13,6 +13,7 @@
     port:
       label: iRODS host port
       type: integer
+      optional: true
       help: Host port to connect to.
       default: 1247
     username:
@@ -23,27 +24,31 @@
     timeout:
       label: Connection timeout
       type: integer
+      optional: true
       help: Connection timeout in seconds.
       default: 30
     refresh_time:
       label: Refresh time
       type: integer
+      optional: true
       help: Connection refresh time in seconds.
       default: 300
     connection_pool_monitor_interval:
       label: Connection pool monitor interval
       type: integer
+      optional: true
       help: Interval for monitoring the connection pool in seconds.
       default: 3600
     zone:
       label: iRODS zone
       type: string
       help: |
-        An iRODS Zone is an independent iRODS system consisting of a Catalog Service 
+        An iRODS Zone is an independent iRODS system consisting of a Catalog Service
         Provider
     resource:
       label: Resource
       type: string
+      optional: true
       help: |
         The iRODS resource to use
       default: "default"
@@ -67,4 +72,3 @@
       timeout: '{{ variables.timeout }}'
       refresh_time: '{{ variables.refresh_time }}'
       connection_pool_monitor_interval: '{{ variables.connection_pool_monitor_interval }}'
-

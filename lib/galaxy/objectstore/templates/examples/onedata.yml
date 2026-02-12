@@ -16,6 +16,7 @@
     disable_tls_certificate_validation:
       label: Disable tls certificate validation?
       type: boolean
+      optional: true
       help: |
         Allows connection to Onedata servers that do not present trusted SSL certificates.
         SHOULD NOT be used unless you really know what you are doing.
@@ -31,6 +32,7 @@
     galaxy_root_dir:
       label: Galaxy root directory
       type: string
+      optional: true
       help: |
         The relative directory path in the space at which the Galaxy data
         will be stored. If empty, the data will be stored in the space's

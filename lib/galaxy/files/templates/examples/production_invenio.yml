@@ -14,6 +14,7 @@
       writable:
           label: Allow Galaxy to export data to InvenioRDM?
           type: boolean
+          optional: true
           default: true
           help: |
               Allow Galaxy to write data to this InvenioRDM instance. Set it to "Yes" if you want to export data from Galaxy to
