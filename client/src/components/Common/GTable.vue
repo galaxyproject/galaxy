@@ -526,6 +526,18 @@ function getAlignmentClass(align?: FieldAlignment) {
 }
 
 /**
+ * Get cell variant class for Bootstrap color variants (e.g., "success", "danger", "info")
+ * Supports the _cellVariants convention from b-table for backward compatibility
+ */
+function getCellVariantClass(item: T, field: TableField) {
+    const cellVariants = item._cellVariants as Record<string, string> | undefined;
+    if (!cellVariants || !cellVariants[field.key]) {
+        return undefined;
+    }
+    return `table-${cellVariants[field.key]}`;
+}
+
+/**
  * Check if row is selected
  */
 function isRowSelected(index: number) {
@@ -672,6 +684,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                             field.cellClass,
                                             field.class,
                                             getAlignmentClass(field.align),
+                                            getCellVariantClass(item, field),
                                             { 'hide-on-small': field.hideOnSmall },
                                         ]">
                                         <template
