@@ -2,13 +2,20 @@
     <div>
         <b-alert :show="messageVisible" variant="danger"> {{ messageText }} </b-alert>
         <b-alert :show="infoVisible" variant="info"> No errors available. </b-alert>
-        <b-table v-if="errorStackVisible" striped :fields="errorStackAttributes" :items="errorStack" />
+
+        <GTable v-if="errorStackVisible" striped :fields="errorStackAttributes" :items="errorStack" />
     </div>
 </template>
+
 <script>
 import { getErrorStack } from "./AdminServices";
 
+import GTable from "@/components/Common/GTable.vue";
+
 export default {
+    components: {
+        GTable,
+    },
     data() {
         return {
             errorStack: [],
