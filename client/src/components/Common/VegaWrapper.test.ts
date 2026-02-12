@@ -19,7 +19,6 @@ vi.mock("vega-embed", () => ({
 }));
 
 vi.mock("@vueuse/core", () => ({
-    useDebounceFn: (fn: (...args: unknown[]) => unknown) => fn,
     useResizeObserver: vi.fn(),
 }));
 

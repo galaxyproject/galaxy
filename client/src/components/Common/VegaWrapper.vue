@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div ref="outerContainer">
         <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
             {{ errorMessage }}
         </b-alert>
@@ -8,12 +8,10 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn, useResizeObserver } from "@vueuse/core";
+import { useResizeObserver } from "@vueuse/core";
 import type { View } from "vega";
 import embed, { type VisualizationSpec } from "vega-embed";
 import { nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from "vue";
-
-const RESIZE_DEBOUNCE_MS = 150;
 
 interface Props {
     spec: VisualizationSpec;
@@ -28,6 +26,7 @@ const emit = defineEmits<{
     (e: "new-view", view: View): void;
 }>();
 
+const outerContainer = ref<HTMLDivElement | null>(null);
 const chartContainer = ref<HTMLDivElement | null>(null);
 const errorMessage = ref<string>("");
 
@@ -52,13 +51,14 @@ async function embedChart() {
 
 watch(props, embedChart, { deep: true });
 
-const debouncedResize = useDebounceFn(() => {
-    if (vegaView) {
-        vegaView.resize().runAsync();
+function onResize() {
+    if (vegaView && outerContainer.value) {
+        const containerWidth = outerContainer.value.clientWidth;
+        vegaView.width(containerWidth).runAsync();
     }
-}, RESIZE_DEBOUNCE_MS);
+}
 
-useResizeObserver(chartContainer, debouncedResize);
+useResizeObserver(outerContainer, onResize);
 
 onMounted(() => embedChart());
 
