@@ -346,31 +346,130 @@ def test_range_validator():
     assert isinstance(e, RequestParameterInvalidException)
 
 
-def test_validators_skip_empty_optional_values():
-    """Test that validators skip empty optional values."""
-    validator = LengthParameterValidatorModel(
-        min=3,
-        message="Value must be at least 3 characters",
-    )
+def test_variable_default_does_not_imply_optional():
+    """A default value (including empty string) must not make a variable optional."""
+    template = _template_with_variable(TemplateVariableString(name="string_var", help=None, type="string", default=""))
+
+    # Default alone does not make the variable optional
+    instance = _test_instance_with_variables({})
+    e = assert_validation_throws(instance, template)
+    assert isinstance(e, RequestParameterMissingException)
+
+
+def test_variable_optional_flag_allows_omission_without_default():
+    """optional=True alone allows a variable to be omitted even without a default."""
     template = _template_with_variable(
-        TemplateVariableString(name="optional_field", help=None, type="string", default="", validators=[validator])
+        TemplateVariableString(name="optional_var", help=None, type="string", optional=True)
     )
 
-    # Empty value should not trigger validator
-    instance = _test_instance_with_variables({"optional_field": ""})
+    # Should not require the variable when optional=True
+    instance = _test_instance_with_variables({})
+    validate_secrets_and_variables(instance, template)
+
+    # Should pass when variable is provided
+    instance = _test_instance_with_variables({"optional_var": "some_value"})
     validate_secrets_and_variables(instance, template)
 
 
-def test_validators_skip_null_values():
-    """Test that validators skip empty values for optional fields with defaults."""
+def test_secret_optional_flag_allows_omission_without_default():
+    """optional=True alone allows a secret to be omitted even without a default."""
+    secret = TemplateSecret(name="optional_secret", help="Help for secret.", optional=True)
+    template = TestTemplate(
+        id=TEST_TEMPLATE_ID,
+        version=TEST_TEMPLATE_VERSION,
+        variables=[],
+        secrets=[secret],
+        environment=None,
+    )
+
+    # Should not require the secret when optional=True
+    instance = _test_instance_with_secrets({})
+    validate_secrets_and_variables(instance, template)
+
+    # Should pass when secret is provided
+    instance = _test_instance_with_secrets({"optional_secret": "myvalue"})
+    validate_secrets_and_variables(instance, template)
+
+
+def test_optional_variable_validators_run_only_when_value_is_provided():
+    """Optional variables are not required, but validators run when a value is supplied."""
     validator = LengthParameterValidatorModel(
         min=3,
         message="Value must be at least 3 characters",
     )
     template = _template_with_variable(
-        TemplateVariableString(name="optional_field", help=None, type="string", default="", validators=[validator])
+        TemplateVariableString(name="optional_var", help=None, type="string", optional=True, validators=[validator])
     )
 
-    # Empty value should not trigger validator when field has empty default
+    # Should not require the variable when optional=True
+    instance = _test_instance_with_variables({})
+    validate_secrets_and_variables(instance, template)
+
+    # Should run validator when value is provided but invalid
+    instance = _test_instance_with_variables({"optional_var": "ab"})  # Too short
+    e = assert_validation_throws(instance, template)
+    assert isinstance(e, RequestParameterInvalidException)
+    assert "at least 3 characters" in str(e)
+
+    # Should pass with valid value
+    instance = _test_instance_with_variables({"optional_var": "valid"})
+    validate_secrets_and_variables(instance, template)
+
+    # Defaults for optional fields are validated when they are applied
+    # Invalid default should fail validation
+    template_with_bad_default = _template_with_variable(
+        TemplateVariableString(
+            name="optional_var",
+            help=None,
+            type="string",
+            optional=True,
+            default="ab",  # too short
+            validators=[validator],
+        )
+    )
+    instance = _test_instance_with_variables({})
+    e = assert_validation_throws(instance, template_with_bad_default)
+    assert isinstance(e, RequestParameterInvalidException)
+
+    # Valid default should pass validation
+    template_with_good_default = _template_with_variable(
+        TemplateVariableString(
+            name="optional_var",
+            help=None,
+            type="string",
+            optional=True,
+            default="good",
+            validators=[validator],
+        )
+    )
+    instance = _test_instance_with_variables({})
+    validate_secrets_and_variables(instance, template_with_good_default)
+
+
+def test_variable_optional_with_valid_default():
+    """Test that optional variables with valid defaults work correctly."""
+    # Optional string variable with default
+    template = _template_with_variable(
+        TemplateVariableString(name="optional_string", help=None, type="string", optional=True, default="default_value")
+    )
+    # Should use default when not provided
+    instance = _test_instance_with_variables({})
+    validate_secrets_and_variables(instance, template)
+
+    # Should accept override
+    instance = _test_instance_with_variables({"optional_string": "override"})
+    validate_secrets_and_variables(instance, template)
+
+    # Optional integer variable with default
+    template = _template_with_variable(
+        TemplateVariableInteger(name="optional_int", help=None, type="integer", optional=True, default=100)
+    )
+    instance = _test_instance_with_variables({})
+    validate_secrets_and_variables(instance, template)
+
+    # Optional boolean variable with default
+    template = _template_with_variable(
+        TemplateVariableBoolean(name="optional_bool", help=None, type="boolean", optional=True, default=False)
+    )
     instance = _test_instance_with_variables({})
     validate_secrets_and_variables(instance, template)

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { TemplateVariable } from "@/api/configTemplates";
+import type { TemplateSecret, TemplateVariable } from "@/api/configTemplates";
 
-import { createTemplateForm, templateVariableFormEntry, upgradeForm } from "./formUtil";
+import { createTemplateForm, templateSecretFormEntry, templateVariableFormEntry, upgradeForm } from "./formUtil";
 import {
     GENERIC_FTP_FILE_SOURCE_TEMPLATE,
     OBJECT_STORE_INSTANCE,
@@ -97,6 +97,68 @@ describe("formUtils", () => {
             const hostVariable = FTP_VARIABLES[0] as TemplateVariable;
             const formEntry = templateVariableFormEntry(hostVariable, "mycoolhost.org");
             expect(formEntry.value).toBe("mycoolhost.org");
+        });
+    });
+
+    describe("templateVariableFormEntry optional field", () => {
+        it("should mark variable as optional when template specifies optional=true", () => {
+            const optionalVar: TemplateVariable = {
+                name: "test_var",
+                type: "string",
+                optional: true,
+            };
+            const formEntry = templateVariableFormEntry(optionalVar, undefined);
+            expect(formEntry.optional).toBe(true);
+        });
+
+        it("should mark variable as required when template specifies optional=false", () => {
+            const requiredVar: TemplateVariable = {
+                name: "test_var",
+                type: "string",
+                optional: false,
+            };
+            const formEntry = templateVariableFormEntry(requiredVar, undefined);
+            expect(formEntry.optional).toBe(false);
+        });
+
+        it("should mark variable as required when template does not specify optional", () => {
+            const varWithoutOptional: TemplateVariable = {
+                name: "test_var",
+                type: "string",
+            };
+            const formEntry = templateVariableFormEntry(varWithoutOptional, undefined);
+            expect(formEntry.optional).toBe(false);
+        });
+    });
+
+    describe("templateSecretFormEntry optional field", () => {
+        it("should mark secret as optional when template specifies optional=true", () => {
+            const optionalSecret: TemplateSecret = {
+                name: "mysecret",
+                help: "Help text",
+                optional: true,
+            };
+            const formEntry = templateSecretFormEntry(optionalSecret);
+            expect(formEntry.optional).toBe(true);
+        });
+
+        it("should mark secret as required when template specifies optional=false", () => {
+            const requiredSecret: TemplateSecret = {
+                name: "mysecret",
+                help: "Help text",
+                optional: false,
+            };
+            const formEntry = templateSecretFormEntry(requiredSecret);
+            expect(formEntry.optional).toBe(false);
+        });
+
+        it("should mark secret as required when template does not specify optional", () => {
+            const secretWithoutOptional: TemplateSecret = {
+                name: "mysecret",
+                help: "Help text",
+            };
+            const formEntry = templateSecretFormEntry(secretWithoutOptional);
+            expect(formEntry.optional).toBe(false);
         });
     });
 });

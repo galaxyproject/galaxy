@@ -439,12 +439,12 @@ Example configuration for EBI SRA downloads:
   id: ebi_aspera
   label: "EBI Aspera Downloads"
   doc: "High-speed downloads from EBI SRA using Aspera FASP protocol"
-  ascp_path: "ascp"  # Path to ascp binary
+  ascp_path: "ascp" # Path to ascp binary
   user: "era-fasp"
   host: "fasp.sra.ebi.ac.uk"
   port: 33001
-  rate_limit: "300m"  # Transfer rate limit (e.g., "300m" for 300 Mbps)
-  disable_encryption: true  # Disable encryption for maximum speed
+  rate_limit: "300m" # Transfer rate limit (e.g., "300m" for 300 Mbps)
+  disable_encryption: true # Disable encryption for maximum speed
   # Retry and resume configuration (optional)
   max_retries: 3
   retry_base_delay: 2.0
@@ -459,11 +459,11 @@ Example configuration for EBI SRA downloads:
   ssh_key_passphrase: sample_passphrase
 ```
 
-The plugin is **download-only** and supports automatic retry with exponential backoff for transient 
+The plugin is **download-only** and supports automatic retry with exponential backoff for transient
 network errors and can resume interrupted transfers. Both `ascp://` and `fasp://` URL schemes are supported.
 
-**SSH Key Configuration Note:** The plugin requires SSH key content (not file paths) because Galaxy jobs often 
-run on clusters that don't mount Galaxy's root or configuration directories. The configuration block is copied 
+**SSH Key Configuration Note:** The plugin requires SSH key content (not file paths) because Galaxy jobs often
+run on clusters that don't mount Galaxy's root or configuration directories. The configuration block is copied
 to the job's directory, but referenced key paths wouldn't be accessible.
 
 **Note:** The plugin does not support browsing directories or uploading files (`writable: false`, `browsable: false`).
@@ -762,6 +762,19 @@ on the simple minio example.
 ## Template Variable Validators
 
 Template variables can include optional validators to enforce constraints on user input. Validators ensure that users provide valid values when configuring file sources or object stores, providing clear error messages when validation fails.
+
+### Required vs optional template variables and secrets
+
+When defining `variables` and `secrets` in file source (and object store) templates, Galaxy follows **explicit rules**:
+
+- Variables and secrets are **required by default**.
+- A variable or secret is optional **only if** `optional: true` is explicitly set.
+- Defining a `default` value **does not** make a field optional.
+- Default values are applied **only** for variables or secrets marked as `optional: true`.
+- Validators are evaluated **only when a value is provided**; omitted optional fields are not validated.
+- Default values **are validated** when they are applied (i.e. for `optional: true` fields with a default).
+
+This explicit model avoids implicit behavior and makes template intent clear and predictable.
 
 ### Validator Types
 

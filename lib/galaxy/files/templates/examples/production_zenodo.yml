@@ -11,6 +11,7 @@
       writable:
           label: Allow Galaxy to export data to Zenodo?
           type: boolean
+          optional: true
           default: true
           help: |
               Set it to "Yes" if you want to export data from Galaxy to Zenodo, set it to "No" if you only need to import

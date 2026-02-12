@@ -79,18 +79,19 @@ class StrictModel(BaseModel):
 class BaseTemplateVariable(StrictModel):
     name: str
     label: Optional[str] = None
-    help: Optional[MarkdownContent]
+    help: Optional[MarkdownContent] = None
+    optional: Optional[bool] = None
     validators: Optional[Sequence[AnySafeValidatorModel]] = None
 
 
 class TemplateVariableString(BaseTemplateVariable):
     type: Literal["string"]
-    default: str = ""
+    default: Optional[str] = None
 
 
 class TemplateVariableInteger(BaseTemplateVariable):
     type: Literal["integer"]
-    default: int = 0
+    default: Optional[int] = None
     # add min/max
 
 
@@ -101,7 +102,7 @@ class TemplateVariablePathComponent(BaseTemplateVariable):
 
 class TemplateVariableBoolean(BaseTemplateVariable):
     type: Literal["boolean"]
-    default: bool = False
+    default: Optional[bool] = None
 
 
 TemplateVariable = Union[
@@ -112,7 +113,8 @@ TemplateVariable = Union[
 class TemplateSecret(StrictModel):
     name: str
     label: Optional[str] = None
-    help: Optional[MarkdownContent]
+    help: Optional[MarkdownContent] = None
+    optional: Optional[bool] = None
 
 
 class TemplateEnvironmentSecret(StrictModel):
@@ -176,7 +178,8 @@ def populate_default_variables(variables: Optional[List[TemplateVariable]], vari
     if variables:
         for variable in variables:
             name = variable.name
-            if name not in variable_values and variable.default is not None:
+            # Apply defaults only for explicitly optional variables
+            if variable.optional and name not in variable_values and variable.default is not None:
                 variable_values[name] = variable.default
 
 
@@ -362,7 +365,8 @@ def validate_defines_all_required_secrets(instance: InstanceDefinition, template
     secrets = instance.secrets
     for template_secret in template.secrets or []:
         name = template_secret.name
-        if name not in secrets:
+        is_optional = bool(template_secret.optional)
+        if name not in secrets and not is_optional:
             raise RequestParameterMissingException(f"Must define secret '{name}'")
 
 
@@ -370,8 +374,8 @@ def validate_defines_all_required_variables(instance: InstanceDefinition, templa
     variables = instance.variables
     for template_variable in template.variables or []:
         name = template_variable.name
-        has_default = template_variable.default is not None
-        if name not in variables and not has_default:
+        is_optional = bool(template_variable.optional)
+        if name not in variables and not is_optional:
             raise RequestParameterMissingException(f"Must define variable '{name}'")
 
 
@@ -387,7 +391,18 @@ def validate_specified_datatypes(instance: InstanceDefinition, template: Templat
 def validate_specified_datatypes_variables(variables: Dict[str, Any], template: Template):
     for template_variable in template.variables or []:
         name = template_variable.name
-        variable_value = variables.get(name, template_variable.default)
+        # Only fall back to default for optional variables
+        if name in variables:
+            variable_value = variables[name]
+        elif template_variable.optional:
+            variable_value = template_variable.default
+        else:
+            variable_value = None
+
+        # Skip validation only if variable is optional, not provided, and has no default applied
+        if name not in variables and template_variable.optional and template_variable.default is None:
+            continue
+
         template_type = template_variable.type
         if template_type in ["string", "path_component"]:
             if not isinstance(variable_value, str):
@@ -408,8 +423,8 @@ def validate_specified_datatypes_variables(variables: Dict[str, Any], template: 
             if not _is_of_exact_type(variable_value, bool):
                 raise RequestParameterInvalidException(f"Variable value for variable '{name}' must be of type bool")
 
-        # Run custom validators if present and value is not None or empty
-        if template_variable.validators and variable_value is not None and variable_value != "":
+        # Run custom validators if present.
+        if template_variable.validators:
             for validator in template_variable.validators:
                 _run_variable_validator(validator, variable_value, name)
 

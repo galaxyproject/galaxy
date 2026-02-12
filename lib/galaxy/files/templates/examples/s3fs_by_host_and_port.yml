@@ -43,6 +43,7 @@
     port:
       label: Connection Port
       type: integer
+      optional: true
       default: 443
       help: |
         The [port](https://en.wikipedia.org/wiki/Port_(computer_networking)) used to connect
@@ -59,6 +60,7 @@
     connection_path:
       label: Connection Path
       type: string
+      optional: true
       default: ""
       help: |
         This is an advanced configuration option and it is very likely best to just keep this empty
@@ -67,6 +69,7 @@
     secure:
       label: Use HTTPS?
       type: boolean
+      optional: true
       default: true
       help: |
         This is an advanced configuration option and if this option is not checked, you should not assume

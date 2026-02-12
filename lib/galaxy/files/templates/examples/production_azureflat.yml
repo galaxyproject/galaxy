@@ -25,6 +25,7 @@
     writable:
       label: Writable?
       type: boolean
+      optional: true
       default: false
       help: Allow Galaxy to write data to this Azure Blob Storage container.
   secrets:
