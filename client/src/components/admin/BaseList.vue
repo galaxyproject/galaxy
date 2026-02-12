@@ -1,6 +1,7 @@
 <template>
     <div>
-        <b-alert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </b-alert>
+        <BAlert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </BAlert>
+
         <div v-if="itemsVisible" class="card-header">
             There are {{ itemsLength }}
             <GButton
@@ -38,11 +39,14 @@
 </template>
 
 <script>
+import { BAlert } from "bootstrap-vue";
+
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
+        BAlert,
         GButton,
         GTable,
     },
