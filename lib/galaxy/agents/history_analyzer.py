@@ -1,9 +1,9 @@
 """
 History Analyzer agent for understanding and summarizing Galaxy histories.
 
-This agent analyzes a Galaxy history, gathers information about all datasets
-and tools used, and can generate summaries, methods sections, or answer
-questions about what was done in the analysis.
+Analyzes a Galaxy history, gathers information about datasets and tools used,
+and can generate summaries, methods sections, or answer questions about what
+was done in the analysis.
 """
 
 import logging
@@ -51,23 +51,15 @@ class HistoryAnalysis(BaseModel):
 
 
 class HistoryAnalyzerAgent(BaseGalaxyAgent):
-    """
-    Agent for analyzing and summarizing Galaxy histories.
-
-    This agent uses AgentOperationsManager to access history contents, dataset details,
-    job information, and tool citations. It can generate summaries, publication-ready
-    methods sections, or answer questions about what was done in the analysis.
-    """
+    """Agent for analyzing and summarizing Galaxy histories."""
 
     agent_type = AgentType.HISTORY_ANALYZER
 
     def __init__(self, deps: GalaxyAgentDependencies):
-        """Initialize the agent with dependencies."""
         super().__init__(deps)
         self.ops = AgentOperationsManager(app=deps.trans.app, trans=deps.trans)
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
-        """Create the pydantic-ai agent with tools for Galaxy data access."""
         agent = Agent(
             self._get_model(),
             deps_type=GalaxyAgentDependencies,
@@ -143,7 +135,6 @@ class HistoryAnalyzerAgent(BaseGalaxyAgent):
         return agent
 
     def get_system_prompt(self) -> str:
-        """Get the system prompt for history analysis."""
         prompt_path = Path(__file__).parent / "prompts" / "history_analyzer.md"
         if prompt_path.exists():
             return prompt_path.read_text()
@@ -189,16 +180,7 @@ Once you have identified which history to analyze:
 """
 
     async def analyze_history(self, history_id: str, focus: str = "summary") -> HistoryAnalysis:
-        """
-        Analyze a Galaxy history.
-
-        Args:
-            history_id: The Galaxy history ID to analyze
-            focus: What to focus on - "summary", "methods", or "detailed"
-
-        Returns:
-            HistoryAnalysis with comprehensive analysis results
-        """
+        """Analyze a specific Galaxy history."""
         focus_instructions = {
             "summary": "Provide a concise summary of what was done in this analysis.",
             "methods": "Generate a publication-ready methods section with citations.",
@@ -226,7 +208,6 @@ Then synthesize this information into a comprehensive analysis."""
         if extracted:
             return extracted
 
-        # Extraction failed - log details and raise an error
         self._log_result_debug_info(result, "analyze_history")
         raise ValueError(
             "The AI model did not return a properly formatted response. "
@@ -235,19 +216,7 @@ Then synthesize this information into a comprehensive analysis."""
         )
 
     async def analyze_with_discovery(self, query: str, focus: str = "summary") -> HistoryAnalysis:
-        """
-        Analyze a history by first discovering which history to use.
-
-        The agent will list the user's histories and select the most appropriate
-        one based on the query, then analyze it.
-
-        Args:
-            query: User's request (e.g., "summarize my history", "what RNA-seq analysis did I do?")
-            focus: What to focus on - "summary", "methods", or "detailed"
-
-        Returns:
-            HistoryAnalysis with comprehensive analysis results
-        """
+        """Analyze a history by first discovering which one to use."""
         focus_instructions = {
             "summary": "Provide a concise summary of what was done in this analysis.",
             "methods": "Generate a publication-ready methods section with citations.",
@@ -280,7 +249,6 @@ Synthesize this into a comprehensive analysis."""
         if extracted:
             return extracted
 
-        # Extraction failed - log details and raise an error
         self._log_result_debug_info(result, "analyze_with_discovery")
         raise ValueError(
             "The AI model did not return a properly formatted response. "
@@ -289,7 +257,6 @@ Synthesize this into a comprehensive analysis."""
         )
 
     def _log_result_debug_info(self, result: Any, method_name: str) -> None:
-        """Log detailed debug information about an agent result for troubleshooting."""
         log.warning(f"HistoryAnalyzer.{method_name} did not return structured HistoryAnalysis")
         log.warning(f"  Result type: {type(result).__name__}")
 
@@ -297,25 +264,21 @@ Synthesize this into a comprehensive analysis."""
             log.warning("  Result is None")
             return
 
-        # Log available attributes
         attrs = [attr for attr in dir(result) if not attr.startswith("_")]
         log.debug(f"  Available attributes: {attrs}")
 
-        # Log .data if present
         if hasattr(result, "data"):
             data = result.data
             log.warning(f"  result.data type: {type(data).__name__ if data is not None else 'None'}")
             if data is not None:
                 log.debug(f"  result.data value: {str(data)[:500]}")
 
-        # Log .output if present (common in pydantic-ai)
         if hasattr(result, "output"):
             output = result.output
             log.warning(f"  result.output type: {type(output).__name__ if output is not None else 'None'}")
             if output is not None:
                 log.debug(f"  result.output value: {str(output)[:500]}")
 
-        # Log messages/tool calls if present
         if hasattr(result, "all_messages"):
             messages = result.all_messages()
             log.debug(f"  Message count: {len(messages) if messages else 0}")
@@ -327,16 +290,6 @@ Synthesize this into a comprehensive analysis."""
             log.debug(f"  New message count: {len(new_msgs) if new_msgs else 0}")
 
     async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
-        """
-        Process a history analysis request.
-
-        Args:
-            query: User's request or question about the history
-            context: Optionally contains 'history_id' and/or 'focus'
-
-        Returns:
-            AgentResponse with the analysis
-        """
         history_id = None
         focus = "summary"
 
@@ -346,13 +299,10 @@ Synthesize this into a comprehensive analysis."""
 
         try:
             if history_id:
-                # Direct analysis of a specific history
                 result = await self.analyze_history(history_id, focus)
             else:
-                # Discovery mode - let the agent find the right history
                 result = await self.analyze_with_discovery(query, focus)
 
-            # Choose primary content based on focus
             if focus == "methods":
                 content = result.methods_text or result.workflow_description
             else:
@@ -380,5 +330,4 @@ Synthesize this into a comprehensive analysis."""
             return self._get_fallback_response(query, str(e))
 
     def _get_fallback_content(self) -> str:
-        """Get fallback content for analysis failures."""
         return "Unable to analyze the history at this time. Please try again later."

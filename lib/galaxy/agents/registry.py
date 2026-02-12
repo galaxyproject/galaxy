@@ -19,7 +19,6 @@ class AgentRegistry:
     """Registry for managing available AI agents."""
 
     def __init__(self):
-        """Initialize empty registry."""
         self._agents: dict[str, type[BaseGalaxyAgent]] = {}
         self._agent_metadata: dict[str, dict] = {}
 
@@ -29,14 +28,7 @@ class AgentRegistry:
         agent_class: type[BaseGalaxyAgent],
         metadata: Optional[dict] = None,
     ):
-        """
-        Register an agent type.
-
-        Args:
-            agent_type: Unique identifier for the agent
-            agent_class: Agent class to register
-            metadata: Optional metadata about the agent
-        """
+        """Register an agent type."""
         if not issubclass(agent_class, BaseGalaxyAgent):
             raise ValueError(f"Agent class must inherit from BaseGalaxyAgent: {agent_class}")
 
@@ -54,19 +46,7 @@ class AgentRegistry:
             log.debug(f"Unregistered agent: {agent_type}")
 
     def get_agent(self, agent_type: str, deps: GalaxyAgentDependencies) -> BaseGalaxyAgent:
-        """
-        Create an agent instance.
-
-        Args:
-            agent_type: Type of agent to create
-            deps: Dependencies to inject into the agent
-
-        Returns:
-            Agent instance
-
-        Raises:
-            ValueError: If agent type is not registered
-        """
+        """Create an agent instance."""
         if agent_type not in self._agents:
             available = list(self._agents.keys())
             raise ValueError(f"Unknown agent type: {agent_type}. Available: {available}")
@@ -75,12 +55,8 @@ class AgentRegistry:
 
         try:
             return agent_class(deps)
-        except (ImportError, TypeError, ValueError):
+        except (ImportError, TypeError, ValueError, RuntimeError):
             log.exception(f"Failed to create agent {agent_type}")
-            raise
-        except RuntimeError:
-            # Covers issues like missing dependencies or configuration problems
-            log.exception(f"Runtime error creating agent {agent_type}")
             raise
 
     def is_registered(self, agent_type: str) -> bool:
@@ -96,12 +72,7 @@ class AgentRegistry:
         return self._agent_metadata.get(agent_type, {})
 
     def get_agent_info(self, agent_type: str) -> dict:
-        """
-        Get comprehensive information about an agent.
-
-        Returns:
-            Dictionary with agent class, metadata, and other info
-        """
+        """Get info about an agent including class, metadata, and description."""
         if agent_type not in self._agents:
             raise ValueError(f"Unknown agent type: {agent_type}")
 
@@ -121,7 +92,6 @@ class AgentRegistry:
         return [self.get_agent_info(agent_type) for agent_type in self._agents.keys()]
 
 
-# Global registry instance
 _global_registry = AgentRegistry()
 
 

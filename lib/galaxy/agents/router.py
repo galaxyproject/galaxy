@@ -35,22 +35,13 @@ log = logging.getLogger(__name__)
 
 
 class QueryRouterAgent(BaseGalaxyAgent):
-    """
-    Router agent that answers queries directly or hands off to specialists.
-
-    This agent serves as Galaxy's primary AI assistant, handling most queries
-    directly and only delegating to specialist agents when their specific
-    expertise is needed (error debugging, tool creation).
-    """
+    """Router that answers queries directly or delegates to specialist agents."""
 
     agent_type = AgentType.ROUTER
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
-        """Create the router agent with output functions for specialist handoff."""
         model_name = self._get_agent_config("model", "")
 
-        # DeepSeek and other models without structured output support
-        # fall back to simple text-based routing
         if "deepseek" in model_name.lower():
             return Agent(
                 self._get_model(),
@@ -58,7 +49,6 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 system_prompt=self._get_simple_system_prompt(),
             )
 
-        # Create output functions for specialist handoff
         error_handoff = self._create_error_analysis_handoff()
         tool_handoff = self._create_custom_tool_handoff()
         tool_rec_handoff = self._create_tool_recommendation_handoff()
@@ -82,15 +72,11 @@ class QueryRouterAgent(BaseGalaxyAgent):
         )
 
     def get_system_prompt(self) -> str:
-        """Get the system prompt for the router agent."""
         prompt_path = Path(__file__).parent / "prompts" / "router.md"
         return prompt_path.read_text()
 
     def _serialize_handoff(self, response: AgentResponse, target_agent: str) -> str:
-        """
-        Wrap a delegated agent's response in JSON so we can pass it back through
-        the router's output function while keeping all the metadata intact.
-        """
+        """Wrap a delegated agent's response in JSON to pass through the router's output function."""
         return json.dumps(
             {
                 "__handoff__": True,
@@ -111,8 +97,6 @@ class QueryRouterAgent(BaseGalaxyAgent):
         )
 
     def _create_error_analysis_handoff(self):
-        """Create output function for error analysis handoff."""
-
         async def hand_off_to_error_analysis(
             ctx: RunContext[GalaxyAgentDependencies],
             task: str,
@@ -145,8 +129,6 @@ class QueryRouterAgent(BaseGalaxyAgent):
         return hand_off_to_error_analysis
 
     def _create_custom_tool_handoff(self):
-        """Create output function for custom tool handoff."""
-
         async def hand_off_to_custom_tool(
             ctx: RunContext[GalaxyAgentDependencies],
             request: str,
@@ -182,8 +164,6 @@ class QueryRouterAgent(BaseGalaxyAgent):
         return hand_off_to_custom_tool
 
     def _create_tool_recommendation_handoff(self):
-        """Create output function for tool recommendation handoff."""
-
         async def hand_off_to_tool_recommendation(
             ctx: RunContext[GalaxyAgentDependencies],
             query: str,
@@ -219,8 +199,6 @@ class QueryRouterAgent(BaseGalaxyAgent):
         return hand_off_to_tool_recommendation
 
     def _create_history_analyzer_handoff(self):
-        """Create output function for history analysis handoff."""
-
         async def hand_off_to_history_analyzer(
             ctx: RunContext[GalaxyAgentDependencies],
             request: str,
@@ -251,10 +229,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
             try:
                 agent = HistoryAnalyzerAgent(ctx.deps)
-
-                # Use the process method which handles discovery
                 result = await agent.process(request, context=None)
-
                 return result.content
             except Exception as e:
                 log.error(f"History analyzer handoff failed: {e}")
@@ -263,8 +238,6 @@ class QueryRouterAgent(BaseGalaxyAgent):
         return hand_off_to_history_analyzer
 
     def _create_next_step_advisor_handoff(self):
-        """Create output function for next-step advice orchestration."""
-
         async def hand_off_to_next_step_advisor(
             ctx: RunContext[GalaxyAgentDependencies],
             request: str,
@@ -286,7 +259,6 @@ class QueryRouterAgent(BaseGalaxyAgent):
             log.info(f"Router handing off to orchestrator for next-step advice: '{request[:100]}...'")
 
             try:
-                # Delegate to the orchestrator which will plan and execute the appropriate agents
                 orchestrator = WorkflowOrchestratorAgent(ctx.deps)
                 result = await orchestrator.process(request, context=None)
                 return result.content
@@ -298,8 +270,6 @@ class QueryRouterAgent(BaseGalaxyAgent):
         return hand_off_to_next_step_advisor
 
     def _create_orchestrator_handoff(self):
-        """Create output function for general multi-agent orchestration."""
-
         async def hand_off_to_orchestrator(
             ctx: RunContext[GalaxyAgentDependencies],
             request: str,
@@ -335,33 +305,21 @@ class QueryRouterAgent(BaseGalaxyAgent):
         return hand_off_to_orchestrator
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
-        """
-        Process a query and return the response.
-
-        The router now handles most queries directly, only handing off to
-        specialist agents when their specific expertise is needed.
-        """
         try:
-            # Log conversation context
             has_history = context and "conversation_history" in context and context["conversation_history"]
             log.info(f"Router: Processing query with conversation_history={has_history}")
             if has_history:
                 log.info(f"Router: Conversation has {len(context['conversation_history'])} messages")
 
-            # Build the full query with conversation history if available
             full_query = self._build_query_with_context(query, context)
             log.info(f"Router: Full query length={len(full_query)} (original={len(query)})")
 
-            # Run the agent - it will either answer directly or use a handoff function
             result = await self._run_with_retry(full_query)
             content = extract_result_content(result)
 
-            # Check if this is a handoff response (JSON-encoded with agent info)
             try:
                 handoff_data = json.loads(content)
                 if handoff_data.get("__handoff__"):
-                    # This was a handoff - use the delegated agent's response
-                    # Preserve handoff_info in metadata if present
                     metadata = handoff_data.get("metadata", {})
                     if handoff_data.get("handoff_info"):
                         metadata["handoff_info"] = handoff_data["handoff_info"]
@@ -373,9 +331,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
                         metadata=metadata,
                     )
             except (json.JSONDecodeError, TypeError, KeyError, ValidationError):
-                pass  # Not a handoff response or malformed suggestions, continue normally
+                pass
 
-            # Direct response from router - use helper for consistent metadata
             return self._build_response(
                 content=content,
                 confidence=ConfidenceLevel.HIGH,
@@ -384,15 +341,11 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 query=query,
             )
 
-        except OSError as e:
-            log.warning(f"Router agent network error, using fallback: {e}")
-            return self._handle_fallback(query, context, str(e))
-        except ValueError as e:
-            log.warning(f"Router agent value error, using fallback: {e}")
+        except (OSError, ValueError) as e:
+            log.warning(f"Router agent error, using fallback: {e}")
             return self._handle_fallback(query, context, str(e))
 
     def _build_query_with_context(self, query: str, context: Optional[dict[str, Any]]) -> str:
-        """Build full query including conversation history if available."""
         if not context or "conversation_history" not in context:
             return query
 
@@ -401,7 +354,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             return query
 
         history_text = "Previous conversation:\n"
-        for msg in history[-6:]:  # Last 6 messages for context
+        for msg in history[-6:]:
             role = msg.get("role", "unknown")
             content = msg.get("content", "")
             history_text += f"{role}: {content}\n"
@@ -410,10 +363,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
         return history_text
 
     def _handle_fallback(self, query: str, context: Optional[dict[str, Any]], error_msg: str) -> AgentResponse:
-        """Handle fallback when the main agent fails."""
         query_lower = query.lower()
 
-        # Check for citation requests
         if any(phrase in query_lower for phrase in ["cite galaxy", "citation", "reference"]):
             return self._build_response(
                 content="""To cite Galaxy, please use: Nekrutenko, A., et al. (2024). The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update. Nucleic Acids Research. https://doi.org/10.1093/nar/gkae410
@@ -426,7 +377,6 @@ For specific tools, please also cite the individual tool publications.""",
                 agent_data={"reason": "citation_request"},
             )
 
-        # Check for error-related keywords
         error_keywords = [
             "error",
             "fail",
@@ -449,7 +399,6 @@ For specific tools, please also cite the individual tool publications.""",
                 agent_data={"reason": "error_query_service_unavailable"},
             )
 
-        # Check for explicit tool creation keywords
         tool_keywords = [
             "create a tool",
             "build a tool",
@@ -468,7 +417,6 @@ For specific tools, please also cite the individual tool publications.""",
                 agent_data={"reason": "tool_creation_service_unavailable"},
             )
 
-        # Check for tool discovery keywords
         tool_discovery_keywords = [
             "what tool",
             "which tool",
@@ -488,7 +436,6 @@ For specific tools, please also cite the individual tool publications.""",
                 agent_data={"reason": "tool_discovery_service_unavailable"},
             )
 
-        # Check for training/tutorial keywords
         training_keywords = [
             "tutorial",
             "training",
@@ -512,7 +459,6 @@ For specific tools, please also cite the individual tool publications.""",
                 agent_data={"reason": "training_service_unavailable"},
             )
 
-        # Check for history analysis keywords
         history_keywords = [
             "summarize my history",
             "my history",
@@ -533,7 +479,6 @@ For specific tools, please also cite the individual tool publications.""",
                 metadata={"fallback": True, "reason": "history_analysis_service_unavailable", "error": error_msg},
             )
 
-        # Check for next-step/recommendation keywords
         next_step_keywords = [
             "what should i do next",
             "next step",
@@ -552,7 +497,6 @@ For specific tools, please also cite the individual tool publications.""",
                 metadata={"fallback": True, "reason": "next_step_service_unavailable", "error": error_msg},
             )
 
-        # Check for multi-agent queries (combining multiple capabilities)
         has_conjunction = " and " in query_lower or " also " in query_lower
         capability_count = sum(
             [
@@ -571,7 +515,6 @@ For specific tools, please also cite the individual tool publications.""",
                 metadata={"fallback": True, "reason": "orchestrator_service_unavailable", "error": error_msg},
             )
 
-        # General fallback
         return self._build_response(
             content="I'm having trouble connecting to the AI service right now. Please try again in a moment. If you have a question about Galaxy, you can also check the Galaxy Training Network (https://training.galaxyproject.org/) for tutorials and documentation.",
             confidence=ConfidenceLevel.LOW,
@@ -583,7 +526,6 @@ For specific tools, please also cite the individual tool publications.""",
         )
 
     def _get_simple_system_prompt(self) -> str:
-        """Simple system prompt for models that don't support output functions."""
         return """You are Galaxy's AI assistant. You ONLY answer questions about the Galaxy platform, Galaxy tools, and scientific data analysis (genomics, proteomics, bioinformatics, etc.).
 
 CRITICAL: Never guess or make up information. If you don't know something, say so. Never fabricate tool names, parameters, or scientific claims. It's better to admit uncertainty than provide incorrect information.
@@ -601,7 +543,6 @@ For off-topic questions: Politely explain you can only help with Galaxy and scie
 When uncertain, suggest the user check Galaxy documentation or the Galaxy Training Network (https://training.galaxyproject.org/)."""
 
     def _get_fallback_content(self) -> str:
-        """Get fallback content for router failures."""
         return (
             "I'm having trouble processing your request. Please try again or check the Galaxy documentation for help."
         )

@@ -1,3 +1,5 @@
+import logging
+from contextlib import asynccontextmanager
 from typing import (
     Any,
 )
@@ -199,12 +201,11 @@ def include_tus(app: FastAPI, gx_app):
     app.include_router(job_files_tus_router)
 
 
-def get_mcp_lifespan(gx_app):
-    """
-    Get MCP lifespan context manager if MCP is enabled.
+log = logging.getLogger(__name__)
 
-    Returns tuple of (mcp_app, mcp_lifespan) or (None, None) if not enabled.
-    """
+
+def get_mcp_lifespan(gx_app):
+    """Get MCP lifespan if enabled, or (None, None)."""
     if not gx_app.config.enable_mcp_server:
         return None, None
 
@@ -220,38 +221,23 @@ def get_mcp_lifespan(gx_app):
 
 
 def include_mcp(app: FastAPI, gx_app, mcp_app):
-    """
-    Mount the MCP server if it was initialized.
-
-    The MCP app's lifespan is handled separately via get_mcp_lifespan().
-    """
+    """Mount the MCP server if it was initialized."""
     if mcp_app is None:
         return
 
     try:
         mcp_path = gx_app.config.mcp_server_path
         app.mount(mcp_path, mcp_app)
-
-        import logging
-
-        logger = logging.getLogger(__name__)
-        logger.info(f"MCP server (Streamable HTTP) mounted at {mcp_path}")
+        log.info(f"MCP server (Streamable HTTP) mounted at {mcp_path}")
     except Exception as e:
-        import logging
-
-        logger = logging.getLogger(__name__)
-        logger.error(f"Failed to mount MCP server: {e}")
+        log.error(f"Failed to mount MCP server: {e}")
 
 
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
-    from contextlib import asynccontextmanager
-
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
 
-    # Get MCP app and lifespan if enabled (must be done before creating FastAPI instance)
     mcp_app, mcp_lifespan = get_mcp_lifespan(gx_app)
 
-    # Create combined lifespan if MCP is enabled
     if mcp_lifespan:
 
         @asynccontextmanager
@@ -276,7 +262,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
     include_tus(app, gx_app)
-    include_mcp(app, gx_app, mcp_app)  # Mount MCP server if enabled
+    include_mcp(app, gx_app, mcp_app)
     app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()

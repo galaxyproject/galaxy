@@ -1,12 +1,7 @@
 """
-Manager for AI agent operations on Galaxy.
+Shared operations layer for AI agents (MCP and internal pydantic-ai).
 
-This manager provides a unified interface for AI agents (both external via MCP
-and internal via pydantic-ai) to interact with Galaxy using the Galaxy API service layer.
-
-All agents (external MCP clients and internal pydantic-ai) use the same code path
-through this manager, which delegates to the service layer to ensure proper validation,
-rate limiting, pagination, and other API safeguards.
+Delegates to the Galaxy service layer for validation, permission checks, and pagination.
 """
 
 import logging
@@ -21,7 +16,6 @@ from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
-# Fields that contain Galaxy database IDs and should be encoded
 ID_FIELDS = {
     "id",
     "history_id",
@@ -38,54 +32,24 @@ ID_FIELDS = {
 
 
 class AgentOperationsManager:
-    """
-    Manager for AI agent operations on Galaxy.
-
-    Provides a unified interface for AI agents to interact with Galaxy through
-    the service layer. Both external (MCP) and internal (pydantic-ai) agents
-    use the same implementation, which delegates to Galaxy services for proper
-    validation, permission checks, and API safeguards.
-    """
+    """Shared operations for AI agents, delegating to Galaxy's service layer."""
 
     def __init__(self, app: MinimalManagerApp, trans: ProvidesUserContext):
-        """
-        Initialize the agent operations manager.
-
-        Args:
-            app: Galaxy application instance
-            trans: User session/request context (WorkRequestContext or SessionRequestContext)
-        """
         self.app = app
         self.trans = trans
-
-        # Initialize services - these provide the proper API layer with validation,
-        # rate limiting, pagination, etc.
         self._tools_service = None
         self._histories_service = None
         self._jobs_service = None
         self._datasets_service = None
         self._workflows_service = None
         self._invocations_service = None
-
         log.debug("AgentOperationsManager initialized")
 
     def _encode_id(self, value: int) -> str:
-        """Encode a single integer ID to a string."""
         return self.trans.security.encode_id(value)
 
     def _encode_ids_in_response(self, data: Any) -> Any:
-        """
-        Recursively encode Galaxy database IDs in response data.
-
-        The service layer returns unencoded integer IDs, but agents need
-        encoded string IDs to use in subsequent API calls.
-
-        Args:
-            data: Response data (dict, list, or scalar)
-
-        Returns:
-            Data with integer IDs encoded as strings
-        """
+        """Recursively encode integer IDs in response data to strings for agent consumption."""
         if isinstance(data, dict):
             result = {}
             for key, value in data.items():
@@ -101,7 +65,6 @@ class AgentOperationsManager:
 
     @property
     def tools_service(self):
-        """Get ToolsService from app's DI container."""
         if self._tools_service is None:
             from galaxy.webapps.galaxy.services.tools import ToolsService
 
@@ -110,7 +73,6 @@ class AgentOperationsManager:
 
     @property
     def histories_service(self):
-        """Get HistoriesService from app's DI container."""
         if self._histories_service is None:
             from galaxy.webapps.galaxy.services.histories import HistoriesService
 
@@ -119,7 +81,6 @@ class AgentOperationsManager:
 
     @property
     def jobs_service(self):
-        """Get JobsService from app's DI container."""
         if self._jobs_service is None:
             from galaxy.webapps.galaxy.services.jobs import JobsService
 
@@ -128,7 +89,6 @@ class AgentOperationsManager:
 
     @property
     def datasets_service(self):
-        """Get DatasetsService from app's DI container."""
         if self._datasets_service is None:
             from galaxy.webapps.galaxy.services.datasets import DatasetsService
 
@@ -137,7 +97,6 @@ class AgentOperationsManager:
 
     @property
     def workflows_service(self):
-        """Get WorkflowsService from app's DI container."""
         if self._workflows_service is None:
             from galaxy.webapps.galaxy.services.workflows import WorkflowsService
 
@@ -146,7 +105,6 @@ class AgentOperationsManager:
 
     @property
     def invocations_service(self):
-        """Get InvocationsService from app's DI container."""
         if self._invocations_service is None:
             from galaxy.webapps.galaxy.services.invocations import InvocationsService
 
@@ -154,12 +112,7 @@ class AgentOperationsManager:
         return self._invocations_service
 
     def connect(self) -> dict[str, Any]:
-        """
-        Verify connection to Galaxy and get server information.
-
-        Returns:
-            Server configuration, version info, and current user details
-        """
+        """Verify connection and return server info + current user."""
         config = self.app.config
         user = self.trans.user
 
@@ -181,19 +134,9 @@ class AgentOperationsManager:
         }
 
     def search_tools(self, query: str) -> dict[str, Any]:
-        """
-        Search for Galaxy tools by name or keyword.
-
-        Args:
-            query: Search query (tool name or keyword)
-
-        Returns:
-            List of matching tools with their IDs, names, and descriptions
-        """
-        # Use the service layer's search which handles boosts and config properly
+        """Search for Galaxy tools by name or keyword."""
         tool_ids = self.tools_service._search(query, view=None)
 
-        # Get tool details for each result
         tools = []
         for tool_id in tool_ids:
             try:
@@ -208,30 +151,18 @@ class AgentOperationsManager:
                         }
                     )
             except Exception as e:
-                # Skip tools that fail to load or user doesn't have access to
                 log.debug(f"Skipping tool {tool_id}: {str(e)}")
                 continue
 
         return {"query": query, "tools": tools, "count": len(tools)}
 
     def get_tool_details(self, tool_id: str, io_details: bool = False) -> dict[str, Any]:
-        """
-        Get detailed information about a specific Galaxy tool.
-
-        Args:
-            tool_id: Galaxy tool ID
-            io_details: Include detailed input/output specifications
-
-        Returns:
-            Tool details including parameters, inputs, outputs, and documentation
-        """
-        # Use service layer to get tool with proper permission checks
+        """Get detailed information about a specific tool, optionally with I/O specs."""
         tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")
 
-        # Build tool info dict
         tool_info = {
             "id": tool.id,
             "name": tool.name,
@@ -241,7 +172,6 @@ class AgentOperationsManager:
         }
 
         if io_details:
-            # Add input/output details
             tool_info["inputs"] = []
             for input_param in tool.inputs.values():
                 tool_info["inputs"].append(
@@ -254,7 +184,6 @@ class AgentOperationsManager:
                     }
                 )
 
-            # Add outputs
             tool_info["outputs"] = []
             for output in tool.outputs.values():
                 tool_info["outputs"].append(
@@ -268,21 +197,10 @@ class AgentOperationsManager:
         return tool_info
 
     def list_histories(self, limit: int = 50, offset: int = 0) -> dict[str, Any]:
-        """
-        List the current user's Galaxy histories.
-
-        Args:
-            limit: Maximum number of histories to return
-            offset: Number of histories to skip for pagination
-
-        Returns:
-            List of histories with their IDs, names, and states
-        """
-        # Use the service layer for proper pagination and filtering
+        """List the current user's histories."""
         serialization_params = SerializationParams(view="summary")
         filter_params = FilterQueryParams(limit=limit, offset=offset)
 
-        # Get histories using the service layer
         histories = self.histories_service.index(
             trans=self.trans,
             serialization_params=serialization_params,
@@ -291,7 +209,6 @@ class AgentOperationsManager:
             all_histories=False,
         )
 
-        # Encode IDs in response for agent consumption
         encoded_histories = self._encode_ids_in_response(histories)
 
         return {
@@ -301,65 +218,30 @@ class AgentOperationsManager:
         }
 
     def run_tool(self, history_id: str, tool_id: str, inputs: dict[str, Any]) -> dict[str, Any]:
-        """
-        Execute a Galaxy tool.
-
-        Args:
-            history_id: ID of the history to run the tool in
-            tool_id: ID of the tool to run
-            inputs: Dictionary of tool input parameters
-
-        Returns:
-            Job execution information including job IDs and output dataset IDs
-        """
-        # Build tool execution payload matching the API format
+        """Execute a Galaxy tool in the given history."""
         payload = {
             "history_id": history_id,
             "tool_id": tool_id,
             "inputs": inputs,
         }
 
-        # Execute the tool using the service layer
-        # This ensures proper validation, permission checks, and all API safeguards
         result = self.tools_service._create(self.trans, payload)
-
-        # Encode IDs in response for agent consumption
         return self._encode_ids_in_response(result)
 
     def get_job_status(self, job_id: str) -> dict[str, Any]:
-        """
-        Get the status and details of a Galaxy job.
-
-        Args:
-            job_id: ID of the job to check
-
-        Returns:
-            Job details including state, tool info, and timestamps
-        """
-        # Decode job ID
+        """Get status and details for a job."""
         decoded_job_id = self.trans.security.decode_id(job_id)
 
-        # Get job details using the service layer
-        # This ensures proper permission checks and access control
         job_details = self.jobs_service.show(
             trans=self.trans,
             id=decoded_job_id,
             full=False,
         )
 
-        # Encode IDs in response for agent consumption
         return {"job": self._encode_ids_in_response(job_details), "job_id": job_id}
 
     def create_history(self, name: str) -> dict[str, Any]:
-        """
-        Create a new Galaxy history.
-
-        Args:
-            name: Name for the new history
-
-        Returns:
-            Created history details including ID, name, and state
-        """
+        """Create a new history."""
         from galaxy.schema.schema import CreateHistoryPayload
 
         payload = CreateHistoryPayload(name=name)
@@ -371,22 +253,10 @@ class AgentOperationsManager:
             serialization_params=serialization_params,
         )
 
-        # Encode IDs in response for agent consumption
         return self._encode_ids_in_response(history)
 
     def get_history_details(self, history_id: str) -> dict[str, Any]:
-        """
-        Get detailed information about a specific history.
-
-        This returns history metadata without loading all datasets.
-        Use get_history_contents() to get the actual datasets.
-
-        Args:
-            history_id: Galaxy history ID (encoded)
-
-        Returns:
-            History details including metadata and summary statistics
-        """
+        """Get metadata for a history (use get_history_contents for datasets)."""
         decoded_history_id = self.trans.security.decode_id(history_id)
         serialization_params = SerializationParams(view="detailed")
 
@@ -396,7 +266,6 @@ class AgentOperationsManager:
             history_id=decoded_history_id,
         )
 
-        # Encode IDs in response for agent consumption
         return {
             "history": self._encode_ids_in_response(history),
             "history_id": history_id,
@@ -409,18 +278,7 @@ class AgentOperationsManager:
         offset: int = 0,
         order: str = "hid-asc",
     ) -> dict[str, Any]:
-        """
-        Get paginated contents (datasets) from a specific history.
-
-        Args:
-            history_id: Galaxy history ID (encoded)
-            limit: Maximum number of items to return (default: 100)
-            offset: Number of items to skip for pagination (default: 0)
-            order: Sort order (e.g., 'hid-asc', 'hid-dsc', 'create_time-dsc')
-
-        Returns:
-            List of datasets/collections in the history with pagination info
-        """
+        """Get paginated datasets from a history."""
         decoded_history_id = self.trans.security.decode_id(history_id)
         serialization_params = SerializationParams(view="summary")
         filter_params = FilterQueryParams(limit=limit, offset=offset, order=order)
@@ -432,13 +290,11 @@ class AgentOperationsManager:
             filter_query_params=filter_params,
         )
 
-        # Calculate pagination metadata
         has_next = (offset + limit) < total_count
         has_previous = offset > 0
         current_page = (offset // limit) + 1 if limit > 0 else 1
         total_pages = ((total_count - 1) // limit) + 1 if limit > 0 and total_count > 0 else 1
 
-        # Encode IDs in response for agent consumption
         return {
             "history_id": history_id,
             "contents": self._encode_ids_in_response(contents),
@@ -455,15 +311,7 @@ class AgentOperationsManager:
         }
 
     def get_dataset_details(self, dataset_id: str) -> dict[str, Any]:
-        """
-        Get detailed information about a specific dataset.
-
-        Args:
-            dataset_id: Galaxy dataset ID (encoded)
-
-        Returns:
-            Dataset details including metadata, state, and file information
-        """
+        """Get detailed information about a dataset."""
         from galaxy.schema.schema import DatasetSourceType
 
         decoded_dataset_id = self.trans.security.decode_id(dataset_id)
@@ -476,7 +324,6 @@ class AgentOperationsManager:
             serialization_params=serialization_params,
         )
 
-        # Encode IDs in response for agent consumption
         return {
             "dataset": self._encode_ids_in_response(dataset),
             "dataset_id": dataset_id,
@@ -490,20 +337,7 @@ class AgentOperationsManager:
         dbkey: str = "?",
         file_name: str | None = None,
     ) -> dict[str, Any]:
-        """
-        Upload a file from a URL to Galaxy.
-
-        Args:
-            history_id: ID of the history to upload to
-            url: URL of the file to upload
-            file_type: Galaxy file format (default: 'auto' for auto-detection)
-            dbkey: Database key/genome build (default: '?')
-            file_name: Optional name for the uploaded file
-
-        Returns:
-            Job execution information including job ID and output dataset IDs
-        """
-        # Build the upload tool payload
+        """Upload a file from a URL to Galaxy."""
         # The upload tool (upload1) uses files_0|url_paste for URL uploads
         inputs = {
             "files_0|url_paste": url,
@@ -516,7 +350,6 @@ class AgentOperationsManager:
         if file_name:
             inputs["files_0|name"] = file_name
 
-        # Run the upload tool
         payload = {
             "history_id": history_id,
             "tool_id": "upload1",
@@ -524,8 +357,6 @@ class AgentOperationsManager:
         }
 
         result = self.tools_service._create(self.trans, payload)
-
-        # Encode IDs in response for agent consumption
         return self._encode_ids_in_response(result)
 
     def list_workflows(
@@ -536,19 +367,7 @@ class AgentOperationsManager:
         show_shared: bool = True,
         search: str | None = None,
     ) -> dict[str, Any]:
-        """
-        List user's workflows.
-
-        Args:
-            limit: Maximum number of workflows to return (default: 50)
-            offset: Number of workflows to skip for pagination (default: 0)
-            show_published: Include published workflows (default: False)
-            show_shared: Include workflows shared with user (default: True)
-            search: Optional search term to filter workflows
-
-        Returns:
-            List of workflows with their IDs, names, and basic metadata
-        """
+        """List user's workflows with optional filtering."""
         from galaxy.webapps.galaxy.services.workflows import WorkflowIndexPayload
 
         payload = WorkflowIndexPayload(
@@ -565,7 +384,6 @@ class AgentOperationsManager:
             include_total_count=True,
         )
 
-        # Encode IDs in response for agent consumption
         encoded_workflows = self._encode_ids_in_response(workflows)
 
         return {
@@ -579,15 +397,7 @@ class AgentOperationsManager:
         }
 
     def get_workflow_details(self, workflow_id: str) -> dict[str, Any]:
-        """
-        Get detailed information about a specific workflow.
-
-        Args:
-            workflow_id: Galaxy workflow ID (encoded)
-
-        Returns:
-            Workflow details including steps, inputs, and outputs
-        """
+        """Get detailed information about a workflow."""
         decoded_workflow_id = self.trans.security.decode_id(workflow_id)
 
         workflow = self.workflows_service.show_workflow(
@@ -598,7 +408,6 @@ class AgentOperationsManager:
             version=None,
         )
 
-        # Encode IDs in response for agent consumption
         return {
             "workflow": self._encode_ids_in_response(workflow),
             "workflow_id": workflow_id,
@@ -611,18 +420,7 @@ class AgentOperationsManager:
         inputs: dict[str, Any] | None = None,
         parameters: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """
-        Invoke (run) a workflow.
-
-        Args:
-            workflow_id: Galaxy workflow ID (encoded)
-            history_id: History ID to run the workflow in
-            inputs: Dictionary mapping workflow input labels/indices to dataset IDs
-            parameters: Dictionary mapping step IDs to parameter values
-
-        Returns:
-            Workflow invocation details including invocation ID
-        """
+        """Invoke (run) a workflow."""
         from galaxy.schema.workflows import InvokeWorkflowPayload
 
         decoded_workflow_id = self.trans.security.decode_id(workflow_id)
@@ -639,7 +437,6 @@ class AgentOperationsManager:
             payload=payload,
         )
 
-        # Encode IDs in response for agent consumption
         return self._encode_ids_in_response(result)
 
     def get_invocations(
@@ -649,18 +446,7 @@ class AgentOperationsManager:
         limit: int = 50,
         offset: int = 0,
     ) -> dict[str, Any]:
-        """
-        List workflow invocations.
-
-        Args:
-            workflow_id: Optional workflow ID to filter by
-            history_id: Optional history ID to filter by
-            limit: Maximum number of invocations to return (default: 50)
-            offset: Number of invocations to skip (default: 0)
-
-        Returns:
-            List of workflow invocations with their status
-        """
+        """List workflow invocations, optionally filtered by workflow or history."""
         from galaxy.schema.invocation import (
             InvocationIndexPayload,
             InvocationSerializationParams,
@@ -688,7 +474,6 @@ class AgentOperationsManager:
             serialization_params=serialization_params,
         )
 
-        # Encode IDs in response for agent consumption
         encoded_invocations = self._encode_ids_in_response(invocations)
 
         return {
@@ -702,15 +487,7 @@ class AgentOperationsManager:
         }
 
     def get_invocation_details(self, invocation_id: str) -> dict[str, Any]:
-        """
-        Get detailed information about a specific workflow invocation.
-
-        Args:
-            invocation_id: Workflow invocation ID (encoded)
-
-        Returns:
-            Invocation details including state, steps, and outputs
-        """
+        """Get detailed information about a workflow invocation."""
         from galaxy.schema.invocation import InvocationSerializationParams
 
         decoded_invocation_id = self.trans.security.decode_id(invocation_id)
@@ -722,22 +499,13 @@ class AgentOperationsManager:
             serialization_params=serialization_params,
         )
 
-        # Encode IDs in response for agent consumption
         return {
             "invocation": self._encode_ids_in_response(invocation),
             "invocation_id": invocation_id,
         }
 
     def cancel_workflow_invocation(self, invocation_id: str) -> dict[str, Any]:
-        """
-        Cancel a running workflow invocation.
-
-        Args:
-            invocation_id: Workflow invocation ID (encoded)
-
-        Returns:
-            Updated invocation details with cancelled state
-        """
+        """Cancel a running workflow invocation."""
         from galaxy.schema.invocation import InvocationSerializationParams
 
         decoded_invocation_id = self.trans.security.decode_id(invocation_id)
@@ -749,7 +517,6 @@ class AgentOperationsManager:
             serialization_params=serialization_params,
         )
 
-        # Encode IDs in response for agent consumption
         return {
             "invocation": self._encode_ids_in_response(invocation),
             "invocation_id": invocation_id,
@@ -757,15 +524,7 @@ class AgentOperationsManager:
         }
 
     def get_tool_panel(self, view: str | None = None) -> dict[str, Any]:
-        """
-        Get the tool panel (toolbox) structure.
-
-        Args:
-            view: Optional panel view name (default: use server default)
-
-        Returns:
-            Tool panel hierarchy with sections and tools
-        """
+        """Get the tool panel structure."""
         if view is None:
             view = self.app.toolbox._default_panel_view(self.trans)
 
@@ -774,23 +533,12 @@ class AgentOperationsManager:
         return {"tool_panel": tool_panel, "view": view}
 
     def get_tool_run_examples(self, tool_id: str) -> dict[str, Any]:
-        """
-        Get test cases/examples for a tool.
-
-        These show how the tool should be run with real inputs.
-
-        Args:
-            tool_id: Galaxy tool ID
-
-        Returns:
-            Test cases with inputs, outputs, and assertions
-        """
+        """Get test cases showing how to run a tool with real inputs."""
         tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")
 
-        # Get tool tests
         test_cases = []
         if hasattr(tool, "tests") and tool.tests:
             for i, test in enumerate(tool.tests):
@@ -799,12 +547,10 @@ class AgentOperationsManager:
                     "inputs": {},
                     "outputs": {},
                 }
-                # Extract inputs
                 if hasattr(test, "inputs"):
                     for name, value in test.inputs.items():
                         test_case["inputs"][name] = str(value) if value is not None else None
 
-                # Extract expected outputs
                 if hasattr(test, "outputs"):
                     for output in test.outputs:
                         test_case["outputs"][output.name] = {
@@ -823,15 +569,7 @@ class AgentOperationsManager:
         }
 
     def get_tool_citations(self, tool_id: str) -> dict[str, Any]:
-        """
-        Get citation information for a tool.
-
-        Args:
-            tool_id: Galaxy tool ID
-
-        Returns:
-            Tool citations including DOIs, BibTeX, etc.
-        """
+        """Get citation information (DOIs, BibTeX) for a tool."""
         tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
 
         if tool is None:
@@ -860,22 +598,11 @@ class AgentOperationsManager:
         }
 
     def search_tools_by_keywords(self, keywords: list[str]) -> dict[str, Any]:
-        """
-        Search for tools matching multiple keywords.
-
-        Searches tool names, descriptions, and input formats.
-
-        Args:
-            keywords: List of keywords to search for
-
-        Returns:
-            Matching tools with relevance information
-        """
+        """Search for tools matching multiple keywords, ranked by relevance."""
         keywords_lower = [k.lower() for k in keywords]
         matching_tools = []
         seen_tool_ids = set()
 
-        # Search each keyword and aggregate results
         for keyword in keywords:
             tool_ids = self.tools_service._search(keyword, view=None)
 
@@ -886,7 +613,6 @@ class AgentOperationsManager:
                 try:
                     tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
                     if tool:
-                        # Check if any keyword matches name or description
                         name_lower = (tool.name or "").lower()
                         desc_lower = (tool.description or "").lower()
 
@@ -909,7 +635,6 @@ class AgentOperationsManager:
                     log.debug(f"Skipping tool {tool_id}: {str(e)}")
                     continue
 
-        # Sort by number of matched keywords (most relevant first)
         matching_tools.sort(key=lambda x: len(x["matched_keywords"]), reverse=True)
 
         return {
@@ -919,12 +644,7 @@ class AgentOperationsManager:
         }
 
     def _get_iwc_manifest(self) -> list[dict[str, Any]]:
-        """
-        Fetch the IWC workflow manifest.
-
-        Returns:
-            Raw manifest data from IWC
-        """
+        """Fetch the IWC workflow manifest from iwc.galaxyproject.org."""
         import httpx
 
         response = httpx.get("https://iwc.galaxyproject.org/workflow_manifest.json", timeout=30.0)
@@ -932,17 +652,9 @@ class AgentOperationsManager:
         return response.json()
 
     def get_iwc_workflows(self) -> dict[str, Any]:
-        """
-        Get all workflows from the IWC (Intergalactic Workflow Commission).
-
-        IWC hosts community-maintained, production-quality Galaxy workflows.
-
-        Returns:
-            List of all IWC workflows with their metadata
-        """
+        """Get all workflows from the IWC (Intergalactic Workflow Commission)."""
         manifest = self._get_iwc_manifest()
 
-        # Collect workflows from all manifest entries
         all_workflows = []
         for entry in manifest:
             if "workflows" in entry:
@@ -960,15 +672,7 @@ class AgentOperationsManager:
         return {"workflows": all_workflows, "count": len(all_workflows)}
 
     def search_iwc_workflows(self, query: str) -> dict[str, Any]:
-        """
-        Search IWC workflows by name, description, or tags.
-
-        Args:
-            query: Search term to match against workflow metadata
-
-        Returns:
-            Matching workflows from IWC
-        """
+        """Search IWC workflows by name, description, or tags."""
         manifest = self._get_iwc_manifest()
         query_lower = query.lower()
 
@@ -983,7 +687,6 @@ class AgentOperationsManager:
                 description = definition.get("annotation", "")
                 tags = definition.get("tags", [])
 
-                # Check if query matches name, description, or tags
                 name_lower = name.lower()
                 desc_lower = description.lower()
                 tags_lower = [t.lower() for t in tags]
@@ -1005,18 +708,9 @@ class AgentOperationsManager:
         return {"query": query, "workflows": results, "count": len(results)}
 
     def import_workflow_from_iwc(self, trs_id: str) -> dict[str, Any]:
-        """
-        Import a workflow from IWC into Galaxy.
-
-        Args:
-            trs_id: TRS ID of the workflow in the IWC manifest
-
-        Returns:
-            Imported workflow information
-        """
+        """Import a workflow from IWC into Galaxy."""
         manifest = self._get_iwc_manifest()
 
-        # Find the workflow by trs_id
         workflow_def = None
         for entry in manifest:
             if "workflows" not in entry:
@@ -1034,7 +728,6 @@ class AgentOperationsManager:
                 "Use search_iwc_workflows() to find valid trsIDs."
             )
 
-        # Import the workflow using the workflows manager
         from galaxy.managers.workflows import WorkflowsManager
 
         workflows_manager = WorkflowsManager(self.app)
@@ -1049,15 +742,7 @@ class AgentOperationsManager:
         }
 
     def list_history_ids(self, limit: int = 100) -> dict[str, Any]:
-        """
-        Get a simplified list of history IDs and names.
-
-        Args:
-            limit: Maximum number of histories to return (default: 100)
-
-        Returns:
-            Simplified list of history IDs and names
-        """
+        """Get a simplified list of history IDs and names."""
         serialization_params = SerializationParams(view="summary")
         filter_params = FilterQueryParams(limit=limit, offset=0)
 
@@ -1069,8 +754,6 @@ class AgentOperationsManager:
             all_histories=False,
         )
 
-        # Return simplified list with just id and name
-        # Service returns dicts, encode IDs for agent consumption
         simplified = [
             {
                 "id": self._encode_id(h["id"]) if isinstance(h["id"], int) else h["id"],
@@ -1082,19 +765,9 @@ class AgentOperationsManager:
         return {"histories": simplified, "count": len(simplified)}
 
     def get_job_details(self, dataset_id: str, history_id: str | None = None) -> dict[str, Any]:
-        """
-        Get details about the job that created a specific dataset.
-
-        Args:
-            dataset_id: Galaxy dataset ID (encoded)
-            history_id: Optional history ID (for performance, not required)
-
-        Returns:
-            Job details including tool info, state, and parameters
-        """
+        """Get details about the job that created a dataset."""
         decoded_dataset_id = self.trans.security.decode_id(dataset_id)
 
-        # Get the HDA to find its creating job
         from galaxy.managers.hdas import HDAManager
 
         hda_manager = self.app[HDAManager]
@@ -1124,15 +797,7 @@ class AgentOperationsManager:
         }
 
     def get_job_errors(self, dataset_id: str) -> dict[str, Any]:
-        """
-        Get error details for a failed job.
-
-        Args:
-            dataset_id: Galaxy dataset ID (encoded) of the failed output
-
-        Returns:
-            Error details including stderr, stdout, exit_code, and info message
-        """
+        """Get error details (stderr, stdout, exit code) for a failed job."""
         decoded_dataset_id = self.trans.security.decode_id(dataset_id)
 
         from galaxy.managers.hdas import HDAManager
@@ -1171,21 +836,9 @@ class AgentOperationsManager:
         }
 
     def download_dataset(self, dataset_id: str) -> dict[str, Any]:
-        """
-        Get download information for a dataset.
-
-        Since MCP clients are remote, this returns the download URL
-        rather than file contents.
-
-        Args:
-            dataset_id: Galaxy dataset ID (encoded)
-
-        Returns:
-            Download URL and dataset information
-        """
+        """Get download URL and metadata for a dataset."""
         decoded_dataset_id = self.trans.security.decode_id(dataset_id)
 
-        # Get the HDA
         from galaxy.managers.hdas import HDAManager
 
         hda_manager = self.app[HDAManager]
@@ -1201,7 +854,6 @@ class AgentOperationsManager:
                 "error": f"Dataset is not ready for download (state: {hda.state})",
             }
 
-        # Build download URL
         base_url = getattr(self.app.config, "galaxy_infrastructure_url", "http://localhost:8080")
         download_url = f"{base_url}/api/datasets/{dataset_id}/display"
 
@@ -1215,12 +867,7 @@ class AgentOperationsManager:
         }
 
     def get_server_info(self) -> dict[str, Any]:
-        """
-        Get detailed Galaxy server information.
-
-        Returns:
-            Server configuration, version, and capabilities
-        """
+        """Get Galaxy server version, configuration, and capabilities."""
         config = self.app.config
 
         return {
@@ -1240,12 +887,7 @@ class AgentOperationsManager:
         }
 
     def get_user(self) -> dict[str, Any]:
-        """
-        Get current user information.
-
-        Returns:
-            User details including email, username, and preferences
-        """
+        """Get current authenticated user information."""
         user = self.trans.user
 
         if not user:
