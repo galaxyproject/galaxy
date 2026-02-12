@@ -39,7 +39,10 @@ export default {
         return {
             error: null,
             loading: true,
-            fields: [{ key: "selected", label: "" }, { key: "path" }],
+            fields: [
+                { key: "selected", label: "" },
+                { key: "path", label: "Path" },
+            ],
             paths: [],
         };
     },
