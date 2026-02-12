@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { BCard } from "bootstrap-vue";
-import { computed, ref, watch } from "vue";
 import type { View } from "vega";
 import type { VisualizationSpec } from "vega-embed";
+import { computed, ref, watch } from "vue";
 
 import type { DataValuePoint } from ".";
 

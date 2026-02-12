@@ -6,9 +6,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { DataValuePoint } from ".";
 
-import VegaWrapper from "@/components/Common/VegaWrapper.vue";
-
 import BarChart from "./BarChart.vue";
+import VegaWrapper from "@/components/Common/VegaWrapper.vue";
 
 const mockFinalize = vi.fn();
 const mockAddSignalListener = vi.fn();
@@ -24,7 +23,7 @@ vi.mock("vega-embed", () => ({
 }));
 
 vi.mock("@vueuse/core", () => ({
-    useDebounceFn: (fn: Function) => fn,
+    useDebounceFn: (fn: (...args: unknown[]) => unknown) => fn,
     useResizeObserver: vi.fn(),
 }));
 

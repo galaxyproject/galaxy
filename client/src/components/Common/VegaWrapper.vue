@@ -9,9 +9,9 @@
 
 <script setup lang="ts">
 import { useDebounceFn, useResizeObserver } from "@vueuse/core";
+import type { View } from "vega";
 import embed, { type VisualizationSpec } from "vega-embed";
 import { nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from "vue";
-import type { View } from "vega";
 
 const RESIZE_DEBOUNCE_MS = 150;
 
