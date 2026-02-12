@@ -3,7 +3,6 @@ Copy of fastapi/openapi/utils.py from https://github.com/fastapi/fastapi/pull/13
 """
 
 from collections.abc import Sequence
-from inspect import signature
 from typing import (
     Any,
     Optional,
@@ -11,17 +10,10 @@ from typing import (
 )
 
 from fastapi import routing
-
-try:
-    from fastapi._compat import (  # type: ignore[attr-defined]
-        get_flat_models_from_fields,
-        get_model_name_map,
-    )
-except ImportError:
-    # FastAPI <0.128.4
-    get_flat_models_from_fields = None
-    from fastapi._compat import get_compat_model_name_map
-
+from fastapi._compat import (
+    get_flat_models_from_fields,
+    get_model_name_map,
+)
 from fastapi.encoders import jsonable_encoder
 from fastapi.openapi.constants import REF_TEMPLATE
 from fastapi.openapi.models import OpenAPI
@@ -72,11 +64,8 @@ def get_openapi(
     webhook_paths: dict[str, dict[str, Any]] = {}
     operation_ids: set[str] = set()
     all_fields = get_fields_from_routes(list(routes or []) + list(webhooks or []))
-    if get_flat_models_from_fields:
-        flat_models = get_flat_models_from_fields(all_fields, known_models=set())
-        model_name_map = get_model_name_map(flat_models)
-    else:
-        model_name_map = get_compat_model_name_map(all_fields)
+    flat_models = get_flat_models_from_fields(all_fields, known_models=set())
+    model_name_map = get_model_name_map(flat_models)
     schema_generator = schema_generator or GenerateJsonSchema(ref_template=REF_TEMPLATE)
     field_mapping, definitions = get_definitions(
         fields=all_fields,
@@ -84,10 +73,6 @@ def get_openapi(
         separate_input_output_schemas=separate_input_output_schemas,
         schema_generator=schema_generator,
     )
-    get_openapi_path_args = {}
-    if "schema_generator" in signature(get_openapi_path).parameters:
-        # FastAPI <0.119.0
-        get_openapi_path_args["schema_generator"] = schema_generator
     for route in routes or []:
         if isinstance(route, routing.APIRoute):
             result = get_openapi_path(
@@ -96,7 +81,6 @@ def get_openapi(
                 model_name_map=model_name_map,
                 field_mapping=field_mapping,
                 separate_input_output_schemas=separate_input_output_schemas,
-                **get_openapi_path_args,
             )
             if result:
                 path, security_schemes, path_definitions = result
@@ -114,7 +98,6 @@ def get_openapi(
                 model_name_map=model_name_map,
                 field_mapping=field_mapping,
                 separate_input_output_schemas=separate_input_output_schemas,
-                **get_openapi_path_args,
             )
             if result:
                 path, security_schemes, path_definitions = result
