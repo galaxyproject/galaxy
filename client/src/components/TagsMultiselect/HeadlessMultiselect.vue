@@ -9,7 +9,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faChevronUp, faPlus, faTags, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useElementBounding, whenever } from "@vueuse/core";
+import { onClickOutside, useElementBounding, whenever } from "@vueuse/core";
 import { computed, nextTick, ref, watch } from "vue";
 // @ts-ignore missing types
 import Vue2Teleport from "vue2-teleport";
@@ -279,12 +279,28 @@ whenever(isOpen, async () => {
     await nextTick();
     bounds.update();
 });
+
+/**
+ * Closes the dropdown when clicking outside.
+ * This is needed for Safari, which doesn't always fire focusout
+ * when clicking on non-focusable elements.
+ * The `ignore` option excludes the teleported options popup.
+ */
+onClickOutside(
+    root,
+    () => {
+        if (isOpen.value) {
+            close(false);
+        }
+    },
+    { ignore: [`#${props.id}-options`], detectIframe: true },
+);
 </script>
 
 <template>
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions  -->
-    <div ref="root" class="headless-multiselect" @mousedown="onMouseDownInside" @focusout="onFocusOut">
-        <fieldset v-if="isOpen" @focusout="onFocusOut">
+    <div ref="root" class="headless-multiselect" @focusout="onFocusOut">
+        <fieldset v-if="isOpen">
             <input
                 :id="`${props.id}-input`"
                 ref="inputField"
@@ -312,7 +328,7 @@ whenever(isOpen, async () => {
                 <FontAwesomeIcon icon="fa-chevron-up" />
             </button>
         </fieldset>
-        <button v-else ref="openButton" class="toggle-button" @click="open">
+        <button v-else ref="openButton" class="toggle-button" @mousedown="onMouseDownInside" @click="open">
             {{ props.placeholder }}
             <FontAwesomeIcon icon="fa-tags" />
         </button>
@@ -320,6 +336,7 @@ whenever(isOpen, async () => {
         <Vue2Teleport v-if="isOpen" :to="`#${getPopupLayerId()}`">
             <div
                 :id="`${props.id}-options`"
+                tabindex="-1"
                 aria-expanded="true"
                 role="listbox"
                 class="headless-multiselect__options"
@@ -331,6 +348,7 @@ whenever(isOpen, async () => {
                 }"
                 :data-parent-id="id"
                 @keydown.up.down.prevent
+                @mousedown="onMouseDownInside"
                 @focusout="onFocusOut">
                 <button
                     v-for="(option, i) in trimmedOptions"
@@ -344,6 +362,7 @@ whenever(isOpen, async () => {
                         invalid: i === 0 && !searchValueValid,
                         highlighted: highlightedOption === i,
                     }"
+                    @mousedown.prevent.stop
                     @click="() => onOptionSelected(option)"
                     @keydown="(e) => onOptionKey(e, i)"
                     @mouseover="() => onOptionHover(i)"
