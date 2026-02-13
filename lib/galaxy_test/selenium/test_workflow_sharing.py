@@ -1,6 +1,6 @@
 from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
 from .framework import (
-    selenium_only,
+    GALAXY_TEST_SELENIUM_USER_PASSWORD,
     selenium_test,
     SeleniumTestCase,
     UsesWorkflowAssertions,
@@ -10,7 +10,6 @@ from .framework import (
 class TestWorkflowSharingRedirect(SeleniumTestCase):
     ensure_registered = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_share_workflow_with_login_redirect(self):
         user_email = self.get_user_email()
@@ -20,11 +19,10 @@ class TestWorkflowSharingRedirect(SeleniumTestCase):
         self.assert_error_message(contains="Must be logged in to manage Galaxy items")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.components._.messages.require_login.wait_for_and_click()
-        self.fill_login_and_submit(user_email)
+        self.fill_login_and_submit(user_email, password=GALAXY_TEST_SELENIUM_USER_PASSWORD)
         self.wait_for_logged_in()
         self.wait_for_selector(".make-accessible")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_export_workflow_with_login_redirect(self):
         user_email = self.get_user_email()
@@ -34,7 +32,7 @@ class TestWorkflowSharingRedirect(SeleniumTestCase):
         self.assert_error_message(contains="Workflow is neither importable, nor owned by or shared with current user")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.components._.messages.require_login.wait_for_and_click()
-        self.fill_login_and_submit(user_email)
+        self.fill_login_and_submit(user_email, password=GALAXY_TEST_SELENIUM_USER_PASSWORD)
         self.wait_for_logged_in()
 
 

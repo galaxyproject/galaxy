@@ -1,16 +1,12 @@
 from selenium.webdriver.common.by import By
 
 from galaxy_test.selenium.framework import (
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
 
 
 class TestManageInformation(SeleniumTestCase):
-    @selenium_only(
-        "Not yet migrated to support Playwright backend - AttributeError: 'PlaywrightElement' object has no attribute 'get_property'"
-    )
     @selenium_test
     def test_api_key(self):
         """
@@ -28,11 +24,11 @@ class TestManageInformation(SeleniumTestCase):
         self.components.preferences.get_new_key.wait_for_and_click()
         api_key_input = self.components.preferences.api_key_input.wait_for_visible()
         new_api_key = self.get_api_key()
-        input_value = api_key_input.get_property("value")
+        input_value = api_key_input.get_attribute("value")
         assert new_api_key == input_value
         # Hover the input to view the key
-        self.action_chains().move_to_element(api_key_input).perform()
-        hover_value = api_key_input.get_property("value")
+        self.hover(api_key_input)
+        hover_value = api_key_input.get_attribute("value")
         assert new_api_key == hover_value
 
     @selenium_test
@@ -145,7 +141,6 @@ class TestManageInformation(SeleniumTestCase):
 
 
 class TestDeleteCurrentAccount(SeleniumTestCase):
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_delete_account(self):
         email = self._get_random_email()

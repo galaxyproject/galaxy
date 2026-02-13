@@ -3,14 +3,12 @@ from unittest import SkipTest
 import pytest
 
 from .framework import (
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
 
 
 class TestTutorialMode(SeleniumTestCase):
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     def test_activate_tutorial_mode(self):
@@ -21,9 +19,9 @@ class TestTutorialMode(SeleniumTestCase):
         self.screenshot("tutorial_mode_0_1")
 
         # Access inside the frame
-        self.switch_to_frame("gtn-embed")
-        self.wait_for_selector_visible("#top-navbar")
-        self.screenshot("tutorial_mode_0_2")
+        with self.in_frame("gtn-embed"):
+            self.wait_for_selector_visible("#top-navbar")
+            self.screenshot("tutorial_mode_0_2")
 
     def _ensure_tutorial_mode_available(self):
         """Skip a test if the webhook GTN doesn't appear."""
