@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
 
 import type { UploadMethod, UploadMethodComponent } from "./types";
 import { getUploadRootBreadcrumb } from "./uploadBreadcrumb";
@@ -14,7 +12,7 @@ import { getUploadMethod } from "./uploadMethodRegistry";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTip from "@/components/BaseComponents/GTip.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
-import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
+import TargetHistorySelector from "@/components/History/TargetHistorySelector.vue";
 
 interface Props {
     methodId: UploadMethod;
@@ -23,15 +21,11 @@ interface Props {
 const props = defineProps<Props>();
 
 const router = useRouter();
-const showHistorySelector = ref(false);
 const uploadMethodRef = ref<UploadMethodComponent | null>(null);
 const canUpload = ref(false);
 
 const historyStore = useHistoryStore();
-const { currentHistoryId, histories } = storeToRefs(historyStore);
-
-const userStore = useUserStore();
-const { isAnonymous } = storeToRefs(userStore);
+const { currentHistoryId } = storeToRefs(historyStore);
 
 const targetHistoryId = ref<string>(currentHistoryId.value || "");
 
@@ -46,14 +40,6 @@ watch(
     { immediate: true },
 );
 
-const targetHistoryName = computed(() => {
-    return targetHistoryId.value ? historyStore.getHistoryNameById(targetHistoryId.value) : undefined;
-});
-
-const isCurrentTargetHistory = computed(() => {
-    return !!targetHistoryId.value && targetHistoryId.value === currentHistoryId.value;
-});
-
 const method = computed(() => {
     return props.methodId ? getUploadMethod(props.methodId) : null;
 });
@@ -65,13 +51,8 @@ const breadcrumbItems = computed(() => {
     return [getUploadRootBreadcrumb("/upload"), { title: method.value.name }];
 });
 
-function openHistorySelector() {
-    showHistorySelector.value = true;
-}
-
 function handleHistorySelected(history: { id: string }) {
     targetHistoryId.value = history.id;
-    showHistorySelector.value = false;
 }
 
 function handleCancel() {
@@ -97,31 +78,13 @@ function handleReadyStateChange(ready: boolean) {
 
             <!-- Target History Display -->
             <div v-if="method.requiresTargetHistory" class="target-history-banner px-3 py-2">
-                <div class="d-flex align-items-center">
-                    <span class="text-muted mr-2" title="This is the history where your uploaded data will go">
-                        Destination history:
-                    </span>
-                    <strong class="target-history-name">{{ targetHistoryName || "selected history" }}</strong>
-                    <BBadge
-                        v-b-tooltip.hover.noninteractive
-                        class="ml-2"
-                        :variant="isCurrentTargetHistory ? 'secondary' : 'info'"
-                        :title="
-                            isCurrentTargetHistory
-                                ? 'This is the currently active history'
-                                : 'Your uploaded data will go to this history, but it is not currently active. You can switch to it from the history panel or select a different history by clicking the change link.'
-                        ">
-                        {{ isCurrentTargetHistory ? "Current" : "Not Current" }}
-                    </BBadge>
-                    <a
-                        v-if="!isAnonymous"
-                        href="#"
-                        class="change-history-link ml-2"
-                        title="Change target history for this upload"
-                        @click.prevent="openHistorySelector">
-                        change
-                    </a>
-                </div>
+                <TargetHistorySelector
+                    :target-history-id="targetHistoryId"
+                    history-caption="Target history"
+                    change-link-text="Choose another"
+                    change-link-tooltip="Change target history for this upload"
+                    modal-title="Select a history for upload"
+                    @select-history="handleHistorySelected" />
             </div>
 
             <!-- Upload Method Content (scrollable) -->
@@ -154,13 +117,6 @@ function handleReadyStateChange(ready: boolean) {
                 </GButton>
             </div>
         </div>
-
-        <SelectorModal
-            v-if="method && method.requiresTargetHistory"
-            :histories="histories"
-            :show-modal.sync="showHistorySelector"
-            title="Select a history for upload"
-            @selectHistory="handleHistorySelected" />
     </div>
 </template>
 
@@ -180,15 +136,6 @@ function handleReadyStateChange(ready: boolean) {
 .target-history-name {
     color: $brand-primary;
     font-size: 1rem;
-}
-
-.change-history-link {
-    font-size: 0.75rem;
-
-    &:hover {
-        text-decoration: underline;
-        color: $brand-primary;
-    }
 }
 
 .upload-footer {
