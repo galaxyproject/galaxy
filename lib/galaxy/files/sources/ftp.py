@@ -1,3 +1,5 @@
+import logging
+import time
 import urllib.parse
 from typing import Union
 
@@ -6,7 +8,9 @@ try:
 except ImportError:
     FTPFS = None  # type: ignore[misc,assignment]
 
+import fs.errors
 
+from galaxy.exceptions import MessageException
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
     BaseFileSourceTemplateConfiguration,
@@ -15,6 +19,8 @@ from galaxy.files.models import (
 from galaxy.util.config_templates import TemplateExpansion
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
+log = logging.getLogger(__name__)
+
 
 class FTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     host: Union[str, TemplateExpansion] = ""
@@ -22,9 +28,11 @@ class FTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     user: Union[str, TemplateExpansion] = "anonymous"
     passwd: Union[str, TemplateExpansion] = ""
     acct: Union[str, TemplateExpansion] = ""
-    timeout: Union[int, TemplateExpansion] = 10
+    timeout: Union[int, TemplateExpansion] = 60
     proxy: Union[str, TemplateExpansion, None] = None
     tls: Union[bool, TemplateExpansion] = False
+    max_retries: Union[int, TemplateExpansion] = 5
+    retry_base_delay: Union[float, TemplateExpansion] = 5.0
 
 
 class FTPFileSourceConfiguration(BaseFileSourceConfiguration):
@@ -33,9 +41,11 @@ class FTPFileSourceConfiguration(BaseFileSourceConfiguration):
     user: str = "anonymous"
     passwd: str = ""
     acct: str = ""
-    timeout: int = 10
+    timeout: int = 60
     proxy: Union[str, None] = None
     tls: bool = False
+    max_retries: int = 5
+    retry_base_delay: float = 5.0
 
 
 class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration, FTPFileSourceConfiguration]):
@@ -66,7 +76,35 @@ class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration
         self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[FTPFileSourceConfiguration]
     ):
         path = self._parse_url_and_get_path(source_path, context.config)
-        super()._realize_to(path, native_path, context)
+        config = context.config
+        max_retries = config.max_retries
+        retry_base_delay = config.retry_base_delay
+        last_exception = None
+
+        for attempt in range(max_retries):
+            try:
+                super()._realize_to(path, native_path, context)
+                return
+            except (fs.errors.RemoteConnectionError, fs.errors.OperationTimeout, OSError) as e:
+                last_exception = e
+                if attempt < max_retries - 1:
+                    delay = min(retry_base_delay ** (attempt + 1), 60.0)
+                    log.warning(
+                        f"FTP download failed (attempt {attempt + 1}/{max_retries}): {e}. "
+                        f"Retrying in {delay:.1f} seconds..."
+                    )
+                    time.sleep(delay)
+                else:
+                    raise MessageException(
+                        f"FTP download failed after {max_retries} attempts for {source_path}. "
+                        f"Last error: {e}"
+                    ) from e
+            except (fs.errors.ResourceNotFound, fs.errors.PermissionDenied) as e:
+                raise MessageException(f"FTP download failed for {source_path}: {e}") from e
+
+        raise MessageException(
+            f"FTP download failed after {max_retries} attempts for {source_path}. Last error: {last_exception}"
+        )
 
     def _write_from(
         self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[FTPFileSourceConfiguration]
