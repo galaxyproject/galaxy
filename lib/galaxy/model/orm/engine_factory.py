@@ -1,6 +1,7 @@
 import inspect
 import logging
 import os
+import sys
 import threading
 import time
 from multiprocessing.util import register_after_fork
@@ -100,6 +101,8 @@ def build_engine(
     engine_options = engine_options or {}
     if url.startswith("sqlite://"):
         set_sqlite_connect_args(engine_options, url)
+    elif url.startswith("postgresql://") or url.startswith("postgresql+psycopg2://"):
+        set_postgres_connect_args(engine_options, url)
 
     if url.startswith("sqlite://") and url not in ("sqlite:///:memory:", "sqlite://"):
         engine = create_engine(url, **engine_options, poolclass=NullPool)
@@ -133,3 +136,16 @@ def set_sqlite_connect_args(engine_options: dict, url: str) -> None:
     """
     connect_args = engine_options.setdefault("connect_args", {})
     connect_args["check_same_thread"] = False
+
+
+def set_postgres_connect_args(engine_options: dict, url: str) -> None:
+    """
+    Add or update `connect_args` in `engine_options` if db is postgres.
+    Set gssencmode to disable for postgres on OSX to prevent worker segfaults when using gunicorn with preload.
+    """
+    if sys.platform == "darwin" and "PGGSSENCMODE" not in os.environ:
+        connect_args = engine_options.setdefault("connect_args", {})
+        # New default in psycopg 3.3.0, see https://github.com/psycopg/psycopg/issues/1136.
+        # We disable gssencmode with psycopg2 as well.
+        # Fixes worker segfaults when using gunicorn with preload on OSX.
+        connect_args["gssencmode"] = connect_args.get("gssencmode", "disable")
