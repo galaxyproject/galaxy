@@ -63,6 +63,7 @@ if TYPE_CHECKING:
 
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
+INPUT_CLASS_T = Literal["galaxy", "cwl"]
 
 
 class AssertionDict(TypedDict):
@@ -134,6 +135,7 @@ class ToolSourceTest(TypedDict):
     expect_num_outputs: Optional[XmlInt]
     command: AssertionList
     command_version: AssertionList
+    value_state_representation: Literal["test_case_xml", "test_case_json"]
 
 
 class ToolSourceTests(TypedDict):
@@ -451,6 +453,9 @@ class ToolSource(metaclass=ABCMeta):
         """Return the tool source as a string"""
 
 
+InputsStyleT = Literal["cheetah", "cwl", "none"]
+
+
 class PagesSource:
     """Contains a list of Pages - each a list of InputSources -
     each item in the outer list representing a page of inputs.
@@ -458,12 +463,17 @@ class PagesSource:
     be exactly a singleton.
     """
 
-    def __init__(self, page_sources):
+    def __init__(self, page_sources, inputs_style: InputsStyleT = "cheetah"):
         self.page_sources = page_sources
+        self._inputs_style = inputs_style
 
     @property
-    def inputs_defined(self):
-        return True
+    def inputs_defined(self) -> bool:
+        return self._inputs_style != "none"
+
+    @property
+    def inputs_style(self) -> InputsStyleT:
+        return self._inputs_style
 
 
 class DynamicOptions(metaclass=ABCMeta):
@@ -496,6 +506,10 @@ class DrillDownDynamicOptions(metaclass=ABCMeta):
 
 class InputSource(metaclass=ABCMeta):
     default_optional = False
+
+    @property
+    def input_class(self) -> INPUT_CLASS_T:
+        return "galaxy"
 
     def elem(self):
         # For things in transition that still depend on XML - provide a way

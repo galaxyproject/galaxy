@@ -18,8 +18,10 @@ outputs:
 tests:
   - inputs:
       datasets:
-        - simple_line.txt
-        - simple_line_alternative.txt
+        - class: File
+          path: simple_line.txt
+        - class: File
+          path: simple_line_alternative.txt
     outputs:
       output1:
         asserts:

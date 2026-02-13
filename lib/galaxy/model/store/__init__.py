@@ -1684,6 +1684,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
             "job_stdout",
             "job_stderr",
             "galaxy_version",
+            "tool_state",
         )
         for attribute in ATTRIBUTES:
             value = job_attrs.get(attribute)

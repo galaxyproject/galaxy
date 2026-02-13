@@ -186,6 +186,7 @@
   <tool file="output_action_change_format.xml" />
   <tool file="output_action_change_format_paired.xml" />
   <tool file="collection_paired_test.xml" />
+  <tool file="collection_paired_test_y.yml" />
   <tool file="collection_paired_default.xml" />
   <tool file="collection_paired_structured_like.xml" />
   <tool file="collection_paired_conditional_structured_like.xml" />
@@ -194,6 +195,7 @@
   <tool file="collection_mixed_param.xml" />
   <tool file="collection_two_paired.xml" />
   <tool file="collection_creates_pair.xml" />
+  <tool file="collection_creates_pair_y.yml" />
   <tool file="collection_creates_pair_format.xml" />
   <tool file="collection_creates_pair_from_type.xml" />
   <tool file="collection_creates_pair_from_work_dir.xml" />
@@ -288,6 +290,24 @@
   <tool file="use_directory_index.xml" />
 
   <tool_dir dir="parameters/" />
+  <!-- YAML tools not picked up automatically yet - arguably for the
+       best until they are out of beta. -->
+  <tool file="parameters/gx_boolean_user.yml" />
+  <tool file="parameters/gx_data_user.yml" />
+  <tool file="parameters/gx_data_multiple_user.yml" />
+  <tool file="parameters/gx_select_multiple_one_default_user.yml" />
+  <tool file="parameters/gx_data_collection_list_or_paired.yml" />
+  <tool file="parameters/gx_data_collection_record.yml" />
+  <tool file="parameters/gx_data_collection_sample_sheet.yml" />
+  <tool file="parameters/gx_data_collection_paired_or_unpaired.yml" />
+  <tool file="parameters/gx_data_collection_list_paired.yml" />
+  <tool file="parameters/gx_data_collection_list_list.yml" />
+  <tool file="parameters/gx_data_collection_list_list_paired.yml" />
+  <tool file="parameters/gx_data_collection_list_or_record.yml" />
+  <tool file="parameters/gx_data_collection_list_paired_or_list_list.yml" />
+  <tool file="parameters/gx_data_collection_list_or_list_paired.yml" />
+  <tool file="parameters/gx_data_collection_paired_or_pou.yml" />
+  <tool file="parameters/gx_data_collection_any.yml" />
 
   <section id="filter" name="For Tours">
     <tool file="for_tours/filtering.xml" />

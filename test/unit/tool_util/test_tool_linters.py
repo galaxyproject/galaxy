@@ -2367,7 +2367,7 @@ def test_linting_yml_tool(lint_ctx):
     assert "Tool defines a version [1.0]." in lint_ctx.valid_messages
     assert "Tool defines a name [simple_constructs_y]." in lint_ctx.valid_messages
     assert "Tool defines an id [simple_constructs_y]." in lint_ctx.valid_messages
-    assert "Tool specifies profile version [16.04]." in lint_ctx.valid_messages
+    assert "Tool specifies profile version [24.2]." in lint_ctx.valid_messages
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 4
     assert not lint_ctx.warn_messages

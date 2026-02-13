@@ -257,7 +257,8 @@ class JobsService(ServiceBase):
         tool_request = ToolRequest()
         # TODO: hash and such...
         tool_source_model = ToolSourceModel(
-            source=[p.model_dump() for p in tool.parameters],
+            source=tool.tool_source.to_string(),
+            source_class=type(tool.tool_source).__name__,
             hash="TODO",
         )
         tool_request.request = request_internal_state.input_state
@@ -270,9 +271,9 @@ class JobsService(ServiceBase):
         sa_session.commit()
         tool_request_id = tool_request.id
         tool_source = ToolSource(
-            raw_tool_source=tool.tool_source.to_string(),
+            raw_tool_source=tool_source_model.source,
             tool_dir=tool.tool_dir,
-            tool_source_class=type(tool.tool_source).__name__,
+            tool_source_class=tool_source_model.source_class,
         )
         task_request = QueueJobs(
             user=trans.async_request_user,
