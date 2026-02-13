@@ -436,18 +436,13 @@ class BaseGalaxyAgent(ABC):
     def _supports_structured_output(self) -> bool:
         """Check if current model supports structured output (tool calling/JSON mode).
 
-        Models via local endpoints (vLLM, LiteLLM) may support simple structured
-        output but fail on complex schemas with $defs.
+        Assumes support by default, excluding known-failing models.
         """
         model_name = self._get_agent_config("model", "").lower()
 
-        if "deepseek" in model_name:
-            return False
-
-        if any(m in model_name for m in ["gpt-4", "gpt-3", "claude", "llama-4-scout"]):
-            return True
-
-        return False
+        # TODO: revisit this list as model support improves
+        unsupported = ["deepseek"]
+        return not any(m in model_name for m in unsupported)
 
     def _requires_structured_output(self) -> bool:
         """Override in agents that require structured output to function."""

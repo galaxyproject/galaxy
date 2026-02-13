@@ -365,6 +365,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
     def _handle_fallback(self, query: str, context: Optional[dict[str, Any]], error_msg: str) -> AgentResponse:
         query_lower = query.lower()
 
+        # Citation requests can be answered without AI
         if any(phrase in query_lower for phrase in ["cite galaxy", "citation", "reference"]):
             return self._build_response(
                 content="""To cite Galaxy, please use: Nekrutenko, A., et al. (2024). The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update. Nucleic Acids Research. https://doi.org/10.1093/nar/gkae410
@@ -377,152 +378,15 @@ For specific tools, please also cite the individual tool publications.""",
                 agent_data={"reason": "citation_request"},
             )
 
-        error_keywords = [
-            "error",
-            "fail",
-            "crash",
-            "not work",
-            "broken",
-            "stderr",
-            "exit code",
-            "died",
-            "killed",
-        ]
-        if any(kw in query_lower for kw in error_keywords):
-            return self._build_response(
-                content="I noticed you're asking about an error or failure. Unfortunately, I'm having trouble connecting to the AI service right now. Please try again in a moment, or check the job details panel for error information.",
-                confidence=ConfidenceLevel.LOW,
-                method="fallback",
-                query=query,
-                fallback=True,
-                error=error_msg,
-                agent_data={"reason": "error_query_service_unavailable"},
-            )
-
-        tool_keywords = [
-            "create a tool",
-            "build a tool",
-            "make a tool",
-            "wrap a tool",
-            "tool wrapper",
-        ]
-        if any(kw in query_lower for kw in tool_keywords):
-            return self._build_response(
-                content="I noticed you want to create a Galaxy tool. Unfortunately, I'm having trouble connecting to the AI service right now. Please try again in a moment.",
-                confidence=ConfidenceLevel.LOW,
-                method="fallback",
-                query=query,
-                fallback=True,
-                error=error_msg,
-                agent_data={"reason": "tool_creation_service_unavailable"},
-            )
-
-        tool_discovery_keywords = [
-            "what tool",
-            "which tool",
-            "find a tool",
-            "is there a tool",
-            "tool for",
-            "tool to",
-        ]
-        if any(kw in query_lower for kw in tool_discovery_keywords):
-            return self._build_response(
-                content="I noticed you're looking for a Galaxy tool. Unfortunately, I'm having trouble connecting to the AI service right now. You can browse available tools in the tool panel on the left, or search using the tool search box.",
-                confidence=ConfidenceLevel.LOW,
-                method="fallback",
-                query=query,
-                fallback=True,
-                error=error_msg,
-                agent_data={"reason": "tool_discovery_service_unavailable"},
-            )
-
-        training_keywords = [
-            "tutorial",
-            "training",
-            "learn",
-            "how do i analyze",
-            "how to analyze",
-            "rna-seq",
-            "chip-seq",
-            "variant calling",
-            "best practice",
-            "workflow for",
-        ]
-        if any(kw in query_lower for kw in training_keywords):
-            return self._build_response(
-                content="I noticed you're looking for training materials or guidance on analysis. Unfortunately, I'm having trouble connecting to the AI service right now. You can browse tutorials directly at the Galaxy Training Network: https://training.galaxyproject.org/training-material/",
-                confidence=ConfidenceLevel.LOW,
-                method="fallback",
-                query=query,
-                fallback=True,
-                error=error_msg,
-                agent_data={"reason": "training_service_unavailable"},
-            )
-
-        history_keywords = [
-            "summarize my history",
-            "my history",
-            "my analysis",
-            "what did i do",
-            "what analysis",
-            "methods section",
-            "generate methods",
-            "tools i used",
-            "describe my",
-        ]
-        if any(kw in query_lower for kw in history_keywords):
-            return AgentResponse(
-                content="I noticed you want to analyze your history. Unfortunately, I'm having trouble connecting to the AI service right now. Please try again in a moment.",
-                confidence=ConfidenceLevel.LOW,
-                agent_type=self.agent_type,
-                suggestions=[],
-                metadata={"fallback": True, "reason": "history_analysis_service_unavailable", "error": error_msg},
-            )
-
-        next_step_keywords = [
-            "what should i do next",
-            "next step",
-            "what now",
-            "continue my analysis",
-            "what tutorials",
-            "recommend",
-            "suggestion",
-        ]
-        if any(kw in query_lower for kw in next_step_keywords):
-            return AgentResponse(
-                content="I'd like to suggest next steps for your analysis, but I'm having trouble connecting to the AI service right now. Please try again in a moment.",
-                confidence=ConfidenceLevel.LOW,
-                agent_type=self.agent_type,
-                suggestions=[],
-                metadata={"fallback": True, "reason": "next_step_service_unavailable", "error": error_msg},
-            )
-
-        has_conjunction = " and " in query_lower or " also " in query_lower
-        capability_count = sum(
-            [
-                any(kw in query_lower for kw in error_keywords),
-                any(kw in query_lower for kw in tool_keywords),
-                any(kw in query_lower for kw in history_keywords),
-                any(kw in query_lower for kw in next_step_keywords),
-            ]
-        )
-        if has_conjunction and capability_count >= 2:
-            return AgentResponse(
-                content="I'd like to help with your multi-part request, but I'm having trouble connecting to the AI service right now. Please try again in a moment.",
-                confidence=ConfidenceLevel.LOW,
-                agent_type=self.agent_type,
-                suggestions=[],
-                metadata={"fallback": True, "reason": "orchestrator_service_unavailable", "error": error_msg},
-            )
-
         return self._build_response(
-            content="I'm having trouble connecting to the AI service right now. Please try again in a moment. If you have a question about Galaxy, you can also check the Galaxy Training Network (https://training.galaxyproject.org/) for tutorials and documentation.",
+            content="The AI service is currently unavailable. Please try again in a moment. "
+            "In the meantime, you can browse the Galaxy Training Network "
+            "(https://training.galaxyproject.org/) for tutorials and documentation.",
             confidence=ConfidenceLevel.LOW,
             method="fallback",
             query=query,
             fallback=True,
             error=error_msg,
-            agent_data={"reason": "service_unavailable"},
         )
 
     def _get_simple_system_prompt(self) -> str:
