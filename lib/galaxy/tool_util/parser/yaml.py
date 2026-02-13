@@ -1,16 +1,23 @@
 import json
 from collections.abc import MutableMapping
+from copy import deepcopy
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
     Tuple,
+    Union,
 )
 
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.parameters.convert import _select_which_when
+from galaxy.tool_util.parameters.factory import input_models_for_tool_source
+from galaxy.tool_util.parameters.state import TestCaseJsonToolState
+from galaxy.tool_util.parameters.visitor import validate_explicit_conditional_test_value
 from galaxy.tool_util.parser.util import (
     DEFAULT_DECOMPRESS,
     DEFAULT_DELTA,
@@ -18,10 +25,17 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_SORT,
 )
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
+from galaxy.tool_util_models.parameters import (
+    DiscriminatorType,
+    ToolParameterBundle,
+    ToolParameterBundleModel,
+    ToolParameterT,
+)
 from galaxy.tool_util_models.tool_source import (
     HelpContent,
     XrefDict,
     YamlTemplateConfigFile,
+    JsonTestCollectionDefDict,
 )
 from galaxy.util import listify
 from .interface import (
@@ -32,6 +46,8 @@ from .interface import (
     PagesSource,
     ToolSource,
     ToolSourceTest,
+    ToolSourceTestInput,
+    ToolSourceTestInputs,
     ToolSourceTests,
 )
 from .output_actions import ToolOutputActionApp
@@ -63,6 +79,12 @@ class YamlToolSource(ToolSource):
 
     def parse_tool_type(self):
         return self.root_dict.get("tool_type")
+
+    def parse_tool_module(self) -> Optional[Tuple[str, str]]:
+        # This should not be settable for user defined tools - placing this here to
+        # ensure this. If we want to implement tool modules for YAML tools in the future
+        # ensure class is not GalaxyUserTool.
+        return None
 
     def parse_id(self):
         return self.root_dict.get("id")
@@ -156,7 +178,7 @@ class YamlToolSource(ToolSource):
     def parse_input_pages(self) -> PagesSource:
         # All YAML tools have only one page (feature is deprecated)
         page_source = YamlPageSource(self.root_dict.get("inputs", {}))
-        return PagesSource([page_source])
+        return PagesSource([page_source], "cwl")
 
     def parse_strict_shell(self):
         # TODO: Add ability to disable this.
@@ -178,7 +200,7 @@ class YamlToolSource(ToolSource):
             return None
 
     def parse_outputs(self, app: Optional[ToolOutputActionApp]):
-        outputs = self.root_dict.get("outputs", [])
+        outputs = deepcopy(self.root_dict.get("outputs", []))
         if isinstance(outputs, MutableMapping):
             for name, output_dict in outputs.items():
                 output_dict["name"] = name
@@ -202,6 +224,7 @@ class YamlToolSource(ToolSource):
         output_collections = {}
         for output in output_collection_defs:
             output_collections[output.name] = output
+            outputs[output.name] = output
 
         return outputs, output_collections
 
@@ -213,7 +236,7 @@ class YamlToolSource(ToolSource):
         name = output_dict.get("name")
         label = output_dict.get("label")
         default_format = output_dict.get("format", "data")
-        collection_type = output_dict.get("type", None)
+        collection_type = output_dict.get("collection_type", None)
         collection_type_source = output_dict.get("type_source", None)
         structured_like = output_dict.get("structured_like", None)
         inherit_format = False
@@ -249,13 +272,78 @@ class YamlToolSource(ToolSource):
         tests: List[ToolSourceTest] = []
         rval: ToolSourceTests = dict(tests=tests)
 
-        for i, test_dict in enumerate(self.root_dict.get("tests", [])):
-            tests.append(_parse_test(i, test_dict))
+        raw_tests = deepcopy(self.root_dict.get("tests", []))
+        for i, test_dict in enumerate(raw_tests):
+            inputs = test_dict.get("inputs", {})
+            state = TestCaseJsonToolState(inputs)
+            parameters = self._parse_parameters()
+            state.validate(parameters, name=f"test case json {i}")
+
+            flat_inputs: Dict[str, Any] = {}
+            self._flatten_parameters(inputs, parameters, flat_inputs=flat_inputs)
+            test_dict["inputs"] = flat_inputs
+            parsed_test = _parse_test(i, test_dict)
+            tests.append(parsed_test)
 
         return rval
 
+    def _flatten_parameters(
+        self, test_dict: Dict[str, Any], input_models: ToolParameterBundle, flat_inputs, prefix=None
+    ):
+        for parameter in input_models.parameters:
+            self._flatten_parameter(test_dict, parameter, flat_inputs, prefix=prefix)
+
+    def _flatten_parameter(self, test_dict: Dict[str, Any], parameter: ToolParameterT, flat_inputs, prefix=None):
+        name = parameter.name
+        if prefix:
+            flat_name = f"{prefix}|{name}"
+        else:
+            flat_name = name
+
+        if parameter.parameter_type == "gx_conditional":
+            if name not in test_dict:
+                test_dict[name] = {}
+
+            raw_conditional_state = test_dict[name]
+            assert isinstance(raw_conditional_state, dict)
+            conditional_state = cast(Dict[str, Any], raw_conditional_state)
+
+            test_parameter = parameter.test_parameter
+            test_parameter_name = test_parameter.name
+
+            explicit_test_value: Optional[DiscriminatorType] = (
+                conditional_state[test_parameter_name] if test_parameter_name in conditional_state else None
+            )
+            test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
+            when = _select_which_when(parameter, test_value, conditional_state)
+            self._flatten_parameter(conditional_state, test_parameter, flat_inputs, prefix=flat_name)
+            self._flatten_parameters(conditional_state, when, flat_inputs, prefix=flat_name)
+        elif parameter.parameter_type == "gx_repeat":
+            if name not in test_dict:
+                test_dict[name] = []
+            repeat_instances = cast(List[Dict[str, Any]], test_dict[name])
+            if parameter.min:
+                while len(repeat_instances) < parameter.min:
+                    repeat_instances.append({})
+
+            for i, instance_state in enumerate(repeat_instances):
+                if prefix:
+                    instance_prefix = f"{prefix}|{name}_{i}"
+                else:
+                    instance_prefix = f"{name}_{i}"
+
+                self._flatten_parameters(instance_state, parameter, flat_inputs, prefix=instance_prefix)
+
+        else:
+            if name in test_dict:
+                flat_inputs[flat_name] = test_dict[name]
+
+    def _parse_parameters(self) -> ToolParameterBundleModel:
+        parameter_bundle = input_models_for_tool_source(self)
+        return parameter_bundle
+
     def parse_profile(self) -> str:
-        return self.root_dict.get("profile") or "16.04"
+        return self.root_dict.get("profile") or "24.2"
 
     def parse_license(self) -> Optional[str]:
         return self.root_dict.get("license")
@@ -274,14 +362,24 @@ class YamlToolSource(ToolSource):
         return json.dumps(self.root_dict, ensure_ascii=False, sort_keys=False)
 
 
-def _parse_test(i, test_dict) -> ToolSourceTest:
-    inputs = test_dict["inputs"]
+def __parse_test_inputs(i: int, test_inputs: Union[list, dict]) -> ToolSourceTestInputs:
+    inputs = test_inputs
     if is_dict(inputs):
         new_inputs = []
         for key, value in inputs.items():
             new_inputs.append({"name": key, "value": value, "attributes": {}})
-        test_dict["inputs"] = new_inputs
+        inputs = new_inputs
+    for input in inputs:
+        if is_dict(input["value"]) and "class" in input["value"] and input["value"]["class"] == "Collection":
+            collection_def = JsonTestCollectionDefDict(input["value"])
+            attrib = input.setdefault("attributes", {})
+            attrib["collection"] = collection_def
 
+    return inputs
+
+
+def _parse_test(i: int, test_dict: dict) -> ToolSourceTest:
+    test_dict["inputs"] = __parse_test_inputs(i, deepcopy(test_dict["inputs"]))
     outputs = test_dict["outputs"]
 
     new_outputs = []
@@ -328,6 +426,7 @@ def _parse_test(i, test_dict) -> ToolSourceTest:
     test_dict["expect_exit_code"] = test_dict.get("expect_exit_code", None)
     test_dict["expect_failure"] = test_dict.get("expect_failure", False)
     test_dict["expect_test_failure"] = test_dict.get("expect_test_failure", False)
+    test_dict["value_state_representation"] = "test_case_json"
     return test_dict
 
 

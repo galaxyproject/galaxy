@@ -1,0 +1,19 @@
+class: GalaxyTool
+id: gx_data_collection_paired_or_unpaired
+name: gx_data_collection_paired_or_unpaired
+version: "1.0.0"
+profile: "25.0"
+container: busybox
+shell_command: |
+  echo "Collection type: $(inputs.parameter.collection_type)" > output.txt
+  echo "Name: $(inputs.parameter.name)" >> output.txt
+inputs:
+  - name: parameter
+    type: data_collection
+    collection_type: paired_or_unpaired
+    label: Input paired or unpaired collection
+outputs:
+  - name: output
+    type: data
+    format: txt
+    from_work_dir: output.txt

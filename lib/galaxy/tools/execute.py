@@ -8,7 +8,10 @@ import collections
 import logging
 import typing
 from abc import abstractmethod
-from collections.abc import Callable
+from collections.abc import (
+    Callable,
+    Sequence,
+)
 from typing import (
     Any,
     NamedTuple,
@@ -248,6 +251,10 @@ def _execute(
         if job:
             if tool_request:
                 job.tool_request = tool_request
+            if execution_slice.validated_param_combination:
+                tool_state = execution_slice.validated_param_combination.input_state
+                job.tool_state = tool_state
+                print(f"\n\n\n\n\njob.tool_state: {job.tool_state}\n\n\n\n\n")
             log.debug(job_timer.to_str(tool_id=tool.id, job_id=job.id))
             execution_tracker.record_success(execution_slice, job, result)
             # associate dataset instances with the job that creates them
@@ -314,11 +321,10 @@ def _execute(
                 setup_fetch_data,
             )
 
-            raw_tool_source = tool.tool_source.to_string()
             #  task_user_id parameter is used to do task user rate limiting. It is only passed
             #  to first task in chain because it is only necessary to rate limit the first
             #  task in a chain.
-            tool_source_class = type(tool.tool_source).__name__
+            raw_tool_source, tool_source_class = tool.to_raw_tool_source()
             async_result = (
                 setup_fetch_data.s(
                     job_id,
@@ -358,16 +364,19 @@ class ExecutionSlice:
     job_index: int
     param_combination: ToolStateJobInstancePopulatedT
     dataset_collection_elements: Optional[DatasetCollectionElementsSliceT]
+    validated_param_combination: Optional[JobInternalToolState] = None
     history: Optional[model.History]
 
     def __init__(
         self,
         job_index: int,
         param_combination: ToolStateJobInstancePopulatedT,
+        validated_param_combination: Optional[JobInternalToolState] = None,
         dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = DEFAULT_DATASET_COLLECTION_ELEMENTS,
     ):
         self.job_index = job_index
         self.param_combination = param_combination
+        self.validated_param_combination = validated_param_combination
         self.dataset_collection_elements = dataset_collection_elements
         self.history = None
 
@@ -412,6 +421,13 @@ class ExecutionTracker:
     @property
     def param_combinations(self) -> list[ToolStateJobInstancePopulatedT]:
         return self.mapping_params.param_combinations
+
+    @property
+    def validated_param_combinations(self) -> Sequence[Optional[JobInternalToolState]]:
+        if self.mapping_params.validated_param_combinations is not None:
+            return self.mapping_params.validated_param_combinations
+        else:
+            return [None for _ in self.param_combinations]
 
     @property
     def example_params(self):
@@ -712,8 +728,10 @@ class ExecutionTracker:
 
     def new_execution_slices(self):
         if self.collection_info is None:
-            for job_index, param_combination in enumerate(self.param_combinations):
-                yield ExecutionSlice(job_index, param_combination)
+            for job_index, (param_combination, validated_param_combination) in enumerate(
+                zip(self.param_combinations, self.validated_param_combinations)
+            ):
+                yield ExecutionSlice(job_index, param_combination, validated_param_combination)
         else:
             yield from self.new_collection_execution_slices()
 
@@ -773,15 +791,19 @@ class ToolExecutionTracker(ExecutionTracker):
             self.outputs_by_output_name[job_output.name].append(job_output.dataset_collection)
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, (dataset_collection_elements, _when_value)) in enumerate(
-            zip(self.param_combinations, self.walk_implicit_collections())
+        for job_index, (
+            param_combination,
+            validated_param_combination,
+            (dataset_collection_elements, _when_value),
+        ) in enumerate(
+            zip(self.param_combinations, self.validated_param_combinations, self.walk_implicit_collections())
         ):
             completed_job = self.completed_jobs and self.completed_jobs[job_index]
             if not completed_job:
                 for dataset_collection_element in dataset_collection_elements.values():
                     assert dataset_collection_element.element_object is None
 
-            yield ExecutionSlice(job_index, param_combination, dataset_collection_elements)
+            yield ExecutionSlice(job_index, param_combination, validated_param_combination, dataset_collection_elements)
 
 
 class WorkflowStepExecutionTracker(ExecutionTracker):
@@ -805,8 +827,12 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
             self.invocation_step.job = job
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, (dataset_collection_elements, _when_value)) in enumerate(
-            zip(self.param_combinations, self.walk_implicit_collections())
+        for job_index, (
+            param_combination,
+            validated_param_combination,
+            (dataset_collection_elements, _when_value),
+        ) in enumerate(
+            zip(self.param_combinations, self.validated_param_combinations, self.walk_implicit_collections())
         ):
             completed_job = self.completed_jobs and self.completed_jobs[job_index]
             if not completed_job:
@@ -818,7 +844,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
                 if found_result:
                     continue
 
-            yield ExecutionSlice(job_index, param_combination, dataset_collection_elements)
+            yield ExecutionSlice(job_index, param_combination, validated_param_combination, dataset_collection_elements)
 
     def ensure_implicit_collections_populated(self, history, params, tool_request: Optional[ToolRequest]):
         if not self.collection_info:

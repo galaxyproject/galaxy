@@ -1,6 +1,7 @@
 # attempt to model requires_value...
 # conditional can descend...
 from abc import abstractmethod
+from functools import lru_cache
 from typing import (
     Any,
     Callable,
@@ -47,8 +48,9 @@ from typing_extensions import (
 from ._base import ToolSourceBaseModel
 from ._types import (
     cast_as_type,
+    dict_type,
     expand_annotation,
-    is_optional,
+    is_optional as is_python_type_optional,
     list_type,
     optional,
     optional_if_needed,
@@ -89,6 +91,7 @@ StateRepresentationT = Literal[
     "job_runtime",
     "job_internal",
     "test_case_xml",
+    "test_case_json",
     "workflow_step",
     "workflow_step_linked",
 ]
@@ -168,7 +171,7 @@ def dynamic_model_information_from_py_type(
     if requires_value is None:
         requires_value = param_model.request_requires_value
     initialize = ... if requires_value else None
-    py_type_is_optional = is_optional(py_type)
+    py_type_is_optional = is_python_type_optional(py_type)
     validators = validators or {}
     if not py_type_is_optional and not requires_value:
         validators["not_null"] = field_validator(name)(Validators.validate_not_none)
@@ -374,6 +377,8 @@ DataSrcT = Literal["hda", "ldda"]
 MultiDataSrcT = Literal["hda", "ldda", "hdca"]
 # @jmchilton you meant CollectionSrcT - fix that at some point please.
 CollectionStrT = Literal["hdca"]
+# Internal collection source type - includes dce for subcollection mapping
+CollectionInternalSrcT = Literal["hdca", "dce"]
 
 TestCaseDataSrcT = Literal["File"]
 
@@ -595,31 +600,234 @@ class DataInternalJson(StrictModel):
     ]
     location: str
     path: Annotated[str, Field(description="The absolute path to the file on disk.")]
-    listing: Optional[List[str]]  # Should be recursive
+    listing: Optional[List[str]] = None  # Should be recursive
     nameroot: Annotated[Optional[str], Field(description="The basename root such that nameroot + nameext == basename")]
     nameext: Annotated[
         Optional[str], Field(description="The basename extension such that nameroot + nameext == basename")
     ]
     format: Annotated[str, Field(description="The datatype extension of the file, e.g. 'txt', 'bam', 'fastq.gz'.")]
     # "secondaryFiles": List[Any],
-    checksum: Optional[str]
+    checksum: Optional[str] = None
     size: int
 
 
-class DataCollectionInternalJson(RootModel):
-    root: Dict[str, DataInternalJson]
+class DataCollectionElementInternalJson(DataInternalJson):
+    """A file within a collection element - adds collection-specific metadata."""
+    element_identifier: str
+    columns: Optional[List[Any]] = None  # for sample_sheet elements
 
 
-class RecursiveDataCollectionInternalJson(RootModel):
-    root: Dict[str, Union[DataInternalJson, "RecursiveDataCollectionInternalJson"]]
+# Collection runtime models with metadata
+class DataCollectionInternalJsonBase(StrictModel):
+    """Base model for collection runtime representations with metadata."""
+    class_: Annotated[Literal["Collection"], Field(alias="class")]
+    name: Optional[str]  # None for raw DatasetCollection inputs
+    collection_type: str
+    tags: List[str] = []
+    # Special metadata fields (optional, type-dependent)
+    column_definitions: Optional[List[Dict[str, Any]]] = None  # for sample_sheet
+    fields: Optional[List[Dict[str, Any]]] = None  # for record
+    has_single_item: Optional[bool] = None  # for paired_or_unpaired
+    columns: Optional[List[Any]] = None  # for sample_sheet elements
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
-RecursiveDataCollectionInternalJson.model_rebuild()
+class DataCollectionPairedElements(StrictModel):
+    forward: DataCollectionElementInternalJson
+    reverse: DataCollectionElementInternalJson
 
 
-class DataCollectionPaired(StrictModel):
-    forward: DataInternalJson
-    reverse: DataInternalJson
+class DataCollectionPairedRuntime(DataCollectionInternalJsonBase):
+    """Paired collection runtime representation."""
+    collection_type: Literal["paired"]
+    elements: DataCollectionPairedElements
+
+
+class DataCollectionListRuntime(DataCollectionInternalJsonBase):
+    """List collection runtime representation."""
+    collection_type: Literal["list"]
+    elements: List[DataCollectionElementInternalJson]
+
+
+class DataCollectionSampleSheetRuntime(DataCollectionInternalJsonBase):
+    """Sample sheet collection runtime representation."""
+    collection_type: Literal["sample_sheet"]
+    elements: List[DataCollectionElementInternalJson]
+
+
+class DataCollectionRecordRuntime(DataCollectionInternalJsonBase):
+    """Record collection runtime representation."""
+    collection_type: Literal["record"]
+    elements: Dict[str, Union[DataCollectionElementInternalJson, "DataCollectionNestedListRuntime", "DataCollectionNestedRecordRuntime"]]
+
+
+class DataCollectionPairedOrUnpairedRuntime(DataCollectionInternalJsonBase):
+    """Paired or Unpaired collection runtime representation."""
+    collection_type: Literal["paired_or_unpaired"]
+    elements: Dict[str, DataCollectionElementInternalJson]
+
+
+class DataCollectionNestedListRuntime(DataCollectionInternalJsonBase):
+    """Nested collection with list-like outer structure (list:*, sample_sheet:*)."""
+    collection_type: str
+
+    @field_validator('collection_type')
+    @classmethod
+    def must_be_nested_list_like(cls, v: str) -> str:
+        if ':' not in v:
+            raise ValueError(f'Nested collection_type must contain ":", got "{v}"')
+        first_segment = v.split(':')[0]
+        if first_segment not in ('list', 'sample_sheet'):
+            raise ValueError(f'Outer type must be list-like (list, sample_sheet), got "{first_segment}"')
+        return v
+
+    elements: List[Union[
+        "DataCollectionListRuntime",
+        "DataCollectionSampleSheetRuntime",
+        "DataCollectionPairedRuntime",
+        "DataCollectionRecordRuntime",
+        "DataCollectionPairedOrUnpairedRuntime",
+        "DataCollectionNestedListRuntime",
+        "DataCollectionNestedRecordRuntime",
+    ]]
+
+
+class DataCollectionNestedRecordRuntime(DataCollectionInternalJsonBase):
+    """Nested collection with record-like outer structure (paired:*, record:*)."""
+    collection_type: str
+
+    @field_validator('collection_type')
+    @classmethod
+    def must_be_nested_record_like(cls, v: str) -> str:
+        if ':' not in v:
+            raise ValueError(f'Nested collection_type must contain ":", got "{v}"')
+        first_segment = v.split(':')[0]
+        if first_segment in ('list', 'sample_sheet'):
+            raise ValueError(f'Outer type must be record-like, got list-like "{first_segment}"')
+        return v
+
+    elements: Dict[str, Union[
+        DataCollectionElementInternalJson,
+        "DataCollectionListRuntime",
+        "DataCollectionSampleSheetRuntime",
+        "DataCollectionPairedRuntime",
+        "DataCollectionRecordRuntime",
+        "DataCollectionPairedOrUnpairedRuntime",
+        "DataCollectionNestedListRuntime",
+        "DataCollectionNestedRecordRuntime",
+    ]]
+
+
+DataCollectionNestedListRuntime.model_rebuild()
+DataCollectionNestedRecordRuntime.model_rebuild()
+
+
+_LEAF_COLLECTION_MODELS: Dict[str, Type] = {
+    "list": DataCollectionListRuntime,
+    "paired": DataCollectionPairedRuntime,
+    "record": DataCollectionRecordRuntime,
+    "paired_or_unpaired": DataCollectionPairedOrUnpairedRuntime,
+    "sample_sheet": DataCollectionSampleSheetRuntime,
+}
+
+
+@lru_cache(maxsize=128)
+def build_collection_model_for_type(collection_type: str) -> Optional[Type]:
+    """Dynamically generate a Pydantic model for a specific collection_type.
+
+    Simple types -> existing static model.
+    Nested types -> model with Literal[collection_type] and
+    elements narrowed to exact inner model.
+    Unknown single-segment types -> None (caller decides fallback).
+    """
+    if collection_type in _LEAF_COLLECTION_MODELS:
+        return _LEAF_COLLECTION_MODELS[collection_type]
+
+    if ":" not in collection_type:
+        return None
+
+    outer_segment, inner_type = collection_type.split(":", 1)
+    inner_model = build_collection_model_for_type(inner_type)
+
+    if inner_model is None:
+        return None
+
+    is_list_like = outer_segment in ("list", "sample_sheet")
+
+    if is_list_like:
+        elements_type = list_type(inner_model)
+    else:
+        elements_type = dict_type(str, inner_model)
+
+    safe_name = f"DynamicCollection_{'_'.join(collection_type.split(':'))}"
+
+    model = create_model(
+        safe_name,
+        __base__=DataCollectionInternalJsonBase,
+        collection_type=(Literal[collection_type], ...),
+        elements=(elements_type, ...),
+    )
+
+    return model
+
+
+def _collection_type_discriminator(v: Any) -> str:
+    """Return the full collection_type string for discriminated union routing.
+
+    Used for subset unions (comma-separated types) where tags may be dynamic
+    model collection_type strings like "list:paired".
+    """
+    if isinstance(v, dict):
+        return v.get('collection_type', '')
+    return getattr(v, 'collection_type', '')
+
+
+def collection_runtime_discriminator(v: Any) -> str:
+    """Discriminator function for collection runtime unions.
+
+    Routes validation to the correct model based on collection_type pattern.
+    """
+    if isinstance(v, dict):
+        ct = v.get('collection_type', '')
+    else:
+        ct = getattr(v, 'collection_type', '')
+
+    # Simple types - exact match
+    if ct == 'list':
+        return 'list'
+    elif ct == 'paired':
+        return 'paired'
+    elif ct == 'record':
+        return 'record'
+    elif ct == 'paired_or_unpaired':
+        return 'paired_or_unpaired'
+    elif ct == 'sample_sheet':
+        return 'sample_sheet'
+    elif ':' in ct:
+        # Nested types - route by outer structure
+        first_segment = ct.split(':')[0]
+        if first_segment in ('list', 'sample_sheet'):
+            return 'nested_list'
+        else:
+            return 'nested_record'
+    else:
+        # Unknown type - default to list (matches historical behavior)
+        return 'list'
+
+
+CollectionRuntimeDiscriminated: Type = Annotated[
+    Union[
+        Annotated[DataCollectionListRuntime, Tag('list')],
+        Annotated[DataCollectionSampleSheetRuntime, Tag('sample_sheet')],
+        Annotated[DataCollectionPairedRuntime, Tag('paired')],
+        Annotated[DataCollectionRecordRuntime, Tag('record')],
+        Annotated[DataCollectionPairedOrUnpairedRuntime, Tag('paired_or_unpaired')],
+        Annotated[DataCollectionNestedListRuntime, Tag('nested_list')],
+        Annotated[DataCollectionNestedRecordRuntime, Tag('nested_record')],
+    ],
+    Discriminator(collection_runtime_discriminator)
+]
 
 
 DataRequestInternal: Type = cast(
@@ -637,9 +845,10 @@ DataRequestInternal: Type = cast(
         Field(discriminator=MultiDataInstanceDiscriminator),
     ],
 )
+DataRequestInternalDereferencedT = Union[DataRequestInternalHda, DataRequestInternalLdda]
 DataRequestInternalDereferenced: Type = cast(
     Type,
-    Annotated[Union[DataRequestInternalHda, DataRequestInternalLdda], Field(discriminator="src")],
+    Annotated[DataRequestInternalDereferencedT, Field(discriminator="src")],
 )
 DataJobInternal = DataRequestInternalDereferenced
 
@@ -755,6 +964,8 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
             return dynamic_model_information_from_py_type(self, self.py_type_internal_json, requires_value=True)
         elif state_representation == "test_case_xml":
             return dynamic_model_information_from_py_type(self, self.py_type_test_case)
+        elif state_representation == "test_case_json":
+            return dynamic_model_information_from_py_type(self, self.py_type_test_case)
         elif state_representation == "workflow_step":
             return dynamic_model_information_from_py_type(self, type(None), requires_value=False)
         elif state_representation == "workflow_step_linked":
@@ -778,7 +989,13 @@ DataCollectionRequestOrCollectionUri: Type = union_type([DataCollectionRequest, 
 
 
 class DataCollectionRequestInternal(StrictModel):
-    src: CollectionStrT
+    """Internal request for a collection - tracks source type.
+
+    src can be:
+    - "hdca": Direct collection input (HistoryDatasetCollectionAssociation)
+    - "dce": Subcollection mapping (DatasetCollectionElement)
+    """
+    src: CollectionInternalSrcT
     id: StrictInt
 
 
@@ -878,28 +1095,67 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
     def py_type_internal_dereferenced(self) -> Type:
         return optional_if_needed(DataCollectionRequestInternal, self.optional)
 
+    def _runtime_model_for_collection_type(self, ct: str) -> tuple:
+        """Map a single collection type to its runtime model and tag.
+
+        Returns tuple of (model, tag) for use in discriminated unions.
+        Uses build_collection_model_for_type which handles both leaf and nested types
+        via _LEAF_COLLECTION_MODELS lookup + recursive dynamic model generation.
+        """
+        model = build_collection_model_for_type(ct)
+        if model is not None:
+            return (model, ct)
+        if ":" in ct:
+            # Fallback to generic nested models for unknown nested types
+            first_segment = ct.split(":")[0]
+            if first_segment in ("list", "sample_sheet"):
+                return (DataCollectionNestedListRuntime, 'nested_list')
+            else:
+                return (DataCollectionNestedRecordRuntime, 'nested_record')
+        return (None, None)
+
     @property
     def py_type_internal_json(self) -> Type:
-        if self.collection_type == "list":
-            return optional_if_needed(list_type(DataInternalJson), self.optional)
-        elif self.collection_type:
-            base_type: Optional[Type] = None
-            for subtype in reversed(self.collection_type.split(":")):
-                if subtype == "paired":
-                    base_type = DataCollectionPaired
-                elif subtype == "list":
-                    if base_type is None:
-                        base_type = Dict[str, DataInternalJson]
-                    else:
-                        base_type = Dict[str, base_type]  # type: ignore[valid-type]  # we use this at runtime to build pydantic model
+        # Return normalized collection runtime models with metadata
+        if not self.collection_type:
+            # Unknown collection_type - use full discriminated union
+            return optional_if_needed(CollectionRuntimeDiscriminated, self.optional)
+
+        # Handle comma-separated collection types (e.g., "list,paired")
+        if "," in self.collection_type:
+            types = [t.strip() for t in self.collection_type.split(",")]
+            tagged_types = []
+            tags_seen: set = set()
+
+            for t in types:
+                model, tag_str = self._runtime_model_for_collection_type(t)
+                if model and tag_str not in tags_seen:
+                    tags_seen.add(tag_str)
+                    tagged_types.append(Annotated[model, Tag(tag_str)])
+
+            if tagged_types:
+                if len(tagged_types) == 1:
+                    # Single type - no union needed
+                    base_type = tagged_types[0].__origin__  # Get unwrapped type
                 else:
-                    raise Exception(f"unknown subtype '{subtype}' in collection_type '{self.collection_type}'")
-        else:
-            base_type = union_type(
-                [list_type(DataInternalJson), DataCollectionPaired, RecursiveDataCollectionInternalJson]
-            )
-        assert base_type
-        return optional_if_needed(base_type, self.optional)
+                    # Multiple types - build discriminated union
+                    # Use _collection_type_discriminator which returns full collection_type,
+                    # matching both simple tags ("list") and dynamic tags ("list:paired")
+                    subset_union = Annotated[
+                        Union[tuple(tagged_types)],
+                        Discriminator(_collection_type_discriminator)
+                    ]
+                    base_type = subset_union
+                return optional_if_needed(base_type, self.optional)
+            # Fall through to full union if no models matched
+
+        # Single collection type
+        model, _tag = self._runtime_model_for_collection_type(self.collection_type)
+        if model:
+            return optional_if_needed(model, self.optional)
+
+        # Fallback for unrecognized types - use full discriminated union
+        return optional_if_needed(CollectionRuntimeDiscriminated, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         if state_representation in ["request", "relaxed_request"]:
@@ -923,6 +1179,8 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         elif state_representation == "workflow_step_linked":
             return dynamic_model_information_from_py_type(self, ConnectedValue)
         elif state_representation == "test_case_xml":
+            return dynamic_model_information_from_py_type(self, JsonTestCollectionDefDict)
+        elif state_representation == "test_case_json":
             return dynamic_model_information_from_py_type(self, JsonTestCollectionDefDict)
         else:
             raise NotImplementedError(
@@ -1165,6 +1423,10 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
             if self.multiple:
                 validators = {"from_string": field_validator(self.name, mode="before")(SelectParameterModel.split_str)}
             py_type = optional_if_needed(py_type, self.optional)
+        elif state_representation == "test_case_json":
+            # in JSON test case representation, lists are already validated as lists (no string splitting)
+            py_type = self.py_type_if_required(allow_connections=False)
+            py_type = optional_if_needed(py_type, self.optional)
         elif state_representation in ("job_internal", "job_runtime"):
             requires_value = True
             py_type = self.py_type
@@ -1295,6 +1557,9 @@ class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         py_type = self.py_type_test_case_xml if state_representation == "test_case_xml" else self.py_type
+        if state_representation == "test_case_json":
+            # JSON test cases use the normal type (not string-based)
+            py_type = self.py_type
         requires_value = self.request_requires_value
         if state_representation in ("job_internal", "job_runtime"):
             requires_value = True
@@ -1389,6 +1654,12 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
             requires_value = self.request_requires_value
             return dynamic_model_information_from_py_type(
                 self, self.py_type, validators=validators, requires_value=requires_value
+            )
+        elif state_representation == "test_case_json":
+            # JSON test cases accept lists directly (no string splitting)
+            requires_value = self.request_requires_value
+            return dynamic_model_information_from_py_type(
+                self, self.py_type, validators={}, requires_value=requires_value
             )
         else:
             requires_value = self.request_requires_value
@@ -1852,6 +2123,14 @@ RepeatParameterModel.model_rebuild()
 CwlUnionParameterModel.model_rebuild()
 
 
+def is_optional(tool_parameter: ToolParameterT):
+    if isinstance(tool_parameter, BaseGalaxyToolParameterModelDefinition):
+        return tool_parameter.optional
+    else:
+        # refine CWL logic in CWL branch...
+        return False
+
+
 class ToolParameterBundle(Protocol):
     """An object having a dictionary of input models (i.e. a 'Tool')"""
 
@@ -1898,6 +2177,7 @@ create_landing_request_internal_model = create_model_factory("landing_request_in
 create_job_internal_model = create_model_factory("job_internal")
 create_job_runtime_model = create_model_factory("job_runtime")
 create_test_case_model = create_model_factory("test_case_xml")
+create_test_case_json_model = create_model_factory("test_case_json")
 create_workflow_step_model = create_model_factory("workflow_step")
 create_workflow_step_linked_model = create_model_factory("workflow_step_linked")
 

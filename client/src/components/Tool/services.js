@@ -61,3 +61,9 @@ export async function submitJob(jobDetails) {
     const { data } = await axios.post(url, jobDetails);
     return data;
 }
+
+export async function submitToolRequest(toolRequest) {
+    const url = `${getAppRoot()}api/jobs`;
+    const { data } = await axios.post(url, toolRequest);
+    return data;
+}

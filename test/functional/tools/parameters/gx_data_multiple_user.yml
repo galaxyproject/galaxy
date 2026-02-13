@@ -1,0 +1,29 @@
+class: GalaxyUserTool
+id: gx_data_multiple_user
+version: "0.1"
+name: gx_data_multiple_user
+container: busybox
+shell_command: cat '$(inputs.parameter.map(p => p.path).join("' '"))' > output.txt
+inputs:
+  - name: parameter
+    type: data
+    multiple: true
+outputs:
+  - name: output
+    type: data
+    from_work_dir: output.txt
+tests:
+  - inputs:
+      parameter:
+      - class: File
+        path: simple_line.txt
+    outputs:
+      output: simple_line.txt
+  - inputs:
+      parameter:
+      - class: File
+        path: simple_line.txt
+      - class: File
+        path: simple_line.txt
+    outputs:
+      output: simple_line_x2.txt

@@ -45,6 +45,7 @@ describe("ToolSuccessMessage", () => {
             propsData: {
                 jobResponse: TEST_JOB_RESPONSE,
                 toolName: TEST_TOOL_NAME,
+                usedToolRequest: false,
             },
             stubs: {
                 FontAwesomeIcon: true,

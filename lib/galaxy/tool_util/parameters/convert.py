@@ -18,10 +18,13 @@ from galaxy.tool_util_models.parameters import (
     create_job_runtime_model,
     DataCollectionParameterModel,
     DataCollectionRequest,
+    DataCollectionRequestInternal,
     DataColumnParameterModel,
+    DataInternalJson,
     DataParameterModel,
     DataRequestCollectionUri,
     DataRequestHda,
+    DataRequestInternalDereferencedT,
     DataRequestInternalHda,
     DataRequestInternalHdca,
     DataRequestUri,
@@ -44,6 +47,7 @@ from galaxy.tool_util_models.tool_source import (
 )
 from .state import (
     JobInternalToolState,
+    JobRuntimeToolState,
     LandingRequestInternalToolState,
     LandingRequestToolState,
     RelaxedRequestToolState,
@@ -359,7 +363,8 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
             if not parameter.multiple:
                 tool_state[parameter_name] = parameter.default_value
             else:
-                tool_state[parameter_name] = parameter.default_values
+                default_values = parameter.default_values
+                tool_state[parameter_name] = default_values if default_values else None
     elif isinstance(parameter, DrillDownParameterModel):
         if parameter_name not in tool_state:
             if parameter.multiple:
@@ -525,3 +530,50 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
             return VISITOR_NO_REPLACEMENT
 
     return decode_callback
+
+
+DatasetToRuntimeJson = Callable[[DataRequestInternalDereferencedT], DataInternalJson]
+CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], Any]
+
+
+def runtimeify(
+    internal_state: JobInternalToolState,
+    input_models: ToolParameterBundle,
+    adapt_dataset: DatasetToRuntimeJson,
+    adapt_collection: Optional[CollectionToRuntimeJson] = None,
+) -> JobRuntimeToolState:
+
+    def adapt_dict(value: dict):
+        assert isinstance(value, dict), str(value)
+        data_request_internal_hda = DataRequestInternalHda(**value)
+        as_json = adapt_dataset(data_request_internal_hda).model_dump()
+        # well this is wrong
+        as_json["class"] = as_json.pop("class_")
+        return as_json
+
+    def to_runtime_callback(parameter: ToolParameterT, value: Any):
+        if isinstance(parameter, DataParameterModel):
+            if parameter.multiple and isinstance(value, list):
+                return list(map(adapt_dict, value))
+            else:
+                return adapt_dict(value)
+        elif isinstance(parameter, DataCollectionParameterModel):
+            if value is None:
+                return VISITOR_NO_REPLACEMENT
+            if adapt_collection is None:
+                raise NotImplementedError("Collection adapter required for DataCollectionParameterModel")
+            assert isinstance(value, dict), str(value)
+            collection_request = DataCollectionRequestInternal(**value)
+            result = adapt_collection(collection_request, parameter.collection_type)
+            return result.model_dump(by_alias=True)
+        else:
+            return VISITOR_NO_REPLACEMENT
+
+    runtime_state_dict = visit_input_values(
+        input_models,
+        internal_state,
+        to_runtime_callback,
+    )
+    runtime_state = JobRuntimeToolState(runtime_state_dict)
+    runtime_state.validate(input_models)
+    return runtime_state

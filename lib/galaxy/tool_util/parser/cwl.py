@@ -12,6 +12,7 @@ from galaxy.tool_util.cwl.parser import tool_proxy
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util_models.tool_source import HelpContent
 from .interface import (
+    INPUT_CLASS_T,
     PageSource,
     PagesSource,
     ToolSource,
@@ -207,6 +208,10 @@ class CwlInputSource(YamlInputSource):
     def __init__(self, as_dict, as_field):
         super().__init__(as_dict)
         self._field = as_field
+
+    @property
+    def input_class(self) -> INPUT_CLASS_T:
+        return "cwl"
 
     @property
     def field(self):
