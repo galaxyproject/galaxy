@@ -737,6 +737,30 @@ execution:
         # clusters. These don't need to be available on the Galaxy server
         # itself.
 
+    # Under most runners, Galaxy will set the `$GALAXY_SLOTS` environment variable in the
+    # tool execution environment to the number of cores allocated to the job by the
+    # scheduler. Tools can use this to control how many threads or processes they start.
+    #
+    # Under some runners, most notably Slurm and SGE, Galaxy will set environment
+    # variables related to the amount of memory allocated to the job by the scheduler, if
+    # possible. These are `$GALAXY_MEMORY_MB`, `$GALAXY_MEMORY_GB`,
+    # `$GALAXY_MEMORY_MB_PER_SLOT`, and `$GALAXY_MEMORY_GB_PER_SLOT`. You can override
+    # these on a per-environment basis as shown below.
+    #
+    # Additionally, you can specify two variables that will indicate a tool should use
+    # less memory than allocated. Typically some overhead is required or else the Linux
+    # OOM Killer will simply kill the job's processes if they exceed they amount of memory
+    # allocated by the scheduler.
+    job_vars_example:
+      runner: drmaa
+      env:
+        # Sets `$GALAXY_MEMORY_MB` to 2GB less than what has been allocated
+        - name: GALAXY_MEMORY_MB_OVERHEAD
+          value: "2048"
+        # Floor value for `$GALAXY_MEMORY_MB` if (allocated - overhead < floor)
+        - name: GALAXY_MEMORY_MB_FLOOR
+          value: "1024"
+
     # Following three environments demonstrate setting up per-job temp directory handling.
     # In these cases TEMP, TMP, and TMPDIR will be set for each job dispatched to these
     # environments.
