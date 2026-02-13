@@ -30,7 +30,6 @@ from typing import (
 import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions as ec
 
 if TYPE_CHECKING:
     from selenium.webdriver.remote.webdriver import WebDriver
@@ -2515,24 +2514,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             self.run_tour_step(step, i, tour_callback)
 
     def tour_wait_for_clickable_element(self, selector):
-        timeout = self.wait_length(wait_type=WAIT_TYPES.JOB_COMPLETION)
-        wait = self.wait(timeout=timeout)
-        timeout_message = self._timeout_message(f"Tour CSS selector [{selector}] to become clickable")
-        element = wait.until(
-            ec.element_to_be_clickable((By.CSS_SELECTOR, selector)),
-            timeout_message,
-        )
-        return element
+        return self.wait_for_selector_clickable(selector, wait_type=WAIT_TYPES.JOB_COMPLETION)
 
     def tour_wait_for_element_present(self, selector):
-        timeout = self.wait_length(wait_type=WAIT_TYPES.JOB_COMPLETION)
-        wait = self.wait(timeout=timeout)
-        timeout_message = self._timeout_message(f"Tour CSS selector [{selector}] to become present")
-        element = wait.until(
-            ec.presence_of_element_located((By.CSS_SELECTOR, selector)),
-            timeout_message,
-        )
-        return element
+        return self.wait_for_selector(selector, wait_type=WAIT_TYPES.JOB_COMPLETION)
 
     def _clear_tooltip(self, tooltip_component):
         last_timeout: Optional[SeleniumTimeoutException] = None
