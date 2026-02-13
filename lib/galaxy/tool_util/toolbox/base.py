@@ -745,7 +745,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             tool_from_uuid = self._get_tool_by_uuid(tool_uuid)
             if tool_from_uuid is None:
                 raise ObjectNotFound(f"Failed to find a tool with uuid [{tool_uuid}]")
-            tool_id = tool_from_uuid.id
+            return tool_from_uuid
         assert tool_id
 
         if tool_version:
