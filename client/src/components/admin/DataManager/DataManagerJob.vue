@@ -38,8 +38,7 @@
                                                     <GButton
                                                         tooltip
                                                         title="View complete info"
-                                                        :href="hdaInfo[i]['infoUrl']"
-                                                        target="galaxy_main">
+                                                        :to="`/datasets/${hdaInfo[i]['encId']}/show_params`">
                                                         <span class="fa fa-info-circle" />
                                                     </GButton>
                                                 </b-col>
