@@ -165,6 +165,7 @@ def _description_from_tool_source(
                 "required_files": required_files,
                 "required_data_tables": required_data_tables,
                 "required_loc_files": required_loc_files,
+                "credentials": raw_test_dict.get("credentials", None),
                 "tool_id": tool_id,
                 "tool_version": tool_version,
                 "test_index": test_index,

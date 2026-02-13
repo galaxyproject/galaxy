@@ -11,7 +11,7 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import UninitializedTree
-from galaxy.schema.credentials import CredentialsContext
+from galaxy.schema.credentials import CredentialsContextT
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import upload_common
 from galaxy.tools.execute import (
@@ -51,7 +51,7 @@ class BaseUploadToolAction(ToolAction):
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        credentials_context: Optional[CredentialsContext] = None,
+        credentials_context: CredentialsContextT = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,

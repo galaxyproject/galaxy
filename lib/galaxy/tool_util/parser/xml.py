@@ -53,6 +53,8 @@ from galaxy.util import (
 )
 from .interface import (
     AssertionList,
+    DirectCredential,
+    DirectCredentialValue,
     DrillDownDynamicOptions,
     DynamicOptions,
     InputSource,
@@ -817,6 +819,7 @@ def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
         expect_test_failure=string_as_bool(test_elem.get("expect_test_failure", False)),
         maxseconds=test_elem.get("maxseconds", None),
+        credentials=__parse_credentials_elems(test_elem),
     )
     _copy_to_dict_if_present(test_elem, rval, ["num_outputs"])
     return rval
@@ -1089,6 +1092,43 @@ def __parse_inputs_elems(test_elem, i) -> ToolSourceTestInputs:
         raw_inputs.append(__parse_param_elem(param_elem, i))
 
     return raw_inputs
+
+
+def __parse_credentials_elems(test_elem):
+    """
+    Parse credential definitions from test element.
+    Returns a list of DirectCredential dictionaries or None if no credentials are defined.
+    """
+
+    credentials_list = []
+    for cred_elem in test_elem.findall("credentials"):
+        name = cred_elem.get("name")
+        if not name:
+            raise ValueError("Credentials element must have a 'name' attribute")
+
+        variables = []
+        for var_elem in cred_elem.findall("variable"):
+            var_name = var_elem.get("name")
+            var_value = var_elem.get("value")
+            if not var_name:
+                raise ValueError("Credential variable must have a 'name' attribute")
+            if var_value is None:
+                raise ValueError(f"Credential variable '{var_name}' must have a 'value' attribute")
+            variables.append(DirectCredentialValue(name=var_name, value=var_value))
+
+        secrets = []
+        for secret_elem in cred_elem.findall("secret"):
+            secret_name = secret_elem.get("name")
+            secret_value = secret_elem.get("value")
+            if not secret_name:
+                raise ValueError("Credential secret must have a 'name' attribute")
+            if secret_value is None:
+                raise ValueError(f"Credential secret '{secret_name}' must have a 'value' attribute")
+            secrets.append(DirectCredentialValue(name=secret_name, value=secret_value))
+
+        credentials_list.append(DirectCredential(name=name, variables=variables, secrets=secrets))
+
+    return credentials_list if credentials_list else None
 
 
 def _test_collection_def_dict(elem: Element) -> XmlTestCollectionDefDict:

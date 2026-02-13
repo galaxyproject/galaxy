@@ -32,6 +32,7 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     Job,
     JobCredentialsContextAssociation,
+    JobDirectCredentials,
     LibraryDatasetDatasetAssociation,
     WorkflowRequestInputParameter,
 )
@@ -41,7 +42,10 @@ from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.none_like import NoneDataset
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import ObjectStorePopulator
-from galaxy.schema.credentials import CredentialsContext
+from galaxy.schema.credentials import (
+    CredentialsContextT,
+    DirectCredentialsContext,
+)
 from galaxy.tool_util.parser.output_objects import tool_output_is_collection
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.execute import (
@@ -108,7 +112,7 @@ class ToolAction:
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        credentials_context: Optional[CredentialsContext] = None,
+        credentials_context: CredentialsContextT = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -448,7 +452,7 @@ class DefaultToolAction(ToolAction):
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        credentials_context: Optional[CredentialsContext] = None,
+        credentials_context: CredentialsContextT = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,
@@ -959,11 +963,27 @@ class DefaultToolAction(ToolAction):
         return job, galaxy_session
 
     def _handle_credentials_context(
-        self, sa_session: galaxy_scoped_session, job: Job, credentials_context: Optional[CredentialsContext]
+        self, sa_session: galaxy_scoped_session, job: Job, credentials_context: CredentialsContextT
     ) -> None:
         if credentials_context is None:
             return
 
+        if isinstance(credentials_context, DirectCredentialsContext):
+            # Direct mode: store embedded values in database for resolver to use
+            for service in credentials_context.root:
+                variables_dict = {v.name: v.value for v in service.variables}
+                secrets_dict = {s.name: s.value for s in service.secrets}
+
+                direct_creds = JobDirectCredentials(
+                    job=job,
+                    service_name=service.name,
+                    variables=variables_dict,
+                    secrets=secrets_dict,
+                )
+                sa_session.add(direct_creds)
+            return
+
+        # Vault mode: create database associations
         for service_context in credentials_context.root:
             association = JobCredentialsContextAssociation(
                 job=job,

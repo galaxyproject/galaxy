@@ -17,7 +17,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
-from galaxy.schema.credentials import CredentialsContext
+from galaxy.schema.credentials import CredentialsContextT
 from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.execute import (
     DatasetCollectionElementsSliceT,
@@ -30,7 +30,9 @@ from galaxy.tools.execute import (
 )
 from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.util import asbool
-from . import ToolAction
+from . import (
+    ToolAction,
+)
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +57,7 @@ class SetMetadataToolAction(ToolAction):
         collection_info: Optional[MatchingCollections] = None,
         job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
         preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
-        credentials_context: Optional[CredentialsContext] = None,
+        credentials_context: CredentialsContextT = None,
         set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
         flush_job: bool = True,
         skip: bool = False,

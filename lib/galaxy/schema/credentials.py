@@ -399,13 +399,46 @@ class ServiceCredentialsContextResponse(Model):
     ]
 
 
-class CredentialsContext(RootModel):
+class VaultCredentialsContext(RootModel):
     """Context for credentials to be used during tool execution.
 
     Contains the list of selected service credentials provided by the user.
     """
 
     root: list[ServiceCredentialsContext]
+
+
+class DirectCredentialValue(Model):
+    """Represents a credential value (variable or secret) provided directly."""
+
+    name: Annotated[str, Field(description="The name of the credential variable or secret.")]
+    value: Annotated[str, Field(description="The value of the credential variable or secret.")]
+
+
+class DirectServiceCredentialsContext(Model):
+    """Context for direct credentials to be used during tool execution.
+
+    Contains embedded credential values instead of database references.
+    """
+
+    name: Annotated[str, Field(description="The name of the service (credentials requirement name).")]
+    variables: Annotated[
+        list[DirectCredentialValue],
+        Field(default_factory=list, description="List of credential variables with embedded values."),
+    ]
+    secrets: Annotated[
+        list[DirectCredentialValue],
+        Field(default_factory=list, description="List of credential secrets with embedded values."),
+    ]
+
+
+class DirectCredentialsContext(RootModel):
+    """Context for direct credentials to be used during tool execution.
+
+    Contains embedded credential values for execution without vault access.
+    """
+
+    root: list[DirectServiceCredentialsContext]
 
 
 class CredentialsContextResponse(RootModel):
@@ -415,3 +448,7 @@ class CredentialsContextResponse(RootModel):
     """
 
     root: list[ServiceCredentialsContextResponse]
+
+
+# Type alias for credentials context that can be either vault-based or direct
+CredentialsContextT = Optional[VaultCredentialsContext | DirectCredentialsContext]
