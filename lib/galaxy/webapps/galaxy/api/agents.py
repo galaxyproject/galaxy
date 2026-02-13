@@ -118,9 +118,21 @@ class AgentAPI:
 
             processing_time = time.time() - start_time
 
+            # Extract usage from metadata if available
+            usage = None
+            if result.metadata:
+                # Check for usage fields in metadata
+                if "input_tokens" in result.metadata or "output_tokens" in result.metadata:
+                    usage = {
+                        "input_tokens": result.metadata.get("input_tokens", 0),
+                        "output_tokens": result.metadata.get("output_tokens", 0),
+                        "total_tokens": result.metadata.get("total_tokens", 0),
+                    }
+
             return AgentQueryResponse(
                 response=result,
                 processing_time=processing_time,
+                usage=usage,
             )
 
         except Exception as e:

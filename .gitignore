@@ -27,6 +27,9 @@ lib/galaxy/web/framework/meta.json
 # Python bytecode
 *.pyc
 
+# Agent evaluation test reports
+test-reports/
+
 # Galaxy runtime files
 *.lock
 *.log

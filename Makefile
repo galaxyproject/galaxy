@@ -107,6 +107,42 @@ reports-config-convert: ## convert old style reports ini to yaml
 reports-config-lint: ## lint reports YAML configuration file
 	$(CONFIG_MANAGE) lint reports
 
+agent-eval-setup: setup-venv ## Setup agent evaluation environment
+	@echo "Setting up agent evaluation environment..."
+	$(IN_VENV) pip install mcpevals>=0.1.10 anthropic
+	@echo "✅ Agent evaluation dependencies installed"
+	@echo "   Set ANTHROPIC_API_KEY for judge evaluations"
+	@echo "   Set GALAXY_TEST_AI_API_KEY for agents under test"
+
+agent-eval: ## Run agent evaluation tests (requires live LLM)
+	@echo "Running agent evaluation tests..."
+	@if [ -z "$$ANTHROPIC_API_KEY" ]; then \
+		echo "Error: ANTHROPIC_API_KEY not set (needed for judge)"; \
+		exit 1; \
+	fi
+	@if [ -z "$$GALAXY_TEST_AI_API_KEY" ]; then \
+		echo "Warning: GALAXY_TEST_AI_API_KEY not set, using galaxy.yml config"; \
+	fi
+	@mkdir -p test-reports database/agent_eval_reports/runs
+	$(IN_VENV) GALAXY_TEST_ENABLE_LIVE_LLM=1 pytest test/integration/agent_evals/ -v -m requires_llm --junit-xml=test-reports/agent-eval-results.xml || true
+	@echo ""
+	@echo "Generating dashboard..."
+	@$(IN_VENV) python scripts/agent_eval_dashboard.py
+
+agent-eval-quick: ## Run quick agent evaluation tests (without judge)
+	@echo "Running quick agent evaluation tests (no LLM judge)..."
+	$(IN_VENV) pytest test/integration/agent_evals/ -v -m "not requires_llm"
+
+agent-eval-dashboard: ## Regenerate dashboard from latest test reports (auto-runs after agent-eval)
+	@echo "Generating agent evaluation dashboard..."
+	$(IN_VENV) python scripts/agent_eval_dashboard.py
+	@echo "Dashboard generated from latest run"
+	@echo "   See output above for file location"
+
+agent-eval-clean: ## Clean agent evaluation test reports
+	rm -rf test-reports/ database/agent_eval_reports/
+	@echo "✅ Test reports cleaned"
+
 config-validate: ## validate galaxy YAML configuration file
 	$(CONFIG_MANAGE) validate galaxy
 

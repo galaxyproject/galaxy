@@ -133,7 +133,17 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         return prompt_path.read_text()
 
     async def search_tools(self, query: str) -> list[dict[str, Any]]:
-        """Search for tools in the Galaxy toolbox."""
+        """Search for tools in Galaxy toolbox or remote source."""
+        # Check if remote tool source is configured
+        remote_url = getattr(self.deps.config, "agent_eval_tool_source_url", None)
+
+        if remote_url:
+            return await self._search_remote(query, remote_url)
+        else:
+            return await self._search_local(query)
+
+    async def _search_local(self, query: str) -> list[dict[str, Any]]:
+        """Search for tools in the local Galaxy toolbox."""
         if not self.deps.toolbox:
             log.warning("Toolbox not available in agent dependencies")
             return []
@@ -161,6 +171,67 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         except (AttributeError, KeyError, TypeError) as e:
             log.warning(f"Error searching tools: {e}")
             return []
+
+    async def _search_remote(self, query: str, base_url: str) -> list[dict[str, Any]]:
+        """Search remote Galaxy instance via API."""
+        try:
+            import httpx
+        except ImportError:
+            log.warning("httpx not available for remote tool search, falling back to local")
+            return await self._search_local(query)
+
+        try:
+            async with httpx.AsyncClient() as client:
+                # First, search for tool IDs matching the query
+                search_response = await client.get(
+                    f"{base_url.rstrip('/')}/api/tools",
+                    params={"q": query},
+                    timeout=10.0
+                )
+                search_response.raise_for_status()
+                tool_ids = search_response.json()
+
+                # If no results, return empty list
+                if not tool_ids:
+                    log.info(f"No tools found for query '{query}' on {base_url}")
+                    return []
+
+                # Fetch full tool list to get details
+                all_tools_response = await client.get(
+                    f"{base_url.rstrip('/')}/api/tools",
+                    timeout=15.0
+                )
+                all_tools_response.raise_for_status()
+                all_tools_data = all_tools_response.json()
+
+                # Extract tools from sections
+                tools_with_details = []
+                for item in all_tools_data:
+                    if item.get("model_class") == "ToolSection":
+                        for tool in item.get("elems", []):
+                            if tool.get("model_class") == "Tool":
+                                tools_with_details.append(tool)
+                    elif item.get("model_class") == "Tool":
+                        tools_with_details.append(item)
+
+                # Filter to only the tools that matched our search
+                matching_tools = [
+                    {
+                        "id": t["id"],
+                        "name": t["name"],
+                        "description": t.get("description", ""),
+                        "category": t.get("panel_section_name", ""),
+                    }
+                    for t in tools_with_details
+                    if t["id"] in tool_ids[:50]  # Limit to top 50 search results
+                ]
+
+                log.info(f"Found {len(matching_tools)} tools for query '{query}' on {base_url}")
+                return matching_tools[:20]  # Return top 20
+
+        except Exception as e:
+            log.warning(f"Remote tool search failed ({base_url}): {e}, falling back to local")
+            return await self._search_local(query)
 
     async def get_tool_details(self, tool_id: str) -> dict[str, Any]:
         """Get detailed information about a specific tool."""

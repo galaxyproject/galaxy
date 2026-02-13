@@ -314,6 +314,11 @@ class ConditionalDependencies:
     def check_fastmcp(self):
         return asbool(self.config.get("enable_mcp_server", False))
 
+    def check_mcpevals(self):
+        return (
+            self.config.get("ai_api_key", None) is not None or self.config.get("inference_services", None) is not None
+        )
+
     def check_weasyprint(self):
         # See notes in ./conditional-requirements.txt for more information.
         return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"

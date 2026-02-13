@@ -4098,6 +4098,33 @@ mapping:
           Agents inherit from 'default' configuration, which itself falls back to global ai_model/ai_api_key settings.
           Example: inference_services: { default: { model: gpt-4o-mini, temperature: 0.7 } }
 
+      agent_eval_judge_api_key:
+        type: str
+        required: false
+        desc: |
+          API key for LLM judge used in agent evaluation tests. If not set,
+          evaluation tests will fall back to ANTHROPIC_API_KEY environment
+          variable or ai_api_key. Recommended: use Claude Sonnet for judging
+          agent responses.
+
+      agent_eval_judge_model:
+        type: str
+        default: claude-opus-4-6
+        required: false
+        desc: |
+          Model to use for agent evaluation judging. Defaults to Claude
+          Opus 4.6 if not specified. Must be Anthropic-compatible model.
+          Recommended: claude-opus-4-6 (most capable), claude-sonnet-4-5-20250929 (cheaper)
+
+      agent_eval_tool_source_url:
+        type: str
+        required: false
+        desc: |
+          URL of remote Galaxy instance to use for tool recommendations during
+          agent evaluation tests. If set, the tool recommendation agent will search
+          for tools on this remote instance instead of the local toolbox.
+          Example: https://usegalaxy.org
+
       enable_tool_recommendations:
         type: bool
         default: false

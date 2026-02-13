@@ -16,6 +16,7 @@ pkce
 total-perspective-vortex>=3.1.2,<4
 openai
 fastmcp>=2.13.0
+mcpevals>=0.1.10
 # upper version constraint because of https://github.com/galaxyproject/galaxy/issues/20600
 redis>=5.3.0,<6
 

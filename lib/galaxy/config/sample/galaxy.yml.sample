@@ -2998,6 +2998,23 @@ galaxy:
   # default: { model: gpt-4o-mini, temperature: 0.7 } }
   #inference_services: null
 
+  # API key for LLM judge used in agent evaluation tests. If not set,
+  # evaluation tests will fall back to ANTHROPIC_API_KEY environment
+  # variable or ai_api_key. Recommended: use Claude Sonnet for judging
+  # agent responses. Example: sk-ant-api03-...
+  #agent_eval_judge_api_key: null
+
+  # Model to use for agent evaluation judging. Defaults to Claude
+  # Opus 4.6 if not specified. Must be Anthropic-compatible model.
+  # Recommended: claude-opus-4-6 (most capable), claude-sonnet-4-5-20250929 (cheaper)
+  #agent_eval_judge_model: claude-opus-4-6
+
+  # URL of remote Galaxy instance to use for tool recommendations during
+  # agent evaluation tests. If set, the tool recommendation agent will search
+  # for tools on this remote instance instead of the local toolbox.
+  # Example: https://usegalaxy.org
+  #agent_eval_tool_source_url: null
+
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please
   # enable 'tool_recommendation_model_path' as well

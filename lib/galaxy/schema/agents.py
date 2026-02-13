@@ -87,6 +87,7 @@ class AgentQueryResponse(BaseModel):
 
     response: AgentResponse = Field(description="The agent's response")
     processing_time: Optional[float] = Field(default=None, description="Time taken to process the query in seconds")
+    usage: Optional[dict[str, int]] = Field(default=None, description="Token usage statistics (input_tokens, output_tokens, total_tokens)")
 
 
 class AvailableAgent(BaseModel):
