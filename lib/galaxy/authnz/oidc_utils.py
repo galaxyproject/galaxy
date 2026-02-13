@@ -65,18 +65,21 @@ def decode_access_token(token_str: str, backend: OpenIdConnectAuth) -> dict:
     signing_key = backend.find_valid_key(token_str)
     jwk = jwt.PyJWK(signing_key)
 
+    strategy = backend.strategy
+    assert hasattr(strategy, "config")
+
     decoded = jwt.decode(
         token_str,
         key=jwk,
         algorithms=[jwk.algorithm_name],
-        audience=backend.strategy.config["accepted_audiences"],
+        audience=strategy.config["accepted_audiences"],
         issuer=backend.id_token_issuer(),
         options={
             "verify_signature": True,
             "verify_exp": True,
             "verify_nbf": True,
             "verify_iat": True,
-            "verify_aud": bool(backend.strategy.config["accepted_audiences"]),
+            "verify_aud": bool(strategy.config["accepted_audiences"]),
             "verify_iss": True,
         },
     )

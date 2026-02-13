@@ -13,14 +13,16 @@ from typing import (
 from fastapi import routing
 
 try:
-    from fastapi._compat import (  # type: ignore[attr-defined]
+    from fastapi._compat import (  # type: ignore[attr-defined,unused-ignore]
         get_flat_models_from_fields,
         get_model_name_map,
     )
+
+    GET_FLAT_MODELS_FROM_FIELDS_AVAILABLE = True
 except ImportError:
     # FastAPI <0.128.4
-    get_flat_models_from_fields = None
-    from fastapi._compat import get_compat_model_name_map
+    GET_FLAT_MODELS_FROM_FIELDS_AVAILABLE = False
+    from fastapi._compat import get_compat_model_name_map  # type: ignore[attr-defined,unused-ignore]
 
 from fastapi.encoders import jsonable_encoder
 from fastapi.openapi.constants import REF_TEMPLATE
@@ -72,7 +74,7 @@ def get_openapi(
     webhook_paths: dict[str, dict[str, Any]] = {}
     operation_ids: set[str] = set()
     all_fields = get_fields_from_routes(list(routes or []) + list(webhooks or []))
-    if get_flat_models_from_fields:
+    if GET_FLAT_MODELS_FROM_FIELDS_AVAILABLE:
         flat_models = get_flat_models_from_fields(all_fields, known_models=set())
         model_name_map = get_model_name_map(flat_models)
     else:
