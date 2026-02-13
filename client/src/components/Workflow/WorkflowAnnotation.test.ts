@@ -5,6 +5,7 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { describe, expect, it, vi } from "vitest";
 
+import type { AnyHistory } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -57,17 +58,6 @@ vi.mock("@/stores/workflowStore", async () => {
     };
 });
 
-vi.mock("@/stores/historyStore", async () => {
-    const originalModule = (await vi.importActual("@/stores/historyStore")) as any;
-    return {
-        ...originalModule,
-        useHistoryStore: () => ({
-            ...originalModule.useHistoryStore(),
-            getHistoryById: vi.fn().mockImplementation(() => TEST_HISTORY),
-        }),
-    };
-});
-
 const localVue = getLocalVue();
 const { server, http } = useServerMock();
 
@@ -104,6 +94,7 @@ async function mountWorkflowAnnotation(version: "run_form" | "invocation", ownsW
     });
 
     const historyStore = useHistoryStore();
+    historyStore.storedHistories = { [TEST_HISTORY_ID]: TEST_HISTORY as AnyHistory };
     historyStore.setCurrentHistoryId(TEST_HISTORY_ID);
 
     const userStore = useUserStore();
