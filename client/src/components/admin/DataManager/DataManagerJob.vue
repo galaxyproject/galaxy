@@ -1,57 +1,65 @@
 <template>
     <div>
-        <b-breadcrumb v-if="dataManager && jobId && !loading" id="breadcrumb" :items="breadcrumbItems" />
+        <BBreadcrumb v-if="dataManager && jobId && !loading" id="breadcrumb" :items="breadcrumbItems" />
+
         <Alert :message="message" :variant="status" />
+
         <Alert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
+
         <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
         <Alert v-else-if="loading" message="Waiting for data" variant="info" />
-        <b-container v-else-if="dataManager">
-            <b-row>
-                <b-col>
-                    <b-card
+        <BContainer v-else-if="dataManager">
+            <BRow>
+                <BCol>
+                    <BCard
                         id="data-manager-card"
                         header-bg-variant="primary"
                         header-text-variant="white"
                         border-variant="primary"
                         class="mb-3">
                         <template v-slot:header>
-                            <b-container>
-                                <b-row align-v="center">
-                                    <b-col cols="auto">
+                            <BContainer>
+                                <BRow align-v="center">
+                                    <BCol cols="auto">
                                         <GButton tooltip title="Rerun" :href="runUrl">
-                                            <span class="fa fa-redo" />
+                                            <!-- <span class="fa fa-redo" /> -->
+                                            <FontAwesomeIcon :icon="faRedo" />
                                         </GButton>
-                                    </b-col>
-                                    <b-col>
+                                    </BCol>
+
+                                    <BCol>
                                         <b>{{ dataManager["name"] }}</b> <i>{{ dataManager["description"] }}</i>
-                                    </b-col>
-                                </b-row>
-                            </b-container>
+                                    </BCol>
+                                </BRow>
+                            </BContainer>
                         </template>
-                        <b-card v-for="(hda, i) in hdaInfo" :id="'data-card-' + i" :key="i" class="mb-4">
+
+                        <BCard v-for="(hda, i) in hdaInfo" :id="'data-card-' + i" :key="i" class="mb-4">
                             <template v-slot:header>
-                                <b-table :fields="fields" :items="[hda]" caption-top small stacked>
+                                <GTable :fields="fields" :items="[hda]" caption-top compact stacked>
                                     <template v-slot:table-caption>
-                                        <b-container>
-                                            <b-row align-v="center">
-                                                <b-col cols="auto">
+                                        <BContainer>
+                                            <BRow align-v="center">
+                                                <BCol cols="auto">
                                                     <GButton
                                                         tooltip
                                                         title="View complete info"
                                                         :href="hdaInfo[i]['infoUrl']"
                                                         target="galaxy_main">
-                                                        <span class="fa fa-info-circle" />
+                                                        <FontAwesomeIcon :icon="faInfoCircle" />
                                                     </GButton>
-                                                </b-col>
-                                                <b-col>
+                                                </BCol>
+
+                                                <BCol>
                                                     <b>{{ hda["name"] }}</b>
-                                                </b-col>
-                                            </b-row>
-                                        </b-container>
+                                                </BCol>
+                                            </BRow>
+                                        </BContainer>
                                     </template>
-                                </b-table>
+                                </GTable>
                             </template>
-                            <b-table
+
+                            <GTable
                                 v-for="(output, j) in dataManagerOutput[i]"
                                 :key="j"
                                 :fields="outputFields(output[1][0])"
@@ -63,27 +71,38 @@
                                 <template v-slot:table-caption>
                                     Data Table: <b>{{ output[0] }}</b>
                                 </template>
-                            </b-table>
-                        </b-card>
-                    </b-card>
-                </b-col>
-            </b-row>
-        </b-container>
+                            </GTable>
+                        </BCard>
+                    </BCard>
+                </BCol>
+            </BRow>
+        </BContainer>
     </div>
 </template>
 
 <script>
+import { faInfoCircle, faRedo } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
+import { BBreadcrumb, BCard, BCol, BContainer, BRow } from "bootstrap-vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
 
 import Alert from "@/components/Alert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
         Alert,
+        BBreadcrumb,
+        BCard,
+        BCol,
+        BContainer,
+        BRow,
+        FontAwesomeIcon,
         GButton,
+        GTable,
     },
     props: {
         id: {
@@ -93,6 +112,8 @@ export default {
     },
     data() {
         return {
+            faInfoCircle,
+            faRedo,
             jobId: Number,
             exitCode: Number,
             runUrl: "#",

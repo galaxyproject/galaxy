@@ -1137,7 +1137,7 @@ admin:
       unused: 'a[contains(text(), "Unused")]'
       resolver_type: '#manage-resolver-type'
       container_type: '#manage-container-type'
-      unused_paths: '#unused-paths-table'
+      unused_paths: '#g-table-container-unused-paths-table'
 
   manage_jobs:
     selectors:
@@ -1203,7 +1203,7 @@ admin:
     dm_data_managers_card: '#data-managers-card'
     dm_jobs_button: '#${data_manager}-jobs'
     dm_jobs_breadcrumb: '#breadcrumb'
-    dm_jobs_table: '#jobs-table'
+    dm_jobs_table: '#g-table-container-jobs-table'
     dm_job: '#job-${job_id}'
     dm_job_breadcrumb: '#breadcrumb'
     dm_job_data_manager_card: '#data-manager-card'

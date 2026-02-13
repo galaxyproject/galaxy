@@ -1,9 +1,10 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { faEllipsisV, faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem, BFormCheckbox, BOverlay } from "bootstrap-vue";
+import { BAlert, BDropdown, BDropdownItem, BFormCheckbox, BOverlay } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import type { BootstrapSize } from "@/components/Common";
 import { useUid } from "@/composables/utils/uid";
 
 import type {
@@ -36,6 +37,12 @@ interface Props {
      * @default false
      */
     bordered?: boolean;
+
+    /**
+     * Whether to place table caption at the top (above the table)
+     * @default false
+     */
+    captionTop?: boolean;
 
     /**
      * Whether rows are clickable
@@ -188,6 +195,12 @@ interface Props {
     showSelectAll?: boolean;
 
     /**
+     * Whether to use responsive stacked layout on small screens
+     * @default false
+     */
+    stacked?: boolean | BootstrapSize;
+
+    /**
      * Row status icon getter - renders icon inline with first data column
      * Return undefined to skip icon for a row
      * @default undefined
@@ -211,6 +224,7 @@ const props = withDefaults(defineProps<Props>(), {
     id: () => useUid("g-table-").value,
     actions: undefined,
     bordered: false,
+    captionTop: false,
     clickableRows: false,
     compact: false,
     containerClass: "",
@@ -236,6 +250,7 @@ const props = withDefaults(defineProps<Props>(), {
     sortBy: "",
     sortDesc: false,
     striped: true,
+    stacked: false,
     statusIcon: undefined,
     stickyHeader: false,
     tableClass: "",
@@ -279,6 +294,16 @@ const emit = defineEmits<{
 const sortBy = ref<string>(props.sortBy || "update_time");
 const sortDesc = ref<boolean>(props.sortDesc || true);
 const expandedRows = ref<Set<number>>(new Set());
+
+const stackedClass = computed(() => {
+    if (!props.stacked) {
+        return undefined;
+    }
+    if (props.stacked === true) {
+        return "g-table-stacked";
+    }
+    return `g-table-stacked-${props.stacked}`;
+});
 
 const stickyHeaderMaxHeight = computed(() => {
     if (!props.stickyHeader) {
@@ -432,7 +457,7 @@ function onRowClick(item: T, index: number, event: MouseEvent | KeyboardEvent) {
         return;
     }
 
-    emit("row-click", { item, index, event });
+    emit("row-click", { item, index, event, toggleDetails: () => toggleRowDetails(index) });
 }
 
 function onSelectAll(selected: boolean) {
@@ -458,7 +483,7 @@ function isRowExpanded(index: number) {
  * Toggle row details expansion
  */
 function toggleRowDetails(index: number) {
-    if (isRowExpanded(index)) {
+    if (expandedRows.value.has(index)) {
         expandedRows.value.delete(index);
     } else {
         expandedRows.value.add(index);
@@ -498,6 +523,18 @@ function getAlignmentClass(align?: FieldAlignment) {
         return "";
     }
     return `text-${align}`;
+}
+
+/**
+ * Get cell variant class for Bootstrap color variants (e.g., "success", "danger", "info")
+ * Supports the _cellVariants convention from b-table for backward compatibility
+ */
+function getCellVariantClass(item: T, field: TableField) {
+    const cellVariants = item._cellVariants as Record<string, string> | undefined;
+    if (!cellVariants || !cellVariants[field.key]) {
+        return undefined;
+    }
+    return `table-${cellVariants[field.key]}`;
 }
 
 /**
@@ -541,7 +578,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 </script>
 
 <template>
-    <div :id="`g-table-container-${props.id}`" :class="containerClass">
+    <div :id="`g-table-container-${props.id}`" class="g-table-container" :class="containerClass">
         <!-- Table wrapper -->
         <BOverlay :show="overlayLoading" rounded="sm" class="position-relative w-100">
             <div
@@ -557,8 +594,14 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                         { 'table-bordered': bordered },
                         { 'g-table-compact': compact },
                         { 'g-table-fixed': fixed },
+                        { 'caption-top': captionTop },
+                        stackedClass,
                         tableClass,
                     ]">
+                    <caption v-if="$slots['table-caption']" :class="{ 'caption-top': captionTop }">
+                        <slot name="table-caption" />
+                    </caption>
+
                     <thead v-if="!props.hideHeader">
                         <tr>
                             <th v-if="selectable" class="g-table-select-column">
@@ -609,7 +652,17 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                         </tr>
                     </thead>
 
-                    <tbody v-if="paginatedLocalItems.length > 0">
+                    <tbody>
+                        <tr v-if="!props.items.length">
+                            <td :colspan="(selectable ? 1 : 0) + props.fields.length + (props.actions ? 1 : 0)">
+                                <slot name="empty">
+                                    <BAlert v-if="!loading" variant="info" show class="w-100 m-0">
+                                        {{ props.emptyState?.message ?? "No data available" }}
+                                    </BAlert>
+                                </slot>
+                            </td>
+                        </tr>
+
                         <template v-for="(item, paginatedIndex) in paginatedLocalItems">
                             <template>
                                 <tr
@@ -636,10 +689,12 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                         v-for="(field, fieldIndex) in props.fields"
                                         :id="getCellId(props.id, field.key, getGlobalIndex(paginatedIndex))"
                                         :key="field.key"
+                                        :data-label="field.label ?? field.key"
                                         :class="[
                                             field.cellClass,
                                             field.class,
                                             getAlignmentClass(field.align),
+                                            getCellVariantClass(item, field),
                                             { 'hide-on-small': field.hideOnSmall },
                                         ]">
                                         <template
@@ -736,97 +791,211 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 @import "@/style/scss/_breakpoints.scss";
 
 // Essential custom styles that cannot be replaced with utility classes
+.g-table-container {
+    container-type: inline-size;
+    container-name: g-table;
 
-.g-table-sticky-header {
-    overflow-y: auto;
-    max-height: v-bind(stickyHeaderMaxHeight);
-}
-
-.g-table {
-    &.g-table-fixed {
-        table-layout: fixed;
-        width: 100%;
+    .g-table-sticky-header {
+        overflow-y: auto;
+        max-height: v-bind(stickyHeaderMaxHeight);
     }
 
-    thead th {
-        position: sticky;
-        top: 0;
-        background-color: $body-bg;
-        z-index: 10;
-        border-bottom: 2px solid $brand-secondary;
-        font-weight: 600;
-        padding: 0.75rem;
+    @mixin g-table-stacked-layout {
+        display: block;
+        overflow-x: visible;
 
-        &.g-table-sortable {
-            cursor: pointer;
-            user-select: none;
+        thead {
+            display: block;
+            position: sticky;
+            top: 0;
+            background-color: $body-bg;
+            z-index: 9;
 
-            &:hover {
-                background-color: lighten($brand-light, 0.5);
+            tr {
+                display: block;
+                border: none;
+            }
+
+            th {
+                display: none;
+
+                &.g-table-select-column {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    width: 100%;
+                    padding: 0.75rem;
+                    border-bottom: 2px solid $brand-secondary;
+
+                    &::after {
+                        content: "Select all";
+                        font-weight: 500;
+                        color: inherit;
+                    }
+                }
             }
         }
 
-        &.g-table-sorted {
-            background-color: $brand-light;
+        tbody,
+        tr {
+            display: block;
+            border: none;
         }
 
-        .g-table-sort-icon {
-            color: $brand-secondary;
+        tr {
+            margin-bottom: 1rem;
+            border: 1px solid $brand-secondary;
+            border-radius: 0.25rem;
+        }
+
+        td {
+            display: block;
+            width: 100%;
+            text-align: right;
+            padding: 0.5rem;
+            border-bottom: 1px solid $brand-secondary;
+
+            &[data-label]::before {
+                content: attr(data-label);
+                float: left;
+                font-weight: 600;
+                text-align: left;
+            }
+        }
+
+        .g-table-select-column,
+        .g-table-actions-column {
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            text-align: center;
+
+            &::before {
+                content: none;
+            }
         }
     }
 
-    tbody {
-        tr {
-            &.g-table-row-clickable {
+    .g-table {
+        &.g-table-fixed {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background-color: $body-bg;
+            z-index: 10;
+            border-bottom: 2px solid $brand-secondary;
+            font-weight: 600;
+            padding: 0.75rem;
+
+            &.g-table-sortable {
                 cursor: pointer;
+                user-select: none;
 
                 &:hover {
                     background-color: lighten($brand-light, 0.5);
                 }
             }
 
-            box-shadow: inset 0 -1px 0 0 rgba($brand-primary, 0.2);
-
-            &.g-table-row-selected {
+            &.g-table-sorted {
                 background-color: $brand-light;
             }
 
-            &.g-table-details-row {
-                background-color: lighten($brand-light, 0.3);
+            .g-table-sort-icon {
+                color: $brand-secondary;
             }
         }
 
-        td {
-            padding: 0.75rem;
-            vertical-align: middle;
+        tbody {
+            tr {
+                &.g-table-row-clickable {
+                    cursor: pointer;
+
+                    &:hover {
+                        background-color: lighten($brand-light, 0.5);
+                    }
+                }
+
+                box-shadow: inset 0 -1px 0 0 rgba($brand-primary, 0.2);
+
+                &.g-table-row-selected {
+                    background-color: $brand-light;
+                }
+
+                &.g-table-details-row {
+                    background-color: lighten($brand-light, 0.3);
+                }
+            }
+
+            td {
+                padding: 0.75rem;
+                vertical-align: middle;
+            }
+        }
+
+        &.g-table-compact {
+            thead th,
+            tbody td {
+                padding: 0.3rem;
+            }
+        }
+
+        .g-table-select-column {
+            width: 40px;
+            text-align: center;
+        }
+
+        .g-table-actions-column {
+            width: 60px;
+            text-align: center;
+        }
+
+        @media (max-width: $breakpoint-sm) {
+            .hide-on-small {
+                display: none;
+            }
+        }
+
+        &.g-table-stacked {
+            @include g-table-stacked-layout;
+        }
+
+        &.g-table-stacked-sm {
+            @container g-table (max-width: #{$breakpoint-sm}) {
+                @include g-table-stacked-layout;
+            }
+        }
+
+        &.g-table-stacked-md {
+            @container g-table (max-width: #{$breakpoint-md}) {
+                @include g-table-stacked-layout;
+            }
+        }
+
+        &.g-table-stacked-lg {
+            @container g-table (max-width: #{$breakpoint-lg}) {
+                @include g-table-stacked-layout;
+            }
+        }
+
+        &.g-table-stacked-xl {
+            @container g-table (max-width: #{$breakpoint-xl}) {
+                @include g-table-stacked-layout;
+            }
+        }
+
+        &.caption-top {
+            caption {
+                caption-side: top;
+            }
         }
     }
 
-    &.g-table-compact {
-        thead th,
-        tbody td {
-            padding: 0.3rem;
-        }
+    .g-table-load-more {
+        border-top: 1px solid $brand-secondary;
     }
-
-    .g-table-select-column {
-        width: 40px;
-        text-align: center;
-    }
-
-    .g-table-actions-column {
-        width: 60px;
-        text-align: center;
-    }
-
-    @media (max-width: $breakpoint-sm) {
-        .hide-on-small {
-            display: none;
-        }
-    }
-}
-
-.g-table-load-more {
-    border-top: 1px solid $brand-secondary;
 }
 </style>
