@@ -12,6 +12,8 @@ from sqlalchemy import (
     JSON,
     String,
 )
+from sqlalchemy.dialects.postgresql import JSONB
+
 from galaxy.model.migrations.util import (
     add_column,
     alter_column,
@@ -40,7 +42,7 @@ def upgrade():
     # Wrap statements for sqlite safety and to ensure atomicity where supported
     with transaction():
         # Persist validated job internal tool state
-        add_column(table_name, Column(column_name, JSON))
+        add_column(table_name, Column(column_name, JSON().with_variant(JSONB, "postgresql")))
 
         # Ensure tool_request.history_id is NOT NULL
         alter_column(
