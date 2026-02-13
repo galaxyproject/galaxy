@@ -50,7 +50,6 @@ if TYPE_CHECKING:
 
     from galaxy.managers.context import ProvidesAppContext
 
-
 log = logging.getLogger(__name__)
 
 # key: a component name which PSA requests.
@@ -513,7 +512,7 @@ class PSAAuthnz(IdentityProvider):
         userinfo = jwt.decode(id_token, options={"verify_signature": False})
 
         email = userinfo.get("email")
-        assert email
+        assert email is not None
         username = userinfo.get("preferred_username", email)
         if "@" in username:
             username = username.split("@")[0]
