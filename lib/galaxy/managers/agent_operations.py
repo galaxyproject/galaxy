@@ -48,6 +48,15 @@ class AgentOperationsManager:
     def _encode_id(self, value: int) -> str:
         return self.trans.security.encode_id(value)
 
+    def _search_toolbox(self, query: str) -> list[str]:
+        """Search toolbox for matching tool IDs."""
+        panel_view = self.app.config.default_panel_view
+        return self.app.toolbox_search.search(q=query, panel_view=panel_view, config=self.app.config)
+
+    def _get_toolbox_tool(self, tool_id: str):
+        """Get a tool from the toolbox by ID, or None."""
+        return self.app.toolbox.get_tool(tool_id)
+
     def _encode_ids_in_response(self, data: Any) -> Any:
         """Recursively encode integer IDs in response data to strings for agent consumption."""
         if isinstance(data, dict):
@@ -135,12 +144,12 @@ class AgentOperationsManager:
 
     def search_tools(self, query: str) -> dict[str, Any]:
         """Search for Galaxy tools by name or keyword."""
-        tool_ids = self.tools_service._search(query, view=None)
+        tool_ids = self._search_toolbox(query)
 
         tools = []
         for tool_id in tool_ids:
             try:
-                tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
+                tool = self._get_toolbox_tool(tool_id)
                 if tool:
                     tools.append(
                         {
@@ -158,7 +167,7 @@ class AgentOperationsManager:
 
     def get_tool_details(self, tool_id: str, io_details: bool = False) -> dict[str, Any]:
         """Get detailed information about a specific tool, optionally with I/O specs."""
-        tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
+        tool = self._get_toolbox_tool(tool_id)
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")
@@ -534,7 +543,7 @@ class AgentOperationsManager:
 
     def get_tool_run_examples(self, tool_id: str) -> dict[str, Any]:
         """Get test cases showing how to run a tool with real inputs."""
-        tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
+        tool = self._get_toolbox_tool(tool_id)
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")
@@ -570,7 +579,7 @@ class AgentOperationsManager:
 
     def get_tool_citations(self, tool_id: str) -> dict[str, Any]:
         """Get citation information (DOIs, BibTeX) for a tool."""
-        tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
+        tool = self._get_toolbox_tool(tool_id)
 
         if tool is None:
             raise ValueError(f"Tool '{tool_id}' not found")
@@ -604,14 +613,14 @@ class AgentOperationsManager:
         seen_tool_ids = set()
 
         for keyword in keywords:
-            tool_ids = self.tools_service._search(keyword, view=None)
+            tool_ids = self._search_toolbox(keyword)
 
             for tool_id in tool_ids:
                 if tool_id in seen_tool_ids:
                     continue
 
                 try:
-                    tool = self.tools_service._get_tool(self.trans, tool_id, user=self.trans.user)
+                    tool = self._get_toolbox_tool(tool_id)
                     if tool:
                         name_lower = (tool.name or "").lower()
                         desc_lower = (tool.description or "").lower()

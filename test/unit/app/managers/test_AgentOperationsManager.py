@@ -93,17 +93,17 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         assert result["pagination"]["offset"] == 0
 
     def test_search_tools(self):
-        """Test tool search with mocked service."""
+        """Test tool search with mocked toolbox."""
         mock_tool = mock.MagicMock()
         mock_tool.id = "upload1"
         mock_tool.name = "Upload File"
         mock_tool.description = "Upload files to Galaxy"
         mock_tool.version = "1.0"
 
-        mock_service = mock.MagicMock()
-        mock_service._search.return_value = ["upload1"]
-        mock_service._get_tool.return_value = mock_tool
-        self.agent_ops._tools_service = mock_service
+        self.app.toolbox_search = mock.MagicMock()
+        self.app.toolbox_search.search.return_value = ["upload1"]
+        self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.get_tool.return_value = mock_tool
 
         result = self.agent_ops.search_tools("upload")
 
@@ -113,7 +113,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         assert result["tools"][0]["id"] == "upload1"
 
     def test_get_tool_details(self):
-        """Test getting tool details with mocked service."""
+        """Test getting tool details with mocked toolbox."""
         mock_tool = mock.MagicMock()
         mock_tool.id = "cat1"
         mock_tool.name = "Concatenate datasets"
@@ -121,9 +121,8 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         mock_tool.description = "Concatenate files"
         mock_tool.help = "Help text"
 
-        mock_service = mock.MagicMock()
-        mock_service._get_tool.return_value = mock_tool
-        self.agent_ops._tools_service = mock_service
+        self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.get_tool.return_value = mock_tool
 
         result = self.agent_ops.get_tool_details("cat1")
 
@@ -133,9 +132,8 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
     def test_get_tool_details_not_found(self):
         """Test get_tool_details raises for non-existent tool."""
-        mock_service = mock.MagicMock()
-        mock_service._get_tool.return_value = None
-        self.agent_ops._tools_service = mock_service
+        self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.get_tool.return_value = None
 
         with pytest.raises(ValueError, match="not found"):
             self.agent_ops.get_tool_details("nonexistent_tool")
