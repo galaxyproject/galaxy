@@ -81,19 +81,21 @@ class AscpFileSystem(AbstractFileSystem):
         rate_limit: str = "300m",
         port: int = 33001,
         disable_encryption: bool = True,
-        max_retries: int = 3,
-        retry_base_delay: float = 2.0,
+        max_retries: int = 5,
+        retry_base_delay: float = 5.0,
         retry_max_delay: float = 60.0,
         enable_resume: bool = True,
+        transfer_timeout: int = 1800,
         **kwargs: Any,
     ):
         """Initialize the AscpFileSystem.
 
         Args:
-            max_retries: Maximum number of retry attempts for failed transfers (default: 3)
-            retry_base_delay: Base delay in seconds for exponential backoff (default: 2.0)
+            max_retries: Maximum number of retry attempts for failed transfers (default: 5)
+            retry_base_delay: Base delay in seconds for exponential backoff (default: 5.0)
             retry_max_delay: Maximum delay in seconds between retries (default: 60.0)
             enable_resume: Enable resume support for interrupted transfers (default: True)
+            transfer_timeout: Timeout in seconds for each ascp subprocess call (default: 1800)
 
         Raises:
             MessageException: If ascp binary is not found or required parameters are missing
@@ -113,6 +115,7 @@ class AscpFileSystem(AbstractFileSystem):
         self.retry_base_delay = retry_base_delay
         self.retry_max_delay = retry_max_delay
         self.enable_resume = enable_resume
+        self.transfer_timeout = transfer_timeout
 
         # Verify ascp binary exists
         if not shutil.which(self.ascp_path):
@@ -237,10 +240,11 @@ class AscpFileSystem(AbstractFileSystem):
             if self.disable_encryption:
                 cmd.append("-T")
 
-            # Add resume flag if enabled and this is a retry attempt
-            if self.enable_resume and attempt > 0:
+            # Add resume flag if enabled (on all attempts to handle interrupted transfers)
+            if self.enable_resume:
                 cmd.extend(["-k", "1"])  # Resume level 1: check file size
-                log.debug(f"Resume enabled for retry attempt {attempt + 1}")
+                if attempt > 0:
+                    log.debug(f"Resume enabled for retry attempt {attempt + 1}")
 
             # Add source and destination
             cmd.append(f"{user}@{host}:{remote_path}")
@@ -254,13 +258,20 @@ class AscpFileSystem(AbstractFileSystem):
             else:
                 env = None
             # Execute ascp
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=False,  # We'll handle errors manually
-                env=env,
-            )
+            try:
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    check=False,  # We'll handle errors manually
+                    env=env,
+                    timeout=self.transfer_timeout,
+                )
+            except subprocess.TimeoutExpired:
+                raise MessageException(
+                    f"ascp transfer timed out after {self.transfer_timeout} seconds for {remote_path}. "
+                    "Consider increasing the transfer_timeout configuration."
+                )
 
             if result.returncode != 0:
                 self._handle_ascp_error(result, remote_path)
@@ -287,15 +298,19 @@ class AscpFileSystem(AbstractFileSystem):
     def _is_retryable_error(self, exception: MessageException) -> bool:
         """Determine if an error is worth retrying.
 
-        Retryable errors include:
-        - Network errors (connection refused, timeouts, etc.)
-        - Transient server errors
+        Uses a blacklist approach: all errors are retried UNLESS they match a
+        known non-retryable pattern. This is safer than a whitelist because
+        transient errors (e.g., "Session Stop", "unable to connect") can have
+        many different message formats that are hard to enumerate.
 
-        Non-retryable errors include:
+        Non-retryable errors (will NOT be retried):
         - Authentication failures
         - File not found
         - Permission denied
         - Invalid SSH key
+        - Configuration errors (missing user/host)
+
+        Everything else is assumed transient and WILL be retried.
 
         Args:
             exception: The exception to check
@@ -305,7 +320,7 @@ class AscpFileSystem(AbstractFileSystem):
         """
         error_msg = str(exception).lower()
 
-        # Non-retryable error patterns
+        # Non-retryable error patterns — known permanent failures
         non_retryable_patterns = [
             "authentication failed",
             "file not found",
@@ -314,22 +329,15 @@ class AscpFileSystem(AbstractFileSystem):
             "invalid key",
             "ssh key is required",
             "user and host must be specified",
+            "ascp binary not found",
         ]
 
         if any(pattern in error_msg for pattern in non_retryable_patterns):
             return False
 
-        # Retryable error patterns
-        retryable_patterns = [
-            "network error",
-            "connection",
-            "timeout",
-            "timed out",
-            "refused",
-            "unreachable",
-        ]
-
-        return any(pattern in error_msg for pattern in retryable_patterns)
+        # Everything else is assumed retryable (network errors, session stops,
+        # connection failures, timeouts, server errors, etc.)
+        return True
 
     def _parse_url(self, url: str) -> dict[str, Any]:
         """Parse ascp:// or fasp:// URL to extract components.
@@ -381,9 +389,13 @@ class AscpFileSystem(AbstractFileSystem):
             )
         elif "no such file" in stderr.lower() or "not found" in stderr.lower():
             raise MessageException(f"Remote file not found: {remote_path}")
-        elif "connection" in stderr.lower() or "network" in stderr.lower():
+        elif "connection" in stderr.lower() or "connect" in stderr.lower() or "network" in stderr.lower():
             raise MessageException(
                 f"Network error while downloading {remote_path}. Please check your network connection and try again."
+            )
+        elif "session stop" in stderr.lower():
+            raise MessageException(
+                f"ascp session stopped while downloading {remote_path}. Error: {stderr.strip()}"
             )
         elif "timed out" in stderr.lower() or "timeout" in stderr.lower():
             raise MessageException(f"Transfer timed out for {remote_path}. Please try again later.")

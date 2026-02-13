@@ -65,10 +65,11 @@ class AscpFilesSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigura
     rate_limit: Union[str, TemplateExpansion] = "300m"
     port: Union[int, TemplateExpansion] = 33001
     disable_encryption: Union[bool, TemplateExpansion] = True
-    max_retries: Union[int, TemplateExpansion] = 3
-    retry_base_delay: Union[float, TemplateExpansion] = 2.0
+    max_retries: Union[int, TemplateExpansion] = 5
+    retry_base_delay: Union[float, TemplateExpansion] = 5.0
     retry_max_delay: Union[float, TemplateExpansion] = 60.0
     enable_resume: Union[bool, TemplateExpansion] = True
+    transfer_timeout: Union[int, TemplateExpansion] = 1800
 
 
 class AscpFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
@@ -90,10 +91,11 @@ class AscpFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
     rate_limit: str = "300m"
     port: int = 33001
     disable_encryption: bool = True
-    max_retries: int = 3
-    retry_base_delay: float = 2.0
+    max_retries: int = 5
+    retry_base_delay: float = 5.0
     retry_max_delay: float = 60.0
     enable_resume: bool = True
+    transfer_timeout: int = 1800
 
 
 class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, AscpFilesSourceConfiguration]):
@@ -172,6 +174,7 @@ class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, As
             retry_base_delay=config.retry_base_delay,
             retry_max_delay=config.retry_max_delay,
             enable_resume=config.enable_resume,
+            transfer_timeout=config.transfer_timeout,
             **cache_options,
         )
 
