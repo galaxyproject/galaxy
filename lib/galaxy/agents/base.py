@@ -12,6 +12,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import (
     Any,
+    Literal,
     Optional,
     TYPE_CHECKING,
     Union,
@@ -61,6 +62,9 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
+# Literal inlines enum values in JSON schema, avoiding $defs that vLLM can't handle
+ConfidenceLiteral = Literal["low", "medium", "high"]
+
 __all__ = [
     "ActionSuggestion",
     "ActionType",
@@ -68,6 +72,7 @@ __all__ = [
     "AgentType",
     "BaseGalaxyAgent",
     "ConfidenceLevel",
+    "ConfidenceLiteral",
     "extract_result_content",
     "extract_structured_output",
     "extract_usage_info",
@@ -237,7 +242,6 @@ class BaseGalaxyAgent(ABC):
         return None
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
-        """Process a query and return structured response."""
         validation_error = self._validate_query(query)
         if validation_error:
             return AgentResponse(
@@ -306,7 +310,6 @@ class BaseGalaxyAgent(ABC):
         raise last_exception or Exception("Max retries exhausted")
 
     def _prepare_prompt(self, query: str, context: dict[str, Any]) -> str:
-        """Prepare the full prompt with optional context."""
         prompt_parts = [query]
 
         if context:
@@ -330,7 +333,6 @@ class BaseGalaxyAgent(ABC):
         )
 
     def _get_fallback_response(self, query: str, error_msg: str) -> AgentResponse:
-        """Return a fallback response when agent processing fails."""
         is_service_error = any(
             indicator in error_msg.lower()
             for indicator in [
@@ -423,7 +425,6 @@ class BaseGalaxyAgent(ABC):
         error: Optional[str] = None,
         reasoning: Optional[str] = None,
     ) -> AgentResponse:
-        """Build an AgentResponse with consistent metadata."""
         return AgentResponse(
             content=content,
             confidence=confidence,

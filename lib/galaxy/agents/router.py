@@ -229,8 +229,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
             try:
                 agent = HistoryAnalyzerAgent(ctx.deps)
-                result = await agent.process(request, context=None)
-                return result.content
+                response = await agent.process(request, context=None)
+                return self._serialize_handoff(response, "history_analyzer")
             except Exception as e:
                 log.error(f"History analyzer handoff failed: {e}")
                 return f"I encountered an issue while analyzing your history. Please try again or contact support. Error: {e}"
@@ -260,8 +260,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
             try:
                 orchestrator = WorkflowOrchestratorAgent(ctx.deps)
-                result = await orchestrator.process(request, context=None)
-                return result.content
+                response = await orchestrator.process(request, context=None)
+                return self._serialize_handoff(response, "next_step_advisor")
 
             except Exception as e:
                 log.error(f"Next-step advisor handoff failed: {e}")
@@ -293,8 +293,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
             try:
                 orchestrator = WorkflowOrchestratorAgent(ctx.deps)
-                result = await orchestrator.process(request, context=None)
-                return result.content
+                response = await orchestrator.process(request, context=None)
+                return self._serialize_handoff(response, "orchestrator")
 
             except Exception as e:
                 log.error(f"Orchestrator handoff failed: {e}")

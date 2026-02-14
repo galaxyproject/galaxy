@@ -8,10 +8,7 @@ was done in the analysis.
 
 import logging
 from pathlib import Path
-from typing import (
-    Any,
-    Literal,
-)
+from typing import Any
 
 from pydantic import (
     BaseModel,
@@ -26,13 +23,12 @@ from .base import (
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
+    ConfidenceLiteral,
     extract_structured_output,
     GalaxyAgentDependencies,
 )
 
 log = logging.getLogger(__name__)
-
-ConfidenceLiteral = Literal["low", "medium", "high"]
 
 
 class HistoryAnalysis(BaseModel):
@@ -141,7 +137,7 @@ class HistoryAnalyzerAgent(BaseGalaxyAgent):
 
         return """You are an expert bioinformatics analyst who specializes in understanding and summarizing Galaxy analysis workflows.
 
-Your task is to analyze a Galaxy history and provide a comprehensive understanding of what was done.
+Your task is to analyze a Galaxy history and provide a clear summary of what was done.
 
 ## Finding the Right History
 
@@ -200,7 +196,7 @@ Use the available tools to gather information:
 4. Call get_tool_citations for the main tools used
 5. Use get_tool_info if you need more details about a specific tool
 
-Then synthesize this information into a comprehensive analysis."""
+Then summarize your findings."""
 
         result = await self._run_with_retry(prompt)
 
@@ -241,7 +237,7 @@ Once you've identified the history, analyze it using:
 4. get_tool_citations for the main tools
 5. get_tool_info for additional tool details
 
-Synthesize this into a comprehensive analysis."""
+Summarize your findings."""
 
         result = await self._run_with_retry(prompt)
 

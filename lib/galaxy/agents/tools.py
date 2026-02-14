@@ -7,7 +7,6 @@ import re
 from pathlib import Path
 from typing import (
     Any,
-    Literal,
     Optional,
 )
 
@@ -24,6 +23,7 @@ from .base import (
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
+    ConfidenceLiteral,
     extract_result_content,
     extract_structured_output,
     GalaxyAgentDependencies,
@@ -31,9 +31,6 @@ from .base import (
 )
 
 log = logging.getLogger(__name__)
-
-# Literal inlines enum values in JSON schema, avoiding $defs that vLLM can't handle
-ConfidenceLiteral = Literal["low", "medium", "high"]
 
 
 class SimplifiedToolRecommendationResult(BaseModel):
@@ -54,7 +51,6 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
     agent_type = AgentType.TOOL_RECOMMENDATION
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
-        """Create the tool recommendation agent."""
         if self._supports_structured_output():
             agent = Agent(
                 self._get_model(),
@@ -128,12 +124,10 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         return agent
 
     def get_system_prompt(self) -> str:
-        """Get the system prompt for tool recommendation."""
         prompt_path = Path(__file__).parent / "prompts" / "tool_recommendation.md"
         return prompt_path.read_text()
 
     async def search_tools(self, query: str) -> list[dict[str, Any]]:
-        """Search for tools in the Galaxy toolbox."""
         if not self.deps.toolbox:
             log.warning("Toolbox not available in agent dependencies")
             return []
@@ -163,7 +157,6 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             return []
 
     async def get_tool_details(self, tool_id: str) -> dict[str, Any]:
-        """Get detailed information about a specific tool."""
         if not self.deps.toolbox:
             return {"id": tool_id, "error": "Toolbox not available"}
 
@@ -210,7 +203,6 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             return {"id": tool_id, "error": str(e)}
 
     async def get_tool_categories(self) -> list[str]:
-        """Get tool categories/sections from the toolbox."""
         if not self.deps.toolbox:
             log.warning("Toolbox not available in agent dependencies")
             return []
@@ -228,7 +220,6 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             return []
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
-        """Process a tool recommendation request."""
         # Fast path: bypass LLM for exact tool name matches
         try:
             trimmed_query = query.strip()
@@ -332,7 +323,6 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             return self._get_fallback_response(query, str(e))
 
     def _format_recommendation_response(self, recommendation: SimplifiedToolRecommendationResult) -> str:
-        """Format the recommendation into user-friendly content."""
         parts = []
 
         if recommendation.primary_tools:
@@ -377,7 +367,6 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         return "\n".join(parts)
 
     def _create_suggestions(self, recommendation: SimplifiedToolRecommendationResult) -> list[ActionSuggestion]:
-        """Create action suggestions from recommendation."""
         suggestions = []
 
         if recommendation.primary_tools:
@@ -404,7 +393,6 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         return suggestions
 
     def _verify_tool_exists(self, tool_id: str) -> bool:
-        """Check if a tool ID exists in the Galaxy toolbox."""
         if not self.deps.toolbox:
             log.warning("Toolbox not available for tool verification")
             return False
@@ -420,7 +408,6 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         return "Unable to generate tool recommendations at this time."
 
     def _get_simple_system_prompt(self) -> str:
-        """Simple system prompt for models without structured output."""
         return """
         You are a Galaxy tool recommendation expert. Analyze the user's request and recommend tools.
 
@@ -440,7 +427,6 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         """
 
     def _parse_simple_response(self, response_text: str) -> dict[str, Any]:
-        """Parse simple text response into structured format."""
         normalized_text = normalize_llm_text(response_text)
 
         tool = re.search(r"TOOL:\s*([^\n]+)", normalized_text, re.IGNORECASE)

@@ -59,7 +59,6 @@ class CustomToolAgent(BaseGalaxyAgent):
         return prompt_path.read_text()
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
-        """Process tool creation request."""
         capability_error = self._validate_model_capabilities()
         if capability_error:
             return self._build_response(

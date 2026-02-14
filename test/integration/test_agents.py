@@ -1,4 +1,4 @@
-"""Test Galaxy AI agents API and functionality.
+"""Test Galaxy AI agents API.
 
 This module contains two test suites:
 1. Mocked tests - Deterministic tests with mocked LLM responses (always run)
@@ -51,8 +51,6 @@ log = logging.getLogger(__name__)
 
 
 class AgentIntegrationTestCase(IntegrationTestCase):
-    """Base class for agent integration tests."""
-
     dataset_populator: DatasetPopulator
     workflow_populator: WorkflowPopulator
 
@@ -99,7 +97,6 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
     def test_list_agents(self):
-        """Test listing available agents (no LLM needed)."""
         response = self._get("ai/agents")
         self._assert_status_code_is_ok(response)
         data = response.json()
@@ -162,7 +159,6 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
     )
     @patch("galaxy.agents.custom_tool.Agent")
     def test_query_custom_tool_agent_mocked(self, mock_agent_class):
-        """Test the custom tool agent with mocked LLM."""
         mock_agent = AsyncMock()
         mock_agent_class.return_value = mock_agent
 
@@ -219,7 +215,6 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
     )
     @patch("galaxy.agents.error_analysis.Agent")
     def test_query_error_analysis_agent_mocked(self, mock_agent_class):
-        """Test the error analysis agent with mocked LLM."""
         mock_agent = AsyncMock()
         mock_agent_class.return_value = mock_agent
 
@@ -284,7 +279,6 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
     """
 
     def test_query_agent_auto_routing_live(self):
-        """Test automatic agent routing with live LLM."""
         response = self._post(
             "ai/agents/query",
             data={
@@ -301,7 +295,6 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         assert data.get("routing_info", {}).get("selected_agent") == "custom_tool"
 
     def test_query_custom_tool_agent_live(self):
-        """Test custom tool agent with live LLM."""
         response = self._post(
             "ai/agents/query",
             data={
@@ -323,7 +316,6 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         assert "command" in tool_yaml or "shell_command" in tool_yaml
 
     def test_error_analysis_endpoint_live(self):
-        """Test the dedicated error-analysis endpoint."""
         response = self._post(
             "ai/agents/error-analysis",
             data={
@@ -341,7 +333,6 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         assert any(word in content for word in ["memory", "kill", "resource", "oom"])
 
     def test_custom_tool_endpoint_live(self):
-        """Test the dedicated custom-tool endpoint."""
         response = self._post(
             "ai/agents/custom-tool",
             data={
@@ -358,7 +349,6 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         assert "tool_yaml" in metadata or "tool_id" in metadata
 
     def test_chat_endpoint_live(self):
-        """Test the chat endpoint with auto routing."""
         response = self._post(
             "chat?query=What%20tools%20are%20available%20for%20RNA-seq%3F&agent_type=auto",
             data={},
@@ -371,7 +361,6 @@ class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
         assert len(data["response"]) > 0
 
     def test_chat_history_endpoint(self):
-        """Test the chat history endpoint."""
         response = self._get("chat/history?limit=5")
         self._assert_status_code_is_ok(response)
         data = response.json()
@@ -392,7 +381,6 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
     """
 
     def test_encode_ids_helper_encodes_nested_ids(self):
-        """Test that _encode_ids_in_response correctly encodes nested IDs."""
         from galaxy.managers.agent_operations import AgentOperationsManager
         from galaxy.managers.context import ProvidesUserContext
 
@@ -447,7 +435,6 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
         assert isinstance(result["list_items"][1]["id"], str)
 
     def test_encode_ids_preserves_non_id_fields(self):
-        """Test that encoding preserves non-ID fields unchanged."""
         from galaxy.managers.agent_operations import AgentOperationsManager
         from galaxy.managers.context import ProvidesUserContext
 
@@ -496,7 +483,6 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
         assert result["tags"] == ["tag1", "tag2"]
 
     def test_encode_ids_handles_already_encoded_ids(self):
-        """Test that string IDs (already encoded) are left unchanged."""
         from galaxy.managers.agent_operations import AgentOperationsManager
         from galaxy.managers.context import ProvidesUserContext
 

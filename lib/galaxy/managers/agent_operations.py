@@ -5,13 +5,24 @@ Delegates to the Galaxy service layer for validation, permission checks, and pag
 """
 
 import logging
+import time
 from typing import Any
 
+import httpx
+
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.hdas import HDAManager
+from galaxy.managers.workflows import WorkflowsManager
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
+from galaxy.schema.invocation import InvocationSerializationParams
+from galaxy.schema.schema import (
+    CreateHistoryPayload,
+    DatasetSourceType,
+)
+from galaxy.schema.workflows import InvokeWorkflowPayload
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -43,13 +54,15 @@ class AgentOperationsManager:
         self._datasets_service = None
         self._workflows_service = None
         self._invocations_service = None
+        self._hda_manager = None
+        self._iwc_manifest_cache: list[dict[str, Any]] | None = None
+        self._iwc_manifest_cache_time: float = 0.0
         log.debug("AgentOperationsManager initialized")
 
     def _encode_id(self, value: int) -> str:
         return self.trans.security.encode_id(value)
 
     def _search_toolbox(self, query: str) -> list[str]:
-        """Search toolbox for matching tool IDs."""
         panel_view = self.app.config.default_panel_view
         return self.app.toolbox_search.search(q=query, panel_view=panel_view, config=self.app.config)
 
@@ -120,6 +133,12 @@ class AgentOperationsManager:
             self._invocations_service = self.app[InvocationsService]
         return self._invocations_service
 
+    @property
+    def hda_manager(self):
+        if self._hda_manager is None:
+            self._hda_manager = self.app[HDAManager]
+        return self._hda_manager
+
     def connect(self) -> dict[str, Any]:
         """Verify connection and return server info + current user."""
         config = self.app.config
@@ -143,7 +162,6 @@ class AgentOperationsManager:
         }
 
     def search_tools(self, query: str) -> dict[str, Any]:
-        """Search for Galaxy tools by name or keyword."""
         tool_ids = self._search_toolbox(query)
 
         tools = []
@@ -206,7 +224,6 @@ class AgentOperationsManager:
         return tool_info
 
     def list_histories(self, limit: int = 50, offset: int = 0) -> dict[str, Any]:
-        """List the current user's histories."""
         serialization_params = SerializationParams(view="summary")
         filter_params = FilterQueryParams(limit=limit, offset=offset)
 
@@ -238,7 +255,6 @@ class AgentOperationsManager:
         return self._encode_ids_in_response(result)
 
     def get_job_status(self, job_id: str) -> dict[str, Any]:
-        """Get status and details for a job."""
         decoded_job_id = self.trans.security.decode_id(job_id)
 
         job_details = self.jobs_service.show(
@@ -250,9 +266,6 @@ class AgentOperationsManager:
         return {"job": self._encode_ids_in_response(job_details), "job_id": job_id}
 
     def create_history(self, name: str) -> dict[str, Any]:
-        """Create a new history."""
-        from galaxy.schema.schema import CreateHistoryPayload
-
         payload = CreateHistoryPayload(name=name)
         serialization_params = SerializationParams(view="summary")
 
@@ -320,9 +333,6 @@ class AgentOperationsManager:
         }
 
     def get_dataset_details(self, dataset_id: str) -> dict[str, Any]:
-        """Get detailed information about a dataset."""
-        from galaxy.schema.schema import DatasetSourceType
-
         decoded_dataset_id = self.trans.security.decode_id(dataset_id)
         serialization_params = SerializationParams(view="detailed")
 
@@ -406,7 +416,6 @@ class AgentOperationsManager:
         }
 
     def get_workflow_details(self, workflow_id: str) -> dict[str, Any]:
-        """Get detailed information about a workflow."""
         decoded_workflow_id = self.trans.security.decode_id(workflow_id)
 
         workflow = self.workflows_service.show_workflow(
@@ -430,8 +439,6 @@ class AgentOperationsManager:
         parameters: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Invoke (run) a workflow."""
-        from galaxy.schema.workflows import InvokeWorkflowPayload
-
         decoded_workflow_id = self.trans.security.decode_id(workflow_id)
 
         payload = InvokeWorkflowPayload(
@@ -456,11 +463,6 @@ class AgentOperationsManager:
         offset: int = 0,
     ) -> dict[str, Any]:
         """List workflow invocations, optionally filtered by workflow or history."""
-        from galaxy.schema.invocation import (
-            InvocationIndexPayload,
-            InvocationSerializationParams,
-        )
-
         decoded_workflow_id = None
         if workflow_id:
             decoded_workflow_id = self.trans.security.decode_id(workflow_id)
@@ -468,6 +470,8 @@ class AgentOperationsManager:
         decoded_history_id = None
         if history_id:
             decoded_history_id = self.trans.security.decode_id(history_id)
+
+        from galaxy.webapps.galaxy.services.invocations import InvocationIndexPayload
 
         payload = InvocationIndexPayload(
             workflow_id=decoded_workflow_id,
@@ -496,9 +500,6 @@ class AgentOperationsManager:
         }
 
     def get_invocation_details(self, invocation_id: str) -> dict[str, Any]:
-        """Get detailed information about a workflow invocation."""
-        from galaxy.schema.invocation import InvocationSerializationParams
-
         decoded_invocation_id = self.trans.security.decode_id(invocation_id)
         serialization_params = InvocationSerializationParams(view="element")
 
@@ -514,9 +515,6 @@ class AgentOperationsManager:
         }
 
     def cancel_workflow_invocation(self, invocation_id: str) -> dict[str, Any]:
-        """Cancel a running workflow invocation."""
-        from galaxy.schema.invocation import InvocationSerializationParams
-
         decoded_invocation_id = self.trans.security.decode_id(invocation_id)
         serialization_params = InvocationSerializationParams(view="element")
 
@@ -533,7 +531,6 @@ class AgentOperationsManager:
         }
 
     def get_tool_panel(self, view: str | None = None) -> dict[str, Any]:
-        """Get the tool panel structure."""
         if view is None:
             view = self.app.toolbox._default_panel_view(self.trans)
 
@@ -653,12 +650,14 @@ class AgentOperationsManager:
         }
 
     def _get_iwc_manifest(self) -> list[dict[str, Any]]:
-        """Fetch the IWC workflow manifest from iwc.galaxyproject.org."""
-        import httpx
-
+        """Fetch the IWC workflow manifest, cached for 10 minutes."""
+        if self._iwc_manifest_cache is not None and (time.time() - self._iwc_manifest_cache_time) < 600:
+            return self._iwc_manifest_cache
         response = httpx.get("https://iwc.galaxyproject.org/workflow_manifest.json", timeout=30.0)
         response.raise_for_status()
-        return response.json()
+        self._iwc_manifest_cache = response.json()
+        self._iwc_manifest_cache_time = time.time()
+        return self._iwc_manifest_cache
 
     def get_iwc_workflows(self) -> dict[str, Any]:
         """Get all workflows from the IWC (Intergalactic Workflow Commission)."""
@@ -681,7 +680,6 @@ class AgentOperationsManager:
         return {"workflows": all_workflows, "count": len(all_workflows)}
 
     def search_iwc_workflows(self, query: str) -> dict[str, Any]:
-        """Search IWC workflows by name, description, or tags."""
         manifest = self._get_iwc_manifest()
         query_lower = query.lower()
 
@@ -717,7 +715,6 @@ class AgentOperationsManager:
         return {"query": query, "workflows": results, "count": len(results)}
 
     def import_workflow_from_iwc(self, trs_id: str) -> dict[str, Any]:
-        """Import a workflow from IWC into Galaxy."""
         manifest = self._get_iwc_manifest()
 
         workflow_def = None
@@ -737,8 +734,6 @@ class AgentOperationsManager:
                 "Use search_iwc_workflows() to find valid trsIDs."
             )
 
-        from galaxy.managers.workflows import WorkflowsManager
-
         workflows_manager = WorkflowsManager(self.app)
         imported = workflows_manager.import_workflow_dict(self.trans, workflow_def, publish=False)
 
@@ -751,7 +746,6 @@ class AgentOperationsManager:
         }
 
     def list_history_ids(self, limit: int = 100) -> dict[str, Any]:
-        """Get a simplified list of history IDs and names."""
         serialization_params = SerializationParams(view="summary")
         filter_params = FilterQueryParams(limit=limit, offset=0)
 
@@ -776,11 +770,7 @@ class AgentOperationsManager:
     def get_job_details(self, dataset_id: str, history_id: str | None = None) -> dict[str, Any]:
         """Get details about the job that created a dataset."""
         decoded_dataset_id = self.trans.security.decode_id(dataset_id)
-
-        from galaxy.managers.hdas import HDAManager
-
-        hda_manager = self.app[HDAManager]
-        hda = hda_manager.get_accessible(decoded_dataset_id, self.trans.user)
+        hda = self.hda_manager.get_accessible(decoded_dataset_id, self.trans.user)
 
         if not hda:
             raise ValueError(f"Dataset '{dataset_id}' not found or not accessible")
@@ -808,11 +798,7 @@ class AgentOperationsManager:
     def get_job_errors(self, dataset_id: str) -> dict[str, Any]:
         """Get error details (stderr, stdout, exit code) for a failed job."""
         decoded_dataset_id = self.trans.security.decode_id(dataset_id)
-
-        from galaxy.managers.hdas import HDAManager
-
-        hda_manager = self.app[HDAManager]
-        hda = hda_manager.get_accessible(decoded_dataset_id, self.trans.user)
+        hda = self.hda_manager.get_accessible(decoded_dataset_id, self.trans.user)
 
         if not hda:
             raise ValueError(f"Dataset '{dataset_id}' not found or not accessible")
@@ -847,11 +833,7 @@ class AgentOperationsManager:
     def download_dataset(self, dataset_id: str) -> dict[str, Any]:
         """Get download URL and metadata for a dataset."""
         decoded_dataset_id = self.trans.security.decode_id(dataset_id)
-
-        from galaxy.managers.hdas import HDAManager
-
-        hda_manager = self.app[HDAManager]
-        hda = hda_manager.get_accessible(decoded_dataset_id, self.trans.user)
+        hda = self.hda_manager.get_accessible(decoded_dataset_id, self.trans.user)
 
         if not hda:
             raise ValueError(f"Dataset '{dataset_id}' not found or not accessible")
@@ -876,7 +858,6 @@ class AgentOperationsManager:
         }
 
     def get_server_info(self) -> dict[str, Any]:
-        """Get Galaxy server version, configuration, and capabilities."""
         config = self.app.config
 
         return {
@@ -896,7 +877,6 @@ class AgentOperationsManager:
         }
 
     def get_user(self) -> dict[str, Any]:
-        """Get current authenticated user information."""
         user = self.trans.user
 
         if not user:
