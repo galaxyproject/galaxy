@@ -16,8 +16,8 @@ const mockView = {
     finalize: mockFinalize,
     resize: mockResize,
     addSignalListener: mockAddSignalListener,
-    runAfter: vi.fn((cb: () => void) => cb()),
-    container: vi.fn(() => null),
+    scale: vi.fn(() => () => "#000"),
+    data: vi.fn(() => []),
 };
 
 vi.mock("vega-embed", () => ({

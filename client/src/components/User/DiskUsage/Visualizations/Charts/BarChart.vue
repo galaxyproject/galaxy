@@ -2,7 +2,7 @@
 import { BCard } from "bootstrap-vue";
 import type { View } from "vega";
 import type { VisualizationSpec } from "vega-embed";
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import type { DataValuePoint } from ".";
 
@@ -32,6 +32,9 @@ const emit = defineEmits<{
 }>();
 
 const selectedDataPoint = ref<DataValuePoint | undefined>(undefined);
+const selectedLegendLabel = ref<string | undefined>(undefined);
+const legendItems = ref<{ label: string; color: string }[]>([]);
+let currentView: View | undefined;
 
 const hasData = computed(
     () => props.data.length > 0 && props.data.reduce((total, dataPoint) => total + dataPoint.value, 0) > 0,
@@ -80,7 +83,7 @@ const vegaSpec = computed<VisualizationSpec>(() => {
                 field: "formattedValue",
                 type: "nominal",
                 sort: null,
-                legend: { title: null, orient: "right", symbolType: "circle", labelFontSize: 14 },
+                legend: null,
             },
             opacity: props.enableSelection
                 ? {
@@ -107,84 +110,38 @@ watch(
     },
 );
 
-function toggleLegendSelection(view: View, formattedValue: string) {
-    const store = view.data("barSelection_store");
-    const isSelected = store.some((s: any) => s.values?.[0] === formattedValue);
-    view.data(
-        "barSelection_store",
-        isSelected ? [] : [{ fields: [{ field: "formattedValue", type: "E" }], values: [formattedValue] }],
-    );
-    view.runAsync();
-}
-
-const legendClickAbort = ref<AbortController | undefined>(undefined);
-
-onBeforeUnmount(() => {
-    legendClickAbort.value?.abort();
-});
-
-function addLegendClickTargets(view: View) {
-    const container = view.container();
-    if (!container) {
-        return;
-    }
-    const entryGroup = container.querySelector(".role-legend-entry");
-    if (!entryGroup) {
-        return;
-    }
+function updateLegendItems(view: View) {
+    const colorScale = view.scale("color") as (value: string) => string;
     const data = view.data("data_0") as Record<string, string>[];
-    const uniqueLabels: string[] = [];
+    const seen = new Set<string>();
+    const items: { label: string; color: string }[] = [];
     for (const d of data) {
         const fv = d.formattedValue;
-        if (fv && !uniqueLabels.includes(fv)) {
-            uniqueLabels.push(fv);
+        if (fv && !seen.has(fv)) {
+            seen.add(fv);
+            items.push({ label: fv, color: colorScale(fv) });
         }
     }
-    // Remove any existing overlays before adding new ones
-    entryGroup.querySelectorAll("[data-legend-index]").forEach((el) => el.remove());
-    entryGroup.querySelectorAll(".role-scope > g").forEach((entry, i) => {
-        if (!uniqueLabels[i]) {
-            return;
-        }
-        const bg = entry.querySelector(".background");
-        if (!bg) {
-            return;
-        }
-        const bbox = (bg as SVGPathElement).getBBox();
-        const overlay = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        overlay.setAttribute("x", String(bbox.x));
-        overlay.setAttribute("y", String(bbox.y));
-        overlay.setAttribute("width", String(bbox.width));
-        overlay.setAttribute("height", String(bbox.height));
-        overlay.setAttribute("fill", "transparent");
-        overlay.setAttribute("pointer-events", "all");
-        overlay.setAttribute("cursor", "pointer");
-        overlay.setAttribute("data-legend-index", String(i));
-        entry.appendChild(overlay);
-    });
-    legendClickAbort.value?.abort();
-    legendClickAbort.value = new AbortController();
-    container.addEventListener(
-        "click",
-        (e: MouseEvent) => {
-            const target = (e.target as Element).closest("[data-legend-index]");
-            if (!target) {
-                return;
-            }
-            const index = parseInt(target.getAttribute("data-legend-index")!, 10);
-            if (uniqueLabels[index]) {
-                toggleLegendSelection(view, uniqueLabels[index]!);
-            }
-        },
-        { signal: legendClickAbort.value.signal },
+    legendItems.value = items;
+}
+
+function onLegendItemClick(label: string) {
+    if (!props.enableSelection || !currentView) {
+        return;
+    }
+    const store = currentView.data("barSelection_store");
+    const isSelected = store.some((s: any) => s.values?.[0] === label);
+    currentView.data(
+        "barSelection_store",
+        isSelected ? [] : [{ fields: [{ field: "formattedValue", type: "E" }], values: [label] }],
     );
+    selectedLegendLabel.value = isSelected ? undefined : label;
+    currentView.runAsync();
 }
 
 function onNewView(view: View) {
-    addLegendClickTargets(view);
-    view.addEventListener("render", () => {
-        addLegendClickTargets(view);
-    });
+    currentView = view;
+    updateLegendItems(view);
     if (!props.enableSelection) {
         return;
     }
@@ -195,11 +152,14 @@ function onNewView(view: View) {
             const dataPoint = match ? props.data.find((d) => d.id === match.id) : undefined;
             if (dataPoint && selectedDataPoint.value?.id === dataPoint.id) {
                 selectedDataPoint.value = undefined;
+                selectedLegendLabel.value = undefined;
             } else {
                 selectedDataPoint.value = dataPoint;
+                selectedLegendLabel.value = selectedFV;
             }
         } else {
             selectedDataPoint.value = undefined;
+            selectedLegendLabel.value = undefined;
         }
         emit("selection-changed", selectedDataPoint.value);
     });
@@ -219,7 +179,21 @@ function onNewView(view: View) {
         <div v-if="hasData">
             <p class="chart-description">{{ description }}</p>
             <div class="chart-area">
-                <VegaWrapper :spec="vegaSpec" @new-view="onNewView" />
+                <div class="chart-with-legend">
+                    <VegaWrapper :spec="vegaSpec" @new-view="onNewView" />
+                    <div v-if="legendItems.length > 0" class="legend-container">
+                        <div
+                            v-for="item in legendItems"
+                            :key="item.label"
+                            class="legend-item"
+                            :class="{ 'legend-item-dimmed': selectedLegendLabel && selectedLegendLabel !== item.label }"
+                            :style="{ cursor: enableSelection ? 'pointer' : 'default' }"
+                            @click="onLegendItemClick(item.label)">
+                            <span class="legend-symbol" :style="{ backgroundColor: item.color }" />
+                            <span class="legend-label">{{ item.label }}</span>
+                        </div>
+                    </div>
+                </div>
                 <div v-if="selectedDataPoint" class="selection-info w-100">
                     <slot name="selection" :data="selectedDataPoint">
                         <GCard :title="`Selected: ${selectedDataPoint.label}`" />
@@ -241,6 +215,51 @@ function onNewView(view: View) {
 
 .chart-area {
     position: relative;
+}
+
+.chart-with-legend {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.chart-with-legend > :first-child {
+    flex: 1;
+    min-width: 0;
+}
+
+.legend-container {
+    flex-shrink: 0;
+    max-height: 350px;
+    max-width: 250px;
+    overflow-y: auto;
+    padding: 0.25rem 0;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.2rem 0.5rem;
+    white-space: nowrap;
+    font-size: 0.85rem;
+}
+
+.legend-item-dimmed {
+    opacity: 0.5;
+}
+
+.legend-symbol {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.legend-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .selection-info {
