@@ -72,6 +72,7 @@ const vegaSpec = computed<VisualizationSpec>(() => {
                 axis: {
                     title: null,
                     tickCount: 5,
+                    labelFontSize: 14,
                     ...(props.yAxisLabelExpr ? { labelExpr: props.yAxisLabelExpr } : {}),
                 },
             },
@@ -79,7 +80,7 @@ const vegaSpec = computed<VisualizationSpec>(() => {
                 field: "formattedValue",
                 type: "nominal",
                 sort: null,
-                legend: { title: null, orient: "right", symbolType: "circle" },
+                legend: { title: null, orient: "right", symbolType: "circle", labelFontSize: 14 },
             },
             opacity: props.enableSelection
                 ? {
