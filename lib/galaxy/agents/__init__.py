@@ -1,7 +1,7 @@
 """
 Galaxy AI Agents Module
 
-Provides AI agent functionality built on pydantic-ai for Galaxy.
+AI agents built on pydantic-ai for Galaxy.
 """
 
 from .base import (

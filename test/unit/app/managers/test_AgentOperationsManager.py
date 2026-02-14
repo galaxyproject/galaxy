@@ -1,5 +1,3 @@
-"""Unit tests for AgentOperationsManager."""
-
 from unittest import mock
 
 import pytest
@@ -16,7 +14,6 @@ class TestAgentOperationsManagerBasic(BaseTestCase):
         self.agent_ops = AgentOperationsManager(app=self.app, trans=self.trans)
 
     def test_connect(self):
-        """Test the connect operation returns expected user and server info."""
         result = self.agent_ops.connect()
 
         assert result["connected"] is True
@@ -26,7 +23,6 @@ class TestAgentOperationsManagerBasic(BaseTestCase):
         assert result["user"]["username"] == self.admin_user.username
 
     def test_connect_requires_user(self):
-        """Test connect fails without authenticated user."""
         self.trans.set_user(None)
         agent_ops = AgentOperationsManager(app=self.app, trans=self.trans)
 
@@ -34,7 +30,6 @@ class TestAgentOperationsManagerBasic(BaseTestCase):
             agent_ops.connect()
 
     def test_get_user(self):
-        """Test get_user returns current user details."""
         result = self.agent_ops.get_user()
 
         assert result["email"] == self.admin_user.email
@@ -44,7 +39,6 @@ class TestAgentOperationsManagerBasic(BaseTestCase):
         assert result["deleted"] is False
 
     def test_get_server_info(self):
-        """Test get_server_info returns server configuration."""
         result = self.agent_ops.get_server_info()
 
         assert "server" in result
@@ -60,7 +54,6 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         self.agent_ops = AgentOperationsManager(app=self.app, trans=self.trans)
 
     def test_create_history(self):
-        """Test creating a new history with mocked service."""
         mock_history = mock.MagicMock()
         mock_history.name = "Test History"
         mock_history.id = "abc123"
@@ -75,7 +68,6 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         assert result.name == "Test History"
 
     def test_list_histories(self):
-        """Test listing user histories with mocked service."""
         mock_histories = [
             mock.MagicMock(id="hist1", name="History 1"),
             mock.MagicMock(id="hist2", name="History 2"),
@@ -93,7 +85,6 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         assert result["pagination"]["offset"] == 0
 
     def test_search_tools(self):
-        """Test tool search with mocked toolbox."""
         mock_tool = mock.MagicMock()
         mock_tool.id = "upload1"
         mock_tool.name = "Upload File"
@@ -113,7 +104,6 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         assert result["tools"][0]["id"] == "upload1"
 
     def test_get_tool_details(self):
-        """Test getting tool details with mocked toolbox."""
         mock_tool = mock.MagicMock()
         mock_tool.id = "cat1"
         mock_tool.name = "Concatenate datasets"
@@ -131,7 +121,6 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         assert result["version"] == "1.0"
 
     def test_get_tool_details_not_found(self):
-        """Test get_tool_details raises for non-existent tool."""
         self.app.toolbox = mock.MagicMock()
         self.app.toolbox.get_tool.return_value = None
 
@@ -139,7 +128,6 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
             self.agent_ops.get_tool_details("nonexistent_tool")
 
     def test_run_tool(self):
-        """Test running a tool with mocked service."""
         mock_result = {"jobs": [{"id": "job123"}], "outputs": [{"id": "dataset123"}]}
 
         mock_service = mock.MagicMock()
@@ -152,7 +140,6 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         mock_service._create.assert_called_once()
 
     def test_get_job_status(self):
-        """Test getting job status with mocked service."""
         mock_job = mock.MagicMock()
         mock_job.id = 123
         mock_job.state = "ok"
@@ -178,7 +165,6 @@ class TestAgentOperationsManagerIWC(BaseTestCase):
         self.agent_ops = AgentOperationsManager(app=self.app, trans=self.trans)
 
     def test_get_iwc_workflows(self):
-        """Test fetching IWC workflow catalog."""
         mock_manifest = [
             {
                 "workflows": [
@@ -204,7 +190,6 @@ class TestAgentOperationsManagerIWC(BaseTestCase):
             assert result["workflows"][0]["name"] == "Test Workflow"
 
     def test_search_iwc_workflows(self):
-        """Test searching IWC workflows."""
         mock_manifest = [
             {
                 "workflows": [
@@ -238,7 +223,6 @@ class TestAgentOperationsManagerIWC(BaseTestCase):
             assert result["workflows"][0]["name"] == "RNA-seq Analysis"
 
     def test_search_iwc_workflows_by_tag(self):
-        """Test searching IWC workflows by tag."""
         mock_manifest = [
             {
                 "workflows": [
@@ -261,7 +245,6 @@ class TestAgentOperationsManagerIWC(BaseTestCase):
             assert result["workflows"][0]["name"] == "Variant Calling"
 
     def test_import_workflow_from_iwc_not_found(self):
-        """Test importing non-existent IWC workflow raises error."""
         mock_manifest = []
 
         with mock.patch.object(self.agent_ops, "_get_iwc_manifest", return_value=mock_manifest):
@@ -269,7 +252,6 @@ class TestAgentOperationsManagerIWC(BaseTestCase):
                 self.agent_ops.import_workflow_from_iwc("#workflow/nonexistent/main")
 
     def test_import_workflow_from_iwc(self):
-        """Test importing workflow from IWC."""
         mock_manifest = [
             {
                 "workflows": [
@@ -291,7 +273,7 @@ class TestAgentOperationsManagerIWC(BaseTestCase):
         mock_imported.name = "Test Workflow"
 
         with mock.patch.object(self.agent_ops, "_get_iwc_manifest", return_value=mock_manifest):
-            with mock.patch("galaxy.managers.workflows.WorkflowsManager") as mock_wf_manager:
+            with mock.patch("galaxy.managers.agent_operations.WorkflowsManager") as mock_wf_manager:
                 mock_wf_manager.return_value.import_workflow_dict.return_value = mock_imported
                 self.trans.security.encode_id = mock.MagicMock(return_value="encoded123")
 

@@ -72,7 +72,7 @@ log = logging.getLogger(__name__)
 router = Router(tags=["chat"])
 
 DEFAULT_PROMPT = """
-Please only say that something went wrong when configuing the ai prompt in your response.
+Please only say that something went wrong when configuring the ai prompt in your response.
 """
 
 JobIdQueryParam = Annotated[

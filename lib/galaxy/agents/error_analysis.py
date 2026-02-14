@@ -8,7 +8,6 @@ from functools import partial
 from pathlib import Path
 from typing import (
     Any,
-    Literal,
     Optional,
 )
 
@@ -23,6 +22,7 @@ from .base import (
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
+    ConfidenceLiteral,
     extract_result_content,
     extract_structured_output,
     GalaxyAgentDependencies,
@@ -30,9 +30,6 @@ from .base import (
 )
 
 log = logging.getLogger(__name__)
-
-# Literal inlines enum values in JSON schema, avoiding $defs that vLLM can't handle
-ConfidenceLiteral = Literal["low", "medium", "high"]
 
 
 class ErrorAnalysisResult(BaseModel):
@@ -74,7 +71,6 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         return prompt_path.read_text()
 
     async def get_job_details(self, job_id: int) -> dict[str, Any]:
-        """Get job information for error analysis."""
         try:
             if not self.deps.job_manager:
                 return {"error": "Job manager not available"}
@@ -104,81 +100,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             log.warning(f"Error getting job details for {job_id}: {e}")
             return {"error": f"Failed to retrieve job details: {str(e)}"}
 
-    async def get_tool_info(self, tool_id: str) -> dict[str, Any]:
-        """Get tool metadata and documentation."""
-        if not self.deps.toolbox:
-            return {"error": "Toolbox not available"}
-
-        try:
-            tool = self.deps.toolbox.get_tool(tool_id)
-            if not tool:
-                return {"error": "Tool not found"}
-
-            return {
-                "tool_id": tool.id,
-                "name": tool.name,
-                "version": tool.version,
-                "description": tool.description or "",
-                "requirements": [str(r) for r in tool.requirements] if hasattr(tool, "requirements") else [],
-                "help_text": str(tool.raw_help)[:500] if hasattr(tool, "raw_help") and tool.raw_help else "",
-            }
-        except (AttributeError, KeyError, TypeError) as e:
-            log.warning(f"Error getting tool info for {tool_id}: {e}")
-            return {"error": f"Failed to retrieve tool info: {str(e)}"}
-
-    async def search_error_patterns(self, error_text: str) -> list[dict[str, Any]]:
-        """Search for similar error patterns using keyword heuristics."""
-        try:
-            patterns = []
-            error_lower = error_text.lower()
-
-            if "memory" in error_lower or "out of memory" in error_lower:
-                patterns.append(
-                    {
-                        "pattern": "Memory exhaustion",
-                        "frequency": "common",
-                        "solutions": [
-                            "Reduce input data size",
-                            "Request more memory in job configuration",
-                            "Use tools designed for large datasets",
-                        ],
-                    }
-                )
-
-            if "permission denied" in error_lower:
-                patterns.append(
-                    {
-                        "pattern": "Permission error",
-                        "frequency": "common",
-                        "solutions": [
-                            "Check file permissions",
-                            "Ensure proper data library access",
-                            "Contact administrator if system files are involved",
-                        ],
-                    }
-                )
-
-            if "command not found" in error_lower:
-                patterns.append(
-                    {
-                        "pattern": "Missing tool or dependency",
-                        "frequency": "common",
-                        "solutions": [
-                            "Tool may not be installed correctly",
-                            "Check tool dependencies",
-                            "Contact administrator about tool installation",
-                        ],
-                    }
-                )
-
-            return patterns
-
-        except (AttributeError, KeyError, TypeError) as e:
-            log.warning(f"Error searching patterns: {e}")
-            return []
-
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
-        """Process an error analysis request."""
         try:
             log.info(f"ErrorAnalysis: Received query (length={len(query)})")
             log.info(f"ErrorAnalysis: Query preview: {query[:800]}...")

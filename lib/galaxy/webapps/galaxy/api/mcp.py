@@ -77,6 +77,7 @@ def get_mcp_app(gx_app):
     mcp = FastMCP("Galaxy")
 
     base_url = getattr(gx_app.config, "galaxy_infrastructure_url", "http://localhost:8080")
+    user_manager = UserManager(gx_app)
 
     def get_operations_manager(api_key: str, ctx: MCPContext) -> AgentOperationsManager:
         """Look up user from API key and return an AgentOperationsManager."""
@@ -85,7 +86,6 @@ def get_mcp_app(gx_app):
                 "API key required. You can create an API key in Galaxy under User -> Preferences -> Manage API Key."
             )
 
-        user_manager = UserManager(gx_app)
         user = user_manager.by_api_key(api_key=api_key)
 
         if not user:
