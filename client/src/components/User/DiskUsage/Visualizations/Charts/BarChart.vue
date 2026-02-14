@@ -55,7 +55,7 @@ const vegaSpec = computed<VisualizationSpec>(() => {
             ? [
                   {
                       name: "barSelection",
-                      select: { type: "point", fields: ["id"] },
+                      select: { type: "point", fields: ["formattedValue"] },
                   },
               ]
             : [],
@@ -106,14 +106,87 @@ watch(
     },
 );
 
+function toggleLegendSelection(view: View, formattedValue: string) {
+    const store = view.data("barSelection_store");
+    const isSelected = store.some((s: any) => s.values?.[0] === formattedValue);
+    view.data(
+        "barSelection_store",
+        isSelected ? [] : [{ fields: [{ field: "formattedValue", type: "E" }], values: [formattedValue] }],
+    );
+    view.runAsync();
+}
+
+let legendClickAbort: AbortController | undefined;
+
+function addLegendClickTargets(view: View) {
+    const container = view.container();
+    if (!container) {
+        return;
+    }
+    const entryGroup = container.querySelector(".role-legend-entry");
+    if (!entryGroup) {
+        return;
+    }
+    const data = view.data("data_0") as Record<string, string>[];
+    const uniqueLabels: string[] = [];
+    for (const d of data) {
+        const fv = d.formattedValue;
+        if (fv && !uniqueLabels.includes(fv)) {
+            uniqueLabels.push(fv);
+        }
+    }
+    entryGroup.querySelectorAll(".role-scope > g").forEach((entry, i) => {
+        if (!uniqueLabels[i]) {
+            return;
+        }
+        const bg = entry.querySelector(".background");
+        if (!bg) {
+            return;
+        }
+        const bbox = (bg as SVGPathElement).getBBox();
+        const overlay = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        overlay.setAttribute("x", String(bbox.x));
+        overlay.setAttribute("y", String(bbox.y));
+        overlay.setAttribute("width", String(bbox.width));
+        overlay.setAttribute("height", String(bbox.height));
+        overlay.setAttribute("fill", "transparent");
+        overlay.setAttribute("pointer-events", "all");
+        overlay.setAttribute("cursor", "pointer");
+        overlay.setAttribute("data-legend-index", String(i));
+        entry.appendChild(overlay);
+    });
+    if (legendClickAbort) {
+        legendClickAbort.abort();
+    }
+    legendClickAbort = new AbortController();
+    container.addEventListener(
+        "click",
+        (e: MouseEvent) => {
+            const target = (e.target as Element).closest("[data-legend-index]");
+            if (!target) {
+                return;
+            }
+            const index = parseInt(target.getAttribute("data-legend-index")!, 10);
+            if (uniqueLabels[index]) {
+                toggleLegendSelection(view, uniqueLabels[index]!);
+            }
+        },
+        { signal: legendClickAbort.signal },
+    );
+}
+
 function onNewView(view: View) {
+    view.runAfter(() => {
+        addLegendClickTargets(view);
+    });
     if (!props.enableSelection) {
         return;
     }
     view.addSignalListener("barSelection", (_name: string, value: Record<string, unknown>) => {
-        const selectedId = (value as { id?: string[] })?.id?.[0];
-        if (selectedId) {
-            const dataPoint = props.data.find((d) => d.id === selectedId);
+        const selectedFV = (value as { formattedValue?: string[] })?.formattedValue?.[0];
+        if (selectedFV) {
+            const match = chartData.value.find((d) => d.formattedValue === selectedFV);
+            const dataPoint = match ? props.data.find((d) => d.id === match.id) : undefined;
             if (dataPoint && selectedDataPoint.value?.id === dataPoint.id) {
                 selectedDataPoint.value = undefined;
             } else {
