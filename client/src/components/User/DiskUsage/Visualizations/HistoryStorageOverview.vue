@@ -146,6 +146,7 @@ function onUndelete(datasetId: string) {
                     )
                 "
                 :data="activeVsDeletedTotalSizeData"
+                :enable-selection="false"
                 v-bind="byteFormattingForChart" />
         </div>
     </OverviewPage>

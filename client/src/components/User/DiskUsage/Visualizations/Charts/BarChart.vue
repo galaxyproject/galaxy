@@ -2,7 +2,7 @@
 import { BCard } from "bootstrap-vue";
 import type { View } from "vega";
 import type { VisualizationSpec } from "vega-embed";
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import type { DataValuePoint } from ".";
 
@@ -116,7 +116,11 @@ function toggleLegendSelection(view: View, formattedValue: string) {
     view.runAsync();
 }
 
-let legendClickAbort: AbortController | undefined;
+const legendClickAbort = ref<AbortController | undefined>(undefined);
+
+onBeforeUnmount(() => {
+    legendClickAbort.value?.abort();
+});
 
 function addLegendClickTargets(view: View) {
     const container = view.container();
@@ -135,6 +139,8 @@ function addLegendClickTargets(view: View) {
             uniqueLabels.push(fv);
         }
     }
+    // Remove any existing overlays before adding new ones
+    entryGroup.querySelectorAll("[data-legend-index]").forEach((el) => el.remove());
     entryGroup.querySelectorAll(".role-scope > g").forEach((entry, i) => {
         if (!uniqueLabels[i]) {
             return;
@@ -155,10 +161,8 @@ function addLegendClickTargets(view: View) {
         overlay.setAttribute("data-legend-index", String(i));
         entry.appendChild(overlay);
     });
-    if (legendClickAbort) {
-        legendClickAbort.abort();
-    }
-    legendClickAbort = new AbortController();
+    legendClickAbort.value?.abort();
+    legendClickAbort.value = new AbortController();
     container.addEventListener(
         "click",
         (e: MouseEvent) => {
@@ -171,12 +175,13 @@ function addLegendClickTargets(view: View) {
                 toggleLegendSelection(view, uniqueLabels[index]!);
             }
         },
-        { signal: legendClickAbort.signal },
+        { signal: legendClickAbort.value.signal },
     );
 }
 
 function onNewView(view: View) {
-    view.runAfter(() => {
+    addLegendClickTargets(view);
+    view.addEventListener("render", () => {
         addLegendClickTargets(view);
     });
     if (!props.enableSelection) {
