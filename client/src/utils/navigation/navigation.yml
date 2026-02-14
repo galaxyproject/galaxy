@@ -368,8 +368,8 @@ history_storage:
 
 storage_dashboard:
   selectors:
-    free_space_link: '[data-description="free space card"] button'
-    explore_usage_link: '[data-description="explore usage card"] button'
+    free_space_link: '[data-description="free-space card"] button'
+    explore_usage_link: '[data-description="explore-storage card"] button'
 
 edit_dataset_attributes:
   selectors:

@@ -238,11 +238,14 @@ function onNewView(view: View) {
 
 .legend-item {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 0.5rem;
     padding: 0.2rem 0.5rem;
-    white-space: nowrap;
     font-size: 0.85rem;
+}
+
+.legend-item:hover .legend-label {
+    text-decoration: underline;
 }
 
 .legend-item-dimmed {
@@ -258,8 +261,7 @@ function onNewView(view: View) {
 }
 
 .legend-label {
-    overflow: hidden;
-    text-overflow: ellipsis;
+    word-break: break-word;
 }
 
 .selection-info {
