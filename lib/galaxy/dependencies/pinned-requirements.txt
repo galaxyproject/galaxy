@@ -2,18 +2,18 @@
 #    uv export --frozen --no-annotate --no-hashes --no-dev
 a2wsgi==1.10.10
 adal==1.2.7
-ag-ui-protocol==0.1.10
+ag-ui-protocol==0.1.11
 aiobotocore==3.1.2
 aiofiles==25.1.0
 aiohappyeyeballs==2.6.1
 aiohttp==3.13.3
 aioitertools==0.13.0
 aiosignal==1.4.0
-alembic==1.18.3
+alembic==1.18.4
 amqp==5.3.1
 annotated-doc==0.0.4
 annotated-types==0.7.0
-anthropic==0.78.0
+anthropic==0.79.0
 anyio==4.12.1
 apispec==6.9.0
 appdirs==1.4.4
@@ -40,7 +40,7 @@ boto3==1.42.42
 botocore==1.42.42
 bx-python==0.14.0
 cachecontrol==0.14.4
-cachetools==7.0.0
+cachetools==7.0.1
 celery==5.6.2
 certifi==2026.1.4
 cffi==2.0.0 ; implementation_name == 'pypy' or platform_python_implementation != 'PyPy'
@@ -53,7 +53,7 @@ click-repl==0.3.0
 cloudauthz==0.6.0
 cloudbridge==3.2.0
 cloudpickle==3.1.2
-cohere==5.20.4 ; sys_platform != 'emscripten'
+cohere==5.20.5 ; sys_platform != 'emscripten'
 colorama==0.4.6
 coloredlogs==15.0.1
 conda-package-streaming==0.12.0
@@ -63,7 +63,7 @@ ct3==3.4.0.post5
 cwl-upgrader==1.2.14
 cwl-utils==0.40
 cwltool==3.1.20260108082145
-cyclopts==4.5.1
+cyclopts==4.5.2
 defusedxml==0.7.1
 deprecated==1.3.1
 deprecation==2.1.0
@@ -83,28 +83,30 @@ eval-type-backport==0.3.1
 exceptiongroup==1.3.1
 executing==2.2.1
 fakeredis==2.33.0
-fastapi==0.128.3
+fastapi==0.129.0
 fastavro==1.12.1 ; sys_platform != 'emscripten'
 fastmcp==2.14.5
-filelock==3.20.3
+filelock==3.23.0
 fissix==24.4.24
 frozenlist==1.8.0
 fs==2.4.16
 fsspec==2026.2.0
 future==1.0.0
-genai-prices==0.0.52
+genai-prices==0.0.53
 google-api-core==2.29.0
 google-auth==2.48.0
 google-cloud-batch==0.20.0
-google-genai==1.62.0
+google-genai==1.63.0
 googleapis-common-protos==1.72.0
 gravity==1.2.0
 greenlet==3.3.1 ; platform_machine == 'AMD64' or platform_machine == 'WIN32' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'ppc64le' or platform_machine == 'win32' or platform_machine == 'x86_64'
-griffe==1.15.0
+griffe==2.0.0
+griffecli==2.0.0
+griffelib==2.0.0
 groq==1.0.0
 grpcio==1.78.0
 grpcio-status==1.78.0
-gunicorn==25.0.2
+gunicorn==25.1.0
 gxformat2==0.21.0
 h11==0.16.0
 h5grove==2.3.0
@@ -139,19 +141,19 @@ kombu==5.6.2
 lagom==2.7.7
 legacy-cgi==2.6.4 ; python_full_version >= '3.13'
 limits==5.8.0
-logfire==4.22.0
-logfire-api==4.22.0
+logfire==4.24.0
+logfire-api==4.24.0
 lupa==2.6
 lxml==6.0.2
 mako==1.3.10
-markdown==3.10.1
+markdown==3.10.2
 markdown-it-py==3.0.0 ; python_full_version < '3.11'
 markdown-it-py==4.0.0 ; python_full_version >= '3.11'
 markupsafe==3.0.3
 mcp==1.26.0
 mdurl==0.1.2
 mercurial==7.2
-mistralai==1.9.11
+mistralai==1.12.2
 mistune==3.1.4
 more-itertools==10.8.0
 mrcfile==1.5.4
@@ -167,7 +169,7 @@ nodejs-wheel-binaries==22.20.0
 numpy==2.2.6 ; python_full_version < '3.11'
 numpy==2.4.2 ; python_full_version >= '3.11'
 oauthlib==3.3.1
-openai==2.17.0
+openai==2.21.0
 openapi-pydantic==0.5.1
 openpyxl==3.1.5
 opentelemetry-api==1.39.1
@@ -190,7 +192,7 @@ pathable==0.4.4
 pathvalidate==3.3.1
 pebble==5.2.0
 pillow==12.1.1
-platformdirs==4.5.1
+platformdirs==4.8.0
 prometheus-client==0.24.1
 prompt-toolkit==3.0.52
 propcache==0.4.1
@@ -206,15 +208,15 @@ pyasn1-modules==0.4.2
 pycparser==3.0 ; (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy') or (implementation_name == 'pypy' and platform_python_implementation == 'PyPy')
 pycryptodome==3.23.0
 pydantic==2.12.5
-pydantic-ai==1.56.0
-pydantic-ai-slim==1.56.0
+pydantic-ai==1.59.0
+pydantic-ai-slim==1.59.0
 pydantic-core==2.41.5
-pydantic-evals==1.56.0
-pydantic-graph==1.56.0
+pydantic-evals==1.59.0
+pydantic-graph==1.59.0
 pydantic-settings==2.12.0
 pydantic-tes==0.2.0
 pydicom==3.0.1
-pydocket==0.17.5
+pydocket==0.17.7
 pydot==4.0.1
 pyeventsystem==0.1.0
 pyfaidx==0.9.0.3
@@ -241,7 +243,7 @@ pywin32-ctypes==0.2.3 ; sys_platform == 'win32'
 pyyaml==6.0.3
 pyzmq==27.1.0
 rdflib==7.5.0
-redis==7.1.0
+redis==7.1.1
 referencing==0.36.2
 refgenconf==0.12.2
 regex==2026.1.15
@@ -268,7 +270,7 @@ shellingham==1.5.4
 six==1.17.0
 slowapi==0.1.9
 sniffio==1.3.1
-social-auth-core==4.8.3
+social-auth-core==4.8.5
 sortedcontainers==2.4.0
 spython==0.3.14
 sqlalchemy==2.0.46
@@ -280,7 +282,7 @@ supervisor==4.3.0
 svgwrite==1.4.3
 taskgroup==0.2.2 ; python_full_version < '3.11'
 temporalio==1.20.0
-tenacity==9.1.3
+tenacity==9.1.4
 text-unidecode==1.3
 tifffile==2025.5.10 ; python_full_version < '3.11'
 tifffile==2026.1.28 ; python_full_version >= '3.11'
@@ -292,14 +294,14 @@ tornado==6.5.4
 tqdm==4.67.3
 tuspy==1.1.0
 tuspyserver==4.2.3
-typer==0.21.1
+typer==0.23.1
 types-protobuf==6.32.1.20251210
 types-requests==2.32.4.20260107 ; sys_platform != 'emscripten'
 typing-extensions==4.15.0
 typing-inspection==0.4.2
 tzdata==2025.3
 tzlocal==5.3.1
-ubiquerg==0.8.2
+ubiquerg==0.9.0
 urllib3==2.6.3
 uvicorn==0.40.0
 uvloop==0.22.1
