@@ -151,12 +151,20 @@ onMounted(async () => {
     }
 });
 
-function selectMethod(method: ImportMethod) {
+async function selectMethod(method: ImportMethod) {
     selectedMethod.value = method;
+    // Wait for Vue to process the change
+    await nextTick();
+    // Auto-advance wizard - it will skip to the next non-skippable step
+    wizard.next();
 }
 
-function selectTrsMethod(method: TrsMethod) {
+async function selectTrsMethod(method: TrsMethod) {
     selectedTrsMethod.value = method;
+    // Wait for Vue to process the change
+    await nextTick();
+    // Auto-advance wizard - it will skip to the next non-skippable step
+    wizard.next();
 }
 
 function onSubmit() {
