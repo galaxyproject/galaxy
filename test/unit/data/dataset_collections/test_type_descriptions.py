@@ -46,6 +46,46 @@ def test_paired_or_unpaired_handling():
     assert mixed_list_type_description.can_match_type("list")
 
 
+def test_sample_sheet_acts_like_list():
+    """sample_sheet should behave like list for mapping/matching purposes."""
+    sample_sheet = c_t("sample_sheet")
+    sample_sheet_paired = c_t("sample_sheet:paired")
+    sample_sheet_paired_or_unpaired = c_t("sample_sheet:paired_or_unpaired")
+    list_type = c_t("list")
+    paired_type = c_t("paired")
+
+    # sample_sheet matches list
+    assert sample_sheet.can_match_type("list")
+    assert sample_sheet.can_match_type(list_type)
+    assert list_type.can_match_type("sample_sheet")
+
+    # sample_sheet:paired matches list:paired
+    assert sample_sheet_paired.can_match_type("list:paired")
+    assert c_t("list:paired").can_match_type("sample_sheet:paired")
+
+    # sample_sheet:paired_or_unpaired matches list:paired_or_unpaired
+    assert sample_sheet_paired_or_unpaired.can_match_type("list:paired_or_unpaired")
+    # and can match list:paired and list (like list:paired_or_unpaired does)
+    assert sample_sheet_paired_or_unpaired.can_match_type("list:paired")
+    assert sample_sheet_paired_or_unpaired.can_match_type("list")
+    assert sample_sheet_paired_or_unpaired.can_match_type("sample_sheet")
+    assert sample_sheet_paired_or_unpaired.can_match_type("sample_sheet:paired")
+
+    # sample_sheet:paired has subcollections of type paired
+    assert sample_sheet_paired.has_subcollections_of_type("paired")
+    assert sample_sheet_paired.has_subcollections_of_type(paired_type)
+
+    # sample_sheet has subcollections of type paired_or_unpaired (like list does)
+    assert sample_sheet.has_subcollections_of_type("paired_or_unpaired")
+
+    # sample_sheet does NOT have subcollections of itself
+    assert not sample_sheet.has_subcollections_of_type("sample_sheet")
+    assert not sample_sheet.has_subcollections_of_type("list")
+
+    # effective collection type works correctly
+    assert sample_sheet_paired.effective_collection_type(paired_type) == "sample_sheet"
+
+
 def test_validate():
     c_t("list").validate()
     c_t("list:paired").validate()

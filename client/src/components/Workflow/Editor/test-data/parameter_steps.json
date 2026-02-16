@@ -1329,5 +1329,202 @@
       "left": 12.8729248046875,
       "top": 501.7839660644531
     }
+  },
+  "29": {
+    "id": 29,
+    "type": "data_collection_input",
+    "label": "sample_sheet input",
+    "content_id": null,
+    "name": "Input dataset collection",
+    "tool_state": {
+      "collection_type": "\"sample_sheet\"",
+      "optional": "\"false\"",
+      "tag": "\"\"",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "collection": true,
+        "collection_type": "sample_sheet",
+        "optional": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 12.8729248046875,
+      "top": 601.7839660644531
+    }
+  },
+  "30": {
+    "id": 30,
+    "type": "data_collection_input",
+    "label": "sample_sheet:paired input",
+    "content_id": null,
+    "name": "Input dataset collection",
+    "tool_state": {
+      "collection_type": "\"sample_sheet:paired\"",
+      "optional": "\"false\"",
+      "tag": "\"\"",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "collection": true,
+        "collection_type": "sample_sheet:paired",
+        "optional": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 12.8729248046875,
+      "top": 701.7839660644531
+    }
+  },
+  "31": {
+    "id": 31,
+    "type": "data_collection_input",
+    "label": "sample_sheet:paired_or_unpaired input",
+    "content_id": null,
+    "name": "Input dataset collection",
+    "tool_state": {
+      "collection_type": "\"sample_sheet:paired_or_unpaired\"",
+      "optional": "\"false\"",
+      "tag": "\"\"",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "collection": true,
+        "collection_type": "sample_sheet:paired_or_unpaired",
+        "optional": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 12.8729248046875,
+      "top": 801.7839660644531
+    }
+  },
+  "32": {
+    "id": 32,
+    "type": "tool",
+    "label": "sample_sheet collection input",
+    "content_id": "count_list",
+    "name": "count_list",
+    "tool_state": {
+      "input1": "{\"__class__\": \"RuntimeValue\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "input1",
+        "label": "Concatenate Dataset",
+        "multiple": false,
+        "input_type": "dataset_collection",
+        "collection_types": [
+          "sample_sheet"
+        ],
+        "optional": false,
+        "extensions": [
+          "data"
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "out_file1",
+        "extensions": [
+          "txt"
+        ],
+        "type": "data",
+        "optional": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 12.8729248046875,
+      "top": 901.7839660644531
+    }
+  },
+  "33": {
+    "id": 33,
+    "type": "tool",
+    "label": "sample_sheet:paired collection input",
+    "content_id": "count_list",
+    "name": "count_list",
+    "tool_state": {
+      "input1": "{\"__class__\": \"RuntimeValue\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "input1",
+        "label": "Concatenate Dataset",
+        "multiple": false,
+        "input_type": "dataset_collection",
+        "collection_types": [
+          "sample_sheet:paired"
+        ],
+        "optional": false,
+        "extensions": [
+          "data"
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "out_file1",
+        "extensions": [
+          "txt"
+        ],
+        "type": "data",
+        "optional": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 12.8729248046875,
+      "top": 1001.7839660644531
+    }
   }
 }

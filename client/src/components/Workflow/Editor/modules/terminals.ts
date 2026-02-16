@@ -619,9 +619,21 @@ export class InputCollectionTerminal extends BaseInputTerminal {
         if (otherCollectionType.isCollection) {
             const effectiveCollectionTypes = this._effectiveCollectionTypes();
             const mapOver = this.mapOver;
-            const canMatch = effectiveCollectionTypes.some((effectiveCollectionType) =>
-                effectiveCollectionType.canMatch(otherCollectionType),
-            );
+            const canMatch = effectiveCollectionTypes.some((effectiveCollectionType, i) => {
+                if (!effectiveCollectionType.canMatch(otherCollectionType)) {
+                    return false;
+                }
+                // sample_sheet asymmetry: sample_sheet input requires sample_sheet output,
+                // but sample_sheet output can satisfy list input.
+                const rawInputType = this.collectionTypes[i]?.collectionType;
+                if (
+                    rawInputType?.startsWith("sample_sheet") &&
+                    !otherCollectionType.collectionType?.startsWith("sample_sheet")
+                ) {
+                    return false;
+                }
+                return true;
+            });
             if (canMatch) {
                 // Only way a direct match...
                 return this._producesAcceptableDatatypeAndOptionalness(other);
@@ -639,7 +651,21 @@ export class InputCollectionTerminal extends BaseInputTerminal {
                         "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry.",
                     );
                 }
-            } else if (this.collectionTypes.some((collectionType) => otherCollectionType.canMapOver(collectionType))) {
+            } else if (
+                this.collectionTypes.some((collectionType) => {
+                    if (!otherCollectionType.canMapOver(collectionType)) {
+                        return false;
+                    }
+                    // sample_sheet asymmetry: same as canMatch guard above
+                    if (
+                        collectionType.collectionType?.startsWith("sample_sheet") &&
+                        !otherCollectionType.collectionType?.startsWith("sample_sheet")
+                    ) {
+                        return false;
+                    }
+                    return true;
+                })
+            ) {
                 // we're not mapped over - but hey maybe we could be... lets check.
                 const effectiveMapOver = this._effectiveMapOver(otherCollectionType);
                 //  Need to check if this would break constraints...
