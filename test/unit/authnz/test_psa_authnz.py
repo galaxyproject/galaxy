@@ -399,7 +399,7 @@ def test_sync_user_profile_skips_when_fixed_delegated_auth_disabled():
     app = SimpleNamespace(config=app_config, user_manager=manager, notification_manager=SimpleNamespace())
     trans = SimpleNamespace(app=app, sa_session=session)
     strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "FIXED_DELEGATED_AUTH": False})
-    user = SimpleNamespace(id=2, preferences={})
+    user = SimpleNamespace(id=2, email="old@example.com", username="oldname", preferences={})
     details = {"email": "new@example.com", "username": "newname"}
 
     with patch("galaxy.webapps.galaxy.services.notifications.NotificationService.send_notification_internal") as notify:
@@ -419,7 +419,7 @@ def test_sync_user_profile_updates_when_account_interface_disabled():
     app = SimpleNamespace(config=app_config, user_manager=manager, notification_manager=notification_manager)
     trans = SimpleNamespace(app=app, sa_session=session)
     strategy = SimpleNamespace(config={"GALAXY_TRANS": trans, "FIXED_DELEGATED_AUTH": True})
-    user = SimpleNamespace(id=2, preferences={})
+    user = SimpleNamespace(id=2, email="old@example.com", username="oldname", preferences={})
     details = {"email": "new@example.com", "username": "newname"}
 
     with patch("galaxy.webapps.galaxy.services.notifications.NotificationService.send_notification_internal") as notify:

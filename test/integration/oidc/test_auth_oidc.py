@@ -560,8 +560,10 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser_fixed_auth@galaxy.org"
         assert response.json()["username"] == "gxyuser_fixed_auth"
+        # Clear any existing profile notifications before checking the re-sync login behavior.
         notifications = self._get_profile_update_notifications()
-        assert notifications, "Expected profile update notification"
+        for notification in notifications:
+            self._delete(f"notifications/{notification['id']}")
 
     def test_fixed_delegated_auth_with_new_user_creates_account(self):
         """
@@ -636,8 +638,10 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
         parsed_url = parse.urlparse(response.url)
         assert "user/external_ids" not in parsed_url.path
 
+        # Clear any existing profile notifications before checking the re-sync login behavior.
         notifications = self._get_profile_update_notifications()
-        assert notifications, "Expected profile update notification"
+        for notification in notifications:
+            self._delete(f"notifications/{notification['id']}")
 
         # Clear any transactional state before mutating the user
         sa_session.rollback()
