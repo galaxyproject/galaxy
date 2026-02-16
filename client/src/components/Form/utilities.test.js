@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import toolModel from "./test-data/tool";
-import { matchCase, matchInputs, validateInputs, visitAllInputs, visitInputs } from "./utilities";
+import { buildNestedState, matchCase, matchInputs, validateInputs, visitAllInputs, visitInputs } from "./utilities";
 
 function visitInputsString(inputs) {
     let results = "";
@@ -522,6 +522,258 @@ describe("form component utilities", () => {
             const allNames = [];
             visitAllInputs(inputs, (node, name) => allNames.push(name));
             expect(allNames).toEqual(["rep_0|nested_cond|sel", "rep_0|nested_cond|leaf_x", "rep_0|nested_cond|leaf_y"]);
+        });
+    });
+
+    describe("buildNestedState", () => {
+        it("should build nested state for simple params", () => {
+            const inputs = [
+                { name: "a", type: "text" },
+                { name: "b", type: "integer" },
+                { name: "c", type: "boolean" },
+            ];
+            const formData = { a: "hello", b: 42, c: true };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                a: "hello",
+                b: 42,
+                c: true,
+            });
+        });
+
+        it("should build nested state for sections", () => {
+            const inputs = [
+                {
+                    name: "sect",
+                    type: "section",
+                    inputs: [
+                        { name: "p", type: "text" },
+                        { name: "q", type: "integer" },
+                    ],
+                },
+            ];
+            const formData = { "sect|p": "val_p", "sect|q": 10 };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                sect: { p: "val_p", q: 10 },
+            });
+        });
+
+        it("should build nested state for conditionals (active case only)", () => {
+            const inputs = [
+                {
+                    name: "cond",
+                    type: "conditional",
+                    test_param: { name: "tp", type: "select", value: "a" },
+                    cases: [
+                        { value: "a", inputs: [{ name: "in_a", type: "text" }] },
+                        { value: "b", inputs: [{ name: "in_b", type: "text" }] },
+                    ],
+                },
+            ];
+            const formData = { "cond|tp": "a", "cond|in_a": "val_a", "cond|in_b": "val_b" };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                cond: { tp: "a", in_a: "val_a" },
+            });
+        });
+
+        it("should build nested state for repeats as arrays", () => {
+            const inputs = [
+                {
+                    name: "rep",
+                    type: "repeat",
+                    cache: [[{ name: "x", type: "text" }], [{ name: "x", type: "text" }]],
+                    inputs: [{ name: "x", type: "text" }],
+                },
+            ];
+            const formData = { "rep_0|x": "first", "rep_1|x": "second" };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                rep: [{ x: "first" }, { x: "second" }],
+            });
+        });
+
+        it("should produce empty array for repeats with no instances", () => {
+            const inputs = [
+                {
+                    name: "rep",
+                    type: "repeat",
+                    cache: [],
+                    inputs: [{ name: "x", type: "text" }],
+                },
+            ];
+            expect(buildNestedState(inputs, {})).toEqual({ rep: [] });
+        });
+
+        it("should build nested state for nested repeats with conditionals", () => {
+            const inputs = [
+                {
+                    name: "rep",
+                    type: "repeat",
+                    cache: [
+                        [
+                            { name: "param", type: "text" },
+                            {
+                                name: "cond",
+                                type: "conditional",
+                                test_param: { name: "sel", type: "select", value: "x" },
+                                cases: [
+                                    { value: "x", inputs: [{ name: "leaf", type: "text" }] },
+                                    { value: "y", inputs: [{ name: "other", type: "text" }] },
+                                ],
+                            },
+                        ],
+                    ],
+                    inputs: [],
+                },
+            ];
+            const formData = {
+                "rep_0|param": "val",
+                "rep_0|cond|sel": "x",
+                "rep_0|cond|leaf": "leaf_val",
+            };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                rep: [{ param: "val", cond: { sel: "x", leaf: "leaf_val" } }],
+            });
+        });
+
+        it("should wrap single dataset value as {src, id}", () => {
+            const inputs = [{ name: "input1", type: "data" }];
+            const formData = {
+                input1: { batch: false, product: false, values: [{ id: "abc123", src: "hda", map_over_type: null }] },
+            };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                input1: { src: "hda", id: "abc123" },
+            });
+        });
+
+        it("should wrap data_collection value as {src, id}", () => {
+            const inputs = [{ name: "input1", type: "data_collection" }];
+            const formData = {
+                input1: {
+                    batch: false,
+                    product: false,
+                    values: [{ id: "col456", src: "hdca", map_over_type: null }],
+                },
+            };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                input1: { src: "hdca", id: "col456" },
+            });
+        });
+
+        it("should wrap multiple dataset values as array of {src, id}", () => {
+            const inputs = [{ name: "input1", type: "data" }];
+            const formData = {
+                input1: {
+                    batch: false,
+                    product: false,
+                    values: [
+                        { id: "id1", src: "hda", map_over_type: null },
+                        { id: "id2", src: "hda", map_over_type: null },
+                    ],
+                },
+            };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                input1: [
+                    { src: "hda", id: "id1" },
+                    { src: "hda", id: "id2" },
+                ],
+            });
+        });
+
+        it("should wrap batch dataset values with __class__: Batch", () => {
+            const inputs = [{ name: "input1", type: "data" }];
+            const formData = {
+                input1: {
+                    batch: true,
+                    product: false,
+                    values: [{ id: "id1", src: "hda", map_over_type: null }],
+                },
+            };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                input1: { __class__: "Batch", values: [{ src: "hda", id: "id1" }] },
+            });
+        });
+
+        it("should return null for empty dataset values", () => {
+            const inputs = [{ name: "input1", type: "data" }];
+            const formData = { input1: { batch: false, values: [] } };
+            expect(buildNestedState(inputs, formData)).toEqual({ input1: null });
+        });
+
+        it("should return null for null/undefined dataset values", () => {
+            const inputs = [{ name: "input1", type: "data" }];
+            const formData = { input1: null };
+            expect(buildNestedState(inputs, formData)).toEqual({ input1: null });
+        });
+
+        it("should coerce data_column string values to integers", () => {
+            const inputs = [{ name: "col", type: "data_column" }];
+            const formData = { col: "3" };
+            expect(buildNestedState(inputs, formData)).toEqual({ col: 3 });
+        });
+
+        it("should coerce data_column array of strings to integers", () => {
+            const inputs = [{ name: "col", type: "data_column" }];
+            const formData = { col: ["1", "2", "5"] };
+            expect(buildNestedState(inputs, formData)).toEqual({ col: [1, 2, 5] });
+        });
+
+        it("should preserve data_column null/empty/undefined values", () => {
+            const inputs = [{ name: "col", type: "data_column" }];
+            expect(buildNestedState(inputs, { col: null })).toEqual({ col: null });
+            expect(buildNestedState(inputs, { col: "" })).toEqual({ col: "" });
+            expect(buildNestedState(inputs, { col: undefined })).toEqual({ col: undefined });
+        });
+
+        it("should preserve data_column already-numeric values", () => {
+            const inputs = [{ name: "col", type: "data_column" }];
+            expect(buildNestedState(inputs, { col: 5 })).toEqual({ col: 5 });
+            expect(buildNestedState(inputs, { col: [1, 2] })).toEqual({ col: [1, 2] });
+        });
+
+        it("should coerce integer string values to integers", () => {
+            const inputs = [{ name: "num", type: "integer" }];
+            expect(buildNestedState(inputs, { num: "42" })).toEqual({ num: 42 });
+        });
+
+        it("should preserve integer null/empty/undefined values", () => {
+            const inputs = [{ name: "num", type: "integer" }];
+            expect(buildNestedState(inputs, { num: null })).toEqual({ num: null });
+            expect(buildNestedState(inputs, { num: "" })).toEqual({ num: "" });
+            expect(buildNestedState(inputs, { num: undefined })).toEqual({ num: undefined });
+        });
+
+        it("should preserve integer already-numeric values", () => {
+            const inputs = [{ name: "num", type: "integer" }];
+            expect(buildNestedState(inputs, { num: 7 })).toEqual({ num: 7 });
+        });
+
+        it("should coerce float string values to floats", () => {
+            const inputs = [{ name: "val", type: "float" }];
+            expect(buildNestedState(inputs, { val: "3.14" })).toEqual({ val: 3.14 });
+        });
+
+        it("should preserve float null/empty/undefined values", () => {
+            const inputs = [{ name: "val", type: "float" }];
+            expect(buildNestedState(inputs, { val: null })).toEqual({ val: null });
+            expect(buildNestedState(inputs, { val: "" })).toEqual({ val: "" });
+            expect(buildNestedState(inputs, { val: undefined })).toEqual({ val: undefined });
+        });
+
+        it("should preserve float already-numeric values", () => {
+            const inputs = [{ name: "val", type: "float" }];
+            expect(buildNestedState(inputs, { val: 2.718 })).toEqual({ val: 2.718 });
+        });
+
+        it("should handle the full tool model from test data", () => {
+            // Build formData from the tool model (mimics what visitInputs collects)
+            const formData = {};
+            visitInputs(toolModel.inputs, (input, name) => {
+                formData[name] = input.value;
+            });
+            const result = buildNestedState(toolModel.inputs, formData);
+            // Conditional "b" has test_param "c" with value "h" → case "h" is active
+            expect(result.b).toEqual({ c: "h", i: "i", j: "j" });
+            // Repeat "k" has one instance with conditional "m", test_param "n" with value "r" → case "r"
+            expect(result.k).toEqual([{ l: "l", m: { n: "r", s: "s", t: "t" } }]);
         });
     });
 });
