@@ -86,6 +86,15 @@ def test_sample_sheet_acts_like_list():
     assert sample_sheet_paired.effective_collection_type(paired_type) == "sample_sheet"
 
 
+def test_effective_collection_type_paired_or_unpaired_over_paired():
+    # list:paired mapped over paired_or_unpaired should yield "list"
+    assert c_t("list:paired").effective_collection_type("paired_or_unpaired") == "list"
+    # list:list:paired mapped over paired_or_unpaired should yield "list:list"
+    assert c_t("list:list:paired").effective_collection_type("paired_or_unpaired") == "list:list"
+    # list:paired_or_unpaired mapped over paired_or_unpaired should still yield "list"
+    assert c_t("list:paired_or_unpaired").effective_collection_type("paired_or_unpaired") == "list"
+
+
 def test_validate():
     c_t("list").validate()
     c_t("list:paired").validate()
