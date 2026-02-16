@@ -47,10 +47,16 @@ class ToolRuntimeFramework(BaseModel):
 ToolRuntimeTest = Union[ToolRuntimeApi, ToolRuntimeFramework]
 
 
+class WorkflowRuntimeTest(BaseModel):
+    api_test: Optional[str] = None
+    framework_test: Optional[str] = None
+
+
 class ExampleTests(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     tool_runtime: Optional[ToolRuntimeTest] = None
+    workflow_runtime: Optional[WorkflowRuntimeTest] = None
     workflow_editor: Optional[str] = None
 
 
@@ -375,43 +381,70 @@ def check() -> list[str]:
     return errors
 
 
+def _validate_api_test_ref(label: str, ref: str, api_test_dir: str) -> Optional[str]:
+    parts = ref.split("::")
+    filename = parts[0]
+    filepath = os.path.join(api_test_dir, filename)
+    if not os.path.exists(filepath):
+        return f"[{label}] api_test file not found: {filename}"
+    with open(filepath) as f:
+        tree = ast.parse(f.read(), filename=filepath)
+    if len(parts) == 2:
+        func_name = parts[1]
+        found = any(
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == func_name
+            for node in ast.walk(tree)
+        )
+        if not found:
+            return f"[{label}] api_test function not found: {ref}"
+    elif len(parts) == 3:
+        class_name, method_name = parts[1], parts[2]
+        found = False
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef) and node.name == class_name:
+                found = any(
+                    isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child.name == method_name
+                    for child in node.body
+                )
+                break
+        if not found:
+            return f"[{label}] api_test method not found: {ref}"
+    return None
+
+
+def _validate_framework_test_ref(label: str, ref: str, workflow_dir: str) -> Optional[str]:
+    """Validate a framework test ref like 'collection_semantics_cat_0'."""
+    parts = ref.rsplit("_", 1)
+    if len(parts) != 2 or not parts[1].isdigit():
+        return f"[{label}] framework_test must be 'workflow_name_index': {ref}"
+    workflow_name = parts[0]
+    workflow_file = os.path.join(workflow_dir, f"{workflow_name}.gxwf.yml")
+    if not os.path.exists(workflow_file):
+        return f"[{label}] framework_test workflow not found: {workflow_name}.gxwf.yml"
+    test_file = os.path.join(workflow_dir, f"{workflow_name}.gxwf-tests.yml")
+    if not os.path.exists(test_file):
+        return f"[{label}] framework_test test file not found: {workflow_name}.gxwf-tests.yml"
+    return None
+
+
 def validate_api_test_refs(examples: list["Example"]) -> list[str]:
     errors: list[str] = []
     api_test_dir = os.path.join(galaxy_directory(), "lib", "galaxy_test", "api")
+    workflow_dir = os.path.join(galaxy_directory(), "lib", "galaxy_test", "workflow")
     for ex in examples:
-        if not ex.tests or not ex.tests.tool_runtime:
-            continue
-        if not isinstance(ex.tests.tool_runtime, ToolRuntimeApi):
-            continue
-        ref = ex.tests.tool_runtime.api_test
-        parts = ref.split("::")
-        filename = parts[0]
-        filepath = os.path.join(api_test_dir, filename)
-        if not os.path.exists(filepath):
-            errors.append(f"[{ex.label}] api_test file not found: {filename}")
-            continue
-        with open(filepath) as f:
-            tree = ast.parse(f.read(), filename=filepath)
-        if len(parts) == 2:
-            func_name = parts[1]
-            found = any(
-                isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == func_name
-                for node in ast.walk(tree)
-            )
-            if not found:
-                errors.append(f"[{ex.label}] api_test function not found: {ref}")
-        elif len(parts) == 3:
-            class_name, method_name = parts[1], parts[2]
-            found = False
-            for node in ast.walk(tree):
-                if isinstance(node, ast.ClassDef) and node.name == class_name:
-                    found = any(
-                        isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child.name == method_name
-                        for child in node.body
-                    )
-                    break
-            if not found:
-                errors.append(f"[{ex.label}] api_test method not found: {ref}")
+        if ex.tests and ex.tests.tool_runtime and isinstance(ex.tests.tool_runtime, ToolRuntimeApi):
+            error = _validate_api_test_ref(ex.label, ex.tests.tool_runtime.api_test, api_test_dir)
+            if error:
+                errors.append(error)
+        if ex.tests and ex.tests.workflow_runtime:
+            if ex.tests.workflow_runtime.api_test:
+                error = _validate_api_test_ref(ex.label, ex.tests.workflow_runtime.api_test, api_test_dir)
+                if error:
+                    errors.append(error)
+            if ex.tests.workflow_runtime.framework_test:
+                error = _validate_framework_test_ref(ex.label, ex.tests.workflow_runtime.framework_test, workflow_dir)
+                if error:
+                    errors.append(error)
     return errors
 
 

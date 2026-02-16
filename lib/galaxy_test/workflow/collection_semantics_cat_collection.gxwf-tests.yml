@@ -1,0 +1,21 @@
+- doc: |
+    COLLECTION_INPUT_LIST: A list collection consumed by a tool expecting a list
+    collection input produces a single dataset.
+  job:
+    input1:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "element 1"
+        - identifier: el2
+          class: File
+          contents: "element 2"
+  outputs:
+    wf_output:
+      asserts:
+        - that: has_text
+          text: "element 1"
+        - that: has_text
+          text: "element 2"

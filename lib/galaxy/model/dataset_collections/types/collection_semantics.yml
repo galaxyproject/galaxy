@@ -59,6 +59,8 @@
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_collection"
+        workflow_runtime:
+            framework_test: "collection_semantics_cat_0"
         workflow_editor: "accepts paired data -> data connection"
 
 - example:
@@ -91,6 +93,8 @@
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_data_with_paired_or_unpaired_paired"
+        workflow_runtime:
+            framework_test: "collection_semantics_cat_1"
         workflow_editor: "accepts paired_or_unpaired data -> data connection"
 
 - example:
@@ -119,6 +123,8 @@
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_data_with_paired_or_unpaired_unpaired"
+        workflow_runtime:
+            framework_test: "collection_semantics_cat_2"
         workflow_editor: "accepts paired_or_unpaired data -> data connection"
 
 - example:
@@ -228,6 +234,8 @@
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_data_with_list_paired_or_unpaired"
+        workflow_runtime:
+            framework_test: "collection_semantics_cat_3"
         workflow_editor: "accepts list:paired_or_unpaired data -> data connection"
 
 - doc: |
@@ -268,6 +276,8 @@
     tests:
         tool_runtime:
             api_test: "test_tools.py::TestToolsApi::test_map_over_collected_and_individual_datasets"
+        workflow_runtime:
+            framework_test: "collection_semantics_cat_two_inputs_0"
 
 - doc: |
     If a tool consumes two input datasets and produces one output dataset, you can map two
@@ -319,9 +329,11 @@
     tests:
         tool_runtime:
             api_test: test_tools.py::TestToolsApi::test_map_over_two_collections
+        workflow_runtime:
+            framework_test: "collection_semantics_cat_two_inputs_1"
 
 - doc: "## Reduction"
-- doc: | 
+- doc: |
     Not all tool executions result in implicit collections and mapping
     over inputs. Tool inputs of ``type`` ``data_collection`` can consume
     collections directly and do not necessarily result in mapping over.
@@ -368,6 +380,8 @@
         produces:
             o: {type: dataset}
     tests:
+        workflow_runtime:
+            framework_test: "collection_semantics_cat_collection_0"
         workflow_editor: "accepts list -> list connection"
 
 - example:
@@ -389,6 +403,8 @@
     tests:
         tool_runtime:
             tool: collection_paired_or_unpaired
+        workflow_runtime:
+            framework_test: "collection_semantics_paired_or_unpaired_0"
         workflow_editor: "accepts paired_or_unpaired data -> paired_or_unpaired connection"
 
 - example:
@@ -410,6 +426,8 @@
     tests:
         tool_runtime:
             tool: collection_list_paired_or_unpaired
+        workflow_runtime:
+            framework_test: "collection_semantics_list_paired_or_unpaired_0"
         workflow_editor: "accepts list:paired_or_unpaired data -> list:paired_or_unpaired connection"
 
 - doc: |
@@ -497,7 +515,7 @@
     label: LIST_REDUCTION
     assumptions:
     - datasets: ["d_1,...,d_n"]
-    - tool: 
+    - tool:
         in: {i: "dataset<multiple=true>"}
         out: {o: dataset}
     - collections:
@@ -513,6 +531,8 @@
     tests:
         tool_runtime:
             api_test: "test_tools.py::TestToolsApi::test_reduce_collections"
+        workflow_runtime:
+            framework_test: "collection_semantics_multi_data_optional_0"
         workflow_editor: "treats multi data input as list input"
 
 - doc: |
@@ -699,6 +719,8 @@
     tests:
         tool_runtime:
             tool: collection_paired_or_unpaired
+        workflow_runtime:
+            framework_test: "collection_semantics_paired_or_unpaired_1"
         workflow_editor: "accepts paired -> paired_or_unpaired connection"
 
 - doc: |
@@ -753,6 +775,8 @@
             inputs:
                 i: {type: map_over, collection: C_AS_MIXED}
     tests:
+        workflow_runtime:
+            framework_test: "collection_semantics_paired_or_unpaired_2"
         workflow_editor: "accepts list:paired -> paired_or_unpaired connection"
 
 - example:
@@ -815,6 +839,8 @@
             inputs:
                 i: {type: map_over, collection: C_AS_MIXED}
     tests:
+        workflow_runtime:
+            framework_test: "collection_semantics_paired_or_unpaired_3"
         workflow_editor: "accepts list:list:paired -> paired_or_unpaired connection"
 
 - doc: |
@@ -855,6 +881,8 @@
     tests:
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_paired_or_unpaired_with_list"
+        workflow_runtime:
+            framework_test: "collection_semantics_paired_or_unpaired_4"
         workflow_editor: "accepts list -> paired_or_unpaired connection"
 
 - doc: |
