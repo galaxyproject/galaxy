@@ -1,5 +1,6 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
+    faBook,
     faBug,
     faChartBar,
     faGraduationCap,
@@ -25,6 +26,12 @@ export const agentTypes: AgentType[] = [
     { value: "custom_tool", label: "Custom Tool", icon: faPlus, description: "Create custom tools" },
     { value: "dataset_analyzer", label: "Dataset Analyzer", icon: faChartBar, description: "Analyze datasets" },
     { value: "gtn_training", label: "GTN Training", icon: faGraduationCap, description: "Find tutorials" },
+    {
+        value: "notebook_assistant",
+        label: "Notebook Assistant",
+        icon: faBook,
+        description: "Notebook editing assistant",
+    },
 ];
 
 export function getAgentIcon(agentType?: string): IconDefinition {

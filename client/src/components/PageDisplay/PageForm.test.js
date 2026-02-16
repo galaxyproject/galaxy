@@ -197,3 +197,47 @@ describe("PageForm.vue - Edit mode", () => {
         expect(alert.text()).toContain("Update failed");
     });
 });
+
+describe("PageForm.vue - Notebook mode", () => {
+    it("fetches notebook content and pre-fills form", async () => {
+        server.use(
+            http.get("/api/histories/:history_id/notebooks/:notebook_id/prepare-for-page", ({ response }) =>
+                response(200).json({
+                    content: "## Notebook Content",
+                    title: "My Analysis",
+                }),
+            ),
+        );
+        server.use(
+            http.post("/api/pages", async ({ request, response }) => {
+                const body = await request.json();
+                expect(body.title).toBe("My Analysis");
+                expect(body.content).toBe("## Notebook Content");
+                expect(body.history_notebook_id).toBe("nb-1");
+                return response(200).json({ id: "new-page-456" });
+            }),
+        );
+        const wrapper = mountTarget({ mode: "create", notebookId: "nb-1", historyId: "hist-1" });
+        expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(true);
+        await flushPromises();
+        expect(wrapper.findComponent({ name: "LoadingSpan" }).exists()).toBe(false);
+        expect(wrapper.find("#page-title").element.value).toBe("My Analysis");
+        expect(wrapper.find("#page-slug").element.value).toBe("notebook-my-analysis");
+        await wrapper.find("#page-submit").trigger("click");
+        await flushPromises();
+        expect(mockPush).toHaveBeenCalledWith("/pages/editor?id=new-page-456");
+    });
+
+    it("shows error if prepare-for-page fails", async () => {
+        server.use(
+            http.get("/api/histories/:history_id/notebooks/:notebook_id/prepare-for-page", ({ response }) =>
+                response(400).json({ err_msg: "HID 99 not found" }),
+            ),
+        );
+        const wrapper = mountTarget({ mode: "create", notebookId: "nb-bad", historyId: "hist-1" });
+        await flushPromises();
+        const alert = wrapper.findComponent({ name: "BAlert" });
+        expect(alert.exists()).toBe(true);
+        expect(alert.text()).toContain("HID 99 not found");
+    });
+});

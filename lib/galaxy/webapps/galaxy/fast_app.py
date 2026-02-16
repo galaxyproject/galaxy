@@ -74,6 +74,7 @@ api_tags_metadata = [
     {"name": "quotas"},
     {"name": "visualizations"},
     {"name": "pages"},
+    {"name": "history_notebooks", "description": "Operations with history notebooks."},
     {
         "name": "licenses",
         "description": "Operations with [SPDX licenses](https://spdx.org/licenses/).",

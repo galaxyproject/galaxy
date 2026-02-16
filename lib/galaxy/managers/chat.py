@@ -60,6 +60,60 @@ class ChatManager:
         trans.sa_session.commit()
         return chat_exchange
 
+    def create_notebook_chat(
+        self,
+        trans: ProvidesUserContext,
+        notebook_id: int,
+        query: str,
+        response_data: Any,
+        agent_type: str = "notebook_assistant",
+    ) -> ChatExchange:
+        """Create a chat exchange scoped to a notebook."""
+        import json
+
+        chat_exchange = ChatExchange(user=trans.user, notebook_id=notebook_id)
+
+        conversation_data: dict[str, Any]
+        if isinstance(response_data, str):
+            conversation_data = {"query": query, "response": response_data, "agent_type": agent_type}
+        else:
+            conversation_data = {
+                "query": query,
+                "response": (
+                    response_data.get("response", "") if isinstance(response_data, dict) else str(response_data)
+                ),
+                "agent_type": agent_type,
+                "agent_response": response_data.get("agent_response") if isinstance(response_data, dict) else None,
+            }
+
+        chat_message = ChatExchangeMessage(message=json.dumps(conversation_data), feedback=None)
+        chat_exchange.messages.append(chat_message)
+
+        trans.sa_session.add(chat_exchange)
+        trans.sa_session.add(chat_message)
+        trans.sa_session.commit()
+        return chat_exchange
+
+    def get_notebook_chat_history(
+        self, trans: ProvidesUserContext, notebook_id: int, limit: int = 50
+    ) -> list[ChatExchange]:
+        """Get chat exchanges scoped to a notebook, ordered most-recent first."""
+        try:
+            stmt = (
+                select(ChatExchange)
+                .where(
+                    and_(
+                        ChatExchange.user_id == trans.user.id,
+                        ChatExchange.notebook_id == notebook_id,
+                    )
+                )
+                .order_by(ChatExchange.id.desc())
+                .limit(limit)
+            )
+            return trans.sa_session.execute(stmt).scalars().all()
+        except Exception as e:
+            raise InternalServerError(f"Error loading notebook chat history: {unicodify(e)}")
+
     def create_general_chat(
         self, trans: ProvidesUserContext, query: str, response_data: Any, agent_type: str = "unknown"
     ) -> ChatExchange:
@@ -288,23 +342,29 @@ class ChatManager:
             return pydantic_messages
 
     def get_user_chat_history(
-        self, trans: ProvidesUserContext, limit: int = 50, include_job_chats: bool = False
+        self,
+        trans: ProvidesUserContext,
+        limit: int = 50,
+        include_job_chats: bool = False,
+        include_notebook_chats: bool = False,
     ) -> list[ChatExchange]:
         """
         Get all chat exchanges for a user.
 
         :param limit: Maximum number of exchanges to return
         :param include_job_chats: Whether to include job-related chats
+        :param include_notebook_chats: Whether to include notebook-scoped chats
         :returns: List of ChatExchange objects
         """
         try:
             stmt = select(ChatExchange).where(ChatExchange.user_id == trans.user.id)
 
-            # Optionally filter out job-related chats
             if not include_job_chats:
                 stmt = stmt.where(ChatExchange.job_id.is_(None))
 
-            # Order by most recent first and apply limit
+            if not include_notebook_chats:
+                stmt = stmt.where(ChatExchange.notebook_id.is_(None))
+
             stmt = stmt.order_by(ChatExchange.id.desc()).limit(limit)
 
             exchanges = trans.sa_session.execute(stmt).scalars().all()

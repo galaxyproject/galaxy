@@ -3888,6 +3888,11 @@ class ChatPayload(Model):
         title="Exchange ID",
         description="The ID of an existing chat exchange to continue.",
     )
+    notebook_id: Optional[DecodedDatabaseIdField] = Field(
+        default=None,
+        title="Notebook ID",
+        description="Scope this chat exchange to a history notebook.",
+    )
     regenerate: Optional[bool] = Field(
         default=None,
         title="Regenerate",
@@ -3958,6 +3963,11 @@ class CreatePagePayload(PageSummaryBase):
         None,
         title="Workflow invocation ID",
         description="Encoded ID used by workflow generated reports.",
+    )
+    history_notebook_id: Optional[DecodedDatabaseIdField] = Field(
+        None,
+        title="History Notebook ID",
+        description="Encoded ID of the history notebook used to create this page.",
     )
     model_config = ConfigDict(use_enum_values=True, extra="allow")
 
@@ -4078,6 +4088,16 @@ class PageSummary(PageSummaryBase, WithModelClass):
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     tags: TagCollection
+    source_invocation_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="Source Invocation ID",
+        description="The workflow invocation this page was created from, if any.",
+    )
+    source_history_notebook_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="Source History Notebook ID",
+        description="The history notebook this page was created from, if any.",
+    )
 
 
 GenerateVersionField = Field(
@@ -4126,6 +4146,93 @@ class PageSummaryList(RootModel):
         default=[],
         title="List with summary information of Pages.",
     )
+
+
+# History Notebook schemas
+
+
+class NotebookContentFormat(str, Enum):
+    markdown = "markdown"
+
+
+class CreateHistoryNotebookPayload(Model):
+    title: Optional[str] = Field(
+        default=None,
+        title="Title",
+        description="Optional title for the notebook. Defaults to history name.",
+    )
+    content: Optional[str] = Field(
+        default="",
+        title="Content",
+        description="Initial markdown content.",
+    )
+    content_format: NotebookContentFormat = Field(
+        default=NotebookContentFormat.markdown,
+        title="Content format",
+    )
+
+
+class UpdateHistoryNotebookPayload(Model):
+    title: Optional[str] = Field(default=None, title="Title")
+    content: str = Field(..., title="Content", description="New markdown content.")
+    content_format: NotebookContentFormat = Field(default=NotebookContentFormat.markdown)
+    edit_source: Optional[str] = Field(
+        default=None, title="Edit source", description="Source of edit: 'user' or 'agent'."
+    )
+
+
+class HistoryNotebookSummary(Model):
+    id: EncodedDatabaseIdField
+    history_id: EncodedDatabaseIdField
+    title: Optional[str] = None
+    latest_revision_id: Optional[EncodedDatabaseIdField] = None
+    revision_ids: list[EncodedDatabaseIdField] = Field(default=[])
+    deleted: bool = Field(default=False)
+    create_time: datetime
+    update_time: datetime
+
+
+class HistoryNotebookDetails(HistoryNotebookSummary):
+    content: Optional[str] = Field(
+        default=None,
+        title="Content",
+        description="Notebook content with embedded directives expanded and IDs encoded (for rendering).",
+    )
+    content_editor: Optional[str] = Field(
+        default=None,
+        title="Content for Editor",
+        description="Raw notebook content preserved for editing.",
+    )
+    content_format: NotebookContentFormat = NotebookContentFormat.markdown
+    edit_source: Optional[str] = Field(default="user")
+
+
+class HistoryNotebookRevisionSummary(Model):
+    id: EncodedDatabaseIdField
+    notebook_id: EncodedDatabaseIdField
+    edit_source: Optional[str] = None
+    create_time: datetime
+    update_time: datetime
+
+
+class HistoryNotebookRevisionDetails(HistoryNotebookRevisionSummary):
+    content: Optional[str] = None
+    content_format: NotebookContentFormat = NotebookContentFormat.markdown
+
+
+class HistoryNotebookRevisionList(RootModel):
+    root: list[HistoryNotebookRevisionSummary] = Field(default=[])
+
+
+class HistoryNotebookList(RootModel):
+    """List of notebooks for a history."""
+
+    root: list[HistoryNotebookSummary] = Field(default=[])
+
+
+class PrepareNotebookForPageResponse(Model):
+    content: str = Field(description="Notebook markdown with encoded IDs, ready for Page creation.")
+    title: str = Field(description="Notebook title (suggested Page title).")
 
 
 class LandingRequestState(str, Enum):

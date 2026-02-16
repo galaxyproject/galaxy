@@ -450,6 +450,71 @@ steps:
         pdf_response = self._get(f"pages/{page_id}.pdf")
         self._assert_status_code_is(pdf_response, 400)
 
+    @skip_without_tool("cat")
+    def test_page_source_invocation_fk(self):
+        test_data = "input_1:\n  value: 1.bed\n  type: File\n"
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_1: data
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+""",
+                test_data=test_data,
+                history_id=history_id,
+            )
+            invocation_id = summary.invocation_id
+            page_request = dict(
+                slug="invocation-report-fk-test",
+                title="Invocation Report FK Test",
+                invocation_id=invocation_id,
+            )
+            page_response = self._post("pages", page_request, json=True)
+            self._assert_status_code_is(page_response, 200)
+            page_id = page_response.json()["id"]
+            show_response = self._get(f"pages/{page_id}")
+            self._assert_status_code_is(show_response, 200)
+            show_json = show_response.json()
+            assert show_json["source_invocation_id"] is not None
+            assert show_json["source_history_notebook_id"] is None
+
+    def test_page_source_notebook_fk(self):
+        with self.dataset_populator.test_history() as history_id:
+            notebook = self.dataset_populator.new_history_notebook(history_id)
+            notebook_id = notebook["id"]
+            page_request = dict(
+                slug="notebook-page-fk-test",
+                title="Notebook Page FK Test",
+                content="*from notebook*",
+                content_format="markdown",
+                history_notebook_id=notebook_id,
+            )
+            page_response = self._post("pages", page_request, json=True)
+            self._assert_status_code_is(page_response, 200)
+            page_id = page_response.json()["id"]
+            show_response = self._get(f"pages/{page_id}")
+            self._assert_status_code_is(show_response, 200)
+            show_json = show_response.json()
+            assert show_json["source_history_notebook_id"] is not None
+            assert show_json["source_invocation_id"] is None
+
+    def test_page_source_fk_null_by_default(self):
+        response_json = self._create_valid_page_with_slug("no-source-fk-test")
+        page_id = response_json["id"]
+        show_response = self._get(f"pages/{page_id}")
+        self._assert_status_code_is(show_response, 200)
+        show_json = show_response.json()
+        assert show_json["source_invocation_id"] is None
+        assert show_json["source_history_notebook_id"] is None
+
     def _create_published_page_with_slug(self, slug, **kwd) -> dict[str, Any]:
         response = self.dataset_populator.new_page(slug=slug, **kwd)
         response = self._make_public(response["id"])

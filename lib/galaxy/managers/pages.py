@@ -271,6 +271,10 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         page.title = payload.title
         page.slug = payload.slug
         page.user = user
+        if payload.invocation_id:
+            page.source_invocation_id = payload.invocation_id
+        if payload.history_notebook_id:
+            page.source_history_notebook_id = payload.history_notebook_id
         if payload.annotation is not None:
             self.add_item_annotation(trans.sa_session, trans.get_user(), page, payload.annotation)
 

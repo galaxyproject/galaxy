@@ -2171,6 +2171,91 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def click_button_new_workflow(self):
         self.wait_for_and_click(self.navigation.workflows.selectors.new_button)
 
+    # History Notebook helpers
+
+    def navigate_to_history_notebooks(self):
+        """Navigate to the notebook list for the current history."""
+        history_id = self.current_history_id()
+        self.get(f"histories/{history_id}/notebooks")
+        self.components.history_notebooks.list.wait_for_visible()
+
+    def history_panel_click_edit_current_notebook(self):
+        """Click notebook icon — waits for editor toolbar (non-WM path)."""
+        self.components.history_panel.notebook_button.wait_for_and_click()
+        self.components.history_notebooks.toolbar.wait_for_visible()
+
+    def history_panel_click_view_current_notebook(self):
+        """Click notebook icon — waits for WinBox window (WM-active path)."""
+        self.components.history_panel.notebook_button.wait_for_and_click()
+        self.window_manager_wait_for_window_count_at_least(1)
+
+    def history_notebook_create(self, screenshot_name=None):
+        """Click the create button on the notebook list. Returns to editor view."""
+        self.components.history_notebooks.create_button.wait_for_and_click()
+        self.components.history_notebooks.toolbar.wait_for_visible()
+        if screenshot_name:
+            self.screenshot(screenshot_name)
+
+    def history_notebook_editor_set_content(self, content):
+        """Type content into the markdown editor textarea.
+
+        Waits for the unsaved indicator to appear, confirming the debounced
+        update has propagated to the store.
+        """
+        editor = self.components.history_notebooks.markdown_editor
+        editor.wait_for_and_clear_and_send_keys(content)
+        self.components.history_notebooks.unsaved_indicator.wait_for_visible()
+
+    def history_notebook_save(self):
+        """Click the save button and wait for save to complete."""
+        save_btn = self.components.history_notebooks.save_button
+        save_btn.wait_for_and_click()
+        # Wait for dirty state to clear -- unsaved indicator disappears
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.history_notebooks.unsaved_indicator.assert_absent_or_hidden_after_transitions()
+
+    def history_notebook_manage(self):
+        """Click 'Manage History Notebooks' button to return to notebook list."""
+        self.components.history_notebooks.manage_button.wait_for_and_click()
+        self.components.history_notebooks.list.wait_for_visible()
+
+    @retry_during_transitions
+    def history_notebook_assert_item_count(self, n):
+        """Assert the notebook list shows exactly n items."""
+        items = self.components.history_notebooks.notebook_item.all()
+        assert len(items) == n, f"Expected {n} notebook items, found {len(items)}"
+
+    def history_notebook_open_revisions(self):
+        """Click Revisions button in notebook toolbar."""
+        self.components.history_notebooks.revisions_button.wait_for_and_click()
+        self.components.history_notebooks.revision_list.wait_for_visible()
+        self.components.history_notebooks.revision_item.wait_for_visible()
+
+    @retry_during_transitions
+    def history_notebook_assert_revision_count(self, n):
+        """Assert the revision list shows exactly n items."""
+        items = self.components.history_notebooks.revision_item.all()
+        assert len(items) == n, f"Expected {n} revision items, found {len(items)}"
+
+    def history_notebook_rename(self, new_name):
+        """Rename notebook via ClickToEdit in toolbar."""
+        self.components.history_notebooks.toolbar_title.wait_for_and_click()
+        title_input = self.components.history_notebooks.toolbar_title_input.wait_for_visible()
+        self.aggressive_clear(title_input)
+        title_input.send_keys(new_name)
+        self.send_enter(title_input)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+    def history_notebook_insert_dataset_via_toolbox(self, hid, screenshot_name=None):
+        """Insert a dataset reference via the markdown toolbox."""
+        toolbox_entry = self.wait_for_selector_clickable(
+            '.toolTitle .title-link[data-tool-id="history_dataset_display"]'
+        )
+        toolbox_entry.click()
+        if screenshot_name:
+            self.screenshot(screenshot_name)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
     @retry_during_transitions
     def click_history_options(self):
         component = self.components.history_panel.options_button_icon
@@ -2223,6 +2308,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         if self.window_manager_is_active():
             self.window_manager_toggle()
 
+    @contextlib.contextmanager
+    def window_manager_active(self):
+        """Context manager: enable WM on entry, disable on exit."""
+        self.window_manager_enable()
+        try:
+            yield
+        finally:
+            self.window_manager_disable()
+
     def window_manager_is_active(self) -> bool:
         """Check if the window manager is currently enabled via the masthead toggle class."""
         return self.components.masthead.window_manager.has_class("toggle")
@@ -2240,6 +2334,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         self._wait_on(check_count, f"window count to be {expected_count}")
 
+    def window_manager_wait_for_window_count_at_least(self, minimum: int):
+        """Wait until at least minimum .winbox elements exist."""
+
+        def check_count(driver=None):
+            return len(self.find_elements_by_selector(".winbox")) >= minimum
+
+        self._wait_on(check_count, f"window count to be at least {minimum}")
+
     @contextlib.contextmanager
     def winbox_frame(self, index=0):
         """Context manager to switch into a WinBox iframe by index.
@@ -2248,8 +2350,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             with self.winbox_frame(0):
                 self.wait_for_selector_visible(".dataset-view")
         """
+
+        def has_enough_iframes(driver=None):
+            return len(self.find_elements_by_selector(".winbox iframe")) > index
+
+        self._wait_on(has_enough_iframes, f"at least {index + 1} WinBox iframes")
         iframes = self.find_elements_by_selector(".winbox iframe")
-        assert len(iframes) > index, f"Expected at least {index + 1} WinBox iframes, found {len(iframes)}"
         try:
             self.switch_to_frame(iframes[index])
             yield
