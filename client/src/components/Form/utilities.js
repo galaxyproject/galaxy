@@ -227,14 +227,21 @@ function _convertDataValue(value) {
     if (value.batch) {
         return {
             __class__: "Batch",
-            values: value.values.map((v) => ({ src: v.src, id: v.id })),
+            values: value.values.map((v) => _convertDataEntry(v)),
         };
     }
     if (value.values.length === 1) {
-        const v = value.values[0];
-        return { src: v.src, id: v.id };
+        return _convertDataEntry(value.values[0]);
     }
-    return value.values.map((v) => ({ src: v.src, id: v.id }));
+    return value.values.map((v) => _convertDataEntry(v));
+}
+
+function _convertDataEntry(v) {
+    const entry = { src: v.src, id: v.id };
+    if (v.map_over_type) {
+        entry.map_over_type = v.map_over_type;
+    }
+    return entry;
 }
 
 /** Validate value against a regular expression pattern

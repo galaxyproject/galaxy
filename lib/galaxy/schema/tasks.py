@@ -43,9 +43,8 @@ class GeneratePdfDownload(Model):
 
 # serialize user info for tasks
 class RequestUser(Model):
-    user_id: int
-    # TODO: allow make the above optional and allow a session_id for anonymous users...
-    # session_id: Optional[str]
+    user_id: Optional[int] = None
+    galaxy_session_id: Optional[int] = None
 
 
 class GenerateHistoryDownload(ShortTermStoreExportPayload):
