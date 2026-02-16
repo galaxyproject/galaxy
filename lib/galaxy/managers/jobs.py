@@ -2223,12 +2223,16 @@ class JobSubmitter:
             sa_session.commit()
 
     def _context(self, tool_request: ToolRequest, request: QueueJobs) -> WorkRequestContext:
-        user = self.user_manager.by_id(request.user.user_id)
+        user = self.user_manager.by_id(request.user.user_id) if request.user.user_id else None
         target_history = tool_request.history
+        galaxy_session = None
+        if request.user.galaxy_session_id:
+            galaxy_session = self.app.model.context.get(model.GalaxySession, request.user.galaxy_session_id)
         trans = WorkRequestContext(
             self.app,
             user,
             history=target_history,
+            galaxy_session=galaxy_session,
         )
         return trans
 
