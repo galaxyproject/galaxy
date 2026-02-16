@@ -48,10 +48,7 @@ from typing import (
 
 from sqlalchemy import select
 
-from galaxy.exceptions import (
-    AuthenticationRequired,
-    UserActivationRequiredException,
-)
+from galaxy.exceptions import UserActivationRequiredException
 from galaxy.model import (
     Dataset,
     Event,
@@ -220,9 +217,10 @@ class ProvidesUserContext(ProvidesAppContext):
 
     @property
     def async_request_user(self) -> RequestUser:
+        galaxy_session_id = self.galaxy_session.id if self.galaxy_session else None
         if self.user is None:
-            raise AuthenticationRequired("The async task requires user authentication.")
-        return RequestUser(user_id=self.user.id)
+            return RequestUser(galaxy_session_id=galaxy_session_id)
+        return RequestUser(user_id=self.user.id, galaxy_session_id=galaxy_session_id)
 
     @property
     @abc.abstractmethod
