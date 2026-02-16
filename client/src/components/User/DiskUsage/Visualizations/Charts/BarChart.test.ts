@@ -27,8 +27,8 @@ function buildMockView(dataPoints: DataValuePoint[] = []) {
     const colorMap: Record<string, string> = {};
     const colors = ["#4c78a8", "#f58518", "#e45756", "#72b7b2"];
     formattedData.forEach((d, i) => {
-        if (!colorMap[d.formattedValue]) {
-            colorMap[d.formattedValue] = colors[i % colors.length]!;
+        if (!colorMap[d.id]) {
+            colorMap[d.id] = colors[i % colors.length]!;
         }
     });
     return {

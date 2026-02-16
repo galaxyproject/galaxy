@@ -33,7 +33,7 @@ const emit = defineEmits<{
 
 const selectedDataPoint = ref<DataValuePoint | undefined>(undefined);
 const selectedLegendLabel = ref<string | undefined>(undefined);
-const legendItems = ref<{ label: string; color: string }[]>([]);
+const legendItems = ref<{ id: string; label: string; color: string }[]>([]);
 let currentView: View | undefined;
 
 const hasData = computed(
@@ -58,7 +58,7 @@ const vegaSpec = computed<VisualizationSpec>(() => {
             ? [
                   {
                       name: "barSelection",
-                      select: { type: "point", fields: ["formattedValue"] },
+                      select: { type: "point", fields: ["id"] },
                   },
               ]
             : [],
@@ -80,7 +80,7 @@ const vegaSpec = computed<VisualizationSpec>(() => {
                 },
             },
             color: {
-                field: "formattedValue",
+                field: "id",
                 type: "nominal",
                 sort: null,
                 legend: null,
@@ -113,29 +113,23 @@ watch(
 function updateLegendItems(view: View) {
     const colorScale = view.scale("color") as (value: string) => string;
     const data = view.data("data_0") as Record<string, string>[];
-    const seen = new Set<string>();
-    const items: { label: string; color: string }[] = [];
+    const items: { id: string; label: string; color: string }[] = [];
     for (const d of data) {
-        const fv = d.formattedValue;
-        if (fv && !seen.has(fv)) {
-            seen.add(fv);
-            items.push({ label: fv, color: colorScale(fv) });
+        if (d.id && d.formattedValue) {
+            items.push({ id: d.id, label: d.formattedValue, color: colorScale(d.id) });
         }
     }
     legendItems.value = items;
 }
 
-function onLegendItemClick(label: string) {
+function onLegendItemClick(id: string) {
     if (!props.enableSelection || !currentView) {
         return;
     }
     const store = currentView.data("barSelection_store");
-    const isSelected = store.some((s: any) => s.values?.[0] === label);
-    currentView.data(
-        "barSelection_store",
-        isSelected ? [] : [{ fields: [{ field: "formattedValue", type: "E" }], values: [label] }],
-    );
-    selectedLegendLabel.value = isSelected ? undefined : label;
+    const isSelected = store.some((s: any) => s.values?.[0] === id);
+    currentView.data("barSelection_store", isSelected ? [] : [{ fields: [{ field: "id", type: "E" }], values: [id] }]);
+    selectedLegendLabel.value = isSelected ? undefined : id;
     currentView.runAsync();
 }
 
@@ -146,16 +140,15 @@ function onNewView(view: View) {
         return;
     }
     view.addSignalListener("barSelection", (_name: string, value: Record<string, unknown>) => {
-        const selectedFV = (value as { formattedValue?: string[] })?.formattedValue?.[0];
-        if (selectedFV) {
-            const match = chartData.value.find((d) => d.formattedValue === selectedFV);
-            const dataPoint = match ? props.data.find((d) => d.id === match.id) : undefined;
+        const selectedId = (value as { id?: string[] })?.id?.[0];
+        if (selectedId) {
+            const dataPoint = props.data.find((d) => d.id === selectedId);
             if (dataPoint && selectedDataPoint.value?.id === dataPoint.id) {
                 selectedDataPoint.value = undefined;
                 selectedLegendLabel.value = undefined;
             } else {
                 selectedDataPoint.value = dataPoint;
-                selectedLegendLabel.value = selectedFV;
+                selectedLegendLabel.value = selectedId;
             }
         } else {
             selectedDataPoint.value = undefined;
@@ -184,11 +177,11 @@ function onNewView(view: View) {
                     <div v-if="legendItems.length > 0" class="legend-container">
                         <div
                             v-for="item in legendItems"
-                            :key="item.label"
+                            :key="item.id"
                             class="legend-item"
-                            :class="{ 'legend-item-dimmed': selectedLegendLabel && selectedLegendLabel !== item.label }"
+                            :class="{ 'legend-item-dimmed': selectedLegendLabel && selectedLegendLabel !== item.id }"
                             :style="{ cursor: enableSelection ? 'pointer' : 'default' }"
-                            @click="onLegendItemClick(item.label)">
+                            @click="onLegendItemClick(item.id)">
                             <span class="legend-symbol" :style="{ backgroundColor: item.color }" />
                             <span class="legend-label">{{ item.label }}</span>
                         </div>
