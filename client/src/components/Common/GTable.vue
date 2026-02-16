@@ -190,6 +190,12 @@ interface Props {
     selectedItems?: number[];
 
     /**
+     * Whether to show the empty state message when no items are available
+     * @default false
+     */
+    showEmpty?: boolean;
+
+    /**
      * Current sort field key
      * @default ""
      */
@@ -261,6 +267,7 @@ const props = withDefaults(defineProps<Props>(), {
     perPage: undefined,
     selectable: false,
     selectedItems: () => [],
+    showEmpty: false,
     showSelectAll: false,
     sortBy: "",
     sortDesc: false,
@@ -695,7 +702,7 @@ defineExpose({
                     </thead>
 
                     <tbody>
-                        <tr v-if="!props.items.length">
+                        <tr v-if="props.showEmpty && !props.items.length">
                             <td :colspan="(selectable ? 1 : 0) + props.fields.length + (props.actions ? 1 : 0)">
                                 <slot name="empty">
                                     <BAlert v-if="!loading" variant="info" show class="w-100 m-0">
