@@ -602,6 +602,21 @@ function getIconProps(item: T, index: number) {
 const getFieldId = (tableId: string, fieldKey: string) => `g-table-field-${fieldKey}-${tableId}`;
 const getRowId = (tableId: string, index: number) => `g-table-row-${index}-${tableId}`;
 const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table-cell-${fieldKey}-${index}-${tableId}`;
+
+/**
+ * Refresh the table - useful for manual recalculation of computed properties
+ */
+function refresh() {
+    // Force reactivity by re-assigning the expanded rows set
+    expandedRows.value = new Set(expandedRows.value);
+}
+
+/**
+ * Expose refresh method to parent components
+ */
+defineExpose({
+    refresh,
+});
 </script>
 
 <template>
