@@ -7234,7 +7234,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         # condition where the cached value becomes stale while nested
         # collections are being populated.
         if hasattr(self, "_populated_optimized"):
-            delattr(self, "_populated_optimized")
+            del self._populated_optimized
 
     @property
     def allow_implicit_mapping(self):
