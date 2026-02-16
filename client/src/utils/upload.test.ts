@@ -14,7 +14,6 @@ import {
     createFileUploadItem,
     createPastedUploadItem,
     createUrlUploadItem,
-    extractPairName,
     fetchDatasets,
     isGalaxyFileName,
     type LegacyUploadItem,
@@ -537,44 +536,6 @@ describe("buildUploadPayload", () => {
         const items: ApiUploadItem[] = [createUrlUploadItem("not-a-valid-url", "historyId")];
 
         expect(() => buildUploadPayload(items)).toThrow("Invalid URL: not-a-valid-url");
-    });
-});
-
-// ============================================================================
-// Pair Name Extraction Tests
-// ============================================================================
-
-describe("extractPairName", () => {
-    test("detects _R1/_R2 suffix", () => {
-        expect(extractPairName("sample_R1.fastq", "sample_R2.fastq")).toBe("sample");
-    });
-
-    test("detects _1/_2 suffix", () => {
-        expect(extractPairName("sample_1.fastq", "sample_2.fastq")).toBe("sample");
-    });
-
-    test("detects .R1/.R2 suffix", () => {
-        expect(extractPairName("sample.R1.fastq", "sample.R2.fastq")).toBe("sample");
-    });
-
-    test("detects _F/_R suffix", () => {
-        expect(extractPairName("sample_F.fastq", "sample_R.fastq")).toBe("sample");
-    });
-
-    test("detects _fwd/_rev suffix", () => {
-        expect(extractPairName("sample_fwd.fastq", "sample_rev.fastq")).toBe("sample");
-    });
-
-    test("detects _forward/_reverse suffix", () => {
-        expect(extractPairName("sample_forward.fastq", "sample_reverse.fastq")).toBe("sample");
-    });
-
-    test("falls back to common prefix", () => {
-        expect(extractPairName("sampleA.fastq", "sampleB.fastq")).toBe("sample");
-    });
-
-    test("returns first file base name when no common pattern", () => {
-        expect(extractPairName("alpha.txt", "beta.txt")).toBe("alpha");
     });
 });
 

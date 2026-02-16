@@ -53,6 +53,8 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { isUrl } from "@/utils/url";
 
+import { COMMON_FILTERS, DEFAULT_FILTER, guessInitialFilterType, guessNameForPair } from "@/components/Collections/pairing";
+
 import { createTusUpload, type FileStream, type NamedBlob, type UploadableFile } from "./tusUpload";
 
 // ============================================================================
@@ -684,43 +686,10 @@ export interface CollectionUploadOptions {
 }
 
 /**
- * Extracts common prefix from pair of file names for smart pair naming.
- * Removes common suffixes like _R1/_R2, _1/_2, _F/_R, etc.
- */
-export function extractPairName(name1: string, name2: string): string {
-    const base1 = name1.replace(/\.[^.]+$/, "");
-    const base2 = name2.replace(/\.[^.]+$/, "");
-
-    const patterns = [
-        { regex: /[._-]?R?[12]$/, replace: "" },
-        { regex: /[._-]?[FR]$/, replace: "" },
-        { regex: /[._-]?read[12]$/i, replace: "" },
-        { regex: /[._-]?fwd$|[._-]?rev$/i, replace: "" },
-        { regex: /[._-]?forward$|[._-]?reverse$/i, replace: "" },
-    ];
-
-    for (const pattern of patterns) {
-        const test1 = base1.replace(pattern.regex, pattern.replace);
-        const test2 = base2.replace(pattern.regex, pattern.replace);
-        if (test1 === test2 && test1.length > 0) {
-            return test1;
-        }
-    }
-
-    let i = 0;
-    while (i < Math.min(base1.length, base2.length) && base1[i] === base2[i]) {
-        i++;
-    }
-    if (i > 0) {
-        return base1.slice(0, i).replace(/[._-]+$/, "");
-    }
-
-    return base1;
-}
-
-/**
  * Builds nested paired elements from a flat list of data elements.
  * Groups consecutive pairs with "forward"/"reverse" names inside NestedElement wrappers.
+ * Uses the shared pairing abstractions from @/components/Collections/pairing for
+ * pair name extraction (synchronized with the backend via auto_pairing_spec.yml).
  *
  * IMPORTANT: The files array order must match depth-first element traversal order.
  * For list:paired, the backend's replace_file_srcs iterates depth-first:
@@ -731,6 +700,10 @@ function buildPairedElements(items: ApiUploadItem[], dataElements: ApiDataElemen
     const pairs: NestedElement[] = [];
     const usedNames = new Set<string>();
 
+    // Use the shared filter detection to determine forward/reverse naming convention
+    const filterType = guessInitialFilterType(items) ?? DEFAULT_FILTER;
+    const [forwardFilter, reverseFilter] = COMMON_FILTERS[filterType];
+
     for (let i = 0; i < items.length; i += 2) {
         if (i + 1 >= items.length) {
             console.warn(`Skipping unpaired file at index ${i}: ${items[i]?.name}`);
@@ -740,7 +713,9 @@ function buildPairedElements(items: ApiUploadItem[], dataElements: ApiDataElemen
         const item1 = items[i]!;
         const item2 = items[i + 1]!;
 
-        const basePairName = extractPairName(item1.name, item2.name) || `pair_${Math.floor(i / 2) + 1}`;
+        const basePairName =
+            guessNameForPair(item1, item2, forwardFilter, reverseFilter, true) ||
+            `pair_${Math.floor(i / 2) + 1}`;
         let pairName = basePairName;
         let counter = 1;
         while (usedNames.has(pairName)) {
