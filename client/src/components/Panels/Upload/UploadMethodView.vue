@@ -112,6 +112,7 @@ function handleReadyStateChange(ready: boolean) {
                     color="blue"
                     :disabled="!canUpload"
                     :title="canUpload ? 'Start uploading to Galaxy' : 'Configure upload options first'"
+                    data-test-id="start-upload"
                     @click="handleStart">
                     <span v-localize>Start</span>
                 </GButton>

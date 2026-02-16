@@ -224,7 +224,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 :placeholder="placeholder"></textarea>
             <div class="d-flex justify-content-end align-items-center">
                 <GButton v-if="hasItems" class="mr-2" @click="showUrlList">View Added URLs</GButton>
-                <GButton color="blue" :disabled="!urlText.trim()" @click="addUrlsFromText">
+                <GButton color="blue" :disabled="!urlText.trim()" data-test-id="add-urls" @click="addUrlsFromText">
                     <FontAwesomeIcon :icon="faLink" class="mr-1" />
                     Add URLs
                 </GButton>

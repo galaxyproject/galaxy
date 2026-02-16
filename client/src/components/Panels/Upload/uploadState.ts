@@ -54,13 +54,13 @@ export interface CollectionBatchState {
     name: string;
     /** Collection type */
     type: SupportedCollectionType;
-    /** Whether to hide source datasets after collection creation */
+    /** Whether to hide source datasets after collection creation (two-step path only) */
     hideSourceItems: boolean;
     /** Target history ID */
     historyId: string;
     /** Upload item IDs belonging to this batch */
     uploadIds: string[];
-    /** Dataset IDs created from uploads (needed for collection creation) */
+    /** Dataset IDs created from uploads (needed for two-step collection creation) */
     datasetIds: string[];
     /** Batch processing status */
     status: BatchStatus;
@@ -70,6 +70,8 @@ export interface CollectionBatchState {
     error?: string;
     /** Timestamp when batch was created */
     createdAt: number;
+    /** Whether this batch uses direct HDCA creation (no separate collection creation step) */
+    directCreation?: boolean;
 }
 
 function generateId() {
@@ -209,11 +211,13 @@ export function useUploadState() {
      * Creates a new collection batch.
      * @param config - Collection configuration
      * @param uploadIds - Upload IDs belonging to this batch
+     * @param directCreation - Whether to use direct HDCA creation (default: false)
      * @returns Unique batch identifier
      */
     function addBatch(
         config: { name: string; type: SupportedCollectionType; hideSourceItems: boolean; historyId: string },
         uploadIds: string[],
+        directCreation = false,
     ): string {
         const batch: CollectionBatchState = {
             id: generateId(),
@@ -222,6 +226,7 @@ export function useUploadState() {
             datasetIds: [],
             status: "uploading",
             createdAt: Date.now(),
+            directCreation,
         };
 
         batches.value.push(batch);

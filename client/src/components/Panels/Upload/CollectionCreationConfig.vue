@@ -187,7 +187,7 @@ defineExpose({ reset });
             <!-- Info about source items -->
             <div class="small text-muted mt-2">
                 <FontAwesomeIcon :icon="faInfoCircle" class="mr-1" />
-                Individual uploaded files will be hidden after collection creation
+                Files will be uploaded directly into the collection
             </div>
         </div>
     </div>
