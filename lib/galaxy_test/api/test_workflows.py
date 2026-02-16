@@ -60,6 +60,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED,
     WORKFLOW_RENAME_ON_INPUT,
     WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
+    WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_BAD_COLUMN_PARAMETER,
     WORKFLOW_WITH_BAD_COLUMN_PARAMETER_GOOD_TEST_DATA,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
@@ -1114,21 +1115,12 @@ steps:
 
     def test_refactor_specific_version(self):
         """Test that refactoring can target a specific workflow version."""
-        # Create initial workflow (version 0) with label "test_input"
-        workflow_id = self.workflow_populator.upload_yaml_workflow("""
-class: GalaxyWorkflow
-inputs:
-  test_input: data
-steps:
-  first_cat:
-    tool_id: cat
-    in:
-      input1: test_input
-""")
+        # Create initial workflow (version 0) with label "input1"
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
 
         # Download and verify initial state (version 0)
         workflow_v0 = self.workflow_populator.download_workflow(workflow_id, version=0)
-        assert workflow_v0["steps"]["0"]["label"] == "test_input"
+        assert workflow_v0["steps"]["0"]["label"] == "input1"
 
         # Refactor (without version param) to create version 1 with label "v1_label"
         actions_v1 = [
@@ -1145,7 +1137,7 @@ steps:
 
         # Verify version 0 still has original label
         workflow_v0_check = self.workflow_populator.download_workflow(workflow_id, version=0)
-        assert workflow_v0_check["steps"]["0"]["label"] == "test_input"
+        assert workflow_v0_check["steps"]["0"]["label"] == "input1"
 
         # Verify version 1 (latest) has the refactored label
         workflow_v1 = self.workflow_populator.download_workflow(workflow_id)
