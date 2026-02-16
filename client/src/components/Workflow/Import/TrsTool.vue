@@ -2,7 +2,6 @@
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormSelect } from "bootstrap-vue";
-import semver from "semver";
 import { computed, onMounted, ref, watch } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
@@ -24,16 +23,39 @@ const emit = defineEmits<{
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
+/** Parse a version string like "v1.2.3" into numeric parts, or null if not semver-like. */
+function parseSemver(name: string): number[] | null {
+    const match = name.match(/(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+    if (!match) {
+        return null;
+    }
+    return [
+        parseInt(match[1] as string, 10),
+        match[2] !== undefined ? parseInt(match[2], 10) : 0,
+        match[3] !== undefined ? parseInt(match[3], 10) : 0,
+    ];
+}
+
+/** Compare two parsed semver arrays in descending order. */
+function compareSemverDesc(a: number[], b: number[]): number {
+    for (let i = 0; i < 3; i++) {
+        if ((a[i] as number) !== (b[i] as number)) {
+            return (b[i] as number) - (a[i] as number);
+        }
+    }
+    return 0;
+}
+
 const sortedVersions = computed(() => {
     return props.trsTool.versions.slice().sort((a, b) => {
-        const aSemver = semver.coerce(a.name);
-        const bSemver = semver.coerce(b.name);
+        const aParsed = parseSemver(a.name);
+        const bParsed = parseSemver(b.name);
 
-        if (aSemver && bSemver) {
-            return semver.rcompare(aSemver, bSemver);
-        } else if (aSemver) {
+        if (aParsed && bParsed) {
+            return compareSemverDesc(aParsed, bParsed);
+        } else if (aParsed) {
             return -1;
-        } else if (bSemver) {
+        } else if (bParsed) {
             return 1;
         } else {
             return b.name.localeCompare(a.name);
