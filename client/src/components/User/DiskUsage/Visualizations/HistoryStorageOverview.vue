@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { useSelectableObjectStores } from "@/composables/useObjectStores";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
@@ -13,6 +14,7 @@ import BarChart from "./Charts/BarChart.vue";
 import OverviewPage from "./OverviewPage.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
 import WarnDeletedDatasets from "./WarnDeletedDatasets.vue";
+import FilterObjectStoreLink from "@/components/Common/FilterObjectStoreLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
@@ -34,14 +36,26 @@ const {
 } = useDatasetsToDisplay();
 
 const { isLoading, loadDataOnMount } = useDataLoading();
+const { selectableObjectStores, hasSelectableObjectStores } = useSelectableObjectStores();
+
+const objectStore = ref<string>();
 
 const canEditHistory = computed(() => {
     const history = getHistoryById(props.historyId);
     return (history && !history.purged && !history.archived) ?? false;
 });
 
+function onChangeObjectStore(value?: string) {
+    objectStore.value = value;
+    reloadDataFromServer();
+}
+
 async function reloadDataFromServer() {
-    const allDatasetsInHistorySizeSummary = await fetchHistoryContentsSizeSummary(props.historyId, 50);
+    const allDatasetsInHistorySizeSummary = await fetchHistoryContentsSizeSummary(
+        props.historyId,
+        50,
+        objectStore.value,
+    );
     datasetsSizeSummaryMap.clear();
     allDatasetsInHistorySizeSummary.forEach((dataset) => datasetsSizeSummaryMap.set(dataset.id, dataset));
 
@@ -123,6 +137,15 @@ function onUndelete(datasetId: string) {
                 v-bind="byteFormattingForChart">
                 <template v-slot:title>
                     <b>{{ localize("Top 50 Datasets by Size") }}</b>
+                </template>
+                <template v-if="hasSelectableObjectStores" v-slot:options>
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="mr-2">{{ localize("Storage:") }}</span>
+                        <FilterObjectStoreLink
+                            :object-stores="selectableObjectStores ?? []"
+                            :value="objectStore"
+                            @change="onChangeObjectStore" />
+                    </div>
                 </template>
                 <template v-slot:selection="{ data }">
                     <SelectedItemActions
