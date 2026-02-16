@@ -201,17 +201,39 @@ def async_task_summary(async_result: AsyncResult) -> AsyncTaskResultSummary:
     )
 
 
-def tool_request_to_model(tool_request: ToolRequest) -> ToolRequestModel:
+def _encode_request_ids(request: dict[str, Any], security: IdEncodingHelper) -> dict[str, Any]:
+    """Walk the request dict and encode dataset IDs (raw ints → encoded strings).
+
+    Looks for dicts with ``{"id": <int>, "src": "hda"|"hdca"|...}`` and encodes the ``id``.
+    """
+    import copy
+
+    def _walk(obj):
+        if isinstance(obj, dict):
+            if "src" in obj and "id" in obj and isinstance(obj["id"], int):
+                obj = dict(obj)
+                obj["id"] = security.encode_id(obj["id"])
+            return {k: _walk(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [_walk(item) for item in obj]
+        return obj
+
+    return _walk(copy.deepcopy(request))
+
+
+def tool_request_to_model(tool_request: ToolRequest, security: IdEncodingHelper) -> ToolRequestModel:
+    encoded_request = _encode_request_ids(tool_request.request, security)
     as_dict = {
         "id": tool_request.id,
-        "request": tool_request.request,
+        "request": encoded_request,
         "state": tool_request.state,
         "state_message": tool_request.state_message,
     }
     return ToolRequestModel.model_validate(as_dict)
 
 
-def tool_request_detailed_to_model(tool_request: ToolRequest) -> ToolRequestDetailedModel:
+def tool_request_detailed_to_model(tool_request: ToolRequest, security: IdEncodingHelper) -> ToolRequestDetailedModel:
+    encoded_request = _encode_request_ids(tool_request.request, security)
     jobs = [{"src": "job", "id": job.id} for job in tool_request.jobs]
     implicit_collections = [
         {"src": "hdca", "id": assoc.dataset_collection.id, "output_name": assoc.output_name}
@@ -219,7 +241,7 @@ def tool_request_detailed_to_model(tool_request: ToolRequest) -> ToolRequestDeta
     ]
     as_dict = {
         "id": tool_request.id,
-        "request": tool_request.request,
+        "request": encoded_request,
         "state": tool_request.state,
         "state_message": tool_request.state_message,
         "jobs": jobs,

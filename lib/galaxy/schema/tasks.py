@@ -186,3 +186,7 @@ class QueueJobs(Model):
     user: RequestUser  # TODO: test anonymous users through this submission path
     use_cached_jobs: bool
     rerun_remap_job_id: Optional[int]  # link to a job to rerun & remap
+    preferred_object_store_id: Optional[str] = None
+    tags: Optional[list[str]] = None
+    data_manager_mode: Optional[str] = None
+    send_email_notification: bool = False
