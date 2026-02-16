@@ -4,7 +4,7 @@ import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 
-import { type AxisAlignedBoundingBox, Transform } from "./modules/geometry";
+import { type AxisAlignedBoundingBox, Transform, type WorkflowTransform } from "./modules/geometry";
 
 const lineGap = 10;
 
@@ -34,7 +34,7 @@ const landmarkLines = [
 const props = defineProps<{
     viewportBounds: UseElementBoundingReturn;
     viewportBoundingBox: AxisAlignedBoundingBox;
-    transform: { x: number; y: number; k: number };
+    transform: WorkflowTransform;
 }>();
 
 const colors = {

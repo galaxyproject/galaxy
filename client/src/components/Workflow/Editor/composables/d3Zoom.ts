@@ -3,14 +3,8 @@ import { select } from "d3-selection";
 import { type D3ZoomEvent, zoom, zoomIdentity } from "d3-zoom";
 import { type Ref, ref, watch } from "vue";
 
-import type { Vector } from "@/components/Workflow/Editor/modules/geometry";
+import type { Vector, WorkflowTransform } from "@/components/Workflow/Editor/modules/geometry";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
-
-export interface WorkflowTransform {
-    x: number;
-    y: number;
-    k: number;
-}
 
 // if element is draggable it may implement its own drag handler,
 // but d3zoom would call preventDefault
@@ -40,7 +34,7 @@ export function useD3Zoom(
     scroll: UseScrollReturn,
     initialPan: XYPosition = { x: 0, y: 0 },
 ) {
-    const transform = ref({ x: initialPan.x, y: initialPan.y, k: k });
+    const transform = ref<WorkflowTransform>({ x: initialPan.x, y: initialPan.y, k: k });
     const d3Zoom = zoom<HTMLElement, unknown>().filter(filter).scaleExtent([minZoom, maxZoom]);
 
     watch(targetRef, () => {
@@ -86,7 +80,7 @@ export function useD3Zoom(
         }
     }
 
-    function setTransform(newTransform: { x: number; y: number; k: number }) {
+    function setTransform(newTransform: WorkflowTransform) {
         if (targetRef.value) {
             const d3Selection = select(targetRef.value).call(d3Zoom);
             const updatedTransform = zoomIdentity.translate(newTransform.x, newTransform.y).scale(newTransform.k);
