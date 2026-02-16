@@ -338,6 +338,7 @@ history_panel:
       selector: '.history-options-button-menu > a:contains("${option_label}")'
     options_show_export_history_to_file: 'a[data-description="export to file"]'
     options_extract_workflow: '[data-description="extract workflow"]'
+    notebook_button: '[data-description="history notebook button"]'
 
     collection_menu_button: '.collection-menu'
     collection_menu_edit_attributes: '.edit-btn'
@@ -624,6 +625,82 @@ pages:
   view:
     selectors:
       history_link: '[data-description="history import link"][data-history-id="${history_id}"]'
+
+history_notebooks:
+  selectors:
+    _:
+      type: data-description
+      selector: 'history notebook view'
+    list:
+      type: data-description
+      selector: 'history notebook list'
+    create_button:
+      type: data-description
+      selector: 'create notebook button'
+    empty_state:
+      type: data-description
+      selector: 'notebook empty state'
+    toolbar:
+      type: data-description
+      selector: 'notebook toolbar'
+    # Target inner span (ClickToEdit's click handler), not outer div where inline text gaps cause missed clicks
+    toolbar_title: '[data-description="notebook toolbar title"] > span'
+    manage_button:
+      type: data-description
+      selector: 'notebook manage button'
+    save_button:
+      type: data-description
+      selector: 'notebook save button'
+    unsaved_indicator:
+      type: data-description
+      selector: 'notebook unsaved indicator'
+    editor:
+      type: data-description
+      selector: 'history notebook editor'
+    markdown_editor: '.markdown-textarea'
+    notebook_item:
+      type: data-description
+      selector: 'notebook item'
+    notebook_title:
+      type: data-description
+      selector: 'notebook title'
+    rendered_view:
+      type: data-description
+      selector: 'notebook rendered view'
+    revisions_button:
+      type: data-description
+      selector: 'notebook revisions button'
+    revision_list:
+      type: data-description
+      selector: 'notebook revision list'
+    revision_item:
+      type: data-description
+      selector: 'revision item'
+    restore_revision_button:
+      type: data-description
+      selector: 'restore revision button'
+    revision_view:
+      type: data-description
+      selector: 'notebook revision view'
+    revision_back_button:
+      type: data-description
+      selector: 'revision back button'
+    revision_restore_button:
+      type: data-description
+      selector: 'revision restore button'
+    view_button:
+      type: data-description
+      selector: 'notebook view button'
+    display_toolbar:
+      type: data-description
+      selector: 'notebook display toolbar'
+    preview_button:
+      type: data-description
+      selector: 'notebook preview button'
+    edit_button:
+      type: data-description
+      selector: 'notebook edit button'
+    toolbar_title_input: '[data-description="notebook toolbar title"] input'
 
 login:
   selectors:

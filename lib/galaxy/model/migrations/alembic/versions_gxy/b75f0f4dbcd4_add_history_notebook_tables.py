@@ -1,7 +1,7 @@
 """add history_notebook tables
 
 Revision ID: b75f0f4dbcd4
-Revises: 1d1d7bf6ac02, 23143e0bf1d8
+Revises: 566b691307a5, b964490175fd
 Create Date: 2025-01-06
 
 """
@@ -10,15 +10,20 @@ import sqlalchemy as sa
 
 from galaxy.model.custom_types import TrimmedString
 from galaxy.model.migrations.util import (
+    add_column,
     create_foreign_key,
+    create_index,
     create_table,
+    drop_column,
+    drop_constraint,
+    drop_index,
     drop_table,
     transaction,
 )
 
 # revision identifiers, used by Alembic.
 revision = "b75f0f4dbcd4"
-down_revision = ("1d1d7bf6ac02", "23143e0bf1d8")
+down_revision = "566b691307a5"
 branch_labels = None
 depends_on = None
 
@@ -73,8 +78,40 @@ def upgrade():
             ["id"],
         )
 
+        # Page source provenance columns (Phase 7.1)
+        add_column("page", sa.Column("source_invocation_id", sa.Integer, nullable=True))
+        add_column("page", sa.Column("source_history_notebook_id", sa.Integer, nullable=True))
+
+        create_index("ix_page_source_invocation_id", "page", ["source_invocation_id"])
+        create_index("ix_page_source_history_notebook_id", "page", ["source_history_notebook_id"])
+
+        create_foreign_key(
+            "page_source_invocation_id_fkey",
+            "page",
+            "workflow_invocation",
+            ["source_invocation_id"],
+            ["id"],
+        )
+        create_foreign_key(
+            "page_source_history_notebook_id_fkey",
+            "page",
+            "history_notebook",
+            ["source_history_notebook_id"],
+            ["id"],
+        )
+
 
 def downgrade():
     with transaction():
+        # Drop page source provenance columns first (they FK to history_notebook)
+        drop_constraint("page_source_history_notebook_id_fkey", "page")
+        drop_constraint("page_source_invocation_id_fkey", "page")
+        drop_index("ix_page_source_history_notebook_id", "page")
+        drop_index("ix_page_source_invocation_id", "page")
+        drop_column("page", "source_history_notebook_id")
+        drop_column("page", "source_invocation_id")
+
+        # Drop circular FK first, then revision table (has FK to notebook), then notebook
+        drop_constraint("history_notebook_latest_revision_id_fk", NOTEBOOK_TABLE)
         drop_table(REVISION_TABLE)
         drop_table(NOTEBOOK_TABLE)

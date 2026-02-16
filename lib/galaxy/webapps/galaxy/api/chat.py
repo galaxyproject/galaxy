@@ -168,11 +168,39 @@ class ChatAPI:
         if payload is not None and hasattr(payload, "exchange_id") and payload.exchange_id:
             exchange_id = payload.exchange_id
 
+        # Check for notebook scope and populate agent context
+        notebook_id = None
+        if payload is not None and hasattr(payload, "notebook_id") and payload.notebook_id:
+            notebook_id = payload.notebook_id
+
         # Use new agent system if available, otherwise fallback to legacy
         try:
             if HAS_AGENTS:
                 # Build context with conversation history
                 full_context: dict[str, Any] = query_context.copy() if query_context else {}
+
+                # If notebook-scoped, look up history_id + content for agent.
+                # Content is exported (IDs encoded) so the agent sees the same
+                # text the editor has — hashes and proposals match the client.
+                if notebook_id:
+                    from galaxy.model import HistoryNotebook
+
+                    notebook = trans.sa_session.get(HistoryNotebook, notebook_id)
+                    if notebook:
+                        full_context["history_id"] = notebook.history_id
+                        if notebook.latest_revision_id:
+                            from galaxy.model import HistoryNotebookRevision
+
+                            from galaxy.managers.markdown_util import ready_galaxy_markdown_for_export
+
+                            rev = trans.sa_session.get(HistoryNotebookRevision, notebook.latest_revision_id)
+                            if rev and rev.content:
+                                exported, _, _ = ready_galaxy_markdown_for_export(trans, rev.content)
+                                full_context["notebook_content"] = exported
+                            else:
+                                full_context["notebook_content"] = ""
+                        else:
+                            full_context["notebook_content"] = ""
 
                 # If we have an exchange_id, ALWAYS load conversation history from database (source of truth)
                 if exchange_id:
@@ -219,6 +247,17 @@ class ChatAPI:
                     message_content = json.dumps(conversation_data)
                     self.chat_manager.add_message(trans, exchange_id, message_content)
                     result["exchange_id"] = exchange_id
+                elif notebook_id:
+                    # Notebook-scoped chat
+                    agent_resp = result.get("agent_response")
+                    storable_result = {
+                        "response": result.get("response", ""),
+                        "agent_response": agent_resp.model_dump() if agent_resp else None,
+                    }
+                    exchange = self.chat_manager.create_notebook_chat(
+                        trans, notebook_id, query_text, storable_result, agent_type
+                    )
+                    result["exchange_id"] = exchange.id
                 else:
                     # Create new exchange for first message
                     # Serialize agent_response for JSON storage
@@ -279,6 +318,43 @@ class ChatAPI:
                     )
                 except (json.JSONDecodeError, AttributeError):
                     # Fallback for non-JSON messages (legacy job-based chats)
+                    pass
+
+        return history
+
+    @router.get("/api/chat/notebook/{notebook_id}/history", unstable=True)
+    def get_notebook_chat_history(
+        self,
+        notebook_id: DecodedDatabaseIdField,
+        limit: int = Query(default=50, description="Maximum number of chats to return"),
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> list[dict[str, Any]]:
+        """Get chat history scoped to a notebook."""
+        if not user:
+            return []
+
+        exchanges = self.chat_manager.get_notebook_chat_history(trans, notebook_id, limit=limit)
+
+        history = []
+        for exchange in exchanges:
+            if exchange.messages:
+                message = exchange.messages[0]
+                try:
+                    data = json.loads(message.message)
+                    history.append(
+                        {
+                            "id": exchange.id,
+                            "query": data.get("query", ""),
+                            "response": data.get("response", ""),
+                            "agent_type": data.get("agent_type", "unknown"),
+                            "agent_response": data.get("agent_response"),
+                            "timestamp": message.create_time.isoformat() if message.create_time else None,
+                            "feedback": message.feedback,
+                            "message_count": len(exchange.messages),
+                        }
+                    )
+                except (json.JSONDecodeError, AttributeError):
                     pass
 
         return history

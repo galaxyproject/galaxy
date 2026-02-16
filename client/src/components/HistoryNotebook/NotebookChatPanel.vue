@@ -1,0 +1,466 @@
+<script setup lang="ts">
+/**
+ * Notebook-specific chat panel.
+ * Talks to the notebook_assistant agent, shows diff views for edit proposals,
+ * and applies accepted edits to the notebook via the store.
+ */
+import { faBook } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BSkeleton } from "bootstrap-vue";
+import { nextTick, onMounted, ref, watch } from "vue";
+
+import { GalaxyApi } from "@/api";
+import { generateId, scrollToBottom } from "@/components/ChatGXY/chatUtils";
+import type { ChatMessage } from "@/components/ChatGXY/chatTypes";
+import { type AgentResponse, type EditProposal, useAgentActions } from "@/composables/agentActions";
+import { useMarkdown } from "@/composables/markdown";
+import { useHistoryNotebookStore } from "@/stores/historyNotebookStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import { applySectionEdit } from "./sectionDiffUtils";
+
+import ProposalDiffView from "./ProposalDiffView.vue";
+import SectionPatchView from "./SectionPatchView.vue";
+import ChatInput from "@/components/ChatGXY/ChatInput.vue";
+import ChatMessageCell from "@/components/ChatGXY/ChatMessageCell.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const props = defineProps<{
+    historyId: string;
+    notebookId: string;
+    notebookContent: string;
+}>();
+
+const AGENT_TYPE = "notebook_assistant";
+
+const store = useHistoryNotebookStore();
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
+const { processingAction, handleAction } = useAgentActions();
+
+const query = ref("");
+const messages = ref<ChatMessage[]>([]);
+const busy = ref(false);
+const chatContainer = ref<HTMLElement>();
+const currentChatId = ref<number | null>(null);
+const dismissedProposals = ref(new Set<string>());
+
+onMounted(async () => {
+    await loadNotebookChat();
+
+    if (messages.value.length === 0) {
+        messages.value.push({
+            id: generateId(),
+            role: "assistant",
+            content:
+                "I'm the Notebook Assistant. I can help you edit this notebook — " +
+                "ask me to rewrite sections, add content, fix formatting, or analyze your history datasets.",
+            timestamp: new Date(),
+            agentType: AGENT_TYPE,
+            confidence: "high",
+            feedback: null,
+            isSystemMessage: true,
+        });
+    }
+});
+
+async function loadNotebookChat() {
+    // Try store-cached exchange ID first (avoids API round-trip on panel reopen)
+    const storedExchangeId = store.getCurrentChatExchangeId(props.notebookId);
+    if (storedExchangeId !== null) {
+        try {
+            await loadConversation(storedExchangeId);
+            if (messages.value.length > 0) {
+                return;
+            }
+        } catch {
+            store.clearCurrentChatExchangeId(props.notebookId);
+        }
+    }
+
+    // Fall back to API
+    try {
+        const { data, error } = await GalaxyApi().GET("/api/chat/notebook/{notebook_id}/history", {
+            params: { path: { notebook_id: props.notebookId }, query: { limit: 1 } },
+        });
+
+        if (data && !error && data.length > 0) {
+            const latest = data[0] as { id: number };
+            await loadConversation(latest.id);
+        }
+    } catch {
+        // silent — no notebook chat history yet
+    }
+}
+
+async function loadConversation(exchangeId: number) {
+    try {
+        const { data } = await GalaxyApi().GET("/api/chat/exchange/{exchange_id}/messages", {
+            params: { path: { exchange_id: exchangeId } },
+        });
+
+        if (data && data.length > 0) {
+            messages.value = data.map((msg: any, index: number) => {
+                const m: ChatMessage = {
+                    id: `hist-${msg.role}-${exchangeId}-${index}`,
+                    role: msg.role,
+                    content: msg.content,
+                    timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+                    feedback: null,
+                };
+
+                if (msg.role === "assistant") {
+                    m.agentType = msg.agent_type || AGENT_TYPE;
+                    m.confidence = msg.agent_response?.confidence || "medium";
+                    m.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
+                    if (msg.agent_response) {
+                        m.agentResponse = msg.agent_response;
+                        m.suggestions = msg.agent_response.suggestions || [];
+                    }
+                }
+
+                return m;
+            });
+            currentChatId.value = exchangeId;
+            store.setCurrentChatExchangeId(props.notebookId, exchangeId);
+            dismissedProposals.value = new Set(store.getDismissedProposals(props.notebookId));
+        }
+    } catch {
+        // silent
+    }
+}
+
+async function submitQuery() {
+    if (!query.value.trim()) {
+        return;
+    }
+
+    const userMessage: ChatMessage = {
+        id: generateId(),
+        role: "user",
+        content: query.value,
+        timestamp: new Date(),
+        feedback: null,
+    };
+
+    messages.value.push(userMessage);
+    const currentQuery = query.value;
+    query.value = "";
+
+    await nextTick();
+    scrollToBottom(chatContainer.value);
+
+    busy.value = true;
+
+    try {
+        const { data, error } = await GalaxyApi().POST("/api/chat", {
+            params: { query: { agent_type: AGENT_TYPE } },
+            body: {
+                query: currentQuery,
+                context: null,
+                exchange_id: currentChatId.value,
+                notebook_id: props.notebookId,
+            },
+        });
+
+        if (error) {
+            const errStr = errorMessageAsString(error, "Failed to get response.");
+            messages.value.push({
+                id: generateId(),
+                role: "assistant",
+                content: `Error: ${errStr}`,
+                timestamp: new Date(),
+                agentType: AGENT_TYPE,
+                confidence: "low",
+                feedback: null,
+            });
+        } else if (data) {
+            if (data.exchange_id) {
+                currentChatId.value = data.exchange_id;
+                store.setCurrentChatExchangeId(props.notebookId, data.exchange_id);
+            }
+
+            const agentResponse = data.agent_response as AgentResponse | undefined;
+
+            messages.value.push({
+                id: generateId(),
+                role: "assistant",
+                content: data.response || "No response received",
+                timestamp: new Date(),
+                agentType: agentResponse?.agent_type || AGENT_TYPE,
+                confidence: agentResponse?.confidence || "medium",
+                feedback: null,
+                agentResponse: agentResponse,
+                suggestions: agentResponse?.suggestions || [],
+            });
+        }
+    } catch (e) {
+        messages.value.push({
+            id: generateId(),
+            role: "assistant",
+            content: "Unexpected error occurred. Please try again.",
+            timestamp: new Date(),
+            agentType: AGENT_TYPE,
+            confidence: "low",
+            feedback: null,
+        });
+    } finally {
+        busy.value = false;
+        await nextTick();
+        scrollToBottom(chatContainer.value);
+    }
+}
+
+watch(busy, (isBusy) => {
+    if (isBusy) {
+        nextTick(() => scrollToBottom(chatContainer.value));
+    }
+});
+
+async function sendFeedback(messageId: string, value: "up" | "down") {
+    const message = messages.value.find((m) => m.id === messageId);
+    if (!message || !currentChatId.value) {
+        return;
+    }
+    message.feedback = value;
+    try {
+        const feedbackValue = value === "up" ? 1 : 0;
+        const { error } = await GalaxyApi().PUT("/api/chat/exchange/{exchange_id}/feedback", {
+            params: { path: { exchange_id: currentChatId.value } },
+            body: feedbackValue,
+        });
+        if (error) {
+            message.feedback = null;
+        }
+    } catch {
+        message.feedback = null;
+    }
+}
+
+function djb2Hash(s: string): string {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) {
+        h = (h * 33 + s.charCodeAt(i)) >>> 0;
+    }
+    return h.toString(16).padStart(8, "0");
+}
+
+function isProposalStale(msg: ChatMessage): boolean {
+    const meta = msg.agentResponse?.metadata;
+    const originalHash = meta?.original_content_hash as string | undefined;
+    if (!originalHash) {
+        return false;
+    }
+    return originalHash !== djb2Hash(props.notebookContent);
+}
+
+function getEditProposal(msg: ChatMessage): EditProposal | null {
+    const meta = msg.agentResponse?.metadata;
+    const editMode = meta?.edit_mode as EditProposal["mode"] | undefined;
+    if (!editMode) {
+        return null;
+    }
+    return {
+        mode: editMode,
+        content: (meta?.content as string) || (meta?.new_section_content as string) || "",
+        target_section_heading: meta?.target_section_heading as string | undefined,
+        new_section_content: meta?.new_section_content as string | undefined,
+    };
+}
+
+function isProposalVisible(msg: ChatMessage): boolean {
+    if (dismissedProposals.value.has(msg.id)) {
+        return false;
+    }
+    const proposal = getEditProposal(msg);
+    if (!proposal) {
+        return false;
+    }
+    // Content-based: if full_replacement content matches current doc, already applied
+    if (proposal.mode === "full_replacement" && proposal.content === props.notebookContent) {
+        return false;
+    }
+    return true;
+}
+
+function getProposalMode(msg: ChatMessage): string {
+    return getEditProposal(msg)?.mode || "";
+}
+
+function buildProposedContent(msg: ChatMessage): string {
+    const proposal = getEditProposal(msg);
+    if (!proposal) {
+        return props.notebookContent;
+    }
+    if (proposal.mode === "full_replacement") {
+        return proposal.content;
+    }
+    // section_patch: reconstruct full doc by replacing the target section
+    return applySectionEdit(
+        props.notebookContent,
+        proposal.target_section_heading || "",
+        proposal.new_section_content || proposal.content,
+    );
+}
+
+async function applyFullReplacement(msg: ChatMessage) {
+    const proposal = getEditProposal(msg);
+    if (!proposal) {
+        return;
+    }
+    store.updateContent(proposal.content);
+    await store.saveNotebook("agent");
+    dismissedProposals.value.add(msg.id);
+    store.addDismissedProposal(props.notebookId, msg.id);
+}
+
+async function applySectionPatched(patchedContent: string, msg: ChatMessage) {
+    store.updateContent(patchedContent);
+    await store.saveNotebook("agent");
+    dismissedProposals.value.add(msg.id);
+    store.addDismissedProposal(props.notebookId, msg.id);
+}
+
+function dismissProposal(msg: ChatMessage) {
+    dismissedProposals.value.add(msg.id);
+    store.addDismissedProposal(props.notebookId, msg.id);
+}
+
+function startNewConversation() {
+    messages.value = [
+        {
+            id: generateId(),
+            role: "assistant",
+            content: "Starting a new conversation. How can I help with this notebook?",
+            timestamp: new Date(),
+            agentType: AGENT_TYPE,
+            confidence: "high",
+            feedback: null,
+            isSystemMessage: true,
+        },
+    ];
+    currentChatId.value = null;
+    store.setCurrentChatExchangeId(props.notebookId, null);
+    query.value = "";
+    dismissedProposals.value = new Set();
+    store.clearDismissedProposals(props.notebookId);
+}
+</script>
+
+<template>
+    <div class="notebook-chat-panel d-flex flex-column h-100" data-description="notebook chat panel">
+        <div class="chat-panel-header d-flex align-items-center justify-content-between p-2 border-bottom">
+            <span class="d-flex align-items-center gap-2">
+                <FontAwesomeIcon :icon="faBook" fixed-width />
+                <strong>Notebook Assistant</strong>
+            </span>
+            <BButton
+                variant="outline-primary"
+                size="sm"
+                data-description="new conversation button"
+                @click="startNewConversation">
+                New Chat
+            </BButton>
+        </div>
+
+        <div ref="chatContainer" class="chat-panel-messages flex-grow-1 overflow-auto">
+            <ChatMessageCell
+                v-for="msg in messages"
+                :key="msg.id"
+                :message="msg"
+                :render-markdown="renderMarkdown"
+                :processing-action="processingAction"
+                @feedback="sendFeedback"
+                @handle-action="handleAction">
+                <template v-if="isProposalVisible(msg)" v-slot:after-content>
+                    <ProposalDiffView
+                        v-if="getProposalMode(msg) === 'full_replacement'"
+                        :original="notebookContent"
+                        :proposed="buildProposedContent(msg)"
+                        :stale="isProposalStale(msg)"
+                        @accept="applyFullReplacement(msg)"
+                        @reject="dismissProposal(msg)" />
+                    <SectionPatchView
+                        v-else-if="getProposalMode(msg) === 'section_patch'"
+                        :original="notebookContent"
+                        :proposed="buildProposedContent(msg)"
+                        :stale="isProposalStale(msg)"
+                        @accept="applySectionPatched($event, msg)"
+                        @reject="dismissProposal(msg)" />
+                </template>
+            </ChatMessageCell>
+
+            <div v-if="busy" class="loading-cell" data-description="chat loading indicator">
+                <div class="cell-label">
+                    <FontAwesomeIcon :icon="faBook" fixed-width />
+                    <span>Notebook Assistant</span>
+                </div>
+                <div class="cell-content">
+                    <BSkeleton animation="wave" width="85%" />
+                    <BSkeleton animation="wave" width="55%" />
+                    <BSkeleton animation="wave" width="70%" />
+                </div>
+            </div>
+
+            <div v-if="!busy && messages.length === 0" class="text-muted text-center p-4">
+                <LoadingSpan message="Loading conversation..." />
+            </div>
+        </div>
+
+        <div class="chat-panel-footer p-2 border-top">
+            <ChatInput
+                v-model="query"
+                :busy="busy"
+                placeholder="Ask about your history or request notebook edits..."
+                @submit="submitQuery" />
+        </div>
+    </div>
+</template>
+
+<style scoped>
+.notebook-chat-panel {
+    background: var(--body-bg, #fff);
+    min-width: 0;
+}
+
+.chat-panel-header {
+    background: var(--panel-header-bg, #f8f9fa);
+    font-size: 0.85rem;
+}
+
+.chat-panel-header .gap-2 {
+    gap: 0.5rem;
+}
+
+.chat-panel-messages {
+    padding: 0.75rem;
+}
+
+.chat-panel-footer {
+    background: var(--panel-header-bg, #f8f9fa);
+}
+
+.loading-cell {
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+.loading-cell .cell-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    margin-bottom: 0.375rem;
+    padding-left: 0.25rem;
+    color: var(--text-muted, #6c757d);
+}
+
+.loading-cell .cell-content {
+    border-left: 3px solid var(--brand-secondary, #6c757d);
+    background: var(--panel-bg-color, #f8f9fa);
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+}
+</style>

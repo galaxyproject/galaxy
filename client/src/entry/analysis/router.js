@@ -50,6 +50,7 @@ import HistoryPublished from "@/components/History/HistoryPublished.vue";
 import HistoryView from "@/components/History/HistoryView.vue";
 import HistoryMultipleView from "@/components/History/Multiple/MultipleView.vue";
 import HistoryImport from "@/components/HistoryImport.vue";
+import HistoryNotebookView from "@/components/HistoryNotebook/HistoryNotebookView.vue";
 import ZipImportResults from "@/components/ImportData/zip/ZipImportResults.vue";
 import ZipImportWizard from "@/components/ImportData/zip/ZipImportWizard.vue";
 import InteractiveToolFrame from "@/components/InteractiveTools/InteractiveToolFrame.vue";
@@ -421,6 +422,22 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
+                        path: "histories/:historyId/notebooks",
+                        component: HistoryNotebookView,
+                        props: (route) => ({
+                            historyId: route.params.historyId,
+                        }),
+                    },
+                    {
+                        path: "histories/:historyId/notebooks/:notebookId",
+                        component: HistoryNotebookView,
+                        props: (route) => ({
+                            historyId: route.params.historyId,
+                            notebookId: route.params.notebookId,
+                            displayOnly: route.query.displayOnly === "true",
+                        }),
+                    },
+                    {
                         path: "interactivetool_entry_points/list",
                         component: InteractiveTools,
                     },
@@ -505,6 +522,8 @@ export function getRouter(Galaxy) {
                         component: PageForm,
                         props: (route) => ({
                             invocationId: route.query.invocation_id,
+                            notebookId: route.query.notebook_id,
+                            historyId: route.query.history_id,
                             mode: "create",
                         }),
                     },

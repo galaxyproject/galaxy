@@ -1,6 +1,6 @@
 import RAW_DIRECTIVE_DATA from "./directives.yml";
 
-type DirectiveMode = "page" | "report";
+export type DirectiveMode = "page" | "report" | "history_notebook";
 
 type DirectiveMetadataValueByMode = {
     [key: string]: string;
@@ -33,7 +33,7 @@ export function directiveEntry(
     }
     let name = directiveMetadataData.side_panel_name;
     if (name && !(typeof name == "string")) {
-        const modeName = name[mode];
+        const modeName = name[mode] ?? name["page"];
         if (modeName == undefined) {
             throw Error(`Client logic error, cannot find directive metadata for ${directiveId}`);
         }
@@ -41,14 +41,14 @@ export function directiveEntry(
     }
     let description = directiveMetadataData.side_panel_description;
     if (description && !(typeof description == "string")) {
-        description = description[mode];
+        description = description[mode] ?? description["page"];
     }
     let help = directiveMetadataData.help;
     if (help && !(typeof help == "string")) {
-        help = help[mode];
+        help = help[mode] ?? help["page"];
     }
     if (help) {
-        help = help.replace(/%MODE%/g, mode);
+        help = help.replace(/%MODE%/g, mode === "history_notebook" ? "notebook" : mode);
     }
     const entry: SidePanelEntry = { id: directiveId, ...baseEntry };
     if (name) {

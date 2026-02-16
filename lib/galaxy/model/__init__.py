@@ -3255,13 +3255,16 @@ class ChatExchange(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
+    notebook_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_notebook.id"), index=True, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="chat_exchanges")
     messages: Mapped[list["ChatExchangeMessage"]] = relationship(back_populates="chat_exchange")
+    notebook: Mapped[Optional["HistoryNotebook"]] = relationship()
 
-    def __init__(self, user, job_id=None, message=None, **kwargs):
+    def __init__(self, user, job_id=None, notebook_id=None, message=None, **kwargs):
         self.user = user
         self.job_id = job_id
+        self.notebook_id = notebook_id
         self.messages = []
         if message:
             self.add_message(message)
@@ -3524,6 +3527,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     user: Mapped[Optional["User"]] = relationship(back_populates="histories")
     jobs: Mapped[list["Job"]] = relationship(back_populates="history")
     tool_requests: Mapped[list["ToolRequest"]] = relationship(back_populates="history")
+    notebooks: Mapped[list["HistoryNotebook"]] = relationship(back_populates="history")
 
     update_time = column_property(
         select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
@@ -11262,6 +11266,12 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     importable: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     slug: Mapped[Optional[str]] = mapped_column(TEXT)
     published: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    source_invocation_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("workflow_invocation.id"), index=True, nullable=True
+    )
+    source_history_notebook_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("history_notebook.id"), index=True, nullable=True
+    )
     user: Mapped["User"] = relationship()
     revisions: Mapped[list["PageRevision"]] = relationship(
         cascade="all, delete-orphan",
@@ -11284,6 +11294,14 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
         back_populates="page",
     )
     users_shared_with: Mapped[list["PageUserShareAssociation"]] = relationship(back_populates="page")
+    source_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(
+        foreign_keys=[source_invocation_id],
+        uselist=False,
+    )
+    source_history_notebook: Mapped[Optional["HistoryNotebook"]] = relationship(
+        foreign_keys=[source_history_notebook_id],
+        uselist=False,
+    )
 
     # Set up proxy so that
     #   Page.users_shared_with
@@ -11303,6 +11321,8 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
         "author_deleted",
         "create_time",
         "update_time",
+        "source_invocation_id",
+        "source_history_notebook_id",
     ]
 
     def to_dict(self, view="element"):
@@ -11349,6 +11369,96 @@ class PageRevision(Base, Dictifiable, RepresentById):
 
     def __init__(self):
         self.content_format = PageRevision.DEFAULT_CONTENT_FORMAT
+
+    def to_dict(self, view="element"):
+        rval = super().to_dict(view=view)
+        rval["create_time"] = self.create_time.isoformat()
+        rval["update_time"] = self.update_time.isoformat()
+        return rval
+
+
+class HistoryNotebook(Base, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
+    """A markdown notebook tied to a Galaxy history, using HID-relative references."""
+
+    __tablename__ = "history_notebook"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
+    history_id: Mapped[int] = mapped_column(
+        ForeignKey("history.id"), index=True, nullable=False
+    )  # No unique constraint - multiple notebooks per history allowed
+    title: Mapped[Optional[str]] = mapped_column(TEXT)  # Not versioned - notebook identity
+    latest_revision_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey(
+            "history_notebook_revision.id",
+            use_alter=True,
+            name="history_notebook_latest_revision_id_fk",
+        ),
+        index=True,
+    )
+    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+
+    history: Mapped["History"] = relationship(back_populates="notebooks")
+    revisions: Mapped[list["HistoryNotebookRevision"]] = relationship(
+        cascade="all, delete-orphan",
+        primaryjoin=(lambda: HistoryNotebook.id == HistoryNotebookRevision.notebook_id),
+        back_populates="notebook",
+    )
+    latest_revision: Mapped[Optional["HistoryNotebookRevision"]] = relationship(
+        post_update=True,
+        primaryjoin=(lambda: HistoryNotebook.latest_revision_id == HistoryNotebookRevision.id),
+        lazy=False,
+    )
+
+    dict_element_visible_keys = [
+        "id",
+        "history_id",
+        "title",
+        "latest_revision_id",
+        "deleted",
+        "create_time",
+        "update_time",
+    ]
+
+    def to_dict(self, view="element"):
+        rval = super().to_dict(view=view)
+        rev = [a.id for a in self.revisions]
+        rval["revision_ids"] = rev
+        return rval
+
+
+class HistoryNotebookRevision(Base, Dictifiable, RepresentById):
+    """A revision of a history notebook, storing markdown content."""
+
+    __tablename__ = "history_notebook_revision"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
+    notebook_id: Mapped[int] = mapped_column(ForeignKey("history_notebook.id"), index=True)
+    content: Mapped[Optional[str]] = mapped_column(TEXT)
+    content_format: Mapped[Optional[str]] = mapped_column(TrimmedString(32))
+    edit_source: Mapped[Optional[str]] = mapped_column(TrimmedString(16), default="user")  # 'user' or 'agent'
+
+    notebook: Mapped["HistoryNotebook"] = relationship(
+        primaryjoin=(lambda: HistoryNotebook.id == HistoryNotebookRevision.notebook_id)
+    )
+
+    DEFAULT_CONTENT_FORMAT = "markdown"
+    dict_element_visible_keys = [
+        "id",
+        "notebook_id",
+        "content",
+        "content_format",
+        "edit_source",
+        "create_time",
+        "update_time",
+    ]
+
+    def __init__(self):
+        self.content_format = HistoryNotebookRevision.DEFAULT_CONTENT_FORMAT
 
     def to_dict(self, view="element"):
         rval = super().to_dict(view=view)

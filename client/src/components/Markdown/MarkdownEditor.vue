@@ -37,6 +37,7 @@
         <b-modal v-model="showHelpModal" hide-footer>
             <template v-slot:modal-title>
                 <h2 v-if="mode === 'page'" class="mb-0">Markdown Help for Pages</h2>
+                <h2 v-else-if="mode === 'history_notebook'" class="mb-0">Markdown Help for History Notebooks</h2>
                 <h2 v-else class="mb-0">Markdown Help for Invocation Reports</h2>
             </template>
             <MarkdownHelp :mode="mode" />
@@ -49,6 +50,7 @@ import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
+import type { DirectiveMode } from "./directives";
 import type { WorkflowLabel } from "./Editor/types";
 
 import CellEditor from "./Editor/CellEditor.vue";
@@ -57,7 +59,7 @@ import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
 const props = defineProps<{
     markdownText: string;
-    mode: "report" | "page";
+    mode: DirectiveMode;
     labels?: Array<WorkflowLabel>;
     steps?: Record<string, any>;
     title: string;
