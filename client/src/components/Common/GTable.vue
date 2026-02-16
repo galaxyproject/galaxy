@@ -87,6 +87,19 @@ interface Props {
     filter?: string;
 
     /**
+     * Array of field keys to exclude from filtering
+     * @default undefined
+     */
+    filterIgnoredFields?: string[];
+
+    /**
+     * Array of field keys to include in filtering
+     * If specified, only these fields will be searched
+     * @default undefined
+     */
+    filterIncludedFields?: string[];
+
+    /**
      * Whether to use fixed table layout (BootstrapVue `fixed`)
      * @default false
      */
@@ -232,6 +245,8 @@ const props = withDefaults(defineProps<Props>(), {
     emptyState: () => ({ message: "No data available" }),
     fields: () => [],
     filter: "",
+    filterIgnoredFields: undefined,
+    filterIncludedFields: undefined,
     fixed: false,
     hover: true,
     hideHeader: false,
@@ -333,11 +348,23 @@ const localItems = computed(() => {
     if (props.localFiltering && props.filter && props.filter.trim() !== "") {
         const filterLower = props.filter.toLowerCase().trim();
         items = items.filter((item) => {
-            // Search through all field values
-            return Object.values(item).some((value) => {
+            // Search through specified fields based on filterIncludedFields and filterIgnoredFields
+            return Object.entries(item).some(([key, value]) => {
+                // Skip if field is in ignored list
+                if (props.filterIgnoredFields && props.filterIgnoredFields.includes(key)) {
+                    return false;
+                }
+
+                // Skip if included list is specified and field is not in it
+                if (props.filterIncludedFields && !props.filterIncludedFields.includes(key)) {
+                    return false;
+                }
+
+                // Skip null/undefined values
                 if (value == null) {
                     return false;
                 }
+
                 return String(value).toLowerCase().includes(filterLower);
             });
         });
