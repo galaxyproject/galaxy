@@ -614,7 +614,6 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
         notifications = self._get_profile_update_notifications()
         assert notifications, "Expected profile update notification"
         message = notifications[0]["content"]["message"]
-        assert "email address" in message
         assert "public name" in message
 
     def test_fixed_delegated_auth_updates_profile_on_repeat_login(self):
@@ -660,6 +659,58 @@ class TestFixedDelegatedAuthIntegration(AbstractTestCases.BaseKeycloakIntegratio
 
         notifications = self._get_profile_update_notifications()
         assert notifications, "Expected profile update notification"
+
+    def test_fixed_delegated_auth_profile_update_notification_once_per_change(self):
+        """
+        Test: fixed_delegated_auth=True, profile update notification is shown once per actual profile change.
+        Expected:
+        - Login with changed username -> one profile update notification
+        - Notification accepted (deleted), login again with no new change -> no new notification
+        - Local username changed again, login -> profile update notification appears again
+        """
+        sa_session = self._app.model.session
+        user = model.User(email="gxyuser_fixed_auth@galaxy.org", username="stale_username")
+        user.set_password_cleartext("test123")
+        sa_session.add(user)
+        try:
+            sa_session.commit()
+        except Exception:
+            pass
+
+        # First login applies username change from OIDC and creates one profile update notification.
+        _, response = self._login_via_keycloak("gxyuser_fixed_auth", KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+        parsed_url = parse.urlparse(response.url)
+        assert "user/external_ids" not in parsed_url.path
+
+        notifications = self._get_profile_update_notifications()
+        assert len(notifications) == 1
+        assert notifications[0]["content"]["message"].endswith("public name.")
+
+        # Accept/dismiss the message.
+        self._delete(f"notifications/{notifications[0]['id']}")
+        notifications = self._get_profile_update_notifications()
+        assert len(notifications) == 0
+
+        # Second login with no local changes should not create a new profile update notification.
+        _, response = self._login_via_keycloak("gxyuser_fixed_auth", KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+        parsed_url = parse.urlparse(response.url)
+        assert "user/external_ids" not in parsed_url.path
+        notifications = self._get_profile_update_notifications()
+        assert len(notifications) == 0
+
+        # Change local username again, then login should re-sync and generate the notification again.
+        sa_session.rollback()
+        user = sa_session.query(model.User).filter_by(email="gxyuser_fixed_auth@galaxy.org").one()
+        user.username = "stale_username_again"
+        sa_session.add(user)
+        sa_session.commit()
+
+        _, response = self._login_via_keycloak("gxyuser_fixed_auth", KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+        parsed_url = parse.urlparse(response.url)
+        assert "user/external_ids" not in parsed_url.path
+        notifications = self._get_profile_update_notifications()
+        assert len(notifications) == 1
+        assert notifications[0]["content"]["message"].endswith("public name.")
 
 
 class TestWithoutFixedDelegatedAuth(AbstractTestCases.BaseKeycloakIntegrationTestCase):

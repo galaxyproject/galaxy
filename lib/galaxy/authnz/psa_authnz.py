@@ -762,15 +762,15 @@ def sync_user_profile(strategy=None, details=None, user=None, **kwargs):
         return
     manager = getattr(trans.app, "user_manager", None) or user_managers.UserManager(trans.app)
     updates: list[str] = []
-    # Update email and keep private role in sync
-    if details and details.get("email"):
+    # Update email and keep private role in sync only when changed
+    if details and details.get("email") and user.email != details["email"]:
         try:
             manager.update_email(trans, user, details["email"], commit=False, send_activation_email=False)
             updates.append("email")
         except galaxy_exceptions.MessageException as exc:
             log.warning("OIDC email sync skipped for user %s: %s", user.id, exc)
-    # Update public name with Galaxy validation
-    if details and details.get("username"):
+    # Update public name with Galaxy validation only when changed
+    if details and details.get("username") and user.username != details["username"]:
         try:
             manager.update_username(trans, user, details["username"], commit=False)
             updates.append("username")
