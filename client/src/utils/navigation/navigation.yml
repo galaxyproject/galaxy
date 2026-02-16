@@ -840,7 +840,8 @@ workflow_run:
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
-    new_history_badge: '[data-description="new history badge"]'
+    current_history_indicator: '[data-description="current history indicator"]'
+    not_current_history_indicator: '[data-description="not current history indicator"]'
     history_target_link: '[data-description="switch to history link"]'
     runtime_setting_button: '.workflow-run-settings'
     runtime_setting_target: '[data-test-id="send-to-new-history-label"]'

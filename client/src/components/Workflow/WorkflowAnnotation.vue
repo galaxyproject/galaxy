@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import { faClock } from "@fortawesome/free-regular-svg-icons";
-import { faExclamation, faHdd } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
-import { useHistoryStore } from "@/stores/historyStore";
 
 import TextSummary from "../Common/TextSummary.vue";
-import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
+import TargetHistoryLink from "../History/TargetHistoryLink.vue";
 import StatelessTags from "../TagsMultiselect/StatelessTags.vue";
 import UtcDate from "../UtcDate.vue";
 import WorkflowInvocationsCount from "../Workflow/WorkflowInvocationsCount.vue";
@@ -53,23 +50,7 @@ const workflowTags = computed(() => {
                     </span>
                     <UtcDate :date="timeElapsed" mode="elapsed" data-description="workflow annotation date" />
                 </i>
-                <span v-if="invocationCreateTime" class="d-flex flex-gapx-1 align-items-center">
-                    <FontAwesomeIcon :icon="faHdd" />History:
-
-                    <span class="history-link-wrapper">
-                        <SwitchToHistoryLink :history-id="props.historyId" />
-                    </span>
-
-                    <BBadge
-                        v-if="useHistoryStore().currentHistoryId !== props.historyId"
-                        v-b-tooltip.hover.noninteractive
-                        data-description="new history badge"
-                        role="button"
-                        variant="info"
-                        title="Results generated in a different history. Click on history name to switch to that history.">
-                        <FontAwesomeIcon :icon="faExclamation" />
-                    </BBadge>
-                </span>
+                <TargetHistoryLink v-if="props.invocationCreateTime" :target-history-id="props.historyId" />
             </div>
             <slot name="middle-content" />
             <div class="d-flex align-items-center">
