@@ -6,8 +6,6 @@ from typing import (
     Union,
 )
 
-import tifffile
-
 from galaxy.exceptions import (
     AuthenticationFailed,
     ObjectNotFound,
@@ -32,6 +30,11 @@ try:
 except ImportError:
     omero = None
     BlitzGateway = None
+
+try:
+    import tifffile
+except ImportError:
+    tifffile = None
 
 
 class OmeroFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
@@ -531,6 +534,9 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
 
         Memory usage: O(Y*X) per plane instead of O(Z*C*Y*X) for entire image.
         """
+        if tifffile is None:
+            raise ImportError("The tifffile library is required to export OMERO images as TIFF. Please install it.")
+
         pixels = image.getPrimaryPixels()
         size_z = image.getSizeZ()
         size_c = image.getSizeC()
