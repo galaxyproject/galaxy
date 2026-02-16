@@ -37,6 +37,7 @@ from galaxy.agents import (
     CustomToolAgent,
     ErrorAnalysisAgent,
     GalaxyAgentDependencies,
+    PageAssistantAgent,
     QueryRouterAgent,
 )
 from galaxy.agents.registry import build_default_registry
@@ -46,6 +47,10 @@ from galaxy.agents.error_analysis import ErrorAnalysisResult
 from galaxy.agents.orchestrator import (
     AgentPlan,
     WorkflowOrchestratorAgent,
+)
+from galaxy.agents.page_assistant import (
+    FullReplacementEdit,
+    SectionPatchEdit,
 )
 from galaxy.schema.agents import ConfidenceLevel
 from galaxy.tool_util_models import UserToolSource
@@ -168,7 +173,8 @@ class TestAgentUnitMocked:
         assert registry.is_registered("orchestrator")
         assert registry.is_registered("tool_recommendation")
         assert registry.is_registered("history")
-        assert len(registry.list_agents()) == 6
+        assert registry.is_registered("page_assistant")
+        assert len(registry.list_agents()) == 7
 
     def test_disabled_agent_not_registered(self):
         """Disabled agent should not be in registry."""
@@ -193,7 +199,7 @@ class TestAgentUnitMocked:
     def test_build_registry_no_config_registers_all(self):
         """Without config, all agents registered (backwards compat)."""
         registry = build_default_registry()
-        assert len(registry.list_agents()) == 6
+        assert len(registry.list_agents()) == 7
 
     def test_disabled_agent_registry_get_agent_raises(self):
         """Registry.get_agent for a disabled agent gives 'Unknown agent type' error."""
@@ -508,6 +514,206 @@ class TestAgentUnitMocked:
     def _orchestrator_agent(self):
         agent = WorkflowOrchestratorAgent(self.deps)
         return agent
+
+
+class TestPageAssistantAgent:
+    """Unit tests for page assistant agent."""
+
+    def setup_method(self):
+        self.mock_config = mock.Mock()
+        self.mock_config.ai_api_key = "test-key"
+        self.mock_config.ai_model = "gpt-4o"
+        self.mock_config.ai_api_base_url = "http://localhost:4000/v1/"
+        self.mock_config.inference_services = None
+
+        self.mock_user = mock.Mock()
+        self.mock_user.id = 1
+        self.mock_user.username = "test_user"
+
+        self.mock_trans = mock.Mock()
+        self.mock_trans.app.config = self.mock_config
+
+        self.deps = GalaxyAgentDependencies(
+            trans=self.mock_trans,
+            user=self.mock_user,
+            config=self.mock_config,
+            get_agent=agent_registry.get_agent,
+            job_manager=None,
+        )
+
+    def test_agent_registered(self):
+        assert agent_registry.is_registered("page_assistant")
+        info = agent_registry.get_agent_info("page_assistant")
+        assert info["class_name"] == "PageAssistantAgent"
+
+    def test_agent_type_constant(self):
+        agent = PageAssistantAgent(self.deps, history_id=1, page_content="# Test")
+        assert agent.agent_type == "page_assistant"
+
+    def test_system_prompt_injects_content(self):
+        agent = PageAssistantAgent(self.deps, history_id=1, page_content="# My Page\n\nHello world")
+        prompt = agent.get_system_prompt()
+        assert "# My Page" in prompt
+        assert "Hello world" in prompt
+
+    def test_system_prompt_empty_content(self):
+        agent = PageAssistantAgent(self.deps, history_id=1, page_content="")
+        prompt = agent.get_system_prompt()
+        assert "(empty document)" in prompt
+
+    def test_config_fallback(self):
+        self.mock_config.inference_services = {
+            "page_assistant": {"model": "claude-sonnet-4-5", "temperature": 0.2},
+            "default": {"model": "gpt-4o-mini"},
+        }
+        agent = PageAssistantAgent(self.deps, history_id=1)
+        assert agent._get_agent_config("model") == "claude-sonnet-4-5"
+        assert agent._get_agent_config("temperature") == 0.2
+
+    @pytest.mark.asyncio
+    async def test_process_full_replacement(self):
+        agent = PageAssistantAgent(self.deps, history_id=1, page_content="# Old doc")
+
+        with mock.patch.object(agent, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = FullReplacementEdit(
+                reasoning="User asked for a complete rewrite",
+                content="# New Document\n\nRewritten content.",
+            )
+            mock_run.return_value = mock_result
+
+            response = await agent.process("Rewrite this entire document")
+
+            assert response.agent_type == "page_assistant"
+            assert response.metadata["method"] == "structured"
+            assert response.metadata["edit_mode"] == "full_replacement"
+            assert response.metadata["content"] == "# New Document\n\nRewritten content."
+            assert "full document rewrite" in response.content.lower()
+
+    @pytest.mark.asyncio
+    async def test_process_section_patch(self):
+        agent = PageAssistantAgent(
+            self.deps,
+            history_id=1,
+            page_content="# Doc\n\n## Methods\n\nOld methods\n\n## Results\n\nOld results",
+        )
+
+        with mock.patch.object(agent, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = SectionPatchEdit(
+                reasoning="User wants to update the Methods section",
+                target_section_heading="## Methods",
+                new_section_content="## Methods\n\nUpdated methods text.",
+            )
+            mock_run.return_value = mock_result
+
+            response = await agent.process("Fix the Methods section")
+
+            assert response.metadata["edit_mode"] == "section_patch"
+            assert response.metadata["target_section_heading"] == "## Methods"
+            assert "## Methods" in response.content
+
+    @pytest.mark.asyncio
+    async def test_process_conversational(self):
+        agent = PageAssistantAgent(self.deps, history_id=1, page_content="# Test")
+
+        with mock.patch.object(agent, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = "This history contains 5 datasets related to RNA-seq analysis."
+            mock_run.return_value = mock_result
+
+            response = await agent.process("What's in this history?")
+
+            assert response.metadata["method"] == "text"
+            assert "RNA-seq" in response.content
+            assert "edit_mode" not in response.metadata
+
+    @pytest.mark.asyncio
+    async def test_process_network_error(self):
+        agent = PageAssistantAgent(self.deps, history_id=1)
+
+        with mock.patch.object(agent, "_run_with_retry", side_effect=OSError("Connection refused")):
+            response = await agent.process("Help me edit this")
+
+            assert response.confidence == ConfidenceLevel.LOW
+            assert "error" in response.metadata
+
+    def test_structured_output_types(self):
+        edit = FullReplacementEdit(reasoning="test", content="# New")
+        assert edit.mode == "full_replacement"
+
+        patch = SectionPatchEdit(
+            reasoning="test",
+            target_section_heading="## Methods",
+            new_section_content="## Methods\n\nNew text",
+        )
+        assert patch.mode == "section_patch"
+
+    def test_simple_prompt_fallback(self):
+        self.mock_config.ai_model = "deepseek-r1"
+        agent = PageAssistantAgent(self.deps, history_id=1, page_content="# Test doc")
+        prompt = agent._get_simple_system_prompt()
+        assert "EDIT_MODE:" in prompt
+        assert "# Test doc" in prompt
+
+    def test_system_prompt_no_history(self):
+        """System prompt includes no-history note when history_id is None."""
+        agent = PageAssistantAgent(self.deps, history_id=None, page_content="# Test")
+        prompt = agent.get_system_prompt()
+        assert "standalone page with no history available" in prompt
+        assert "not available" in prompt
+
+    def test_system_prompt_session_history(self):
+        """System prompt includes session-history note when history_is_session=True."""
+        agent = PageAssistantAgent(self.deps, history_id=5, page_content="# Test")
+        agent.history_is_session = True
+        prompt = agent.get_system_prompt()
+        assert "standalone page" in prompt
+        assert "current active history" in prompt
+        assert "not attached" in prompt
+
+    def test_system_prompt_attached_history(self):
+        """System prompt has no standalone note when page has attached history."""
+        agent = PageAssistantAgent(self.deps, history_id=5, page_content="# Test")
+        prompt = agent.get_system_prompt()
+        assert "standalone page" not in prompt
+
+    @pytest.mark.asyncio
+    async def test_process_sets_session_history_from_context(self):
+        """process() with history_is_session=True enables history tools."""
+        agent = PageAssistantAgent(self.deps, page_content="# Test")
+
+        with mock.patch.object(agent, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = "Here are the datasets in your history."
+            mock_run.return_value = mock_result
+
+            response = await agent.process(
+                "What's in my history?",
+                context={"history_id": 5, "history_is_session": True},
+            )
+
+            assert agent.history_id == 5
+            assert agent.history_is_session is True
+            assert response.content is not None
+
+    def test_simple_prompt_session_history(self):
+        """Simple prompt fallback handles session history."""
+        self.mock_config.ai_model = "deepseek-r1"
+        agent = PageAssistantAgent(self.deps, history_id=5, page_content="# Test doc")
+        agent.history_is_session = True
+        prompt = agent._get_simple_system_prompt()
+        assert "standalone page" in prompt
+        assert "current active history" in prompt
+        assert "resolve_hid" in prompt
+
+    def test_simple_prompt_no_history(self):
+        """Simple prompt fallback for no history."""
+        self.mock_config.ai_model = "deepseek-r1"
+        agent = PageAssistantAgent(self.deps, history_id=None, page_content="# Test doc")
+        prompt = agent._get_simple_system_prompt()
+        assert "not associated with a history" in prompt
+        assert "not available" in prompt
 
 
 @pytestmark_live_llm

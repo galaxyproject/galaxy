@@ -2005,6 +2005,115 @@ class BaseDatasetPopulator(BasePopulator):
         )
         return request
 
+    # --- History Page helpers (pages attached to histories) ---
+
+    def new_history_page_raw(
+        self,
+        history_id: str,
+        title: Optional[str] = None,
+        content: str = "",
+        content_format: str = "markdown",
+    ) -> Response:
+        payload: dict[str, Any] = {
+            "history_id": history_id,
+            "content": content,
+            "content_format": content_format,
+        }
+        if title:
+            payload["title"] = title
+        return self._post("pages", payload, json=True)
+
+    def new_history_page(
+        self,
+        history_id: str,
+        title: Optional[str] = None,
+        content: str = "",
+        content_format: str = "markdown",
+    ) -> dict[str, Any]:
+        response = self.new_history_page_raw(history_id, title=title, content=content, content_format=content_format)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def get_history_page(self, page_id: str) -> dict[str, Any]:
+        response = self._get(f"pages/{page_id}")
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def list_history_pages(self, history_id: str) -> list[dict[str, Any]]:
+        response = self._get("pages", data={"history_id": history_id, "show_own": True, "show_published": False})
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def update_history_page_raw(
+        self,
+        page_id: str,
+        content: str,
+        title: Optional[str] = None,
+        edit_source: Optional[str] = None,
+    ) -> Response:
+        payload: dict[str, Any] = {"content": content, "content_format": "markdown"}
+        if title:
+            payload["title"] = title
+        if edit_source:
+            payload["edit_source"] = edit_source
+        return self._put(f"pages/{page_id}", payload, json=True)
+
+    def update_history_page(
+        self,
+        page_id: str,
+        content: str,
+        title: Optional[str] = None,
+        edit_source: Optional[str] = None,
+    ) -> dict[str, Any]:
+        response = self.update_history_page_raw(page_id, content=content, title=title, edit_source=edit_source)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def delete_history_page(self, page_id: str) -> None:
+        response = self._delete(f"pages/{page_id}")
+        api_asserts.assert_status_code_is(response, 204)
+
+    def list_page_revisions(self, page_id: str) -> list[dict[str, Any]]:
+        response = self._get(f"pages/{page_id}/revisions")
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def revert_page_revision(self, page_id: str, revision_id: str) -> dict[str, Any]:
+        response = self._post(f"pages/{page_id}/revisions/{revision_id}/revert", json=True)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def send_page_chat_raw(
+        self,
+        page_id: str,
+        query: str,
+        agent_type: str = "page_assistant",
+        exchange_id: Optional[str] = None,
+    ):
+        payload: dict[str, Any] = {"query": query, "page_id": page_id}
+        if exchange_id is not None:
+            payload["exchange_id"] = exchange_id
+        return self._post(f"chat?agent_type={agent_type}", payload, json=True)
+
+    def send_page_chat(
+        self,
+        page_id: str,
+        query: str,
+        agent_type: str = "page_assistant",
+        exchange_id: Optional[str] = None,
+    ) -> dict[str, Any]:
+        response = self.send_page_chat_raw(page_id, query, agent_type=agent_type, exchange_id=exchange_id)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def get_page_chat_history_raw(self, page_id: str):
+        return self._get(f"chat/page/{page_id}/history")
+
+    def get_page_chat_history(self, page_id: str) -> list[dict[str, Any]]:
+        response = self.get_page_chat_history_raw(page_id)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
     def export_history_to_uri_async(
         self, history_id: str, target_uri: str, model_store_format: str = "tgz", include_files: bool = True
     ):

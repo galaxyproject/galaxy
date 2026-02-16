@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
+import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import type { PublishedItem as PublishedItemType } from "@/components/Common/models/PublishedItem";
+import { PAGE_LABELS, PUBLISHED_LABELS } from "@/components/Page/constants";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import { urlData } from "@/utils/url";
@@ -25,11 +28,13 @@ interface Props {
     pageId: string;
     embed?: boolean;
     showHeading?: boolean;
+    displayOnly?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     embed: false,
     showHeading: true,
+    displayOnly: false,
 });
 
 const { config, isConfigLoaded } = useConfig(true);
@@ -64,9 +69,9 @@ async function load() {
         // Ensure data has the expected shape for PublishedItem
         page.value = {
             ...data,
-            name: data.title || data.name || "Untitled Page",
+            name: data.title || data.name || PAGE_LABELS.standalone.defaultTitle,
             title: data.title,
-            model_class: "Page",
+            model_class: PUBLISHED_LABELS.modelClass,
             username: data.username || data.owner,
         } as PageData;
     } catch (error) {
@@ -84,25 +89,39 @@ function onEdit() {
     window.location.href = `/pages/editor?id=${props.pageId}`;
 }
 
+/** Whether to render chrome-free (embed or displayOnly). */
+const isChromeFree = computed(() => props.embed || props.displayOnly);
+
 function stsUrl(config: any) {
     return `${dataUrl.value}/prepare_download`;
 }
 </script>
 
 <template>
-    <div v-if="props.embed" id="columns" class="page-view embed">
+    <div v-if="isChromeFree" id="columns" class="page-view embed">
         <div id="center" class="container-root">
+            <div
+                v-if="props.displayOnly && page && !loading"
+                class="page-display-toolbar d-flex align-items-center p-2 border-bottom">
+                <BButton variant="link" size="sm" data-description="page view edit button" @click="onEdit">
+                    <FontAwesomeIcon :icon="faArrowLeft" />
+                    {{ PUBLISHED_LABELS.editButton }}
+                </BButton>
+                <span class="flex-grow-1 text-center font-weight-bold">
+                    {{ page.title || page.name }}
+                </span>
+            </div>
             <div v-if="loading">
-                <LoadingSpan message="Loading Page" />
+                <LoadingSpan :message="PUBLISHED_LABELS.loadingMessage" />
             </div>
             <div v-else-if="hasError">
-                <Heading h1 separator size="lg">Failed to load Page</Heading>
+                <Heading h1 separator size="lg">{{ PUBLISHED_LABELS.errorHeading }}</Heading>
                 <BAlert show variant="danger">
                     {{ errorMessage }}
                 </BAlert>
             </div>
             <div v-else-if="page && isConfigLoaded" class="page-container">
-                <Heading v-if="props.showHeading" h1 separator size="lg" class="page-title">
+                <Heading v-if="props.showHeading && !props.displayOnly" h1 separator size="lg" class="page-title">
                     {{ page.title || page.name }}
                 </Heading>
 

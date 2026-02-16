@@ -38,6 +38,7 @@ import { ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
+import { FORM_LABELS } from "@/components/Page/constants";
 import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
 
 import FormInput from "@/components/Form/Elements/FormInput.vue";
@@ -60,7 +61,7 @@ const title = ref("");
 
 const router = useRouter();
 
-const cardTitle = props.mode === "edit" ? "Edit Page" : "Create a new Page";
+const cardTitle = props.mode === "edit" ? FORM_LABELS.editTitle : FORM_LABELS.createTitle;
 const buttonText = props.mode === "edit" ? "Update" : "Create";
 
 async function fetchData() {
@@ -89,7 +90,7 @@ async function fetchData() {
             errorMessage.value = "";
             annotation.value = data.annotation || "";
             content.value = data.content;
-            slug.value = data.slug;
+            slug.value = data.slug ?? "";
             title.value = data.title;
         }
         loading.value = false;
@@ -110,6 +111,7 @@ async function onSubmit() {
                 content_format: "markdown",
                 slug: slug.value,
                 title: title.value,
+                ...(props.invocationId && { invocation_id: props.invocationId }),
             },
         });
         if (error) {

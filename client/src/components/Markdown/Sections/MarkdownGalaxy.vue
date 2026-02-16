@@ -61,9 +61,8 @@ const workflowLoading = ref(false);
 const args = computed(() => {
     if (invocation.value && workflowId.value) {
         return parseInvocation(invocation.value, workflowId.value, name.value, attributes.value.args);
-    } else {
-        return { ...attributes.value.args };
     }
+    return { ...attributes.value.args };
 });
 
 const hasLabels = computed(() => props.labels !== undefined);

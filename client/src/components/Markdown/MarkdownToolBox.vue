@@ -202,7 +202,10 @@ export default {
             return !!this.steps;
         },
         mode() {
-            return this.isWorkflow ? "report" : "page";
+            if (this.isWorkflow) {
+                return "report";
+            }
+            return "page";
         },
         hasVisualizations() {
             return this.visualizationSection.elems.length > 0;

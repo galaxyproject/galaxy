@@ -151,6 +151,7 @@ class AgentType:
     ORCHESTRATOR = "orchestrator"
     TOOL_RECOMMENDATION = "tool_recommendation"
     HISTORY = "history"
+    PAGE_ASSISTANT = "page_assistant"
 
 
 # For API responses, use galaxy.schema.agents.AgentResponse

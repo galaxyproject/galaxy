@@ -20,6 +20,7 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 
+import { ACTIVITY_LABELS } from "@/components/Page/constants";
 import type { Activity } from "@/stores/activityStoreTypes";
 import type { EventData } from "@/stores/eventStore";
 
@@ -170,14 +171,14 @@ export const defaultActivities = [
     },
     {
         anonymous: true,
-        description: "Display and create new pages.",
+        description: ACTIVITY_LABELS.description,
         icon: faFileContract,
         id: "pages",
         mutable: false,
         optional: true,
         panel: false,
-        title: "Pages",
-        tooltip: "Show all pages",
+        title: ACTIVITY_LABELS.title,
+        tooltip: ACTIVITY_LABELS.tooltip,
         to: "/pages/list",
         visible: true,
     },

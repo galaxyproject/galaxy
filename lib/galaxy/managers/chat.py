@@ -20,15 +20,18 @@ from sqlalchemy.exc import (
     NoResultFound,
 )
 
+from galaxy import exceptions
 from galaxy.exceptions import (
     InconsistentDatabase,
     InternalServerError,
     RequestParameterInvalidException,
 )
+from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     ChatExchange,
     ChatExchangeMessage,
+    Page,
 )
 from galaxy.util import unicodify
 
@@ -59,6 +62,67 @@ class ChatManager:
         trans.sa_session.add(chat_message)
         trans.sa_session.commit()
         return chat_exchange
+
+    def get_accessible_page(self, trans: ProvidesUserContext, page_id: int) -> Page:
+        """Return a Page the current user is allowed to read, or raise."""
+        page = trans.sa_session.get(Page, page_id)
+        if not page:
+            raise exceptions.ObjectNotFound("Page not found")
+        return base.security_check(trans, page, check_ownership=False, check_accessible=True)
+
+    def create_page_chat(
+        self,
+        trans: ProvidesUserContext,
+        page_id: int,
+        query: str,
+        response_data: Any,
+        agent_type: str = "page_assistant",
+    ) -> ChatExchange:
+        """Create a chat exchange scoped to a page."""
+        import json
+
+        self.get_accessible_page(trans, page_id)
+        chat_exchange = ChatExchange(user=trans.user, page_id=page_id)
+
+        conversation_data: dict[str, Any]
+        if isinstance(response_data, str):
+            conversation_data = {"query": query, "response": response_data, "agent_type": agent_type}
+        else:
+            conversation_data = {
+                "query": query,
+                "response": (
+                    response_data.get("response", "") if isinstance(response_data, dict) else str(response_data)
+                ),
+                "agent_type": agent_type,
+                "agent_response": response_data.get("agent_response") if isinstance(response_data, dict) else None,
+            }
+
+        chat_message = ChatExchangeMessage(message=json.dumps(conversation_data), feedback=None)
+        chat_exchange.messages.append(chat_message)
+
+        trans.sa_session.add(chat_exchange)
+        trans.sa_session.add(chat_message)
+        trans.sa_session.commit()
+        return chat_exchange
+
+    def get_page_chat_history(self, trans: ProvidesUserContext, page_id: int, limit: int = 50) -> list[ChatExchange]:
+        """Get chat exchanges scoped to a page, ordered most-recent first."""
+        self.get_accessible_page(trans, page_id)
+        try:
+            stmt = (
+                select(ChatExchange)
+                .where(
+                    and_(
+                        ChatExchange.user_id == trans.user.id,
+                        ChatExchange.page_id == page_id,
+                    )
+                )
+                .order_by(ChatExchange.id.desc())
+                .limit(limit)
+            )
+            return trans.sa_session.execute(stmt).scalars().all()
+        except Exception as e:
+            raise InternalServerError(f"Error loading page chat history: {unicodify(e)}")
 
     def create_general_chat(
         self, trans: ProvidesUserContext, query: str, response_data: Any, agent_type: str = "unknown"
@@ -311,23 +375,29 @@ class ChatManager:
         return count
 
     def get_user_chat_history(
-        self, trans: ProvidesUserContext, limit: int = 50, include_job_chats: bool = False
+        self,
+        trans: ProvidesUserContext,
+        limit: int = 50,
+        include_job_chats: bool = False,
+        include_page_chats: bool = False,
     ) -> list[ChatExchange]:
         """
         Get all chat exchanges for a user.
 
         :param limit: Maximum number of exchanges to return
         :param include_job_chats: Whether to include job-related chats
+        :param include_page_chats: Whether to include page-scoped chats
         :returns: List of ChatExchange objects
         """
         try:
             stmt = select(ChatExchange).where(ChatExchange.user_id == trans.user.id)
 
-            # Optionally filter out job-related chats
             if not include_job_chats:
                 stmt = stmt.where(ChatExchange.job_id.is_(None))
 
-            # Order by most recent first and apply limit
+            if not include_page_chats:
+                stmt = stmt.where(ChatExchange.page_id.is_(None))
+
             stmt = stmt.order_by(ChatExchange.id.desc()).limit(limit)
 
             exchanges = trans.sa_session.execute(stmt).scalars().all()

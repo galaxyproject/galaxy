@@ -29,12 +29,10 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    encode_id,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     ChatExchangeBatchDeletePayload,
+    ChatHistoryItemResponse,
     ChatPayload,
     ChatResponse,
 )
@@ -172,11 +170,44 @@ class ChatAPI:
         if payload is not None and hasattr(payload, "exchange_id") and payload.exchange_id:
             exchange_id = payload.exchange_id
 
+        # Check for page scope and populate agent context
+        page_id = None
+        page_obj = None
+        if payload is not None and hasattr(payload, "page_id") and payload.page_id:
+            page_id = payload.page_id
+            # Access-check outside the try below so 403s propagate instead of
+            # being masked as 500.
+            page_obj = self.chat_manager.get_accessible_page(trans, page_id)
+
         # Use new agent system if available, otherwise fallback to legacy
         try:
             if HAS_AGENTS:
                 # Build context with conversation history
                 full_context: dict[str, Any] = query_context.copy() if query_context else {}
+
+                # If page-scoped, look up history_id + content for agent.
+                # Content is exported (IDs encoded) so the agent sees the same
+                # text the editor has — hashes and proposals match the client.
+                if page_id:
+                    if page_obj:
+                        full_context["history_id"] = page_obj.history_id
+                        # Fallback to session history for standalone pages
+                        if not full_context.get("history_id"):
+                            session_history = getattr(trans, "history", None)
+                            if session_history:
+                                full_context["history_id"] = session_history.id
+                                full_context["history_is_session"] = True
+                        if page_obj.latest_revision_id:
+                            from galaxy.managers.markdown_util import ready_galaxy_markdown_for_export
+
+                            rev = page_obj.latest_revision
+                            if rev and rev.content:
+                                exported, _, _ = ready_galaxy_markdown_for_export(trans, rev.content)
+                                full_context["page_content"] = exported
+                            else:
+                                full_context["page_content"] = ""
+                        else:
+                            full_context["page_content"] = ""
 
                 # If we have an exchange_id, ALWAYS load conversation history from database (source of truth)
                 if exchange_id:
@@ -229,6 +260,17 @@ class ChatAPI:
                         partial(self.chat_manager.add_message, trans, exchange_id, message_content)
                     )
                     result["exchange_id"] = exchange_id
+                elif page_id:
+                    # Page-scoped chat
+                    agent_resp = result.get("agent_response")
+                    storable_result = {
+                        "response": result.get("response", ""),
+                        "agent_response": agent_resp.model_dump() if agent_resp else None,
+                    }
+                    exchange = self.chat_manager.create_page_chat(
+                        trans, page_id, query_text, storable_result, agent_type
+                    )
+                    result["exchange_id"] = exchange.id
                 else:
                     # Create new exchange for first message
                     # Serialize agent_response for JSON storage
@@ -260,40 +302,25 @@ class ChatAPI:
         limit: int = Query(default=50, description="Maximum number of chats to return"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> list[dict[str, Any]]:
+    ) -> list[ChatHistoryItemResponse]:
         """Get user's chat history."""
         exchanges = self.chat_manager.get_user_chat_history(trans, limit=limit, include_job_chats=False)
+        return self._format_exchange_history(exchanges)
 
-        # Format exchanges for frontend
-        history = []
+    @router.get("/api/chat/page/{page_id}/history", unstable=True)
+    def get_page_chat_history(
+        self,
+        page_id: DecodedDatabaseIdField,
+        limit: int = Query(default=50, description="Maximum number of chats to return"),
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> list[ChatHistoryItemResponse]:
+        """Get chat history scoped to a page."""
+        if not user:
+            return []
 
-        for exchange in exchanges:
-            # For now, still return just the first message of each exchange for compatibility
-            # TODO: Eventually return full conversation threads
-            if exchange.messages:
-                message = exchange.messages[0]  # Get first message
-                try:
-                    # Parse JSON content
-                    data = json.loads(message.message)
-                    history.append(
-                        {
-                            "id": encode_id(exchange.id),
-                            "query": data.get("query", ""),
-                            "response": data.get("response", ""),
-                            "agent_type": data.get("agent_type", "unknown"),
-                            "agent_response": data.get(
-                                "agent_response"
-                            ),  # Include full agent response with suggestions
-                            "timestamp": message.create_time.isoformat() if message.create_time else None,
-                            "feedback": message.feedback,
-                            "message_count": len(exchange.messages),  # Add count to show it's a conversation
-                        }
-                    )
-                except (json.JSONDecodeError, AttributeError):
-                    # Fallback for non-JSON messages (legacy job-based chats)
-                    pass
-
-        return history
+        exchanges = self.chat_manager.get_page_chat_history(trans, page_id, limit=limit)
+        return self._format_exchange_history(exchanges)
 
     @router.delete("/api/chat/history", unstable=True)
     def clear_chat_history(
@@ -427,6 +454,33 @@ class ChatAPI:
                 )
 
         return messages
+
+    def _format_exchange_history(self, exchanges) -> list[ChatHistoryItemResponse]:
+        """Convert a list of ChatExchange ORM objects into API response models."""
+        history: list[ChatHistoryItemResponse] = []
+        for exchange in exchanges:
+            if not exchange.messages:
+                continue
+            message = exchange.messages[0]
+            try:
+                data = json.loads(message.message)
+                agent_response_raw = data.get("agent_response")
+                agent_response = AgentResponse(**agent_response_raw) if agent_response_raw else None
+                history.append(
+                    ChatHistoryItemResponse(
+                        id=exchange.id,
+                        query=data.get("query", ""),
+                        response=data.get("response", ""),
+                        agent_type=data.get("agent_type", "unknown"),
+                        agent_response=agent_response,
+                        timestamp=message.create_time.isoformat() if message.create_time else None,
+                        feedback=message.feedback,
+                        message_count=len(exchange.messages),
+                    )
+                )
+            except (json.JSONDecodeError, AttributeError):
+                log.debug("Skipping malformed chat exchange %s", exchange.id)
+        return history
 
     def _ensure_ai_configured(self):
         """Ensure AI is configured"""

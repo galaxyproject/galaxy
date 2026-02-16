@@ -48,6 +48,29 @@ rules:
           priority: 1
 
   - match:
+      agent_type: page_assistant
+      query: "(?i)hello|hi|hey"
+    response:
+      content: "Hello! I'm your page assistant. I can help you edit and document this history."
+      confidence: high
+      agent_type: page_assistant
+
+  - match:
+      agent_type: page_assistant
+      query: "(?i)summar"
+    response:
+      content: "Here is a summary of your history. It contains datasets from your analysis pipeline."
+      confidence: high
+      agent_type: page_assistant
+
+  - match:
+      agent_type: page_assistant
+    response:
+      content: "I can help you write and edit pages for this history."
+      confidence: medium
+      agent_type: page_assistant
+
+  - match:
       agent_type: error_analysis
     response:
       content: "This error appears to be a tool configuration issue."

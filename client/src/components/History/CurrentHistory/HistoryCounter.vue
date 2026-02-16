@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { faDatabase, faEyeSlash, faMapMarker, faSync, faTrash } from "@fortawesome/free-solid-svg-icons";
+import {
+    faBook,
+    faDatabase,
+    faEyeSlash,
+    faMapMarker,
+    faSpinner,
+    faSync,
+    faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
 import { BButton, BButtonGroup } from "bootstrap-vue";
@@ -10,8 +18,13 @@ import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { type HistorySummaryExtended, userOwnsHistory } from "@/api";
+import { getGalaxyInstance } from "@/app";
+import type { RouterPushOptions } from "@/components/History/Content/router-push-options";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
+import { PAGE_LABELS } from "@/components/Page/constants";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
+import { useToast } from "@/composables/toast";
+import { usePageEditorStore } from "@/stores/pageEditorStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
@@ -104,6 +117,37 @@ async function reloadContents() {
     }, 1000);
 }
 
+const isResolvingPage = ref(false);
+
+async function navigateToCurrentPage() {
+    const pageStore = usePageEditorStore();
+    const toast = useToast();
+    isResolvingPage.value = true;
+    try {
+        const pageId = await pageStore.resolveCurrentPage(props.history.id);
+        const Galaxy = getGalaxyInstance();
+        const isWmActive = Galaxy?.frame?.active;
+
+        if (isWmActive) {
+            const page = pageStore.pages.find((n) => n.id === pageId);
+            const title = page?.title || PAGE_LABELS.history.entityName;
+            const url = `/histories/${props.history.id}/pages/${pageId}?displayOnly=true`;
+            const options: RouterPushOptions = {
+                title: `${PAGE_LABELS.history.entityName}: ${title}`,
+                preventWindowManager: false,
+            };
+            // @ts-ignore - monkeypatched router, drop with migration.
+            router.push(url, options);
+        } else {
+            router.push(`/histories/${props.history.id}/pages/${pageId}`);
+        }
+    } catch (e: any) {
+        toast.error(e.message || "Failed to open page");
+    } finally {
+        isResolvingPage.value = false;
+    }
+}
+
 onMounted(() => {
     updateTime();
     // update every second
@@ -113,19 +157,34 @@ onMounted(() => {
 
 <template>
     <div class="history-size my-1 d-flex justify-content-between">
-        <GButton
-            tooltip
-            :title="localize('History Size')"
-            transparent
-            size="small"
-            color="blue"
-            class="rounded-0 history-storage-overview-button"
-            :disabled="!canManageStorage"
-            data-description="storage dashboard button"
-            @click="onDashboard">
-            <FontAwesomeIcon :icon="faDatabase" />
-            <span>{{ niceHistorySize }}</span>
-        </GButton>
+        <div class="d-flex">
+            <GButton
+                tooltip
+                :title="localize('History Size')"
+                transparent
+                size="small"
+                color="blue"
+                class="rounded-0 history-storage-overview-button"
+                :disabled="!canManageStorage"
+                data-description="storage dashboard button"
+                @click="onDashboard">
+                <FontAwesomeIcon :icon="faDatabase" />
+                <span>{{ niceHistorySize }}</span>
+            </GButton>
+
+            <GButton
+                tooltip
+                :title="PAGE_LABELS.history.historyCounterTooltip"
+                transparent
+                size="small"
+                color="blue"
+                class="rounded-0"
+                :disabled="isAnonymous || isResolvingPage"
+                data-description="history page button"
+                @click="navigateToCurrentPage">
+                <FontAwesomeIcon :icon="isResolvingPage ? faSpinner : faBook" :spin="isResolvingPage" />
+            </GButton>
+        </div>
 
         <BButtonGroup v-if="currentUser">
             <BButtonGroup>

@@ -98,6 +98,7 @@ def build_default_registry(config=None) -> AgentRegistry:
     from .error_analysis import ErrorAnalysisAgent
     from .history import HistoryAgent
     from .orchestrator import WorkflowOrchestratorAgent
+    from .page_assistant import PageAssistantAgent
     from .router import QueryRouterAgent
     from .tools import ToolRecommendationAgent
 
@@ -129,4 +130,5 @@ def build_default_registry(config=None) -> AgentRegistry:
     _register_if_enabled(registry, AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
     _register_if_enabled(registry, AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)
     _register_if_enabled(registry, AgentType.HISTORY, HistoryAgent)
+    _register_if_enabled(registry, AgentType.PAGE_ASSISTANT, PageAssistantAgent)
     return registry
