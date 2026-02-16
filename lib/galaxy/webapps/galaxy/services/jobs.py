@@ -89,6 +89,9 @@ class JobRequest(BaseModel):
         default=None, title="rerun_remap_job_id", description="TODO"
     )
     send_email_notification: bool = Field(default=False, title="Send Email Notification", description="TODO")
+    preferred_object_store_id: Optional[str] = Field(default=None, title="Preferred Object Store ID")
+    tags: Optional[list[str]] = Field(default=None, title="Tags")
+    data_manager_mode: Optional[str] = Field(default=None, title="Data Manager Mode")
 
 
 class JobCreateResponse(BaseModel):
@@ -282,6 +285,10 @@ class JobsService(ServiceBase):
             tool_request_id=tool_request_id,
             use_cached_jobs=job_request.use_cached_jobs or False,
             rerun_remap_job_id=job_request.rerun_remap_job_id,
+            preferred_object_store_id=job_request.preferred_object_store_id,
+            tags=job_request.tags,
+            data_manager_mode=job_request.data_manager_mode,
+            send_email_notification=job_request.send_email_notification,
         )
         result = queue_jobs.delay(request=task_request)
         return JobCreateResponse(

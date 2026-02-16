@@ -113,6 +113,7 @@
 import { mapActions, mapState, storeToRefs } from "pinia";
 
 import { canMutateHistory } from "@/api";
+import { buildNestedState } from "@/components/Form/utilities";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -122,7 +123,13 @@ import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
-import { getToolFormData, submitJob, updateToolFormData } from "./services";
+import {
+    buildJobResponse,
+    getToolFormData,
+    submitJobRequest,
+    updateToolFormData,
+    waitForToolRequest,
+} from "./services";
 
 import ToolRecommendation from "../ToolRecommendation.vue";
 import ToolCard from "./ToolCard.vue";
@@ -378,7 +385,7 @@ export default {
         onUpdatePreferredObjectStoreId(preferredObjectStoreId) {
             this.preferredObjectStoreId = preferredObjectStoreId;
         },
-        onExecute(config, historyId) {
+        async onExecute(config, historyId) {
             // If a tour is active that was generated for this tool, end it.
             if (this.currentTour?.id.startsWith(`tool-generated-${this.formConfig.id}`)) {
                 this.setTour(undefined);
@@ -390,107 +397,89 @@ export default {
             }
             this.showExecuting = true;
             this.addRecentTool(this.formConfig?.id);
+
+            const nestedInputs = buildNestedState(this.formConfig.inputs, this.formData);
             const jobDef = {
-                history_id: historyId,
                 tool_id: this.formConfig.id,
                 tool_version: this.formConfig.version,
-                tool_uuid: this.toolUuid,
-                __tags: this.tags,
-                inputs: {
-                    ...this.formData,
-                },
+                history_id: historyId,
+                inputs: nestedInputs,
+                use_cached_jobs: this.useCachedJobs || false,
+                send_email_notification: this.useEmail || false,
             };
-            if (this.useEmail) {
-                jobDef.inputs["send_email_notification"] = true;
-            }
             if (this.useJobRemapping) {
-                jobDef.inputs["rerun_remap_job_id"] = this.job_id;
-            }
-            if (this.useCachedJobs) {
-                jobDef.inputs["use_cached_job"] = true;
+                jobDef.rerun_remap_job_id = this.job_id;
             }
             if (this.preferredObjectStoreId) {
                 jobDef.preferred_object_store_id = this.preferredObjectStoreId;
             }
+            if (this.tags?.length) {
+                jobDef.tags = this.tags;
+            }
             if (this.dataManagerMode === "bundle") {
                 jobDef.data_manager_mode = this.dataManagerMode;
             }
-            if (this.formConfig.credentials?.length) {
-                jobDef.credentials_context = this.getCredentialsExecutionContextForTool(
-                    this.formConfig.id,
-                    this.formConfig.version,
-                );
-            }
+
             console.debug("toolForm::onExecute()", jobDef);
             const prevRoute = this.$route.fullPath;
-            submitJob(jobDef).then(
-                (jobResponse) => {
-                    this.submissionRequestFailed = false;
-                    this.showExecuting = false;
-                    let changeRoute = false;
-                    this.startWatchingHistory();
-                    if (jobResponse.produces_entry_points) {
-                        this.showEntryPoints = true;
-                        this.entryPoints = jobResponse.jobs;
+
+            try {
+                const submitResponse = await submitJobRequest(jobDef);
+                const toolRequestId = submitResponse.tool_request_id;
+                const toolRequestDetail = await waitForToolRequest(toolRequestId);
+                const jobResponse = await buildJobResponse(toolRequestDetail);
+
+                this.submissionRequestFailed = false;
+                this.showExecuting = false;
+                this.startWatchingHistory();
+
+                if (jobResponse.produces_entry_points) {
+                    this.showEntryPoints = true;
+                    this.entryPoints = jobResponse.jobs;
+                }
+
+                const nJobs = jobResponse.jobs ? jobResponse.jobs.length : 0;
+                if (nJobs > 0) {
+                    this.showForm = false;
+                    this.saveLatestResponse({
+                        jobDef,
+                        jobResponse,
+                        toolName: this.toolName,
+                    });
+                }
+
+                if (prevRoute === this.$route.fullPath) {
+                    this.$router.push(`/jobs/submission/success`);
+                } else {
+                    if ([true, "true"].includes(config.enable_tool_recommendations)) {
+                        this.showRecommendation = true;
                     }
-                    const nJobs = jobResponse && jobResponse.jobs ? jobResponse.jobs.length : 0;
-                    if (nJobs > 0 && !jobResponse.errors?.length) {
-                        this.showForm = false;
-                        const toolName = this.toolName;
-                        this.saveLatestResponse({
-                            jobDef,
-                            jobResponse,
-                            toolName,
-                        });
-                        changeRoute = prevRoute === this.$route.fullPath;
-                    } else {
-                        const defaultErrorTitle = "Job submission rejected.";
-                        this.showError = true;
-                        this.showForm = true;
-                        if (jobResponse?.errors) {
-                            const nErrors = jobResponse.errors.length;
-                            if (nJobs > 0) {
-                                this.errorTitle = `Job submission for ${nErrors} out of ${
-                                    nJobs + nErrors
-                                } jobs failed.`;
-                            } else {
-                                this.errorTitle = defaultErrorTitle;
-                            }
-                            this.errorContent = jobResponse.errors;
-                        } else {
-                            this.errorTitle = defaultErrorTitle;
-                            this.errorContent = jobResponse;
-                        }
+                    document.querySelector("#center").scrollTop = 0;
+                }
+            } catch (e) {
+                this.showExecuting = false;
+
+                const errorData = e?.response?.data?.err_data;
+                if (errorData) {
+                    const errorEntries = Object.entries(errorData);
+                    if (errorEntries.length > 0) {
+                        this.errorMessage = e?.response?.data?.err_msg;
+                        this.submissionRequestFailed = true;
+                        this.validationScrollTo = errorEntries[0];
+                        return;
                     }
-                    if (changeRoute) {
-                        this.$router.push(`/jobs/submission/success`);
-                    } else {
-                        if ([true, "true"].includes(config.enable_tool_recommendations)) {
-                            this.showRecommendation = true;
-                        }
-                        document.querySelector("#center").scrollTop = 0;
-                    }
-                },
-                (e) => {
-                    this.errorMessage = e?.response?.data?.err_msg;
+                }
+
+                if (e?.response?.data?.err_msg) {
+                    this.errorMessage = e.response.data.err_msg;
                     this.submissionRequestFailed = true;
-                    this.showExecuting = false;
-                    let genericError = true;
-                    const errorData = e && e.response && e.response.data && e.response.data.err_data;
-                    if (errorData) {
-                        const errorEntries = Object.entries(errorData);
-                        if (errorEntries.length > 0) {
-                            this.validationScrollTo = errorEntries[0];
-                            genericError = false;
-                        }
-                    }
-                    if (genericError) {
-                        this.showError = true;
-                        this.errorTitle = "Job submission failed.";
-                        this.errorContent = jobDef;
-                    }
-                },
-            );
+                    return;
+                }
+
+                this.showError = true;
+                this.errorTitle = "Job submission failed.";
+                this.errorContent = e?.message || jobDef;
+            }
         },
     },
 };

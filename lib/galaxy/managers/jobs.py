@@ -65,6 +65,7 @@ from galaxy.model import (
     Job,
     JobMetricNumeric,
     JobParameter,
+    PostJobAction,
     ToolRequest,
     User,
     Workflow,
@@ -2187,14 +2188,30 @@ class JobSubmitter:
                 # here we just created the datasets - lets just materialize them in place
                 # and avoid extra and confusing input copies
                 self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
-            tool.handle_input_async(
+            execution_tracker = tool.handle_input_async(
                 request_context,
                 tool_request,
                 tool_state,
                 history=target_history,
                 use_cached_job=use_cached_jobs,
                 rerun_remap_job_id=rerun_remap_job_id,
+                preferred_object_store_id=request.preferred_object_store_id,
             )
+            if request.tags:
+                tag_handler = request_context.tag_handler
+                for _, hda in execution_tracker.output_datasets:
+                    tag_handler.apply_item_tags(
+                        user=request_context.user, item=hda, tags_str=",".join(request.tags), flush=False
+                    )
+                for _, hdca in execution_tracker.output_collections:
+                    tag_handler.apply_item_tags(
+                        user=request_context.user, item=hdca, tags_str=",".join(request.tags), flush=False
+                    )
+            if request.send_email_notification:
+                if request_context.user is None:
+                    raise Exception("Anonymously run jobs cannot send an email notification.")
+                for job in execution_tracker.successful_jobs:
+                    job.add_post_job_action(PostJobAction("EmailAction"))
             tool_request.state = ToolRequest.states.SUBMITTED
             sa_session.add(tool_request)
             sa_session.commit()

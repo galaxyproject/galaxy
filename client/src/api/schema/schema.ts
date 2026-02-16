@@ -17481,6 +17481,8 @@ export interface components {
         };
         /** JobRequest */
         JobRequest: {
+            /** Data Manager Mode */
+            data_manager_mode?: string | null;
             /**
              * history_id
              * @description TODO
@@ -17493,6 +17495,8 @@ export interface components {
             inputs?: {
                 [key: string]: unknown;
             } | null;
+            /** Preferred Object Store ID */
+            preferred_object_store_id?: string | null;
             /**
              * rerun_remap_job_id
              * @description TODO
@@ -17510,6 +17514,8 @@ export interface components {
              * @default true
              */
             strict: boolean;
+            /** Tags */
+            tags?: string[] | null;
             /**
              * tool_id
              * @description TODO

@@ -136,6 +136,107 @@ export function matchInputs(index, response) {
     return result;
 }
 
+/** Builds a nested state dict from the form input tree and flat formData.
+ * Produces the format expected by RequestToolState (POST /api/jobs).
+ * @param{Array}    inputs    - Nested array of input elements (the tool form tree)
+ * @param{Object}   formData  - Flat dictionary with pipe-separated keys (e.g. "cond|param")
+ * @returns{Object} Nested dictionary matching the RequestToolState format
+ */
+export function buildNestedState(inputs, formData) {
+    return _buildLevel(inputs, formData, "");
+}
+
+function _buildLevel(inputs, formData, prefix) {
+    const result = {};
+    for (const key in inputs) {
+        const node = inputs[key];
+        const nodeName = node.name || key;
+        const flatKey = prefix ? `${prefix}|${nodeName}` : nodeName;
+        switch (node.type) {
+            case "repeat": {
+                const items = [];
+                if (node.cache) {
+                    _.each(node.cache, (cache, j) => {
+                        items.push(_buildLevel(cache, formData, `${flatKey}_${j}`));
+                    });
+                }
+                result[nodeName] = items;
+                break;
+            }
+            case "conditional": {
+                const condResult = {};
+                if (node.test_param) {
+                    const testKey = `${flatKey}|${node.test_param.name}`;
+                    condResult[node.test_param.name] = _convertValue(node.test_param, formData[testKey]);
+                    const selectedCase = matchCase(node, node.test_param.value);
+                    if (selectedCase !== -1) {
+                        Object.assign(condResult, _buildLevel(node.cases[selectedCase].inputs, formData, flatKey));
+                    }
+                }
+                result[nodeName] = condResult;
+                break;
+            }
+            case "section":
+                result[nodeName] = _buildLevel(node.inputs, formData, flatKey);
+                break;
+            default:
+                result[nodeName] = _convertValue(node, formData[flatKey]);
+        }
+    }
+    return result;
+}
+
+function _convertValue(node, value) {
+    if (node.type === "data" || node.type === "data_collection") {
+        return _convertDataValue(value);
+    }
+    if (node.type === "data_column") {
+        if (value === null || value === undefined || value === "") {
+            return value;
+        }
+        if (Array.isArray(value)) {
+            return value.map((v) => (typeof v === "string" ? parseInt(v, 10) : v));
+        }
+        return typeof value === "string" ? parseInt(value, 10) : value;
+    }
+    if (node.type === "integer") {
+        if (value === null || value === undefined || value === "") {
+            return value;
+        }
+        return typeof value === "string" ? parseInt(value, 10) : value;
+    }
+    if (node.type === "float") {
+        if (value === null || value === undefined || value === "") {
+            return value;
+        }
+        return typeof value === "string" ? parseFloat(value) : value;
+    }
+    if (node.type === "boolean") {
+        if (typeof value === "string") {
+            return value === "true";
+        }
+        return value;
+    }
+    return value;
+}
+
+function _convertDataValue(value) {
+    if (!value || !value.values || value.values.length === 0) {
+        return null;
+    }
+    if (value.batch) {
+        return {
+            __class__: "Batch",
+            values: value.values.map((v) => ({ src: v.src, id: v.id })),
+        };
+    }
+    if (value.values.length === 1) {
+        const v = value.values[0];
+        return { src: v.src, id: v.id };
+    }
+    return value.values.map((v) => ({ src: v.src, id: v.id }));
+}
+
 /** Validate value against a regular expression pattern
  * @param{object} validator - Validator definition
  * @param{*}      value     - Value to validate
