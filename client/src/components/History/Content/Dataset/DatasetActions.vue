@@ -87,7 +87,7 @@ function onVisualize() {
 }
 
 function onRerun() {
-    router.push(`/root?job_id=${props.item.creating_job}`);
+    router.push(`/?job_id=${props.item.creating_job}`);
 }
 </script>
 
