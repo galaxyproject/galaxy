@@ -34,7 +34,7 @@ except ImportError:
 try:
     import tifffile
 except ImportError:
-    tifffile = None  # type: ignore[assignment]
+    tifffile = None  # type: ignore[assignment,unused-ignore]
 
 
 class OmeroFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
