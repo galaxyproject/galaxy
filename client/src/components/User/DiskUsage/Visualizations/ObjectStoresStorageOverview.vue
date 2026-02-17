@@ -13,7 +13,6 @@ import { byteFormattingForChart, useDataLoading } from "./util";
 import BarChart from "./Charts/BarChart.vue";
 import ObjectStoreActions from "./ObjectStoreActions.vue";
 import OverviewPage from "./OverviewPage.vue";
-import ShowObjectStore from "./ShowObjectStore.vue";
 import WarnDeletedHistories from "./WarnDeletedHistories.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -70,9 +69,6 @@ function onViewObjectStore(objectStoreId: string) {
                 v-bind="byteFormattingForChart">
                 <template v-slot:title>
                     <b>{{ localize(`Galaxy Storage by Usage`) }}</b>
-                </template>
-                <template v-slot:tooltip="{ data }">
-                    <ShowObjectStore v-if="data" :object-store-id="data.id" />
                 </template>
                 <template v-slot:selection="{ data }">
                     <ObjectStoreActions :data="data" @view-item="onViewObjectStore" />
