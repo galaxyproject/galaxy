@@ -646,6 +646,17 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         action_chains = self.action_chains()
         action_chains.move_to_element(element).double_click().perform()
 
+    def fire_mousedown(self, element: WebElement) -> None:
+        """Dispatch a mousedown event on an element via JS.
+
+        Fires exactly one mousedown event. Useful for elements that
+        listen for mousedown rather than click.
+        """
+        self.execute_script(
+            "arguments[0].dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));",
+            element,
+        )
+
     def assert_absent_or_hidden_after_transitions(self, selector_template: Target, **kwds) -> None:
         """
         Assert element is absent or hidden (convenience method for subclasses to override with retry logic).

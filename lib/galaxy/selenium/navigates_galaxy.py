@@ -2178,8 +2178,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             self.window_manager_toggle()
 
     def window_manager_is_active(self) -> bool:
-        """Check if the window manager is currently enabled."""
-        return self.execute_script("return !!(window.Galaxy && window.Galaxy.frame && window.Galaxy.frame.active);")
+        """Check if the window manager is currently enabled via the masthead toggle class."""
+        return self.components.masthead.window_manager.has_class("toggle")
 
     def window_manager_window_count(self) -> int:
         """Return number of open WinBox windows."""
@@ -2212,14 +2212,53 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def window_manager_get_titles(self) -> list:
         """Return list of window titles from all open WinBox windows."""
-        return self.execute_script(
-            "return Array.from(document.querySelectorAll('.winbox .wb-title')).map(el => el.textContent);"
-        )
+        elements = self.components.window_manager.title.all()
+        return [el.text for el in elements]
 
     def window_manager_close_all(self):
-        """Close all open WinBox windows."""
-        self.execute_script("document.querySelectorAll('.winbox .wb-close').forEach(btn => btn.click());")
+        """Close all open WinBox windows.
+
+        Uses JS click because .wb-close is obscured by WinBox's .wb-n resize handle.
+        """
+        close_buttons = self.components.window_manager.close_button.all()
+        for btn in close_buttons:
+            self.execute_script_click(btn)
         self.sleep_for(self.wait_types.UX_TRANSITION)
+
+    def window_manager_close_window(self, index=0):
+        """Close a specific WinBox window by index.
+
+        Uses JS click because the .wb-close button is obscured by WinBox's
+        .wb-n resize handle overlay.
+        """
+        close_buttons = self.components.window_manager.close_button.all()
+        assert len(close_buttons) > index, f"Expected at least {index + 1} close buttons, found {len(close_buttons)}"
+        self.execute_script_click(close_buttons[index])
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+
+    def window_manager_get_focused_title(self) -> str:
+        """Return the title text of the currently focused WinBox window."""
+        return self.components.window_manager.focused_title.wait_for_text()
+
+    def window_manager_click_focus_overlay(self, index=0):
+        """Click the focus overlay of a WinBox window to switch focus.
+
+        Uses fire_mousedown to match the event the overlay actually listens for.
+        """
+        overlays = self.components.window_manager.focus_overlay.all()
+        assert len(overlays) > index, f"Expected at least {index + 1} overlays, found {len(overlays)}"
+        self.fire_mousedown(overlays[index])
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+    def window_manager_get_iframe_src(self, index=0) -> str:
+        """Return the src attribute of a WinBox iframe by index."""
+        iframes = self.components.window_manager.iframe.all()
+        assert len(iframes) > index, f"Expected at least {index + 1} iframes, found {len(iframes)}"
+        return iframes[index].get_attribute("src") or ""
+
+    def window_manager_focused_count(self) -> int:
+        """Return the number of WinBox windows with focus class."""
+        return len(self.components.window_manager.focused.all())
 
     # avoids problematic ID and classes on markup
     def history_element(self, attribute_value, attribute_name="data-description", scope=".history-index"):

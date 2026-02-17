@@ -650,6 +650,16 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """Internal implementation of double-click."""
         element.dblclick()
 
+    def fire_mousedown(self, element: WebElementProtocol) -> None:
+        """Dispatch a mousedown event on an element."""
+        self._fire_mousedown(self._unwrap_element(element))
+
+    def _fire_mousedown(self, element: ElementHandle) -> None:
+        self.execute_script(
+            "arguments[0].dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));",
+            element,
+        )
+
     def click(self, selector_template: Target) -> None:
         """
         Click an element using Target selector.

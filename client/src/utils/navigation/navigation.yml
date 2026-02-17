@@ -649,6 +649,7 @@ window_manager:
     iframe: '.winbox iframe'
     focused: '.winbox.focus'
     focused_title: '.winbox.focus .wb-title'
+    focus_overlay: '.winbox .iframe-focus-overlay'
 
 tool_form:
   selectors:

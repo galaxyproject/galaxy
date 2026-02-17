@@ -312,6 +312,10 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Double-click element."""
         self._driver_impl.double_click(element)
 
+    def fire_mousedown(self, element: WebElementProtocol) -> None:
+        """Dispatch a mousedown event on element."""
+        self._driver_impl.fire_mousedown(element)
+
     def action_chains(self):
         """Get action chains object for complex interactions."""
         return self._driver_impl.action_chains()
