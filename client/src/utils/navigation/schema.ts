@@ -447,8 +447,6 @@ interface Rootworkflow_editor extends Component {
     edit_annotation: SelectorTemplate;
     edit_name: SelectorTemplate;
     tool_menu: SelectorTemplate;
-    tool_menu_section_link: SelectorTemplate;
-    tool_menu_item_link: SelectorTemplate;
     workflow_link: SelectorTemplate;
     insert_steps: SelectorTemplate;
     connect_icon: SelectorTemplate;

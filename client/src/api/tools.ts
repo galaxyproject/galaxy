@@ -1,5 +1,6 @@
 import { type components, GalaxyApi } from "@/api";
 import { ERROR_STATES, type ShowFullJobResponse } from "@/api/jobs";
+import type { Tool, ToolPanelItem, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 export type HdcaUploadTarget = components["schemas"]["HdcaDataItemsTarget"];
@@ -129,4 +130,18 @@ export function fetchJobErrorMessage(jobDetails: ShowFullJobResponse): string | 
             "Unknown error encountered while running your data import job, this could be a server issue or a problem with the upload definition.";
     }
     return errorMessage;
+}
+
+// TODO: Once the backend models are typed, make sure these type guards are correct.
+export function isTool(section: ToolPanelItem): section is Tool {
+    return !isToolSection(section) && !isToolSectionLabel(section);
+}
+export function isToolSection(section: ToolPanelItem): section is ToolSection {
+    return (section as ToolSection).tools !== undefined || (section as ToolSection).elems !== undefined;
+}
+export function isToolSectionLabel(section: ToolPanelItem): section is ToolSectionLabel {
+    return (
+        (section as ToolSectionLabel).text !== undefined &&
+        (section as ToolSectionLabel).model_class === "ToolSectionLabel"
+    );
 }

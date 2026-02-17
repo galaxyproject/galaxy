@@ -19,12 +19,10 @@ const emit = defineEmits<{
 
 const icon = computed(() => {
     const viewType = props.panelView.view_type;
-    if (props.currentPanelView === props.panelView.id) {
-        return faCheck;
-    } else {
-        return types_to_icons[viewType] || faEye;
-    }
+    return types_to_icons[viewType] || faEye;
 });
+
+const isSelected = computed(() => props.currentPanelView === props.panelView.id);
 </script>
 
 <template>
@@ -32,9 +30,15 @@ const icon = computed(() => {
         class="ml-1"
         :title="props.panelView.description"
         :data-panel-id="panelView.id"
-        :active="props.currentPanelView === props.panelView.id"
+        :active="isSelected"
         @click="emit('onSelect', props.panelView)">
-        <FontAwesomeIcon :icon="icon" data-description="panel view item icon" fixed-width />
-        <span v-localize>{{ props.panelView.name }}</span>
+        <FontAwesomeIcon :icon="icon" class="mr-1" fixed-width />
+        <span v-localize>{{ panelView.name }}</span>
+        <FontAwesomeIcon
+            v-if="isSelected"
+            :icon="faCheck"
+            class="ml-1"
+            data-description="panel view item icon"
+            fixed-width />
     </BDropdownItem>
 </template>

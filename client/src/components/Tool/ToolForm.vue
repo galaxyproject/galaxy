@@ -309,6 +309,7 @@ export default {
         ...mapActions(useJobStore, ["saveLatestResponse"]),
         ...mapActions(useTourStore, ["setTour"]),
         ...mapActions(useHistoryStore, ["startWatchingHistory"]),
+        ...mapActions(useUserStore, ["addRecentTool"]),
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;
         },
@@ -388,6 +389,7 @@ export default {
                 return;
             }
             this.showExecuting = true;
+            this.addRecentTool(this.formConfig?.id);
             const jobDef = {
                 history_id: historyId,
                 tool_id: this.formConfig.id,

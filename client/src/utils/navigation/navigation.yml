@@ -940,8 +940,6 @@ workflow_editor:
       selector: 'license save'
       type: data-description
     tool_menu: '.toolMenuContainer'
-    tool_menu_section_link: '.tool-menu-section-${section_name} a span'
-    tool_menu_item_link: 'a.tool-menu-item-${item_name}'
     workflow_link:
       type: xpath
       selector: '//a[contains(., "${workflow_title}")]'

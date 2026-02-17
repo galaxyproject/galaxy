@@ -46,7 +46,7 @@ export function suppressBootstrapVueWarnings() {
     const originalWarn = console.warn;
     vi.spyOn(console, "warn").mockImplementation(
         vi.fn((msg) => {
-            if (msg.indexOf("BootstrapVue warn") < 0) {
+            if (typeof msg !== "string" || msg.indexOf("BootstrapVue warn") < 0) {
                 originalWarn(msg);
             }
         }),
