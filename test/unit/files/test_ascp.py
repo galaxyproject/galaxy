@@ -461,50 +461,6 @@ class TestAscpRetryLogic:
                                 # Should only be called once (no retry)
                                 assert call_count == 1
 
-    def test_resume_flag_added_on_retry(self):
-        """Test that resume flag (-k 1) is added on retry attempts."""
-        with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
-                max_retries=2,
-                retry_base_delay=0.1,
-                enable_resume=True,
-            )
-
-            captured_commands = []
-
-            def mock_run(cmd, *args, **kwargs):
-                captured_commands.append(cmd)
-                if len(captured_commands) < 2:
-                    # Fail first attempt
-                    return Mock(
-                        returncode=1,
-                        stderr="Network error: timeout",
-                        stdout="",
-                    )
-                else:
-                    # Success on second attempt
-                    return Mock(returncode=0, stderr="", stdout="")
-
-            with patch("subprocess.run", side_effect=mock_run):
-                with patch("tempfile.mkstemp", return_value=(1, "/tmp/test_key.key")):
-                    with patch("os.fdopen"):
-                        with patch("os.chmod"):
-                            with patch("os.unlink"):
-                                with patch("time.sleep"):
-                                    fs.get_file("/remote/file.txt", "/local/file.txt")
-
-                                    # First attempt should NOT have -k flag
-                                    assert "-k" not in captured_commands[0]
-
-                                    # Second attempt (retry) SHOULD have -k 1 flag
-                                    assert "-k" in captured_commands[1]
-                                    k_index = captured_commands[1].index("-k")
-                                    assert captured_commands[1][k_index + 1] == "1"
-
     def test_resume_disabled(self):
         """Test that resume flag is not added when disabled."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):

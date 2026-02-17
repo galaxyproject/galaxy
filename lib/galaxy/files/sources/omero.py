@@ -6,8 +6,6 @@ from typing import (
     Union,
 )
 
-from PIL import Image as PILImage
-
 from galaxy.exceptions import (
     AuthenticationFailed,
     ObjectNotFound,
@@ -32,6 +30,11 @@ try:
 except ImportError:
     omero = None
     BlitzGateway = None
+
+try:
+    import tifffile
+except ImportError:
+    tifffile = None  # type: ignore[assignment,unused-ignore]
 
 
 class OmeroFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
@@ -494,7 +497,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
         if self._try_download_original_file(image, native_path):
             return
 
-        self._export_pixel_data(image, native_path)
+        self._export_as_tiff(image, native_path)
 
     def _try_download_original_file(self, image, native_path: str) -> bool:
         """Attempt to download the original imported file. Returns True if successful.
@@ -522,41 +525,45 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             for chunk in orig_file.getFileInChunks():
                 f.write(chunk)
 
-    def _export_pixel_data(self, image, native_path: str):
-        """Export pixel data as TIFF or fallback to thumbnail."""
-        try:
-            self._export_as_tiff(image, native_path)
-        except Exception:
-            self._export_as_thumbnail(image, native_path)
-
     def _export_as_tiff(self, image, native_path: str):
-        """Export all Z-planes of the image as a multi-page TIFF.
+        """Export all Z-planes and channels of the image as a multi-dimensional OME-TIFF.
 
-        Exports the first channel (C=0) and first timepoint (T=0) across all Z-planes.
-        This preserves the full Z-stack for 3D analysis while keeping the export manageable.
+        Exports all channels (C) and Z-planes at the first timepoint (T=0).
+        Uses generator-based streaming to minimize memory usage - the full shape
+        is declared upfront but planes are fetched and written one at a time.
+
+        Memory usage: O(Y*X) per plane instead of O(Z*C*Y*X) for entire image.
         """
+        if tifffile is None:
+            raise ImportError("The tifffile library is required to export OMERO images as TIFF. Please install it.")
 
         pixels = image.getPrimaryPixels()
         size_z = image.getSizeZ()
+        size_c = image.getSizeC()
+        size_y = image.getSizeY()
+        size_x = image.getSizeX()
 
-        planes = []
-        for z in range(size_z):
-            plane_data = pixels.getPlane(z, 0, 0)
-            planes.append(PILImage.fromarray(plane_data))
+        # Get dtype from first plane sample
+        first_plane = pixels.getPlane(0, 0, 0)
+        dtype = first_plane.dtype
 
-        if planes:
-            planes[0].save(
-                native_path,
-                format="TIFF",
-                save_all=True,
-                append_images=planes[1:] if len(planes) > 1 else [],
+        def plane_generator():
+            """Generator yielding 2D planes in ZCYX order (Z outer, C inner)."""
+            for z in range(size_z):
+                for c in range(size_c):
+                    if z == 0 and c == 0:
+                        # First plane already fetched for dtype detection
+                        yield first_plane
+                    else:
+                        yield pixels.getPlane(z, c, 0)
+
+        with tifffile.TiffWriter(native_path, bigtiff=True, ome=True) as tif:
+            tif.write(
+                data=plane_generator(),
+                shape=(size_z, size_c, size_y, size_x),
+                dtype=dtype,
+                metadata={"axes": "ZCYX"},
             )
-
-    def _export_as_thumbnail(self, image, native_path: str):
-        """Export the rendered thumbnail as final fallback."""
-        img_data = image.getThumbnail()
-        with open(native_path, "wb") as f:
-            f.write(img_data)
 
     def _write_from(
         self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[OmeroFileSourceConfiguration]
