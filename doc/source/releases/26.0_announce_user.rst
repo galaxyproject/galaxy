@@ -1,0 +1,169 @@
+
+===========================================================
+26.0 Galaxy Release (February 2026)
+===========================================================
+
+.. include:: _header.rst
+
+Please see the full `release notes <https://github.com/galaxyproject/galaxy/releases/tag/v26.0.0>`__ for more details.
+
+Highlights
+===========================================================
+
+Discover some of the exciting new features, enhancements, and improvements in Galaxy 26.0.
+
+Feature1
+--------
+
+A description of the feature and its main highlights. Include screenshots/videos if applicable.
+
+Feature2
+--------
+
+A description of the feature and its main highlights. Include screenshots/videos if applicable.
+
+Feature3
+--------
+
+A description of the feature and its main highlights. Include screenshots/videos if applicable.
+
+
+----
+
+Visualizations Updates
+===========================================================
+
+.. visualizations
+* Selenium test cases for IGV
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 21034`_
+* Remove Trackster
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20974`_
+* Add missing types to visualization model
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21672`_
+* Update dependencies for IGV and Plotly
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21543`_
+* Add Jupyternaut adapter for JupyterLite integration
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21463`_
+* Add plotly pie charts
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21174`_
+* Adds Vintent visualization plugin
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21586`_
+* Remove dummy header from JupyterLite requests
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21585`_
+
+Datatypes Updates
+===========================================================
+
+.. datatypes
+* Merge 25 1 into dev
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21067`_
+* Merge 25.1 into dev
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21128`_
+* Remove Trackster
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20974`_
+* Add type annotations to job handling code
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 21171`_
+* Merge 25.1 into dev
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21305`_
+* Slight improvement of mztab2 datatype
+  (thanks to `@nguilhot <https://github.com/nguilhot>`__).
+  `Pull Request 21258`_
+* Add Sourmash sig new datatype
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 21469`_
+* add new datatype for kmindex index data
+  (thanks to `@Smeds <https://github.com/Smeds>`__).
+  `Pull Request 21429`_
+* Add missing test file for sig datatype
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 21473`_
+* Add missing ending newline to test.sig test data file
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 21485`_
+* Discriminate decompression tools
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21510`_
+* Add missing dependencies to ``galaxy-files`` package
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 21518`_
+* Fix width and height assignment for image metadata using Pillow
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 21554`_
+* Drop support for Python 3.9
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 21583`_
+* Add new datatype pg and hg for pangenomics
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 21620`_
+* Add initial support for the DICOM format
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 21385`_
+* Merge 25.1 into dev
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21677`_
+* Remove tabular chunked, binary and large file mako
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21106`_
+* Infer type from extension for mzml
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 21033`_
+* Add Deacon idx format
+  (thanks to `@SantaMcCloud <https://github.com/SantaMcCloud>`__).
+  `Pull Request 21632`_
+* Add a few datatypes from the digital humanities domain
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 21596`_
+* Add new datatypes required for VG tool
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 21644`_
+* Add amnis cif flow cytometry data type
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 21829`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Selenium test case for basic tools list functionality
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 21059`_
+* remove a tool from sample that is no longer included in dist
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 21371`_
+* Remove sanitization from built-in grep tool
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 21648`_
+* Add new jupyter version
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 21531`_
+* Add missing filter_failed_collection_1.1.0.xml tool
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21719`_
+* Fix data manager .loc file selection logic
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 21664`_
+* Add `builtin_converters` section to integrated tool panel
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 21838`_
+
+Please see the full `release notes <https://github.com/galaxyproject/galaxy/releases/tag/v26.0.0>`__ for more details.
+The admin-facing release notes are available :doc:`here <26.0_announce>`.
+
+.. include:: 26.0_prs.rst
+
+----
+
+.. include:: _thanks.rst
