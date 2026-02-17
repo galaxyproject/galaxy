@@ -191,6 +191,147 @@ class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, U
         self._refactor(actions)
         assert self._latest_workflow.step_by_label("first_cat").workflow_outputs[0].label == "new_wf_out"
 
+    def test_extract_input_multiple_non_overlapping_positions(self):
+        """Test that multiple extract_input actions create non-overlapping, properly positioned inputs."""
+        # Create a workflow with multiple tool steps that have disconnected inputs
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  first_cat:
+    tool_id: cat
+    position:
+      left: 230
+      top: 10
+  second_cat:
+    tool_id: cat
+    position:
+      left: 450
+      top: 10
+  third_cat:
+    tool_id: cat
+    position:
+      left: 230
+      top: 150
+""")
+
+        # Extract inputs for all three tool steps in a single refactor operation
+        actions: ActionsJson = [
+            {
+                "action_type": "extract_input",
+                "input": {"label": "first_cat", "input_name": "input1"},
+                "label": "input_1",
+            },
+            {
+                "action_type": "extract_input",
+                "input": {"label": "second_cat", "input_name": "input1"},
+                "label": "input_2",
+            },
+            {
+                "action_type": "extract_input",
+                "input": {"label": "third_cat", "input_name": "input1"},
+                "label": "input_3",
+            },
+        ]
+        self._refactor(actions)
+
+        # Verify all inputs were created
+        input_1 = self._latest_workflow.step_by_label("input_1")
+        input_2 = self._latest_workflow.step_by_label("input_2")
+        input_3 = self._latest_workflow.step_by_label("input_3")
+
+        assert input_1 is not None
+        assert input_2 is not None
+        assert input_3 is not None
+
+        # Verify inputs are connected
+        assert len(self._latest_workflow.step_by_label("first_cat").inputs) == 1
+        assert len(self._latest_workflow.step_by_label("second_cat").inputs) == 1
+        assert len(self._latest_workflow.step_by_label("third_cat").inputs) == 1
+
+        # Verify positions are set
+        assert input_1.position is not None
+        assert input_2.position is not None
+        assert input_3.position is not None
+
+        # Verify all inputs have the same left position (leftmost column)
+        assert input_1.position["left"] == input_2.position["left"] == input_3.position["left"]
+
+        first_cat = self._latest_workflow.step_by_label("first_cat")
+        second_cat = self._latest_workflow.step_by_label("second_cat")
+        third_cat = self._latest_workflow.step_by_label("third_cat")
+
+        # Verify inputs are to the left of all tool steps
+        assert input_1.position["left"] < first_cat.position["left"]
+        assert input_1.position["left"] < second_cat.position["left"]
+        assert input_1.position["left"] < third_cat.position["left"]
+
+        # Verify inputs are vertically stacked with 120px spacing
+        # The actual top values will be normalized, but the spacing should be preserved
+        assert input_2.position["top"] - input_1.position["top"] == 120
+        assert input_3.position["top"] - input_2.position["top"] == 120
+
+    def test_extract_input_avoids_existing_input_overlap(self):
+        """Test that new inputs don't overlap with existing inputs."""
+        # Create a workflow with an existing input and a tool step
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  existing_input:
+    type: data
+    position:
+      left: 10
+      top: 10
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: existing_input
+    position:
+      left: 230
+      top: 10
+  second_cat:
+    tool_id: cat
+    position:
+      left: 450
+      top: 10
+""")
+
+        # Disconnect second_cat and extract its input
+        actions: ActionsJson = [
+            {
+                "action_type": "extract_input",
+                "input": {"label": "second_cat", "input_name": "input1"},
+                "label": "new_input",
+            }
+        ]
+        self._refactor(actions)
+
+        # Verify new input was created
+        new_input = self._latest_workflow.step_by_label("new_input")
+        existing_input = self._latest_workflow.step_by_label("existing_input")
+        assert new_input is not None
+        assert existing_input is not None
+
+        # Both inputs should be in the same column (leftmost) new input should be
+        # below the existing input to avoid overlap
+
+        # Verify they're in the same column (same left position)
+        assert new_input.position["left"] == existing_input.position["left"]
+
+        # Verify the new input is positioned below the existing input
+        # Should be at least 120px (VERTICAL_SPACING) apart
+        assert new_input.position["top"] > existing_input.position["top"]
+        assert new_input.position["top"] - existing_input.position["top"] >= 120
+
+        # Verify both inputs are to the left of tool steps
+        first_cat = self._latest_workflow.step_by_label("first_cat")
+        second_cat = self._latest_workflow.step_by_label("second_cat")
+
+        assert new_input.position["left"] < first_cat.position["left"]
+        assert new_input.position["left"] < second_cat.position["left"]
+        assert existing_input.position["left"] < first_cat.position["left"]
+        assert existing_input.position["left"] < second_cat.position["left"]
+
     def test_basic_refactoring_types_dry_run(self):
         self.workflow_populator.upload_yaml_workflow(REFACTORING_SIMPLE_TEST)
 

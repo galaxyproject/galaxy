@@ -37,6 +37,7 @@ const props = withDefaults(
         defaultActivities?: Activity[];
         activityBarId?: string;
         specialActivities?: Activity[];
+        exitActivity?: Activity;
         showAdmin?: boolean;
         optionsTitle?: string;
         optionsTooltip?: string;
@@ -50,6 +51,7 @@ const props = withDefaults(
         defaultActivities: undefined,
         activityBarId: "default",
         specialActivities: () => [],
+        exitActivity: undefined,
         showAdmin: true,
         optionsTitle: "More",
         optionsHeading: "Additional Activities",
@@ -293,6 +295,8 @@ defineExpose({
                                 v-else
                                 :id="`${activity.id}`"
                                 :key="activity.id"
+                                :indicator="activity.indicator"
+                                :indicator-variant="activity.indicatorVariant"
                                 :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
                                 :is-active="isActiveRoute(activity.to)"
@@ -306,6 +310,36 @@ defineExpose({
                 </draggable>
             </b-nav>
             <b-nav v-if="!isAnonymous" vertical class="activity-footer flex-nowrap p-1">
+                <template v-for="activity in props.specialActivities">
+                    <ActivityItem
+                        v-if="activity.panel"
+                        :id="`${activity.id}`"
+                        :key="activity.id"
+                        :activity-bar-id="props.activityBarId"
+                        :icon="activity.icon"
+                        :indicator="activity.indicator"
+                        :indicator-variant="activity.indicatorVariant"
+                        :is-active="panelActivityIsActive(activity)"
+                        :title="activity.title"
+                        :tooltip="activity.tooltip"
+                        :to="activity.to || ''"
+                        :variant="activity.variant"
+                        @click="toggleSidebar(activity.id, activity.to)" />
+                    <ActivityItem
+                        v-else
+                        :id="`${activity.id}`"
+                        :key="activity.id"
+                        :activity-bar-id="props.activityBarId"
+                        :icon="activity.icon"
+                        :indicator="activity.indicator"
+                        :indicator-variant="activity.indicatorVariant"
+                        :is-active="isActiveRoute(activity.to)"
+                        :title="activity.title"
+                        :tooltip="activity.tooltip"
+                        :to="activity.to ?? undefined"
+                        :variant="activity.variant"
+                        @click="onActivityClicked(activity)" />
+                </template>
                 <NotificationItem
                     v-if="isConfigLoaded && config.enable_notification_system"
                     id="notifications"
@@ -332,32 +366,17 @@ defineExpose({
                     tooltip="Administer this Galaxy"
                     variant="danger"
                     @click="toggleSidebar('admin')" />
-                <template v-for="activity in props.specialActivities">
-                    <ActivityItem
-                        v-if="activity.panel"
-                        :id="`${activity.id}`"
-                        :key="activity.id"
-                        :activity-bar-id="props.activityBarId"
-                        :icon="activity.icon"
-                        :is-active="panelActivityIsActive(activity)"
-                        :title="activity.title"
-                        :tooltip="activity.tooltip"
-                        :to="activity.to || ''"
-                        :variant="activity.variant"
-                        @click="toggleSidebar(activity.id, activity.to)" />
-                    <ActivityItem
-                        v-else
-                        :id="`${activity.id}`"
-                        :key="activity.id"
-                        :activity-bar-id="props.activityBarId"
-                        :icon="activity.icon"
-                        :is-active="isActiveRoute(activity.to)"
-                        :title="activity.title"
-                        :tooltip="activity.tooltip"
-                        :to="activity.to ?? undefined"
-                        :variant="activity.variant"
-                        @click="onActivityClicked(activity)" />
-                </template>
+                <ActivityItem
+                    v-if="props.exitActivity"
+                    :id="`${props.exitActivity.id}`"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="props.exitActivity.icon"
+                    :indicator="props.exitActivity.indicator"
+                    :indicator-variant="props.exitActivity.indicatorVariant"
+                    :title="props.exitActivity.title"
+                    :tooltip="props.exitActivity.tooltip"
+                    :variant="props.exitActivity.variant"
+                    @click="onActivityClicked(props.exitActivity)" />
             </b-nav>
         </div>
         <FlexPanel

@@ -2377,6 +2377,7 @@ class BaseWorkflowPopulator(BasePopulator):
         style: Optional[str] = None,
         history_id: Optional[str] = None,
         instance: Optional[bool] = None,
+        version: Optional[int] = None,
     ) -> dict:
         params: dict[str, Any] = {}
         if style is not None:
@@ -2385,6 +2386,8 @@ class BaseWorkflowPopulator(BasePopulator):
             params["history_id"] = history_id
         if instance is not None:
             params["instance"] = instance
+        if version is not None:
+            params["version"] = version
         response = self._get(f"workflows/{workflow_id}/download", data=params)
         api_asserts.assert_status_code_is(response, 200)
         if style != "format2":
@@ -2409,7 +2412,12 @@ class BaseWorkflowPopulator(BasePopulator):
         return put_response
 
     def refactor_workflow(
-        self, workflow_id: str, actions: list, dry_run: Optional[bool] = None, style: Optional[str] = None
+        self,
+        workflow_id: str,
+        actions: list,
+        dry_run: Optional[bool] = None,
+        style: Optional[str] = None,
+        version: Optional[int] = None,
     ) -> Response:
         data: dict[str, Any] = dict(
             actions=actions,
@@ -2418,6 +2426,8 @@ class BaseWorkflowPopulator(BasePopulator):
             data["style"] = style
         if dry_run is not None:
             data["dry_run"] = dry_run
+        if version is not None:
+            data["version"] = version
         raw_url = f"workflows/{workflow_id}/refactor"
         put_response = self._put(raw_url, data, json=True)
         return put_response

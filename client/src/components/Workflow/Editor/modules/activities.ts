@@ -2,6 +2,7 @@ import { faSave as farSave } from "@fortawesome/free-regular-svg-icons";
 import {
     faDownload,
     faEdit,
+    faExclamation,
     faHistory,
     faMagic,
     faPencilAlt,
@@ -14,11 +15,13 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
-import { faDiagramNext, faSearch } from "font-awesome-6";
+import { faDiagramNext, faSearch, type IconDefinition } from "font-awesome-6";
 import { computed, type Ref } from "vue";
 
 import { useActivityStore } from "@/stores/activityStore";
 import type { Activity } from "@/stores/activityStoreTypes";
+
+import type { LintData } from "./useLinting";
 
 export const workflowEditorActivities = [
     {
@@ -77,16 +80,7 @@ export const workflowEditorActivities = [
         visible: true,
         optional: true,
     },
-    {
-        title: "Best Practices",
-        id: "workflow-best-practices",
-        description: "Show and test for the best practices in this workflow.",
-        tooltip: "Test workflow for best practices",
-        icon: faMagic,
-        panel: true,
-        visible: true,
-        optional: true,
-    },
+
     {
         title: "Changes",
         id: "workflow-undo-redo",
@@ -198,6 +192,7 @@ export function useActivityLogic(options: Ref<ActivityLogicOptions>) {
 
 interface SpecialActivityOptions {
     hasInvalidConnections: boolean;
+    lintData: LintData;
 }
 
 export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions>) {
@@ -209,20 +204,75 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
         }
     });
 
+    /** Indicator for best practices activity
+     * @returns
+     * - `number`: count of critical issues remaining
+     * - `faInfoCircle`: non-critical issues remaining
+     * - `undefined`: no issues remaining
+     */
+    const bestPracticesIndicator = computed<number | IconDefinition | undefined>(() => {
+        const { resolvedPriorityIssues, totalPriorityIssues, resolvedAttributeIssues, totalAttributeIssues } =
+            options.value.lintData;
+        if (totalPriorityIssues.value > resolvedPriorityIssues.value) {
+            return totalPriorityIssues.value - resolvedPriorityIssues.value;
+        } else if (totalAttributeIssues.value > resolvedAttributeIssues.value) {
+            return faExclamation;
+        }
+        return undefined;
+    });
+
+    /** Helper function to create issue description with proper pluralization */
+    function getIssueDescription(count: number, type: "critical" | "minor"): string {
+        const issueWord = count === 1 ? "issue" : "issues";
+        const remainWord = count === 1 ? "remains" : "remain";
+        return `${count} ${type} best practice ${issueWord} ${remainWord}`;
+    }
+
+    /** Tooltip for best practices activity */
+    const bestPracticeHover = computed(() => {
+        const { resolvedPriorityIssues, totalPriorityIssues, resolvedAttributeIssues, totalAttributeIssues } =
+            options.value.lintData;
+
+        const criticalCount = totalPriorityIssues.value - resolvedPriorityIssues.value;
+        const nonCriticalCount = totalAttributeIssues.value - resolvedAttributeIssues.value;
+
+        if (criticalCount > 0) {
+            return getIssueDescription(criticalCount, "critical");
+        } else if (nonCriticalCount > 0) {
+            return getIssueDescription(nonCriticalCount, "minor");
+        } else {
+            return "Test workflow for best practices";
+        }
+    });
+
     const specialWorkflowActivities = computed<Activity[]>(() => [
         {
-            description: "",
-            icon: faSave,
-            id: "save-and-exit",
-            title: "Save + Exit",
-            tooltip: saveHover.value,
-            visible: false,
-            click: true,
-            mutable: false,
+            title: "Best Practices",
+            id: "workflow-best-practices",
+            description: "Show and test for the best practices in this workflow.",
+            tooltip: bestPracticeHover.value,
+            indicator: bestPracticesIndicator.value,
+            indicatorVariant: typeof bestPracticesIndicator.value === "number" ? "danger" : "primary",
+            icon: faMagic,
+            panel: true,
+            visible: true,
+            optional: true,
         },
     ]);
 
+    const exitWorkflowActivity = computed<Activity>(() => ({
+        description: "",
+        icon: faSave,
+        id: "save-and-exit",
+        title: "Save + Exit",
+        tooltip: saveHover.value,
+        visible: false,
+        click: true,
+        mutable: false,
+    }));
+
     return {
         specialWorkflowActivities,
+        exitWorkflowActivity,
     };
 }
