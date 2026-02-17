@@ -6,6 +6,7 @@ import { useRouter } from "vue-router/composables";
 
 import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -69,11 +70,7 @@ async function submit(ev: SubmitEvent) {
 
         router.push(path);
     } catch (error) {
-        let message = null;
-        if (axios.isAxiosError(error)) {
-            message = error.response?.data?.err_msg;
-        }
-        errorMessage.value = message || "Import failed for an unknown reason.";
+        errorMessage.value = errorMessageAsString(error);
     } finally {
         loading.value = false;
     }
