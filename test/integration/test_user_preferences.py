@@ -1,3 +1,4 @@
+import json
 from typing import (
     Any,
     cast,
@@ -32,3 +33,17 @@ class TestUserPreferences(integration_util.IntegrationTestCase):
         # value should be what we saved and should be part of the user response
         assert db_user.preferences["theme"] == "test_theme"
         assert response["preferences"]["theme"] == "test_theme"
+
+    def test_set_information_lowercases_email(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        url = self._api_url(f"users/{user['id']}/information/inputs", params=dict(key=self.master_api_key))
+        app = cast(Any, self._test_driver.app if self._test_driver else None)
+
+        new_email = "New.Email+UpperCase@Test.Example"
+        expected_email = new_email.lower()
+        response = put(url, data=json.dumps({"email": new_email}))
+        assert response.status_code == 200
+
+        db_user = get_user_by_email(app.model.session, expected_email)
+        assert db_user is not None
+        assert db_user.email == expected_email

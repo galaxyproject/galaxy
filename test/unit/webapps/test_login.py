@@ -35,7 +35,7 @@ class TestLoginController(TestCase):
         self.app.security.encode_id(user2.id)
         assert isinstance(user2, model.User)
         assert user2.id is not None
-        assert user2.email == user2_data["email"]
+        assert user2.email == user2_data["email"].lower()
         assert check_password(default_password, user2.password)
 
         controller = User(self.app)

@@ -619,6 +619,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         # now.
         if self.app.config.use_remote_user:
             remote_user_email = self.environ.get(self.app.config.remote_user_header, None)
+            remote_user_email = remote_user_email.lower() if remote_user_email else None
             if galaxy_session:
                 if remote_user_email and galaxy_session.user is None:
                     # No user, associate

@@ -104,6 +104,21 @@ class TestUserManager(BaseTestCase):
         assert message is None
         assert user2c.username == "user2c"
 
+    def test_register_lowercases_email(self):
+        user, message = self.user_manager.register(
+            self.trans,
+            email="User2D@User2.User2",
+            username="user2d",
+            password=default_password,
+            confirm=default_password,
+        )
+        assert message is None
+        assert user.email == "user2d@user2.user2"
+
+        persisted_user = self.user_manager.by_id(user.id)
+        assert persisted_user is not None
+        assert persisted_user.email == "user2d@user2.user2"
+
     def test_email_queries(self):
         user2 = self.user_manager.create(**user2_data)
 

@@ -133,6 +133,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Create a new user.
         """
+        email = email.lower()
         self._error_on_duplicate_email(email)
         user = self.model_class(email=email, username=username)
         if password:
@@ -163,6 +164,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         message = validate_email(trans, new_email, user)
         if message:
             raise exceptions.RequestParameterInvalidException(message)
+        new_email = new_email.lower()
         if user.email == new_email:
             return
         private_role = trans.app.security_agent.get_private_user_role(user)
@@ -670,7 +672,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                     self.app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
         elif user is None:
             random.seed()
-            user = self.app.model.User(email=remote_user_email)
+            user = self.app.model.User(email=remote_user_email.lower())
             user.set_random_password(length=12)
             user.external = True
             user.username = username_from_email(self.session(), remote_user_email, self.app.model.User)
