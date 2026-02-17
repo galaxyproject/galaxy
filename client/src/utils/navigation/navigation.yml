@@ -1371,7 +1371,7 @@ beta_upload:
     method_card: '[data-method-id="${method_id}"]'
     paste_textarea: '#paste-links-textarea'
     add_urls_button: '[data-test-id="add-urls"]'
-    collection_section: '.collection-section'
+    collection_section: '[data-test-id="collection-toggle"] label'
     collection_name_input: '#collection-name-input'
     collection_type_select: '#collection-type-select'
     start_button: '[data-test-id="start-upload"]'

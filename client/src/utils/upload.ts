@@ -46,14 +46,18 @@ import {
     type PastedDataElement,
     type UrlDataElement,
 } from "@/api/tools";
+import {
+    COMMON_FILTERS,
+    DEFAULT_FILTER,
+    guessInitialFilterType,
+    guessNameForPair,
+} from "@/components/Collections/pairing";
 import type { UploadRowModel } from "@/components/Upload/model";
 import type { SupportedCollectionType } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { isUrl } from "@/utils/url";
-
-import { COMMON_FILTERS, DEFAULT_FILTER, guessInitialFilterType, guessNameForPair } from "@/components/Collections/pairing";
 
 import { createTusUpload, type FileStream, type NamedBlob, type UploadableFile } from "./tusUpload";
 
@@ -714,8 +718,7 @@ function buildPairedElements(items: ApiUploadItem[], dataElements: ApiDataElemen
         const item2 = items[i + 1]!;
 
         const basePairName =
-            guessNameForPair(item1, item2, forwardFilter, reverseFilter, true) ||
-            `pair_${Math.floor(i / 2) + 1}`;
+            guessNameForPair(item1, item2, forwardFilter, reverseFilter, true) || `pair_${Math.floor(i / 2) + 1}`;
         let pairName = basePairName;
         let counter = 1;
         while (usedNames.has(pairName)) {

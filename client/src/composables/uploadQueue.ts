@@ -11,7 +11,12 @@ import type { CollectionElementIdentifiers } from "@/api";
 import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
 import { copyDataset } from "@/api/datasets";
 import type { FetchDataResponse } from "@/api/tools";
-import { COMMON_FILTERS, DEFAULT_FILTER, guessInitialFilterType, guessNameForPair } from "@/components/Collections/pairing";
+import {
+    COMMON_FILTERS,
+    DEFAULT_FILTER,
+    guessInitialFilterType,
+    guessNameForPair,
+} from "@/components/Collections/pairing";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import type { CollectionCreationInput, SupportedCollectionType } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
@@ -92,8 +97,7 @@ function buildCollectionElements(
             }
 
             const basePairName =
-                guessNameForPair(item1, item2, forwardFilter, reverseFilter, true) ||
-                `pair_${Math.floor(i / 2) + 1}`;
+                guessNameForPair(item1, item2, forwardFilter, reverseFilter, true) || `pair_${Math.floor(i / 2) + 1}`;
             let pairName = basePairName;
 
             // Ensure unique pair names by adding suffix if needed

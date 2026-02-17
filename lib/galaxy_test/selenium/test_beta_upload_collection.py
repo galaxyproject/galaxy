@@ -26,6 +26,12 @@ class TestBetaUploadCollection(SeleniumTestCase, UsesHistoryItemAssertions):
         which navigates to the upload method view via router.push().
         """
         self.home()
+        # Wait for the activity bar to be fully synced before interacting.
+        # The tools activity (#activity-tools) is rendered by the v-for loop
+        # over synced activities, so its presence confirms sync() has completed.
+        # Without this, clicking #activity-settings (hardcoded in the footer)
+        # can race with sync() which resets toggledSideBar.
+        self.components.tools.activity.wait_for_visible()
         # Open activity settings panel
         self.components.preferences.activity.wait_for_and_click()
         # Click the Beta Upload activity in settings to open its sidebar panel
