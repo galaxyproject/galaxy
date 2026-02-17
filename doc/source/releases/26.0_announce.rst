@@ -1,6 +1,71 @@
 
-:orphan:
+===========================================================
+26.0 Galaxy Release (February 2026)
+===========================================================
 
+.. include:: _header.rst
+
+Please see the `26.0 user release notes <26.0_announce_user.html>`__ for a summary of new user features.
+The `GitHub Release Notes <https://github.com/galaxyproject/galaxy/releases/tag/v26.0.0>`__ provide a comprehensive overview of all changes.
+
+Get Galaxy
 ===========================================================
-26.0 Galaxy Release
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_26.0 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_26.0 && git pull --ff-only origin release_26.0
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+
+Admin Notes
 ===========================================================
+Add content or drop section.
+
+Configuration Changes
+===========================================================
+Run ``python scripts/release-diff.py release_<previous_version>`` in the Galaxy root directory
+to get a diff of configuration changes between releases.
+Add any more content or drop section if it's empty.
+
+Deprecation Notices
+===========================================================
+Add content or drop section.
+
+Developer Notes
+===========================================================
+Add content or drop section.
+
+Release Team
+===========================================================
+
+Release manager:  `Aysam Guerler <https://github.com/guerler>`__, `Ahmed Awan <https://github.com/ahmedhamidawan>`__
+
+Release testing:
+
+* `Tyler Collins <https://github.com/tcollins2011>`__
+* `Arash Kadkhodaei <https://github.com/arash77>`__
+* `John Chilton <https://github.com/jmchilton>`__
+* `Keith Suderman <https://github.com/ksuderman>`__
+* `Aysam Guerler <https://github.com/guerler>`__
+* `Alireza Heidari <https://github.com/itisAliRH>`__
+* `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
+
+Communications:
+
+* `Natalie Whitaker-Allen <https://github.com/natalie-wa>`__
+* `Scott Cain <https://github.com/scottcain>`__
+
+A special thank you goes to everyone who helped test the new release after its deployment on usegalaxy.org.
+
+----
+
+.. include:: _thanks.rst
