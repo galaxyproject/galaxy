@@ -10,6 +10,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    queryTrsUrl: "",
     hideSubmitButton: false,
 });
 

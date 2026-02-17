@@ -27,6 +27,12 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     trsMethod: "search",
+    isRun: false,
+    queryTrsId: '',
+    queryTrsUrl: '',
+    queryTrsServer: '',
+    queryTrsVersionId: '',
+    trsServers: () => [],
 });
 
 const emit = defineEmits<{
