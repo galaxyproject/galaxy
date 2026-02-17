@@ -95,13 +95,11 @@ class TestToolOutputFromLibraryImportWithPrivateObjectStore(BaseObjectStoreInteg
             ), f"Library import should retain default store, got {copied_storage['object_store_id']}"
 
             # Make the imported dataset public — simulating a dataset from a public
-            # data library where datasets are accessible to all users. This is the
-            # crux of the bug: the input's access permissions (public) propagate to
-            # tool outputs, which then conflict with the private object store.
+            # data library where datasets are accessible to all users.
             response = self.dataset_populator.make_dataset_public_raw(history_id, copied_hda["id"])
             api_asserts.assert_status_code_is_ok(response)
 
-            # Run a tool on the library-imported dataset — this is the scenario from the bug
+            # Run a tool on the library-imported dataset
             run_response = self.dataset_populator.run_tool(
                 "cat1",
                 inputs={"input1": {"src": "hda", "id": copied_hda["id"]}},
@@ -110,9 +108,6 @@ class TestToolOutputFromLibraryImportWithPrivateObjectStore(BaseObjectStoreInteg
             self.dataset_populator.wait_for_history(history_id)
             job = run_response["jobs"][0]
             job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
-            # This is the core assertion — the job should succeed, not fail with
-            # "Job attempted to create sharable output datasets in a storage location
-            #  with sharing disabled"
             assert job_details["state"] == "ok", (
                 f"Tool run on library-imported dataset failed with state '{job_details['state']}'. "
                 f"Expected outputs to respect history's private store preference regardless of input origin."
