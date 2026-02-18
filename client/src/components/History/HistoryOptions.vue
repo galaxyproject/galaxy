@@ -210,6 +210,7 @@ function onDelete() {
             <BDropdownItem
                 v-if="historyStore.currentHistoryId === history.id"
                 :disabled="isAnonymous"
+                data-description="extract workflow"
                 :title="userTitle('Convert History to Workflow')"
                 @click="iframeRedirect(`/workflow/build_from_current_history?history_id=${history.id}`)">
                 <FontAwesomeIcon fixed-width :icon="faFileExport" />

@@ -337,6 +337,7 @@ history_panel:
       type: sizzle
       selector: '.history-options-button-menu > a:contains("${option_label}")'
     options_show_export_history_to_file: 'a[data-description="export to file"]'
+    options_extract_workflow: '[data-description="extract workflow"]'
 
     collection_menu_button: '.collection-menu'
     collection_menu_edit_attributes: '.edit-btn'
@@ -1033,6 +1034,26 @@ workflow_show:
     _: '.published-workflow'
     title: '[data-description="workflow name"]'
     import_link: '[data-description="workflow import"]'
+
+workflow_extract:
+  selectors:
+    _: 'body.full-content'
+    workflow_name_input: 'input[name="workflow_name"]'
+    create_button: 'input[type="submit"].btn-primary'
+    job_checkbox: 'input[name="job_ids"][value="${job_id}"]'
+    job_checkbox_any: 'input[name="job_ids"]'
+    dataset_checkbox: 'input[name="dataset_ids"][value="${hid}"]'
+    dataset_collection_checkbox: 'input[name="dataset_collection_ids"][value="${hid}"]'
+    as_input_checkbox: '#as-input-${encoded_id}'
+    as_named_input: '#as-named-input-${encoded_id}'
+    tool_form: '.toolForm'
+    tool_form_disabled: '.toolFormDisabled'
+    tool_form_title: '.toolFormTitle'
+    warning_message: '.warningmark'
+    info_message: '.alert-info'
+    success_message: '.alert-success'
+    history_item: '#dataset-${encoded_id}'
+    history_item_title: '#dataset-${encoded_id} .title'
 
 invocations:
   selectors:
