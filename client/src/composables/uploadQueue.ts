@@ -11,11 +11,17 @@ import type { CollectionElementIdentifiers } from "@/api";
 import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
 import { copyDataset } from "@/api/datasets";
 import type { FetchDataResponse } from "@/api/tools";
+import {
+    COMMON_FILTERS,
+    DEFAULT_FILTER,
+    guessInitialFilterType,
+    guessNameForPair,
+} from "@/components/Collections/pairing";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import type { CollectionCreationInput, SupportedCollectionType } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { toApiUploadItem, uploadDatasets } from "@/utils/upload";
+import { toApiUploadItem, uploadCollectionDatasets, uploadDatasets } from "@/utils/upload";
 
 /**
  * Collection configuration for batch uploads that will be combined
@@ -46,54 +52,9 @@ interface CollectionBatch {
 }
 
 /**
- * Extracts common prefix from pair of file names for smart pair naming.
- * Removes common suffixes like _R1/_R2, _1/_2, _F/_R, etc.
- *
- * @param name1 - First file name
- * @param name2 - Second file name
- * @returns Common prefix or empty string if no clear pattern
- */
-function extractPairName(name1: string, name2: string): string {
-    // Remove file extensions
-    const base1 = name1.replace(/\.[^.]+$/, "");
-    const base2 = name2.replace(/\.[^.]+$/, "");
-
-    // Common paired-end patterns to detect and remove
-    const patterns = [
-        { regex: /[._-]?R?[12]$/, replace: "" }, // _R1, _R2, _1, _2, .R1, .R2
-        { regex: /[._-]?[FR]$/, replace: "" }, // _F, _R, .F, .R
-        { regex: /[._-]?read[12]$/i, replace: "" }, // _read1, _read2
-        { regex: /[._-]?fwd$|[._-]?rev$/i, replace: "" }, // _fwd, _rev
-        { regex: /[._-]?forward$|[._-]?reverse$/i, replace: "" }, // _forward, _reverse
-    ];
-
-    // Try each pattern
-    for (const pattern of patterns) {
-        const test1 = base1.replace(pattern.regex, pattern.replace);
-        const test2 = base2.replace(pattern.regex, pattern.replace);
-
-        if (test1 === test2 && test1.length > 0) {
-            return test1;
-        }
-    }
-
-    // Fallback: find longest common prefix
-    let i = 0;
-    while (i < Math.min(base1.length, base2.length) && base1[i] === base2[i]) {
-        i++;
-    }
-
-    if (i > 0) {
-        // Trim trailing separators
-        return base1.slice(0, i).replace(/[._-]+$/, "");
-    }
-
-    // Last resort: use first file's base name
-    return base1;
-}
-
-/**
  * Builds collection element identifiers based on collection type.
+ * Uses the shared pairing abstractions from @/components/Collections/pairing for
+ * pair name extraction (synchronized with the backend via auto_pairing_spec.yml).
  *
  * @param items - Upload items with dataset IDs
  * @param datasetIds - Array of created dataset IDs (in upload order)
@@ -117,6 +78,10 @@ function buildCollectionElements(
         const pairs: CollectionElementIdentifiers = [];
         const usedNames = new Set<string>();
 
+        // Use the shared filter detection to determine forward/reverse naming convention
+        const filterType = guessInitialFilterType(items) ?? DEFAULT_FILTER;
+        const [forwardFilter, reverseFilter] = COMMON_FILTERS[filterType];
+
         for (let i = 0; i < items.length; i += 2) {
             if (i + 1 >= items.length) {
                 // Odd number of files - skip last one or handle as error
@@ -131,7 +96,8 @@ function buildCollectionElements(
                 continue;
             }
 
-            const basePairName = extractPairName(item1.name, item2.name) || `pair_${Math.floor(i / 2) + 1}`;
+            const basePairName =
+                guessNameForPair(item1, item2, forwardFilter, reverseFilter, true) || `pair_${Math.floor(i / 2) + 1}`;
             let pairName = basePairName;
 
             // Ensure unique pair names by adding suffix if needed
@@ -409,6 +375,67 @@ export function useUploadQueue() {
     }
 
     /**
+     * Determines if a collection batch should use direct HDCA creation.
+     * Returns false for batches containing data-library items (which need the two-step approach
+     * since they use copyDataset instead of /api/tools/fetch).
+     */
+    function canUseDirectCollection(batch: CollectionBatch): boolean {
+        return batch.items.every((item) => item.uploadMode !== "data-library");
+    }
+
+    /**
+     * Processes an entire collection batch as a single HDCA upload.
+     * All items are uploaded together in one /api/tools/fetch request with
+     * destination { type: "hdca" }, creating the collection atomically.
+     */
+    async function processCollectionBatch(batch: CollectionBatch): Promise<void> {
+        const { batchId, items, collectionConfig } = batch;
+
+        // Mark all items as uploading
+        batch.ids.forEach((id) => uploadState.setStatus(id, "uploading"));
+        uploadState.updateBatchStatus(batchId, "uploading");
+
+        try {
+            // Validate all items first
+            for (const item of items) {
+                const validationError = validateUploadItem(item);
+                if (validationError) {
+                    throw new Error(validationError);
+                }
+            }
+
+            // Convert all UI items to API items
+            const apiItems = items.map((item) => toApiUploadItem(item));
+
+            await uploadCollectionDatasets(
+                apiItems,
+                {
+                    collectionName: collectionConfig.name,
+                    collectionType: collectionConfig.type,
+                },
+                {
+                    progress: (percentage) => {
+                        batch.ids.forEach((id) => uploadState.updateProgress(id, percentage));
+                    },
+                    success: (_response: FetchDataResponse) => {
+                        batch.ids.forEach((id) => uploadState.updateProgress(id, 100));
+                        uploadState.updateBatchStatus(batchId, "completed");
+                    },
+                    error: (err) => {
+                        const errorMsg = errorMessageAsString(err);
+                        batch.ids.forEach((id) => uploadState.setError(id, errorMsg));
+                        uploadState.setBatchError(batchId, errorMsg);
+                    },
+                },
+            );
+        } catch (err) {
+            const errorMsg = errorMessageAsString(err);
+            batch.ids.forEach((id) => uploadState.setError(id, errorMsg));
+            uploadState.setBatchError(batchId, errorMsg);
+        }
+    }
+
+    /**
      * Processes a library dataset upload by importing it to the target history.
      *
      * @param id - Upload item ID
@@ -482,20 +509,48 @@ export function useUploadQueue() {
     /**
      * Processes the next upload in the queue.
      * Orchestrates upload execution by delegating to specialized handlers.
+     *
+     * When the next item belongs to a collection batch that can use direct
+     * HDCA creation, all items in the batch are processed together in a
+     * single /api/tools/fetch request instead of one-by-one.
      */
     async function processNext(): Promise<void> {
         if (processing || queue.length === 0) {
             return;
         }
 
-        const id = queue.shift()!;
+        const id = queue[0]!; // Peek, don't remove yet
         const item = findUploadItem(id);
 
         if (!item) {
+            queue.shift();
             // Item was removed from state (e.g., user cleared it), skip to next
             return processNext();
         }
 
+        // Check if this item belongs to a collection batch that can use direct creation
+        const batch = batches.find((b) => b.ids.includes(id));
+        if (batch && canUseDirectCollection(batch)) {
+            // Remove all batch items from queue at once
+            for (const batchItemId of batch.ids) {
+                const idx = queue.indexOf(batchItemId);
+                if (idx !== -1) {
+                    queue.splice(idx, 1);
+                }
+            }
+
+            processing = true;
+            try {
+                await processCollectionBatch(batch);
+            } finally {
+                processing = false;
+                processNext();
+            }
+            return;
+        }
+
+        // Single-item processing (non-collection or data-library fallback)
+        queue.shift();
         processing = true;
         uploadState.setStatus(id, "uploading");
 
@@ -505,9 +560,6 @@ export function useUploadQueue() {
             if (validationError) {
                 throw new Error(validationError);
             }
-
-            // Find the batch this upload belongs to
-            const batch = batches.find((b) => b.ids.includes(id));
 
             // Delegate to appropriate upload handler based on upload mode
             if (item.uploadMode === "data-library") {
@@ -532,8 +584,12 @@ export function useUploadQueue() {
      * @returns Array of upload IDs for tracking
      */
     function enqueue(items: NewUploadItem[], collectionConfig?: CollectionConfig): string[] {
+        // Determine if this batch can use direct HDCA creation
+        const isDirectCreation =
+            collectionConfig !== undefined && items.every((item) => item.uploadMode !== "data-library");
+
         // Create batch first if collection config provided
-        const batchId = collectionConfig ? uploadState.addBatch(collectionConfig, []) : undefined;
+        const batchId = collectionConfig ? uploadState.addBatch(collectionConfig, [], isDirectCreation) : undefined;
 
         // Add upload items with batch ID
         const ids = items.map((item) => uploadState.addUploadItem(item, batchId));
@@ -577,6 +633,9 @@ export function useUploadQueue() {
     /**
      * Recovers incomplete collection creation on initialization.
      * Checks for batches where uploads completed but collection wasn't created.
+     *
+     * For direct-creation batches, there's no separate collection creation step
+     * to recover — if the upload was interrupted, the user must re-upload.
      */
     function recoverIncompleteBatches(): void {
         uploadState.activeBatches.value.forEach((batch) => {
@@ -585,6 +644,12 @@ export function useUploadQueue() {
                 return;
             }
 
+            // Direct-creation batches don't have a separate collection creation step
+            if (batch.directCreation) {
+                return;
+            }
+
+            // Two-step batch recovery (data-library fallback path)
             // Check if all uploads in batch are completed
             const allCompleted = batch.uploadIds.every((uploadId) => {
                 const upload = findUploadItem(uploadId);

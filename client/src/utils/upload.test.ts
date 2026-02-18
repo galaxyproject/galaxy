@@ -2,11 +2,12 @@ import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, test, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import type { CompositeDataElement, HdasUploadTarget } from "@/api/tools";
+import type { CompositeDataElement, HdasUploadTarget, HdcaUploadTarget, NestedElement } from "@/api/tools";
 
 import { createTusUpload } from "./tusUpload";
 import {
     type ApiUploadItem,
+    buildCollectionUploadPayload,
     buildLegacyPayload,
     buildUploadPayload,
     cleanUrlFilename,
@@ -539,6 +540,227 @@ describe("buildUploadPayload", () => {
 });
 
 // ============================================================================
+// Collection Upload Payload Building Tests
+// ============================================================================
+
+describe("buildCollectionUploadPayload", () => {
+    test("throws on empty items", () => {
+        expect(() => buildCollectionUploadPayload([], { collectionName: "test", collectionType: "list" })).toThrow(
+            "No upload items provided.",
+        );
+    });
+
+    test("throws on mixed history IDs", () => {
+        const items: ApiUploadItem[] = [
+            createUrlUploadItem("http://example.com/1.txt", "history1"),
+            createUrlUploadItem("http://example.com/2.txt", "history2"),
+        ];
+
+        expect(() => buildCollectionUploadPayload(items, { collectionName: "test", collectionType: "list" })).toThrow(
+            "All upload items must target the same history.",
+        );
+    });
+
+    test("builds list collection payload with URL items", () => {
+        const items: ApiUploadItem[] = [
+            createUrlUploadItem("http://example.com/1.txt", "historyId"),
+            createUrlUploadItem("http://example.com/2.txt", "historyId"),
+        ];
+
+        const result = buildCollectionUploadPayload(items, {
+            collectionName: "My List",
+            collectionType: "list",
+        });
+
+        expect(result.history_id).toBe("historyId");
+        expect(result.auto_decompress).toBe(true);
+        expect(result.files).toEqual([]);
+        expect(result.targets).toHaveLength(1);
+
+        const target = result.targets[0] as HdcaUploadTarget;
+        expect(target.destination).toEqual({ type: "hdca" });
+        expect(target.collection_type).toBe("list");
+        expect(target.name).toBe("My List");
+        expect(target.elements).toHaveLength(2);
+
+        const elem1 = target.elements[0] as { src: string; url: string };
+        const elem2 = target.elements[1] as { src: string; url: string };
+        expect(elem1.src).toBe("url");
+        expect(elem1.url).toBe("http://example.com/1.txt");
+        expect(elem2.src).toBe("url");
+        expect(elem2.url).toBe("http://example.com/2.txt");
+    });
+
+    test("builds list collection payload with local file items", () => {
+        const file1 = createMockFile("file1.txt");
+        const file2 = createMockFile("file2.txt");
+        const items: ApiUploadItem[] = [
+            createFileUploadItem(file1, "historyId"),
+            createFileUploadItem(file2, "historyId"),
+        ];
+
+        const result = buildCollectionUploadPayload(items, {
+            collectionName: "File List",
+            collectionType: "list",
+        });
+
+        expect(result.files).toHaveLength(2);
+        expect(result.files[0]).toBe(file1);
+        expect(result.files[1]).toBe(file2);
+
+        const target = result.targets[0] as HdcaUploadTarget;
+        expect(target.destination).toEqual({ type: "hdca" });
+        expect(target.collection_type).toBe("list");
+        expect(target.elements).toHaveLength(2);
+
+        const elem1 = target.elements[0] as { src: string };
+        const elem2 = target.elements[1] as { src: string };
+        expect(elem1.src).toBe("files");
+        expect(elem2.src).toBe("files");
+    });
+
+    test("builds list:paired collection payload with nested elements", () => {
+        const items: ApiUploadItem[] = [
+            createUrlUploadItem("http://example.com/sample_R1.fastq", "historyId", { name: "sample_R1.fastq" }),
+            createUrlUploadItem("http://example.com/sample_R2.fastq", "historyId", { name: "sample_R2.fastq" }),
+        ];
+
+        const result = buildCollectionUploadPayload(items, {
+            collectionName: "Paired List",
+            collectionType: "list:paired",
+        });
+
+        const target = result.targets[0] as HdcaUploadTarget;
+        expect(target.destination).toEqual({ type: "hdca" });
+        expect(target.collection_type).toBe("list:paired");
+        expect(target.name).toBe("Paired List");
+        expect(target.elements).toHaveLength(1); // 1 pair
+
+        const pair = target.elements[0] as NestedElement;
+        expect(pair.name).toBe("sample");
+        expect(pair.elements).toHaveLength(2);
+
+        const fwd = pair.elements[0] as { name: string; src: string; url: string };
+        const rev = pair.elements[1] as { name: string; src: string; url: string };
+        expect(fwd.name).toBe("forward");
+        expect(fwd.src).toBe("url");
+        expect(rev.name).toBe("reverse");
+        expect(rev.src).toBe("url");
+    });
+
+    test("builds list:paired with multiple pairs", () => {
+        const items: ApiUploadItem[] = [
+            createUrlUploadItem("http://example.com/s1_R1.fastq", "historyId", { name: "s1_R1.fastq" }),
+            createUrlUploadItem("http://example.com/s1_R2.fastq", "historyId", { name: "s1_R2.fastq" }),
+            createUrlUploadItem("http://example.com/s2_R1.fastq", "historyId", { name: "s2_R1.fastq" }),
+            createUrlUploadItem("http://example.com/s2_R2.fastq", "historyId", { name: "s2_R2.fastq" }),
+        ];
+
+        const result = buildCollectionUploadPayload(items, {
+            collectionName: "Two Pairs",
+            collectionType: "list:paired",
+        });
+
+        const target = result.targets[0] as HdcaUploadTarget;
+        expect(target.elements).toHaveLength(2); // 2 pairs
+
+        const pair1 = target.elements[0] as NestedElement;
+        const pair2 = target.elements[1] as NestedElement;
+        expect(pair1.name).toBe("s1");
+        expect(pair2.name).toBe("s2");
+    });
+
+    test("files array order matches depth-first element traversal for list:paired", () => {
+        const file1 = createMockFile("s1_R1.fastq");
+        const file2 = createMockFile("s1_R2.fastq");
+        const file3 = createMockFile("s2_R1.fastq");
+        const file4 = createMockFile("s2_R2.fastq");
+
+        const items: ApiUploadItem[] = [
+            createFileUploadItem(file1, "historyId", { name: "s1_R1.fastq" }),
+            createFileUploadItem(file2, "historyId", { name: "s1_R2.fastq" }),
+            createFileUploadItem(file3, "historyId", { name: "s2_R1.fastq" }),
+            createFileUploadItem(file4, "historyId", { name: "s2_R2.fastq" }),
+        ];
+
+        const result = buildCollectionUploadPayload(items, {
+            collectionName: "Paired Files",
+            collectionType: "list:paired",
+        });
+
+        // Files must be in order: pair1-fwd, pair1-rev, pair2-fwd, pair2-rev
+        // This matches the backend's depth-first replace_file_srcs iteration
+        expect(result.files).toHaveLength(4);
+        expect(result.files[0]).toBe(file1);
+        expect(result.files[1]).toBe(file2);
+        expect(result.files[2]).toBe(file3);
+        expect(result.files[3]).toBe(file4);
+    });
+
+    test("handles mixed element types (files + URLs)", () => {
+        const file1 = createMockFile("local.txt");
+        const items: ApiUploadItem[] = [
+            createFileUploadItem(file1, "historyId"),
+            createUrlUploadItem("http://example.com/remote.txt", "historyId"),
+        ];
+
+        const result = buildCollectionUploadPayload(items, {
+            collectionName: "Mixed List",
+            collectionType: "list",
+        });
+
+        expect(result.files).toHaveLength(1);
+        expect(result.files[0]).toBe(file1);
+
+        const target = result.targets[0] as HdcaUploadTarget;
+        expect(target.elements).toHaveLength(2);
+
+        const elem1 = target.elements[0] as { src: string };
+        const elem2 = target.elements[1] as { src: string };
+        expect(elem1.src).toBe("files");
+        expect(elem2.src).toBe("url");
+    });
+
+    test("handles pasted content in collection", () => {
+        const items: ApiUploadItem[] = [
+            createPastedUploadItem("content 1", "historyId", { name: "paste1.txt" }),
+            createPastedUploadItem("content 2", "historyId", { name: "paste2.txt" }),
+        ];
+
+        const result = buildCollectionUploadPayload(items, {
+            collectionName: "Pasted List",
+            collectionType: "list",
+        });
+
+        expect(result.files).toEqual([]);
+
+        const target = result.targets[0] as HdcaUploadTarget;
+        expect(target.elements).toHaveLength(2);
+
+        const elem1 = target.elements[0] as { src: string; paste_content: string };
+        expect(elem1.src).toBe("pasted");
+        expect(elem1.paste_content).toBe("content 1");
+    });
+
+    test("validates empty file data", () => {
+        const emptyFile = new File([], "empty.txt");
+        const items: ApiUploadItem[] = [createFileUploadItem(emptyFile, "historyId")];
+
+        expect(() => buildCollectionUploadPayload(items, { collectionName: "test", collectionType: "list" })).toThrow(
+            "File data is empty for upload item: empty.txt",
+        );
+    });
+
+    test("validates invalid URL", () => {
+        const items: ApiUploadItem[] = [createUrlUploadItem("not-a-url", "historyId")];
+
+        expect(() => buildCollectionUploadPayload(items, { collectionName: "test", collectionType: "list" })).toThrow(
+            "Invalid URL: not-a-url",
+        );
+    });
+});
+
+// ============================================================================
 // Upload Submission Tests
 // ============================================================================
 
@@ -904,6 +1126,124 @@ describe("upload submission", () => {
             });
 
             expect(errorCallback).toHaveBeenCalled();
+        });
+
+        it("should directly submit HDCA collection target with URLs (no TUS)", async () => {
+            const successCallback = vi.fn();
+
+            server.use(
+                http.post("/api/tools/fetch", () => {
+                    return HttpResponse.json({ jobs: [{ id: "job_hdca" }] });
+                }),
+            );
+
+            await submitUpload({
+                data: {
+                    history_id: "hist123",
+                    targets: [
+                        {
+                            destination: { type: "hdca" },
+                            collection_type: "list",
+                            name: "My Collection",
+                            auto_decompress: false,
+                            elements: [
+                                {
+                                    src: "url",
+                                    url: "https://example.com/1.txt",
+                                    name: "1.txt",
+                                    dbkey: "?",
+                                    ext: "auto",
+                                    space_to_tab: false,
+                                    to_posix_lines: false,
+                                    auto_decompress: false,
+                                    deferred: false,
+                                },
+                                {
+                                    src: "url",
+                                    url: "https://example.com/2.txt",
+                                    name: "2.txt",
+                                    dbkey: "?",
+                                    ext: "auto",
+                                    space_to_tab: false,
+                                    to_posix_lines: false,
+                                    auto_decompress: false,
+                                    deferred: false,
+                                },
+                            ],
+                        },
+                    ],
+                    auto_decompress: true,
+                    files: [],
+                },
+                success: successCallback,
+            });
+
+            expect(createTusUpload).not.toHaveBeenCalled();
+            expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_hdca" }] });
+        });
+
+        it("should upload HDCA collection with local files via TUS", async () => {
+            const file1 = new File(["content1"], "file1.txt");
+            const file2 = new File(["content2"], "file2.txt");
+            const successCallback = vi.fn();
+
+            vi.mocked(createTusUpload)
+                .mockResolvedValueOnce({
+                    sessionId: "session1",
+                    fileName: "file1.txt",
+                })
+                .mockResolvedValueOnce({
+                    sessionId: "session2",
+                    fileName: "file2.txt",
+                });
+
+            server.use(
+                http.post("/api/tools/fetch", () => {
+                    return HttpResponse.json({ jobs: [{ id: "job_hdca_files" }] });
+                }),
+            );
+
+            await submitUpload({
+                data: {
+                    history_id: "hist123",
+                    targets: [
+                        {
+                            destination: { type: "hdca" },
+                            collection_type: "list",
+                            name: "File Collection",
+                            auto_decompress: false,
+                            elements: [
+                                {
+                                    src: "files",
+                                    name: "file1.txt",
+                                    dbkey: "?",
+                                    ext: "auto",
+                                    space_to_tab: false,
+                                    to_posix_lines: false,
+                                    auto_decompress: false,
+                                    deferred: false,
+                                },
+                                {
+                                    src: "files",
+                                    name: "file2.txt",
+                                    dbkey: "?",
+                                    ext: "auto",
+                                    space_to_tab: false,
+                                    to_posix_lines: false,
+                                    auto_decompress: false,
+                                    deferred: false,
+                                },
+                            ],
+                        },
+                    ],
+                    auto_decompress: true,
+                    files: [file1, file2],
+                },
+                success: successCallback,
+            });
+
+            expect(createTusUpload).toHaveBeenCalledTimes(2);
+            expect(successCallback).toHaveBeenCalledWith({ jobs: [{ id: "job_hdca_files" }] });
         });
     });
 });

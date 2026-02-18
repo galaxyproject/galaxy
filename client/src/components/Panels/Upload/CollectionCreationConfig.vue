@@ -117,9 +117,11 @@ defineExpose({ reset });
 <template>
     <div class="collection-section mt-3">
         <div class="d-flex align-items-center justify-content-between">
-            <BFormCheckbox v-model="isCreateCollectionActive" switch>
-                <strong>Create a collection from these files</strong>
-            </BFormCheckbox>
+            <span data-test-id="collection-toggle">
+                <BFormCheckbox v-model="isCreateCollectionActive" switch>
+                    <strong>Create a collection from these files</strong>
+                </BFormCheckbox>
+            </span>
             <a
                 href="https://training.galaxyproject.org/training-material/topics/galaxy-interface/tutorials/collections/tutorial.html"
                 target="_blank"
@@ -187,7 +189,7 @@ defineExpose({ reset });
             <!-- Info about source items -->
             <div class="small text-muted mt-2">
                 <FontAwesomeIcon :icon="faInfoCircle" class="mr-1" />
-                Individual uploaded files will be hidden after collection creation
+                Files will be uploaded directly into the collection
             </div>
         </div>
     </div>

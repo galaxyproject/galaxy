@@ -1361,6 +1361,19 @@ upload:
     local_button: '#btn-local'
     explore_archive_button: '.btn-explore-archive'
 
+beta_upload:
+  selectors:
+    activity:
+      type: xpath
+      selector: '//button[contains(., "Beta Upload")]'
+    method_card: '[data-method-id="${method_id}"]'
+    paste_textarea: '#paste-links-textarea'
+    add_urls_button: '[data-test-id="add-urls"]'
+    collection_section: '[data-test-id="collection-toggle"] label'
+    collection_name_input: '#collection-name-input'
+    collection_type_select: '#collection-type-select'
+    start_button: '[data-test-id="start-upload"]'
+
 new_user_welcome:
   selectors:
     _: .new-user-welcome
