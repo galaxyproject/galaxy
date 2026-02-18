@@ -932,7 +932,16 @@ class WorkflowContentsManager(UsesAnnotations):
 
         return workflow, missing_tool_tups
 
-    def workflow_to_dict(self, trans, stored, style="export", version=None, history=None, instance_id=None):
+    def workflow_to_dict(
+        self,
+        trans,
+        stored,
+        style="export",
+        version=None,
+        history=None,
+        instance_id=None,
+        preserve_external_subworkflow_links=False,
+    ):
         """Export the workflow contents to a dictionary ready for JSON-ification and to be
         sent out via API for instance. There are three styles of export allowed 'export', 'instance', and
         'editor'. The Galaxy team will do its best to preserve the backward compatibility of the
@@ -940,6 +949,10 @@ class WorkflowContentsManager(UsesAnnotations):
         time. The 'editor' style is subject to rapid and unannounced changes. The 'instance' export
         option describes the workflow in a context more tied to the current Galaxy instance and includes
         fields like 'url' and 'url' and actual unencoded step ids instead of 'order_index'.
+
+        If preserve_external_subworkflow_links is True, subworkflow steps whose subworkflow has
+        source_metadata (indicating it was fetched from a URL or TRS) will preserve the external
+        reference instead of embedding the full subworkflow content.
         """
 
         def to_format_2(wf_dict, **kwds):
@@ -969,13 +982,34 @@ class WorkflowContentsManager(UsesAnnotations):
         elif style == "preview":
             wf_dict = self._workflow_to_dict_preview(trans, workflow=workflow)
         elif style == "format2":
-            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
-            wf_dict = to_format_2(wf_dict)
+            wf_dict = self._workflow_to_dict_export(
+                trans,
+                stored,
+                workflow=workflow,
+                preserve_external_subworkflow_links=preserve_external_subworkflow_links,
+            )
+            if preserve_external_subworkflow_links:
+                wf_dict = self._to_format2_with_preserved_links(wf_dict, to_format_2)
+            else:
+                wf_dict = to_format_2(wf_dict)
         elif style == "format2_wrapped_yaml":
-            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
-            wf_dict = to_format_2(wf_dict, json_wrapper=True)
+            wf_dict = self._workflow_to_dict_export(
+                trans,
+                stored,
+                workflow=workflow,
+                preserve_external_subworkflow_links=preserve_external_subworkflow_links,
+            )
+            if preserve_external_subworkflow_links:
+                wf_dict = self._to_format2_with_preserved_links(wf_dict, to_format_2, json_wrapper=True)
+            else:
+                wf_dict = to_format_2(wf_dict, json_wrapper=True)
         elif style == "ga":
-            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
+            wf_dict = self._workflow_to_dict_export(
+                trans,
+                stored,
+                workflow=workflow,
+                preserve_external_subworkflow_links=preserve_external_subworkflow_links,
+            )
         else:
             raise exceptions.RequestParameterInvalidException(f"Unknown workflow style {style}")
         if version is not None:
@@ -986,6 +1020,41 @@ class WorkflowContentsManager(UsesAnnotations):
         else:
             wf_dict["version"] = len(stored.workflows) - 1
         return wf_dict
+
+    @staticmethod
+    def _to_format2_with_preserved_links(wf_dict, to_format_2, **kwds):
+        """Convert .ga dict with preserved external links to format2.
+
+        from_galaxy_native expects a ``subworkflow`` dict on subworkflow steps. When
+        external links are preserved, those steps carry ``content_source``/``content_id``
+        instead. This method injects placeholder subworkflows for conversion, then
+        replaces the resulting ``run`` values with the original URLs.
+        """
+        external_links: dict[str, str] = {}
+        for step in wf_dict.get("steps", {}).values():
+            if step.get("content_source") and step.get("type") == "subworkflow":
+                step_key = step.get("label") or str(step["id"])
+                external_links[step_key] = step.pop("content_id", "")
+                step.pop("content_source")
+                step["subworkflow"] = {
+                    "a_galaxy_workflow": "true",
+                    "format-version": "0.1",
+                    "name": "placeholder",
+                    "steps": {},
+                }
+        format2_dict = to_format_2(wf_dict, **kwds)
+        if external_links:
+            format2_steps = format2_dict.get("steps", {})
+            if isinstance(format2_steps, dict):
+                for step_key, step in format2_steps.items():
+                    if step_key in external_links:
+                        step["run"] = external_links[step_key]
+            elif isinstance(format2_steps, list):
+                for step in format2_steps:
+                    step_label = step.get("label", "")
+                    if step_label in external_links:
+                        step["run"] = external_links[step_label]
+        return format2_dict
 
     def _sync_stored_workflow(self, trans, stored_workflow):
         if trans.user_is_admin:
@@ -1492,11 +1561,21 @@ class WorkflowContentsManager(UsesAnnotations):
                         step_data_output["collection_type"] = collection_type
         return steps
 
-    def _workflow_to_dict_export(self, trans, stored=None, workflow=None, internal=False, allow_upgrade=False):
+    def _workflow_to_dict_export(
+        self,
+        trans,
+        stored=None,
+        workflow=None,
+        internal=False,
+        allow_upgrade=False,
+        preserve_external_subworkflow_links=False,
+    ):
         """Export the workflow contents to a dictionary ready for JSON-ification and export.
 
         If internal, use content_ids instead subworkflow definitions.
         If `allow_upgrade`, the workflow and sub-workflows might use updated tool versions when refactoring.
+        If `preserve_external_subworkflow_links`, subworkflow steps with source_metadata
+        will emit content_source/content_id instead of embedding the full subworkflow.
         """
         annotation_str = ""
         tags_list = []
@@ -1610,13 +1689,28 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_dict["post_job_actions"] = pja_dict
 
             if module.type == "subworkflow" and not internal:
-                del step_dict["content_id"]
                 del step_dict["errors"]
                 del step_dict["tool_version"]
                 del step_dict["tool_state"]
                 subworkflow = step.subworkflow
-                subworkflow_as_dict = self._workflow_to_dict_export(trans, stored=None, workflow=subworkflow)
-                step_dict["subworkflow"] = subworkflow_as_dict
+                if preserve_external_subworkflow_links and subworkflow.source_metadata:
+                    del step_dict["content_id"]
+                    source_metadata = subworkflow.source_metadata
+                    if "url" in source_metadata:
+                        step_dict["content_source"] = "url"
+                        step_dict["content_id"] = source_metadata["url"]
+                    elif "trs_url" in source_metadata:
+                        step_dict["content_source"] = "trs_url"
+                        step_dict["content_id"] = source_metadata["trs_url"]
+                else:
+                    del step_dict["content_id"]
+                    subworkflow_as_dict = self._workflow_to_dict_export(
+                        trans,
+                        stored=None,
+                        workflow=subworkflow,
+                        preserve_external_subworkflow_links=preserve_external_subworkflow_links,
+                    )
+                    step_dict["subworkflow"] = subworkflow_as_dict
 
             # Data inputs, legacy section not used anywhere within core
             input_dicts = []
