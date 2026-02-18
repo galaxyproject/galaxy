@@ -10,22 +10,82 @@ Please see the full `release notes <https://github.com/galaxyproject/galaxy/rele
 Highlights
 ===========================================================
 
-Discover some of the exciting new features, enhancements, and improvements in Galaxy 26.0.
+Discover some of the most exciting new capabilities and improvements in Galaxy 26.1.
 
-Feature1
---------
+AI Comes to Galaxy
+-----------------------------------------------------------
 
-A description of the feature and its main highlights. Include screenshots/videos if applicable.
+Galaxy 26.1 brings artificial intelligence directly into the Galaxy experience, expanding how users explore data, discover tools, and troubleshoot analyses.
 
-Feature2
---------
+ChatGXY: Intelligent Assistance Inside Galaxy
+-----------------------------------------------------------
 
-A description of the feature and its main highlights. Include screenshots/videos if applicable.
+Galaxy introduces **ChatGXY**, a built in AI assistant integrated directly into the interface.
 
-Feature3
---------
+- **Conversational help**. Ask questions about tools, workflows, results, or errors without leaving Galaxy.
+- **Error analysis guidance**. Receive contextual explanations and suggestions when jobs fail.
+- **Tool recommendations**. Describe your analysis goal and get suggestions tailored to the tools installed on your Galaxy instance.
+- **Training discovery**. Find relevant Galaxy Training Network tutorials directly from within Galaxy.
+- **Extensible architecture**. Built on a flexible agent framework designed to grow with additional specialized AI capabilities over time.
 
-A description of the feature and its main highlights. Include screenshots/videos if applicable.
+ChatGXY provides a conversational entry point to Galaxy's AI capabilities and lays the groundwork for connecting Galaxy users to an expanding set of intelligent capabilities.
+
+AI Assisted Notebooks with JupyterLite
+-----------------------------------------------------------
+
+Galaxy 26.1 strengthens integration with **JupyterLite**, bringing AI enhanced notebooks directly into your browser.
+
+- **Browser based notebooks**. Launch lightweight, interactive notebooks connected to Galaxy data.
+- **AI powered exploration**. Use AI assistance within notebooks to prototype analyses and accelerate exploration.
+- **Seamless data access**. Work with Galaxy datasets without manual downloads or complex setup.
+- **Shared AI services**. Notebook AI features use Galaxy's configured AI services for consistent behavior and control.
+
+This integration makes interactive, AI supported analysis a natural extension of Galaxy workflows.
+
+AI Powered Data Visualization with Vintent
+-----------------------------------------------------------
+
+Galaxy introduces **Vintent**, an AI driven visualization engine for generating interactive charts from your data.
+
+- **Natural language to visualization**. Turn requests into structured, validated charts.
+- **Modern Vega Lite charts**. Create expressive and interactive visualizations directly within Galaxy.
+- **Integrated with Galaxy datasets**. Visualizations operate directly on your data without extra preparation.
+- **Reproducible browser based Python runtime**. Data transformations run in a versioned Pyodide environment directly in the browser.
+- **Consistent, versioned environments**. Visualization logic uses pinned dependencies, making environments portable, reproducible, and easy to evolve independently.
+
+By combining AI reasoning with a portable and reproducible Python runtime in the browser, Vintent expands Galaxy's visualization ecosystem while preserving flexibility and isolation.
+
+Automated Actions When Workflows Finish
+-----------------------------------------------------------
+
+Galaxy 26.1 adds configurable actions that automatically execute when a workflow completes.
+
+- **Automatic result export**. Send workflow outputs to remote file sources such as cloud storage.
+- **Completion notifications**. Receive alerts when long running workflows finish.
+- **Configurable at launch**. Select post run actions directly in a new On Completion section of the workflow run form.
+- **Track recent exports**. Monitor export status and review recent transfers from within Galaxy.
+
+These features streamline post analysis workflows and reduce manual follow up steps.
+
+Improved Workflow Error Navigation
+-----------------------------------------------------------
+
+Debugging complex workflows is now easier with clearer and more actionable failure hints.
+
+- **Clickable failure paths**. Navigate directly to the exact failing step, even within subworkflows.
+- **More precise step hints**. See clearer guidance on where and why a failure occurred.
+- **Faster troubleshooting**. Reduce time spent locating and diagnosing workflow issues.
+
+A Redesigned ToolShed Landing Experience
+-----------------------------------------------------------
+
+The ToolShed landing page has been redesigned to make tool discovery clearer and more focused.
+
+- **Prominent search box**. Quickly find Galaxy tools from a central search interface.
+- **Clear guidance sections**. Learn how to find, install, publish, and cite tools.
+- **Streamlined layout**. A simplified two column design highlights essential information and recent repositories.
+
+These improvements make exploring and managing Galaxy tools more intuitive for both new and experienced users.
 
 
 ----
