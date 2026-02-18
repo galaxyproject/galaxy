@@ -2,6 +2,7 @@ import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
 import { computed, del, type Ref, ref, set, unref } from "vue";
 
 import { LastQueue } from "@/utils/lastQueue";
+import { ApiError } from "@/utils/simple-error";
 
 /**
  * Parameters for fetching an item from the server.
@@ -29,6 +30,16 @@ type ShouldFetchHandler<T> = (item?: T) => boolean;
  */
 const fetchIfAbsent = <T>(item?: T) => item === undefined;
 
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+const MAX_RETRIES = 3;
+
+function isRetryableError(error: Error): boolean {
+    if (error instanceof ApiError && error.status !== undefined) {
+        return RETRYABLE_STATUSES.has(error.status);
+    }
+    return false;
+}
+
 /**
  * A composable that provides a simple key-value cache for items fetched from the server.
  *
@@ -45,6 +56,7 @@ export function useKeyedCache<T>(
 ) {
     const storedItems = ref<{ [key: string]: T }>({});
     const loadingErrors = ref<{ [key: string]: Error }>({});
+    const retryCounts: { [key: string]: number } = {};
 
     const loadingRequests = ref<{ [key: string]: Promise<T | undefined> }>({});
 
@@ -53,9 +65,9 @@ export function useKeyedCache<T>(
     const getItemById = computed(() => {
         return (id: string) => {
             const item = storedItems.value[id];
-            // TODO: consider allowing retries for transient errors (e.g. 5xx, network)
-            // while still blocking on permanent ones (403, 404).
-            if (shouldFetch(item) && !loadingErrors.value[id]) {
+            const existingError = loadingErrors.value[id];
+            const canRetry = existingError && isRetryableError(existingError) && (retryCounts[id] ?? 0) < MAX_RETRIES;
+            if (shouldFetch(item) && (!existingError || canRetry)) {
                 fetchItemById({ id: id });
             }
             return item ?? null;
@@ -93,8 +105,10 @@ export function useKeyedCache<T>(
                 const fetchItem = unref(fetchItemHandler);
                 const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
                 set(storedItems.value, itemId, item);
+                delete retryCounts[itemId];
                 return item;
             } catch (error) {
+                retryCounts[itemId] = (retryCounts[itemId] ?? 0) + 1;
                 set(loadingErrors.value, itemId, error as Error);
             } finally {
                 del(loadingRequests.value, itemId);

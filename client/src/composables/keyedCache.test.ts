@@ -2,6 +2,8 @@ import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { computed, ref } from "vue";
 
+import { ApiError } from "@/utils/simple-error";
+
 import { useKeyedCache } from "./keyedCache";
 
 interface ItemData {
@@ -212,6 +214,64 @@ describe("useKeyedCache", () => {
         await flushPromises();
 
         expect(fetchItem).toHaveBeenCalledTimes(1);
+    });
+
+    it("should retry on transient errors (429, 5xx) up to max retries", async () => {
+        const id = "1";
+
+        fetchItem.mockRejectedValue(new ApiError("Too Many Requests", 429));
+
+        const { getItemById, getItemLoadError } = useKeyedCache<ItemData>(fetchItem);
+
+        // First attempt + MAX_RETRIES - 1 retries (first call counts as attempt 1)
+        for (let i = 1; i <= 3; i++) {
+            getItemById.value(id);
+            await flushPromises();
+            expect(fetchItem).toHaveBeenCalledTimes(i);
+            expect(getItemLoadError.value(id)).toBeInstanceOf(ApiError);
+        }
+
+        // Should stop after max retries exhausted
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(3);
+    });
+
+    it("should not retry on permanent errors (403, 404)", async () => {
+        const id = "1";
+
+        fetchItem.mockRejectedValue(new ApiError("Forbidden", 403));
+
+        const { getItemById, getItemLoadError } = useKeyedCache<ItemData>(fetchItem);
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+        expect(getItemLoadError.value(id)).toBeInstanceOf(ApiError);
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+    });
+
+    it("should recover on retry if transient error resolves", async () => {
+        const id = "1";
+        const item = { id, name: "Item 1" };
+
+        fetchItem.mockRejectedValueOnce(new ApiError("Service Unavailable", 503)).mockResolvedValueOnce(item);
+
+        const { getItemById, storedItems, getItemLoadError } = useKeyedCache<ItemData>(fetchItem);
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+        expect(getItemLoadError.value(id)).toBeInstanceOf(ApiError);
+
+        // Retry should succeed
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(2);
+        expect(storedItems.value[id]).toEqual(item);
     });
 
     it("should handle fake timers without hanging when advanced manually", async () => {

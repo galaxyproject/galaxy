@@ -24,3 +24,18 @@ export function rethrowSimple(e: any): never {
     }
     throw Error(errorMessageAsString(e));
 }
+
+export class ApiError extends Error {
+    status?: number;
+    constructor(message: string, status?: number) {
+        super(message);
+        this.status = status;
+    }
+}
+
+export function rethrowSimpleWithStatus(e: any, response?: { status: number }): never {
+    if (process.env.NODE_ENV != "test") {
+        console.debug(e);
+    }
+    throw new ApiError(errorMessageAsString(e), response?.status);
+}
