@@ -1533,6 +1533,233 @@ steps:
         reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
         assert reuploaded_workflow.get("source_metadata") is None
 
+    def test_import_ga_workflow_with_url_subworkflow(self):
+        """Test importing a .ga workflow where a subworkflow is referenced via a base64:// URL."""
+        inner_workflow = {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "Inner Workflow",
+            "annotation": "",
+            "steps": {
+                "0": {
+                    "type": "data_input",
+                    "id": 0,
+                    "tool_id": None,
+                    "tool_version": None,
+                    "tool_state": json.dumps({"name": "inner_input"}),
+                    "input_connections": {},
+                    "inputs": [{"name": "inner_input", "description": ""}],
+                    "outputs": [],
+                    "annotation": "",
+                },
+                "1": {
+                    "type": "tool",
+                    "id": 1,
+                    "tool_id": "cat1",
+                    "tool_version": None,
+                    "name": "Concatenate datasets",
+                    "tool_state": "{}",
+                    "input_connections": {"input1": {"id": 0, "output_name": "output"}},
+                    "inputs": [],
+                    "outputs": [{"name": "out_file1", "type": "input"}],
+                    "post_job_actions": {},
+                    "annotation": "",
+                    "workflow_outputs": [{"output_name": "out_file1", "label": "inner_output"}],
+                },
+            },
+        }
+        inner_json = json.dumps(inner_workflow)
+        base64_url = "base64://" + base64.b64encode(inner_json.encode("utf-8")).decode("utf-8")
+
+        outer_workflow = {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "Outer Workflow with URL Subworkflow",
+            "annotation": "",
+            "steps": {
+                "0": {
+                    "type": "data_input",
+                    "id": 0,
+                    "tool_id": None,
+                    "tool_version": None,
+                    "tool_state": json.dumps({"name": "outer_input"}),
+                    "input_connections": {},
+                    "inputs": [{"name": "outer_input", "description": ""}],
+                    "outputs": [],
+                    "annotation": "",
+                },
+                "1": {
+                    "type": "subworkflow",
+                    "id": 1,
+                    "content_source": "url",
+                    "content_id": base64_url,
+                    "input_connections": {"inner_input": {"id": 0, "output_name": "output"}},
+                    "annotation": "",
+                },
+            },
+        }
+        response = self._post("workflows", data={"workflow": json.dumps(outer_workflow)})
+        response.raise_for_status()
+        workflow_id = response.json()["id"]
+        workflow = self._download_workflow(workflow_id)
+        assert workflow["name"] == "Outer Workflow with URL Subworkflow"
+        # Find the subworkflow step
+        subworkflow_step = None
+        for step in workflow["steps"].values():
+            if step["type"] == "subworkflow":
+                subworkflow_step = step
+                break
+        assert subworkflow_step is not None, "No subworkflow step found"
+        subworkflow = subworkflow_step["subworkflow"]
+        assert subworkflow["name"] == "Inner Workflow"
+        assert subworkflow.get("source_metadata") == {"url": base64_url}
+
+    def test_import_gxformat2_workflow_with_url_subworkflow(self):
+        """Test importing a gxformat2 workflow where a subworkflow is referenced via a base64:// URL.
+
+        Uses server-side conversion (client_convert=False) because the gxformat2 client-side
+        converter does not support URL references in the 'run' field.
+        """
+        inner_yaml = """
+class: GalaxyWorkflow
+inputs:
+  inner_input: data
+outputs:
+  inner_output:
+    outputSource: cat_step/out_file1
+steps:
+  cat_step:
+    tool_id: cat1
+    in:
+      input1: inner_input
+"""
+        base64_url = "base64://" + base64.b64encode(inner_yaml.strip().encode("utf-8")).decode("utf-8")
+        outer_yaml = f"""
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: nested_workflow/inner_output
+steps:
+  nested_workflow:
+    run: "{base64_url}"
+    in:
+      inner_input: outer_input
+"""
+        workflow_id = self._upload_yaml_workflow(outer_yaml, client_convert=False)
+        workflow = self._download_workflow(workflow_id)
+        subworkflow_step = None
+        for step in workflow["steps"].values():
+            if step["type"] == "subworkflow":
+                subworkflow_step = step
+                break
+        assert subworkflow_step is not None, "No subworkflow step found"
+        subworkflow = subworkflow_step["subworkflow"]
+        assert subworkflow.get("source_metadata") == {"url": base64_url}
+
+    @skip_if_github_down
+    def test_import_ga_workflow_with_trs_url_subworkflow(self):
+        """Test importing a .ga workflow where a subworkflow is referenced via a TRS URL."""
+        trs_url = (
+            "https://dockstore.org/api/ga4gh/trs/v2/tools/"
+            "%23workflow%2Fgithub.com%2Fjmchilton%2Fgalaxy-workflow-dockstore-example-1%2Fmycoolworkflow/"
+            "versions/master"
+        )
+        outer_workflow = {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "Outer Workflow with TRS URL Subworkflow",
+            "annotation": "",
+            "steps": {
+                "0": {
+                    "type": "data_input",
+                    "id": 0,
+                    "tool_id": None,
+                    "tool_version": None,
+                    "tool_state": json.dumps({"name": "outer_input"}),
+                    "input_connections": {},
+                    "inputs": [{"name": "outer_input", "description": ""}],
+                    "outputs": [],
+                    "annotation": "",
+                },
+                "1": {
+                    "type": "subworkflow",
+                    "id": 1,
+                    "content_source": "trs_url",
+                    "content_id": trs_url,
+                    "input_connections": {"WorkflowInput1": {"id": 0, "output_name": "output"}},
+                    "annotation": "",
+                },
+            },
+        }
+        response = self._post("workflows", data={"workflow": json.dumps(outer_workflow)})
+        response.raise_for_status()
+        workflow_id = response.json()["id"]
+        workflow = self._download_workflow(workflow_id)
+        subworkflow_step = None
+        for step in workflow["steps"].values():
+            if step["type"] == "subworkflow":
+                subworkflow_step = step
+                break
+        assert subworkflow_step is not None, "No subworkflow step found"
+        subworkflow = subworkflow_step["subworkflow"]
+        assert "Test Workflow" in subworkflow["name"]
+        source_metadata = subworkflow.get("source_metadata")
+        assert source_metadata is not None
+        assert source_metadata["trs_tool_id"] == "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
+        assert source_metadata["trs_version_id"] == "master"
+        assert source_metadata["trs_url"] == trs_url
+
+    @skip_if_github_down
+    def test_import_ga_workflow_with_trs_id_subworkflow(self):
+        """Test importing a .ga workflow where a subworkflow is referenced via TRS server + tool ID + version."""
+        outer_workflow = {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "Outer Workflow with TRS ID Subworkflow",
+            "annotation": "",
+            "steps": {
+                "0": {
+                    "type": "data_input",
+                    "id": 0,
+                    "tool_id": None,
+                    "tool_version": None,
+                    "tool_state": json.dumps({"name": "outer_input"}),
+                    "input_connections": {},
+                    "inputs": [{"name": "outer_input", "description": ""}],
+                    "outputs": [],
+                    "annotation": "",
+                },
+                "1": {
+                    "type": "subworkflow",
+                    "id": 1,
+                    "content_source": "trs_id",
+                    "trs_server": "dockstore",
+                    "trs_tool_id": "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow",
+                    "trs_version_id": "master",
+                    "input_connections": {"WorkflowInput1": {"id": 0, "output_name": "output"}},
+                    "annotation": "",
+                },
+            },
+        }
+        response = self._post("workflows", data={"workflow": json.dumps(outer_workflow)})
+        response.raise_for_status()
+        workflow_id = response.json()["id"]
+        workflow = self._download_workflow(workflow_id)
+        subworkflow_step = None
+        for step in workflow["steps"].values():
+            if step["type"] == "subworkflow":
+                subworkflow_step = step
+                break
+        assert subworkflow_step is not None, "No subworkflow step found"
+        subworkflow = subworkflow_step["subworkflow"]
+        assert "Test Workflow" in subworkflow["name"]
+        source_metadata = subworkflow.get("source_metadata")
+        assert source_metadata is not None
+        assert source_metadata["trs_tool_id"] == "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
+        assert source_metadata["trs_version_id"] == "master"
+
     def test_anonymous_published(self):
         def anonymous_published_workflows(explicit_query_parameter):
             if explicit_query_parameter:
