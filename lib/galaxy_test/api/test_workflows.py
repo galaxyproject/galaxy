@@ -236,9 +236,15 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
         jobs = self._history_jobs(history_id)
         assert len(jobs) == n
 
-    def _download_workflow(self, workflow_id, style=None, history_id=None, instance=None):
+    def _download_workflow(
+        self, workflow_id, style=None, history_id=None, instance=None, preserve_external_subworkflow_links=None
+    ):
         return self.workflow_populator.download_workflow(
-            workflow_id, style=style, history_id=history_id, instance=instance
+            workflow_id,
+            style=style,
+            history_id=history_id,
+            instance=instance,
+            preserve_external_subworkflow_links=preserve_external_subworkflow_links,
         )
 
     def _assert_is_runtime_input(self, tool_state_value):
@@ -1564,6 +1570,14 @@ steps:
         }
 
     @staticmethod
+    def _get_subworkflow_step(workflow: dict) -> dict:
+        """Find and return the subworkflow step dict from a downloaded workflow."""
+        for step in workflow["steps"].values():
+            if step["type"] == "subworkflow":
+                return step
+        raise AssertionError("No subworkflow step found in downloaded workflow")
+
+    @staticmethod
     def _get_subworkflow_dict(workflow: dict) -> dict:
         """Find the subworkflow step in a downloaded workflow and return its embedded subworkflow dict."""
         for step in workflow["steps"].values():
@@ -1653,6 +1667,95 @@ steps:
             == "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
         )
         assert source_metadata["trs_version_id"] == "master"
+
+    def test_download_preserves_url_subworkflow_link(self):
+        """Test that downloading with preserve_external_subworkflow_links emits content_source/content_id."""
+        inner_workflow = self.workflow_populator.load_workflow("inner_workflow")
+        base64_url = "base64://" + base64.b64encode(json.dumps(inner_workflow).encode()).decode()
+        outer_workflow = self._build_outer_ga_workflow({"content_source": "url", "content_id": base64_url})
+        workflow_id = self.workflow_populator.create_workflow(outer_workflow)
+        # Default download embeds the subworkflow
+        default_download = self._download_workflow(workflow_id)
+        subworkflow = self._get_subworkflow_dict(default_download)
+        assert "subworkflow" not in self._get_subworkflow_step(default_download).get("content_source", "")
+        assert subworkflow["name"] == "inner_workflow"
+        # Download with preserved links emits content_source/content_id
+        preserved = self._download_workflow(workflow_id, preserve_external_subworkflow_links=True)
+        step = self._get_subworkflow_step(preserved)
+        assert step["content_source"] == "url"
+        assert step["content_id"] == base64_url
+        assert "subworkflow" not in step
+
+    def test_modified_subworkflow_not_preserved_as_link(self):
+        """After updating a subworkflow the external link is lost and content is embedded verbatim."""
+        inner_workflow = self.workflow_populator.load_workflow("inner_workflow")
+        base64_url = "base64://" + base64.b64encode(json.dumps(inner_workflow).encode()).decode()
+        outer_workflow = self._build_outer_ga_workflow({"content_source": "url", "content_id": base64_url})
+        workflow_id = self.workflow_populator.create_workflow(outer_workflow)
+        # Before modification, preserved links work
+        preserved = self._download_workflow(workflow_id, preserve_external_subworkflow_links=True)
+        step = self._get_subworkflow_step(preserved)
+        assert step["content_source"] == "url"
+        # Download full workflow with embedded subworkflow, modify it, re-upload as new workflow.
+        # This simulates what happens when a user edits and saves: the subworkflow is rebuilt
+        # from the embedded dict and loses its source_metadata.
+        full_download = self._download_workflow(workflow_id)
+        subworkflow = self._get_subworkflow_dict(full_download)
+        subworkflow["name"] = "Modified Inner Workflow"
+        modified_id = self.workflow_populator.create_workflow(full_download)
+        # After modification, preserved links option still embeds verbatim
+        after_update = self._download_workflow(modified_id, preserve_external_subworkflow_links=True)
+        step = self._get_subworkflow_step(after_update)
+        assert "content_source" not in step
+        assert "subworkflow" in step
+        assert step["subworkflow"]["name"] == "Modified Inner Workflow"
+        assert step["subworkflow"].get("source_metadata") is None
+
+    def test_roundtrip_ga_workflow_with_url_subworkflow(self):
+        """Import .ga with URL subworkflow, download with preserved links, re-import, verify."""
+        inner_workflow = self.workflow_populator.load_workflow("inner_workflow")
+        base64_url = "base64://" + base64.b64encode(json.dumps(inner_workflow).encode()).decode()
+        outer_workflow = self._build_outer_ga_workflow({"content_source": "url", "content_id": base64_url})
+        workflow_id = self.workflow_populator.create_workflow(outer_workflow)
+        # Download with preserved external links
+        exported = self._download_workflow(workflow_id, preserve_external_subworkflow_links=True)
+        # Re-import the exported workflow
+        reimported_id = self.workflow_populator.create_workflow(exported)
+        reimported = self._download_workflow(reimported_id)
+        subworkflow = self._get_subworkflow_dict(reimported)
+        assert subworkflow["name"] == "inner_workflow"
+        assert subworkflow.get("source_metadata") == {"url": base64_url}
+
+    def test_roundtrip_format2_workflow_with_url_subworkflow(self):
+        """Import gxformat2 with URL subworkflow, download format2 with preserved links, re-import, verify."""
+        base64_url = "base64://" + base64.b64encode(WORKFLOW_SIMPLE.strip().encode()).decode()
+        outer_yaml = f"""
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: nested_workflow/wf_output_1
+steps:
+  nested_workflow:
+    run: "{base64_url}"
+    in:
+      input1: outer_input
+"""
+        workflow_id = self._upload_yaml_workflow(outer_yaml, client_convert=False)
+        # Download as format2 with preserved links
+        exported = self._download_workflow(
+            workflow_id,
+            style="format2",
+            preserve_external_subworkflow_links=True,
+        )
+        nested_step = exported["steps"]["nested_workflow"]
+        assert nested_step["run"] == base64_url
+        # Re-import the exported format2 workflow as YAML string (server-side conversion)
+        reimported_id = self._upload_yaml_workflow(yaml.dump(dict(exported)), client_convert=False)
+        reimported = self._download_workflow(reimported_id)
+        subworkflow = self._get_subworkflow_dict(reimported)
+        assert subworkflow.get("source_metadata") == {"url": base64_url}
 
     def test_anonymous_published(self):
         def anonymous_published_workflows(explicit_query_parameter):
