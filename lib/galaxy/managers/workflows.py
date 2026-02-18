@@ -139,6 +139,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+MAX_SUBWORKFLOW_URL_DEPTH = 10
 
 INDEX_SEARCH_FILTERS = {
     "name": "name",
@@ -2033,8 +2034,10 @@ class WorkflowContentsManager(UsesAnnotations):
         resolving_urls: frozenset[str],
     ) -> model.Workflow:
         if url in resolving_urls:
+            raise exceptions.RequestParameterInvalidException(f"Circular subworkflow reference detected for URL: {url}")
+        if len(resolving_urls) >= MAX_SUBWORKFLOW_URL_DEPTH:
             raise exceptions.RequestParameterInvalidException(
-                f"Circular subworkflow reference detected for URL: {url}"
+                f"Maximum subworkflow URL resolution depth ({MAX_SUBWORKFLOW_URL_DEPTH}) exceeded"
             )
         validate_uri_access(url, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
         workflow_content = stream_url_to_str(url, file_sources=trans.app.file_sources)
@@ -2059,6 +2062,10 @@ class WorkflowContentsManager(UsesAnnotations):
         if trs_url in resolving_urls:
             raise exceptions.RequestParameterInvalidException(
                 f"Circular subworkflow reference detected for TRS URL: {trs_url}"
+            )
+        if len(resolving_urls) >= MAX_SUBWORKFLOW_URL_DEPTH:
+            raise exceptions.RequestParameterInvalidException(
+                f"Maximum subworkflow URL resolution depth ({MAX_SUBWORKFLOW_URL_DEPTH}) exceeded"
             )
         _, trs_tool_id, trs_version_id = self.trs_proxy.get_trs_id_and_version_from_trs_url(trs_url=trs_url)
         data = self.trs_proxy.get_version_from_trs_url(trs_url)
@@ -2101,7 +2108,9 @@ class WorkflowContentsManager(UsesAnnotations):
             )
         return self.__build_subworkflow_from_trs_url(trans, trs_url, resolving_urls)
 
-    def __build_embedded_subworkflow(self, trans, data, workflow_state_resolution_options, resolving_urls: frozenset[str] = frozenset()):
+    def __build_embedded_subworkflow(
+        self, trans, data, workflow_state_resolution_options, resolving_urls: frozenset[str] = frozenset()
+    ):
         raw_workflow_description = self.ensure_raw_description(data)
         subworkflow = self.build_workflow_from_raw_description(
             trans,
