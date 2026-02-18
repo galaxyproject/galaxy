@@ -1146,6 +1146,8 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         force_watch: bool = False,
     ) -> None:
         def quick_load(tool_file: "StrPath", async_load: bool = True) -> Union[str, None]:
+            if not self._looks_like_a_tool(str(tool_file)):
+                return None
             try:
                 tool = self.load_tool(tool_file)
                 self.__add_tool(tool, load_panel_dict, elems)
