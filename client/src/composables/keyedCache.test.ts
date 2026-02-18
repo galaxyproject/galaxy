@@ -193,6 +193,27 @@ describe("useKeyedCache", () => {
         expect(shouldFetch).toHaveBeenCalled();
     });
 
+    it("should not re-fetch after a failed request", async () => {
+        const id = "1";
+
+        fetchItem.mockRejectedValue(new Error("Request failed"));
+
+        const { getItemById, getItemLoadError, isLoadingItem } = useKeyedCache<ItemData>(fetchItem);
+
+        getItemById.value(id);
+        await flushPromises();
+
+        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(getItemLoadError.value(id)).toBeInstanceOf(Error);
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+
+        // Calling getItemById again should not trigger another fetch
+        getItemById.value(id);
+        await flushPromises();
+
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+    });
+
     it("should handle fake timers without hanging when advanced manually", async () => {
         vi.useFakeTimers();
         const id = "1";
