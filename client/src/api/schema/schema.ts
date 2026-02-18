@@ -17584,6 +17584,12 @@ export interface components {
         };
         /** JobRequest */
         JobRequest: {
+            /** Credentials Context */
+            credentials_context?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
             /** Data Manager Mode */
             data_manager_mode?: string | null;
             /**
@@ -23476,7 +23482,7 @@ export interface components {
             };
             state: components["schemas"]["ToolRequestState"];
             /** State Message */
-            state_message: string | null;
+            state_message?: unknown | null;
         };
         /** ToolRequestImplicitCollectionReference */
         ToolRequestImplicitCollectionReference: {
@@ -23520,7 +23526,7 @@ export interface components {
             };
             state: components["schemas"]["ToolRequestState"];
             /** State Message */
-            state_message: string | null;
+            state_message?: unknown | null;
         };
         /**
          * ToolRequestState
