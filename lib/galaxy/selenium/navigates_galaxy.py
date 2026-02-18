@@ -2163,9 +2163,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     # --- Window Manager helpers ---
 
     def window_manager_toggle(self):
-        """Click the window manager toggle button in the masthead."""
+        """Click the window manager toggle button and wait for state change."""
+        was_active = self.window_manager_is_active()
         self.components.masthead.window_manager.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self._wait_on(
+            lambda driver=None: self.window_manager_is_active() != was_active,
+            "window manager toggle state to change",
+        )
 
     def window_manager_enable(self):
         """Enable the window manager (if not already active)."""
@@ -2215,16 +2219,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         elements = self.components.window_manager.title.all()
         return [el.text for el in elements]
 
-    def window_manager_close_all(self):
-        """Close all open WinBox windows.
-
-        Uses JS click because .wb-close is obscured by WinBox's .wb-n resize handle.
-        """
-        close_buttons = self.components.window_manager.close_button.all()
-        for btn in close_buttons:
-            self.execute_script_click(btn)
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-
     def window_manager_close_window(self, index=0):
         """Close a specific WinBox window by index.
 
@@ -2234,7 +2228,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         close_buttons = self.components.window_manager.close_button.all()
         assert len(close_buttons) > index, f"Expected at least {index + 1} close buttons, found {len(close_buttons)}"
         self.execute_script_click(close_buttons[index])
-        self.sleep_for(self.wait_types.UX_TRANSITION)
 
     def window_manager_get_focused_title(self) -> str:
         """Return the title text of the currently focused WinBox window."""
@@ -2248,7 +2241,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         overlays = self.components.window_manager.focus_overlay.all()
         assert len(overlays) > index, f"Expected at least {index + 1} overlays, found {len(overlays)}"
         self.fire_mousedown(overlays[index])
-        self.sleep_for(self.wait_types.UX_RENDER)
 
     def window_manager_get_iframe_src(self, index=0) -> str:
         """Return the src attribute of a WinBox iframe by index."""

@@ -85,7 +85,6 @@ class TestWindowManager(SeleniumTestCase):
             item = self.history_panel_item_component(hid=hid)
             self.clear_tooltips()
             item.display_button.wait_for_and_click()
-            self.sleep_for(self.wait_types.UX_RENDER)
 
         self.window_manager_wait_for_window_count(3)
         self.screenshot("window_manager_three_windows")
@@ -115,7 +114,6 @@ class TestWindowManager(SeleniumTestCase):
             item = self.history_panel_item_component(hid=hid)
             self.clear_tooltips()
             item.display_button.wait_for_and_click()
-            self.sleep_for(self.wait_types.UX_RENDER)
 
         self.window_manager_wait_for_window_count(2)
         self.screenshot("window_manager_before_close")
@@ -187,7 +185,6 @@ class TestWindowManager(SeleniumTestCase):
             item = self.history_panel_item_component(hid=hid)
             self.clear_tooltips()
             item.display_button.wait_for_and_click()
-            self.sleep_for(self.wait_types.UX_RENDER)
 
         self.window_manager_wait_for_window_count(2)
 
