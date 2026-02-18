@@ -626,7 +626,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                     galaxy_session_requires_flush = True
                 elif (
                     remote_user_email
-                    and galaxy_session.user.email != remote_user_email
+                    and galaxy_session.user.email.lower() != remote_user_email.lower()
                     and (
                         not self.app.config.allow_user_impersonation
                         or remote_user_email not in self.app.config.admin_users_list
