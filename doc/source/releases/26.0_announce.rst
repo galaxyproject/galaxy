@@ -26,24 +26,6 @@ To update an existing Galaxy repository run:
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
 
 
-Admin Notes
-===========================================================
-Add content or drop section.
-
-Configuration Changes
-===========================================================
-Run ``python scripts/release-diff.py release_<previous_version>`` in the Galaxy root directory
-to get a diff of configuration changes between releases.
-Add any more content or drop section if it's empty.
-
-Deprecation Notices
-===========================================================
-Add content or drop section.
-
-Developer Notes
-===========================================================
-Add content or drop section.
-
 Release Team
 ===========================================================
 
@@ -51,13 +33,13 @@ Release manager:  `Aysam Guerler <https://github.com/guerler>`__, `Ahmed Awan <h
 
 Release testing:
 
-* `Tyler Collins <https://github.com/tcollins2011>`__
+* `Alireza Heidari <https://github.com/itisAliRH>`__
 * `Arash Kadkhodaei <https://github.com/arash77>`__
+* `Bjoern Gruening <https://github.com/bgruening>`__
+* `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
 * `John Chilton <https://github.com/jmchilton>`__
 * `Keith Suderman <https://github.com/ksuderman>`__
-* `Aysam Guerler <https://github.com/guerler>`__
-* `Alireza Heidari <https://github.com/itisAliRH>`__
-* `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
+* `Tyler Collins <https://github.com/tcollins2011>`__
 
 Communications:
 
