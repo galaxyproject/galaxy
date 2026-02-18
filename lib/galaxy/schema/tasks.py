@@ -189,3 +189,4 @@ class QueueJobs(Model):
     tags: Optional[list[str]] = None
     data_manager_mode: Optional[str] = None
     send_email_notification: bool = False
+    credentials_context: Optional[list[dict]] = None

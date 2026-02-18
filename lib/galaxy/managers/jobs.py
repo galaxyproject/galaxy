@@ -40,6 +40,7 @@ from galaxy.exceptions import (
     ConfigDoesNotAllowException,
     InconsistentDatabase,
     ItemAccessibilityException,
+    MessageException,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException,
@@ -80,6 +81,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
@@ -2188,6 +2190,11 @@ class JobSubmitter:
                 # here we just created the datasets - lets just materialize them in place
                 # and avoid extra and confusing input copies
                 self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
+            if request.data_manager_mode:
+                tool_request.request["__data_manager_mode"] = request.data_manager_mode
+            credentials_context = (
+                CredentialsContext(root=cast(Any, request.credentials_context)) if request.credentials_context else None
+            )
             execution_tracker = tool.handle_input_async(
                 request_context,
                 tool_request,
@@ -2196,6 +2203,7 @@ class JobSubmitter:
                 use_cached_job=use_cached_jobs,
                 rerun_remap_job_id=rerun_remap_job_id,
                 preferred_object_store_id=request.preferred_object_store_id,
+                credentials_context=credentials_context,
             )
             if request.tags:
                 tag_handler = request_context.tag_handler
@@ -2218,7 +2226,11 @@ class JobSubmitter:
         except Exception as e:
             log.exception("Problem validating tool state after request created")
             tool_request.state = ToolRequest.states.FAILED
-            tool_request.state_message = str(e)
+            state_message: dict = {"err_msg": str(e)}
+            if isinstance(e, MessageException) and e.extra_error_info:
+                if "err_data" in e.extra_error_info:
+                    state_message["err_data"] = e.extra_error_info["err_data"]
+            tool_request.state_message = cast(Any, state_message)
             sa_session.add(tool_request)
             sa_session.commit()
 

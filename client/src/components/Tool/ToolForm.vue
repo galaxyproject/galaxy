@@ -419,6 +419,12 @@ export default {
             if (this.dataManagerMode === "bundle") {
                 jobDef.data_manager_mode = this.dataManagerMode;
             }
+            if (this.formConfig.credentials?.length) {
+                jobDef.credentials_context = this.getCredentialsExecutionContextForTool(
+                    this.formConfig.id,
+                    this.formConfig.version,
+                );
+            }
 
             console.debug("toolForm::onExecute()", jobDef);
             const prevRoute = this.$route.fullPath;
@@ -428,6 +434,7 @@ export default {
                 const toolRequestId = submitResponse.tool_request_id;
                 const toolRequestDetail = await waitForToolRequest(toolRequestId);
                 const jobResponse = await buildJobResponse(toolRequestDetail);
+                jobResponse.produces_entry_points = this.formConfig.model_class === "InteractiveTool";
 
                 this.submissionRequestFailed = false;
                 this.showExecuting = false;
@@ -459,19 +466,21 @@ export default {
             } catch (e) {
                 this.showExecuting = false;
 
-                const errorData = e?.response?.data?.err_data;
+                // Check for structured error data from both axios responses and tool request failures
+                const errorData = e?.response?.data?.err_data || e?.err_data;
                 if (errorData) {
                     const errorEntries = Object.entries(errorData);
                     if (errorEntries.length > 0) {
-                        this.errorMessage = e?.response?.data?.err_msg;
+                        this.errorMessage = e?.response?.data?.err_msg || e?.err_msg;
                         this.submissionRequestFailed = true;
                         this.validationScrollTo = errorEntries[0];
                         return;
                     }
                 }
 
-                if (e?.response?.data?.err_msg) {
-                    this.errorMessage = e.response.data.err_msg;
+                const errorMsg = e?.response?.data?.err_msg || e?.err_msg;
+                if (errorMsg) {
+                    this.errorMessage = errorMsg;
                     this.submissionRequestFailed = true;
                     return;
                 }

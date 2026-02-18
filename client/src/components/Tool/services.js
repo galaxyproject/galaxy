@@ -81,7 +81,15 @@ export async function waitForToolRequest(toolRequestId, { pollInterval = 1000, m
         if (state === "failed") {
             const detailUrl = `${getAppRoot()}api/tool_requests/${toolRequestId}`;
             const { data: detail } = await axios.get(detailUrl);
-            throw new Error(detail.state_message || "Tool request failed");
+            const stateMessage = detail.state_message;
+            const error = new Error(
+                typeof stateMessage === "object" ? stateMessage?.err_msg : stateMessage || "Tool request failed",
+            );
+            if (typeof stateMessage === "object") {
+                error.err_data = stateMessage?.err_data;
+                error.err_msg = stateMessage?.err_msg;
+            }
+            throw error;
         }
         await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
@@ -137,7 +145,6 @@ export async function buildJobResponse(toolRequestDetail) {
     ]);
 
     return {
-        produces_entry_points: false,
         jobs,
         outputs,
         output_collections,
