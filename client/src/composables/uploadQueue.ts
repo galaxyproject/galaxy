@@ -646,12 +646,6 @@ export function useUploadQueue() {
 
             // Direct-creation batches don't have a separate collection creation step
             if (batch.directCreation) {
-                if (batch.status === "uploading") {
-                    uploadState.setBatchError(
-                        batch.id,
-                        "Upload was interrupted. Please re-upload the files to create the collection.",
-                    );
-                }
                 return;
             }
 
