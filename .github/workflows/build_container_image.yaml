@@ -105,33 +105,46 @@ jobs:
         run: |
           version=$(python3 -c "import lib.galaxy.version; print(lib.galaxy.version.VERSION)")
           echo "version=$version" >> $GITHUB_OUTPUT
-      - name: Build container image
-        run: docker build . --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg IMAGE_TAG=${{ steps.branch.outputs.name }} -t galaxy/galaxy-min:${{ steps.branch.outputs.name }} -t quay.io/galaxyproject/galaxy-min:${{ steps.branch.outputs.name }} -f .k8s_ci.Dockerfile
-      - name: Create auto-expiring one for per-commit auto repository
-        run: echo "FROM galaxy/galaxy-min:${{ steps.branch.outputs.name }}" | docker build --label "quay.expires-after"="90d" -t "quay.io/galaxyproject/galaxy-k8s-auto:${{ steps.commit.outputs.sha_short }}" -
+      - name: Build args
+        id: buildargs
+        run: |
+          echo "gitcommit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "builddate=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Login to quay.io
-        uses: actions-hub/docker/login@master
-        env:
-          DOCKER_USERNAME: ${{ secrets.QUAY_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
-          DOCKER_REGISTRY_URL: quay.io
-      - name: Push to quay.io with branch name
-        uses: actions-hub/docker@master
+        uses: docker/login-action@v3
         with:
-          args: push quay.io/galaxyproject/galaxy-min:${{ steps.branch.outputs.name }}
-      - name: Push to quay.io with commit hash
-        uses: actions-hub/docker@master
-        with:
-          args: push quay.io/galaxyproject/galaxy-k8s-auto:${{ steps.commit.outputs.sha_short }}
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
       - name: Login to DockerHub
-        uses: actions-hub/docker/login@master
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Push to DockerHub with branch name
-        uses: actions-hub/docker@master
+        uses: docker/login-action@v3
         with:
-          args: push galaxy/galaxy-min:${{ steps.branch.outputs.name }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Build and push galaxy-min image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .k8s_ci.Dockerfile
+          push: true
+          build-args: |
+            GIT_COMMIT=${{ steps.buildargs.outputs.gitcommit }}
+            BUILD_DATE=${{ steps.buildargs.outputs.builddate }}
+            IMAGE_TAG=${{ steps.branch.outputs.name }}
+          tags: |
+            galaxy/galaxy-min:${{ steps.branch.outputs.name }}
+            quay.io/galaxyproject/galaxy-min:${{ steps.branch.outputs.name }}
+      - name: Create Dockerfile for auto-expiring image
+        run: echo "FROM galaxy/galaxy-min:${{ steps.branch.outputs.name }}" > /tmp/Dockerfile.auto
+      - name: Build and push auto-expiring per-commit image
+        uses: docker/build-push-action@v6
+        with:
+          file: /tmp/Dockerfile.auto
+          push: true
+          tags: quay.io/galaxyproject/galaxy-k8s-auto:${{ steps.commit.outputs.sha_short }}
+          labels: quay.expires-after=90d
 
   smoke-test:
     name: Try installing the new image
