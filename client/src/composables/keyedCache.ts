@@ -53,7 +53,9 @@ export function useKeyedCache<T>(
     const getItemById = computed(() => {
         return (id: string) => {
             const item = storedItems.value[id];
-            if (shouldFetch(item)) {
+            // TODO: consider allowing retries for transient errors (e.g. 5xx, network)
+            // while still blocking on permanent ones (403, 404).
+            if (shouldFetch(item) && !loadingErrors.value[id]) {
                 fetchItemById({ id: id });
             }
             return item ?? null;
