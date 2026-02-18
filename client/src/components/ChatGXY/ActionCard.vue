@@ -1,21 +1,3 @@
-<template>
-    <div v-if="suggestions.length > 0" class="action-card">
-        <div class="action-header">Suggested Actions</div>
-        <div class="action-list">
-            <button
-                v-for="(action, index) in sortedSuggestions"
-                :key="`${action.action_type}-${index}-${action.description}`"
-                class="btn action-button"
-                :class="getButtonClass(action.priority)"
-                :disabled="processingAction"
-                @click="$emit('handle-action', action)">
-                <FontAwesomeIcon :icon="getIcon(action.action_type)" fixed-width />
-                <span class="action-text">{{ action.description }}</span>
-            </button>
-        </div>
-    </div>
-</template>
-
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
@@ -41,8 +23,8 @@ const props = withDefaults(defineProps<Props>(), {
     processingAction: false,
 });
 
-defineEmits<{
-    "handle-action": [action: ActionSuggestion];
+const emit = defineEmits<{
+    (e: "handle-action", value: ActionSuggestion): void;
 }>();
 
 // Sort suggestions by priority (1 = highest)
@@ -59,6 +41,7 @@ const iconMap: Record<ActionType, IconDefinition> = {
     [ActionType.REFINE_QUERY]: faPencilAlt,
     [ActionType.DOCUMENTATION]: faBook,
     [ActionType.VIEW_EXTERNAL]: faExternalLinkAlt,
+    [ActionType.PYODIDE_EXECUTE]: faWrench, // TODO: Is this needed/correct for pyodide execute actions?
 };
 
 function getIcon(actionType: ActionType): IconDefinition {
@@ -76,6 +59,24 @@ function getButtonClass(priority: number): string {
     }
 }
 </script>
+
+<template>
+    <div v-if="suggestions.length > 0" class="action-card">
+        <div class="action-header">Suggested Actions</div>
+        <div class="action-list">
+            <button
+                v-for="(action, index) in sortedSuggestions"
+                :key="`${action.action_type}-${index}-${action.description}`"
+                class="btn action-button"
+                :class="getButtonClass(action.priority)"
+                :disabled="processingAction"
+                @click="emit('handle-action', action)">
+                <FontAwesomeIcon :icon="getIcon(action.action_type)" fixed-width />
+                <span class="action-text">{{ action.description }}</span>
+            </button>
+        </div>
+    </div>
+</template>
 
 <style lang="scss" scoped>
 @import "@/style/scss/theme/blue.scss";

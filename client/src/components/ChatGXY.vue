@@ -21,10 +21,11 @@ import { BSkeleton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 
-import { GalaxyApi, type HDACustom } from "@/api";
+import { GalaxyApi } from "@/api";
 import { type ActionSuggestion, type AgentResponse, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
 import { useToast } from "@/composables/toast";
+import { useHistoryDatasets } from "@/composables/useHistoryDatasets";
 import {
     type PyodideArtifact,
     type PyodideRunResult,
@@ -32,10 +33,10 @@ import {
     usePyodideRunner,
 } from "@/composables/usePyodideRunner";
 import { getAppRoot } from "@/onload/loadConfig";
-import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import type { AnalysisStep, ChatHistoryItem, ExecutionState, Message, UploadedArtifact } from "./ChatGXY/types";
 import type { DataOption } from "./Form/Elements/FormData/types";
 
 import ActionCard from "./ChatGXY/ActionCard.vue";
@@ -43,73 +44,6 @@ import DatasetSelector from "./Form/Elements/FormData/FormData.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
-
-interface AnalysisStep {
-    type: "thought" | "action" | "observation" | "conclusion";
-    content: string;
-    requirements?: string[];
-    status?: "pending" | "running" | "completed" | "error";
-    stdout?: string;
-    stderr?: string;
-    success?: boolean;
-}
-
-interface Message {
-    id: string;
-    role: "user" | "assistant";
-    content: string;
-    timestamp: Date;
-    agentType?: string;
-    confidence?: string;
-    feedback?: "up" | "down" | null;
-    agentResponse?: AgentResponse;
-    suggestions?: ActionSuggestion[];
-    isSystemMessage?: boolean; // Flag for welcome/placeholder messages that shouldn't have feedback
-    routingInfo?: {
-        selected_agent: string;
-        reasoning: string;
-    };
-    analysisSteps?: AnalysisStep[];
-    artifacts?: UploadedArtifact[];
-    generatedPlots?: string[];
-    generatedFiles?: string[];
-    isCollapsible?: boolean;
-    isCollapsed?: boolean;
-    collapsedHistory?: Message[];
-}
-
-interface ChatHistoryItem {
-    id: number;
-    query: string;
-    response: string;
-    agent_type: string;
-    agent_response?: AgentResponse; // Full agent response with suggestions
-    timestamp: string;
-    feedback?: number | null;
-}
-
-interface UploadedArtifact {
-    dataset_id: string;
-    name?: string;
-    size?: number;
-    mime_type?: string;
-    download_url: string;
-    history_id?: string;
-}
-
-interface ExecutionState {
-    status: "pending" | "initialising" | "installing" | "fetching" | "running" | "submitting" | "completed" | "error";
-    stdout: string;
-    stderr: string;
-    artifacts: UploadedArtifact[];
-    errorMessage?: string;
-}
-
-interface DatasetOption extends DataOption {
-    hid: number;
-    size?: number;
-    extension: string;
-}
 
 const query = ref("");
 const messages = ref<Message[]>([]);
@@ -124,8 +58,6 @@ const currentChatId = ref<number | null>(null);
 const hasLoadedInitialChat = ref(false);
 const pendingCollapsedMessages: Message[] = [];
 
-const datasetOptions = ref<DatasetOption[]>([]);
-
 const selectedDatasets = ref<string[]>([]);
 /** A computed ref that gets/sets the selected datasets as `FormData` structured data,
  * based on the `selectedDatasets` array of IDs.
@@ -134,7 +66,7 @@ const selectedDatasets = ref<string[]>([]);
  * the counts do not update correctly. Possibly related to how the options are built?
  */
 const selectedDatasetsFormData = computed<{
-    values: Array<DatasetOption>;
+    values: Array<DataOption>;
 } | null>({
     get() {
         if (selectedDatasets.value.length === 0) {
@@ -154,11 +86,59 @@ const selectedDatasetsFormData = computed<{
     },
 });
 /** `FormData` structured options for datasets */
-const formDataOptions = computed<Record<string, Array<DatasetOption>>>(() => ({ hda: datasetOptions.value }));
+const formDataOptions = computed<Record<string, Array<DataOption>>>(() => ({ hda: datasetOptions.value }));
 
-const loadingDatasets = ref(false);
-const datasetError = ref("");
-let pendingDatasetRefresh = false;
+const { currentHistoryId } = storeToRefs(useHistoryStore());
+
+/** Whether fetching datasets is allowed/enabled (for Data Analysis agent type) */
+const allowFetchingDatasets = ref(false);
+
+// History items variables
+const {
+    datasets: currentHistoryDatasets,
+    isFetching: loadingDatasets,
+    error: datasetError,
+    // initialFetchDone: initialFetch, // TODO: Remove if we don't need this
+} = useHistoryDatasets({
+    historyId: () => currentHistoryId.value || "",
+    enabled: () => currentHistoryId.value !== null && allowFetchingDatasets.value,
+});
+
+const datasetOptions = computed<DataOption[]>(() => {
+    if (loadingDatasets.value) {
+        return [];
+    }
+    const datasets = currentHistoryDatasets.value;
+
+    return datasets
+        .map((item) => {
+            const name = item.name || `Dataset ${item.hid || ""}`;
+            const hidden = Boolean(item.visible === false);
+            const generated = typeof name === "string" && name.trim().toLowerCase().startsWith("generated_file");
+            if (!item.id || hidden || generated) {
+                return null;
+            }
+            // TODO: We aren't using `file_size` key in `useHistoryDatasets` currently
+            //       Neither are we storing the extensions for the datasets.
+            return {
+                id: item.id,
+                hid: item.hid,
+                name,
+                src: "hda",
+            } as DataOption;
+        })
+        .filter((entry): entry is DataOption => entry !== null && Boolean(entry));
+});
+
+// Ensure selected datasets are valid when dataset options change
+watch(
+    () => datasetOptions.value,
+    () => {
+        const validIds = new Set(datasetOptions.value.map((entry) => entry.id));
+        selectedDatasets.value = selectedDatasets.value.filter((id) => validIds.has(id));
+    },
+    { immediate: true, deep: true },
+);
 
 const toast = useToast();
 const pyodideRunner = usePyodideRunner();
@@ -167,10 +147,6 @@ const chatStream = ref<WebSocket | null>(null);
 const streamSupported = typeof window !== "undefined" && typeof WebSocket !== "undefined";
 const deliveredTaskIds = new Set<string>();
 const pyodideTaskToMessage = new Map<string, Message>();
-const historyItemsStore = useHistoryItemsStore();
-const historyStore = useHistoryStore();
-const { lastUpdateTime } = storeToRefs(historyItemsStore);
-const { currentHistoryId } = storeToRefs(historyStore);
 const isChatBusy = computed(
     () => busy.value || pyodideRunner.isRunning.value || messages.value.some((message) => isAwaitingExecution(message)),
 );
@@ -235,9 +211,11 @@ const agentIconMap: Record<string, IconDefinition> = {
 };
 
 onMounted(async () => {
-    await loadDatasetOptions();
     // Try to load the most recent chat
     await loadLatestChat();
+
+    // TODO: This should be conditionally set only for the Data Analysis agent type
+    allowFetchingDatasets.value = true;
 
     // If no chat was loaded, show the welcome message
     if (!hasLoadedInitialChat.value) {
@@ -261,22 +239,9 @@ onMounted(async () => {
 });
 
 watch(
-    () => lastUpdateTime.value,
-    () => {
-        if (loadingDatasets.value) {
-            pendingDatasetRefresh = true;
-            return;
-        }
-        loadDatasetOptions();
-    },
-    { immediate: false },
-);
-
-watch(
     () => currentHistoryId.value,
     () => {
         selectedDatasets.value = [];
-        loadDatasetOptions();
     },
     { immediate: false },
 );
@@ -328,7 +293,7 @@ function attachPendingCollapsedMessages(target: Message) {
 function getLatestUserQuery(): string {
     for (let i = messages.value.length - 1; i >= 0; i -= 1) {
         const entry = messages.value[i];
-        if (entry.role === "user") {
+        if (entry?.role === "user") {
             return entry.content;
         }
     }
@@ -747,7 +712,7 @@ function openChatStream(exchangeId: number) {
     }
 
     try {
-        const rawRoot = getAppRoot(undefined, true) || "/";
+        const rawRoot = getAppRoot() || "/";
         const appRoot = rawRoot.replace(/\/+$/, "") || "/";
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
         const wsUrl = `${protocol}//${window.location.host}${appRoot}/api/chat/exchange/${exchangeId}/stream`;
@@ -807,7 +772,6 @@ function handleStreamMessage(event: MessageEvent) {
                 }
             }
             appendAssistantMessage(payload.payload, selectedAgentType.value);
-            loadDatasetOptions();
         }
     } catch (error) {
         console.error("Failed to process chat stream message", error);
@@ -869,7 +833,7 @@ function resolveDownloadUrl(url: string): string {
     if (/^https?:\/\//i.test(url)) {
         return url;
     }
-    const rootCandidate = getAppRoot(undefined, true) || window.location.origin;
+    const rootCandidate = getAppRoot() || window.location.origin;
     const absoluteRoot = rootCandidate.replace(/\/$/, "");
     if (url.startsWith("/")) {
         return `${absoluteRoot}${url}`;
@@ -933,7 +897,6 @@ async function submitPyodideExecutionResult(
             deliveredTaskIds.add(payload.task_id);
         }
         appendAssistantMessage(data, message.agentType || selectedAgentType.value);
-        await loadDatasetOptions();
     }
 }
 
@@ -1207,72 +1170,6 @@ function normaliseAnalysisSteps(raw: unknown): AnalysisStep[] {
             } as AnalysisStep;
         })
         .filter((step): step is AnalysisStep => Boolean(step));
-}
-
-// TODO: I don't love how we're fetching the history datasets locally (in this component) every time,
-// because we have this stuff cached in stores (historyItemsStore I think), and we should try to avoid
-// as many API calls as possible
-async function loadDatasetOptions() {
-    loadingDatasets.value = true;
-    datasetError.value = "";
-
-    try {
-        const queryParams: Record<string, string | number> = {
-            limit: 200,
-            order: "update_time-dsc",
-            keys: "id,hid,name,extension,file_size,visible",
-            q: "history_content_type",
-            qv: "dataset",
-        };
-        if (currentHistoryId.value) {
-            queryParams.history_id = currentHistoryId.value;
-        }
-        const { data, error } = await GalaxyApi().GET("/api/datasets", {
-            params: {
-                query: queryParams,
-            },
-        });
-
-        if (error) {
-            datasetError.value = errorMessageAsString(error, "Failed to load datasets");
-            datasetOptions.value = [];
-            return;
-        }
-
-        // TODO: From `HDACustom`, create a new type where we only pick the keys we have specified in the query above
-        const datasets = data as HDACustom[];
-
-        datasetOptions.value = datasets
-            .map((item: HDACustom) => {
-                const name = item.name || `Dataset ${item.hid || ""}`;
-                const hidden = Boolean(item.visible === false);
-                const generated = typeof name === "string" && name.trim().toLowerCase().startsWith("generated_file");
-                if (!item.id || hidden || generated) {
-                    return null;
-                }
-                return {
-                    id: item.id,
-                    hid: item.hid,
-                    name,
-                    extension: item.extension,
-                    size: typeof item.file_size === "number" ? item.file_size : undefined,
-                    src: "hda",
-                } as DatasetOption;
-            })
-            .filter((entry): entry is DatasetOption => entry !== null && Boolean(entry));
-
-        const validIds = new Set(datasetOptions.value.map((entry) => entry.id));
-        selectedDatasets.value = selectedDatasets.value.filter((id) => validIds.has(id));
-    } catch (e) {
-        datasetError.value = errorMessageAsString(e, "Failed to load datasets");
-        datasetOptions.value = [];
-    } finally {
-        loadingDatasets.value = false;
-        if (pendingDatasetRefresh) {
-            pendingDatasetRefresh = false;
-            loadDatasetOptions();
-        }
-    }
 }
 
 async function submitQuery() {
@@ -1597,11 +1494,9 @@ async function loadPreviousChat(item: ChatHistoryItem) {
                                 pyodideTaskToMessage.set(String(pendingTask.task_id), message);
                                 taskIdToMessage[String(pendingTask.task_id)] = message;
                             }
-                            const taskIdsToCheck = [
-                                executedTask?.task_id,
-                                pendingTask?.task_id,
-                                metadata?.pyodide_task?.task_id,
-                            ].filter(Boolean) as string[];
+                            const taskIdsToCheck = [executedTask?.task_id, pendingTask?.task_id].filter(
+                                Boolean,
+                            ) as string[];
                             taskIdsToCheck.forEach((taskId) => {
                                 if (pendingExecResults[taskId]) {
                                     applyExecutionResultMetadata(message, pendingExecResults[taskId]);
@@ -1730,6 +1625,11 @@ async function loadLatestChat() {
     }
 }
 
+/** Type guard to check if a message has artifacts */
+function hasArtifacts(message: Message): message is Message & { artifacts: UploadedArtifact[] } {
+    return Boolean(message.artifacts && message.artifacts.length > 0);
+}
+
 function startNewChat() {
     pendingCollapsedMessages.length = 0;
     // Clear messages and reset to welcome message
@@ -1824,654 +1724,287 @@ function toggleHistory() {
 
             <!-- Main Chat Area -->
             <div ref="chatContainer" class="chat-messages flex-grow-1">
-                    <div class="mb-3">
-                        <div class="pb-2">Select a dataset for this chat</div>
-                        <DatasetSelector
-                            v-if="datasetOptions.length"
-                            id="dataset-select"
-                            v-model="selectedDatasetsFormData"
-                            :loading="loadingDatasets"
-                            :options="formDataOptions"
-                            user-defined-title="Created for ChatGXY"
-                            workflow-run />
-                        <div v-if="datasetError" class="text-danger small mt-2">{{ datasetError }}</div>
-                    </div>
+                <div class="mb-3">
+                    <div class="pb-2">Select a dataset for this chat</div>
+                    <DatasetSelector
+                        v-if="datasetOptions.length"
+                        id="dataset-select"
+                        v-model="selectedDatasetsFormData"
+                        :loading="loadingDatasets"
+                        :options="formDataOptions"
+                        user-defined-title="Created for ChatGXY"
+                        workflow-run />
+                    <div v-if="datasetError" class="text-danger small mt-2">{{ datasetError }}</div>
+                </div>
 
-                    <div
-                        v-for="message in messages"
-                        :key="message.id"
-                        :class="['notebook-cell', message.role === 'user' ? 'query-cell' : 'response-cell']">
-                        <!-- Query cell (user input) -->
-                        <template v-if="message.role === 'user'">
-                            <div class="cell-label">
-                                <FontAwesomeIcon :icon="faUser" fixed-width />
-                                <span>Query</span>
+                <div
+                    v-for="message in messages"
+                    :key="message.id"
+                    :class="['notebook-cell', message.role === 'user' ? 'query-cell' : 'response-cell']">
+                    <!-- Query cell (user input) -->
+                    <template v-if="message.role === 'user'">
+                        <div class="cell-label">
+                            <FontAwesomeIcon :icon="faUser" fixed-width />
+                            <span>Query</span>
+                        </div>
+                        <div class="cell-content">{{ message.content }}</div>
+                    </template>
+
+                    <!-- Response cell (assistant output) -->
+                    <template v-else>
+                        <div class="cell-label">
+                            <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
+                            <span>{{ getAgentLabel(message.agentType) }}</span>
+                            <span
+                                v-if="message.agentResponse?.metadata?.handoff_info"
+                                class="routing-badge"
+                                :title="'Routed by ' + message.agentResponse.metadata.handoff_info.source_agent">
+                                <!-- Had title as :title="message.routingInfo.reasoning" for DA agent -->
+                                via Router
+                            </span>
+                        </div>
+                        <div class="cell-content">
+                            <!-- eslint-disable-next-line vue/no-v-html -->
+                            <div v-html="safeRenderMarkdown(message.content)" />
+
+                            <div v-if="isAwaitingExecution(message)" class="alert alert-warning pyodide-hint mb-2">
+                                ⚙️ Analysis still running… please keep this tab open; refreshing will restart the
+                                execution.
                             </div>
-                            <div class="cell-content">{{ message.content }}</div>
-                        </template>
-
-                        <!-- Response cell (assistant output) -->
-                        <template v-else>
-                            <div class="cell-label">
-                                <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
-                                <span>{{ getAgentLabel(message.agentType) }}</span>
-                                <span
-                                    v-if="message.agentResponse?.metadata?.handoff_info"
-                                    class="routing-badge"
-                                    :title="'Routed by ' + message.agentResponse.metadata.handoff_info.source_agent">
-                                    <!-- Had title as :title="message.routingInfo.reasoning" for DA agent -->
-                                    via Router
-                                </span>
+                            <div
+                                v-else-if="message.agentResponse?.metadata?.pyodide_status === 'timeout'"
+                                class="alert alert-warning pyodide-hint mb-2">
+                                ⚠️ Previous run timed out before the result was sent. Please ask again if you still need
+                                this step to complete.
                             </div>
-                            <div class="cell-content">
-                                <!-- eslint-disable-next-line vue/no-v-html -->
-                                <div v-html="safeRenderMarkdown(message.content)" />
 
-                                <div v-if="isAwaitingExecution(message)" class="alert alert-warning pyodide-hint mb-2">
-                                    ⚙️ Analysis still running… please keep this tab open; refreshing will restart the
-                                    execution.
-                                </div>
-                                <div
-                                    v-else-if="message.agentResponse?.metadata?.pyodide_status === 'timeout'"
-                                    class="alert alert-warning pyodide-hint mb-2">
-                                    ⚠️ Previous run timed out before the result was sent. Please ask again if you still
-                                    need this step to complete.
-                                </div>
-
-                                <div v-if="message.artifacts?.length" class="mt-2">
-                                    <details open class="artifacts-panel">
-                                        <summary class="text-muted">
-                                            Saved Artifacts ({{ message.artifacts.length }})
-                                        </summary>
-                                        <div class="artifact-grid">
-                                            <div
-                                                v-for="artifact in message.artifacts"
-                                                :key="artifact.dataset_id || artifact.name"
-                                                class="artifact-grid-item">
-                                                <div class="artifact-name">
-                                                    <button
-                                                        v-if="artifact.download_url"
-                                                        class="btn btn-link btn-sm p-0"
-                                                        type="button"
-                                                        @click="downloadArtifact(artifact)">
-                                                        {{ artifact.name || artifact.dataset_id }}
-                                                    </button>
-                                                    <span v-else>{{ artifact.name || artifact.dataset_id }}</span>
-                                                    <span v-if="artifact.size" class="text-muted ml-1">
-                                                        ({{ formatSize(artifact.size) }})
-                                                    </span>
-                                                </div>
-                                                <div
-                                                    v-if="
-                                                        artifact.mime_type &&
-                                                        artifact.mime_type.startsWith('image/') &&
-                                                        artifact.download_url
-                                                    "
-                                                    class="artifact-preview mt-2">
-                                                    <img
-                                                        :src="artifact.download_url"
-                                                        :alt="artifact.name || 'plot preview'"
-                                                        class="plot-preview img-thumbnail" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </details>
-                                </div>
-
-                                <template v-if="isDataAnalysisMessage(message)">
-                                    <details
-                                        v-if="hasIntermediateDetails(message)"
-                                        class="intermediate-panel card mt-2">
-                                        <summary class="text-muted">Intermediate steps</summary>
-                                        <div class="card-body">
-                                            <div
-                                                v-if="message.agentResponse?.metadata?.executed_task?.code"
-                                                class="executed-code">
-                                                <details>
-                                                    <summary class="text-muted">Executed Python Code</summary>
-                                                    <pre>{{
-                                                        message.agentResponse?.metadata?.executed_task?.code
-                                                    }}</pre>
-                                                </details>
-                                                <div v-if="message.agentResponse?.metadata?.stdout" class="mt-2">
-                                                    <details>
-                                                        <summary class="text-muted">Execution Stdout</summary>
-                                                        <pre>{{ message.agentResponse?.metadata?.stdout }}</pre>
-                                                    </details>
-                                                </div>
-                                                <div v-if="message.agentResponse?.metadata?.stderr" class="mt-2">
-                                                    <details>
-                                                        <summary class="text-muted">Execution Stderr</summary>
-                                                        <pre class="text-danger">
-                                                            {{ message.agentResponse?.metadata?.stderr }}
-                                                        </pre>
-                                                    </details>
-                                                </div>
-                                            </div>
-                                            <div v-if="message.analysisSteps?.length" class="analysis-steps card mt-2">
-                                                <div
-                                                    v-for="(step, idx) in message.analysisSteps"
-                                                    :key="idx"
-                                                    class="analysis-step"
-                                                    :class="[
-                                                        step.type,
-                                                        step.status && step.status !== 'pending' ? step.status : '',
-                                                    ]">
-                                                    <div class="analysis-step-header">
-                                                        <span class="step-label">
-                                                            {{
-                                                                step.type === "thought"
-                                                                    ? "Plan"
-                                                                    : step.type === "action"
-                                                                      ? "Action"
-                                                                      : step.type === "observation"
-                                                                        ? "Observation"
-                                                                        : "Conclusion"
-                                                            }}
-                                                        </span>
-                                                        <span
-                                                            v-if="
-                                                                step.type === 'action' &&
-                                                                step.status &&
-                                                                step.status !== 'pending'
-                                                            "
-                                                            class="step-status"
-                                                            :class="step.status">
-                                                            {{ step.status }}
-                                                        </span>
-                                                        <span
-                                                            v-else-if="
-                                                                step.type === 'observation' &&
-                                                                step.success !== undefined
-                                                            "
-                                                            class="step-status"
-                                                            :class="step.success ? 'completed' : 'error'">
-                                                            {{ step.success ? "success" : "error" }}
-                                                        </span>
-                                                    </div>
-                                                    <div class="analysis-step-body">
-                                                        <pre v-if="step.type === 'action'">{{ step.content }}</pre>
-                                                        <div v-else-if="step.type === 'observation'">
-                                                            <div v-if="step.stdout">
-                                                                <small class="text-muted">stdout</small>
-                                                                <pre>{{ step.stdout }}</pre>
-                                                            </div>
-                                                            <div v-if="step.stderr">
-                                                                <small class="text-muted">stderr</small>
-                                                                <pre class="text-danger">{{ step.stderr }}</pre>
-                                                            </div>
-                                                            <div v-if="!step.stdout && !step.stderr">
-                                                                No textual output.
-                                                            </div>
-                                                        </div>
-                                                        <div v-else>{{ step.content }}</div>
-                                                        <div
-                                                            v-if="step.type === 'action' && step.requirements?.length"
-                                                            class="step-requirements">
-                                                            <small class="text-muted">
-                                                                requirements: {{ step.requirements.join(", ") }}
-                                                            </small>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                            <div v-if="message.artifacts?.length" class="mt-2">
+                                <details open class="artifacts-panel">
+                                    <summary class="text-muted">
+                                        Saved Artifacts ({{ message.artifacts.length }})
+                                    </summary>
+                                    <div class="artifact-grid">
+                                        <div
+                                            v-for="artifact in message.artifacts"
+                                            :key="artifact.dataset_id || artifact.name"
+                                            class="artifact-grid-item">
+                                            <div class="artifact-name">
+                                                <button
+                                                    v-if="artifact.download_url"
+                                                    class="btn btn-link btn-sm p-0"
+                                                    type="button"
+                                                    @click="downloadArtifact(artifact)">
+                                                    {{ artifact.name || artifact.dataset_id }}
+                                                </button>
+                                                <span v-else>{{ artifact.name || artifact.dataset_id }}</span>
+                                                <span v-if="artifact.size" class="text-muted ml-1">
+                                                    ({{ formatSize(artifact.size) }})
+                                                </span>
                                             </div>
                                             <div
-                                                v-if="message.role === 'assistant' && shouldShowPyodideStatus(message)"
-                                                class="pyodide-status card mt-2">
-                                                <div class="card-body">
-                                                    <div
-                                                        v-if="
-                                                            pyodideStateForMessage(message)?.status === 'initialising'
-                                                        "
-                                                        class="text-muted">
-                                                        Preparing browser environment…
-                                                    </div>
-                                                    <div
-                                                        v-else-if="
-                                                            pyodideStateForMessage(message)?.status === 'installing'
-                                                        "
-                                                        class="text-muted">
-                                                        Installing Python packages…
-                                                    </div>
-                                                    <div
-                                                        v-else-if="
-                                                            pyodideStateForMessage(message)?.status === 'fetching'
-                                                        "
-                                                        class="text-muted">
-                                                        Downloading datasets…
-                                                    </div>
-                                                    <div
-                                                        v-else-if="
-                                                            pyodideStateForMessage(message)?.status === 'running'
-                                                        "
-                                                        class="text-muted">
-                                                        Running generated Python in the browser…
-                                                    </div>
-                                                    <div
-                                                        v-else-if="
-                                                            pyodideStateForMessage(message)?.status === 'submitting'
-                                                        "
-                                                        class="text-muted">
-                                                        Sending results back to Galaxy…
-                                                    </div>
-                                                    <div
-                                                        v-else-if="
-                                                            pyodideStateForMessage(message)?.status === 'completed'
-                                                        "
-                                                        class="text-success">
-                                                        Execution completed in your browser.
-                                                    </div>
-                                                    <div
-                                                        v-else-if="pyodideStateForMessage(message)?.status === 'error'"
-                                                        class="text-danger">
-                                                        Execution failed{{
-                                                            pyodideStateForMessage(message)?.errorMessage
-                                                                ? ": " + pyodideStateForMessage(message)?.errorMessage
-                                                                : ""
-                                                        }}
-                                                    </div>
-
-                                                    <div v-if="pyodideStateForMessage(message)?.stdout" class="mt-2">
-                                                        <h6 class="mb-1">Stdout</h6>
-                                                        <pre class="pyodide-stream">
-                                                            {{ pyodideStateForMessage(message)?.stdout }}
-                                                        </pre>
-                                                    </div>
-                                                    <div v-if="pyodideStateForMessage(message)?.stderr" class="mt-2">
-                                                        <h6 class="mb-1 text-danger">Stderr</h6>
-                                                        <pre class="pyodide-stream text-danger">
-                                                            {{ pyodideStateForMessage(message)?.stderr }}
-                                                        </pre>
-                                                    </div>
-                                                    <div
-                                                        v-if="pyodideStateForMessage(message)?.artifacts.length"
-                                                        class="mt-2">
-                                                        <h6 class="mb-1">Artifacts</h6>
-                                                        <div class="artifact-grid">
-                                                            <div
-                                                                v-for="artifact in pyodideStateForMessage(message)
-                                                                    ?.artifacts"
-                                                                :key="artifact.dataset_id || artifact.name"
-                                                                class="artifact-grid-item">
-                                                                <div class="artifact-name">
-                                                                    {{ artifact.name || artifact.dataset_id }}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div
-                                                v-if="message.collapsedHistory && message.collapsedHistory.length"
-                                                class="intermediate-history mt-3">
-                                                <h6 class="mb-2">
-                                                    Earlier steps ({{ message.collapsedHistory.length }})
-                                                </h6>
-                                                <div
-                                                    v-for="historyMessage in message.collapsedHistory"
-                                                    :key="historyMessage.id"
-                                                    class="previous-step mb-3">
-                                                    <div class="text-muted mb-2">
-                                                        {{ collapsedSummary(historyMessage) }}
-                                                    </div>
-                                                    <div class="message-content">
-                                                        <div v-html="safeRenderMarkdown(historyMessage.content)" />
-                                                        <div v-if="shouldShowArtifacts(historyMessage)" class="mt-2">
-                                                            <details open class="artifacts-panel">
-                                                                <summary class="text-muted">
-                                                                    Saved Artifacts ({{
-                                                                        historyMessage.artifacts.length
-                                                                    }})
-                                                                </summary>
-                                                                <div class="artifact-grid">
-                                                                    <div
-                                                                        v-for="artifact in historyMessage.artifacts"
-                                                                        :key="artifact.dataset_id || artifact.name"
-                                                                        class="artifact-grid-item">
-                                                                        <div class="artifact-name">
-                                                                            <button
-                                                                                v-if="artifact.download_url"
-                                                                                class="btn btn-link btn-sm p-0"
-                                                                                type="button"
-                                                                                @click="downloadArtifact(artifact)">
-                                                                                {{
-                                                                                    artifact.name || artifact.dataset_id
-                                                                                }}
-                                                                            </button>
-                                                                            <span v-else>{{
-                                                                                artifact.name || artifact.dataset_id
-                                                                            }}</span>
-                                                                            <span
-                                                                                v-if="artifact.size"
-                                                                                class="text-muted ml-1">
-                                                                                ({{ formatSize(artifact.size) }})
-                                                                            </span>
-                                                                        </div>
-                                                                        <div
-                                                                            v-if="
-                                                                                artifact.mime_type &&
-                                                                                artifact.mime_type.startsWith(
-                                                                                    'image/',
-                                                                                ) &&
-                                                                                artifact.download_url
-                                                                            "
-                                                                            class="artifact-preview mt-2">
-                                                                            <img
-                                                                                :src="artifact.download_url"
-                                                                                :alt="artifact.name || 'plot preview'"
-                                                                                class="plot-preview img-thumbnail" />
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </details>
-                                                        </div>
-                                                        <div
-                                                            v-if="
-                                                                historyMessage.agentResponse?.metadata?.executed_task
-                                                                    ?.code
-                                                            "
-                                                            class="mt-2 executed-code">
-                                                            <details open>
-                                                                <summary class="text-muted">
-                                                                    Executed Python Code
-                                                                </summary>
-                                                                <pre>{{
-                                                                    historyMessage.agentResponse?.metadata
-                                                                        ?.executed_task?.code
-                                                                }}</pre>
-                                                            </details>
-                                                            <div
-                                                                v-if="historyMessage.agentResponse?.metadata?.stdout"
-                                                                class="mt-2">
-                                                                <details open>
-                                                                    <summary class="text-muted">
-                                                                        Execution Stdout
-                                                                    </summary>
-                                                                    <pre>{{
-                                                                        historyMessage.agentResponse?.metadata?.stdout
-                                                                    }}</pre>
-                                                                </details>
-                                                            </div>
-                                                            <div
-                                                                v-if="historyMessage.agentResponse?.metadata?.stderr"
-                                                                class="mt-2">
-                                                                <details>
-                                                                    <summary class="text-muted">
-                                                                        Execution Stderr
-                                                                    </summary>
-                                                                    <pre class="text-danger">{{
-                                                                        historyMessage.agentResponse?.metadata?.stderr
-                                                                    }}</pre>
-                                                                </details>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        v-if="historyMessage.analysisSteps?.length"
-                                                        class="analysis-steps card mt-2">
-                                                        <div
-                                                            v-for="(step, idx) in historyMessage.analysisSteps"
-                                                            :key="idx"
-                                                            class="analysis-step"
-                                                            :class="[
-                                                                step.type,
-                                                                step.status && step.status !== 'pending'
-                                                                    ? step.status
-                                                                    : '',
-                                                            ]">
-                                                            <div class="analysis-step-header">
-                                                                <span class="step-label">
-                                                                    {{
-                                                                        step.type === "thought"
-                                                                            ? "Plan"
-                                                                            : step.type === "action"
-                                                                              ? "Action"
-                                                                              : step.type === "observation"
-                                                                                ? "Observation"
-                                                                                : "Conclusion"
-                                                                    }}
-                                                                </span>
-                                                                <span
-                                                                    v-if="
-                                                                        step.type === 'action' &&
-                                                                        step.status &&
-                                                                        step.status !== 'pending'
-                                                                    "
-                                                                    class="step-status"
-                                                                    :class="step.status">
-                                                                    {{ step.status }}
-                                                                </span>
-                                                                <span
-                                                                    v-else-if="
-                                                                        step.type === 'observation' &&
-                                                                        step.success !== undefined
-                                                                    "
-                                                                    class="step-status"
-                                                                    :class="step.success ? 'completed' : 'error'">
-                                                                    {{ step.success ? "success" : "error" }}
-                                                                </span>
-                                                            </div>
-                                                            <div class="analysis-step-body">
-                                                                <pre v-if="step.type === 'action'">{{
-                                                                    step.content
-                                                                }}</pre>
-                                                                <div v-else-if="step.type === 'observation'">
-                                                                    <div v-if="step.stdout">
-                                                                        <small class="text-muted">stdout</small>
-                                                                        <pre>{{ step.stdout }}</pre>
-                                                                    </div>
-                                                                    <div v-if="step.stderr">
-                                                                        <small class="text-muted">stderr</small>
-                                                                        <pre class="text-danger">{{ step.stderr }}</pre>
-                                                                    </div>
-                                                                    <div v-if="!step.stdout && !step.stderr">
-                                                                        No textual output.
-                                                                    </div>
-                                                                </div>
-                                                                <div v-else>{{ step.content }}</div>
-                                                                <div
-                                                                    v-if="
-                                                                        step.type === 'action' &&
-                                                                        step.requirements?.length
-                                                                    "
-                                                                    class="step-requirements">
-                                                                    <small class="text-muted">
-                                                                        requirements:
-                                                                        {{ step.requirements.join(", ") }}
-                                                                    </small>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </details>
-                                </template>
-
-                                <div
-                                    v-if="message.agentResponse?.metadata?.executed_task?.code"
-                                    class="mt-2 executed-code">
-                                    <details open>
-                                        <summary class="text-muted">Executed Python Code</summary>
-                                        <pre>{{ message.agentResponse?.metadata?.executed_task?.code }}</pre>
-                                    </details>
-                                    <div v-if="message.agentResponse?.metadata?.stdout" class="mt-2">
-                                        <details open>
-                                            <summary class="text-muted">Execution Stdout</summary>
-                                            <pre>{{ message.agentResponse?.metadata?.stdout }}</pre>
-                                        </details>
-                                    </div>
-                                    <div v-if="message.agentResponse?.metadata?.stderr" class="mt-2">
-                                        <details>
-                                            <summary class="text-muted">Execution Stderr</summary>
-                                            <pre class="text-danger">{{ message.agentResponse?.metadata?.stderr }}</pre>
-                                        </details>
-                                    </div>
-                                </div>
-
-                                <div v-if="message.analysisSteps?.length" class="analysis-steps card mt-2">
-                                    <div
-                                        v-for="(step, idx) in message.analysisSteps"
-                                        :key="idx"
-                                        class="analysis-step"
-                                        :class="[
-                                            step.type,
-                                            step.status && step.status !== 'pending' ? step.status : '',
-                                        ]">
-                                        <div class="analysis-step-header">
-                                            <span class="step-label">
-                                                {{
-                                                    step.type === "thought"
-                                                        ? "Plan"
-                                                        : step.type === "action"
-                                                          ? "Action"
-                                                          : step.type === "observation"
-                                                            ? "Observation"
-                                                            : "Conclusion"
-                                                }}
-                                            </span>
-                                            <span
                                                 v-if="
-                                                    step.type === 'action' && step.status && step.status !== 'pending'
+                                                    artifact.mime_type &&
+                                                    artifact.mime_type.startsWith('image/') &&
+                                                    artifact.download_url
                                                 "
-                                                class="step-status"
-                                                :class="step.status">
-                                                {{ step.status }}
-                                            </span>
-                                            <span
-                                                v-else-if="step.type === 'observation' && step.success !== undefined"
-                                                class="step-status"
-                                                :class="step.success ? 'completed' : 'error'">
-                                                {{ step.success ? "success" : "error" }}
-                                            </span>
-                                        </div>
-                                        <div class="analysis-step-body">
-                                            <pre v-if="step.type === 'action'">{{ step.content }}</pre>
-                                            <div v-else-if="step.type === 'observation'">
-                                                <div v-if="step.stdout">
-                                                    <small class="text-muted">stdout</small>
-                                                    <pre>{{ step.stdout }}</pre>
-                                                </div>
-                                                <div v-if="step.stderr">
-                                                    <small class="text-muted">stderr</small>
-                                                    <pre class="text-danger">{{ step.stderr }}</pre>
-                                                </div>
-                                                <div v-if="!step.stdout && !step.stderr">No textual output.</div>
-                                            </div>
-                                            <div v-else>{{ step.content }}</div>
-                                            <div
-                                                v-if="step.type === 'action' && step.requirements?.length"
-                                                class="step-requirements">
-                                                <small class="text-muted">
-                                                    requirements: {{ step.requirements.join(", ") }}
-                                                </small>
+                                                class="artifact-preview mt-2">
+                                                <img
+                                                    :src="artifact.download_url"
+                                                    :alt="artifact.name || 'plot preview'"
+                                                    class="plot-preview img-thumbnail" />
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </details>
+                            </div>
 
-                                <div v-if="shouldShowPyodideStatus(message)" class="pyodide-status card mt-2">
+                            <template v-if="isDataAnalysisMessage(message)">
+                                <details v-if="hasIntermediateDetails(message)" class="intermediate-panel card mt-2">
+                                    <summary class="text-muted">Intermediate steps</summary>
                                     <div class="card-body">
                                         <div
-                                            v-if="pyodideStateForMessage(message)?.status === 'initialising'"
-                                            class="text-muted">
-                                            Preparing browser environment…
+                                            v-if="message.agentResponse?.metadata?.executed_task?.code"
+                                            class="executed-code">
+                                            <details>
+                                                <summary class="text-muted">Executed Python Code</summary>
+                                                <pre>{{ message.agentResponse?.metadata?.executed_task?.code }}</pre>
+                                            </details>
+                                            <div v-if="message.agentResponse?.metadata?.stdout" class="mt-2">
+                                                <details>
+                                                    <summary class="text-muted">Execution Stdout</summary>
+                                                    <pre>{{ message.agentResponse?.metadata?.stdout }}</pre>
+                                                </details>
+                                            </div>
+                                            <div v-if="message.agentResponse?.metadata?.stderr" class="mt-2">
+                                                <details>
+                                                    <summary class="text-muted">Execution Stderr</summary>
+                                                    <pre class="text-danger">
+                                                            {{ message.agentResponse?.metadata?.stderr }}
+                                                        </pre
+                                                    >
+                                                </details>
+                                            </div>
                                         </div>
-                                        <div
-                                            v-else-if="pyodideStateForMessage(message)?.status === 'installing'"
-                                            class="text-muted">
-                                            Installing Python packages…
-                                        </div>
-                                        <div
-                                            v-else-if="pyodideStateForMessage(message)?.status === 'fetching'"
-                                            class="text-muted">
-                                            Downloading datasets…
-                                        </div>
-                                        <div
-                                            v-else-if="pyodideStateForMessage(message)?.status === 'running'"
-                                            class="text-muted">
-                                            Running generated Python in the browser…
-                                        </div>
-                                        <div
-                                            v-else-if="pyodideStateForMessage(message)?.status === 'submitting'"
-                                            class="text-muted">
-                                            Sending results back to Galaxy…
-                                        </div>
-                                        <div
-                                            v-else-if="pyodideStateForMessage(message)?.status === 'completed'"
-                                            class="text-success">
-                                            Execution completed in your browser.
-                                        </div>
-                                        <div
-                                            v-else-if="pyodideStateForMessage(message)?.status === 'error'"
-                                            class="text-danger">
-                                            Execution failed{{
-                                                pyodideStateForMessage(message)?.errorMessage
-                                                    ? ": " + pyodideStateForMessage(message)?.errorMessage
-                                                    : ""
-                                            }}
-                                        </div>
-
-                                        <div v-if="pyodideStateForMessage(message)?.stdout" class="mt-2">
-                                            <h6 class="mb-1">Stdout</h6>
-                                            <pre class="pyodide-stream">{{
-                                                pyodideStateForMessage(message)?.stdout
-                                            }}</pre>
-                                        </div>
-                                        <div v-if="pyodideStateForMessage(message)?.stderr" class="mt-2">
-                                            <h6 class="mb-1 text-danger">Stderr</h6>
-                                            <pre class="pyodide-stream text-danger">
-                                                {{ pyodideStateForMessage(message)?.stderr }}
-                                            </pre>
-                                        </div>
-                                        <div v-if="pyodideStateForMessage(message)?.artifacts.length" class="mt-2">
-                                            <h6 class="mb-1">Artifacts</h6>
-                                            <div class="artifact-grid">
-                                                <div
-                                                    v-for="artifact in pyodideStateForMessage(message)?.artifacts"
-                                                    :key="artifact.dataset_id || artifact.name"
-                                                    class="artifact-grid-item">
-                                                    <div class="artifact-name">
-                                                        {{ artifact.name || artifact.dataset_id }}
+                                        <div v-if="message.analysisSteps?.length" class="analysis-steps card mt-2">
+                                            <div
+                                                v-for="(step, idx) in message.analysisSteps"
+                                                :key="idx"
+                                                class="analysis-step"
+                                                :class="[
+                                                    step.type,
+                                                    step.status && step.status !== 'pending' ? step.status : '',
+                                                ]">
+                                                <div class="analysis-step-header">
+                                                    <span class="step-label">
+                                                        {{
+                                                            step.type === "thought"
+                                                                ? "Plan"
+                                                                : step.type === "action"
+                                                                  ? "Action"
+                                                                  : step.type === "observation"
+                                                                    ? "Observation"
+                                                                    : "Conclusion"
+                                                        }}
+                                                    </span>
+                                                    <span
+                                                        v-if="
+                                                            step.type === 'action' &&
+                                                            step.status &&
+                                                            step.status !== 'pending'
+                                                        "
+                                                        class="step-status"
+                                                        :class="step.status">
+                                                        {{ step.status }}
+                                                    </span>
+                                                    <span
+                                                        v-else-if="
+                                                            step.type === 'observation' && step.success !== undefined
+                                                        "
+                                                        class="step-status"
+                                                        :class="step.success ? 'completed' : 'error'">
+                                                        {{ step.success ? "success" : "error" }}
+                                                    </span>
+                                                </div>
+                                                <div class="analysis-step-body">
+                                                    <pre v-if="step.type === 'action'">{{ step.content }}</pre>
+                                                    <div v-else-if="step.type === 'observation'">
+                                                        <div v-if="step.stdout">
+                                                            <small class="text-muted">stdout</small>
+                                                            <pre>{{ step.stdout }}</pre>
+                                                        </div>
+                                                        <div v-if="step.stderr">
+                                                            <small class="text-muted">stderr</small>
+                                                            <pre class="text-danger">{{ step.stderr }}</pre>
+                                                        </div>
+                                                        <div v-if="!step.stdout && !step.stderr">
+                                                            No textual output.
+                                                        </div>
+                                                    </div>
+                                                    <div v-else>{{ step.content }}</div>
+                                                    <div
+                                                        v-if="step.type === 'action' && step.requirements?.length"
+                                                        class="step-requirements">
+                                                        <small class="text-muted">
+                                                            requirements: {{ step.requirements.join(", ") }}
+                                                        </small>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
+                                        <div
+                                            v-if="message.role === 'assistant' && shouldShowPyodideStatus(message)"
+                                            class="pyodide-status card mt-2">
+                                            <div class="card-body">
+                                                <div
+                                                    v-if="pyodideStateForMessage(message)?.status === 'initialising'"
+                                                    class="text-muted">
+                                                    Preparing browser environment…
+                                                </div>
+                                                <div
+                                                    v-else-if="pyodideStateForMessage(message)?.status === 'installing'"
+                                                    class="text-muted">
+                                                    Installing Python packages…
+                                                </div>
+                                                <div
+                                                    v-else-if="pyodideStateForMessage(message)?.status === 'fetching'"
+                                                    class="text-muted">
+                                                    Downloading datasets…
+                                                </div>
+                                                <div
+                                                    v-else-if="pyodideStateForMessage(message)?.status === 'running'"
+                                                    class="text-muted">
+                                                    Running generated Python in the browser…
+                                                </div>
+                                                <div
+                                                    v-else-if="pyodideStateForMessage(message)?.status === 'submitting'"
+                                                    class="text-muted">
+                                                    Sending results back to Galaxy…
+                                                </div>
+                                                <div
+                                                    v-else-if="pyodideStateForMessage(message)?.status === 'completed'"
+                                                    class="text-success">
+                                                    Execution completed in your browser.
+                                                </div>
+                                                <div
+                                                    v-else-if="pyodideStateForMessage(message)?.status === 'error'"
+                                                    class="text-danger">
+                                                    Execution failed{{
+                                                        pyodideStateForMessage(message)?.errorMessage
+                                                            ? ": " + pyodideStateForMessage(message)?.errorMessage
+                                                            : ""
+                                                    }}
+                                                </div>
 
-                                <div
-                                    v-if="
-                                        !isDataAnalysisMessage(message) &&
-                                        message.collapsedHistory &&
-                                        message.collapsedHistory.length
-                                    "
-                                    class="collapsed-history mt-3">
-                                    <details
-                                        class="intermediate-details"
-                                        :open="!message.isCollapsed"
-                                        @toggle="(event) => handleIntermediateToggle(event, message)">
-                                        <summary>
-                                            <span>Intermediate steps ({{ message.collapsedHistory.length }})</span>
-                                            <span class="chip-chevron" :class="{ open: !message.isCollapsed }">›</span>
-                                        </summary>
-                                        <div class="collapsed-entry-body card card-body mt-3">
+                                                <div v-if="pyodideStateForMessage(message)?.stdout" class="mt-2">
+                                                    <h6 class="mb-1">Stdout</h6>
+                                                    <pre class="pyodide-stream">
+                                                            {{ pyodideStateForMessage(message)?.stdout }}
+                                                        </pre
+                                                    >
+                                                </div>
+                                                <div v-if="pyodideStateForMessage(message)?.stderr" class="mt-2">
+                                                    <h6 class="mb-1 text-danger">Stderr</h6>
+                                                    <pre class="pyodide-stream text-danger">
+                                                            {{ pyodideStateForMessage(message)?.stderr }}
+                                                        </pre
+                                                    >
+                                                </div>
+                                                <div
+                                                    v-if="pyodideStateForMessage(message)?.artifacts.length"
+                                                    class="mt-2">
+                                                    <h6 class="mb-1">Artifacts</h6>
+                                                    <div class="artifact-grid">
+                                                        <div
+                                                            v-for="artifact in pyodideStateForMessage(message)
+                                                                ?.artifacts"
+                                                            :key="artifact.dataset_id || artifact.name"
+                                                            class="artifact-grid-item">
+                                                            <div class="artifact-name">
+                                                                {{ artifact.name || artifact.dataset_id }}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            v-if="message.collapsedHistory && message.collapsedHistory.length"
+                                            class="intermediate-history mt-3">
+                                            <h6 class="mb-2">Earlier steps ({{ message.collapsedHistory.length }})</h6>
                                             <div
                                                 v-for="historyMessage in message.collapsedHistory"
                                                 :key="historyMessage.id"
-                                                class="previous-step mb-4">
+                                                class="previous-step mb-3">
                                                 <div class="text-muted mb-2">
                                                     {{ collapsedSummary(historyMessage) }}
                                                 </div>
                                                 <div class="message-content">
                                                     <!-- eslint-disable-next-line vue/no-v-html -->
                                                     <div v-html="safeRenderMarkdown(historyMessage.content)" />
-                                                    <div v-if="shouldShowArtifacts(historyMessage)" class="mt-2">
+                                                    <div v-if="hasArtifacts(historyMessage)" class="mt-2">
                                                         <details open class="artifacts-panel">
                                                             <summary class="text-muted">
-                                                                <!-- TODO: Handle case where historyMessage.artifacts is undefined? -->
-                                                                Saved Artifacts ({{ historyMessage.artifacts?.length }})
+                                                                Saved Artifacts ({{ historyMessage.artifacts.length }})
                                                             </summary>
                                                             <div class="artifact-grid">
                                                                 <div
@@ -2518,21 +2051,19 @@ function toggleHistory() {
                                                         class="mt-2 executed-code">
                                                         <details open>
                                                             <summary class="text-muted">Executed Python Code</summary>
-                                                            <pre>
-                                                                {{
-                                                                    historyMessage.agentResponse?.metadata
-                                                                        ?.executed_task?.code
-                                                                }}
-                                                            </pre>
+                                                            <pre>{{
+                                                                historyMessage.agentResponse?.metadata?.executed_task
+                                                                    ?.code
+                                                            }}</pre>
                                                         </details>
                                                         <div
                                                             v-if="historyMessage.agentResponse?.metadata?.stdout"
                                                             class="mt-2">
                                                             <details open>
                                                                 <summary class="text-muted">Execution Stdout</summary>
-                                                                <pre>
-                                                                    {{ historyMessage.agentResponse?.metadata?.stdout }}
-                                                                </pre>
+                                                                <pre>{{
+                                                                    historyMessage.agentResponse?.metadata?.stdout
+                                                                }}</pre>
                                                             </details>
                                                         </div>
                                                         <div
@@ -2540,9 +2071,9 @@ function toggleHistory() {
                                                             class="mt-2">
                                                             <details>
                                                                 <summary class="text-muted">Execution Stderr</summary>
-                                                                <pre class="text-danger">
-                                                                    {{ historyMessage.agentResponse?.metadata?.stderr }}
-                                                                </pre>
+                                                                <pre class="text-danger">{{
+                                                                    historyMessage.agentResponse?.metadata?.stderr
+                                                                }}</pre>
                                                             </details>
                                                         </div>
                                                     </div>
@@ -2612,7 +2143,8 @@ function toggleHistory() {
                                                                 "
                                                                 class="step-requirements">
                                                                 <small class="text-muted">
-                                                                    requirements: {{ step.requirements.join(", ") }}
+                                                                    requirements:
+                                                                    {{ step.requirements.join(", ") }}
                                                                 </small>
                                                             </div>
                                                         </div>
@@ -2620,61 +2152,384 @@ function toggleHistory() {
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                </details>
+                            </template>
+
+                            <div v-if="message.agentResponse?.metadata?.executed_task?.code" class="mt-2 executed-code">
+                                <details open>
+                                    <summary class="text-muted">Executed Python Code</summary>
+                                    <pre>{{ message.agentResponse?.metadata?.executed_task?.code }}</pre>
+                                </details>
+                                <div v-if="message.agentResponse?.metadata?.stdout" class="mt-2">
+                                    <details open>
+                                        <summary class="text-muted">Execution Stdout</summary>
+                                        <pre>{{ message.agentResponse?.metadata?.stdout }}</pre>
                                     </details>
                                 </div>
+                                <div v-if="message.agentResponse?.metadata?.stderr" class="mt-2">
+                                    <details>
+                                        <summary class="text-muted">Execution Stderr</summary>
+                                        <pre class="text-danger">{{ message.agentResponse?.metadata?.stderr }}</pre>
+                                    </details>
+                                </div>
+                            </div>
 
-                                <!-- Action suggestions -->
-                                <ActionCard
-                                    v-if="Array.isArray(message.suggestions) && message.suggestions.length"
-                                    :suggestions="message.suggestions"
-                                    :processing-action="processingAction"
-                                    @handle-action="
-                                        (action) => handleAction(action, getAgentResponseOrEmpty(message.agentResponse))
-                                    " />
+                            <div v-if="message.analysisSteps?.length" class="analysis-steps card mt-2">
+                                <div
+                                    v-for="(step, idx) in message.analysisSteps"
+                                    :key="idx"
+                                    class="analysis-step"
+                                    :class="[step.type, step.status && step.status !== 'pending' ? step.status : '']">
+                                    <div class="analysis-step-header">
+                                        <span class="step-label">
+                                            {{
+                                                step.type === "thought"
+                                                    ? "Plan"
+                                                    : step.type === "action"
+                                                      ? "Action"
+                                                      : step.type === "observation"
+                                                        ? "Observation"
+                                                        : "Conclusion"
+                                            }}
+                                        </span>
+                                        <span
+                                            v-if="step.type === 'action' && step.status && step.status !== 'pending'"
+                                            class="step-status"
+                                            :class="step.status">
+                                            {{ step.status }}
+                                        </span>
+                                        <span
+                                            v-else-if="step.type === 'observation' && step.success !== undefined"
+                                            class="step-status"
+                                            :class="step.success ? 'completed' : 'error'">
+                                            {{ step.success ? "success" : "error" }}
+                                        </span>
+                                    </div>
+                                    <div class="analysis-step-body">
+                                        <pre v-if="step.type === 'action'">{{ step.content }}</pre>
+                                        <div v-else-if="step.type === 'observation'">
+                                            <div v-if="step.stdout">
+                                                <small class="text-muted">stdout</small>
+                                                <pre>{{ step.stdout }}</pre>
+                                            </div>
+                                            <div v-if="step.stderr">
+                                                <small class="text-muted">stderr</small>
+                                                <pre class="text-danger">{{ step.stderr }}</pre>
+                                            </div>
+                                            <div v-if="!step.stdout && !step.stderr">No textual output.</div>
+                                        </div>
+                                        <div v-else>{{ step.content }}</div>
+                                        <div
+                                            v-if="step.type === 'action' && step.requirements?.length"
+                                            class="step-requirements">
+                                            <small class="text-muted">
+                                                requirements: {{ step.requirements.join(", ") }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+
+                            <div v-if="shouldShowPyodideStatus(message)" class="pyodide-status card mt-2">
+                                <div class="card-body">
+                                    <div
+                                        v-if="pyodideStateForMessage(message)?.status === 'initialising'"
+                                        class="text-muted">
+                                        Preparing browser environment…
+                                    </div>
+                                    <div
+                                        v-else-if="pyodideStateForMessage(message)?.status === 'installing'"
+                                        class="text-muted">
+                                        Installing Python packages…
+                                    </div>
+                                    <div
+                                        v-else-if="pyodideStateForMessage(message)?.status === 'fetching'"
+                                        class="text-muted">
+                                        Downloading datasets…
+                                    </div>
+                                    <div
+                                        v-else-if="pyodideStateForMessage(message)?.status === 'running'"
+                                        class="text-muted">
+                                        Running generated Python in the browser…
+                                    </div>
+                                    <div
+                                        v-else-if="pyodideStateForMessage(message)?.status === 'submitting'"
+                                        class="text-muted">
+                                        Sending results back to Galaxy…
+                                    </div>
+                                    <div
+                                        v-else-if="pyodideStateForMessage(message)?.status === 'completed'"
+                                        class="text-success">
+                                        Execution completed in your browser.
+                                    </div>
+                                    <div
+                                        v-else-if="pyodideStateForMessage(message)?.status === 'error'"
+                                        class="text-danger">
+                                        Execution failed{{
+                                            pyodideStateForMessage(message)?.errorMessage
+                                                ? ": " + pyodideStateForMessage(message)?.errorMessage
+                                                : ""
+                                        }}
+                                    </div>
+
+                                    <div v-if="pyodideStateForMessage(message)?.stdout" class="mt-2">
+                                        <h6 class="mb-1">Stdout</h6>
+                                        <pre class="pyodide-stream">{{ pyodideStateForMessage(message)?.stdout }}</pre>
+                                    </div>
+                                    <div v-if="pyodideStateForMessage(message)?.stderr" class="mt-2">
+                                        <h6 class="mb-1 text-danger">Stderr</h6>
+                                        <pre class="pyodide-stream text-danger">
+                                                {{ pyodideStateForMessage(message)?.stderr }}
+                                            </pre
+                                        >
+                                    </div>
+                                    <div v-if="pyodideStateForMessage(message)?.artifacts.length" class="mt-2">
+                                        <h6 class="mb-1">Artifacts</h6>
+                                        <div class="artifact-grid">
+                                            <div
+                                                v-for="artifact in pyodideStateForMessage(message)?.artifacts"
+                                                :key="artifact.dataset_id || artifact.name"
+                                                class="artifact-grid-item">
+                                                <div class="artifact-name">
+                                                    {{ artifact.name || artifact.dataset_id }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div
-                                v-if="!(message.content || '').startsWith('❌') && !message.isSystemMessage"
-                                class="cell-footer">
-                                <div class="feedback-actions">
-                                    <button
-                                        class="feedback-btn"
-                                        :disabled="message.feedback !== null"
-                                        :class="{ active: message.feedback === 'up' }"
-                                        title="Helpful"
-                                        @click="sendFeedback(message.id, 'up')">
-                                        <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
-                                    </button>
-                                    <button
-                                        class="feedback-btn"
-                                        :disabled="message.feedback !== null"
-                                        :class="{ active: message.feedback === 'down' }"
-                                        title="Not helpful"
-                                        @click="sendFeedback(message.id, 'down')">
-                                        <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
-                                    </button>
-                                    <span v-if="message.feedback" class="feedback-text">Thanks!</span>
-                                </div>
-                                <div class="response-stats">
-                                    <span class="stat-item" :title="'Agent: ' + getAgentLabel(message.agentType)">
-                                        <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
-                                        {{ getAgentLabel(message.agentType) }}
-                                    </span>
-                                    <span
-                                        v-if="message.agentResponse?.metadata?.model"
-                                        class="stat-item"
-                                        :title="'Model: ' + message.agentResponse.metadata.model">
-                                        {{ formatModelName(message.agentResponse.metadata.model) }}
-                                    </span>
-                                    <span
-                                        v-if="message.agentResponse?.metadata?.total_tokens"
-                                        class="stat-item"
-                                        title="Tokens used">
-                                        {{ message.agentResponse.metadata.total_tokens }} tokens
-                                    </span>
-                                </div>
+                                v-if="
+                                    !isDataAnalysisMessage(message) &&
+                                    message.collapsedHistory &&
+                                    message.collapsedHistory.length
+                                "
+                                class="collapsed-history mt-3">
+                                <details
+                                    class="intermediate-details"
+                                    :open="!message.isCollapsed"
+                                    @toggle="handleIntermediateToggle($event, message)">
+                                    <summary>
+                                        <span>Intermediate steps ({{ message.collapsedHistory.length }})</span>
+                                        <span class="chip-chevron" :class="{ open: !message.isCollapsed }">›</span>
+                                    </summary>
+                                    <div class="collapsed-entry-body card card-body mt-3">
+                                        <div
+                                            v-for="historyMessage in message.collapsedHistory"
+                                            :key="historyMessage.id"
+                                            class="previous-step mb-4">
+                                            <div class="text-muted mb-2">
+                                                {{ collapsedSummary(historyMessage) }}
+                                            </div>
+                                            <div class="message-content">
+                                                <!-- eslint-disable-next-line vue/no-v-html -->
+                                                <div v-html="safeRenderMarkdown(historyMessage.content)" />
+                                                <div v-if="hasArtifacts(historyMessage)" class="mt-2">
+                                                    <details open class="artifacts-panel">
+                                                        <summary class="text-muted">
+                                                            Saved Artifacts ({{ historyMessage.artifacts.length }})
+                                                        </summary>
+                                                        <div class="artifact-grid">
+                                                            <div
+                                                                v-for="artifact in historyMessage.artifacts"
+                                                                :key="artifact.dataset_id || artifact.name"
+                                                                class="artifact-grid-item">
+                                                                <div class="artifact-name">
+                                                                    <button
+                                                                        v-if="artifact.download_url"
+                                                                        class="btn btn-link btn-sm p-0"
+                                                                        type="button"
+                                                                        @click="downloadArtifact(artifact)">
+                                                                        {{ artifact.name || artifact.dataset_id }}
+                                                                    </button>
+                                                                    <span v-else>{{
+                                                                        artifact.name || artifact.dataset_id
+                                                                    }}</span>
+                                                                    <span v-if="artifact.size" class="text-muted ml-1">
+                                                                        ({{ formatSize(artifact.size) }})
+                                                                    </span>
+                                                                </div>
+                                                                <div
+                                                                    v-if="
+                                                                        artifact.mime_type &&
+                                                                        artifact.mime_type.startsWith('image/') &&
+                                                                        artifact.download_url
+                                                                    "
+                                                                    class="artifact-preview mt-2">
+                                                                    <img
+                                                                        :src="artifact.download_url"
+                                                                        :alt="artifact.name || 'plot preview'"
+                                                                        class="plot-preview img-thumbnail" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </details>
+                                                </div>
+                                                <div
+                                                    v-if="historyMessage.agentResponse?.metadata?.executed_task?.code"
+                                                    class="mt-2 executed-code">
+                                                    <details open>
+                                                        <summary class="text-muted">Executed Python Code</summary>
+                                                        <pre>
+                                                                {{
+                                                                historyMessage.agentResponse?.metadata?.executed_task
+                                                                    ?.code
+                                                            }}
+                                                            </pre
+                                                        >
+                                                    </details>
+                                                    <div
+                                                        v-if="historyMessage.agentResponse?.metadata?.stdout"
+                                                        class="mt-2">
+                                                        <details open>
+                                                            <summary class="text-muted">Execution Stdout</summary>
+                                                            <pre>
+                                                                    {{ historyMessage.agentResponse?.metadata?.stdout }}
+                                                                </pre
+                                                            >
+                                                        </details>
+                                                    </div>
+                                                    <div
+                                                        v-if="historyMessage.agentResponse?.metadata?.stderr"
+                                                        class="mt-2">
+                                                        <details>
+                                                            <summary class="text-muted">Execution Stderr</summary>
+                                                            <pre class="text-danger">
+                                                                    {{ historyMessage.agentResponse?.metadata?.stderr }}
+                                                                </pre
+                                                            >
+                                                        </details>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                v-if="historyMessage.analysisSteps?.length"
+                                                class="analysis-steps card mt-2">
+                                                <div
+                                                    v-for="(step, idx) in historyMessage.analysisSteps"
+                                                    :key="idx"
+                                                    class="analysis-step"
+                                                    :class="[
+                                                        step.type,
+                                                        step.status && step.status !== 'pending' ? step.status : '',
+                                                    ]">
+                                                    <div class="analysis-step-header">
+                                                        <span class="step-label">
+                                                            {{
+                                                                step.type === "thought"
+                                                                    ? "Plan"
+                                                                    : step.type === "action"
+                                                                      ? "Action"
+                                                                      : step.type === "observation"
+                                                                        ? "Observation"
+                                                                        : "Conclusion"
+                                                            }}
+                                                        </span>
+                                                        <span
+                                                            v-if="
+                                                                step.type === 'action' &&
+                                                                step.status &&
+                                                                step.status !== 'pending'
+                                                            "
+                                                            class="step-status"
+                                                            :class="step.status">
+                                                            {{ step.status }}
+                                                        </span>
+                                                        <span
+                                                            v-else-if="
+                                                                step.type === 'observation' &&
+                                                                step.success !== undefined
+                                                            "
+                                                            class="step-status"
+                                                            :class="step.success ? 'completed' : 'error'">
+                                                            {{ step.success ? "success" : "error" }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="analysis-step-body">
+                                                        <pre v-if="step.type === 'action'">{{ step.content }}</pre>
+                                                        <div v-else-if="step.type === 'observation'">
+                                                            <div v-if="step.stdout">
+                                                                <small class="text-muted">stdout</small>
+                                                                <pre>{{ step.stdout }}</pre>
+                                                            </div>
+                                                            <div v-if="step.stderr">
+                                                                <small class="text-muted">stderr</small>
+                                                                <pre class="text-danger">{{ step.stderr }}</pre>
+                                                            </div>
+                                                            <div v-if="!step.stdout && !step.stderr">
+                                                                No textual output.
+                                                            </div>
+                                                        </div>
+                                                        <div v-else>{{ step.content }}</div>
+                                                        <div
+                                                            v-if="step.type === 'action' && step.requirements?.length"
+                                                            class="step-requirements">
+                                                            <small class="text-muted">
+                                                                requirements: {{ step.requirements.join(", ") }}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </details>
                             </div>
-                        </template>
-                    </div>
+
+                            <!-- Action suggestions -->
+                            <ActionCard
+                                v-if="Array.isArray(message.suggestions) && message.suggestions.length"
+                                :suggestions="message.suggestions"
+                                :processing-action="processingAction"
+                                @handle-action="
+                                    (action) => handleAction(action, getAgentResponseOrEmpty(message.agentResponse))
+                                " />
+                        </div>
+                        <div
+                            v-if="!(message.content || '').startsWith('❌') && !message.isSystemMessage"
+                            class="cell-footer">
+                            <div class="feedback-actions">
+                                <button
+                                    class="feedback-btn"
+                                    :disabled="message.feedback !== null"
+                                    :class="{ active: message.feedback === 'up' }"
+                                    title="Helpful"
+                                    @click="sendFeedback(message.id, 'up')">
+                                    <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
+                                </button>
+                                <button
+                                    class="feedback-btn"
+                                    :disabled="message.feedback !== null"
+                                    :class="{ active: message.feedback === 'down' }"
+                                    title="Not helpful"
+                                    @click="sendFeedback(message.id, 'down')">
+                                    <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
+                                </button>
+                                <span v-if="message.feedback" class="feedback-text">Thanks!</span>
+                            </div>
+                            <div class="response-stats">
+                                <span class="stat-item" :title="'Agent: ' + getAgentLabel(message.agentType)">
+                                    <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
+                                    {{ getAgentLabel(message.agentType) }}
+                                </span>
+                                <span
+                                    v-if="message.agentResponse?.metadata?.model"
+                                    class="stat-item"
+                                    :title="'Model: ' + message.agentResponse.metadata.model">
+                                    {{ formatModelName(message.agentResponse.metadata.model) }}
+                                </span>
+                                <span
+                                    v-if="message.agentResponse?.metadata?.total_tokens"
+                                    class="stat-item"
+                                    title="Tokens used">
+                                    {{ message.agentResponse.metadata.total_tokens }} tokens
+                                </span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
 
                 <!-- Loading state -->
                 <div v-if="busy" class="notebook-cell response-cell loading-cell">
