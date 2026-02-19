@@ -12,7 +12,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import { type ActionSuggestion, ActionType } from "@/composables/agentActions";
+import type { ActionSuggestion, ActionType } from "@/composables/agentActions";
 
 interface Props {
     suggestions: ActionSuggestion[];
@@ -30,18 +30,18 @@ const emit = defineEmits<{
 // Sort suggestions by priority (1 = highest)
 const sortedSuggestions = computed(() => {
     return [...props.suggestions]
-        .filter((suggestion) => suggestion.action_type !== ActionType.PYODIDE_EXECUTE)
+        .filter((suggestion) => suggestion.action_type !== "pyodide_execute")
         .sort((a, b) => a.priority - b.priority);
 });
 
 const iconMap: Record<ActionType, IconDefinition> = {
-    [ActionType.TOOL_RUN]: faPlay,
-    [ActionType.SAVE_TOOL]: faSave,
-    [ActionType.CONTACT_SUPPORT]: faLifeRing,
-    [ActionType.REFINE_QUERY]: faPencilAlt,
-    [ActionType.DOCUMENTATION]: faBook,
-    [ActionType.VIEW_EXTERNAL]: faExternalLinkAlt,
-    [ActionType.PYODIDE_EXECUTE]: faWrench, // TODO: Is this needed/correct for pyodide execute actions?
+    tool_run: faPlay,
+    save_tool: faSave,
+    contact_support: faLifeRing,
+    refine_query: faPencilAlt,
+    documentation: faBook,
+    view_external: faExternalLinkAlt,
+    pyodide_execute: faWrench,
 };
 
 function getIcon(actionType: ActionType): IconDefinition {

@@ -36,6 +36,7 @@ from .base import (
     ActionType,
     AgentResponse,
     BaseGalaxyAgent,
+    ConfidenceLevel,
     GalaxyAgentDependencies,
 )
 from galaxy.model import HistoryDatasetAssociation
@@ -130,13 +131,13 @@ class DataAnalysisAgent(BaseGalaxyAgent):
                     action_type=ActionType.REFINE_QUERY,
                     description="Adjust the request and try again.",
                     parameters={},
-                    confidence="low",
+                    confidence=ConfidenceLevel.LOW,
                     priority=1,
                 )
             ]
             return AgentResponse(
                 content=error_message,
-                confidence="low",
+                confidence=ConfidenceLevel.LOW,
                 agent_type=self.agent_type,
                 suggestions=suggestions,
                 metadata=metadata,
@@ -198,13 +199,13 @@ class DataAnalysisAgent(BaseGalaxyAgent):
                         action_type=ActionType.REFINE_QUERY,
                         description="Server missing itsdangerous or id_secret; install 'itsdangerous' and configure id_secret to enable dataset execution.",
                         parameters={},
-                        confidence="low",
+                        confidence=ConfidenceLevel.LOW,
                         priority=1,
                     )
                 ]
                 return AgentResponse(
                     content="Cannot execute analysis in browser: dataset download tokens are not configured (missing 'itsdangerous' and/or id_secret).",
-                    confidence="low",
+                    confidence=ConfidenceLevel.LOW,
                     agent_type=self.agent_type,
                     suggestions=suggestions,
                     metadata=metadata,
@@ -341,7 +342,7 @@ class DataAnalysisAgent(BaseGalaxyAgent):
                     action_type=ActionType.REFINE_QUERY,
                     description="Adjust the request and try a different analysis approach.",
                     parameters={},
-                    confidence="medium",
+                    confidence=ConfidenceLevel.MEDIUM,
                     priority=1,
                 )
             )
@@ -354,17 +355,17 @@ class DataAnalysisAgent(BaseGalaxyAgent):
                     action_type=ActionType.REFINE_QUERY,
                     description=follow,
                     parameters={},
-                    confidence="medium",
+                    confidence=ConfidenceLevel.MEDIUM,
                     priority=base_priority + index,
                 )
             )
 
         if execution_result and execution_result.get("success"):
             content = self._build_content_from_execution(summary_text, execution_result)
-            confidence = "high"
+            confidence = ConfidenceLevel.HIGH
         elif execution_result:
             content = self._build_content_from_execution(summary_text, execution_result)
-            confidence = "low"
+            confidence = ConfidenceLevel.LOW
         elif pyodide_task:
             summary_text = summary_text.strip()
             content = (
@@ -372,13 +373,13 @@ class DataAnalysisAgent(BaseGalaxyAgent):
                 if summary_text
                 else "Executing generated Python in the browser..."
             )
-            confidence = "medium"
+            confidence = ConfidenceLevel.MEDIUM
         else:
             content = active_plan.summary or next(
                 (step["content"] for step in analysis_steps if step.get("type") == "thought"),
                 "Generated analysis plan.",
             )
-            confidence = "high" if active_plan.is_complete else "medium"
+            confidence = ConfidenceLevel.HIGH if active_plan.is_complete else ConfidenceLevel.MEDIUM
 
         self._record_debug_steps(active_plan, analysis_steps, execution_result)
 

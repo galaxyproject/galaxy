@@ -1,3 +1,5 @@
+import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
+
 export interface AnalysisStep {
     type: "thought" | "action" | "observation" | "conclusion";
     content: string;
@@ -37,7 +39,7 @@ export interface ChatHistoryItem {
     query: string;
     response: string;
     agent_type: string;
-    agent_response?: AgentResponse; // Full agent response with suggestions
+    agent_response?: AgentResponse;
     timestamp: string;
     feedback?: number | null;
 }

@@ -6,40 +6,14 @@ import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 import { parse } from "yaml";
 
-import { type DynamicUnprivilegedToolCreatePayload, GalaxyApi } from "@/api";
+import { type components, type DynamicUnprivilegedToolCreatePayload, GalaxyApi } from "@/api";
 import { useConfig } from "@/composables/config";
 import { useToast } from "@/composables/toast";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 
-/* eslint-disable no-unused-vars */
-// Action types from backend - values are used in switch/case and icon maps
-export enum ActionType {
-    TOOL_RUN = "tool_run",
-    DOCUMENTATION = "documentation",
-    CONTACT_SUPPORT = "contact_support",
-    VIEW_EXTERNAL = "view_external",
-    SAVE_TOOL = "save_tool",
-    REFINE_QUERY = "refine_query",
-    PYODIDE_EXECUTE = "pyodide_execute",
-}
-/* eslint-enable no-unused-vars */
-
-export interface ActionSuggestion {
-    action_type: ActionType;
-    description: string;
-    parameters: Record<string, any>;
-    confidence: "low" | "medium" | "high";
-    priority: number;
-}
-
-export interface AgentResponse {
-    content: string;
-    agent_type: string;
-    confidence: "low" | "medium" | "high";
-    suggestions: ActionSuggestion[];
-    metadata: Record<string, any>;
-    reasoning?: string;
-}
+export type AgentResponse = components["schemas"]["AgentResponse"];
+export type ActionSuggestion = components["schemas"]["ActionSuggestion"];
+export type ActionType = components["schemas"]["ActionType"];
 
 export function useAgentActions() {
     const router = useRouter();
@@ -56,31 +30,31 @@ export function useAgentActions() {
 
         try {
             switch (action.action_type) {
-                case ActionType.TOOL_RUN:
+                case "tool_run":
                     await handleToolRun(action);
                     break;
 
-                case ActionType.SAVE_TOOL:
+                case "save_tool":
                     await handleSaveTool(agentResponse);
                     break;
 
-                case ActionType.CONTACT_SUPPORT:
+                case "contact_support":
                     handleContactSupport();
                     break;
 
-                case ActionType.REFINE_QUERY:
+                case "refine_query":
                     toast.info("Please refine your query with more details");
                     break;
 
-                case ActionType.VIEW_EXTERNAL:
+                case "view_external":
                     handleViewExternal(action);
                     break;
 
-                case ActionType.DOCUMENTATION:
+                case "documentation":
                     handleDocumentation(action);
                     break;
 
-                case ActionType.PYODIDE_EXECUTE:
+                case "pyodide_execute":
                     toast.info("Generated code is running automatically in the browser.");
                     break;
 
@@ -102,8 +76,8 @@ export function useAgentActions() {
      * Handle TOOL_RUN action - navigate to tool with parameters
      */
     async function handleToolRun(action: ActionSuggestion) {
-        const toolId = action.parameters.tool_id;
-        const params = action.parameters.tool_params || {};
+        const toolId = action.parameters?.tool_id as string;
+        const params = action.parameters?.tool_params || {};
 
         if (!toolId) {
             toast.error("No tool ID provided for tool run action");
@@ -126,7 +100,7 @@ export function useAgentActions() {
      * Handle SAVE_TOOL action - save custom tool as unprivileged user tool
      */
     async function handleSaveTool(agentResponse: AgentResponse) {
-        const toolYaml = agentResponse.metadata?.tool_yaml;
+        const toolYaml = agentResponse.metadata?.tool_yaml as string;
 
         if (!toolYaml) {
             toast.error("No tool YAML provided for save action");
@@ -171,7 +145,7 @@ export function useAgentActions() {
      * Handle VIEW_EXTERNAL action - open external URL in new tab
      */
     function handleViewExternal(action: ActionSuggestion) {
-        const url = action.parameters.url;
+        const url = action.parameters?.url as string;
 
         if (!url) {
             toast.error("No URL provided for external view action");
@@ -187,7 +161,7 @@ export function useAgentActions() {
      * Handle DOCUMENTATION action - open tool documentation
      */
     function handleDocumentation(action: ActionSuggestion) {
-        const toolId = action.parameters.tool_id;
+        const toolId = action.parameters?.tool_id as string;
 
         if (toolId && toolId !== "unknown") {
             // Navigate to tool help page
@@ -211,13 +185,13 @@ export function useAgentActions() {
      */
     function getActionIcon(actionType: ActionType): string {
         const icons: Record<ActionType, string> = {
-            [ActionType.TOOL_RUN]: "🔧",
-            [ActionType.SAVE_TOOL]: "💾",
-            [ActionType.DOCUMENTATION]: "📖",
-            [ActionType.CONTACT_SUPPORT]: "🆘",
-            [ActionType.REFINE_QUERY]: "✏️",
-            [ActionType.VIEW_EXTERNAL]: "🔗",
-            [ActionType.PYODIDE_EXECUTE]: "🧪",
+            tool_run: "🔧",
+            save_tool: "💾",
+            documentation: "📖",
+            contact_support: "🆘",
+            refine_query: "✏️",
+            view_external: "🔗",
+            pyodide_execute: "🧪",
         };
         return icons[actionType] || "❓";
     }

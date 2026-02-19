@@ -33,6 +33,7 @@ class ActionType(str, Enum):
     CONTACT_SUPPORT = "contact_support"
     VIEW_EXTERNAL = "view_external"
     DOCUMENTATION = "documentation"
+    REFINE_QUERY = "refine_query"
     PYODIDE_EXECUTE = "pyodide_execute"
 
 
