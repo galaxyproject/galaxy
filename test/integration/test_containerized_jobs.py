@@ -271,6 +271,48 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
             assert lines[1] == "test_user", f"Expected username in second line, got: {lines[1]}"
             assert lines[2] == "test_pass", f"Expected password in third line, got: {lines[2]}"
 
+    @skip_without_tool("secret_tool")
+    def test_credentials_passed_to_container_in_workflow(self) -> None:
+        """
+        Test that tool credentials are passed into containerized workflow steps.
+
+        This is a regression test for issue #21715: when a tool using credentials
+        is run as a workflow step, the credentials are silently dropped because
+        ToolModule.execute() does not forward credentials_context.
+        """
+        self._setup_credentials_context()
+
+        workflow_yaml = """
+class: GalaxyWorkflow
+steps:
+  secret_step:
+    tool_id: secret_tool
+"""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(workflow_yaml)
+
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id,
+                history_id=history_id,
+                assert_ok=True,
+            )
+
+            # Get the single output dataset from the history
+            history_contents = self.dataset_populator.get_history_contents(history_id)
+            datasets = [item for item in history_contents if item["history_content_type"] == "dataset"]
+            assert len(datasets) == 1, f"Expected 1 output dataset, got {len(datasets)}"
+            output = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=datasets[0]["id"], timeout=EXTENDED_TIMEOUT
+            )
+
+            # Verify that credential environment variables were available in the container.
+            # This will fail because credentials are not forwarded through workflow execution.
+            lines = output.strip().split("\n")
+            assert len(lines) == 3, f"Expected 3 lines in output, got {len(lines)}: {lines}"
+            assert lines[0] == "http://test-server:8080", f"Expected server URL in first line, got: {lines[0]}"
+            assert lines[1] == "test_user", f"Expected username in second line, got: {lines[1]}"
+            assert lines[2] == "test_pass", f"Expected password in third line, got: {lines[2]}"
+
 
 class TestMappingContainerResolver(IntegrationTestCase):
     """
