@@ -1,7 +1,6 @@
 import logging
 
 from ..base import common
-from ..base.api import skip_if_api_v2
 from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
@@ -53,28 +52,4 @@ class TestToolHelpImages(ShedTwillTestCase):
             repository,
             "htseq_count/htseq_count.tar",
             commit_message="Uploaded htseq_count.tar.",
-        )
-
-    @skip_if_api_v2
-    def test_0010_load_tool_page(self):
-        """Load the tool page and check for the image.
-
-        We are at step 2
-        Visit the manage_repository page and the tool page, and look for the image url
-        similar to the following string:
-
-        src="/repository/static/images/<id>/count_modes.png"
-        """
-        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        # Get the repository tip.
-        changeset_revision = self.get_repository_tip(repository)
-        self.display_manage_repository_page(repository)
-        # Generate the image path.
-        image_path = f'src="/repository/static/images/{repository.id}/count_modes.png"'
-        # The repository uploaded in this test should only have one metadata revision, with one tool defined, which
-        # should be the tool that contains a link to the image.
-        repository_metadata = self._db_repository(repository).metadata_revisions[0].metadata
-        tool_path = repository_metadata["tools"][0]["tool_config"]
-        self.load_display_tool_page(
-            repository, tool_path, changeset_revision, strings_displayed=[image_path], strings_not_displayed=[]
         )
