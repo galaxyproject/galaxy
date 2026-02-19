@@ -28,7 +28,6 @@ Galaxy introduces **ChatGXY**, a built in AI assistant integrated directly into 
 - **Extensible architecture**. Built on a flexible agent framework designed to grow with additional specialized AI capabilities over time.
 
 ChatGXY provides a conversational entry point to Galaxy's AI capabilities and lays the groundwork for connecting Galaxy users to an expanding set of intelligent capabilities.
-
 [`#21434 <https://github.com/galaxyproject/galaxy/pull/21434>`__]
 
 .. raw:: html
@@ -46,7 +45,6 @@ Galaxy 26.1 strengthens integration with **JupyterLite**, bringing AI enhanced n
 - **Shared AI services**. Notebook AI features use Galaxy's configured AI services for consistent behavior and control.
 
 This integration makes interactive, AI supported analysis a natural extension of Galaxy workflows.
-
 [`#21463 <https://github.com/galaxyproject/galaxy/pull/21463>`__]
 
 .. raw:: html
@@ -65,7 +63,6 @@ Galaxy introduces **Vintent**, an AI driven visualization engine for generating 
 - **Consistent, versioned environments**. Visualization logic uses pinned dependencies, making environments portable, reproducible, and easy to evolve independently.
 
 By combining AI reasoning with a portable and reproducible Python runtime in the browser, Vintent expands Galaxy's visualization ecosystem while preserving flexibility and isolation.
-
 [`#21586 <https://github.com/galaxyproject/galaxy/pull/21586>`__]
 
 .. raw:: html
@@ -82,7 +79,6 @@ The ToolShed landing page has been redesigned to make tool discovery clearer and
 - **Streamlined layout**. A simplified two column design highlights essential information and recent repositories.
 
 These improvements make exploring and managing Galaxy tools more intuitive for both new and experienced users.
-
 [`#21430 <https://github.com/galaxyproject/galaxy/pull/21430>`__]
 
 .. raw:: html
@@ -100,7 +96,6 @@ Galaxy 26.1 adds configurable actions that automatically execute when a workflow
 - **Track recent exports**. Monitor export status and review recent transfers from within Galaxy.
 
 These features streamline post analysis workflows and reduce manual follow up steps.
-
 [`#21532 <https://github.com/galaxyproject/galaxy/pull/21532>`__]
 
 .. raw:: html
@@ -111,12 +106,11 @@ Improved Workflow Error Navigation
 ----------------------------------
 
 Debugging complex workflows is now easier with clearer and more actionable failure hints.
+[`#21514 <https://github.com/galaxyproject/galaxy/pull/21514>`__]
 
 - **Clickable failure paths**. Navigate directly to the exact failing step, even within subworkflows.
 - **More precise step hints**. See clearer guidance on where and why a failure occurred.
 - **Faster troubleshooting**. Reduce time spent locating and diagnosing workflow issues.
-
-[`#21514 <https://github.com/galaxyproject/galaxy/pull/21514>`__]
 
 .. figure:: images/26.0-better-workflow-debugging.png
    :alt: Improved workflow failure hints
