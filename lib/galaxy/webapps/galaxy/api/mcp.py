@@ -141,14 +141,17 @@ def get_mcp_app(gx_app):
             raise ValueError(f"Failed to get tool details for '{tool_id}': {str(e)}") from e
 
     @mcp.tool()
-    def list_histories(api_key: str, ctx: MCPContext, limit: int = 50, offset: int = 0) -> dict[str, Any]:
+    def list_histories(
+        api_key: str, ctx: MCPContext, limit: int = 50, offset: int = 0, name: str | None = None
+    ) -> dict[str, Any]:
         """List the current user's Galaxy histories.
 
         Histories are containers for datasets and analysis results.
+        Optionally filter by name (substring match).
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
-            return ops_manager.list_histories(limit, offset)
+            return ops_manager.list_histories(limit, offset, name)
         except Exception as e:
             logger.error(f"Failed to list histories: {str(e)}")
             raise ValueError(f"Failed to list histories: {str(e)}") from e
@@ -219,15 +222,18 @@ def get_mcp_app(gx_app):
         limit: int = 100,
         offset: int = 0,
         order: str = "hid-asc",
+        deleted: bool | None = None,
+        visible: bool | None = None,
     ) -> dict[str, Any]:
         """Get paginated contents (datasets and collections) from a history.
 
         Order options: 'hid-asc', 'hid-dsc', 'create_time-dsc',
         'update_time-dsc', 'name-asc'.
+        Set deleted=true to include deleted items, visible=false to include hidden items.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
-            return ops_manager.get_history_contents(history_id, limit, offset, order)
+            return ops_manager.get_history_contents(history_id, limit, offset, order, deleted, visible)
         except Exception as e:
             logger.error(f"Failed to get history contents for {history_id}: {str(e)}")
             raise ValueError(f"Failed to get contents for history '{history_id}': {str(e)}") from e
@@ -241,6 +247,22 @@ def get_mcp_app(gx_app):
         except Exception as e:
             logger.error(f"Failed to get dataset details for {dataset_id}: {str(e)}")
             raise ValueError(f"Failed to get details for dataset '{dataset_id}': {str(e)}") from e
+
+    @mcp.tool()
+    def get_collection_details(
+        collection_id: str, api_key: str, ctx: MCPContext, max_elements: int = 500
+    ) -> dict[str, Any]:
+        """Get detailed information about a dataset collection including its elements.
+
+        Dataset collections group related datasets (e.g., paired-end reads, lists of samples).
+        Use max_elements to limit the number of elements returned for large collections.
+        """
+        try:
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.get_collection_details(collection_id, max_elements)
+        except Exception as e:
+            logger.error(f"Failed to get collection details for {collection_id}: {str(e)}")
+            raise ValueError(f"Failed to get details for collection '{collection_id}': {str(e)}") from e
 
     @mcp.tool()
     def upload_file_from_url(
@@ -285,11 +307,16 @@ def get_mcp_app(gx_app):
             raise ValueError(f"Failed to list workflows: {str(e)}") from e
 
     @mcp.tool()
-    def get_workflow_details(workflow_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """Get detailed information about a workflow including steps, inputs, and outputs."""
+    def get_workflow_details(
+        workflow_id: str, api_key: str, ctx: MCPContext, version: int | None = None
+    ) -> dict[str, Any]:
+        """Get detailed information about a workflow including steps, inputs, and outputs.
+
+        Optionally specify a version number to get a specific workflow version.
+        """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
-            return ops_manager.get_workflow_details(workflow_id)
+            return ops_manager.get_workflow_details(workflow_id, version)
         except Exception as e:
             logger.error(f"Failed to get workflow details for {workflow_id}: {str(e)}")
             raise ValueError(f"Failed to get details for workflow '{workflow_id}': {str(e)}") from e
@@ -297,21 +324,24 @@ def get_mcp_app(gx_app):
     @mcp.tool()
     def invoke_workflow(
         workflow_id: str,
-        history_id: str,
         api_key: str,
         ctx: MCPContext,
+        history_id: str | None = None,
         inputs: dict[str, Any] | None = None,
         parameters: dict[str, Any] | None = None,
+        history_name: str | None = None,
     ) -> dict[str, Any]:
         """Invoke (run) a workflow.
 
         Use get_workflow_details() first to understand required inputs.
         inputs maps workflow input labels/indices to dataset IDs;
         parameters maps step IDs to parameter values.
+        Provide history_id to run in an existing history, or history_name
+        to create a new history for this invocation.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
-            return ops_manager.invoke_workflow(workflow_id, history_id, inputs, parameters)
+            return ops_manager.invoke_workflow(workflow_id, history_id, inputs, parameters, history_name)
         except Exception as e:
             logger.error(f"Failed to invoke workflow {workflow_id}: {str(e)}")
             raise ValueError(f"Failed to invoke workflow '{workflow_id}': {str(e)}") from e
@@ -366,14 +396,17 @@ def get_mcp_app(gx_app):
             raise ValueError(f"Failed to get tool panel: {str(e)}") from e
 
     @mcp.tool()
-    def get_tool_run_examples(tool_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
+    def get_tool_run_examples(
+        tool_id: str, api_key: str, ctx: MCPContext, tool_version: str | None = None
+    ) -> dict[str, Any]:
         """Get test cases showing how to run a tool with real inputs.
 
         Useful for learning how to properly format tool inputs.
+        Optionally specify tool_version to get examples for a specific version.
         """
         try:
             ops_manager = get_operations_manager(api_key, ctx)
-            return ops_manager.get_tool_run_examples(tool_id)
+            return ops_manager.get_tool_run_examples(tool_id, tool_version)
         except Exception as e:
             logger.error(f"Failed to get tool run examples for {tool_id}: {str(e)}")
             raise ValueError(f"Failed to get run examples for tool '{tool_id}': {str(e)}") from e
@@ -426,6 +459,20 @@ def get_mcp_app(gx_app):
         except Exception as e:
             logger.error(f"Failed to search IWC workflows: {str(e)}")
             raise ValueError(f"Failed to search IWC workflows: {str(e)}") from e
+
+    @mcp.tool()
+    def get_iwc_workflow_details(trs_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
+        """Get detailed information about an IWC workflow before importing it.
+
+        Returns full readme, inputs, outputs, tools used, authors, license, and more.
+        Use search_iwc_workflows() first to find the TRS ID.
+        """
+        try:
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.get_iwc_workflow_details(trs_id)
+        except Exception as e:
+            logger.error(f"Failed to get IWC workflow details for {trs_id}: {str(e)}")
+            raise ValueError(f"Failed to get IWC workflow details (TRS ID: '{trs_id}'): {str(e)}") from e
 
     @mcp.tool()
     def import_workflow_from_iwc(trs_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
@@ -504,5 +551,5 @@ def get_mcp_app(gx_app):
 
     mcp_app = mcp.http_app()
 
-    logger.info("MCP server initialized with 29 tools (Streamable HTTP)")
+    logger.info("MCP server initialized with 31 tools (Streamable HTTP)")
     return mcp_app
