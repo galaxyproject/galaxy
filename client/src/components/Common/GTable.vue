@@ -148,12 +148,6 @@ interface Props {
     loadMoreMessage?: string;
 
     /**
-     * Whether to show overlay loading (for sorting/filtering operations)
-     * @default false
-     */
-    overlayLoading?: boolean;
-
-    /**
      * Whether to use local filtering (client-side) or rely on external filtering (server-side)
      * @default true
      */
@@ -164,6 +158,20 @@ interface Props {
      * @default true
      */
     localSorting?: boolean;
+
+    /**
+     * Prevent text selection when clicking on table rows.
+     * When true and selectable is true, rows can only be selected via checkbox clicks.
+     * When false and selectable is true, rows can be selected by clicking anywhere on the row.
+     * @default false
+     */
+    noSelectOnClick?: boolean;
+
+    /**
+     * Whether to show overlay loading (for sorting/filtering operations)
+     * @default false
+     */
+    overlayLoading?: boolean;
 
     /**
      * Number of items per page for pagination
@@ -263,6 +271,7 @@ const props = withDefaults(defineProps<Props>(), {
     loadMoreMessage: "Loading more...",
     localFiltering: true,
     localSorting: true,
+    noSelectOnClick: false,
     overlayLoading: false,
     perPage: undefined,
     selectable: false,
@@ -487,11 +496,15 @@ function getSortIcon(field: TableField) {
  * Handle row click
  */
 function onRowClick(item: T, index: number, event: MouseEvent | KeyboardEvent) {
-    if (!props.clickableRows) {
-        return;
+    // Handle row selection on click if selectable and noSelectOnClick is false
+    if (props.selectable && !props.noSelectOnClick) {
+        onRowSelect(item, index);
     }
 
-    emit("row-click", { item, index, event, toggleDetails: () => toggleRowDetails(index) });
+    // Emit row-click event if rows are clickable
+    if (props.clickableRows) {
+        emit("row-click", { item, index, event, toggleDetails: () => toggleRowDetails(index) });
+    }
 }
 
 function onSelectAll(selected: boolean) {
@@ -644,6 +657,7 @@ defineExpose({
                         { 'g-table-compact': compact },
                         { 'g-table-fixed': fixed },
                         { 'caption-top': captionTop },
+                        { 'g-table-no-select': props.noSelectOnClick },
                         stackedClass,
                         tableClass,
                     ]">
@@ -718,7 +732,7 @@ defineExpose({
                                     :id="getRowId(props.id, getGlobalIndex(paginatedIndex))"
                                     :key="`tr` + getGlobalIndex(paginatedIndex)"
                                     :class="{
-                                        'g-table-row-clickable': clickableRows,
+                                        'g-table-row-clickable': clickableRows || (selectable && !noSelectOnClick),
                                         'g-table-row-selected': isRowSelected(getGlobalIndex(paginatedIndex)),
                                     }"
                                     @click="onRowClick(item, getGlobalIndex(paginatedIndex), $event)">
@@ -995,6 +1009,10 @@ defineExpose({
         .g-table-select-column {
             width: 40px;
             text-align: center;
+
+            .custom-checkbox {
+                cursor: pointer;
+            }
         }
 
         .g-table-actions-column {
@@ -1039,6 +1057,12 @@ defineExpose({
         &.caption-top {
             caption {
                 caption-side: top;
+            }
+        }
+
+        &.g-table-no-select {
+            tbody tr {
+                user-select: none;
             }
         }
     }
