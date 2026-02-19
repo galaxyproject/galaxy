@@ -57,19 +57,21 @@
                 :text="currentRouteName"
                 title="Copy link to this dataset " />
         </div>
+
         <!-- Table -->
-        <b-table
+        <GTable
             v-if="table_items"
+            class="dataset_table mt-2"
+            compact
+            hide-header
+            striped
             :fields="fields"
             :items="table_items"
-            class="dataset_table mt-2"
-            thead-class="d-none"
-            striped
-            small
             data-test-id="dataset-table">
             <template v-slot:cell(name)="row">
                 <strong>{{ row.item.name }}</strong>
             </template>
+
             <template v-slot:cell(value)="row">
                 <div v-if="isEditMode">
                     <b-form-input
@@ -110,7 +112,8 @@
                     <div>{{ row.item.value }}</div>
                 </div>
             </template>
-        </b-table>
+        </GTable>
+
         <!-- Edit Controls -->
         <div v-if="isEditMode">
             <b-button class="mr-1 mb-2" @click="isEditMode = false">
@@ -142,6 +145,7 @@ import { DatatypesProvider, DbKeyProvider } from "@/components/providers";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
+import GTable from "@/components/Common/GTable.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
@@ -151,6 +155,7 @@ export default {
         LibraryBreadcrumb,
         CopyToClipboard,
         FontAwesomeIcon,
+        GTable,
         DbKeyProvider,
         DatatypesProvider,
         SingleItemSelector,
