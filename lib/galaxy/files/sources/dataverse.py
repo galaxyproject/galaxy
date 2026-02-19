@@ -4,6 +4,7 @@ import urllib.request
 from typing import (
     Any,
     cast,
+    get_args,
     Optional,
 )
 from urllib.error import HTTPError
@@ -23,6 +24,7 @@ from galaxy.files.models import (
     FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
+    RemoteFileHash,
 )
 from galaxy.files.sources import DEFAULT_PAGE_LIMIT
 from galaxy.files.sources._defaults import DEFAULT_SCHEME
@@ -39,6 +41,7 @@ from galaxy.util import (
     requests,
     stream_to_open_named_file,
 )
+from galaxy.util.hash_util import HashFunctionNames
 from galaxy.util.user_agent import get_default_headers
 
 
@@ -247,6 +250,11 @@ class DataverseRDMFilesSource(RDMFilesSource):
 
 class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     """In Dataverse a "Dataset" represents what we refer to as container in the rdm base class"""
+
+    _SUPPORTED_HASHES: set[HashFunctionNames] = set(get_args(HashFunctionNames))
+    _LEGACY_HASH_MAP: dict[str, HashFunctionNames] = {
+        hash_name.lower().replace("-", ""): hash_name for hash_name in _SUPPORTED_HASHES
+    }
 
     @property
     def api_base_url(self) -> str:
@@ -497,6 +505,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                 # (e.g., when FilePIDsEnabled is false on the Dataverse instance)
                 file_identifier = f"id:{dataFile.get('id')}"
             uri = self.to_plugin_uri(dataset_id, file_identifier)
+            hashes = self._get_file_hashes(dataFile)
             rval.append(
                 RemoteFile(
                     name=dataFile.get("filename"),
@@ -504,9 +513,42 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                     ctime=dataFile.get("creationDate"),
                     uri=uri,
                     path=self.plugin.to_relative_path(uri),
+                    hashes=hashes,
                 )
             )
         return rval
+
+    def _get_file_hashes(self, dataFile: dict) -> Optional[list[RemoteFileHash]]:
+        hashes: list[RemoteFileHash] = []
+
+        # Preferred: extract from "checksum" field
+        supported_hashes = self._SUPPORTED_HASHES
+        checksum = dataFile.get("checksum")
+        if isinstance(checksum, dict):
+            hash_type = str(checksum.get("type") or "").upper()
+            hash_value = checksum.get("value")
+            if hash_value and hash_type in supported_hashes:
+                return [
+                    RemoteFileHash(
+                        hash_function=cast(HashFunctionNames, hash_type),
+                        hash_value=str(hash_value),
+                    )
+                ]
+
+        # Fallback to legacy flat fields (md5, sha1, sha256, sha512, ...)
+        legacy_map = self._LEGACY_HASH_MAP
+        for key, normalized in legacy_map.items():
+            value = dataFile.get(key)
+            if value:
+                if not any(h.hash_function == normalized for h in hashes):
+                    hashes.append(
+                        RemoteFileHash(
+                            hash_function=normalized,
+                            hash_value=value,
+                        )
+                    )
+
+        return hashes or None
 
     def _get_response(
         self,
