@@ -213,6 +213,25 @@ The following files are new, or recently converted to yaml
 -  ``config/url_headers_conf.yml.sample``
 
 
+Developer Notes
+===========================================================
+
+**Client Build Toolchain Modernized: Vite, Vitest, and Removal of Webpack/Gulp**
+  The Galaxy client build system has been completely overhauled in 26.0.
+  `Webpack has been replaced by Vite <https://github.com/galaxyproject/galaxy/pull/21369>`__
+  for bundling, `Jest has been replaced by Vitest <https://github.com/galaxyproject/galaxy/pull/21348>`__
+  for unit testing, and `Gulp has been replaced by a plain Node.js script <https://github.com/galaxyproject/galaxy/pull/21370>`__
+  for pre-build tasks (icons and visualization plugins). These changes put the entire client
+  on a single modern toolchain and result in significantly faster builds (~35s) and test
+  runs (~22s for the full suite).
+
+  Contributors writing client tests should update their files to use Vitest APIs
+  (``vi.fn()``, ``vi.mock()``) and import test utilities explicitly (``describe``, ``it``,
+  ``expect``, etc.) rather than relying on globals. The test environment has also
+  `switched from jsdom to happy-dom <https://github.com/galaxyproject/galaxy/pull/21359>`__,
+  removing the need for several manual polyfills. Pre-build shortcuts ``yarn icons``,
+  ``yarn plugins``, and ``yarn plugins-rebuild`` are also now available.
+
 Release Team
 ===========================================================
 
