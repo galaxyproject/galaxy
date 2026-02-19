@@ -34,7 +34,7 @@ ChatGXY provides a conversational entry point to Galaxy's AI capabilities and la
 
 .. raw:: html
 
-   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="PLACEHOLDER" title="Galaxy 26.0 - ChatGXY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/DQsiSbzMQgE?si=NMSpS2KyEO7AmWSM" title="Galaxy 26.0 - ChatGXY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 
 AI Assisted Notebooks with JupyterLite
@@ -53,7 +53,7 @@ This integration makes interactive, AI supported analysis a natural extension of
 
 .. raw:: html
 
-   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="PLACEHOLDER" title="Galaxy 26.0 - JupyterLite" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/qUmPw-ySH9U?si=n-Kf4dRdeKhGnD__" title="Galaxy 26.0 - JupyterLite" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 AI Powered Data Visualization with Vintent
 -----------------------------------------------------------
@@ -72,7 +72,7 @@ By combining AI reasoning with a portable and reproducible Python runtime in the
 
 .. raw:: html
 
-   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="PLACEHOLDER" title="Galaxy 26.0 - Vintent" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/RhKpgCof7ac?si=jPGFHT24vqLLr6U3" title="Galaxy 26.0 - Vintent" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 A Redesigned ToolShed Landing Experience
 -----------------------------------------------------------
@@ -89,8 +89,7 @@ These improvements make exploring and managing Galaxy tools more intuitive for b
 
 .. raw:: html
 
-   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="PLACEHOLDER" title="Galaxy 26.0 - ToolShed" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/unSGKRpogTI?si=5dR1eIoLCp_P2Cic" title="Galaxy 26.0 - ToolShed" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Automated Actions When Workflows Finish
 -----------------------------------------------------------
@@ -106,6 +105,11 @@ These features streamline post analysis workflows and reduce manual follow up st
 
 [`#21532 <https://github.com/galaxyproject/galaxy/pull/21532>`__]
 
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/2-hPsH259m0?si=grZYVPzad8BxN0sK" title="Galaxy 26.0 - Workflow Completion Actions" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+
 Improved Workflow Error Navigation
 -----------------------------------------------------------
 
@@ -116,6 +120,11 @@ Debugging complex workflows is now easier with clearer and more actionable failu
 - **Faster troubleshooting**. Reduce time spent locating and diagnosing workflow issues.
 
 [`#21514 <https://github.com/galaxyproject/galaxy/pull/21514>`__]
+
+.. figure:: images/26.0-better-workflow-debugging.png
+   :alt: Improved workflow failure hints
+   :height: 360px
+   :align: center
 
 ----
 
