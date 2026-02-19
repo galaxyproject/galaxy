@@ -42,20 +42,23 @@
                 </b-form>
             </b-card>
         </b-collapse>
-        <b-table
+        <GTable
             id="libraries_list"
-            ref="libraries_list"
-            no-sort-reset
+            ref="libraryTable"
+            class="mb-4"
             striped
             hover
+            show-empty
             :fields="fields"
             :items="librariesList"
-            :sort-by.sync="sortBy"
+            :sort-by="sortBy"
+            :sort-desc="sortDesc"
             :per-page="perPage"
             :current-page="currentPage"
-            show-empty
             :filter="filter"
             :filter-included-fields="filterOn"
+            :filter-ignored-fields="excluded"
+            @sort-changed="onSortChanged"
             @filtered="onFiltered">
             <template v-slot:cell(name)="row">
                 <textarea
@@ -143,7 +146,7 @@
                     {{ titleDelete }}
                 </b-button>
             </template>
-        </b-table>
+        </GTable>
 
         <b-container>
             <b-row class="justify-content-md-center">
@@ -206,6 +209,7 @@ import _l from "@/utils/localization";
 import { Services } from "./services";
 import { fields } from "./table-fields";
 
+import GTable from "@/components/Common/GTable.vue";
 import LibraryEditField from "@/components/Libraries/LibraryEditField.vue";
 import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
 
@@ -214,6 +218,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         FontAwesomeIcon,
+        GTable,
         LibraryEditField,
         SearchField,
     },
@@ -259,6 +264,7 @@ export default {
             titleDelete: _l("Delete"),
             titlePerPage: _l("per page"),
             titleTotal: _l("total"),
+            sortDesc: false,
             sortBy: "name",
         };
     },
@@ -274,16 +280,23 @@ export default {
         this.loadLibraries(this.includeDeleted);
     },
     methods: {
+        refreshTable() {
+            this.$refs.libraryTable.refresh();
+        },
         loadLibraries(includeDeleted = false) {
             this.services.getLibraries(includeDeleted).then((result) => (this.librariesList = result));
         },
         toggleEditMode(item) {
             item.editMode = !item.editMode;
-            this.$refs.libraries_list.refresh();
+            this.refreshTable();
         },
         toggleDescriptionExpand(item) {
             item.isExpanded = !item.isExpanded;
-            this.$refs.libraries_list.refresh();
+            this.refreshTable();
+        },
+        onSortChanged(sortBy, sortDesc) {
+            this.sortBy = sortBy;
+            this.sortDesc = sortDesc;
         },
         saveChanges(item) {
             const description = item[this.newDescriptionProperty];
@@ -333,7 +346,7 @@ export default {
             if (this.includeDeleted) {
                 this.services.getLibraries(this.includeDeleted).then((result) => {
                     this.librariesList = this.librariesList.concat(result);
-                    this.$refs.libraries_list.refresh();
+                    this.refreshTable();
                 });
             } else {
                 this.hideOn("deleted", false);
@@ -364,7 +377,7 @@ export default {
                 () => {
                     item.deleted = false;
                     Toast.success("Library has been undeleted.");
-                    this.$refs.libraries_list.refresh();
+                    this.refreshTable();
                 },
                 (error) => onError(error),
                 true,
