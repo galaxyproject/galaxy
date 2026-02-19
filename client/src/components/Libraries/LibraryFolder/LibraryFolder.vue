@@ -20,6 +20,7 @@
         <GTable
             id="folder_list_body"
             ref="folderTable"
+            class="mb-4"
             clickable-rows
             hover
             selectable
@@ -52,35 +53,45 @@
 
             <!-- Name -->
             <template v-slot:cell(name)="row">
-                <div v-if="row.item.editMode" @click="onRowClick">
-                    <textarea
-                        v-if="row.item.isNewFolder"
-                        :ref="'name' + row.item.id"
-                        v-model="row.item.name"
-                        class="form-control"
-                        name="input_folder_name"
-                        rows="3" />
-                    <textarea v-else :ref="'name' + row.item.id" class="form-control" :value="row.item.name" rows="3" />
-                </div>
-                <div v-else-if="!row.item.deleted">
-                    <b-link
-                        v-if="row.item.type === 'folder'"
-                        :to="{ name: `LibraryFolder`, params: { folder_id: `${row.item.id}` } }">
-                        {{ row.item.name }}
-                    </b-link>
+                <div class="d-flex flex-gapx-1 align-items-center">
+                    <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="faFolder" title="Folder" fixed-width />
+                    <FontAwesomeIcon v-else-if="row.item.type === 'file'" :icon="faFile" title="Dataset" fixed-width />
 
-                    <b-link
-                        v-else
-                        :to="{
-                            name: `LibraryDataset`,
-                            params: { folder_id: folder_id, dataset_id: `${row.item.id}` },
-                        }">
-                        {{ row.item.name }}
-                    </b-link>
-                </div>
-                <!-- Deleted Item-->
-                <div v-else>
-                    <div class="deleted-item">{{ row.item.name }}</div>
+                    <div v-if="row.item.editMode" @click="onRowClick">
+                        <textarea
+                            v-if="row.item.isNewFolder"
+                            :ref="'name' + row.item.id"
+                            v-model="row.item.name"
+                            class="form-control"
+                            name="input_folder_name"
+                            rows="3" />
+                        <textarea
+                            v-else
+                            :ref="'name' + row.item.id"
+                            class="form-control"
+                            :value="row.item.name"
+                            rows="3" />
+                    </div>
+                    <div v-else-if="!row.item.deleted">
+                        <b-link
+                            v-if="row.item.type === 'folder'"
+                            :to="{ name: `LibraryFolder`, params: { folder_id: `${row.item.id}` } }">
+                            {{ row.item.name }}
+                        </b-link>
+
+                        <b-link
+                            v-else
+                            :to="{
+                                name: `LibraryDataset`,
+                                params: { folder_id: folder_id, dataset_id: `${row.item.id}` },
+                            }">
+                            {{ row.item.name }}
+                        </b-link>
+                    </div>
+                    <!-- Deleted Item-->
+                    <div v-else>
+                        <div class="deleted-item">{{ row.item.name }}</div>
+                    </div>
                 </div>
             </template>
 
@@ -125,11 +136,6 @@
                         <div v-else v-html="linkify(purify.sanitize(getMessage(row.item)))"></div>
                     </div>
                 </div>
-            </template>
-
-            <template v-slot:cell(type_icon)="row">
-                <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="faFolder" title="Folder" />
-                <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="Dataset" :icon="faFile" />
             </template>
 
             <template v-slot:cell(type)="row">
