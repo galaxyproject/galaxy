@@ -12,10 +12,9 @@ Highlights
 
 Discover some of the most exciting new capabilities and improvements in Galaxy 26.1.
 
-AI Comes to Galaxy
-------------------
+.. rubric:: AI Comes to Galaxy!
 
-Galaxy 26.1 brings artificial intelligence directly into the Galaxy experience, expanding how users explore data, discover tools, and troubleshoot analyses.
+*Galaxy 26.1 brings artificial intelligence directly into the Galaxy experience, expanding how users explore data, discover tools, and troubleshoot analyses.*
 
 ChatGXY: Intelligent Assistance Inside Galaxy
 ---------------------------------------------
