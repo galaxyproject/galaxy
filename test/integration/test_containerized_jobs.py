@@ -7,8 +7,10 @@ from typing import Any
 
 from galaxy.util.commands import which
 from galaxy_test.base.populators import (
+    CredentialsPopulator,
     DatasetPopulator,
     skip_without_tool,
+    WorkflowPopulator,
 )
 from galaxy_test.driver.integration_util import (
     ConfiguresDatabaseVault,
@@ -26,6 +28,10 @@ SINGULARITY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "singularity_job_co
 
 EXTENDED_TIMEOUT = 120
 
+CREDENTIALS_TEST_TOOL = "secret_tool"
+CONTAINER_TEST_VARIABLES = [{"name": "server", "value": "http://test-server:8080"}]
+CONTAINER_TEST_SECRETS = [{"name": "username", "value": "test_user"}, {"name": "password", "value": "test_pass"}]
+
 
 class MulledJobTestCases:
     """
@@ -33,6 +39,7 @@ class MulledJobTestCases:
     """
 
     dataset_populator: DatasetPopulator
+    credentials_populator: CredentialsPopulator
     container_type: str
 
     def _run_and_get_contents(self, tool_id: str, history_id: str):
@@ -125,6 +132,14 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
 
     def setUp(self) -> None:
         super().setUp()
+        self.credentials_populator = CredentialsPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+
+    def _setup_credentials_context(self, **kwargs):
+        kwargs.setdefault("tool_id", CREDENTIALS_TEST_TOOL)
+        kwargs.setdefault("variables", CONTAINER_TEST_VARIABLES)
+        kwargs.setdefault("secrets", CONTAINER_TEST_SECRETS)
+        return self.credentials_populator.setup_credentials_context(**kwargs)
 
     def test_container_job_environment(self) -> None:
         """
@@ -234,52 +249,12 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         """
         Test that tool credentials are passed as environment variables into containerized environments.
         """
-        # Create credentials for the tool
-        credentials_payload = {
-            "source_type": "tool",
-            "source_id": "secret_tool",
-            "source_version": "test",
-            "service_credential": {
-                "name": "service1",
-                "version": "v1",
-                "group": {
-                    "name": "default",
-                    "variables": [{"name": "server", "value": "http://test-server:8080"}],
-                    "secrets": [
-                        {"name": "username", "value": "test_user"},
-                        {"name": "password", "value": "test_pass"},
-                    ],
-                },
-            },
-        }
-        response = self._post("/api/users/current/credentials", data=credentials_payload, json=True)
-        self._assert_status_code_is(response, 200)
-        created_group = response.json()
-
-        # Get the user credentials to find the user_credentials_id
-        credentials_list_response = self._get("/api/users/current/credentials?source_type=tool&source_id=secret_tool")
-        self._assert_status_code_is(credentials_list_response, 200)
-        credentials_list = credentials_list_response.json()
-        assert len(credentials_list) == 1
-        user_credentials_id = credentials_list[0]["id"]
-
-        # Build credentials_context for tool execution
-        credentials_context = [
-            {
-                "user_credentials_id": user_credentials_id,
-                "name": "service1",
-                "version": "v1",
-                "selected_group": {
-                    "id": created_group["id"],
-                    "name": created_group["name"],
-                },
-            }
-        ]
+        credentials_context = self._setup_credentials_context()
 
         # Run the containerized tool that outputs credential environment variables
         with self.dataset_populator.test_history() as history_id:
             run_response = self.dataset_populator.run_tool(
-                "secret_tool", {}, history_id, credentials_context=json.dumps(credentials_context)
+                "secret_tool", {}, history_id, credentials_context=credentials_context
             )
             job_id = run_response["jobs"][0]["id"]
             self.dataset_populator.wait_for_job(job_id=job_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
