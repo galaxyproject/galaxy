@@ -85,7 +85,7 @@ The ToolShed landing page has been redesigned to make tool discovery clearer and
 
 These improvements make exploring and managing Galaxy tools more intuitive for both new and experienced users.
 
-[`#21434 <https://github.com/galaxyproject/galaxy/pull/21434>`__]
+[`#21430 <https://github.com/galaxyproject/galaxy/pull/21430>`__]
 
 .. raw:: html
 
