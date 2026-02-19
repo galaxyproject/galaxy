@@ -4157,8 +4157,13 @@ class DescribeFailure:
         if message not in (actual_text := self._response.text):
             if self._tool_request:
                 state_message = self._tool_request["state_message"]
-                if message not in state_message:
-                    raise AssertionError(f"'{message}' not found in '{state_message}'")
+                error_text = (
+                    state_message.get("err_msg", str(state_message))
+                    if isinstance(state_message, dict)
+                    else state_message
+                )
+                if message not in error_text:
+                    raise AssertionError(f"'{message}' not found in '{error_text}'")
             else:
                 raise AssertionError(f"'{message}' not found in '{actual_text}'")
         return self
