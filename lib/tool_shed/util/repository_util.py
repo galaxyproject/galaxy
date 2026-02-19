@@ -249,10 +249,13 @@ def create_repository(
 
 
 def generate_sharable_link_for_repository_in_tool_shed(
-    repository: model.Repository, changeset_revision: Optional[str] = None
+    repository: model.Repository, changeset_revision: Optional[str] = None, base_url: Optional[str] = None
 ) -> str:
     """Generate the URL for sharing a repository that is in the tool shed."""
-    base_url = web.url_for("/", qualified=True).rstrip("/")
+    if base_url is None:
+        base_url = web.url_for("/", qualified=True).rstrip("/")
+    else:
+        base_url = base_url.rstrip("/")
     sharable_url = f"{base_url}/view/{repository.user.username}/{repository.name}"
     if changeset_revision:
         sharable_url += f"/{changeset_revision}"
