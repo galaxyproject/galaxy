@@ -29,6 +29,7 @@ from galaxy.exceptions import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.compute_environment import ComputeEnvironment
+from galaxy.managers.credentials import _build_user_credentials_query
 from galaxy.model import (
     Job,
     PostJobAction,
@@ -42,6 +43,11 @@ from galaxy.model.dataset_collections import matching
 from galaxy.model.dataset_collections.query import HistoryQuery
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
+from galaxy.schema.credentials import (
+    CredentialsContext,
+    SelectedGroup,
+    ServiceCredentialsContext,
+)
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -2503,6 +2509,7 @@ class ToolModule(WorkflowModule):
                 if pja.action_type == "ValidateOutputsAction":
                     validate_outputs = True
 
+            credentials_context = self._resolve_credentials_context(tool)
             execution_tracker = execute(
                 trans=self.trans,
                 tool=tool,
@@ -2518,6 +2525,7 @@ class ToolModule(WorkflowModule):
                 ),
                 completed_jobs=completed_jobs,
                 workflow_resource_parameters=resource_parameters,
+                credentials_context=credentials_context,
             )
             complete = True
         except PartialJobExecution as pje:
@@ -2580,6 +2588,38 @@ class ToolModule(WorkflowModule):
                 ActionBox.execute_on_mapped_over(
                     self.trans, self.trans.sa_session, pja, step_inputs, step_outputs, replacement_dict
                 )
+
+    def _resolve_credentials_context(self, tool: "Tool") -> Optional[CredentialsContext]:
+        """Auto-resolve the user's current credentials for a tool in workflow execution."""
+        if not tool.credentials:
+            return None
+        trans = self.trans
+        if not trans.user:
+            return None
+        stmt = _build_user_credentials_query(
+            user_id=trans.user.id,
+            source_type="tool",
+            source_id=tool.id,
+            current_group_only=True,
+        )
+        results = trans.sa_session.execute(stmt).tuples().all()
+        if not results:
+            return None
+        encode = trans.security.encode_id
+        seen = {}
+        for user_cred, group, _cred in results:
+            key = (user_cred.id, user_cred.name, user_cred.version)
+            if key not in seen:
+                seen[key] = ServiceCredentialsContext(
+                    user_credentials_id=encode(user_cred.id),
+                    name=user_cred.name,
+                    version=user_cred.version,
+                    selected_group=SelectedGroup(
+                        id=encode(group.id),
+                        name=group.name,
+                    ),
+                )
+        return CredentialsContext(root=list(seen.values()))
 
     def _handle_post_job_actions(self, step, job, replacement_dict):
         # Create new PJA associations with the created job, to be run on completion.
