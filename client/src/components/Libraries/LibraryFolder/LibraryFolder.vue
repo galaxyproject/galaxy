@@ -17,20 +17,25 @@
             @deleteFromTable="deleteFromTable"
             @setBusy="setBusy($event)"
             @newFolder="newFolder" />
-        <b-table
+        <GTable
             id="folder_list_body"
-            ref="folder_content_table"
-            striped
+            ref="folderTable"
+            clickable-rows
             hover
-            :busy.sync="isBusy"
+            selectable
+            show-empty
+            show-select-all
+            striped
             :fields="fields"
             :items="folderContents"
             :per-page="perPage"
-            selectable
-            no-select-on-click
-            show-empty
+            :selected-items="selectedIndices"
+            :sort-by="sortBy"
+            :sort-desc="sortDesc"
+            :local-sorting="false"
             @sort-changed="onSort"
-            @row-clicked="onRowClick">
+            @select-all="toggleSelect"
+            @row-select="onRowSelect">
             <template v-slot:empty>
                 <div v-if="isBusy" class="text-center my-2">
                     <b-spinner class="align-middle"></b-spinner>
@@ -44,32 +49,10 @@
                     </a>
                 </div>
             </template>
-            <template v-slot:head(selected)="">
-                <FontAwesomeIcon
-                    v-if="isAllSelectedMode && !isAllSelectedOnPage()"
-                    class="select-checkbox cursor-pointer"
-                    size="lg"
-                    title="Check to select all datasets"
-                    :icon="faMinusSquare"
-                    @click="toggleSelect" />
-                <FontAwesomeIcon
-                    v-else
-                    class="select-checkbox cursor-pointer"
-                    size="lg"
-                    title="Check to select all datasets"
-                    :icon="isAllSelectedOnPage() ? faCheckSquare : faSquare"
-                    @click="toggleSelect" />
-            </template>
-            <template v-slot:cell(selected)="row">
-                <FontAwesomeIcon
-                    v-if="!row.item.isNewFolder && !row.item.deleted"
-                    class="select-checkbox lib-folder-checkbox"
-                    size="lg"
-                    :icon="row.rowSelected ? faCheckSquare : faSquare" />
-            </template>
+
             <!-- Name -->
             <template v-slot:cell(name)="row">
-                <div v-if="row.item.editMode">
+                <div v-if="row.item.editMode" @click="onRowClick">
                     <textarea
                         v-if="row.item.isNewFolder"
                         :ref="'name' + row.item.id"
@@ -143,25 +126,31 @@
                     </div>
                 </div>
             </template>
+
             <template v-slot:cell(type_icon)="row">
                 <FontAwesomeIcon v-if="row.item.type === 'folder'" :icon="faFolder" title="Folder" />
                 <FontAwesomeIcon v-else-if="row.item.type === 'file'" title="Dataset" :icon="faFile" />
             </template>
+
             <template v-slot:cell(type)="row">
                 <div v-if="row.item.type === 'folder'">{{ row.item.type }}</div>
                 <div v-else-if="row.item.type === 'file'">{{ row.item.file_ext }}</div>
             </template>
+
             <template v-slot:cell(raw_size)="row">
                 <div v-if="row.item.type === 'file'" v-html="bytesToString(row.item.raw_size)"></div>
             </template>
+
             <template v-slot:cell(state)="row">
                 <div v-if="row.item.state != 'ok'">
                     {{ row.item.state }}
                 </div>
             </template>
+
             <template v-slot:cell(update_time)="row">
                 <UtcDate v-if="row.item.update_time" :date="row.item.update_time" mode="elapsed" />
             </template>
+
             <template v-slot:cell(is_unrestricted)="row">
                 <FontAwesomeIcon v-if="row.item.is_unrestricted" title="Unrestricted dataset" :icon="faGlobe" />
                 <FontAwesomeIcon v-else-if="row.item.deleted" title="Marked deleted" :icon="faBan"></FontAwesomeIcon>
@@ -177,14 +166,14 @@
                     <button
                         class="primary-button btn-sm permission_folder_btn save_folder_btn"
                         :title="'save ' + row.item.name"
-                        @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)">
+                        @click.stop="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)">
                         <FontAwesomeIcon :icon="faSave" />
                         Save
                     </button>
                     <button
                         class="primary-button btn-sm permission_folder_btn"
                         title="Discard Changes"
-                        @click="toggleEditMode(row.item)">
+                        @click.stop="toggleEditMode(row.item)">
                         <FontAwesomeIcon :icon="faTimes" />
                         Cancel
                     </button>
@@ -197,7 +186,7 @@
                         size="sm"
                         class="lib-btn permission_folder_btn edit_folder_btn"
                         :title="'Edit ' + row.item.name"
-                        @click="toggleEditMode(row.item)">
+                        @click.stop="toggleEditMode(row.item)">
                         <FontAwesomeIcon :icon="faPencilAlt" />
                         Edit
                     </b-button>
@@ -206,7 +195,8 @@
                         size="sm"
                         class="lib-btn permission_lib_btn"
                         :title="`Permissions of ${row.item.name}`"
-                        :to="{ path: `${navigateToPermission(row.item)}` }">
+                        :to="{ path: `${navigateToPermission(row.item)}` }"
+                        @click.stop>
                         <FontAwesomeIcon :icon="faUsers" />
                         Manage
                     </b-button>
@@ -215,13 +205,14 @@
                         :title="'Undelete ' + row.item.name"
                         class="lib-btn primary-button btn-sm undelete_dataset_btn"
                         type="button"
-                        @click="undelete(row.item, folder_id)">
+                        @click.stop="undelete(row.item, folder_id)">
                         <FontAwesomeIcon :icon="faUnlock" />
                         Undelete
                     </button>
                 </div>
             </template>
-        </b-table>
+        </GTable>
+
         <!-- hide pagination if the table is loading-->
         <b-container>
             <b-row align-v="center" class="justify-content-md-center">
@@ -264,12 +255,11 @@
 </template>
 
 <script>
-import { faCheckSquare, faFile, faFolder, faSave, faSquare } from "@fortawesome/free-regular-svg-icons";
+import { faFile, faFolder, faSave } from "@fortawesome/free-regular-svg-icons";
 import {
     faBan,
     faGlobe,
     faKey,
-    faMinusSquare,
     faPencilAlt,
     faShieldAlt,
     faTimes,
@@ -294,6 +284,7 @@ import { Services } from "./services";
 import { fields } from "./table-fields";
 
 import FolderTopBar from "./TopToolbar/FolderTopBar.vue";
+import GTable from "@/components/Common/GTable.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 Vue.use(BootstrapVue);
@@ -312,6 +303,7 @@ function initialFolderState() {
 export default {
     components: {
         FolderTopBar,
+        GTable,
         UtcDate,
         FontAwesomeIcon,
     },
@@ -336,16 +328,13 @@ export default {
             ...{
                 // Icons
                 faBan,
-                faCheckSquare,
                 faFile,
                 faFolder,
                 faGlobe,
                 faKey,
-                faMinusSquare,
                 faPencilAlt,
                 faSave,
                 faShieldAlt,
-                faSquare,
                 faTimes,
                 faUnlock,
                 faUsers,
@@ -371,6 +360,12 @@ export default {
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
+        selectedIndices() {
+            return this.folderContents
+                .map((item, index) => ({ item, index }))
+                .filter(({ item }) => this.isRowSelected(item))
+                .map(({ index }) => index);
+        },
     },
     watch: {
         perPage(newValue) {
@@ -411,9 +406,9 @@ export default {
                 this.perPage = this.perPageRef.value;
             }
         },
-        onSort(props) {
-            this.sortBy = props.sortBy;
-            this.sortDesc = props.sortDesc;
+        onSort(sortBy, sortDesc) {
+            this.sortBy = sortBy;
+            this.sortDesc = sortDesc;
         },
         fetchFolderContents() {
             this.setBusy(true);
@@ -434,13 +429,7 @@ export default {
                     this.total_rows = response.metadata.total_rows;
                     if (this.isAllSelectedMode) {
                         this.selected = [];
-                        Vue.nextTick(() => {
-                            this.selectAllRenderedRows();
-                        });
-                    } else if (this.selected.length > 0) {
-                        Vue.nextTick(() => {
-                            this.selected.forEach((row) => this.select_unselect_row_by_id(row.id));
-                        });
+                        this.selectAllRenderedRows();
                     }
                     this.setBusy(false);
                 })
@@ -454,21 +443,16 @@ export default {
             this.fetchFolderContents();
         },
         selectAllRenderedRows() {
-            this.$refs.folder_content_table.items.forEach((row, index) => {
-                if (!row.isNewFolder && !row.deleted && !this.unselected.some((unsel) => unsel.id === row.id)) {
-                    this.select_unselect_row(index);
-                    if (!this.selected.some((selectedItem) => selectedItem.id === row.id)) {
-                        this.selected.push(row);
-                    }
-                }
-            });
+            const selectedRows = this.folderContents.filter(
+                (row) => !row.isNewFolder && !row.deleted && !this.unselected.some((unsel) => unsel.id === row.id),
+            );
+            this.selected = selectedRows;
         },
         clearRenderedSelectedRows() {
-            this.$refs.folder_content_table.clearSelected();
             this.selected = [];
         },
         refreshTable() {
-            this.$refs.folder_content_table.refresh();
+            this.$refs.folderTable.refresh();
         },
         refreshTableContent() {
             this.fetchFolderContents();
@@ -481,25 +465,22 @@ export default {
             });
         },
         isAllSelectedOnPage() {
-            if (!this.$refs.folder_content_table) {
-                return false;
-            }
-
             // Since we cannot select new folders, toggle should clear all if all rows match, expect new folders
             let unselectable = 0;
 
-            this.$refs.folder_content_table.computedItems.forEach((row) => {
+            this.folderContents.forEach((row) => {
                 if (row.isNewFolder || row.deleted) {
                     unselectable++;
                 }
             });
 
-            const numComputedItems = this.$refs.folder_content_table.computedItems.length;
-            if (numComputedItems === 0 || numComputedItems === unselectable) {
+            const numItems = this.folderContents.length;
+            if (numItems === 0 || numItems === unselectable) {
                 return false;
             }
 
-            return this.selected.length + unselectable === numComputedItems;
+            const selectedOnPage = this.folderContents.filter((row) => this.isRowSelected(row)).length;
+            return selectedOnPage + unselectable === numItems;
         },
         toggleSelect() {
             this.unselected = [];
@@ -521,36 +502,51 @@ export default {
             });
             this.refreshTable();
         },
-        onRowClick(row, index, event) {
-            // check if exists
-            const selected_array_index = this.selected.findIndex((item) => item.id === row.id);
-            if (selected_array_index > -1) {
-                this.selected.splice(selected_array_index, 1);
-                this.select_unselect_row(index, true);
+        isRowSelected(row) {
+            if (this.isAllSelectedMode) {
+                return !row.isNewFolder && !row.deleted && !this.unselected.some((unsel) => unsel.id === row.id);
+            }
+            return this.selected.some((selectedItem) => selectedItem.id === row.id);
+        },
+        onRowSelect({ item, selected }) {
+            if (item.isNewFolder || item.deleted) {
+                return;
+            }
+
+            if (selected) {
+                // Add to selection
+                const alreadySelected = this.selected.some((selectedItem) => selectedItem.id === item.id);
+                if (!alreadySelected) {
+                    this.selected.push(item);
+                }
+                // Remove from unselected if in all-select mode
                 if (this.isAllSelectedMode) {
-                    this.unselected.push(row);
+                    const unselectedIndex = this.unselected.findIndex((unsel) => unsel.id === item.id);
+                    if (unselectedIndex > -1) {
+                        this.unselected.splice(unselectedIndex, 1);
+                    }
+                }
+            } else {
+                // Remove from selection
+                const selected_array_index = this.selected.findIndex((selectedItem) => selectedItem.id === item.id);
+                if (selected_array_index > -1) {
+                    this.selected.splice(selected_array_index, 1);
+                }
+                // Add to unselected if in all-select mode
+                if (this.isAllSelectedMode) {
+                    this.unselected.push(item);
                     if (this.total_rows === this.unselected.length) {
                         // if user presses `selectAll` and unselects everything manually
                         this.isAllSelectedMode = false;
                         this.unselected = [];
                     }
                 }
-            } else {
-                if (!row.isNewFolder && !row.deleted) {
-                    this.select_unselect_row(index);
-                    this.selected.push(row);
-                }
             }
         },
-        select_unselect_row_by_id(id, unselect = false) {
-            const index = this.$refs.folder_content_table.items.findIndex((row) => row.id === id);
-            this.select_unselect_row(index, unselect);
-        },
-        select_unselect_row(index, unselect = false) {
-            if (unselect) {
-                this.$refs.folder_content_table.unselectRow(index);
-            } else {
-                this.$refs.folder_content_table.selectRow(index);
+        onRowClick({ item }) {
+            // Navigate to folder/file when clicking on row
+            if (item.type === "folder") {
+                this.$router.push(`/libraries/folders/${item.id}`);
             }
         },
         bytesToString(raw_size) {
