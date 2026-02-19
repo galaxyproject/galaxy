@@ -13,12 +13,12 @@ Highlights
 Discover some of the most exciting new capabilities and improvements in Galaxy 26.1.
 
 AI Comes to Galaxy
------------------------------------------------------------
+------------------
 
 Galaxy 26.1 brings artificial intelligence directly into the Galaxy experience, expanding how users explore data, discover tools, and troubleshoot analyses.
 
 ChatGXY: Intelligent Assistance Inside Galaxy
------------------------------------------------------------
+---------------------------------------------
 
 Galaxy introduces **ChatGXY**, a built in AI assistant integrated directly into the interface.
 
@@ -36,9 +36,8 @@ ChatGXY provides a conversational entry point to Galaxy's AI capabilities and la
 
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/DQsiSbzMQgE?si=NMSpS2KyEO7AmWSM" title="Galaxy 26.0 - ChatGXY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-
 AI Assisted Notebooks with JupyterLite
------------------------------------------------------------
+--------------------------------------
 
 Galaxy 26.1 strengthens integration with **JupyterLite**, bringing AI enhanced notebooks directly into your browser.
 
@@ -56,7 +55,7 @@ This integration makes interactive, AI supported analysis a natural extension of
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/qUmPw-ySH9U?si=n-Kf4dRdeKhGnD__" title="Galaxy 26.0 - JupyterLite" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 AI Powered Data Visualization with Vintent
------------------------------------------------------------
+------------------------------------------
 
 Galaxy introduces **Vintent**, an AI driven visualization engine for generating interactive charts from your data.
 
@@ -75,7 +74,7 @@ By combining AI reasoning with a portable and reproducible Python runtime in the
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/RhKpgCof7ac?si=jPGFHT24vqLLr6U3" title="Galaxy 26.0 - Vintent" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 A Redesigned ToolShed Landing Experience
------------------------------------------------------------
+----------------------------------------
 
 The ToolShed landing page has been redesigned to make tool discovery clearer and more focused.
 
@@ -92,7 +91,7 @@ These improvements make exploring and managing Galaxy tools more intuitive for b
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/unSGKRpogTI?si=5dR1eIoLCp_P2Cic" title="Galaxy 26.0 - ToolShed" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Automated Actions When Workflows Finish
------------------------------------------------------------
+---------------------------------------
 
 Galaxy 26.1 adds configurable actions that automatically execute when a workflow completes.
 
@@ -109,9 +108,8 @@ These features streamline post analysis workflows and reduce manual follow up st
 
    <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/2-hPsH259m0?si=grZYVPzad8BxN0sK" title="Galaxy 26.0 - Workflow Completion Actions" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-
 Improved Workflow Error Navigation
------------------------------------------------------------
+----------------------------------
 
 Debugging complex workflows is now easier with clearer and more actionable failure hints.
 
