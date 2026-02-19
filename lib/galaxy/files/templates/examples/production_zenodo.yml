@@ -19,6 +19,7 @@
       public_name:
           label: Publication Name
           type: string
+          optional: true
           help: |
               The name of the person or organization that is creating the records in Zenodo. This will be used as the
               "creator" field in the metadata of the records. You can always change this value later by editing the records in
@@ -26,6 +27,7 @@
   secrets:
       token:
           label: Personal Access Token
+          optional: true
           help: |
               The personal access token to use to connect to Zenodo. Go to your Account Settings and then go to Applications
               here https://zenodo.org/account/settings/applications/. You can generate a new `Personal Access Token` if you don't have one yet.
