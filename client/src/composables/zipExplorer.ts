@@ -97,6 +97,10 @@ export function useZipExplorer() {
             return;
         }
 
+        if (toUploadToHistory.length === 0) {
+            return;
+        }
+
         if (!historyId) {
             throw new Error("There is no history available to upload the selected files.");
         }
@@ -162,6 +166,10 @@ export function useZipExplorer() {
             }
         }
 
+        if (toUploadToHistory.length === 0) {
+            return;
+        }
+
         if (!historyId) {
             throw new Error("There is no history available to upload the selected files.");
         }
@@ -189,6 +197,7 @@ export function useZipExplorer() {
             };
             uploadItems.push(uploadItem);
         }
+
         try {
             const payload = buildUploadPayload(uploadItems);
             submitUpload({ data: payload });
