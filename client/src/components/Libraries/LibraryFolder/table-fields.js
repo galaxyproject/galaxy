@@ -1,9 +1,5 @@
 export const fields = [
     {
-        label: "",
-        key: "type_icon",
-    },
-    {
         label: "Name",
         key: "name",
         sortable: true,
