@@ -73,7 +73,6 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
     def test_0040_verify_repository(self):
         """Display basic repository pages"""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        latest_changeset_revision = self.get_repository_tip(repository)
         self.check_for_valid_tools(repository, strings_displayed=["Filter1"])
         self.check_count_of_metadata_revisions_associated_with_repository(repository, metadata_count=1)
         tip = self.get_repository_tip(repository)
@@ -97,11 +96,6 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
             repository, strings_displayed=[f"Repository '{repository.name}' revision", "(repository tip)"]
         )
         strings = ["Uploaded filtering 1.1.0"]
-        if self._browser.is_twill:
-            # this appears in a link - it isn't how one would check this
-            # in playwright. But also we're testing the mercurial page
-            # here so this is probably a questionable check overall.
-            strings += [latest_changeset_revision]
         self.display_repository_clone_page(
             common.test_user_1_name,
             repository_name,
@@ -112,23 +106,13 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         """Upload filtering.txt file associated with tool version 1.1.0."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.add_file_to_repository(repository, "filtering/filtering_0000.txt")
-        expected = self._escape_page_content_if_needed("Readme file for filtering 1.1.0")
+        expected = "Readme file for filtering 1.1.0"
         self.display_manage_repository_page(repository, strings_displayed=[expected])
 
     def test_0060_upload_filtering_test_data(self):
         """Upload filtering test data."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.add_tar_to_repository(repository, "filtering/filtering_test_data.tar")
-        if self._browser.is_twill:
-            # probably not porting this functionality - just test
-            # with Twill for older UI and drop when that is all dropped
-            self.display_repository_file_contents(
-                repository=repository,
-                filename="1.bed",
-                filepath="test-data",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
         self.check_repository_metadata(repository, tip_only=True)
 
     def test_0065_upload_filtering_2_2_0(self):
@@ -165,10 +149,10 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         """Upload readme.txt file associated with tool version 2.2.0."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.add_file_to_repository(repository, "readme.txt")
-        content = self._escape_page_content_if_needed("This is a readme file.")
+        content = "This is a readme file."
         self.display_manage_repository_page(repository, strings_displayed=[content])
         # Verify that there is a different readme file for each metadata revision.
-        readme_content = self._escape_page_content_if_needed("Readme file for filtering 1.1.0")
+        readme_content = "Readme file for filtering 1.1.0"
         self.display_manage_repository_page(
             repository,
             strings_displayed=[
@@ -182,7 +166,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.delete_files_from_repository(repository, filenames=["readme.txt"])
         self.check_count_of_metadata_revisions_associated_with_repository(repository, metadata_count=2)
-        readme_content = self._escape_page_content_if_needed("Readme file for filtering 1.1.0")
+        readme_content = "Readme file for filtering 1.1.0"
         self.display_manage_repository_page(repository, strings_displayed=[readme_content])
 
     def test_0090_verify_repository_metadata(self):
@@ -223,7 +207,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         # Upload readme.txt to the filtering_0000 repository and verify that it is now displayed.
         self.add_file_to_repository(repository, "filtering/readme.txt")
-        content = self._escape_page_content_if_needed("These characters should not")
+        content = "These characters should not"
         self.display_manage_repository_page(repository, strings_displayed=[content])
 
     def test_0130_verify_handling_of_invalid_characters(self):
@@ -241,7 +225,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
                 break
         # Check for the changeset revision, repository name, owner username, 'repos' in the clone url, and the captured
         # unicode decoding error message.
-        content = self._escape_page_content_if_needed("These characters should not")
+        content = "These characters should not"
         strings_displayed = [
             f"{revision_number}:{revision_hash}",
             "filtering_0000",
@@ -265,10 +249,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         encoded_repository_id = repository.id
         assert encoded_repository_id
-        strings_displayed = ["Invalid+changeset+revision"]
         view_repo_url = (
             f"/repository/view_repository?id={encoded_repository_id}&changeset_revision=nonsensical_changeset"
         )
         self.visit_url(view_repo_url)
-        if self._browser.is_twill:
-            self.check_for_strings(strings_displayed=strings_displayed, strings_not_displayed=[])

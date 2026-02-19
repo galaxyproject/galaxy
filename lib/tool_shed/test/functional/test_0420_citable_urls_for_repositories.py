@@ -116,7 +116,7 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         strings_displayed_in_iframe = [
             "user1",
             "filtering_0420",
-            self._escape_page_content_if_needed(repository_long_description),
+            repository_long_description,
         ]
         strings_displayed_in_iframe.append(self.get_repository_tip(repository))
         self.load_citable_url(
@@ -147,7 +147,7 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         strings_displayed_in_iframe = [
             "user1",
             "filtering_0420",
-            self._escape_page_content_if_needed(repository_long_description),
+            repository_long_description,
             first_changeset_hash,
         ]
         self.load_citable_url(

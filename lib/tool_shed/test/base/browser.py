@@ -35,11 +35,6 @@ class ShedBrowser(metaclass=abc.ABCMeta):
     def submit_form_with_name(self, form_name: str, button="runtool_btn", **kwd):
         """Submit the target button."""
 
-    @property
-    @abc.abstractmethod
-    def is_twill(self) -> bool:
-        """Return whether this is a twill browser."""
-
     @abc.abstractmethod
     def edit_repository_categories(self, categories_to_add: list[str], categories_to_remove: list[str]) -> None:
         """Select some new categories and then restore the component."""

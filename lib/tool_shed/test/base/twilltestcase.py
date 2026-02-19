@@ -77,10 +77,6 @@ from . import (
 from .api import ShedApiTestCase
 from .browser import ShedBrowser
 from .playwrightbrowser import PlaywrightShedBrowser
-from .twillbrowser import (
-    page_content,
-    visit_url,
-)
 
 if TYPE_CHECKING:
     from galaxy.model.scoped_session import install_model_scoped_session
@@ -198,6 +194,8 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
 
     def __init__(self, testcase: "ShedTwillTestCase"):
         self.testcase = testcase
+        self._session = requests.Session()
+        self._last_page_content = ""
 
     def setup(self):
         self._galaxy_login()
@@ -247,7 +245,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         for data_manager_name in data_manager_names:
             params = {"id": data_managers[data_manager_name]["guid"]}
             self._visit_galaxy_url("/data_manager/jobs_list", params=params)
-            content = page_content()
+            content = self._last_page_content
             for expected in strings_displayed:
                 if content.find(expected) == -1:
                     raise AssertionError(f"Failed to find pattern {expected} in {content}")
@@ -257,7 +255,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
     ) -> dict[str, Any]:
         params = {"id": self.testcase.security.encode_id(installed_repository.id)}
         self._visit_galaxy_url("/admin_toolshed/manage_repository_json", params=params)
-        json = page_content()
+        json = self._last_page_content
         return loads(json)
 
     def install_repository(
@@ -413,7 +411,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
 
     def _galaxy_token(self):
         self._visit_galaxy_url("/")
-        html = page_content()
+        html = self._last_page_content
         token_def_index = html.find("session_csrf_token")
         token_sep_index = html.find("=", token_def_index)
         token_quote_start_index = html.find('"', token_sep_index)
@@ -426,7 +424,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         tool_guid = quote_plus(tool_metadata[0]["guid"], safe="")
         api_url = f"/api/tools/{tool_guid}"
         self._visit_galaxy_url(api_url)
-        tool_dict = loads(page_content())
+        tool_dict = loads(self._last_page_content)
         tool_panel_section = tool_dict["panel_section_name"]
         return tool_panel_section
 
@@ -445,7 +443,13 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
             allowed_codes = [200]
         url = f"{self.testcase.galaxy_url}{url}"
         url = self.testcase.join_url_and_params(url, params)
-        return visit_url(url, allowed_codes)
+        response = self._session.get(url, timeout=DEFAULT_SOCKET_TIMEOUT)
+        assert response.status_code in allowed_codes, "Invalid HTTP return code {}, allowed codes: {}".format(
+            response.status_code,
+            ", ".join(str(code) for code in allowed_codes),
+        )
+        self._last_page_content = response.text
+        return url
 
 
 class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
@@ -655,12 +659,6 @@ class ShedTwillTestCase(ShedApiTestCase):
     def _browser(self) -> ShedBrowser:
         assert self.__browser
         return self.__browser
-
-    def _escape_page_content_if_needed(self, content: str) -> str:
-        # if twill browser is being used - replace spaces with "&nbsp;"
-        if self._browser.is_twill:
-            content = content.replace(" ", "&nbsp;")
-        return content
 
     def check_for_strings(self, strings_displayed=None, strings_not_displayed=None):
         strings_displayed = strings_displayed or []
@@ -1260,10 +1258,6 @@ class ShedTwillTestCase(ShedApiTestCase):
                 self._browser.fill_form_value("edit_repository", input_elem_name, kwd[input_elem_name])
                 strings_displayed.append(self.escape_html(kwd[input_elem_name]))
         self._browser.submit_form_with_name("edit_repository", "edit_repository_button")
-        # TODO: come back to this (and similar conditional below), the problem is check
-        # for strings isn't working with with textboxes I think?
-        if self._browser.is_twill:
-            self.check_for_strings(strings_displayed)
         if revert:
             strings_displayed = []
             # assert original_information[input_elem_name]
@@ -1273,8 +1267,6 @@ class ShedTwillTestCase(ShedApiTestCase):
                 )
                 strings_displayed.append(self.escape_html(original_information[input_elem_name]))
             self._browser.submit_form_with_name("edit_repository", "edit_repository_button")
-            if self._browser.is_twill:
-                self.check_for_strings(strings_displayed)
 
     def enable_email_alerts(self, repository: Repository, strings_displayed=None, strings_not_displayed=None) -> None:
         repository_id = repository.id
