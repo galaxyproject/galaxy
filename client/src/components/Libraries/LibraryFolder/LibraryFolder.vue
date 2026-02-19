@@ -17,6 +17,7 @@
             @deleteFromTable="deleteFromTable"
             @setBusy="setBusy($event)"
             @newFolder="newFolder" />
+
         <GTable
             id="folder_list_body"
             ref="folderTable"
@@ -39,7 +40,7 @@
             @row-select="onRowSelect">
             <template v-slot:empty>
                 <div v-if="isBusy" class="text-center my-2">
-                    <b-spinner class="align-middle"></b-spinner>
+                    <BSpinner class="align-middle" />
                     <strong>Loading...</strong>
                 </div>
                 <div v-else class="empty-folder-message">
@@ -73,20 +74,19 @@
                             rows="3" />
                     </div>
                     <div v-else-if="!row.item.deleted">
-                        <b-link
+                        <BLink
                             v-if="row.item.type === 'folder'"
                             :to="{ name: `LibraryFolder`, params: { folder_id: `${row.item.id}` } }">
                             {{ row.item.name }}
-                        </b-link>
-
-                        <b-link
+                        </BLink>
+                        <BLink
                             v-else
                             :to="{
                                 name: `LibraryDataset`,
                                 params: { folder_id: folder_id, dataset_id: `${row.item.id}` },
                             }">
                             {{ row.item.name }}
-                        </b-link>
+                        </BLink>
                     </div>
                     <!-- Deleted Item-->
                     <div v-else>
@@ -103,13 +103,13 @@
                         :ref="'description' + row.item.id"
                         v-model="row.item.description"
                         class="form-control input_folder_description"
-                        rows="3"></textarea>
+                        rows="3" />
                     <textarea
                         v-else
                         :ref="'description' + row.item.id"
                         class="form-control input_folder_description"
                         :value="row.item.description"
-                        rows="3"></textarea>
+                        rows="3" />
                 </div>
                 <div v-else>
                     <div v-if="getMessage(row.item)" class="description-field">
@@ -126,6 +126,7 @@
                                     linkify(purify.sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))
                                 ">
                             </span>
+
                             <!-- eslint-enable vue/no-v-html -->
                             <span :title="getMessage(row.item)"> ...</span>
                             <a class="more-text-btn" href="javascript:void(0)" @click="expandMessage(row.item)">
@@ -133,7 +134,7 @@
                             </a>
                         </div>
                         <!-- eslint-disable-next-line vue/no-v-html -->
-                        <div v-else v-html="linkify(purify.sanitize(getMessage(row.item)))"></div>
+                        <div v-else v-html="linkify(purify.sanitize(getMessage(row.item)))" />
                     </div>
                 </div>
             </template>
@@ -144,7 +145,7 @@
             </template>
 
             <template v-slot:cell(raw_size)="row">
-                <div v-if="row.item.type === 'file'" v-html="bytesToString(row.item.raw_size)"></div>
+                <div v-if="row.item.type === 'file'" v-html="bytesToString(row.item.raw_size)" />
             </template>
 
             <template v-slot:cell(state)="row">
@@ -159,7 +160,7 @@
 
             <template v-slot:cell(is_unrestricted)="row">
                 <FontAwesomeIcon v-if="row.item.is_unrestricted" title="Unrestricted dataset" :icon="faGlobe" />
-                <FontAwesomeIcon v-else-if="row.item.deleted" title="Marked deleted" :icon="faBan"></FontAwesomeIcon>
+                <FontAwesomeIcon v-else-if="row.item.deleted" title="Marked deleted" :icon="faBan" />
                 <FontAwesomeIcon v-else-if="row.item.is_private" title="Private dataset" :icon="faKey" />
                 <FontAwesomeIcon
                     v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
@@ -176,6 +177,7 @@
                         <FontAwesomeIcon :icon="faSave" />
                         Save
                     </button>
+
                     <button
                         class="primary-button btn-sm permission_folder_btn"
                         title="Discard Changes"
@@ -185,7 +187,7 @@
                     </button>
                 </div>
                 <div v-else>
-                    <b-button
+                    <BButton
                         v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'"
                         data-toggle="tooltip"
                         data-placement="top"
@@ -195,8 +197,9 @@
                         @click.stop="toggleEditMode(row.item)">
                         <FontAwesomeIcon :icon="faPencilAlt" />
                         Edit
-                    </b-button>
-                    <b-button
+                    </BButton>
+
+                    <BButton
                         v-if="currentUser?.is_admin"
                         size="sm"
                         class="lib-btn permission_lib_btn"
@@ -205,7 +208,8 @@
                         @click.stop>
                         <FontAwesomeIcon :icon="faUsers" />
                         Manage
-                    </b-button>
+                    </BButton>
+
                     <button
                         v-if="row.item.deleted"
                         :title="'Undelete ' + row.item.name"
@@ -220,29 +224,29 @@
         </GTable>
 
         <!-- hide pagination if the table is loading-->
-        <b-container>
-            <b-row align-v="center" class="justify-content-md-center">
-                <b-col md="auto">
+        <BContainer>
+            <BRow align-v="center" class="justify-content-md-center">
+                <BCol md="auto">
                     <div v-if="isBusy">
-                        <b-spinner small type="grow"></b-spinner>
-                        <b-spinner small type="grow"></b-spinner>
-                        <b-spinner small type="grow"></b-spinner>
+                        <BSpinner small type="grow" />
+                        <BSpinner small type="grow" />
+                        <BSpinner small type="grow" />
                     </div>
-                    <b-pagination
+                    <BPagination
                         v-else
                         :value="currentPage"
                         :total-rows="total_rows"
                         :per-page="perPage"
                         aria-controls="folder_list_body"
                         @input="changePage">
-                    </b-pagination>
-                </b-col>
+                    </BPagination>
+                </BCol>
 
-                <b-col cols="1.5">
+                <BCol cols="1.5">
                     <table>
                         <tr>
                             <td class="m-0 p-0">
-                                <b-form-input
+                                <BFormInput
                                     id="paginationPerPage"
                                     v-model="perPage"
                                     class="pagination-input-field"
@@ -254,9 +258,9 @@
                             </td>
                         </tr>
                     </table>
-                </b-col>
-            </b-row>
-        </b-container>
+                </BCol>
+            </BRow>
+        </BContainer>
     </div>
 </template>
 
@@ -273,11 +277,10 @@ import {
     faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
+import { BButton, BCol, BContainer, BFormInput, BLink, BPagination, BRow, BSpinner } from "bootstrap-vue";
 import purify from "dompurify";
 import linkifyHtml from "linkify-html";
 import { mapState } from "pinia";
-import Vue from "vue";
 
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
 import { usePersistentRef } from "@/composables/persistentRef";
@@ -293,8 +296,6 @@ import FolderTopBar from "./TopToolbar/FolderTopBar.vue";
 import GTable from "@/components/Common/GTable.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-Vue.use(BootstrapVue);
-
 function initialFolderState() {
     return {
         canAddLibraryItem: false,
@@ -308,10 +309,18 @@ function initialFolderState() {
 }
 export default {
     components: {
+        BButton,
+        BCol,
+        BContainer,
+        BFormInput,
+        BLink,
+        BPagination,
+        BRow,
+        BSpinner,
         FolderTopBar,
+        FontAwesomeIcon,
         GTable,
         UtcDate,
-        FontAwesomeIcon,
     },
     beforeRouteUpdate(to, from, next) {
         this.getFolder(to.params.folder_id, to.params.page);
