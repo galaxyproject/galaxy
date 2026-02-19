@@ -17,7 +17,7 @@ import {
     faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BSkeleton } from "bootstrap-vue";
+import { BAlert, BSkeleton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 
@@ -39,6 +39,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import type { AnalysisStep, ChatHistoryItem, ExecutionState, Message, UploadedArtifact } from "./ChatGXY/types";
 import type { DataOption } from "./Form/Elements/FormData/types";
 
+import GButton from "./BaseComponents/GButton.vue";
 import ActionCard from "./ChatGXY/ActionCard.vue";
 import DatasetSelector from "./Form/Elements/FormData/FormData.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -213,9 +214,6 @@ const agentIconMap: Record<string, IconDefinition> = {
 onMounted(async () => {
     // Try to load the most recent chat
     await loadLatestChat();
-
-    // TODO: This should be conditionally set only for the Data Analysis agent type
-    allowFetchingDatasets.value = true;
 
     // If no chat was loaded, show the welcome message
     if (!hasLoadedInitialChat.value) {
@@ -1212,7 +1210,7 @@ async function submitQuery() {
                 context: null,
                 exchange_id: currentChatId.value,
                 agent_type: selectedAgentType.value,
-                dataset_ids: selectedDatasets.value,
+                dataset_ids: allowFetchingDatasets.value ? selectedDatasets.value : undefined,
             },
         });
 
@@ -1665,21 +1663,61 @@ function toggleHistory() {
 <template>
     <div class="chatgxy-container">
         <div class="chatgxy-header">
-            <Heading h2 :icon="faMagic" size="lg">
-                <span>ChatGXY</span>
-            </Heading>
-            <div class="header-actions">
-                <button class="btn btn-sm btn-outline-primary" title="Start New Chat" @click="startNewChat">
-                    <FontAwesomeIcon :icon="faPlus" fixed-width />
-                    New
-                </button>
-                <button
-                    class="btn btn-sm"
-                    :class="showHistory ? 'btn-primary' : 'btn-outline-primary'"
-                    :title="showHistory ? 'Hide History' : 'Show History'"
-                    @click="toggleHistory">
-                    <FontAwesomeIcon :icon="faHistory" fixed-width />
-                </button>
+            <div class="header-main">
+                <Heading h2 :icon="faMagic" size="lg">
+                    <span>ChatGXY</span>
+                </Heading>
+                <div class="header-actions">
+                    <GButton
+                        color="blue"
+                        :outline="!allowFetchingDatasets"
+                        size="small"
+                        :title="
+                            !allowFetchingDatasets
+                                ? 'Include datasets from my current history in the conversation context'
+                                : 'Do not include datasets'
+                        "
+                        @click="() => (allowFetchingDatasets = !allowFetchingDatasets)">
+                        <FontAwesomeIcon :icon="faMicroscope" fixed-width />
+                        Include Datasets
+                    </GButton>
+
+                    <GButton color="blue" outline size="small" title="Start New Chat" @click="startNewChat">
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
+                        New
+                    </GButton>
+
+                    <GButton
+                        color="blue"
+                        :outline="!showHistory"
+                        size="small"
+                        :title="showHistory ? 'Hide History' : 'Show History'"
+                        @click="toggleHistory">
+                        <FontAwesomeIcon :icon="faHistory" fixed-width />
+                    </GButton>
+                </div>
+            </div>
+
+            <div v-if="allowFetchingDatasets" class="header-expand">
+                <div class="pb-2">Select a dataset for this chat</div>
+                <DatasetSelector
+                    v-if="datasetOptions.length"
+                    id="dataset-select"
+                    v-model="selectedDatasetsFormData"
+                    :loading="loadingDatasets"
+                    :options="formDataOptions"
+                    user-defined-title="Created for ChatGXY"
+                    workflow-run />
+                <BAlert v-else :variant="datasetError ? 'danger' : 'info'" show>
+                    <div v-if="loadingDatasets">
+                        <LoadingSpan message="Loading datasets" />
+                    </div>
+                    <div v-else-if="datasetError">{{ datasetError }}</div>
+                    <div v-else>
+                        No datasets in the current history. Upload a dataset or switch to a different history to use
+                        this feature.
+                    </div>
+                </BAlert>
             </div>
         </div>
 
@@ -1724,19 +1762,6 @@ function toggleHistory() {
 
             <!-- Main Chat Area -->
             <div ref="chatContainer" class="chat-messages flex-grow-1">
-                <div class="mb-3">
-                    <div class="pb-2">Select a dataset for this chat</div>
-                    <DatasetSelector
-                        v-if="datasetOptions.length"
-                        id="dataset-select"
-                        v-model="selectedDatasetsFormData"
-                        :loading="loadingDatasets"
-                        :options="formDataOptions"
-                        user-defined-title="Created for ChatGXY"
-                        workflow-run />
-                    <div v-if="datasetError" class="text-danger small mt-2">{{ datasetError }}</div>
-                </div>
-
                 <div
                     v-for="message in messages"
                     :key="message.id"
@@ -2579,9 +2604,6 @@ function toggleHistory() {
 }
 
 .chatgxy-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     padding: 0.75rem 1rem;
     background: $panel-bg-color;
     border-bottom: $border-default;
@@ -2589,6 +2611,30 @@ function toggleHistory() {
     .header-actions {
         display: flex;
         gap: 0.5rem;
+    }
+    .header-main {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .header-expand {
+        margin-top: 0.625rem;
+        padding-top: 0.625rem;
+        border-top: 1px solid rgba($brand-primary, 0.12);
+        animation: fadeIn 0.2s ease-out;
+
+        > div:first-child {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: $text-muted;
+        }
+
+        // TODO: If the dataset selector expands beyond a height,
+        //       we need to allow scrolling etc.
+        // :deep(.form-data) {
+        // }
     }
 }
 
