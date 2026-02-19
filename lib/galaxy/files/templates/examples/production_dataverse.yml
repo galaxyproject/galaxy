@@ -25,6 +25,7 @@
       public_name:
           label: Publication Name
           type: string
+          optional: true
           help: |
               The name of the person or organization creating the datasets. This will be used in the dataset metadata as the
               creator. You can update this information later by editing the dataset in Dataverse. If left blank, an anonymous user will be used as the creator.
@@ -32,6 +33,7 @@
   secrets:
       token:
           label: API Token
+          optional: true
           help: |
               The personal API token used to authenticate with the Dataverse server. You can generate this token in your
               Dataverse account settings under "API Token". It is required to access private data or upload datasets from Galaxy.
