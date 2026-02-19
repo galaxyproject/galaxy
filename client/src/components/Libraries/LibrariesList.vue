@@ -79,9 +79,9 @@
                 <div v-else-if="row.item.deleted && includeDeleted" class="deleted-item">
                     {{ row.item.name }}
                 </div>
-                <BLink v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">
+                <GLink v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">
                     {{ row.item.name }}
-                </BLink>
+                </GLink>
             </template>
 
             <template v-slot:cell(description)="{ item }">
@@ -225,7 +225,6 @@ import {
     BFormCheckbox,
     BFormInput,
     BInputGroup,
-    BLink,
     BPagination,
     BRow,
 } from "bootstrap-vue";
@@ -240,6 +239,7 @@ import _l from "@/utils/localization";
 import { Services } from "./services";
 import { fields } from "./table-fields";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LibraryEditField from "@/components/Libraries/LibraryEditField.vue";
 import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
@@ -255,10 +255,10 @@ export default {
         BFormCheckbox,
         BFormInput,
         BInputGroup,
-        BLink,
         BPagination,
         BRow,
         FontAwesomeIcon,
+        GLink,
         GTable,
         LibraryEditField,
         SearchField,
