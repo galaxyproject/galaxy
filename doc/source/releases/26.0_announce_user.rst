@@ -30,6 +30,13 @@ Galaxy introduces **ChatGXY**, a built in AI assistant integrated directly into 
 
 ChatGXY provides a conversational entry point to Galaxy's AI capabilities and lays the groundwork for connecting Galaxy users to an expanding set of intelligent capabilities.
 
+[`#21434 <https://github.com/galaxyproject/galaxy/pull/21434>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="PLACEHOLDER" title="Galaxy 26.0 - ChatGXY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+
 AI Assisted Notebooks with JupyterLite
 -----------------------------------------------------------
 
@@ -41,6 +48,12 @@ Galaxy 26.1 strengthens integration with **JupyterLite**, bringing AI enhanced n
 - **Shared AI services**. Notebook AI features use Galaxy's configured AI services for consistent behavior and control.
 
 This integration makes interactive, AI supported analysis a natural extension of Galaxy workflows.
+
+[`#21463 <https://github.com/galaxyproject/galaxy/pull/21463>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="PLACEHOLDER" title="Galaxy 26.0 - JupyterLite" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 AI Powered Data Visualization with Vintent
 -----------------------------------------------------------
@@ -55,26 +68,11 @@ Galaxy introduces **Vintent**, an AI driven visualization engine for generating 
 
 By combining AI reasoning with a portable and reproducible Python runtime in the browser, Vintent expands Galaxy's visualization ecosystem while preserving flexibility and isolation.
 
-Automated Actions When Workflows Finish
------------------------------------------------------------
+[`#21586 <https://github.com/galaxyproject/galaxy/pull/21586>`__]
 
-Galaxy 26.1 adds configurable actions that automatically execute when a workflow completes.
+.. raw:: html
 
-- **Automatic result export**. Send workflow outputs to remote file sources such as cloud storage.
-- **Completion notifications**. Receive alerts when long running workflows finish.
-- **Configurable at launch**. Select post run actions directly in a new On Completion section of the workflow run form.
-- **Track recent exports**. Monitor export status and review recent transfers from within Galaxy.
-
-These features streamline post analysis workflows and reduce manual follow up steps.
-
-Improved Workflow Error Navigation
------------------------------------------------------------
-
-Debugging complex workflows is now easier with clearer and more actionable failure hints.
-
-- **Clickable failure paths**. Navigate directly to the exact failing step, even within subworkflows.
-- **More precise step hints**. See clearer guidance on where and why a failure occurred.
-- **Faster troubleshooting**. Reduce time spent locating and diagnosing workflow issues.
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="PLACEHOLDER" title="Galaxy 26.0 - Vintent" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 A Redesigned ToolShed Landing Experience
 -----------------------------------------------------------
@@ -87,6 +85,37 @@ The ToolShed landing page has been redesigned to make tool discovery clearer and
 
 These improvements make exploring and managing Galaxy tools more intuitive for both new and experienced users.
 
+[`#21434 <https://github.com/galaxyproject/galaxy/pull/21434>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="PLACEHOLDER" title="Galaxy 26.0 - ToolShed" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+
+Automated Actions When Workflows Finish
+-----------------------------------------------------------
+
+Galaxy 26.1 adds configurable actions that automatically execute when a workflow completes.
+
+- **Automatic result export**. Send workflow outputs to remote file sources such as cloud storage.
+- **Completion notifications**. Receive alerts when long running workflows finish.
+- **Configurable at launch**. Select post run actions directly in a new On Completion section of the workflow run form.
+- **Track recent exports**. Monitor export status and review recent transfers from within Galaxy.
+
+These features streamline post analysis workflows and reduce manual follow up steps.
+
+[`#21532 <https://github.com/galaxyproject/galaxy/pull/21532>`__]
+
+Improved Workflow Error Navigation
+-----------------------------------------------------------
+
+Debugging complex workflows is now easier with clearer and more actionable failure hints.
+
+- **Clickable failure paths**. Navigate directly to the exact failing step, even within subworkflows.
+- **More precise step hints**. See clearer guidance on where and why a failure occurred.
+- **Faster troubleshooting**. Reduce time spent locating and diagnosing workflow issues.
+
+[`#21514 <https://github.com/galaxyproject/galaxy/pull/21514>`__]
 
 ----
 
