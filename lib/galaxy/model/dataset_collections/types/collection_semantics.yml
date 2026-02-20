@@ -971,3 +971,256 @@
     it should be able to for consistency. We have focused our time on data structures
     more likely to be used in actual Galaxy analyses given current and guessed future
     usage.
+
+- doc: "## sample_sheet Collections"
+- doc: |
+    The collection type ``sample_sheet`` attaches typed, columnar metadata to each
+    element of a dataset collection. For mapping and type matching purposes,
+    ``sample_sheet`` behaves identically to ``list`` - it can be mapped over tool
+    inputs, matched against ``list`` collection inputs, and composed with inner types
+    (``sample_sheet:paired``, ``sample_sheet:paired_or_unpaired``). The key asymmetry
+    is that while a ``sample_sheet`` output can satisfy a ``list`` input, a ``list``
+    output cannot satisfy a ``sample_sheet`` input - sample sheets carry metadata
+    that plain lists do not.
+
+- example:
+    label: SAMPLE_SHEET_MAPPING
+    assumptions:
+    - datasets: ["d_1,...,d_n"]
+    - tool:
+        in: {i: dataset}
+        out: {o: dataset}
+    - collections:
+        C: [sample_sheet, {i1: "d_1", ..., in: "d_n"}]
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C}
+        produces:
+            o:
+                type: collection
+                collection_type: sample_sheet
+                elements:
+                    i1:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d_1}}}
+                        output: o
+                    "...": {type: ellipsis}
+                    in:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: dataset, ref: d_n}}}
+                        output: o
+    tests:
+        workflow_editor: "accepts sample_sheet data -> data connection (maps like list)"
+
+- example:
+    label: SAMPLE_SHEET_MATCHES_LIST
+    assumptions:
+    - datasets: ["d_1,...,d_n"]
+    - tool:
+        in: {i: "collection<list>"}
+        out: {o: dataset}
+    - collections:
+        C: [sample_sheet, {i1: d_1, ..., in: d_n}]
+    then:
+        type: reduction
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+        produces:
+            o: {type: dataset}
+    tests:
+        workflow_editor: "accepts sample_sheet -> list connection (canMatch)"
+
+- doc: |
+    Sub-collection mapping works the same as for ``list`` composites. A
+    ``sample_sheet:paired`` can be mapped over a ``paired`` collection input,
+    extracting each inner pair and producing a ``sample_sheet`` implicit output.
+
+- example:
+    label: SAMPLE_SHEET_PAIRED_MAPPING_OVER_PAIRED
+    assumptions:
+    - datasets: [d_f, d_r]
+    - tool:
+        in: {i: "collection<paired>"}
+        out: {o: dataset}
+    - collections:
+        C: ["sample_sheet:paired", {el1: {forward: d_f, reverse: d_r}}]
+        "C\\_PAIRED": [paired, {forward: d_f, reverse: d_r}]
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C, sub_collection_type: paired}
+        produces:
+            o:
+                type: collection
+                collection_type: sample_sheet
+                elements:
+                    el1:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: collection, ref: "C\\_PAIRED"}}}
+                        output: o
+    tests:
+        workflow_editor: "accepts sample_sheet:paired -> paired connection (maps over like list:paired)"
+
+- example:
+    label: SAMPLE_SHEET_PAIRED_MATCHES_LIST_PAIRED
+    assumptions:
+    - datasets: [d_f, d_r]
+    - tool:
+        in: {i: "collection<list:paired>"}
+        out: {o: dataset}
+    - collections:
+        C: ["sample_sheet:paired", {el1: {forward: d_f, reverse: d_r}}]
+    then:
+        type: reduction
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+        produces:
+            o: {type: dataset}
+    tests:
+        workflow_editor: "accepts sample_sheet:paired -> list:paired connection (canMatch)"
+
+- doc: |
+    The ``paired_or_unpaired`` integration rules carry over from ``list`` to
+    ``sample_sheet``. A flat ``sample_sheet`` can be mapped over a
+    ``paired_or_unpaired`` input via ``single_datasets`` sub-collection mapping,
+    and ``sample_sheet:paired`` can be mapped over ``paired_or_unpaired`` just as
+    ``list:paired`` can.
+
+- example:
+    label: SAMPLE_SHEET_MAPPING_OVER_PAIRED_OR_UNPAIRED
+    assumptions:
+    - datasets: ["d_1,...,d_n"]
+    - tool:
+        in: {i: "collection<paired_or_unpaired>"}
+        out: {o: dataset}
+    - collections:
+        C: [sample_sheet, {i1: d_1, ..., in: d_n}]
+    - "C_AS_UNPAIRED_i = CollectionInstance<paired_or_unpaired,{unpaired=di}> for i from 1...n"
+    then:
+        type: map_over
+        invocation:
+            inputs:
+                i: {type: map_over, collection: C, sub_collection_type: single_datasets}
+        produces:
+            o:
+                type: collection
+                collection_type: sample_sheet
+                elements:
+                    i1:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: collection, ref: C_AS_UNPAIRED_1}}}
+                        output: o
+                    "...": {type: ellipsis}
+                    in:
+                        type: tool_output_ref
+                        invocation: {inputs: {i: {type: collection, ref: C_AS_UNPAIRED_n}}}
+                        output: o
+    tests:
+        workflow_editor: "accepts sample_sheet -> paired_or_unpaired connection"
+
+- example:
+    label: SAMPLE_SHEET_PAIRED_MAPPING_OVER_PAIRED_OR_UNPAIRED
+    assumptions:
+    - datasets: [d_f, d_r]
+    - tool:
+        in: {i: "collection<paired_or_unpaired>"}
+        out: {o: dataset}
+    - collections:
+        C: ["sample_sheet:paired", {el1: {forward: d_f, reverse: d_r}}]
+        C_AS_MIXED: ["sample_sheet:paired_or_unpaired", {el1: {forward: d_f, reverse: d_r}}]
+    then:
+        type: equivalence
+        left:
+            inputs:
+                i: {type: map_over, collection: C}
+        right:
+            inputs:
+                i: {type: map_over, collection: C_AS_MIXED}
+    tests:
+        workflow_editor: "accepts sample_sheet:paired -> paired_or_unpaired connection"
+
+- example:
+    label: SAMPLE_SHEET_PAIRED_OR_UNPAIRED_MATCHES_LIST_PAIRED_OR_UNPAIRED
+    assumptions:
+    - datasets: [d_f, d_r]
+    - tool:
+        in: {i: "collection<list:paired_or_unpaired>"}
+        out: {o: dataset}
+    - collections:
+        C: ["sample_sheet:paired_or_unpaired", {el1: {forward: d_f, reverse: d_r}}]
+    then:
+        type: reduction
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+        produces:
+            o: {type: dataset}
+    tests:
+        workflow_editor: "accepts sample_sheet:paired_or_unpaired -> list:paired_or_unpaired connection (canMatch)"
+
+- doc: |
+    The type matching is asymmetric: a ``sample_sheet`` output can satisfy a ``list``
+    input because sample sheets carry all the structural information lists have (plus
+    metadata). However, a ``list`` output cannot satisfy a ``sample_sheet`` input because
+    lists lack the ``column_definitions`` and per-element ``columns`` metadata that
+    sample sheet consumers expect.
+
+- example:
+    label: LIST_NOT_MATCHES_SAMPLE_SHEET
+    assumptions:
+    - datasets: ["d_1,...,d_n"]
+    - tool:
+        in: {i: "collection<sample_sheet>"}
+        out: {o: dataset}
+    - collections:
+        C: [list, {i1: d_1, ..., in: d_n}]
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+    is_valid: false
+    tests:
+        workflow_editor: "rejects list -> sample_sheet connection (asymmetry)"
+
+- example:
+    label: LIST_PAIRED_NOT_MATCHES_SAMPLE_SHEET_PAIRED
+    assumptions:
+    - datasets: [d_f, d_r]
+    - tool:
+        in: {i: "collection<sample_sheet:paired>"}
+        out: {o: dataset}
+    - collections:
+        C: ["list:paired", {el1: {forward: d_f, reverse: d_r}}]
+    then:
+        type: invalid
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+    is_valid: false
+    tests:
+        workflow_editor: "rejects list:paired -> sample_sheet:paired connection (asymmetry)"
+
+- example:
+    label: SAMPLE_SHEET_MATCHES_SAMPLE_SHEET
+    assumptions:
+    - datasets: ["d_1,...,d_n"]
+    - tool:
+        in: {i: "collection<sample_sheet>"}
+        out: {o: dataset}
+    - collections:
+        C: [sample_sheet, {i1: d_1, ..., in: d_n}]
+    then:
+        type: reduction
+        invocation:
+            inputs:
+                i: {type: collection, ref: C}
+        produces:
+            o: {type: dataset}
+    tests:
+        workflow_editor: "accepts sample_sheet -> sample_sheet connection"
