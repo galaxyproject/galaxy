@@ -1220,7 +1220,7 @@ admin:
 libraries:
 
   selectors:
-    _: '#libraries_list'
+    _: '#g-table-libraries_list'
     activity: '#activity-libraries'
     create_new_library_btn: '#create-new-lib'
     permission_library_btn: '.permission_library_btn'
