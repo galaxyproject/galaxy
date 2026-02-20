@@ -129,7 +129,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     }
 
     function setAll(newActivities: Array<Activity>) {
-        activities.value = newActivities;
+        activities.value = [...newActivities];
     }
 
     function remove(activityId: string) {
