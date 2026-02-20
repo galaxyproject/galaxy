@@ -92,11 +92,10 @@ class TestAscpFileSystem:
                 user="test-user",
                 host="test.example.com",
             )
-            assert fs.max_retries == 5
+            assert fs.max_retries == 3
             assert fs.retry_base_delay == 5.0
             assert fs.retry_max_delay == 60.0
             assert fs.enable_resume is True
-            assert fs.transfer_timeout == 1800
 
     def test_parse_url_with_full_ascp_url(self):
         """Test URL parsing with full ascp:// URL."""
@@ -388,13 +387,6 @@ class TestCommandConstruction:
             result = self._capture_command(fs)
             assert result["kwargs"].get("env") is None
 
-    def test_timeout_passed_to_subprocess(self):
-        """transfer_timeout is passed as timeout kwarg to subprocess.run."""
-        with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h", transfer_timeout=999)
-            result = self._capture_command(fs)
-            assert result["kwargs"].get("timeout") == 999
-
     def test_resume_on_all_attempts(self):
         """Resume flag (-k 1) present on both first attempt and retries."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
@@ -538,18 +530,18 @@ class TestRetryMechanics:
                 assert sleep_calls[2] == 8.0   # 2^3, not capped (< 10)
 
     def test_transfer_timeout(self):
-        """subprocess.TimeoutExpired → MessageException with timeout info."""
+        """subprocess.TimeoutExpired → MessageException."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY, user="u", host="h",
-                max_retries=1, transfer_timeout=10,
+                max_retries=1,
             )
 
         def mock_run(*args, **kwargs):
             raise subprocess.TimeoutExpired(cmd="ascp", timeout=10)
 
         with patch("subprocess.run", side_effect=mock_run):
-            with pytest.raises(MessageException, match="timed out after 10 seconds"):
+            with pytest.raises(MessageException, match="timed out"):
                 fs.get_file("/remote/file.txt", "/local/file.txt")
 
 

@@ -31,7 +31,7 @@ class FTPFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     timeout: Union[int, TemplateExpansion] = 60
     proxy: Union[str, TemplateExpansion, None] = None
     tls: Union[bool, TemplateExpansion] = False
-    max_retries: Union[int, TemplateExpansion] = 5
+    max_retries: Union[int, TemplateExpansion] = 3
     retry_base_delay: Union[float, TemplateExpansion] = 5.0
 
 
@@ -44,7 +44,7 @@ class FTPFileSourceConfiguration(BaseFileSourceConfiguration):
     timeout: int = 60
     proxy: Union[str, None] = None
     tls: bool = False
-    max_retries: int = 5
+    max_retries: int = 3
     retry_base_delay: float = 5.0
 
 

@@ -63,7 +63,7 @@ class AscpFileSystem(AbstractFileSystem):
         port: SSH port (default: 33001)
         disable_encryption: Use -T flag for maximum speed (default: True)
         max_retries: Maximum retry attempts for failed transfers (default: 3)
-        retry_base_delay: Base delay for exponential backoff (default: 2.0)
+        retry_base_delay: Base delay for exponential backoff (default: 5.0)
         retry_max_delay: Maximum delay between retries (default: 60.0)
         enable_resume: Enable resume for interrupted transfers (default: True)
         **kwargs: Additional arguments passed to AbstractFileSystem
@@ -81,21 +81,19 @@ class AscpFileSystem(AbstractFileSystem):
         rate_limit: str = "300m",
         port: int = 33001,
         disable_encryption: bool = True,
-        max_retries: int = 5,
+        max_retries: int = 3,
         retry_base_delay: float = 5.0,
         retry_max_delay: float = 60.0,
         enable_resume: bool = True,
-        transfer_timeout: int = 1800,
         **kwargs: Any,
     ):
         """Initialize the AscpFileSystem.
 
         Args:
-            max_retries: Maximum number of retry attempts for failed transfers (default: 5)
+            max_retries: Maximum number of retry attempts for failed transfers (default: 3)
             retry_base_delay: Base delay in seconds for exponential backoff (default: 5.0)
             retry_max_delay: Maximum delay in seconds between retries (default: 60.0)
             enable_resume: Enable resume support for interrupted transfers (default: True)
-            transfer_timeout: Timeout in seconds for each ascp subprocess call (default: 1800)
 
         Raises:
             MessageException: If ascp binary is not found or required parameters are missing
@@ -115,7 +113,6 @@ class AscpFileSystem(AbstractFileSystem):
         self.retry_base_delay = retry_base_delay
         self.retry_max_delay = retry_max_delay
         self.enable_resume = enable_resume
-        self.transfer_timeout = transfer_timeout
 
         # Verify ascp binary exists
         if not shutil.which(self.ascp_path):
@@ -265,13 +262,9 @@ class AscpFileSystem(AbstractFileSystem):
                     text=True,
                     check=False,  # We'll handle errors manually
                     env=env,
-                    timeout=self.transfer_timeout,
                 )
             except subprocess.TimeoutExpired:
-                raise MessageException(
-                    f"ascp transfer timed out after {self.transfer_timeout} seconds for {remote_path}. "
-                    "Consider increasing the transfer_timeout configuration."
-                )
+                raise MessageException(f"ascp transfer timed out for {remote_path}.")
 
             if result.returncode != 0:
                 self._handle_ascp_error(result, remote_path)

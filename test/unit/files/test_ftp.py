@@ -90,9 +90,9 @@ class TestFtpConfigDefaults:
         assert fields["timeout"].default == 60
 
     def test_retry_defaults(self):
-        """Default retry config: 5 retries, 5.0s base delay."""
+        """Default retry config: 3 retries, 5.0s base delay."""
         fields = FTPFileSourceConfiguration.model_fields
-        assert fields["max_retries"].default == 5
+        assert fields["max_retries"].default == 3
         assert fields["retry_base_delay"].default == 5.0
 
 
