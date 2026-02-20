@@ -2,11 +2,11 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
     faBug,
-    faChartBar,
     faClock,
     faGraduationCap,
     faHistory,
     faMagic,
+    faMicroscope,
     faPaperPlane,
     faPlus,
     faRobot,
@@ -17,41 +17,46 @@ import {
     faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BSkeleton } from "bootstrap-vue";
-import { nextTick, onMounted, ref, watch } from "vue";
+import { BAlert, BSkeleton } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type ActionSuggestion, type AgentResponse, useAgentActions } from "@/composables/agentActions";
+import { useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
+import { useToast } from "@/composables/toast";
+import { useHistoryDatasets } from "@/composables/useHistoryDatasets";
+import {
+    type PyodideArtifact,
+    type PyodideRunResult,
+    type PyodideTask,
+    usePyodideRunner,
+} from "@/composables/usePyodideRunner";
+import { getAppRoot } from "@/onload/loadConfig";
+import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import type {
+    ActionSuggestion,
+    AgentResponse,
+    AnalysisStep,
+    ChatHistoryItem,
+    ConfidenceLevel,
+    ExecutionState,
+    Message,
+    UploadedArtifact,
+} from "./ChatGXY/types";
+import { hasArtifacts } from "./ChatGXY/utilities";
+import type { DataOption } from "./Form/Elements/FormData/types";
+
+import GButton from "./BaseComponents/GButton.vue";
 import ActionCard from "./ChatGXY/ActionCard.vue";
+import MessageArtifacts from "./ChatGXY/MessageArtifacts.vue";
+import MessageIntermediateDetails from "./ChatGXY/MessageIntermediateDetails.vue";
+import DatasetSelector from "./Form/Elements/FormData/FormData.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
-
-interface Message {
-    id: string;
-    role: "user" | "assistant";
-    content: string;
-    timestamp: Date;
-    agentType?: string;
-    confidence?: string;
-    feedback?: "up" | "down" | null;
-    agentResponse?: AgentResponse;
-    suggestions?: ActionSuggestion[];
-    isSystemMessage?: boolean; // Flag for welcome/placeholder messages that shouldn't have feedback
-}
-
-interface ChatHistoryItem {
-    id: number;
-    query: string;
-    response: string;
-    agent_type: string;
-    agent_response?: AgentResponse; // Full agent response with suggestions
-    timestamp: string;
-    feedback?: number | null;
-}
 
 const query = ref("");
 const messages = ref<Message[]>([]);
@@ -64,9 +69,127 @@ const chatHistory = ref<ChatHistoryItem[]>([]);
 const loadingHistory = ref(false);
 const currentChatId = ref<number | null>(null);
 const hasLoadedInitialChat = ref(false);
+const pendingCollapsedMessages: Message[] = [];
+
+const selectedDatasets = ref<string[]>([]);
+/** A computed ref that gets/sets the selected datasets as `FormData` structured data,
+ * based on the `selectedDatasets` array of IDs.
+ *
+ * TODO: Fix a major bug here with multiselect, somehow, in column select, when we select/deselect all,
+ * the counts do not update correctly. Possibly related to how the options are built?
+ */
+const selectedDatasetsFormData = computed<{
+    values: Array<DataOption>;
+} | null>({
+    get() {
+        if (selectedDatasets.value.length === 0) {
+            return null;
+        }
+        const selected = datasetOptions.value.filter((dataset) => selectedDatasets.value.includes(dataset.id));
+        return {
+            values: selected,
+        };
+    },
+    set(value) {
+        if (value === null) {
+            selectedDatasets.value = [];
+        } else {
+            selectedDatasets.value = value.values.map((dataset) => dataset.id);
+        }
+    },
+});
+/** `FormData` structured options for datasets */
+const formDataOptions = computed<Record<string, Array<DataOption>>>(() => ({ hda: datasetOptions.value }));
+
+const { currentHistoryId } = storeToRefs(useHistoryStore());
+
+/** Whether fetching datasets is allowed/enabled (for Data Analysis agent type) */
+const allowFetchingDatasets = ref(false);
+
+// History items variables
+const {
+    datasets: currentHistoryDatasets,
+    isFetching: loadingDatasets,
+    error: datasetError,
+    // initialFetchDone: initialFetch, // TODO: Remove if we don't need this
+} = useHistoryDatasets({
+    historyId: () => currentHistoryId.value || "",
+    enabled: () => currentHistoryId.value !== null && allowFetchingDatasets.value,
+});
+
+const datasetOptions = computed<DataOption[]>(() => {
+    if (loadingDatasets.value) {
+        return [];
+    }
+    const datasets = currentHistoryDatasets.value;
+
+    return datasets
+        .map((item) => {
+            const name = item.name || `Dataset ${item.hid || ""}`;
+            const hidden = Boolean(item.visible === false);
+            const generated = typeof name === "string" && name.trim().toLowerCase().startsWith("generated_file");
+            if (!item.id || hidden || generated) {
+                return null;
+            }
+            // TODO: We aren't using `file_size` key in `useHistoryDatasets` currently
+            //       Neither are we storing the extensions for the datasets.
+            return {
+                id: item.id,
+                hid: item.hid,
+                name,
+                src: "hda",
+            } as DataOption;
+        })
+        .filter((entry): entry is DataOption => entry !== null && Boolean(entry));
+});
+
+// Ensure selected datasets are valid when dataset options change
+watch(
+    () => datasetOptions.value,
+    () => {
+        const validIds = new Set(datasetOptions.value.map((entry) => entry.id));
+        selectedDatasets.value = selectedDatasets.value.filter((id) => validIds.has(id));
+    },
+    { immediate: true, deep: true },
+);
+
+const toast = useToast();
+const pyodideRunner = usePyodideRunner();
+const pyodideExecutions = reactive<Record<string, ExecutionState>>({});
+const chatStream = ref<WebSocket | null>(null);
+const streamSupported = typeof window !== "undefined" && typeof WebSocket !== "undefined";
+const deliveredTaskIds = new Set<string>();
+const pyodideTaskToMessage = new Map<string, Message>();
+const isChatBusy = computed(
+    () => busy.value || pyodideRunner.isRunning.value || messages.value.some((message) => isAwaitingExecution(message)),
+);
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 const { processingAction, handleAction } = useAgentActions();
+
+function escapeHtml(raw: string): string {
+    // Minimal escaping for fallback rendering.
+    return raw
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function safeRenderMarkdown(content: unknown): string {
+    const text = typeof content === "string" ? content : String(content ?? "");
+    try {
+        return renderMarkdown(text);
+    } catch (error) {
+        console.error("Failed to render markdown for chat message:", error);
+        return `<pre>${escapeHtml(text)}</pre>`;
+    }
+}
+
+function normaliseSuggestions(raw: unknown): ActionSuggestion[] {
+    return Array.isArray(raw) ? (raw as ActionSuggestion[]) : [];
+}
 
 interface AgentType {
     value: string;
@@ -80,7 +203,13 @@ const agentTypes: AgentType[] = [
     { value: "router", label: "Router", icon: faRoute, description: "Query router" },
     { value: "error_analysis", label: "Error Analysis", icon: faBug, description: "Debug tool errors" },
     { value: "custom_tool", label: "Custom Tool", icon: faPlus, description: "Create custom tools" },
-    { value: "dataset_analyzer", label: "Dataset Analyzer", icon: faChartBar, description: "Analyze datasets" },
+    {
+        value: "data_analysis",
+        label: "Data Analysis",
+        icon: faMicroscope,
+        description: "Explore datasets with generated code",
+    },
+    // { value: "data_analysis_dspy", label: "📊 Data Analysis (DSPy)", description: "Iterative planning with DSPy + auto code execution" },
     { value: "gtn_training", label: "GTN Training", icon: faGraduationCap, description: "Find tutorials" },
 ];
 
@@ -90,7 +219,7 @@ const agentIconMap: Record<string, IconDefinition> = {
     router: faRoute,
     error_analysis: faBug,
     custom_tool: faPlus,
-    dataset_analyzer: faChartBar,
+    data_analysis: faMicroscope,
     gtn_training: faGraduationCap,
 };
 
@@ -119,14 +248,869 @@ onMounted(async () => {
     }
 });
 
+watch(
+    () => currentHistoryId.value,
+    () => {
+        selectedDatasets.value = [];
+    },
+    { immediate: false },
+);
+
 function generateId() {
     return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+function applyDatasetSelectionFromMessages(conversation: any[]) {
+    for (let i = conversation.length - 1; i >= 0; i -= 1) {
+        const entry = conversation[i];
+        const datasets = entry?.dataset_ids;
+        if (Array.isArray(datasets) && datasets.length > 0) {
+            selectedDatasets.value = datasets.map(String);
+            return;
+        }
+    }
+}
+
+function attachPendingCollapsedMessages(target: Message) {
+    if (!pendingCollapsedMessages.length) {
+        return;
+    }
+    target.collapsedHistory = pendingCollapsedMessages.map((msg) => {
+        msg.isCollapsed = true;
+        return msg;
+    });
+    for (let i = pendingCollapsedMessages.length - 1; i >= 0; i -= 1) {
+        const msg = pendingCollapsedMessages[i];
+
+        if (msg) {
+            if (!target.generatedPlots?.length && msg.generatedPlots?.length) {
+                target.generatedPlots = [...msg.generatedPlots];
+            }
+            if (!target.generatedFiles?.length && msg.generatedFiles?.length) {
+                target.generatedFiles = [...msg.generatedFiles];
+            }
+            if ((!target.artifacts || !target.artifacts.length) && msg.artifacts?.length) {
+                target.artifacts = [...msg.artifacts];
+            }
+        }
+    }
+    if (target.isCollapsed === undefined) {
+        target.isCollapsed = true;
+    }
+    pendingCollapsedMessages.length = 0;
+}
+
+function getLatestUserQuery(): string {
+    for (let i = messages.value.length - 1; i >= 0; i -= 1) {
+        const entry = messages.value[i];
+        if (entry?.role === "user") {
+            return entry.content;
+        }
+    }
+    return "";
+}
+
+function findMessageForPayload(payload: any): Message | undefined {
+    const candidateTaskId =
+        payload?.task_id ||
+        payload?.pyodide_task_id ||
+        payload?.agent_response?.metadata?.executed_task?.task_id ||
+        payload?.agent_response?.metadata?.pyodide_task?.task_id;
+    if (candidateTaskId) {
+        const key = String(candidateTaskId);
+        if (pyodideTaskToMessage.has(key)) {
+            return pyodideTaskToMessage.get(key);
+        }
+        const fallback = messages.value.find((message) => {
+            const metadata = message.agentResponse?.metadata;
+            if (!metadata) {
+                return false;
+            }
+            const executedTask = metadata.executed_task;
+            const pendingTask = metadata.pyodide_task;
+            return (
+                (executedTask && String(executedTask.task_id) === key) ||
+                (pendingTask && String(pendingTask.task_id) === key)
+            );
+        });
+        if (fallback) {
+            pyodideTaskToMessage.set(key, fallback);
+            return fallback;
+        }
+    }
+    return undefined;
+}
+
+function shouldAutoCollapse(message: Message): boolean {
+    if (message.role !== "assistant") {
+        return false;
+    }
+    if (isAwaitingExecution(message)) {
+        return false;
+    }
+    const metadata = message.agentResponse?.metadata;
+    if (!metadata) {
+        return false;
+    }
+    if (metadata.is_complete === true) {
+        return false;
+    }
+    if (metadata.executed_task || metadata.execution || metadata.pyodide_status === "completed") {
+        return true;
+    }
+    if (metadata.pyodide_status === "error" || metadata.pyodide_status === "timeout") {
+        return true;
+    }
+    return false;
+}
+
+function applyCollapseState(message: Message) {
+    const collapsible = shouldAutoCollapse(message);
+    message.isCollapsible = collapsible;
+    if (!collapsible) {
+        delete message.isCollapsed;
+        return;
+    }
+    if (message.isCollapsed === undefined) {
+        message.isCollapsed = true;
+    }
+}
+
+function populateAssistantMessage(
+    target: Message,
+    payload: any,
+    fallbackAgentType: string,
+    options?: { skipDatasetUpdate?: boolean },
+) {
+    const agentResponse = (payload?.agent_response ?? payload?.response?.agent_response) as AgentResponse | undefined;
+    const rawContent =
+        typeof payload === "string" ? payload : (payload?.response ?? agentResponse?.content ?? "No response received");
+    const content = typeof rawContent === "string" ? rawContent : String(rawContent ?? "No response received");
+    const effectiveAgentType =
+        agentResponse?.agent_type || (fallbackAgentType === "auto" ? "router" : fallbackAgentType);
+
+    target.content = content;
+    target.timestamp = payload?.timestamp ? new Date(payload.timestamp) : new Date();
+    target.agentType = effectiveAgentType;
+    target.confidence = agentResponse?.confidence || (payload?.confidence as ConfidenceLevel) || "medium";
+    target.feedback = target.feedback ?? null;
+    target.agentResponse = agentResponse;
+    target.suggestions = normaliseSuggestions(agentResponse?.suggestions);
+    target.routingInfo = payload?.routing_info;
+
+    const metadata = agentResponse?.metadata;
+    if (metadata) {
+        const steps = normaliseAnalysisSteps(metadata.analysis_steps);
+        if (steps.length) {
+            target.analysisSteps = steps;
+        }
+        const artifactSource = metadata.artifacts ?? metadata.execution?.artifacts;
+        const storedArtifacts = normaliseArtifactList(artifactSource);
+        updateMessageOutputsFromArtifacts(target, storedArtifacts);
+        const plotEntries = normalisePathList(metadata.plots);
+        if (plotEntries.length) {
+            target.generatedPlots = plotEntries;
+        }
+        const fileEntries = normalisePathList(metadata.files);
+        if (fileEntries.length) {
+            target.generatedFiles = fileEntries;
+        }
+        const executedTask = metadata.executed_task;
+        if (executedTask?.task_id) {
+            const taskId = String(executedTask.task_id);
+            deliveredTaskIds.add(taskId);
+            pyodideTaskToMessage.set(taskId, target);
+        }
+        const pendingTask = metadata.pyodide_task;
+        if (pendingTask?.task_id) {
+            pyodideTaskToMessage.set(String(pendingTask.task_id), target);
+        }
+    }
+
+    if (!options?.skipDatasetUpdate) {
+        if (Array.isArray(payload?.dataset_ids) && payload.dataset_ids.length > 0) {
+            selectedDatasets.value = payload.dataset_ids.map(String);
+        }
+    }
+
+    applyCollapseState(target);
+}
+
+function appendAssistantMessage(payload: any, fallbackAgentType: string): Message {
+    const existingMessage = findMessageForPayload(payload);
+    if (existingMessage) {
+        populateAssistantMessage(existingMessage, payload, fallbackAgentType, { skipDatasetUpdate: true });
+        if (!existingMessage.isCollapsible) {
+            attachPendingCollapsedMessages(existingMessage);
+        }
+        maybeRunPyodideForMessage(existingMessage);
+        return existingMessage;
+    }
+
+    const assistantMessage: Message = {
+        id: generateId(),
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+        agentType: fallbackAgentType === "auto" ? "router" : fallbackAgentType,
+        confidence: "medium",
+        feedback: null,
+    };
+
+    populateAssistantMessage(assistantMessage, payload, fallbackAgentType);
+
+    if (assistantMessage.isCollapsible) {
+        pendingCollapsedMessages.push(assistantMessage);
+        return assistantMessage;
+    }
+
+    attachPendingCollapsedMessages(assistantMessage);
+
+    messages.value.push(assistantMessage);
+
+    if (payload?.exchange_id) {
+        currentChatId.value = payload.exchange_id;
+    }
+
+    maybeRunPyodideForMessage(assistantMessage);
+    ensurePendingPyodideTasks();
+
+    return assistantMessage;
+}
+
+function maybeRunPyodideForMessage(message: Message) {
+    const metadata = message.agentResponse?.metadata;
+    if (!metadata) {
+        return;
+    }
+    const task = metadata.pyodide_task;
+    if (!task) {
+        return;
+    }
+    const taskKey = task.task_id || message.id;
+    if (task.task_id) {
+        pyodideTaskToMessage.set(String(task.task_id), message);
+    }
+    if (task.task_id && deliveredTaskIds.has(task.task_id)) {
+        metadata.pyodide_status = metadata.pyodide_status || "completed";
+        return;
+    }
+    const existing = pyodideExecutions[taskKey];
+    if (existing) {
+        // Do not retry if we have already completed or errored out.
+        if (existing.status === "completed" || existing.status === "error") {
+            metadata.pyodide_status = existing.status;
+            return;
+        }
+        return;
+    }
+
+    const status = metadata.pyodide_status;
+    if (status === "error" || status === "completed" || status === "timeout") {
+        delete metadata.pyodide_task;
+        const baseState: ExecutionState = {
+            status: status === "completed" ? "completed" : "error",
+            stdout: metadata.stdout || "",
+            stderr: metadata.stderr || "",
+            artifacts: [],
+        };
+        if (status === "error") {
+            baseState.errorMessage = metadata.error || "";
+        } else if (status === "timeout") {
+            baseState.errorMessage =
+                metadata.pyodide_timeout_reason ||
+                `Execution timed out after ${metadata.pyodide_timeout_seconds || "unknown"} seconds.`;
+        }
+        pyodideExecutions[taskKey] = baseState;
+        return;
+    }
+    if (status && status !== "pending") {
+        return;
+    }
+
+    if (!pyodideRunner.isSupported.value) {
+        pyodideExecutions[taskKey] = {
+            status: "error",
+            stdout: "",
+            stderr: "",
+            artifacts: [],
+            errorMessage: "Browser does not support in-browser execution.",
+        };
+        metadata.pyodide_status = "error";
+        toast.warning("This browser cannot run the generated analysis code.");
+        return;
+    }
+
+    metadata.pyodide_retry_count = (metadata.pyodide_retry_count || 0) + 1;
+    if (metadata.pyodide_retry_count > 1) {
+        metadata.pyodide_status = "error";
+        pyodideExecutions[taskKey] = {
+            status: "error",
+            stdout: "",
+            stderr: "",
+            artifacts: [],
+            errorMessage: "Pyodide task exceeded retry limit.",
+        };
+        return;
+    }
+
+    runPyodideTaskForMessage(message, task, taskKey, metadata);
+}
+
+function ensurePendingPyodideTasks() {
+    messages.value.forEach((message) => {
+        const metadata = message.agentResponse?.metadata;
+        if (!metadata) {
+            return;
+        }
+        const task = metadata.pyodide_task;
+        if (!task) {
+            return;
+        }
+        const status = metadata.pyodide_status || "pending";
+        if (status === "error" || status === "completed" || status === "timeout") {
+            return;
+        }
+        const taskKey = task.task_id || message.id;
+        if (pyodideExecutions[taskKey]) {
+            return;
+        }
+        if (task.task_id && deliveredTaskIds.has(task.task_id)) {
+            return;
+        }
+        maybeRunPyodideForMessage(message);
+    });
+}
+
+watch(
+    messages,
+    () => {
+        ensurePendingPyodideTasks();
+    },
+    { deep: true },
+);
+
+function runPyodideTaskForMessage(message: Message, task: PyodideTask, taskKey: string, metadata: Record<string, any>) {
+    const state = reactive<ExecutionState>({
+        status: "initialising",
+        stdout: "",
+        stderr: "",
+        artifacts: [],
+    });
+    pyodideExecutions[taskKey] = state;
+    metadata.pyodide_status = "running";
+
+    const runnerTask: PyodideTask = { ...task, task_id: taskKey };
+
+    let executionPromise: Promise<any>;
+    try {
+        // `runTask` may throw synchronously (e.g. Worker construction failures). Make
+        // sure we surface the error instead of taking down the whole chat UI.
+        executionPromise = pyodideRunner.runTask(runnerTask, {
+            onStdout: (line) => {
+                state.stdout += line;
+            },
+            onStderr: (line) => {
+                state.stderr += line;
+            },
+            onStatus: (event) => {
+                state.status = mapStatus(event.status);
+            },
+        });
+    } catch (error) {
+        const errMessage = error instanceof Error ? error.message : String(error);
+        state.status = "error";
+        state.errorMessage = errMessage;
+        metadata.pyodide_status = "error";
+        if (metadata.pyodide_task) {
+            delete metadata.pyodide_task;
+        }
+        toast.error(`Pyodide execution failed: ${errMessage}`);
+        return;
+    }
+
+    executionPromise
+        .then(async (result) => {
+            state.stdout = result.stdout;
+            state.stderr = result.stderr;
+            state.status = "submitting";
+            let uploadedArtifacts: UploadedArtifact[] = [];
+            try {
+                uploadedArtifacts = await uploadArtifacts(result.artifacts || []);
+                state.artifacts = uploadedArtifacts;
+                updateMessageOutputsFromArtifacts(message, uploadedArtifacts);
+                await submitPyodideExecutionResult(runnerTask, message, result, uploadedArtifacts);
+                applyExecutionResultMetadata(message, {
+                    success: result.success,
+                    stdout: result.stdout,
+                    stderr: result.stderr,
+                    artifacts: serializeUploadedArtifacts(uploadedArtifacts),
+                    task_id: runnerTask.task_id,
+                });
+                state.status = result.success ? "completed" : "error";
+                if (!result.success && result.error) {
+                    state.errorMessage = result.error;
+                }
+                metadata.pyodide_status = state.status;
+            } catch (error) {
+                const errMessage = error instanceof Error ? error.message : String(error);
+                state.status = "error";
+                state.errorMessage = errMessage;
+                metadata.pyodide_status = "error";
+                if (metadata.pyodide_task) {
+                    delete metadata.pyodide_task;
+                }
+                toast.error(`Pyodide execution failed: ${errMessage}`);
+            }
+        })
+        .catch((error) => {
+            const errMessage = error instanceof Error ? error.message : String(error);
+            if (error && (error as any).stdout && typeof (error as any).stdout === "string") {
+                state.stdout += (error as any).stdout;
+            }
+            if (error && (error as any).stderr && typeof (error as any).stderr === "string") {
+                state.stderr += (error as any).stderr;
+            }
+            state.status = "error";
+            state.errorMessage = errMessage;
+            metadata.pyodide_status = "error";
+            if (metadata.pyodide_task) {
+                delete metadata.pyodide_task;
+            }
+            toast.error(`Pyodide execution failed: ${errMessage}`);
+        });
+}
+
+function openChatStream(exchangeId: number) {
+    if (!streamSupported) {
+        return;
+    }
+    const existing = chatStream.value;
+    if (existing) {
+        const existingId = (existing as any)._exchangeId as number | undefined;
+        if (
+            existingId === exchangeId &&
+            (existing.readyState === WebSocket.OPEN || existing.readyState === WebSocket.CONNECTING)
+        ) {
+            return;
+        }
+        existing.close();
+    }
+
+    try {
+        const rawRoot = getAppRoot() || "/";
+        const appRoot = rawRoot.replace(/\/+$/, "") || "/";
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const wsUrl = `${protocol}//${window.location.host}${appRoot}/api/chat/exchange/${exchangeId}/stream`;
+        const socket = new WebSocket(wsUrl);
+        (socket as any)._exchangeId = exchangeId;
+        socket.onopen = () => {
+            chatStream.value = socket;
+        };
+        socket.onmessage = (event: MessageEvent) => {
+            handleStreamMessage(event);
+        };
+        socket.onclose = () => {
+            if (chatStream.value === socket) {
+                chatStream.value = null;
+            }
+        };
+        socket.onerror = () => {
+            socket.close();
+        };
+    } catch (error) {
+        console.error("Failed to open chat stream", error);
+    }
+}
+
+function closeChatStream() {
+    const socket = chatStream.value;
+    if (socket) {
+        chatStream.value = null;
+        try {
+            socket.close();
+        } catch (error) {
+            console.error("Failed to close chat stream", error);
+        }
+    }
+}
+
+function handleStreamMessage(event: MessageEvent) {
+    try {
+        const payload = JSON.parse(event.data);
+        if (payload?.type === "exec_followup" && payload.payload) {
+            if (payload.exchange_id && payload.exchange_id !== currentChatId.value) {
+                return;
+            }
+            const taskId = payload.task_id as string | undefined;
+            if (taskId && deliveredTaskIds.has(taskId)) {
+                return;
+            }
+            if (taskId) {
+                deliveredTaskIds.add(taskId);
+                const existing = pyodideTaskToMessage.get(String(taskId));
+                if (existing) {
+                    populateAssistantMessage(existing, payload.payload, selectedAgentType.value, {
+                        skipDatasetUpdate: true,
+                    });
+                    maybeRunPyodideForMessage(existing);
+                    return;
+                }
+            }
+            appendAssistantMessage(payload.payload, selectedAgentType.value);
+        }
+    } catch (error) {
+        console.error("Failed to process chat stream message", error);
+    }
+}
+
+async function uploadArtifacts(artifacts: PyodideArtifact[]): Promise<UploadedArtifact[]> {
+    if (!currentChatId.value) {
+        throw new Error("No active chat to attach artifacts.");
+    }
+    if (!artifacts || artifacts.length === 0) {
+        return [];
+    }
+
+    const results: UploadedArtifact[] = [];
+    for (const artifact of artifacts) {
+        const buffer = artifact.buffer;
+        if (!buffer) {
+            continue;
+        }
+        const blob = new Blob([buffer], { type: artifact.mime_type || "application/octet-stream" });
+        if (blob.size === 0) {
+            continue;
+        }
+        const formData = new FormData();
+        formData.append("file", blob, artifact.name || "artifact");
+        if (artifact.name) {
+            formData.append("name", artifact.name);
+        }
+        formData.append("mime_type", artifact.mime_type || blob.type || "application/octet-stream");
+        formData.append("size", String(blob.size));
+
+        // TODO: Use GalaxyApi here?
+        const response = await fetch(`${getAppRoot()}api/chat/exchange/${currentChatId.value}/artifacts`, {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            const description = errorText || response.statusText || "Unknown error";
+            throw new Error(`Artifact upload failed (${response.status}): ${description}`);
+        }
+
+        const payload = (await response.json()) as UploadedArtifact;
+        if (payload.download_url) {
+            payload.download_url = resolveDownloadUrl(payload.download_url);
+        }
+        results.push(payload);
+        artifact.buffer = undefined;
+    }
+    return results;
+}
+
+function resolveDownloadUrl(url: string): string {
+    if (!url) {
+        return url;
+    }
+    if (/^https?:\/\//i.test(url)) {
+        return url;
+    }
+    const rootCandidate = getAppRoot() || window.location.origin;
+    const absoluteRoot = rootCandidate.replace(/\/$/, "");
+    if (url.startsWith("/")) {
+        return `${absoluteRoot}${url}`;
+    }
+    return `${getAppRoot()}${url}`;
+}
+
+function mapStatus(status: string): ExecutionState["status"] {
+    switch (status) {
+        case "initialising":
+            return "initialising";
+        case "installing":
+            return "installing";
+        case "fetch":
+            return "fetching";
+        case "executing":
+            return "running";
+        case "collecting":
+            return "submitting";
+        default:
+            return "running";
+    }
+}
+
+async function submitPyodideExecutionResult(
+    task: PyodideTask,
+    message: Message,
+    result: PyodideRunResult,
+    artifacts: UploadedArtifact[],
+) {
+    if (!currentChatId.value) {
+        throw new Error("No active chat to submit execution results.");
+    }
+
+    const useStream = streamSupported && chatStream.value?.readyState === WebSocket.OPEN;
+
+    const payload = {
+        task_id: task.task_id,
+        stdout: result.stdout,
+        stderr: result.stderr,
+        artifacts,
+        success: result.success,
+        metadata: {
+            selected_dataset_ids: [...selectedDatasets.value],
+            agent_type: message.agentResponse?.agent_type || message.agentType,
+            original_query: getLatestUserQuery(),
+        },
+    };
+
+    // @ts-ignore TODO: We will add the pydantic model later
+    const { data, error } = await GalaxyApi().POST(`/api/chat/exchange/${currentChatId.value}/pyodide_result`, {
+        body: payload,
+    });
+
+    if (error) {
+        throw new Error(errorMessageAsString(error, "Failed to submit execution results"));
+    }
+
+    if (!useStream && data) {
+        if (payload.task_id) {
+            deliveredTaskIds.add(payload.task_id);
+        }
+        appendAssistantMessage(data, message.agentType || selectedAgentType.value);
+    }
+}
+
+watch(
+    currentChatId,
+    (newId, oldId) => {
+        if (!streamSupported) {
+            return;
+        }
+        if (oldId && newId !== oldId) {
+            closeChatStream();
+            deliveredTaskIds.clear();
+        }
+        if (typeof newId === "number") {
+            openChatStream(newId);
+        }
+        if (newId == null) {
+            deliveredTaskIds.clear();
+        }
+    },
+    { immediate: false },
+);
+onBeforeUnmount(() => {
+    closeChatStream();
+});
+
+function normalisePathList(raw: unknown): string[] {
+    if (!Array.isArray(raw)) {
+        return [];
+    }
+    const results: string[] = [];
+    const seen = new Set<string>();
+    for (const entry of raw) {
+        const text = String(entry ?? "").trim();
+        if (!text) {
+            continue;
+        }
+        const normalised = text.startsWith("generated_file") ? text : `generated_file/${text.replace(/^\/+/, "")}`;
+        if (!seen.has(normalised)) {
+            seen.add(normalised);
+            results.push(normalised);
+        }
+    }
+    return results;
+}
+
+function normaliseArtifactList(raw: unknown): UploadedArtifact[] {
+    if (!Array.isArray(raw)) {
+        return [];
+    }
+    const artifacts: UploadedArtifact[] = [];
+    for (const entry of raw) {
+        if (!entry || typeof entry !== "object") {
+            continue;
+        }
+        const record = entry as Record<string, any>;
+        const identifier = record.dataset_id || record.name || record.path || record.id || generateId();
+        const downloadUrl = record.download_url ? resolveDownloadUrl(String(record.download_url)) : undefined;
+        artifacts.push({
+            dataset_id: String(identifier),
+            name: record.name ? String(record.name) : undefined,
+            size: typeof record.size === "number" ? record.size : Number(record.size) || undefined,
+            mime_type: record.mime_type ? String(record.mime_type) : undefined,
+            download_url: downloadUrl || "",
+            history_id: record.history_id ? String(record.history_id) : undefined,
+        });
+    }
+    return artifacts;
+}
+
+// Commented out unused functions for now
+
+// function normaliseGeneratedEntry(entry: string): string {
+//     return entry.replace(/^generated_file\//, "").replace(/^\/+/, "");
+// }
+
+// function findArtifactForEntry(entry: string, artifacts?: UploadedArtifact[]): UploadedArtifact | undefined {
+//     if (!artifacts || artifacts.length === 0) {
+//         return undefined;
+//     }
+//     const normalized = normaliseGeneratedEntry(entry);
+//     return artifacts.find((artifact) => {
+//         const artifactName = normaliseGeneratedEntry(artifact.name || "");
+//         return (
+//             artifactName === normalized ||
+//             artifactName === entry ||
+//             artifact.dataset_id === normalized ||
+//             artifact.dataset_id === entry
+//         );
+//     });
+// }
+
+// function artifactPreviewUrl(entry: string, artifacts?: UploadedArtifact[]): string | undefined {
+//     const match = findArtifactForEntry(entry, artifacts);
+//     return match?.download_url || undefined;
+// }
+
+// function artifactDownloadHandler(entry: string, artifacts?: UploadedArtifact[]) {
+//     const match = findArtifactForEntry(entry, artifacts);
+//     if (match) {
+//         downloadArtifact(match);
+//     }
+// }
+
+function formatGeneratedEntry(entry: string): string {
+    return entry.replace(/^generated_file\//, "");
+}
+
+// function artifactIsDownloadable(entry: string, artifacts?: UploadedArtifact[]): boolean {
+//     return Boolean(findArtifactForEntry(entry, artifacts));
+// }
+
+function updateMessageOutputsFromArtifacts(message: Message, artifacts: UploadedArtifact[] | undefined) {
+    if (!artifacts || artifacts.length === 0) {
+        return;
+    }
+    message.artifacts = artifacts;
+    const plotNames: string[] = [];
+    const fileNames: string[] = [];
+    for (const artifact of artifacts) {
+        const name = formatGeneratedEntry(artifact.name || artifact.dataset_id || "");
+        if (!name) {
+            continue;
+        }
+        if (artifact.mime_type && artifact.mime_type.startsWith("image/")) {
+            plotNames.push(`generated_file/${name}`);
+        } else {
+            fileNames.push(`generated_file/${name}`);
+        }
+    }
+    message.generatedPlots = plotNames.length ? plotNames : message.generatedPlots;
+    message.generatedFiles = fileNames.length ? fileNames : message.generatedFiles;
+}
+function serializeUploadedArtifacts(artifacts: UploadedArtifact[] = []): any[] {
+    return artifacts.map((artifact) => ({
+        dataset_id: artifact.dataset_id,
+        name: artifact.name,
+        size: artifact.size,
+        mime_type: artifact.mime_type,
+        download_url: artifact.download_url,
+        history_id: artifact.history_id,
+    }));
+}
+
+function applyExecutionResultMetadata(message: Message, execResult: any) {
+    if (!execResult) {
+        return;
+    }
+    if (!message.agentResponse) {
+        message.agentResponse = {
+            metadata: {},
+            suggestions: [],
+            agent_type: message.agentType || selectedAgentType.value,
+            confidence: message.confidence || "medium",
+            content: message.content,
+        };
+    }
+    const metadata = message.agentResponse?.metadata || {};
+    metadata.pyodide_status = execResult.success ? "completed" : "error";
+    metadata.stdout = execResult.stdout || "";
+    metadata.stderr = execResult.stderr || "";
+    metadata.execution = {
+        success: execResult.success,
+        stdout: execResult.stdout || "",
+        stderr: execResult.stderr || "",
+        artifacts: execResult.artifacts || [],
+        task_id: execResult.task_id,
+    };
+    if (metadata.pyodide_task && execResult.task_id) {
+        metadata.executed_task = metadata.executed_task || { task_id: execResult.task_id };
+        metadata.executed_task.task_id = execResult.task_id;
+        pyodideTaskToMessage.set(String(execResult.task_id), message);
+        deliveredTaskIds.add(String(execResult.task_id));
+    }
+    if (metadata.pyodide_task) {
+        delete metadata.pyodide_task;
+    }
+    const artifacts = normaliseArtifactList(execResult.artifacts);
+    updateMessageOutputsFromArtifacts(message, artifacts);
+    applyCollapseState(message);
+}
+
+function normaliseAnalysisSteps(raw: unknown): AnalysisStep[] {
+    if (!Array.isArray(raw)) {
+        return [];
+    }
+
+    return raw
+        .map((step) => {
+            if (!step || typeof step !== "object") {
+                return null;
+            }
+            const type = step.type;
+            if (type !== "thought" && type !== "action" && type !== "observation" && type !== "conclusion") {
+                return null;
+            }
+            const content = String(step.content ?? "");
+            const requirements = Array.isArray(step.requirements) ? step.requirements.map(String) : undefined;
+            const statusValue = step.status;
+            const status: AnalysisStep["status"] | undefined =
+                statusValue === "running" || statusValue === "completed" || statusValue === "error"
+                    ? statusValue
+                    : undefined;
+            const stdout = typeof step.stdout === "string" ? step.stdout : undefined;
+            const stderr = typeof step.stderr === "string" ? step.stderr : undefined;
+            const success = typeof step.success === "boolean" ? step.success : undefined;
+            return {
+                type,
+                content,
+                requirements,
+                status: type === "action" ? (status ?? "pending") : undefined,
+                stdout,
+                stderr,
+                success,
+            } as AnalysisStep;
+        })
+        .filter((step): step is AnalysisStep => Boolean(step));
+}
+
 async function submitQuery() {
+    if (isChatBusy.value) {
+        return;
+    }
     if (!query.value.trim()) {
         return;
     }
+    pendingCollapsedMessages.length = 0;
 
     const userMessage: Message = {
         id: generateId(),
@@ -158,6 +1142,8 @@ async function submitQuery() {
                 query: currentQuery,
                 context: null,
                 exchange_id: currentChatId.value,
+                agent_type: selectedAgentType.value,
+                dataset_ids: allowFetchingDatasets.value ? selectedDatasets.value : undefined,
             },
         });
 
@@ -179,7 +1165,7 @@ async function submitQuery() {
             scrollToBottom();
         } else if (data) {
             // Extract typed response fields
-            const agentResponse = data.agent_response as AgentResponse | undefined;
+            const agentResponse = data.agent_response;
             const content = data.response || "No response received";
 
             // Get the exchange ID if returned
@@ -198,7 +1184,7 @@ async function submitQuery() {
                 confidence: agentResponse?.confidence || "medium",
                 feedback: null,
                 agentResponse: agentResponse,
-                suggestions: agentResponse?.suggestions || [],
+                suggestions: normaliseSuggestions(agentResponse?.suggestions),
             };
             messages.value.push(assistantMessage);
 
@@ -256,6 +1242,8 @@ async function sendFeedback(messageId: string, value: "up" | "down") {
         if (currentChatId.value) {
             try {
                 const feedbackValue = value === "up" ? 1 : 0;
+
+                // @ts-ignore TODO: Add pydantic model later
                 const { error } = await GalaxyApi().PUT("/api/chat/exchange/{exchange_id}/feedback", {
                     params: {
                         path: { exchange_id: currentChatId.value },
@@ -295,10 +1283,19 @@ function formatModelName(model?: string): string {
     return parts[parts.length - 1] || model;
 }
 
-function getAgentResponseOrEmpty(response?: AgentResponse): AgentResponse {
+function getAgentResponseOrEmpty(response?: AgentResponse | null): AgentResponse {
     return (
         response || ({ content: "", agent_type: "", confidence: "low", suggestions: [], metadata: {} } as AgentResponse)
     );
+}
+
+function isAwaitingExecution(message: Message): boolean {
+    const metadata = message.agentResponse?.metadata;
+    if (!metadata) {
+        return false;
+    }
+    const status = typeof metadata.pyodide_status === "string" ? metadata.pyodide_status : undefined;
+    return Boolean(status && status !== "completed" && status !== "error" && status !== "timeout");
 }
 
 async function loadChatHistory() {
@@ -345,9 +1342,11 @@ async function clearHistory() {
 }
 
 async function loadPreviousChat(item: ChatHistoryItem) {
+    pendingCollapsedMessages.length = 0;
     // Try to load the full conversation from the backend
     try {
-        const { data: fullConversation } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
+        // @ts-ignore TODO: Add pydantic model later
+        const { data } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
             params: {
                 path: {
                     exchange_id: item.id,
@@ -355,15 +1354,40 @@ async function loadPreviousChat(item: ChatHistoryItem) {
             },
         });
 
+        // TODO: Define proper type for response, then we wouldn't need to define `fullConversation` here separately
+        const fullConversation = data as any[] | undefined;
+
         if (fullConversation && fullConversation.length > 0) {
             // Clear and rebuild messages from full conversation
             messages.value = [];
+            deliveredTaskIds.clear();
+            pyodideTaskToMessage.clear();
+            const taskIdToMessage: Record<string, Message> = {};
+            const pendingExecResults: Record<string, any> = {};
 
-            fullConversation.forEach((msg: any, index: number) => {
+            const assistantMessagesToReplay: Message[] = [];
+            for (let index = 0; index < fullConversation.length; index += 1) {
+                const msg = fullConversation[index];
+                if (msg?.role === "execution_result") {
+                    if (msg.task_id) {
+                        deliveredTaskIds.add(String(msg.task_id));
+                        const target = taskIdToMessage[String(msg.task_id)];
+                        if (target) {
+                            applyExecutionResultMetadata(target, msg);
+                        } else {
+                            pendingExecResults[String(msg.task_id)] = msg;
+                        }
+                    }
+                    continue;
+                }
+                if (msg?.role !== "user" && msg?.role !== "assistant") {
+                    // Defensive: ignore unexpected roles to avoid template/runtime errors.
+                    continue;
+                }
                 const message: Message = {
                     id: `hist-${msg.role}-${item.id}-${index}`,
                     role: msg.role as "user" | "assistant",
-                    content: msg.content,
+                    content: typeof msg.content === "string" ? msg.content : String(msg.content ?? ""),
                     timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
                     feedback: null,
                 };
@@ -375,12 +1399,63 @@ async function loadPreviousChat(item: ChatHistoryItem) {
 
                     if (msg.agent_response) {
                         message.agentResponse = msg.agent_response;
-                        message.suggestions = msg.agent_response.suggestions || [];
+                        message.suggestions = normaliseSuggestions(msg.agent_response.suggestions);
+                        const metadata = (msg.agent_response as AgentResponse)?.metadata;
+                        const steps = metadata ? normaliseAnalysisSteps(metadata?.analysis_steps) : [];
+                        if (steps.length) {
+                            message.analysisSteps = steps;
+                        }
+                        if (metadata) {
+                            const artifactSource = metadata?.artifacts ?? metadata?.execution?.artifacts;
+                            const storedArtifacts = normaliseArtifactList(artifactSource);
+                            updateMessageOutputsFromArtifacts(message, storedArtifacts);
+                            const plots = normalisePathList(metadata?.plots);
+                            message.generatedPlots = plots.length ? plots : undefined;
+                            const files = normalisePathList(metadata?.files);
+                            message.generatedFiles = files.length ? files : undefined;
+                            const executedTask = metadata?.executed_task;
+                            if (executedTask?.task_id) {
+                                deliveredTaskIds.add(String(executedTask.task_id));
+                                pyodideTaskToMessage.set(String(executedTask.task_id), message);
+                                taskIdToMessage[String(executedTask.task_id)] = message;
+                            }
+                            const pendingTask = metadata?.pyodide_task;
+                            if (pendingTask?.task_id) {
+                                pyodideTaskToMessage.set(String(pendingTask.task_id), message);
+                                taskIdToMessage[String(pendingTask.task_id)] = message;
+                            }
+                            const taskIdsToCheck = [executedTask?.task_id, pendingTask?.task_id].filter(
+                                Boolean,
+                            ) as string[];
+                            taskIdsToCheck.forEach((taskId) => {
+                                if (pendingExecResults[taskId]) {
+                                    applyExecutionResultMetadata(message, pendingExecResults[taskId]);
+                                    delete pendingExecResults[taskId];
+                                }
+                            });
+                        }
                     }
                 }
 
+                if (msg.role === "assistant") {
+                    applyCollapseState(message);
+                    if (message.isCollapsible) {
+                        pendingCollapsedMessages.push(message);
+                        continue;
+                    }
+                    attachPendingCollapsedMessages(message);
+                    assistantMessagesToReplay.push(message);
+                }
+
                 messages.value.push(message);
-            });
+            }
+
+            applyDatasetSelectionFromMessages(fullConversation);
+            assistantMessagesToReplay.forEach((assistantMessage) => maybeRunPyodideForMessage(assistantMessage));
+            if (pendingCollapsedMessages.length) {
+                pendingCollapsedMessages.forEach((msg) => messages.value.push(msg));
+                pendingCollapsedMessages.length = 0;
+            }
         } else {
             // Fallback to single message if no full conversation available
             loadSingleMessageFallback(item);
@@ -401,7 +1476,7 @@ function loadSingleMessageFallback(item: ChatHistoryItem) {
     const userMessage: Message = {
         id: `hist-user-${item.id}`,
         role: "user",
-        content: item.query,
+        content: typeof item.query === "string" ? item.query : String(item.query ?? ""),
         timestamp: new Date(item.timestamp),
         feedback: null,
     };
@@ -409,7 +1484,7 @@ function loadSingleMessageFallback(item: ChatHistoryItem) {
     const assistantMessage: Message = {
         id: `hist-assistant-${item.id}`,
         role: "assistant",
-        content: item.response,
+        content: typeof item.response === "string" ? item.response : String(item.response ?? ""),
         timestamp: new Date(item.timestamp),
         agentType: item.agent_type,
         confidence: item.agent_response?.confidence || "medium",
@@ -418,13 +1493,48 @@ function loadSingleMessageFallback(item: ChatHistoryItem) {
 
     if (item.agent_response) {
         assistantMessage.agentResponse = item.agent_response;
-        assistantMessage.suggestions = item.agent_response.suggestions || [];
+        assistantMessage.suggestions = normaliseSuggestions(item.agent_response.suggestions);
+        const metadata = item.agent_response?.metadata;
+        const steps = metadata ? normaliseAnalysisSteps(metadata?.analysis_steps) : [];
+        if (steps.length) {
+            assistantMessage.analysisSteps = steps;
+        }
+        if (metadata) {
+            const artifactSource = metadata?.artifacts ?? metadata?.execution?.artifacts;
+            const storedArtifacts = normaliseArtifactList(artifactSource);
+            updateMessageOutputsFromArtifacts(assistantMessage, storedArtifacts);
+            const plots = normalisePathList(metadata?.plots);
+            if (plots.length) {
+                assistantMessage.generatedPlots = plots;
+            }
+            const files = normalisePathList(metadata?.files);
+            if (files.length) {
+                assistantMessage.generatedFiles = files;
+            }
+            const executedTask = metadata?.executed_task;
+            if (executedTask?.task_id) {
+                deliveredTaskIds.add(String(executedTask.task_id));
+                pyodideTaskToMessage.set(String(executedTask.task_id), assistantMessage);
+            }
+            const pendingTask = metadata?.pyodide_task;
+            if (pendingTask?.task_id) {
+                pyodideTaskToMessage.set(String(pendingTask.task_id), assistantMessage);
+            }
+        }
     }
 
+    applyCollapseState(assistantMessage);
     messages.value = [userMessage, assistantMessage];
     currentChatId.value = item.id;
     showHistory.value = false;
     nextTick(() => scrollToBottom());
+
+    maybeRunPyodideForMessage(assistantMessage);
+
+    const metadataDatasets = item.agent_response?.metadata?.datasets_used;
+    if (Array.isArray(metadataDatasets) && metadataDatasets.length > 0) {
+        selectedDatasets.value = metadataDatasets.map(String);
+    }
 }
 
 async function loadLatestChat() {
@@ -446,6 +1556,7 @@ async function loadLatestChat() {
 }
 
 function startNewChat() {
+    pendingCollapsedMessages.length = 0;
     // Clear messages and reset to welcome message
     messages.value = [
         {
@@ -459,7 +1570,11 @@ function startNewChat() {
             isSystemMessage: true,
         },
     ];
+    Object.keys(pyodideExecutions).forEach((key) => delete pyodideExecutions[key]);
     currentChatId.value = null;
+    deliveredTaskIds.clear();
+    pyodideTaskToMessage.clear();
+    selectedDatasets.value = [];
     query.value = "";
     errorMessage.value = "";
 }
@@ -475,21 +1590,61 @@ function toggleHistory() {
 <template>
     <div class="chatgxy-container">
         <div class="chatgxy-header">
-            <Heading h2 :icon="faMagic" size="lg">
-                <span>ChatGXY</span>
-            </Heading>
-            <div class="header-actions">
-                <button class="btn btn-sm btn-outline-primary" title="Start New Chat" @click="startNewChat">
-                    <FontAwesomeIcon :icon="faPlus" fixed-width />
-                    New
-                </button>
-                <button
-                    class="btn btn-sm"
-                    :class="showHistory ? 'btn-primary' : 'btn-outline-primary'"
-                    :title="showHistory ? 'Hide History' : 'Show History'"
-                    @click="toggleHistory">
-                    <FontAwesomeIcon :icon="faHistory" fixed-width />
-                </button>
+            <div class="header-main">
+                <Heading h2 :icon="faMagic" size="lg">
+                    <span>ChatGXY</span>
+                </Heading>
+                <div class="header-actions">
+                    <GButton
+                        color="blue"
+                        :outline="!allowFetchingDatasets"
+                        size="small"
+                        :title="
+                            !allowFetchingDatasets
+                                ? 'Include datasets from my current history in the conversation context'
+                                : 'Do not include datasets'
+                        "
+                        @click="() => (allowFetchingDatasets = !allowFetchingDatasets)">
+                        <FontAwesomeIcon :icon="faMicroscope" fixed-width />
+                        Include Datasets
+                    </GButton>
+
+                    <GButton color="blue" outline size="small" title="Start New Chat" @click="startNewChat">
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
+                        New
+                    </GButton>
+
+                    <GButton
+                        color="blue"
+                        :outline="!showHistory"
+                        size="small"
+                        :title="showHistory ? 'Hide History' : 'Show History'"
+                        @click="toggleHistory">
+                        <FontAwesomeIcon :icon="faHistory" fixed-width />
+                    </GButton>
+                </div>
+            </div>
+
+            <div v-if="allowFetchingDatasets" class="header-expand">
+                <div class="pb-2">Select a dataset for this chat</div>
+                <DatasetSelector
+                    v-if="datasetOptions.length"
+                    id="dataset-select"
+                    v-model="selectedDatasetsFormData"
+                    :loading="loadingDatasets"
+                    :options="formDataOptions"
+                    user-defined-title="Created for ChatGXY"
+                    workflow-run />
+                <BAlert v-else :variant="datasetError ? 'danger' : 'info'" show>
+                    <div v-if="loadingDatasets">
+                        <LoadingSpan message="Loading datasets" />
+                    </div>
+                    <div v-else-if="datasetError">{{ datasetError }}</div>
+                    <div v-else>
+                        No datasets in the current history. Upload a dataset or switch to a different history to use
+                        this feature.
+                    </div>
+                </BAlert>
             </div>
         </div>
 
@@ -514,6 +1669,9 @@ function toggleHistory() {
                         v-for="item in chatHistory"
                         :key="item.id"
                         class="history-item"
+                        role="button"
+                        tabindex="0"
+                        @keydown.enter="() => loadPreviousChat(item)"
                         @click="() => loadPreviousChat(item)">
                         <div class="history-query">{{ item.query }}</div>
                         <div class="history-meta">
@@ -553,23 +1711,41 @@ function toggleHistory() {
                                 v-if="message.agentResponse?.metadata?.handoff_info"
                                 class="routing-badge"
                                 :title="'Routed by ' + message.agentResponse.metadata.handoff_info.source_agent">
+                                <!-- Had title as :title="message.routingInfo.reasoning" for DA agent -->
                                 via Router
                             </span>
                         </div>
                         <div class="cell-content">
                             <!-- eslint-disable-next-line vue/no-v-html -->
-                            <div v-html="renderMarkdown(message.content)" />
+                            <div v-html="safeRenderMarkdown(message.content)" />
+
+                            <div v-if="isAwaitingExecution(message)" class="alert alert-warning pyodide-hint mb-2">
+                                ⚙️ Analysis still running… please keep this tab open; refreshing will restart the
+                                execution.
+                            </div>
+                            <div
+                                v-else-if="message.agentResponse?.metadata?.pyodide_status === 'timeout'"
+                                class="alert alert-warning pyodide-hint mb-2">
+                                ⚠️ Previous run timed out before the result was sent. Please ask again if you still need
+                                this step to complete.
+                            </div>
+
+                            <MessageArtifacts v-if="hasArtifacts(message)" :message="message" />
+
+                            <MessageIntermediateDetails :message="message" :pyodide-executions="pyodideExecutions" />
 
                             <!-- Action suggestions -->
                             <ActionCard
-                                v-if="message.suggestions?.length"
+                                v-if="Array.isArray(message.suggestions) && message.suggestions.length"
                                 :suggestions="message.suggestions"
                                 :processing-action="processingAction"
                                 @handle-action="
                                     (action) => handleAction(action, getAgentResponseOrEmpty(message.agentResponse))
                                 " />
                         </div>
-                        <div v-if="!message.content.startsWith('❌') && !message.isSystemMessage" class="cell-footer">
+                        <div
+                            v-if="!(message.content || '').startsWith('❌') && !message.isSystemMessage"
+                            class="cell-footer">
                             <div class="feedback-actions">
                                 <button
                                     class="feedback-btn"
@@ -632,7 +1808,7 @@ function toggleHistory() {
                 <textarea
                     id="chat-input"
                     v-model="query"
-                    :disabled="busy"
+                    :disabled="isChatBusy"
                     placeholder="Ask about tools, workflows, errors, or anything Galaxy..."
                     rows="1"
                     class="form-control chat-input"
@@ -659,9 +1835,6 @@ function toggleHistory() {
 }
 
 .chatgxy-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     padding: 0.75rem 1rem;
     background: $panel-bg-color;
     border-bottom: $border-default;
@@ -669,6 +1842,30 @@ function toggleHistory() {
     .header-actions {
         display: flex;
         gap: 0.5rem;
+    }
+    .header-main {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .header-expand {
+        margin-top: 0.625rem;
+        padding-top: 0.625rem;
+        border-top: 1px solid rgba($brand-primary, 0.12);
+        animation: fadeIn 0.2s ease-out;
+
+        > div:first-child {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: $text-muted;
+        }
+
+        // TODO: If the dataset selector expands beyond a height,
+        //       we need to allow scrolling etc.
+        // :deep(.form-data) {
+        // }
     }
 }
 
@@ -690,6 +1887,48 @@ function toggleHistory() {
     overflow-y: auto;
     padding: 1rem 1.5rem;
     background: $white;
+}
+
+.collapsed-history {
+    details {
+        border: 1px solid #dfe3e6;
+        border-radius: 8px;
+        background: #f7f8fa;
+        padding: 0.25rem 0.75rem;
+    }
+
+    summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #1f2a37;
+        list-style: none;
+        cursor: pointer;
+        padding: 0.25rem 0;
+    }
+
+    summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .chip-chevron {
+        margin-left: 0.75rem;
+        transition: transform 0.2s ease;
+
+        &.open {
+            transform: rotate(90deg);
+        }
+    }
+
+    .collapsed-entry-body {
+        background: #fff;
+    }
+}
+
+.pyodide-hint {
+    font-size: 0.85rem;
 }
 
 .notebook-cell {

@@ -1,9 +1,11 @@
-"""
-API Controller providing Chat functionality
-"""
+"""API Controller providing Chat functionality"""
 
+import asyncio
 import json
 import logging
+import mimetypes
+import os
+from datetime import datetime, timezone
 import time
 from typing import (
     Annotated,
@@ -14,23 +16,37 @@ from typing import (
 
 from fastapi import (
     Body,
+    File,
+    Form,
+    HTTPException,
     Path,
     Query,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
 )
 from pydantic import Field
+
+from starlette.responses import StreamingResponse
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ConfigurationError
 from galaxy.managers.agents import AgentService
+from galaxy.managers.chat_execution import ChatExecutionService
 from galaxy.managers.chat import ChatManager
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext
+)
 from galaxy.managers.jobs import JobManager
-from galaxy.model import User
+from galaxy.model import HistoryDatasetAssociation, User
 from galaxy.schema.agents import AgentResponse
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     ChatPayload,
     ChatResponse,
+    PyodideResultPayload,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -81,6 +97,61 @@ JobIdPathParam = Annotated[
 ]
 
 
+def _guess_extension(filename: Optional[str], mime_type: Optional[str]) -> str:
+    """Best-effort guess of an artifact extension based on the provided metadata."""
+
+    if filename and "." in filename:
+        candidate = filename.rsplit(".", 1)[1].strip().lower()
+        if candidate:
+            return candidate
+    if mime_type:
+        guessed = mimetypes.guess_extension(mime_type)
+        if guessed:
+            return guessed.lstrip(".")
+    return "data"
+
+
+
+ACTIVE_EXECUTION_STREAMS: dict[int, set[WebSocket]] = {}
+STREAM_LOCK = asyncio.Lock()
+
+
+async def _register_stream(exchange_id: int, websocket: WebSocket) -> None:
+    async with STREAM_LOCK:
+        ACTIVE_EXECUTION_STREAMS.setdefault(exchange_id, set()).add(websocket)
+
+
+async def _remove_stream(exchange_id: int, websocket: WebSocket) -> None:
+    async with STREAM_LOCK:
+        connections = ACTIVE_EXECUTION_STREAMS.get(exchange_id)
+        if connections and websocket in connections:
+            connections.remove(websocket)
+            if not connections:
+                ACTIVE_EXECUTION_STREAMS.pop(exchange_id, None)
+
+
+async def _broadcast_exec_followup(exchange_id: int, message: dict[str, Any]) -> None:
+    async with STREAM_LOCK:
+        targets = list(ACTIVE_EXECUTION_STREAMS.get(exchange_id, set()))
+    if not targets:
+        return
+    stale: list[WebSocket] = []
+    for ws in targets:
+        try:
+            await ws.send_json(message)
+        except Exception:
+            stale.append(ws)
+    if stale:
+        async with STREAM_LOCK:
+            connections = ACTIVE_EXECUTION_STREAMS.get(exchange_id)
+            if connections:
+                for ws in stale:
+                    connections.discard(ws)
+                if not connections:
+                    ACTIVE_EXECUTION_STREAMS.pop(exchange_id, None)
+
+
+
 @router.cbv
 class ChatAPI:
     """Chat interface for AI agents.
@@ -92,6 +163,16 @@ class ChatAPI:
     chat_manager: ChatManager = depends(ChatManager)
     job_manager: JobManager = depends(JobManager)
     agent_service: AgentService = depends(AgentService)
+    chat_execution_service: ChatExecutionService = depends(ChatExecutionService)
+
+    @property
+    def pyodide_timeout_seconds(self) -> int:
+        raw_value = getattr(self.config, "chat_pyodide_timeout_seconds", 600)
+        try:
+            timeout = int(raw_value)
+        except (TypeError, ValueError):
+            timeout = 600
+        return max(timeout, 0)
 
     @router.post("/api/chat", unstable=True)
     async def query(
@@ -127,6 +208,13 @@ class ChatAPI:
             "processing_time": None,
         }
 
+        dataset_ids: list[str] = []
+        # The UI posts `agent_type` in the request body; keep the query parameter for
+        # backwards compatibility but prefer the body value when present.
+        effective_agent_type = (
+            (payload.agent_type.strip() if payload and isinstance(payload.agent_type, str) else "") or agent_type
+        )
+
         # Determine query source - either from payload (job-based) or query param (general)
         regenerate = False
         if payload and payload.query:
@@ -136,6 +224,9 @@ class ChatAPI:
             context_str = payload.context if hasattr(payload, "context") else None
             query_context = {"context_type": context_str} if context_str else {}
             regenerate = bool(payload.regenerate) if hasattr(payload, "regenerate") else False
+            raw_dataset_ids = getattr(payload, "dataset_ids", None) or getattr(payload, "selected_dataset_ids", None)
+            if raw_dataset_ids:
+                dataset_ids = [str(ds_id) for ds_id in raw_dataset_ids or []]
         elif query:
             # New format: query parameters (context not supported in this path)
             query_text = query
@@ -167,8 +258,16 @@ class ChatAPI:
         # Use new agent system if available, otherwise fallback to legacy
         try:
             if HAS_AGENTS:
+                log.info(
+                    "Chat query received agent=%s datasets=%s exchange_id=%s",
+                    effective_agent_type,
+                    dataset_ids,
+                    exchange_id,
+                )
                 # Build context with conversation history
                 full_context: dict[str, Any] = query_context.copy() if query_context else {}
+                if dataset_ids:
+                    full_context["dataset_ids"] = dataset_ids
 
                 # If we have an exchange_id, ALWAYS load conversation history from database (source of truth)
                 if exchange_id:
@@ -184,10 +283,11 @@ class ChatAPI:
 
                 # Get full agent response with metadata
                 agent_response = await self._get_agent_response_full(
-                    query_text, agent_type, trans, user, job, full_context
+                    query_text, effective_agent_type, trans, user, job, full_context
                 )
                 result["response"] = agent_response.content
                 result["agent_response"] = agent_response
+                result["dataset_ids"] = dataset_ids
             else:
                 # Fallback to legacy implementation
                 self._ensure_ai_configured()
@@ -209,8 +309,9 @@ class ChatAPI:
                     conversation_data = {
                         "query": query_text,
                         "response": result.get("response", ""),
-                        "agent_type": agent_type,
+                        "agent_type": effective_agent_type,
                         "agent_response": agent_resp.model_dump() if agent_resp else None,
+                        "dataset_ids": dataset_ids,
                     }
                     message_content = json.dumps(conversation_data)
                     self.chat_manager.add_message(trans, exchange_id, message_content)
@@ -223,7 +324,7 @@ class ChatAPI:
                         "response": result.get("response", ""),
                         "agent_response": agent_resp.model_dump() if agent_resp else None,
                     }
-                    exchange = self.chat_manager.create_general_chat(trans, query_text, storable_result, agent_type)
+                    exchange = self.chat_manager.create_general_chat(trans, query_text, storable_result, effective_agent_type)
                     result["exchange_id"] = exchange.id
 
             result["processing_time"] = time.time() - start_time
@@ -370,6 +471,7 @@ class ChatAPI:
                             "role": "user",
                             "content": data["query"],
                             "timestamp": msg.create_time.isoformat() if msg.create_time else None,
+                            "dataset_ids": data.get("dataset_ids", []),
                         }
                     )
                 if "response" in data:
@@ -381,8 +483,31 @@ class ChatAPI:
                             "agent_response": data.get("agent_response"),
                             "timestamp": msg.create_time.isoformat() if msg.create_time else None,
                             "feedback": msg.feedback,
+                            "dataset_ids": data.get("dataset_ids", []),
                         }
                     )
+                    assistant_payload = messages[-1]
+                    agent_response = assistant_payload.get("agent_response")
+                    if isinstance(agent_response, dict):
+                        metadata = agent_response.get("metadata")
+                        if isinstance(metadata, dict):
+                            self._expire_stale_pyodide_task(metadata, msg.create_time)
+                            self._ensure_pyodide_completion_state(metadata)
+                        self._refresh_artifact_download_urls(trans, agent_response)
+                elif data.get("role") == "execution_result":
+                    messages.append(
+                        {
+                            "role": "execution_result",
+                            "task_id": data.get("task_id"),
+                            "stdout": data.get("stdout", ""),
+                            "stderr": data.get("stderr", ""),
+                            "artifacts": data.get("artifacts", []),
+                            "metadata": data.get("metadata", {}),
+                            "success": data.get("success", False),
+                            "timestamp": msg.create_time.isoformat() if msg.create_time else None,
+                        }
+                    )
+                    self._refresh_artifact_download_urls(trans, messages[-1])
             except (json.JSONDecodeError, AttributeError):
                 # Fallback for non-JSON messages
                 messages.append(
@@ -395,6 +520,288 @@ class ChatAPI:
                 )
 
         return messages
+
+    @router.get("/api/chat/datasets/{dataset_id}/download", response_class=StreamingResponse)
+    async def download_dataset_for_execution(
+        self,
+        dataset_id: str,
+        token: str = Query(..., description="Signed dataset download token"),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ):
+        """Stream a history dataset referenced by a signed execution token."""
+
+        if not token:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing download token")
+
+        try:
+            self.agent_service.verify_dataset_download_token(trans, dataset_id, token)
+        except ValueError as exc:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+        try:
+            decoded_id = trans.security.decode_id(dataset_id)
+        except Exception as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found") from exc
+
+        hda_manager = trans.app.hda_manager
+        try:
+            hda = hda_manager.get_accessible(decoded_id, user, current_history=trans.history, trans=trans)
+        except Exception as exc:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Dataset is not accessible") from exc
+
+        try:
+            hda_manager.ensure_dataset_on_disk(trans, hda)
+        except Exception as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+        dataset = hda.dataset
+        file_path = dataset.get_file_name()
+        if not file_path or not os.path.exists(file_path):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dataset file not found")
+
+        mime_type = hda.get_mime() or "application/octet-stream"
+        try:
+            display_name = hda.display_name()
+        except Exception:
+            display_name = hda.name or dataset_id
+        safe_name = (display_name or dataset_id).replace('\\', '').replace('"', '')
+        headers = {
+            "Content-Disposition": f'attachment; filename="{safe_name}"',
+            "Content-Length": str(os.path.getsize(file_path)),
+        }
+
+        def iter_file():
+            with open(file_path, "rb") as handle:
+                while True:
+                    chunk = handle.read(65536)
+                    if not chunk:
+                        break
+                    yield chunk
+
+        return StreamingResponse(iter_file(), media_type=mime_type, headers=headers)
+
+    @router.post("/api/chat/exchange/{exchange_id}/artifacts")
+    async def upload_pyodide_artifact(
+        self,
+        exchange_id: int,
+        file: UploadFile = File(...),
+        name: Optional[str] = Form(default=None),
+        mime_type: Optional[str] = Form(default=None),
+        size: Optional[int] = Form(default=None),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> dict[str, Any]:
+        """Persist an artifact generated by the Pyodide worker as a history dataset."""
+
+        if not user:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Authentication required")
+
+        exchange = self.chat_manager.get_exchange_by_id(trans, exchange_id)
+        if not exchange:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat exchange not found")
+
+        history = trans.history
+        if history is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No active history available")
+
+        raw_bytes = await file.read()
+        if not raw_bytes:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Artifact contains no data")
+
+        artifact_name = name or file.filename or "artifact"
+        artifact_mime = mime_type or file.content_type or "application/octet-stream"
+        artifact_size = size or len(raw_bytes)
+
+        extension = _guess_extension(artifact_name, artifact_mime)
+
+        hda = HistoryDatasetAssociation(
+            history=history,
+            name=artifact_name,
+            extension=extension,
+            create_dataset=True,
+            sa_session=trans.sa_session,
+        )
+        trans.sa_session.add(hda)
+        history.add_dataset(hda, set_hid=True)
+
+        permissions = trans.app.security_agent.history_get_default_permissions(history)
+        trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
+
+        dataset = hda.dataset
+        try:
+            trans.app.object_store.create(dataset)
+        except Exception as exc:  # pragma: no cover - object store allocation failure
+            trans.sa_session.rollback()
+            log.exception("Unable to allocate object store for artifact upload")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+        file_path = dataset.get_file_name()
+        try:
+            with open(file_path, "wb") as handle:
+                handle.write(raw_bytes)
+        except Exception as exc:
+            trans.sa_session.rollback()
+            log.exception("Failed writing artifact to object store")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+        hda.state = hda.states.OK
+        try:
+            hda.set_size()
+            hda.set_total_size()
+        except Exception:
+            pass
+        try:
+            hda.set_meta()
+        except Exception:
+            pass
+        try:
+            hda.set_peek()
+        except Exception:
+            pass
+
+        trans.sa_session.flush()
+        trans.sa_session.commit()
+
+        encoded_dataset_id = trans.security.encode_id(hda.id)
+        download_url = self.agent_service._dataset_download_url(trans, encoded_dataset_id)
+
+        return {
+            "dataset_id": encoded_dataset_id,
+            "history_id": trans.security.encode_id(history.id),
+            "name": artifact_name,
+            "mime_type": artifact_mime,
+            "size": artifact_size,
+            "download_url": download_url,
+        }
+
+
+    @router.websocket("/api/chat/exchange/{exchange_id}/stream")
+    async def chat_exchange_stream(
+        self,
+        exchange_id: int,
+        websocket: WebSocket,
+    ) -> None:
+        await websocket.accept()
+        await _register_stream(exchange_id, websocket)
+        try:
+            while True:
+                try:
+                    message = await websocket.receive_text()
+                except WebSocketDisconnect:
+                    break
+                if message and message.lower().startswith("ping"):
+                    await websocket.send_text("pong")
+        except WebSocketDisconnect:
+            pass
+        finally:
+            await _remove_stream(exchange_id, websocket)
+
+
+    @router.post("/api/chat/exchange/{exchange_id}/pyodide_result")
+    async def submit_pyodide_result(
+        self,
+        exchange_id: int,
+        payload: PyodideResultPayload,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> dict[str, Any]:
+        """Persist results from client-side Pyodide execution and trigger follow-up reasoning."""
+
+        if not user:
+            return {"message": "Authentication required"}
+
+        exchange = self.chat_manager.get_exchange_by_id(trans, exchange_id)
+        if not exchange:
+            return {"message": "Chat exchange not found"}
+        response_payload = await self.chat_execution_service.handle_pyodide_result(exchange_id, payload, trans, user)
+
+        if response_payload.get("agent_response"):
+            await _broadcast_exec_followup(
+                exchange_id,
+                {
+                    "type": "exec_followup",
+                    "exchange_id": exchange_id,
+                    "task_id": payload.task_id,
+                    "payload": response_payload,
+                },
+            )
+
+        return response_payload
+
+    def _refresh_artifact_download_urls(self, trans: ProvidesUserContext, payload: Any) -> Any:
+        if isinstance(payload, dict):
+            for key, value in list(payload.items()):
+                if key == "artifacts" and isinstance(value, list):
+                    payload[key] = [self._refresh_single_artifact_entry(trans, entry) for entry in value]
+                else:
+                    self._refresh_artifact_download_urls(trans, value)
+        elif isinstance(payload, list):
+            for item in payload:
+                self._refresh_artifact_download_urls(trans, item)
+        return payload
+
+    def _refresh_single_artifact_entry(self, trans: ProvidesUserContext, artifact: Any) -> Any:
+        if not isinstance(artifact, dict):
+            return artifact
+        entry = dict(artifact)
+        dataset_id = entry.get("dataset_id")
+        if dataset_id:
+            try:
+                entry["download_url"] = self.agent_service._dataset_download_url(trans, dataset_id)
+            except Exception:  # pragma: no cover - best effort
+                log.warning("Unable to refresh download URL for dataset %s", dataset_id)
+        return entry
+
+    def _expire_stale_pyodide_task(self, metadata: dict[str, Any], created_at: Optional[datetime]) -> None:
+        timeout = self.pyodide_timeout_seconds
+        if timeout <= 0:
+            return
+        if not metadata or not isinstance(metadata, dict):
+            return
+        if "pyodide_task" not in metadata:
+            return
+        status = metadata.get("pyodide_status") or "pending"
+        if status not in (None, "pending"):
+            return
+        reference = metadata.get("pyodide_started_at")
+        started_at = self._parse_iso_datetime(reference) if isinstance(reference, str) else None
+        if started_at is None and isinstance(created_at, datetime):
+            started_at = created_at
+        if started_at is None:
+            return
+        if started_at.tzinfo is None:
+            started_at = started_at.replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+        if (now - started_at).total_seconds() < timeout:
+            return
+        metadata["pyodide_status"] = "timeout"
+        metadata["pyodide_timeout_reason"] = (
+            metadata.get("pyodide_timeout_reason") or "Timed out waiting for the browser execution result."
+        )
+        metadata["pyodide_timeout_seconds"] = timeout
+        metadata.pop("pyodide_task", None)
+
+    def _parse_iso_datetime(self, value: str) -> Optional[datetime]:
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            return None
+
+    def _ensure_pyodide_completion_state(self, metadata: dict[str, Any]) -> None:
+        if not isinstance(metadata, dict):
+            return
+        status = metadata.get("pyodide_status")
+        if status in ("completed", "error", "timeout"):
+            return
+        execution = metadata.get("execution")
+        if isinstance(execution, dict):
+            success = bool(execution.get("success", False))
+            metadata["pyodide_status"] = "completed" if success else "error"
+            metadata.pop("pyodide_task", None)
+            return
+        if metadata.get("artifacts") and not metadata.get("pyodide_task"):
+            metadata["pyodide_status"] = "completed"
 
     def _ensure_ai_configured(self):
         """Ensure AI is configured"""
@@ -473,7 +880,7 @@ class ChatAPI:
         self,
         query: str,
         agent_type: str,
-        trans: ProvidesUserContext,
+        trans: ProvidesHistoryContext,
         user: User,
         job=None,
         context: Optional[dict[str, Any]] = None,

@@ -188,6 +188,9 @@ typecheck = [
     "types-setuptools",
     "types-six",
 ]
+agents = [
+    "pydantic-ai",
+]
 
 [tool.black]
 line-length = 120

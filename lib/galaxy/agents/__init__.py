@@ -11,11 +11,16 @@ from .base import (
     GalaxyAgentDependencies,
 )
 from .custom_tool import CustomToolAgent
+# from .dspy_agent import DSPyGalaxyAgent
 from .error_analysis import ErrorAnalysisAgent
 from .orchestrator import WorkflowOrchestratorAgent
 from .registry import AgentRegistry
 from .router import QueryRouterAgent
 from .tools import ToolRecommendationAgent
+try:
+    from .data_analysis import DataAnalysisAgent
+except ImportError:  # pragma: no cover - optional dependency (e.g. itsdangerous)
+    DataAnalysisAgent = None  # type: ignore[assignment]
 
 __all__ = [
     "AgentType",
@@ -27,6 +32,8 @@ __all__ = [
     "CustomToolAgent",
     "WorkflowOrchestratorAgent",
     "ToolRecommendationAgent",
+    "DataAnalysisAgent",
+    # "DataAnalysisDSPyAgent",
 ]
 
 # Global agent registry instance
@@ -38,3 +45,6 @@ agent_registry.register(AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent)
 agent_registry.register(AgentType.CUSTOM_TOOL, CustomToolAgent)
 agent_registry.register(AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
 agent_registry.register(AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)
+if DataAnalysisAgent is not None:
+    agent_registry.register(AgentType.DATA_ANALYSIS, DataAnalysisAgent)
+# agent_registry.register(AgentType.DATA_ANALYSIS_DSPY, DataAnalysisDSPyAgent)  # Disabled while DSPy agent is offline.

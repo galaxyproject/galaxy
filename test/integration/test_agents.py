@@ -26,6 +26,7 @@ This module contains two test suites:
     export GALAXY_TEST_ENABLE_LIVE_LLM=1
 """
 
+import json
 import logging
 import os
 from unittest.mock import (
@@ -111,6 +112,66 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         assert "router" in agent_types
         assert "custom_tool" in agent_types
         assert "error_analysis" in agent_types
+
+    @patch("galaxy.webapps.galaxy.api.chat.ChatAPI._get_agent_response_full", new_callable=AsyncMock)
+    def test_chat_with_dataset_context_records_execution_metadata(self, mock_response):
+        """Dataset selections should persist and execution metadata should be captured."""
+
+        mock_response.return_value = {
+            "content": "Summary placeholder",
+            "agent_type": "data_analysis",
+            "confidence": "medium",
+            "suggestions": [],
+            "metadata": {
+                "datasets_used": ["encoded-dataset-id"],
+                "analysis_steps": [
+                    {
+                        "type": "observation",
+                        "content": "Execution finished",
+                        "stdout": "analysis complete",
+                        "stderr": "",
+                        "success": True,
+                    }
+                ],
+                "execution": {
+                    "success": True,
+                    "stdout": "analysis complete",
+                    "stderr": "",
+                    "artifacts": [],
+                    "datasets": [{"id": "encoded-dataset-id"}],
+                },
+            },
+        }
+
+        payload = {
+            "query": "Analyze dataset 1",
+            "context": "",
+            "dataset_ids": ["encoded-dataset-id"],
+        }
+
+        response = self._post("chat", data=json.dumps(payload), content_type="application/json")
+        self._assert_status_code_is_ok(response)
+        data = response.json()
+        assert data.get("dataset_ids") == ["encoded-dataset-id"]
+        assert data.get("agent_response", {}).get("metadata", {}).get("datasets_used") == ["encoded-dataset-id"]
+
+        exchange_id = data.get("exchange_id")
+        assert exchange_id is not None
+
+        history_response = self._get(f"chat/exchange/{exchange_id}/messages")
+        self._assert_status_code_is_ok(history_response)
+        history = history_response.json()
+        assert any(msg.get("dataset_ids") == ["encoded-dataset-id"] for msg in history if msg.get("role") == "user")
+        assistant_messages = [msg for msg in history if msg.get("role") == "assistant"]
+        assert assistant_messages
+        assert any(
+            msg.get("agent_response", {}).get("metadata", {})
+            .get("execution", {})
+            .get("stdout")
+            == "analysis complete"
+            for msg in history
+            if msg.get("role") == "assistant"
+        )
 
     @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
     @patch("galaxy.agents.router.Agent")
