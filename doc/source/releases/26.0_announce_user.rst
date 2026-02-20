@@ -14,7 +14,7 @@ Discover some of the most exciting new capabilities and improvements in Galaxy 2
 
 .. rubric:: AI Comes to Galaxy!
 
-*Galaxy 26.1 brings artificial intelligence directly into the Galaxy experience, expanding how users explore data, discover tools, and troubleshoot analyses.*
+*Galaxy 26.0 brings artificial intelligence directly into the Galaxy experience, expanding how users explore data, discover tools, and troubleshoot analyses.*
 
 ChatGXY: Intelligent Assistance Inside Galaxy
 ---------------------------------------------
@@ -37,7 +37,7 @@ ChatGXY provides a conversational entry point to Galaxy's AI capabilities and la
 AI Assisted Notebooks with JupyterLite
 --------------------------------------
 
-Galaxy 26.1 strengthens integration with **JupyterLite**, bringing AI enhanced notebooks directly into your browser.
+Galaxy 26.0 strengthens integration with **JupyterLite**, bringing AI enhanced notebooks directly into your browser.
 
 - **Browser based notebooks**. Launch lightweight, interactive notebooks connected to Galaxy data.
 - **AI powered exploration**. Use AI assistance within notebooks to prototype analyses and accelerate exploration.
@@ -88,7 +88,7 @@ These improvements make exploring and managing Galaxy tools more intuitive for b
 Automated Actions When Workflows Finish
 ---------------------------------------
 
-Galaxy 26.1 adds configurable actions that automatically execute when a workflow completes.
+Galaxy 26.0 adds configurable actions that automatically execute when a workflow completes.
 
 - **Automatic result export**. Send workflow outputs to remote file sources such as cloud storage.
 - **Completion notifications**. Receive alerts when long running workflows finish.
