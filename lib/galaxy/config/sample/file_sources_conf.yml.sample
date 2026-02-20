@@ -93,6 +93,12 @@
     -----END RSA PRIVATE KEY-----
   # SSH key passphrase. https://embl.service-now.com/kb?id=kb_article_view&sys_kb_id=4cc60cf8c398a610bf313dfc0501314c#mcetoc_1idpn4k0to
   ssh_key_passphrase: sample_passphrase
+  # Fallback to FTP if ascp fails (optional)
+  # When ascp exhausts all retries, the URL is rewritten using fallback_scheme and fallback_host
+  # and downloaded via Galaxy's standard file source machinery (e.g., the FTP plugin).
+  # For ENA: fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/... → ftp://ftp.sra.ebi.ac.uk/vol1/...
+  fallback_scheme: "ftp"
+  fallback_host: "ftp.sra.ebi.ac.uk"
   # Note: This plugin is download-only (writable: false, browsable: false)
 
 # Example: Custom Aspera endpoint with encryption enabled

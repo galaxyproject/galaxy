@@ -5,6 +5,7 @@ Tests verify behavior through the public API where possible:
 - Command construction: flag logic for any configuration
 - Temp file lifecycle: real file creation, permissions, cleanup
 - Retry mechanics: backoff, exhaustion, timeout
+- Fallback: URL rewriting and FTP fallback on ascp failure
 """
 
 import os
@@ -578,4 +579,180 @@ class TestEdgeCases:
         with patch("subprocess.run", side_effect=mock_run):
             # Should not raise
             fs.get_file("/remote/file.txt", "/local/file.txt")
+
+
+# ---------------------------------------------------------------------------
+# TestFallback: URL rewriting and FTP fallback on ascp failure
+# ---------------------------------------------------------------------------
+
+
+def _make_ascp_source_with_fallback(fallback_scheme="ftp", fallback_host="ftp.sra.ebi.ac.uk"):
+    """Create an AscpFilesSource configured with fallback."""
+    import yaml
+
+    config = {
+        "type": "ascp",
+        "id": "test_ascp_fallback",
+        "label": "Test Aspera with Fallback",
+        "ssh_key_content": TEST_SSH_KEY,
+        "user": "era-fasp",
+        "host": "fasp.sra.ebi.ac.uk",
+        "fallback_scheme": fallback_scheme,
+        "fallback_host": fallback_host,
+    }
+    with patch("shutil.which", return_value="/usr/bin/ascp"):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
+            yaml.dump([config], f)
+            config_file = f.name
+        try:
+            file_sources = configured_file_sources(config_file)
+            pair = file_sources.get_file_source_path("fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR123/file.fastq.gz")
+            return pair.file_source, pair, config_file
+        except Exception:
+            os.unlink(config_file)
+            raise
+
+
+class TestFallbackUrlRewrite:
+    """Test _rewrite_url_for_fallback: pure URL transformation logic."""
+
+    def _make_source(self, fallback_scheme=None, fallback_host=None):
+        from types import SimpleNamespace
+
+        config = SimpleNamespace(
+            fallback_scheme=fallback_scheme,
+            fallback_host=fallback_host,
+        )
+        source = AscpFilesSource.__new__(AscpFilesSource)
+        return source, config
+
+    def test_ena_fasp_to_ftp(self):
+        """fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/... → ftp://ftp.sra.ebi.ac.uk/vol1/..."""
+        source, config = self._make_source(fallback_scheme="ftp", fallback_host="ftp.sra.ebi.ac.uk")
+        result = source._rewrite_url_for_fallback(
+            "fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR123/ERR123.fastq.gz", config
+        )
+        assert result == "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR123/ERR123.fastq.gz"
+
+    def test_ascp_scheme_also_rewritten(self):
+        """ascp:// URLs are also rewritten."""
+        source, config = self._make_source(fallback_scheme="ftp", fallback_host="ftp.sra.ebi.ac.uk")
+        result = source._rewrite_url_for_fallback(
+            "ascp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR123/ERR123.fastq.gz", config
+        )
+        assert result == "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR123/ERR123.fastq.gz"
+
+    def test_user_stripped_from_url(self):
+        """User component (era-fasp@) is not included in the fallback URL."""
+        source, config = self._make_source(fallback_scheme="ftp", fallback_host="ftp.sra.ebi.ac.uk")
+        result = source._rewrite_url_for_fallback(
+            "fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR123/ERR123.fastq.gz", config
+        )
+        assert "era-fasp" not in result
+        assert "@" not in result
+
+    def test_no_fallback_host_returns_none(self):
+        """No fallback_host → returns None."""
+        source, config = self._make_source(fallback_scheme="ftp", fallback_host=None)
+        result = source._rewrite_url_for_fallback("fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/file.gz", config)
+        assert result is None
+
+    def test_no_fallback_scheme_returns_none(self):
+        """No fallback_scheme → returns None."""
+        source, config = self._make_source(fallback_scheme=None, fallback_host="ftp.sra.ebi.ac.uk")
+        result = source._rewrite_url_for_fallback("fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/file.gz", config)
+        assert result is None
+
+    def test_non_ascp_url_returns_none(self):
+        """Non-ascp/fasp URL → returns None (not our URL to rewrite)."""
+        source, config = self._make_source(fallback_scheme="ftp", fallback_host="ftp.sra.ebi.ac.uk")
+        result = source._rewrite_url_for_fallback("https://example.com/file.gz", config)
+        assert result is None
+
+    def test_path_preserved_exactly(self):
+        """Deep nested path is preserved exactly in the fallback URL."""
+        source, config = self._make_source(fallback_scheme="ftp", fallback_host="ftp.sra.ebi.ac.uk")
+        result = source._rewrite_url_for_fallback(
+            "fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR999/ERR999_1.fastq.gz", config
+        )
+        assert result == "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR999/ERR999_1.fastq.gz"
+
+
+class TestFallbackInvocation:
+    """Test that fallback is triggered on ascp failure and not on success."""
+
+    def test_fallback_called_on_ascp_failure(self):
+        """When ascp fails and fallback is configured, stream_url_to_file is called."""
+        source, pair, config_file = _make_ascp_source_with_fallback()
+        try:
+            with patch("shutil.which", return_value="/usr/bin/ascp"):
+                with patch("subprocess.run", return_value=Mock(returncode=1, stderr="Session Stop (Error: Client unable to connect)", stdout="")):
+                    with patch("time.sleep"):
+                        with patch("galaxy.files.sources.ascp.stream_url_to_file") as mock_fallback:
+                            mock_fallback.return_value = None
+                            source.realize_to(pair.path, "/tmp/test_fallback_output.txt")
+
+            mock_fallback.assert_called_once()
+            fallback_url = mock_fallback.call_args[0][0]
+            assert fallback_url.startswith("ftp://ftp.sra.ebi.ac.uk/")
+            assert "era-fasp" not in fallback_url
+        finally:
+            os.unlink(config_file)
+
+    def test_fallback_not_called_on_ascp_success(self):
+        """When ascp succeeds, fallback is never invoked."""
+        source, pair, config_file = _make_ascp_source_with_fallback()
+        try:
+            with patch("shutil.which", return_value="/usr/bin/ascp"):
+                with patch("subprocess.run", return_value=Mock(returncode=0, stderr="", stdout="")):
+                    with patch("galaxy.files.sources.ascp.stream_url_to_file") as mock_fallback:
+                        source.realize_to(pair.path, "/tmp/test_no_fallback_output.txt")
+
+            mock_fallback.assert_not_called()
+        finally:
+            os.unlink(config_file)
+
+    def test_both_fail_raises_message_exception(self):
+        """When ascp and fallback both fail, MessageException is raised."""
+        source, pair, config_file = _make_ascp_source_with_fallback()
+        try:
+            with patch("shutil.which", return_value="/usr/bin/ascp"):
+                with patch("subprocess.run", return_value=Mock(returncode=1, stderr="Session Stop", stdout="")):
+                    with patch("time.sleep"):
+                        with patch("galaxy.files.sources.ascp.stream_url_to_file", side_effect=Exception("FTP also down")):
+                            with pytest.raises(MessageException, match="fallback.*also failed"):
+                                source.realize_to(pair.path, "/tmp/test_both_fail.txt")
+        finally:
+            os.unlink(config_file)
+
+    def test_no_fallback_configured_raises_original_error(self):
+        """Without fallback config, ascp failure raises directly without fallback attempt."""
+        import yaml
+
+        config = {
+            "type": "ascp",
+            "id": "test_ascp_no_fallback",
+            "label": "Test Aspera no Fallback",
+            "ssh_key_content": TEST_SSH_KEY,
+            "user": "era-fasp",
+            "host": "fasp.sra.ebi.ac.uk",
+        }
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
+                yaml.dump([config], f)
+                config_file = f.name
+            try:
+                file_sources = configured_file_sources(config_file)
+                pair = file_sources.get_file_source_path("fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/file.gz")
+                source = pair.file_source
+
+                with patch("subprocess.run", return_value=Mock(returncode=1, stderr="Session Stop", stdout="")):
+                    with patch("time.sleep"):
+                        with patch("galaxy.files.sources.ascp.stream_url_to_file") as mock_fallback:
+                            with pytest.raises(MessageException):
+                                source.realize_to(pair.path, "/tmp/test_no_fallback.txt")
+
+                mock_fallback.assert_not_called()
+            finally:
+                os.unlink(config_file)
 
