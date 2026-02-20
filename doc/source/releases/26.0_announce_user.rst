@@ -1,0 +1,258 @@
+
+===========================================================
+26.0 Galaxy Release (February 2026)
+===========================================================
+
+.. include:: _header.rst
+
+Please see the full `release notes <https://github.com/galaxyproject/galaxy/releases/tag/v26.0.0>`__ for more details.
+
+Highlights
+===========================================================
+
+Discover some of the most exciting new capabilities and improvements in Galaxy 26.0.
+
+.. rubric:: AI Comes to Galaxy!
+
+*Galaxy 26.0 brings artificial intelligence directly into the Galaxy experience, expanding how users explore data, discover tools, and troubleshoot analyses.*
+
+ChatGXY: Intelligent Assistance Inside Galaxy
+---------------------------------------------
+
+Galaxy introduces **ChatGXY**, a built in AI assistant integrated directly into the interface.
+
+- **Conversational help**. Ask questions about tools, workflows, results, or errors without leaving Galaxy.
+- **Error analysis guidance**. Receive contextual explanations and suggestions when jobs fail.
+- **Tool recommendations**. Describe your analysis goal and get suggestions tailored to the tools installed on your Galaxy instance.
+- **Training discovery**. Find relevant Galaxy Training Network tutorials directly from within Galaxy.
+- **Extensible architecture**. Built on a flexible agent framework designed to grow with additional specialized AI capabilities over time.
+
+ChatGXY provides a conversational entry point to Galaxy's AI capabilities and lays the groundwork for connecting Galaxy users to an expanding set of intelligent capabilities.
+[`#21434 <https://github.com/galaxyproject/galaxy/pull/21434>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/DQsiSbzMQgE?si=NMSpS2KyEO7AmWSM" title="Galaxy 26.0 - ChatGXY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+AI Assisted Notebooks with JupyterLite
+--------------------------------------
+
+Galaxy 26.0 strengthens integration with **JupyterLite**, bringing AI enhanced notebooks directly into your browser.
+
+- **Browser based notebooks**. Launch lightweight, interactive notebooks connected to Galaxy data.
+- **AI powered exploration**. Use AI assistance within notebooks to prototype analyses and accelerate exploration.
+- **Seamless data access**. Work with Galaxy datasets without manual downloads or complex setup.
+- **Shared AI services**. Notebook AI features use Galaxy's configured AI services for consistent behavior and control.
+
+This integration makes interactive, AI supported analysis a natural extension of Galaxy workflows.
+[`#21463 <https://github.com/galaxyproject/galaxy/pull/21463>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/qUmPw-ySH9U?si=n-Kf4dRdeKhGnD__" title="Galaxy 26.0 - JupyterLite" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+AI Powered Data Visualization with Vintent
+------------------------------------------
+
+Galaxy introduces **Vintent**, an AI driven visualization engine for generating interactive charts from your data.
+
+- **Natural language to visualization**. Turn requests into structured, validated charts.
+- **Modern Vega Lite charts**. Create expressive and interactive visualizations directly within Galaxy.
+- **Integrated with Galaxy datasets**. Visualizations operate directly on your data without extra preparation.
+- **Reproducible browser based Python runtime**. Data transformations run in a versioned Pyodide environment directly in the browser.
+- **Consistent, versioned environments**. Visualization logic uses pinned dependencies, making environments portable, reproducible, and easy to evolve independently.
+
+By combining AI reasoning with a portable and reproducible Python runtime in the browser, Vintent expands Galaxy's visualization ecosystem while preserving flexibility and isolation.
+[`#21586 <https://github.com/galaxyproject/galaxy/pull/21586>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/RhKpgCof7ac?si=jPGFHT24vqLLr6U3" title="Galaxy 26.0 - Vintent" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+A Redesigned ToolShed Landing Experience
+----------------------------------------
+
+The ToolShed landing page has been redesigned to make tool discovery clearer and more focused.
+
+- **Prominent search box**. Quickly find Galaxy tools from a central search interface.
+- **Clear guidance sections**. Learn how to find, install, publish, and cite tools.
+- **Streamlined layout**. A simplified two column design highlights essential information and recent repositories.
+
+These improvements make exploring and managing Galaxy tools more intuitive for both new and experienced users.
+[`#21430 <https://github.com/galaxyproject/galaxy/pull/21430>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/unSGKRpogTI?si=5dR1eIoLCp_P2Cic" title="Galaxy 26.0 - ToolShed" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Automated Actions When Workflows Finish
+---------------------------------------
+
+Galaxy 26.0 adds configurable actions that automatically execute when a workflow completes.
+
+- **Automatic result export**. Send workflow outputs to remote file sources such as cloud storage.
+- **Completion notifications**. Receive alerts when long running workflows finish.
+- **Configurable at launch**. Select post run actions directly in a new On Completion section of the workflow run form.
+- **Track recent exports**. Monitor export status and review recent transfers from within Galaxy.
+
+These features streamline post analysis workflows and reduce manual follow up steps.
+[`#21532 <https://github.com/galaxyproject/galaxy/pull/21532>`__]
+
+.. raw:: html
+
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/2-hPsH259m0?si=grZYVPzad8BxN0sK" title="Galaxy 26.0 - Workflow Completion Actions" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+Improved Workflow Error Navigation
+----------------------------------
+
+Debugging complex workflows is now easier with clearer and more actionable failure hints.
+[`#21514 <https://github.com/galaxyproject/galaxy/pull/21514>`__]
+
+- **Clickable failure paths**. Navigate directly to the exact failing step, even within subworkflows.
+- **More precise step hints**. See clearer guidance on where and why a failure occurred.
+- **Faster troubleshooting**. Reduce time spent locating and diagnosing workflow issues.
+
+.. figure:: images/26.0-better-workflow-debugging.png
+   :alt: Improved workflow failure hints
+   :height: 360px
+   :align: center
+
+----
+
+Visualizations Updates
+===========================================================
+
+.. visualizations
+* Selenium test cases for IGV
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 21034`_
+* Remove Trackster
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20974`_
+* Add missing types to visualization model
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21672`_
+* Update dependencies for IGV and Plotly
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21543`_
+* Add Jupyternaut adapter for JupyterLite integration
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21463`_
+* Add plotly pie charts
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21174`_
+* Adds Vintent visualization plugin
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21586`_
+* Remove dummy header from JupyterLite requests
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21585`_
+
+Datatypes Updates
+===========================================================
+
+.. datatypes
+* Merge 25 1 into dev
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21067`_
+* Merge 25.1 into dev
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21128`_
+* Remove Trackster
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 20974`_
+* Add type annotations to job handling code
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 21171`_
+* Merge 25.1 into dev
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21305`_
+* Slight improvement of mztab2 datatype
+  (thanks to `@nguilhot <https://github.com/nguilhot>`__).
+  `Pull Request 21258`_
+* Add Sourmash sig new datatype
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 21469`_
+* add new datatype for kmindex index data
+  (thanks to `@Smeds <https://github.com/Smeds>`__).
+  `Pull Request 21429`_
+* Add missing test file for sig datatype
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 21473`_
+* Add missing ending newline to test.sig test data file
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 21485`_
+* Discriminate decompression tools
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21510`_
+* Add missing dependencies to ``galaxy-files`` package
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 21518`_
+* Fix width and height assignment for image metadata using Pillow
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 21554`_
+* Drop support for Python 3.9
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 21583`_
+* Add new datatype pg and hg for pangenomics
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 21620`_
+* Add initial support for the DICOM format
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 21385`_
+* Merge 25.1 into dev
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21677`_
+* Remove tabular chunked, binary and large file mako
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 21106`_
+* Infer type from extension for mzml
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 21033`_
+* Add Deacon idx format
+  (thanks to `@SantaMcCloud <https://github.com/SantaMcCloud>`__).
+  `Pull Request 21632`_
+* Add a few datatypes from the digital humanities domain
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 21596`_
+* Add new datatypes required for VG tool
+  (thanks to `@SaimMomin12 <https://github.com/SaimMomin12>`__).
+  `Pull Request 21644`_
+* Add amnis cif flow cytometry data type
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 21829`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Selenium test case for basic tools list functionality
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 21059`_
+* remove a tool from sample that is no longer included in dist
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 21371`_
+* Remove sanitization from built-in grep tool
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 21648`_
+* Add new jupyter version
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 21531`_
+* Add missing filter_failed_collection_1.1.0.xml tool
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 21719`_
+* Fix data manager .loc file selection logic
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 21664`_
+* Add `builtin_converters` section to integrated tool panel
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 21838`_
+
+Please see the full `release notes <https://github.com/galaxyproject/galaxy/releases/tag/v26.0.0>`__ for more details.
+The admin-facing release notes are available :doc:`here <26.0_announce>`.
+
+.. include:: 26.0_prs.rst
+
+----
+
+.. include:: _thanks.rst
