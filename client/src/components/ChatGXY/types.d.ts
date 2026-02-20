@@ -1,4 +1,46 @@
-import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
+import type { components } from "@/api";
+import type { PyodideTask } from "@/composables/usePyodideRunner";
+
+// TODO: Just use schema type when metadata is no longer { [key: string]: unknown; }
+export type AgentResponse = Omit<components["schemas"]["AgentResponse"], "metadata"> & {
+    metadata?: {
+        analysis_steps?: AnalysisStep[];
+        artifacts?: UploadedArtifact[];
+        datasets_used?: string[];
+        executed_task?: {
+            code?: string;
+            task_id: string;
+        };
+        execution?: {
+            artifacts: UploadedArtifact[];
+            success: boolean;
+            stdout: string;
+            stderr: string;
+            task_id: string;
+        };
+        error?: string;
+        files?: string[];
+        handoff_info?: {
+            source_agent: string;
+        };
+        model?: string;
+        plots?: string[];
+        pyodide_status?: "completed" | "error" | "pending" | "timeout";
+        pyodide_task?: PyodideTask;
+        pyodide_timeout_reason?: string;
+        pyodide_timeout_seconds?: number;
+        pyodide_retry_count?: number;
+        is_complete?: boolean;
+        stdout?: string;
+        stderr?: string;
+        summary?: string;
+        tool_yaml?: string;
+        total_tokens?: number;
+    };
+};
+export type ActionSuggestion = components["schemas"]["ActionSuggestion"];
+export type ActionType = components["schemas"]["ActionType"];
+export type ConfidenceLevel = components["schemas"]["ConfidenceLevel"];
 
 export interface AnalysisStep {
     type: "thought" | "action" | "observation" | "conclusion";
@@ -16,9 +58,9 @@ export interface Message {
     content: string;
     timestamp: Date;
     agentType?: string;
-    confidence?: string;
+    confidence?: ConfidenceLevel;
     feedback?: "up" | "down" | null;
-    agentResponse?: AgentResponse;
+    agentResponse?: AgentResponse | null;
     suggestions?: ActionSuggestion[];
     isSystemMessage?: boolean; // Flag for welcome/placeholder messages that shouldn't have feedback
     routingInfo?: {

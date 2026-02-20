@@ -6,14 +6,11 @@ import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 import { parse } from "yaml";
 
-import { type components, type DynamicUnprivilegedToolCreatePayload, GalaxyApi } from "@/api";
+import { type DynamicUnprivilegedToolCreatePayload, GalaxyApi } from "@/api";
+import type { ActionSuggestion, ActionType, AgentResponse } from "@/components/ChatGXY/types";
 import { useConfig } from "@/composables/config";
 import { useToast } from "@/composables/toast";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
-
-export type AgentResponse = components["schemas"]["AgentResponse"];
-export type ActionSuggestion = components["schemas"]["ActionSuggestion"];
-export type ActionType = components["schemas"]["ActionType"];
 
 export function useAgentActions() {
     const router = useRouter();
