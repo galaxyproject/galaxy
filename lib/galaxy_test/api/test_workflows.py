@@ -1597,11 +1597,7 @@ steps:
         assert subworkflow.get("source_metadata") == {"url": base64_url}
 
     def test_import_gxformat2_workflow_with_url_subworkflow(self):
-        """Test importing a gxformat2 workflow where a subworkflow is referenced via a base64:// URL.
-
-        Uses server-side conversion (client_convert=False) because the gxformat2 client-side
-        converter does not support URL references in the 'run' field.
-        """
+        """Test importing a gxformat2 workflow where a subworkflow is referenced via a base64:// URL."""
         base64_url = "base64://" + base64.b64encode(WORKFLOW_SIMPLE.strip().encode()).decode()
         outer_yaml = f"""
 class: GalaxyWorkflow
@@ -1616,7 +1612,7 @@ steps:
     in:
       input1: outer_input
 """
-        workflow_id = self._upload_yaml_workflow(outer_yaml, client_convert=False)
+        workflow_id = self._upload_yaml_workflow(outer_yaml)
         workflow = self._download_workflow(workflow_id)
         subworkflow = self._get_subworkflow_dict(workflow)
         assert subworkflow.get("source_metadata") == {"url": base64_url}
@@ -1742,7 +1738,7 @@ steps:
     in:
       input1: outer_input
 """
-        workflow_id = self._upload_yaml_workflow(outer_yaml, client_convert=False)
+        workflow_id = self._upload_yaml_workflow(outer_yaml)
         # Download as format2 with preserved links
         exported = self._download_workflow(
             workflow_id,
@@ -1751,8 +1747,8 @@ steps:
         )
         nested_step = exported["steps"]["nested_workflow"]
         assert nested_step["run"] == base64_url
-        # Re-import the exported format2 workflow as YAML string (server-side conversion)
-        reimported_id = self._upload_yaml_workflow(yaml.dump(dict(exported)), client_convert=False)
+        # Re-import the exported format2 workflow
+        reimported_id = self._upload_yaml_workflow(exported)
         reimported = self._download_workflow(reimported_id)
         subworkflow = self._get_subworkflow_dict(reimported)
         assert subworkflow.get("source_metadata") == {"url": base64_url}
