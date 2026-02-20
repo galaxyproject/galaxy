@@ -760,7 +760,6 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     @property
     def _playwright_browser(self) -> PlaywrightShedBrowser:
-        # make sure self.is_v2
         browser = self._browser
         assert isinstance(browser, PlaywrightShedBrowser)
         return browser

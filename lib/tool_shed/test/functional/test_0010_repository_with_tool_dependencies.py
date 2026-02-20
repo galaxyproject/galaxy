@@ -52,9 +52,8 @@ class TestFreebayesRepository(ShedTwillTestCase):
         )
         strings_displayed = ["Metadata may have been defined", "This file requires an entry", "tool_data_table_conf"]
         self.add_file_to_repository(repository, "freebayes/freebayes.xml", strings_displayed=strings_displayed)
-        if self.is_v2:
-            # opps... not good right?
-            self.populator.reset_metadata(repository)
+        # opps... not good right?
+        self.populator.reset_metadata(repository)
         self.display_manage_repository_page(
             repository, strings_displayed=[self.invalid_tools_labels], strings_not_displayed=["Valid tools"]
         )

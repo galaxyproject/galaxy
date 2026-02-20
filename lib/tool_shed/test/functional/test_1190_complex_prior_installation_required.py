@@ -132,12 +132,7 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         matplotlib_repository = self._get_repository_by_name_and_owner(
             matplotlib_repository_name, common.test_user_1_name
         )
-        changeset_revision = self.get_repository_tip(numpy_repository)
         self.check_repository_dependency(matplotlib_repository, depends_on_repository=numpy_repository)
-        if not self.is_v2:
-            self.display_manage_repository_page(
-                matplotlib_repository, strings_displayed=["numpy", "1.7", "package", changeset_revision]
-            )
 
     def test_0025_install_matplotlib_repository(self):
         """Install the package_matplotlib_1_2_0170 repository.

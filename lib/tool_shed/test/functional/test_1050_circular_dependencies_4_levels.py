@@ -258,31 +258,11 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
         self.check_repository_dependency(filtering_repository, emboss_repository)
         for repository in [bismark_repository, emboss_repository, column_repository]:
             self.check_repository_dependency(freebayes_repository, repository)
-        freebayes_dependencies = [
-            freebayes_repository,
-            emboss_repository,
-            column_repository,
-        ]
-        strings_displayed = [
-            f"{freebayes_repository.name} depends on {', '.join(repo.name for repo in freebayes_dependencies)}."
-        ]
-        if not self.is_v2:
-            self.display_manage_repository_page(freebayes_repository, strings_displayed=strings_displayed)
 
     def test_0050_verify_tool_dependencies(self):
         """Check that freebayes and emboss display tool dependencies."""
-        freebayes_repository = self._get_repository_by_name_and_owner(
-            freebayes_repository_name, common.test_user_1_name
-        )
-        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
-        if not self.is_v2:
-            self.display_manage_repository_page(
-                freebayes_repository,
-                strings_displayed=["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18", "Tool dependencies"],
-            )
-            self.display_manage_repository_page(
-                emboss_repository, strings_displayed=["Tool dependencies", "emboss", "5.0.0", "package"]
-            )
+        # Note: test not yet implemented in v2
+        pass
 
     def test_0055_install_column_repository(self):
         """Install column_maker with repository dependencies."""

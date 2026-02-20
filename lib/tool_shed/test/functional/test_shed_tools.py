@@ -70,7 +70,6 @@ class TestShedToolsApi(ShedApiTestCase):
         tool_response = self.api_interactor.get(url)
         tool_response.raise_for_status()
 
-    @skip_if_api_v1
     def test_tool_source(self):
         populator = self.populator
         repository = populator.setup_column_maker_repo(prefix="toolsource")

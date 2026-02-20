@@ -241,9 +241,6 @@ class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
         self.check_repository_dependency(filtering_repository, emboss_repository)
         for repository in [bismark_repository, emboss_repository, column_repository]:
             self.check_repository_dependency(freebayes_repository, repository)
-        if not self.is_v2:
-            strings_displayed = ["freebayes_0050 depends on freebayes_0050, emboss_0050, column_maker_0050."]
-            self.display_manage_repository_page(freebayes_repository, strings_displayed=strings_displayed)
 
     def test_0055_verify_repository_metadata(self):
         """Verify that resetting the metadata does not change it."""
