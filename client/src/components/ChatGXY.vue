@@ -1,60 +1,35 @@
 <script setup lang="ts">
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import {
-    faBug,
-    faChartBar,
-    faClock,
-    faGraduationCap,
-    faHistory,
-    faMagic,
-    faPaperPlane,
-    faPlus,
-    faRobot,
-    faRoute,
-    faThumbsDown,
-    faThumbsUp,
-    faTrash,
-    faUser,
-} from "@fortawesome/free-solid-svg-icons";
+import { faClock, faHistory, faMagic, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
 import { nextTick, onMounted, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type ActionSuggestion, type AgentResponse, useAgentActions } from "@/composables/agentActions";
+import { type AgentResponse, type ChatMessage, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import ActionCard from "./ChatGXY/ActionCard.vue";
+import { getAgentIcon, getAgentLabel } from "./ChatGXY/agentTypes";
+import { generateId, scrollToBottom } from "./ChatGXY/chatUtils";
+
+import ChatInput from "./ChatGXY/ChatInput.vue";
+import ChatMessageCell from "./ChatGXY/ChatMessageCell.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
-
-interface Message {
-    id: string;
-    role: "user" | "assistant";
-    content: string;
-    timestamp: Date;
-    agentType?: string;
-    confidence?: string;
-    feedback?: "up" | "down" | null;
-    agentResponse?: AgentResponse;
-    suggestions?: ActionSuggestion[];
-    isSystemMessage?: boolean; // Flag for welcome/placeholder messages that shouldn't have feedback
-}
 
 interface ChatHistoryItem {
     id: number;
     query: string;
     response: string;
     agent_type: string;
-    agent_response?: AgentResponse; // Full agent response with suggestions
+    agent_response?: AgentResponse;
     timestamp: string;
     feedback?: number | null;
 }
 
 const query = ref("");
-const messages = ref<Message[]>([]);
+const messages = ref<ChatMessage[]>([]);
 const errorMessage = ref("");
 const busy = ref(false);
 const chatContainer = ref<HTMLElement>();
@@ -68,37 +43,9 @@ const hasLoadedInitialChat = ref(false);
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 const { processingAction, handleAction } = useAgentActions();
 
-interface AgentType {
-    value: string;
-    label: string;
-    icon: IconDefinition;
-    description: string;
-}
-
-const agentTypes: AgentType[] = [
-    { value: "auto", label: "Auto (Router)", icon: faMagic, description: "Intelligent routing" },
-    { value: "router", label: "Router", icon: faRoute, description: "Query router" },
-    { value: "error_analysis", label: "Error Analysis", icon: faBug, description: "Debug tool errors" },
-    { value: "custom_tool", label: "Custom Tool", icon: faPlus, description: "Create custom tools" },
-    { value: "dataset_analyzer", label: "Dataset Analyzer", icon: faChartBar, description: "Analyze datasets" },
-    { value: "gtn_training", label: "GTN Training", icon: faGraduationCap, description: "Find tutorials" },
-];
-
-// Map agent types to their icons for quick lookup
-const agentIconMap: Record<string, IconDefinition> = {
-    auto: faMagic,
-    router: faRoute,
-    error_analysis: faBug,
-    custom_tool: faPlus,
-    dataset_analyzer: faChartBar,
-    gtn_training: faGraduationCap,
-};
-
 onMounted(async () => {
-    // Try to load the most recent chat
     await loadLatestChat();
 
-    // If no chat was loaded, show the welcome message
     if (!hasLoadedInitialChat.value) {
         messages.value.push({
             id: generateId(),
@@ -119,16 +66,12 @@ onMounted(async () => {
     }
 });
 
-function generateId() {
-    return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
 async function submitQuery() {
     if (!query.value.trim()) {
         return;
     }
 
-    const userMessage: Message = {
+    const userMessage: ChatMessage = {
         id: generateId(),
         role: "user",
         content: query.value,
@@ -140,9 +83,8 @@ async function submitQuery() {
     const currentQuery = query.value;
     query.value = "";
 
-    // Scroll to bottom after adding user message
     await nextTick();
-    scrollToBottom();
+    scrollToBottom(chatContainer.value);
 
     busy.value = true;
     errorMessage.value = "";
@@ -163,7 +105,7 @@ async function submitQuery() {
 
         if (error) {
             errorMessage.value = errorMessageAsString(error, "Failed to get response from ChatGXY.");
-            const errorMsg: Message = {
+            const errorMsg: ChatMessage = {
                 id: generateId(),
                 role: "assistant",
                 content: `❌ Error: ${errorMessage.value}`,
@@ -174,20 +116,17 @@ async function submitQuery() {
             };
             messages.value.push(errorMsg);
 
-            // Scroll to bottom after adding error message
             await nextTick();
-            scrollToBottom();
+            scrollToBottom(chatContainer.value);
         } else if (data) {
-            // Extract typed response fields
             const agentResponse = data.agent_response as AgentResponse | undefined;
             const content = data.response || "No response received";
 
-            // Get the exchange ID if returned
             if (data.exchange_id) {
                 currentChatId.value = data.exchange_id;
             }
 
-            const assistantMessage: Message = {
+            const assistantMessage: ChatMessage = {
                 id: generateId(),
                 role: "assistant",
                 content: content,
@@ -202,13 +141,12 @@ async function submitQuery() {
             };
             messages.value.push(assistantMessage);
 
-            // Scroll to bottom after adding assistant message
             await nextTick();
-            scrollToBottom();
+            scrollToBottom(chatContainer.value);
         }
     } catch (e) {
         errorMessage.value = `Unexpected error: ${e}`;
-        const errorMsg: Message = {
+        const errorMsg: ChatMessage = {
             id: generateId(),
             role: "assistant",
             content: `❌ Unexpected error occurred. Please try again.`,
@@ -219,40 +157,26 @@ async function submitQuery() {
         };
         messages.value.push(errorMsg);
 
-        // Scroll to bottom after adding error message
         await nextTick();
-        scrollToBottom();
+        scrollToBottom(chatContainer.value);
     } finally {
         busy.value = false;
         await nextTick();
-        scrollToBottom();
+        scrollToBottom(chatContainer.value);
     }
 }
 
-function scrollToBottom() {
-    if (chatContainer.value) {
-        // Use smooth scrolling and avoid focus disruption
-        chatContainer.value.scrollTo({
-            top: chatContainer.value.scrollHeight,
-            behavior: "auto", // Use 'smooth' if you want animated scrolling
-        });
-    }
-}
-
-// Scroll to bottom when busy state changes to show loading skeleton
 watch(busy, (isBusy) => {
     if (isBusy) {
-        nextTick(() => scrollToBottom());
+        nextTick(() => scrollToBottom(chatContainer.value));
     }
 });
 
 async function sendFeedback(messageId: string, value: "up" | "down") {
     const message = messages.value.find((m) => m.id === messageId);
     if (message) {
-        // Update UI immediately
         message.feedback = value;
 
-        // Only persist if we have a currentChatId (for saved chats)
         if (currentChatId.value) {
             try {
                 const feedbackValue = value === "up" ? 1 : 0;
@@ -265,40 +189,14 @@ async function sendFeedback(messageId: string, value: "up" | "down") {
 
                 if (error) {
                     console.error("Failed to save feedback:", error);
-                    // Revert on error
                     message.feedback = null;
                 }
             } catch (e) {
                 console.error("Failed to save feedback:", e);
-                // Revert on error
                 message.feedback = null;
             }
         }
     }
-}
-
-function getAgentIcon(agentType?: string): IconDefinition {
-    return agentIconMap[agentType || ""] || faRobot;
-}
-
-function getAgentLabel(agentType?: string) {
-    const agent = agentTypes.find((a) => a.value === agentType);
-    return agent?.label || agentType || "AI Assistant";
-}
-
-function formatModelName(model?: string): string {
-    if (!model) {
-        return "";
-    }
-    // Extract just the model name from full paths like "openai/gpt-4" or "anthropic/claude-3"
-    const parts = model.split("/");
-    return parts[parts.length - 1] || model;
-}
-
-function getAgentResponseOrEmpty(response?: AgentResponse): AgentResponse {
-    return (
-        response || ({ content: "", agent_type: "", confidence: "low", suggestions: [], metadata: {} } as AgentResponse)
-    );
 }
 
 async function loadChatHistory() {
@@ -330,7 +228,6 @@ async function clearHistory() {
         if (!error && data) {
             console.log("Clear history response:", data);
             chatHistory.value = [];
-            // Also clear current chat if it was from history
             if (currentChatId.value) {
                 startNewChat();
             }
@@ -345,7 +242,6 @@ async function clearHistory() {
 }
 
 async function loadPreviousChat(item: ChatHistoryItem) {
-    // Try to load the full conversation from the backend
     try {
         const { data: fullConversation } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
             params: {
@@ -356,11 +252,10 @@ async function loadPreviousChat(item: ChatHistoryItem) {
         });
 
         if (fullConversation && fullConversation.length > 0) {
-            // Clear and rebuild messages from full conversation
             messages.value = [];
 
             fullConversation.forEach((msg: any, index: number) => {
-                const message: Message = {
+                const message: ChatMessage = {
                     id: `hist-${msg.role}-${item.id}-${index}`,
                     role: msg.role as "user" | "assistant",
                     content: msg.content,
@@ -382,23 +277,20 @@ async function loadPreviousChat(item: ChatHistoryItem) {
                 messages.value.push(message);
             });
         } else {
-            // Fallback to single message if no full conversation available
             loadSingleMessageFallback(item);
         }
 
         currentChatId.value = item.id;
         showHistory.value = false;
-        nextTick(() => scrollToBottom());
+        nextTick(() => scrollToBottom(chatContainer.value));
     } catch (error) {
         console.error("Error loading full conversation:", error);
-        // Fallback to simple loading on error
         loadSingleMessageFallback(item);
     }
 }
 
 function loadSingleMessageFallback(item: ChatHistoryItem) {
-    // Fallback method for loading just the first message pair
-    const userMessage: Message = {
+    const userMessage: ChatMessage = {
         id: `hist-user-${item.id}`,
         role: "user",
         content: item.query,
@@ -406,7 +298,7 @@ function loadSingleMessageFallback(item: ChatHistoryItem) {
         feedback: null,
     };
 
-    const assistantMessage: Message = {
+    const assistantMessage: ChatMessage = {
         id: `hist-assistant-${item.id}`,
         role: "assistant",
         content: item.response,
@@ -424,7 +316,7 @@ function loadSingleMessageFallback(item: ChatHistoryItem) {
     messages.value = [userMessage, assistantMessage];
     currentChatId.value = item.id;
     showHistory.value = false;
-    nextTick(() => scrollToBottom());
+    nextTick(() => scrollToBottom(chatContainer.value));
 }
 
 async function loadLatestChat() {
@@ -446,7 +338,6 @@ async function loadLatestChat() {
 }
 
 function startNewChat() {
-    // Clear messages and reset to welcome message
     messages.value = [
         {
             id: generateId(),
@@ -531,85 +422,14 @@ function toggleHistory() {
 
             <!-- Main Chat Area -->
             <div ref="chatContainer" class="chat-messages flex-grow-1">
-                <div
+                <ChatMessageCell
                     v-for="message in messages"
                     :key="message.id"
-                    :class="['notebook-cell', message.role === 'user' ? 'query-cell' : 'response-cell']">
-                    <!-- Query cell (user input) -->
-                    <template v-if="message.role === 'user'">
-                        <div class="cell-label">
-                            <FontAwesomeIcon :icon="faUser" fixed-width />
-                            <span>Query</span>
-                        </div>
-                        <div class="cell-content">{{ message.content }}</div>
-                    </template>
-
-                    <!-- Response cell (assistant output) -->
-                    <template v-else>
-                        <div class="cell-label">
-                            <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
-                            <span>{{ getAgentLabel(message.agentType) }}</span>
-                            <span
-                                v-if="message.agentResponse?.metadata?.handoff_info"
-                                class="routing-badge"
-                                :title="'Routed by ' + message.agentResponse.metadata.handoff_info.source_agent">
-                                via Router
-                            </span>
-                        </div>
-                        <div class="cell-content">
-                            <!-- eslint-disable-next-line vue/no-v-html -->
-                            <div v-html="renderMarkdown(message.content)" />
-
-                            <!-- Action suggestions -->
-                            <ActionCard
-                                v-if="message.suggestions?.length"
-                                :suggestions="message.suggestions"
-                                :processing-action="processingAction"
-                                @handle-action="
-                                    (action) => handleAction(action, getAgentResponseOrEmpty(message.agentResponse))
-                                " />
-                        </div>
-                        <div v-if="!message.content.startsWith('❌') && !message.isSystemMessage" class="cell-footer">
-                            <div class="feedback-actions">
-                                <button
-                                    class="feedback-btn"
-                                    :disabled="message.feedback !== null"
-                                    :class="{ active: message.feedback === 'up' }"
-                                    title="Helpful"
-                                    @click="sendFeedback(message.id, 'up')">
-                                    <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
-                                </button>
-                                <button
-                                    class="feedback-btn"
-                                    :disabled="message.feedback !== null"
-                                    :class="{ active: message.feedback === 'down' }"
-                                    title="Not helpful"
-                                    @click="sendFeedback(message.id, 'down')">
-                                    <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
-                                </button>
-                                <span v-if="message.feedback" class="feedback-text">Thanks!</span>
-                            </div>
-                            <div class="response-stats">
-                                <span class="stat-item" :title="'Agent: ' + getAgentLabel(message.agentType)">
-                                    <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
-                                    {{ getAgentLabel(message.agentType) }}
-                                </span>
-                                <span
-                                    v-if="message.agentResponse?.metadata?.model"
-                                    class="stat-item"
-                                    :title="'Model: ' + message.agentResponse.metadata.model">
-                                    {{ formatModelName(message.agentResponse.metadata.model) }}
-                                </span>
-                                <span
-                                    v-if="message.agentResponse?.metadata?.total_tokens"
-                                    class="stat-item"
-                                    title="Tokens used">
-                                    {{ message.agentResponse.metadata.total_tokens }} tokens
-                                </span>
-                            </div>
-                        </div>
-                    </template>
-                </div>
+                    :message="message"
+                    :render-markdown="renderMarkdown"
+                    :processing-action="processingAction"
+                    @feedback="sendFeedback"
+                    @handle-action="handleAction" />
 
                 <!-- Loading state -->
                 <div v-if="busy" class="notebook-cell response-cell loading-cell">
@@ -627,21 +447,7 @@ function toggleHistory() {
         </div>
 
         <div class="chatgxy-footer">
-            <div class="chat-input-container">
-                <label for="chat-input" class="sr-only">Chat message</label>
-                <textarea
-                    id="chat-input"
-                    v-model="query"
-                    :disabled="busy"
-                    placeholder="Ask about tools, workflows, errors, or anything Galaxy..."
-                    rows="1"
-                    class="form-control chat-input"
-                    @keydown.enter.prevent="!$event.shiftKey && submitQuery()" />
-                <button :disabled="busy || !query.trim()" class="btn btn-primary send-button" @click="submitQuery">
-                    <FontAwesomeIcon v-if="!busy" :icon="faPaperPlane" fixed-width />
-                    <LoadingSpan v-else message="" />
-                </button>
-            </div>
+            <ChatInput v-model="query" :busy="busy" @submit="submitQuery" />
         </div>
     </div>
 </template>
@@ -684,7 +490,6 @@ function toggleHistory() {
     border-top: $border-default;
 }
 
-// Notebook-style cells
 .chat-messages {
     flex: 1;
     overflow-y: auto;
@@ -692,23 +497,10 @@ function toggleHistory() {
     background: $white;
 }
 
+// Loading skeleton cell (stays in parent since it's not a real message)
 .notebook-cell {
     margin-bottom: 1rem;
     animation: fadeIn 0.2s ease-out;
-
-    &.query-cell {
-        .cell-label {
-            color: $brand-primary;
-        }
-
-        .cell-content {
-            border-left: 3px solid $brand-primary;
-            background: rgba($brand-primary, 0.04);
-            padding: 0.75rem 1rem;
-            font-size: 0.95rem;
-            color: $text-color;
-        }
-    }
 
     &.response-cell {
         .cell-label {
@@ -741,151 +533,10 @@ function toggleHistory() {
     padding-left: 0.25rem;
 }
 
-.routing-badge {
-    font-weight: 400;
-    font-size: 0.65rem;
-    color: $text-light;
-    text-transform: none;
-    cursor: help;
-
-    &::before {
-        content: "·";
-        margin: 0 0.25rem;
-    }
-}
-
 .cell-content {
     border-radius: $border-radius-base;
     word-wrap: break-word;
     line-height: 1.6;
-
-    :deep(p:last-child) {
-        margin-bottom: 0;
-    }
-
-    :deep(p:first-child) {
-        margin-top: 0;
-    }
-
-    :deep(code) {
-        background: rgba($brand-dark, 0.08);
-        padding: 0.125rem 0.375rem;
-        border-radius: $border-radius-base;
-        font-family: $font-family-monospace;
-        font-size: 0.85em;
-    }
-
-    :deep(pre) {
-        background: $white;
-        border: $border-default;
-        padding: 0.75rem;
-        border-radius: $border-radius-base;
-        overflow-x: auto;
-        margin: 0.75rem 0;
-
-        code {
-            background: none;
-            padding: 0;
-        }
-    }
-
-    :deep(ul),
-    :deep(ol) {
-        margin-bottom: 0.75rem;
-        padding-left: 1.5rem;
-    }
-
-    :deep(li) {
-        margin-bottom: 0.25rem;
-    }
-}
-
-.cell-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 0.5rem;
-    padding-left: 0.25rem;
-}
-
-.feedback-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-.response-stats {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.7rem;
-    color: $text-light;
-
-    .stat-item {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-}
-
-.feedback-btn {
-    background: none;
-    border: none;
-    padding: 0.25rem 0.5rem;
-    color: $text-light;
-    cursor: pointer;
-    border-radius: $border-radius-base;
-    transition: all 0.15s;
-
-    &:hover:not(:disabled) {
-        color: $brand-primary;
-        background: rgba($brand-primary, 0.08);
-    }
-
-    &:disabled {
-        cursor: default;
-        opacity: 0.5;
-    }
-
-    &.active {
-        color: $brand-success;
-    }
-}
-
-.feedback-text {
-    font-size: 0.7rem;
-    color: $text-light;
-    margin-left: 0.25rem;
-}
-
-// Input area
-.chat-input-container {
-    display: flex;
-    gap: 0.5rem;
-    align-items: flex-end;
-
-    .chat-input {
-        flex: 1;
-        resize: none;
-        border-radius: $border-radius-base;
-        padding: 0.625rem 0.875rem;
-        border: $border-default;
-        font-size: 0.9rem;
-        min-height: 2.5rem;
-        max-height: 8rem;
-
-        &:focus {
-            border-color: $brand-primary;
-            box-shadow: 0 0 0 2px rgba($brand-primary, 0.1);
-            outline: none;
-        }
-    }
-
-    .send-button {
-        flex-shrink: 0;
-        border-radius: $border-radius-base;
-        padding: 0.5rem 0.875rem;
-    }
 }
 
 // History sidebar
@@ -955,7 +606,6 @@ function toggleHistory() {
     }
 }
 
-// Animations
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -965,18 +615,5 @@ function toggleHistory() {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-// Accessibility
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
 }
 </style>
