@@ -742,6 +742,16 @@ class TestActionChainsAndKeys:
         # Verify the field is cleared
         assert element.get_attribute("value") == ""
 
+    def test_fire_mousedown(self, has_driver_instance, base_url):
+        """Test firing mousedown event on an element."""
+        has_driver_instance.navigate_to(f"{base_url}/basic.html")
+        target = has_driver_instance.find_element_by_id("mousedown-target")
+        indicator = has_driver_instance.find_element_by_id("mousedown-indicator")
+        assert not indicator.is_displayed()
+        has_driver_instance.fire_mousedown(target)
+        indicator = has_driver_instance.find_element_by_id("mousedown-indicator")
+        assert indicator.is_displayed()
+
 
 class TestFrameSwitching:
     """Tests for frame switching functionality."""

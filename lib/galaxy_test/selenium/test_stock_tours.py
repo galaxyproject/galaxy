@@ -12,7 +12,6 @@ STOCK_TOURS_DIRECTORY = os.path.join(galaxy_root_path, "config", "plugins", "tou
 
 
 class TestStockToursTestCase(SeleniumTestCase):
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_core_galaxy_ui(self):
         sleep_on_steps = {
@@ -26,7 +25,6 @@ class TestStockToursTestCase(SeleniumTestCase):
             tour_callback=TourCallback(self),
         )
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_core_windows(self):
         self.run_tour(
@@ -34,7 +32,6 @@ class TestStockToursTestCase(SeleniumTestCase):
             tour_callback=TourCallback(self),
         )
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_core_history(self):
         self.run_tour(
@@ -42,7 +39,9 @@ class TestStockToursTestCase(SeleniumTestCase):
             tour_callback=TourCallback(self),
         )
 
-    @selenium_only("Not yet migrated to support Playwright backend")
+    # Timeout finding tool_panel.tool_link(tool_id=cat1) after search textinsert.
+    # Tour step 18 can't find a[href$="/?tool_id=cat1&version=latest"] in Playwright.
+    @selenium_only
     @selenium_test
     def test_core_deferred(self):
         self.run_tour(

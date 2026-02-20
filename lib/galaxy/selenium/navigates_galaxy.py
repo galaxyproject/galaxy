@@ -30,7 +30,6 @@ from typing import (
 import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions as ec
 
 if TYPE_CHECKING:
     from selenium.webdriver.remote.webdriver import WebDriver
@@ -2161,6 +2160,98 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             option_component = option_label_or_component
             option_component.wait_for_and_click()
 
+    # --- Window Manager helpers ---
+
+    def window_manager_toggle(self):
+        """Click the window manager toggle button and wait for state change."""
+        was_active = self.window_manager_is_active()
+        self.components.masthead.window_manager.wait_for_and_click()
+        self._wait_on(
+            lambda driver=None: self.window_manager_is_active() != was_active,
+            "window manager toggle state to change",
+        )
+
+    def window_manager_enable(self):
+        """Enable the window manager (if not already active)."""
+        if not self.window_manager_is_active():
+            self.window_manager_toggle()
+
+    def window_manager_disable(self):
+        """Disable the window manager (if currently active)."""
+        if self.window_manager_is_active():
+            self.window_manager_toggle()
+
+    def window_manager_is_active(self) -> bool:
+        """Check if the window manager is currently enabled via the masthead toggle class."""
+        return self.components.masthead.window_manager.has_class("toggle")
+
+    def window_manager_window_count(self) -> int:
+        """Return number of open WinBox windows."""
+        return len(self.find_elements_by_selector(".winbox"))
+
+    def window_manager_wait_for_window_count(self, expected_count: int):
+        """Wait until the expected number of .winbox elements exist."""
+
+        def check_count(driver=None):
+            count = len(self.find_elements_by_selector(".winbox"))
+            return count == expected_count
+
+        self._wait_on(check_count, f"window count to be {expected_count}")
+
+    @contextlib.contextmanager
+    def winbox_frame(self, index=0):
+        """Context manager to switch into a WinBox iframe by index.
+
+        Usage:
+            with self.winbox_frame(0):
+                self.wait_for_selector_visible(".dataset-view")
+        """
+        iframes = self.find_elements_by_selector(".winbox iframe")
+        assert len(iframes) > index, f"Expected at least {index + 1} WinBox iframes, found {len(iframes)}"
+        try:
+            self.switch_to_frame(iframes[index])
+            yield
+        finally:
+            self.switch_to_default_content()
+
+    def window_manager_get_titles(self) -> list:
+        """Return list of window titles from all open WinBox windows."""
+        elements = self.components.window_manager.title.all()
+        return [el.text for el in elements]
+
+    def window_manager_close_window(self, index=0):
+        """Close a specific WinBox window by index.
+
+        Uses JS click because the .wb-close button is obscured by WinBox's
+        .wb-n resize handle overlay.
+        """
+        close_buttons = self.components.window_manager.close_button.all()
+        assert len(close_buttons) > index, f"Expected at least {index + 1} close buttons, found {len(close_buttons)}"
+        self.execute_script_click(close_buttons[index])
+
+    def window_manager_get_focused_title(self) -> str:
+        """Return the title text of the currently focused WinBox window."""
+        return self.components.window_manager.focused_title.wait_for_text()
+
+    def window_manager_click_focus_overlay(self, index=0):
+        """Click the focus overlay of a WinBox window to switch focus.
+
+        Uses fire_mousedown to match the event the overlay actually listens for.
+        """
+        overlays = self.components.window_manager.focus_overlay.all()
+        assert len(overlays) > index, f"Expected at least {index + 1} overlays, found {len(overlays)}"
+        self.fire_mousedown(overlays[index])
+
+    def window_manager_get_iframe_src(self, index=0) -> str:
+        """Return the src attribute of a WinBox iframe by index."""
+        iframes = self.components.window_manager.iframe.all()
+        assert len(iframes) > index, f"Expected at least {index + 1} iframes, found {len(iframes)}"
+        return iframes[index].get_attribute("src") or ""
+
+    def window_manager_focused_count(self) -> int:
+        """Return the number of WinBox windows with focus class."""
+        return len(self.components.window_manager.focused.all())
+
     # avoids problematic ID and classes on markup
     def history_element(self, attribute_value, attribute_name="data-description", scope=".history-index"):
         return self.components._.by_attribute(name=attribute_name, value=attribute_value, scope=scope)
@@ -2515,24 +2606,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             self.run_tour_step(step, i, tour_callback)
 
     def tour_wait_for_clickable_element(self, selector):
-        timeout = self.wait_length(wait_type=WAIT_TYPES.JOB_COMPLETION)
-        wait = self.wait(timeout=timeout)
-        timeout_message = self._timeout_message(f"Tour CSS selector [{selector}] to become clickable")
-        element = wait.until(
-            ec.element_to_be_clickable((By.CSS_SELECTOR, selector)),
-            timeout_message,
-        )
-        return element
+        return self.wait_for_selector_clickable(selector, wait_type=WAIT_TYPES.JOB_COMPLETION)
 
     def tour_wait_for_element_present(self, selector):
-        timeout = self.wait_length(wait_type=WAIT_TYPES.JOB_COMPLETION)
-        wait = self.wait(timeout=timeout)
-        timeout_message = self._timeout_message(f"Tour CSS selector [{selector}] to become present")
-        element = wait.until(
-            ec.presence_of_element_located((By.CSS_SELECTOR, selector)),
-            timeout_message,
-        )
-        return element
+        return self.wait_for_selector(selector, wait_type=WAIT_TYPES.JOB_COMPLETION)
 
     def _clear_tooltip(self, tooltip_component):
         last_timeout: Optional[SeleniumTimeoutException] = None

@@ -354,6 +354,11 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         ...
 
     @abstractmethod
+    def fire_mousedown(self, element: WebElementProtocol) -> None:
+        """Dispatch a mousedown event on element."""
+        ...
+
+    @abstractmethod
     def action_chains(self):
         """Get action chains object for complex interactions."""
         ...
