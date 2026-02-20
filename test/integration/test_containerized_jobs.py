@@ -3,13 +3,19 @@
 import json
 import os
 import unittest
-from typing import (
-    Any,
-)
+from typing import Any
 
 from galaxy.util.commands import which
-from galaxy_test.base.populators import DatasetPopulator
-from galaxy_test.driver.integration_util import IntegrationTestCase
+from galaxy_test.base.populators import (
+    CredentialsPopulator,
+    DatasetPopulator,
+    skip_without_tool,
+    WorkflowPopulator,
+)
+from galaxy_test.driver.integration_util import (
+    ConfiguresDatabaseVault,
+    IntegrationTestCase,
+)
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -22,6 +28,10 @@ SINGULARITY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "singularity_job_co
 
 EXTENDED_TIMEOUT = 120
 
+CREDENTIALS_TEST_TOOL = "secret_tool"
+CONTAINER_TEST_VARIABLES = [{"name": "server", "value": "http://test-server:8080"}]
+CONTAINER_TEST_SECRETS = [{"name": "username", "value": "test_user"}, {"name": "password", "value": "test_pass"}]
+
 
 class MulledJobTestCases:
     """
@@ -29,6 +39,7 @@ class MulledJobTestCases:
     """
 
     dataset_populator: DatasetPopulator
+    credentials_populator: CredentialsPopulator
     container_type: str
 
     def _run_and_get_contents(self, tool_id: str, history_id: str):
@@ -98,7 +109,7 @@ def skip_if_container_type_unavailable(cls) -> None:
         raise unittest.SkipTest(f"Executable '{cls.container_type}' not found on PATH")
 
 
-class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
+class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases, ConfiguresDatabaseVault):
     dataset_populator: DatasetPopulator
     jobs_directory: str
     job_config_file = DOCKERIZED_JOB_CONFIG_FILE
@@ -112,6 +123,7 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
         disable_dependency_resolution(config)
+        cls._configure_database_vault(config)
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -120,6 +132,14 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
 
     def setUp(self) -> None:
         super().setUp()
+        self.credentials_populator = CredentialsPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+
+    def _setup_credentials_context(self, **kwargs):
+        kwargs.setdefault("tool_id", CREDENTIALS_TEST_TOOL)
+        kwargs.setdefault("variables", CONTAINER_TEST_VARIABLES)
+        kwargs.setdefault("secrets", CONTAINER_TEST_SECRETS)
+        return self.credentials_populator.setup_credentials_context(**kwargs)
 
     def test_container_job_environment(self) -> None:
         """
@@ -223,6 +243,75 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         may need to be overwritten in derived classes.
         """
         assert identifier == f"quay.io/local/{expected_hash}"
+
+    @skip_without_tool("secret_tool")
+    def test_credentials_passed_to_container(self) -> None:
+        """
+        Test that tool credentials are passed as environment variables into containerized environments.
+        """
+        credentials_context = self._setup_credentials_context()
+
+        # Run the containerized tool that outputs credential environment variables
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self.dataset_populator.run_tool(
+                "secret_tool", {}, history_id, credentials_context=credentials_context
+            )
+            job_id = run_response["jobs"][0]["id"]
+            self.dataset_populator.wait_for_job(job_id=job_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
+
+            # Get the output - should contain the credential environment variables
+            output = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=run_response["outputs"][0]["id"]
+            )
+
+            # Verify that credential environment variables were available in the container
+            lines = output.strip().split("\n")
+            assert len(lines) == 3, f"Expected 3 lines in output, got {len(lines)}: {lines}"
+            assert lines[0] == "http://test-server:8080", f"Expected server URL in first line, got: {lines[0]}"
+            assert lines[1] == "test_user", f"Expected username in second line, got: {lines[1]}"
+            assert lines[2] == "test_pass", f"Expected password in third line, got: {lines[2]}"
+
+    @skip_without_tool("secret_tool")
+    def test_credentials_passed_to_container_in_workflow(self) -> None:
+        """
+        Test that tool credentials are passed into containerized workflow steps.
+
+        This is a regression test for issue #21715: when a tool using credentials
+        is run as a workflow step, the credentials are silently dropped because
+        ToolModule.execute() does not forward credentials_context.
+        """
+        self._setup_credentials_context()
+
+        workflow_yaml = """
+class: GalaxyWorkflow
+steps:
+  secret_step:
+    tool_id: secret_tool
+"""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(workflow_yaml)
+
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.invoke_workflow_and_wait(
+                workflow_id,
+                history_id=history_id,
+                assert_ok=True,
+            )
+
+            # Get the single output dataset from the history
+            history_contents = self.dataset_populator.get_history_contents(history_id)
+            datasets = [item for item in history_contents if item["history_content_type"] == "dataset"]
+            assert len(datasets) == 1, f"Expected 1 output dataset, got {len(datasets)}"
+            output = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=datasets[0]["id"], timeout=EXTENDED_TIMEOUT
+            )
+
+            # Verify that credential environment variables were available in the container.
+            # This will fail because credentials are not forwarded through workflow execution.
+            lines = output.strip().split("\n")
+            assert len(lines) == 3, f"Expected 3 lines in output, got {len(lines)}: {lines}"
+            assert lines[0] == "http://test-server:8080", f"Expected server URL in first line, got: {lines[0]}"
+            assert lines[1] == "test_user", f"Expected username in second line, got: {lines[1]}"
+            assert lines[2] == "test_pass", f"Expected password in third line, got: {lines[2]}"
 
 
 class TestMappingContainerResolver(IntegrationTestCase):

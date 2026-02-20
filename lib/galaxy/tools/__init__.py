@@ -1482,6 +1482,17 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.javascript_requirements = javasscript_requirements
         self.credentials = credentials
 
+        # Add credential inject_as_env names to docker_env_pass_through
+        # so they are passed into containerized environments (Docker -e, Singularity SINGULARITYENV_)
+        if self.credentials:
+            if not self.docker_env_pass_through:
+                self.docker_env_pass_through = []
+            for credential in self.credentials:
+                for secret in credential.secrets:
+                    self.docker_env_pass_through.append(secret.inject_as_env)
+                for variable in credential.variables:
+                    self.docker_env_pass_through.append(variable.inject_as_env)
+
         required_files = tool_source.parse_required_files()
         if required_files is None:
             old_id = self.old_id

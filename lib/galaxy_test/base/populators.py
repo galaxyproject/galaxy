@@ -1199,6 +1199,8 @@ class BaseDatasetPopulator(BasePopulator):
                 kwds["__files"][key] = value
                 del inputs[key]
 
+        if "credentials_context" in kwds and not isinstance(kwds["credentials_context"], str):
+            kwds["credentials_context"] = json.dumps(kwds["credentials_context"])
         return dict(tool_id=tool_id, inputs=json.dumps(inputs), history_id=history_id, **kwds)
 
     def build_tool_state(self, tool_id: str, history_id: str):
@@ -2029,6 +2031,204 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
             require_new=require_new, cleanup_callback=cleanup_callback
         ) as history_id:
             yield history_id
+
+
+class BaseCredentialsPopulator(BasePopulator):
+    """Abstract base class for credential operations in Galaxy tests."""
+
+    DEFAULT_SOURCE_TYPE = "tool"
+    DEFAULT_SOURCE_VERSION = "test"
+    DEFAULT_SERVICE_NAME = "service1"
+    DEFAULT_SERVICE_VERSION = "v1"
+
+    def build_credentials_payload(
+        self,
+        tool_id: str,
+        variables: list,
+        secrets: list,
+        source_type: str = DEFAULT_SOURCE_TYPE,
+        source_version: str = DEFAULT_SOURCE_VERSION,
+        service_name: str = DEFAULT_SERVICE_NAME,
+        service_version: str = DEFAULT_SERVICE_VERSION,
+        group_name: Optional[str] = None,
+    ) -> dict:
+        """Build and return a credentials payload dict without posting it."""
+        if group_name is None:
+            group_name = random_name()
+        return {
+            "source_type": source_type,
+            "source_id": tool_id,
+            "source_version": source_version,
+            "service_credential": {
+                "name": service_name,
+                "version": service_version,
+                "group": {
+                    "name": group_name,
+                    "variables": [dict(v) for v in variables],
+                    "secrets": [dict(s) for s in secrets],
+                },
+            },
+        }
+
+    def post_credentials(self, payload: dict, expected_status: int = 200, anon: bool = False) -> dict:
+        """Post credentials payload, assert expected status, and return the response JSON."""
+        response = self._post("/api/users/current/credentials", data=payload, json=True, anon=anon)
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response.json()
+
+    def create_credentials(
+        self,
+        tool_id: str,
+        variables: list,
+        secrets: list,
+        expected_status: int = 200,
+        anon: bool = False,
+        **kwargs,
+    ) -> dict:
+        """Build and post credentials in one step. Returns response JSON."""
+        payload = self.build_credentials_payload(tool_id=tool_id, variables=variables, secrets=secrets, **kwargs)
+        return self.post_credentials(payload, expected_status=expected_status, anon=anon)
+
+    def list_credentials(
+        self,
+        source_type: Optional[str] = None,
+        source_id: Optional[str] = None,
+        include_definition: bool = False,
+        expected_status: int = 200,
+    ) -> list:
+        """Return credentials for the current user, optionally filtered by source or definition."""
+        params = []
+        if source_type is not None:
+            params.append(f"source_type={source_type}")
+        if source_id is not None:
+            params.append(f"source_id={source_id}")
+        if include_definition:
+            params.append("include_definition=true")
+        url = "/api/users/current/credentials"
+        if params:
+            url += "?" + "&".join(params)
+        response = self._get(url)
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response.json()
+
+    def get_credentials(self, source_type: str, source_id: str) -> list:
+        """Return credentials list for the given source."""
+        return self.list_credentials(source_type=source_type, source_id=source_id)
+
+    def update_credentials_group(
+        self, user_credentials_id: str, group_id: str, payload: dict, expected_status: int = 200
+    ) -> dict:
+        """PUT /api/users/current/credentials/{id}/groups/{gid} and return response JSON."""
+        response = self._put(
+            f"/api/users/current/credentials/{user_credentials_id}/groups/{group_id}", data=payload, json=True
+        )
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response.json()
+
+    def select_current_group(
+        self,
+        source_type: str,
+        source_id: str,
+        source_version: str,
+        user_credentials_id: str,
+        current_group_id: Optional[str],
+        expected_status: int = 204,
+    ) -> None:
+        """PUT /api/users/current/credentials to select (or unset) the current group."""
+        payload = {
+            "source_type": source_type,
+            "source_id": source_id,
+            "source_version": source_version,
+            "service_credentials": [{"user_credentials_id": user_credentials_id, "current_group_id": current_group_id}],
+        }
+        response = self._put("/api/users/current/credentials", data=payload, json=True)
+        api_asserts.assert_status_code_is(response, expected_status)
+
+    def delete_service_credentials(self, user_credentials_id: str, expected_status: int = 204) -> None:
+        """DELETE /api/users/current/credentials/{id}."""
+        response = self._delete(f"/api/users/current/credentials/{user_credentials_id}")
+        api_asserts.assert_status_code_is(response, expected_status)
+
+    def delete_credentials_group(self, user_credentials_id: str, group_id: str, expected_status: int = 204) -> None:
+        """DELETE /api/users/current/credentials/{id}/groups/{gid}."""
+        response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/groups/{group_id}")
+        api_asserts.assert_status_code_is(response, expected_status)
+
+    def setup_credentials_context(
+        self,
+        tool_id: str,
+        variables: list,
+        secrets: list,
+        service_name: str = DEFAULT_SERVICE_NAME,
+        service_version: str = DEFAULT_SERVICE_VERSION,
+        group_name: str = "default",
+        source_version: str = DEFAULT_SOURCE_VERSION,
+    ) -> list:
+        """Create credentials and return a ready-to-use credentials_context list for tool execution.
+
+        Idempotent: if the service credentials and group already exist (e.g. from a prior test
+        in the same server session), reuses them instead of failing with a 409 conflict.
+        Also selects the group as the current group so server-side resolution
+        (e.g. during workflow execution) can find it via current_group_id.
+        """
+        # Check whether credentials already exist for this service.
+        existing = self.get_credentials("tool", tool_id)
+        user_cred_entry = next(
+            (c for c in existing if c.get("name") == service_name and c.get("version") == service_version),
+            None,
+        )
+        if user_cred_entry:
+            user_credentials_id = user_cred_entry["id"]
+            created_group = next(
+                (g for g in user_cred_entry.get("groups", []) if g["name"] == group_name),
+                None,
+            )
+            if created_group is None:
+                # User credentials exist but this group doesn't — create only the group.
+                created_group = self.create_credentials(
+                    tool_id=tool_id,
+                    variables=variables,
+                    secrets=secrets,
+                    service_name=service_name,
+                    service_version=service_version,
+                    group_name=group_name,
+                    source_version=source_version,
+                )
+        else:
+            created_group = self.create_credentials(
+                tool_id=tool_id,
+                variables=variables,
+                secrets=secrets,
+                service_name=service_name,
+                service_version=service_version,
+                group_name=group_name,
+                source_version=source_version,
+            )
+            credentials_list = self.get_credentials("tool", tool_id)
+            user_credentials_id = credentials_list[0]["id"]
+        self.select_current_group(
+            source_type="tool",
+            source_id=tool_id,
+            source_version=source_version,
+            user_credentials_id=user_credentials_id,
+            current_group_id=created_group["id"],
+        )
+        return [
+            {
+                "user_credentials_id": user_credentials_id,
+                "name": service_name,
+                "version": service_version,
+                "selected_group": {
+                    "id": created_group["id"],
+                    "name": created_group["name"],
+                },
+            }
+        ]
+
+
+class CredentialsPopulator(GalaxyInteractorHttpMixin, BaseCredentialsPopulator):
+    def __init__(self, galaxy_interactor: ApiTestInteractor) -> None:
+        self.galaxy_interactor = galaxy_interactor
 
 
 # Things gxformat2 knows how to upload as workflows
