@@ -65,6 +65,17 @@ export const ANY_COLLECTION_TYPE_DESCRIPTION: CollectionTypeDescriptor = {
     },
 };
 
+/**
+ * Normalize collection type for comparison purposes.
+ * sample_sheet behaves like list for mapping/matching.
+ */
+function normalizeCollectionType(collectionType: string): string {
+    if (collectionType.startsWith("sample_sheet")) {
+        return "list" + collectionType.slice("sample_sheet".length);
+    }
+    return collectionType;
+}
+
 export class CollectionTypeDescription implements CollectionTypeDescriptor {
     collectionType: string;
     isCollection: true;
@@ -92,39 +103,43 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         if (other === ANY_COLLECTION_TYPE_DESCRIPTION) {
             return true;
         }
-        if (otherCollectionType === "paired" && this.collectionType == "paired_or_unpaired") {
+        const normalizedThis = normalizeCollectionType(this.collectionType);
+        const normalizedOther = otherCollectionType ? normalizeCollectionType(otherCollectionType) : null;
+        if (normalizedOther === "paired" && normalizedThis == "paired_or_unpaired") {
             return true;
         }
-        if (this.collectionType.endsWith(":paired_or_unpaired")) {
-            const asPlainList = this.collectionType.slice(0, -":paired_or_unpaired".length);
-            if (otherCollectionType === asPlainList) {
+        if (normalizedThis.endsWith(":paired_or_unpaired")) {
+            const asPlainList = normalizedThis.slice(0, -":paired_or_unpaired".length);
+            if (normalizedOther === asPlainList) {
                 return true;
             }
             const asPairedList = `${asPlainList}:paired`;
-            if (otherCollectionType === asPairedList) {
+            if (normalizedOther === asPairedList) {
                 return true;
             }
         }
-        return otherCollectionType == this.collectionType;
+        return normalizedOther == normalizedThis;
     }
     canMapOver(other: CollectionTypeDescriptor) {
         if (!other.collectionType || other.collectionType === "any") {
             return false;
         }
+        const normalizedThis = normalizeCollectionType(this.collectionType);
+        const normalizedOther = normalizeCollectionType(other.collectionType);
         if (this.rank <= other.rank) {
-            if (other.collectionType == "paired_or_unpaired") {
+            if (normalizedOther == "paired_or_unpaired") {
                 // this can be thought of as a subcollection of anything except a pair
                 // since it would match a pair exactly
-                return !this.collectionType.endsWith("paired");
+                return !normalizedThis.endsWith("paired");
             }
-            if (other.collectionType.endsWith(":paired_or_unpaired")) {
-                return !this.collectionType.endsWith(":paired");
+            if (normalizedOther.endsWith(":paired_or_unpaired")) {
+                return !normalizedThis.endsWith(":paired");
             }
             // Cannot map over self...
             return false;
         }
-        const requiredSuffix = other.collectionType;
-        const directMatch = this._endsWith(this.collectionType, `:${requiredSuffix}`);
+        const requiredSuffix = normalizedOther;
+        const directMatch = this._endsWith(normalizedThis, `:${requiredSuffix}`);
         if (directMatch) {
             return true;
         }
@@ -135,10 +150,10 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         } else if (requiredSuffix.endsWith(":paired_or_unpaired")) {
             const higherRanksRequired = requiredSuffix.substring(0, requiredSuffix.lastIndexOf(":"));
             let higherRanks: string;
-            if (this.collectionType.endsWith(":paired")) {
-                higherRanks = this.collectionType.substring(0, this.collectionType.lastIndexOf(":"));
+            if (normalizedThis.endsWith(":paired")) {
+                higherRanks = normalizedThis.substring(0, normalizedThis.lastIndexOf(":"));
             } else {
-                higherRanks = this.collectionType;
+                higherRanks = normalizedThis;
             }
             return this._endsWith(higherRanks, higherRanksRequired);
         }
@@ -148,10 +163,12 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         const thisCollectionType = this.collectionType;
         if (other.collectionType && this.canMapOver(other)) {
             const otherCollectionType = other.collectionType;
+            const normalizedThis = normalizeCollectionType(thisCollectionType);
+            const normalizedOther = normalizeCollectionType(otherCollectionType);
             // needs to be extended to include ending in :paired_or_unpaired.
-            if (otherCollectionType.endsWith("paired_or_unpaired")) {
-                if (otherCollectionType == "paired_or_unpaired") {
-                    if (thisCollectionType.endsWith("list")) {
+            if (normalizedOther.endsWith("paired_or_unpaired")) {
+                if (normalizedOther == "paired_or_unpaired") {
+                    if (normalizedThis.endsWith("list")) {
                         // the elements of the inner most list are consumed by the
                         // paired_or_unpaired input.
                         return new CollectionTypeDescription(thisCollectionType);
@@ -159,7 +176,7 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
                     return new CollectionTypeDescription(
                         thisCollectionType.substring(0, thisCollectionType.lastIndexOf(":")),
                     );
-                } else if (thisCollectionType.endsWith(":paired") || thisCollectionType.endsWith(":list")) {
+                } else if (normalizedThis.endsWith(":paired") || normalizedThis.endsWith(":list")) {
                     // otherCollectionType endswith :paired_or_unpaired
                     let currentCollectionType = thisCollectionType;
                     let currentOther = otherCollectionType;
@@ -172,7 +189,7 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
                     }
                     // and strip the last rank off for the remaining currentOther if
                     // the paired_or_unpaired consumed the inner paired collection
-                    if (thisCollectionType.endsWith(":paired")) {
+                    if (normalizedThis.endsWith(":paired")) {
                         currentCollectionType = currentCollectionType.substring(
                             0,
                             currentCollectionType.lastIndexOf(":"),

@@ -8,15 +8,66 @@ import {
     faNewspaper,
     faProjectDiagram,
     faSitemap,
+    faStar,
     faUndo,
     type IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { orderBy } from "lodash";
 
-import type { FilterSettings as ToolFilters, Tool, ToolSection, ToolSectionLabel } from "@/stores/toolStore";
+import { isTool, isToolSection } from "@/api/tools";
+import type {
+    FilterSettings as ToolFilters,
+    Tool,
+    ToolPanelItem,
+    ToolSection,
+    ToolSectionLabel,
+} from "@/stores/toolStore";
 import levenshteinDistance from "@/utils/levenshtein";
 
 export const FAVORITES_KEYS = ["#favs", "#favorites", "#favourites"];
+
+/** Build a ToolSection object */
+export function buildToolSection(id: string, name: string, tools: string[]): ToolSection {
+    return {
+        model_class: "ToolSection",
+        id,
+        name,
+        tools,
+    };
+}
+
+/** Build a ToolSectionLabel object */
+export function buildToolLabel(id: string, text: string): ToolSectionLabel {
+    return {
+        model_class: "ToolSectionLabel",
+        id,
+        text,
+    };
+}
+
+/** Build an array of [toolId, tool] entries from tool IDs and tools by ID map */
+export function buildToolEntries(toolIds: string[], toolsById: Record<string, Tool>): Array<[string, Tool]> {
+    return toolIds.map((id) => [id, toolsById[id]] as [string, Tool]).filter(([, tool]) => tool !== undefined);
+}
+
+/** Filter panel to only include tools matching the provided tool IDs */
+export function filterPanelByToolIds(
+    panel: Record<string, ToolPanelItem>,
+    toolIds: Set<string>,
+): Record<string, Tool | ToolSection> {
+    const filtered: Record<string, Tool | ToolSection> = {};
+    for (const [key, item] of Object.entries(panel)) {
+        if ("tools" in item && item?.tools) {
+            const tools = item.tools.filter((toolId) => typeof toolId === "string" && toolIds.has(toolId));
+            if (tools.length > 0) {
+                filtered[key] = { ...item, tools };
+            }
+        } else if (isTool(item) && toolIds.has(item.id)) {
+            filtered[key] = item;
+        }
+    }
+    return filtered;
+}
 
 const FILTER_KEYS = {
     id: ["id", "tool_id"],
@@ -26,13 +77,13 @@ const FILTER_KEYS = {
 const STRING_REPLACEMENTS: string[] = [" ", "-", "\\(", "\\)", "'", ":", `"`];
 const MINIMUM_DL_LENGTH = 5; // for Demerau-Levenshtein distance
 const MINIMUM_WORD_MATCH = 2; // for word match
-const UNSECTIONED_SECTION = {
+export const UNSECTIONED_SECTION: ToolSection = {
     // to return a section for unsectioned tools
     model_class: "ToolSection",
     id: "unsectioned",
     name: "Unsectioned Tools",
     description: "Tools that don't appear under any section in the unsearched panel",
-};
+} as const;
 
 export interface SearchCommonKeys {
     [key: string]: number | undefined;
@@ -69,6 +120,7 @@ const TOOL_SECTION_SEARCH_KEYS: SearchCommonKeys = { exact: 4, startsWith: 3, na
 /** Returns icon for tool panel `view_type` */
 export const types_to_icons = {
     default: faUndo,
+    favorites: faStar,
     generic: faFilter,
     ontology: faSitemap,
     activity: faProjectDiagram,
@@ -164,13 +216,16 @@ export function filterTools(toolsById: Record<string, Tool>, results: string[]) 
     return filteredTools;
 }
 
-/** Returns a `toolsById` object containing tools that meet required conditions
- * based on params.
- * @param toolsById - object of tools, keyed by id
- * @param isWorkflowPanel - whether or not the ToolPanel is in Workflow Editor
- * @param excludedSectionIds - ids for sections whose tools will be excluded
+/** Returns a `toolsById` object containing tools that meet required conditions such as:
+ * - Not `hidden`
+ * - Not `disabled`
+ * - If in workflow editor panel, only tools that are `is_workflow_compatible`
+ * - Not in an excluded section (if `excludedSectionIds` provided)
+ * @param toolsById object of tools, keyed by id
+ * @param isWorkflowPanel whether or not the ToolPanel is in Workflow Editor
+ * @param excludedSectionIds ids for sections whose tools will be excluded
  */
-export function getValidToolsInCurrentView(
+export function getVisibleTools(
     toolsById: Record<string, Tool>,
     isWorkflowPanel = false,
     excludedSectionIds: string[] = [],
@@ -195,27 +250,28 @@ export function getValidToolsInCurrentView(
 
 /** Looks in each section of `currentPanel` and filters `section.tools` on `validToolIdsInCurrentView` */
 export function getValidToolsInEachSection(
-    validToolIdsInCurrentView: string[],
-    currentPanel: Record<string, Tool | ToolSection>,
-) {
-    // use a set for fast membership lookup
-    const idSet = new Set(validToolIdsInCurrentView);
+    validToolIdsInCurrentView: Set<string>,
+    currentPanel: Record<string, ToolPanelItem>,
+): Array<[string, ToolPanelItem]> {
     return Object.entries(currentPanel).map(([id, section]) => {
-        const validatedSection = { ...section } as ToolSection;
-        // assign sectionTools to avoid repeated getter access
-        const sectionTools = validatedSection.tools;
-        if (sectionTools && Array.isArray(sectionTools)) {
-            // filter on valid tools and panel labels in this section
-            validatedSection.tools = sectionTools.filter((toolId) => {
-                if (typeof toolId === "string" && idSet.has(toolId)) {
-                    return true;
-                } else if (typeof toolId !== "string") {
-                    // is a special case where there is a label within a section
-                    return true;
-                }
-            });
+        if (isToolSection(section)) {
+            const validatedSection = { ...section };
+            // assign sectionTools to avoid repeated getter access
+            const sectionTools = validatedSection.tools;
+            if (sectionTools && Array.isArray(sectionTools)) {
+                // filter on valid tools and panel labels in this section
+                validatedSection.tools = sectionTools.filter((toolId) => {
+                    if (typeof toolId === "string" && validToolIdsInCurrentView.has(toolId)) {
+                        return true;
+                    } else if (typeof toolId !== "string") {
+                        // is a special case where there is a label within a section
+                        return true;
+                    }
+                });
+            }
+            return [id, validatedSection];
         }
-        return [id, validatedSection];
+        return [id, section];
     });
 }
 
@@ -226,20 +282,18 @@ export function getValidToolsInEachSection(
  * @returns a `currentPanel` object containing sections/tools/labels that meet required conditions
  */
 export function getValidPanelItems(
-    items: (string | ToolSection)[][],
-    validToolIdsInCurrentView: string[],
+    items: Array<[string, ToolPanelItem]>,
+    validToolIdsInCurrentView: Set<string>,
     excludedSectionIds: string[] = [],
 ) {
     const validEntries = items.filter(([id, item]) => {
-        id = id as string;
-        item = item as Tool | ToolSection;
-        if (isToolObject(item as Tool) && validToolIdsInCurrentView.includes(id)) {
+        if (isTool(item) && validToolIdsInCurrentView.has(id)) {
             // is a `Tool` and is in `localToolsById`
             return true;
-        } else if (item.tools === undefined) {
+        } else if (!isToolSection(item)) {
             // is neither a `Tool` nor a `ToolSection`, maybe a `ToolSectionLabel`
             return true;
-        } else if (item.tools && item.tools.length > 0 && !excludedSectionIds.includes(id)) {
+        } else if ("tools" in item && item.tools?.length && !excludedSectionIds.includes(id)) {
             // is a `ToolSection` with tools; is not an excluded section
             return true;
         } else {
@@ -267,7 +321,7 @@ export function getValidPanelItems(
 export function searchTools(
     tools: Tool[],
     query: string,
-    currentPanel: Record<string, Tool | ToolSection>,
+    currentPanel: Record<string, ToolPanelItem>,
 ): {
     results: string[];
     resultPanel: Record<string, Tool | ToolSection>;
@@ -419,6 +473,28 @@ export function searchObjectsByKeys<T extends { id: string }>(
     };
 }
 
+function getOrCreateSection(
+    acc: Record<string, Tool | ToolSection>,
+    sectionId: string,
+    sectionName: string,
+): ToolSection {
+    return acc[sectionId] && isToolSection(acc[sectionId])
+        ? (acc[sectionId] as ToolSection)
+        : buildToolSection(sectionId, sectionName, []);
+}
+
+function addToolToSection(
+    acc: Record<string, Tool | ToolSection>,
+    sectionId: string,
+    sectionName: string,
+    toolId: string,
+): boolean {
+    const section = getOrCreateSection(acc, sectionId, sectionName);
+    section.tools?.push(toolId);
+    acc[sectionId] = section;
+    return true;
+}
+
 /**
  * Orders the matchedTools by order of keys that are being searched, and creates a resultPanel
  * @param matchedTools containing { id: tool id, order: order }
@@ -427,50 +503,34 @@ export function searchObjectsByKeys<T extends { id: string }>(
  * - idResults: array of tool ids that match the query
  * - resultPanel: a ToolPanel with only the results
  */
-export function createSortedResultPanel(matchedTools: SearchMatch[], currentPanel: Record<string, Tool | ToolSection>) {
+export function createSortedResultPanel(matchedTools: SearchMatch[], currentPanel: Record<string, ToolPanelItem>) {
     const idResults: string[] = [];
+
     // creating a sectioned results object ({section_id: [tool ids], ...}), keeping
     // track unique ids of each tool, and also sorting by indexed order of keys
     const resultPanel = orderBy(matchedTools, ["order"], ["desc"]).reduce(
         (acc: Record<string, Tool | ToolSection>, match: SearchMatch) => {
             // we need to search all sections in panel for this tool id
-            const sections = Object.keys(currentPanel);
-            for (const section of sections) {
+            const panelItems = Object.keys(currentPanel);
+            for (const itemId of panelItems) {
+                const existingPanelItem = currentPanel[itemId];
+                if (!existingPanelItem) {
+                    continue;
+                }
+
                 let toolAdded = false;
-                const existingPanelItem = section ? currentPanel[section] : undefined;
-                if (existingPanelItem && section) {
-                    if (
-                        (existingPanelItem as ToolSection).tools &&
-                        (existingPanelItem as ToolSection).tools?.includes(match.id)
-                    ) {
-                        // it has tools so is a section, and it has the tool we're looking for
 
-                        // if we haven't seen this section yet, create it in the resultPanel
-                        let existingSection = acc[section] as ToolSection;
-                        if (!existingSection) {
-                            existingSection = { ...existingPanelItem };
-                            existingSection.tools = [];
-                        }
-                        existingSection.tools?.push(match.id);
-                        acc[section] = existingSection;
-                        toolAdded = true;
-                    } else if (isToolObject(existingPanelItem as Tool) && existingPanelItem.id === match.id) {
-                        // it is a tool, and it is the tool we're looking for
+                if ("tools" in existingPanelItem && existingPanelItem.tools?.includes(match.id)) {
+                    // it has tools so is a section, and it has the tool we're looking for
+                    toolAdded = addToolToSection(acc, itemId, existingPanelItem.name, match.id);
+                } else if (isTool(existingPanelItem) && existingPanelItem.id === match.id) {
+                    // it is a tool, and it is the tool we're looking for
+                    // put it in the "Unsectioned Tools" section
+                    toolAdded = addToolToSection(acc, UNSECTIONED_SECTION.id, UNSECTIONED_SECTION.name, match.id);
+                }
 
-                        // put in it the "Unsectioned Tools" section (if it doesn't exist, create it)
-                        const unsectionedId = UNSECTIONED_SECTION.id;
-                        let unsectionedSection = acc[unsectionedId] as ToolSection;
-                        if (!unsectionedSection) {
-                            unsectionedSection = { ...UNSECTIONED_SECTION };
-                            unsectionedSection.tools = [];
-                        }
-                        unsectionedSection.tools?.push(match.id);
-                        acc[unsectionedId] = unsectionedSection;
-                        toolAdded = true;
-                    }
-                    if (toolAdded && !idResults.includes(match.id)) {
-                        idResults.push(match.id);
-                    }
+                if (toolAdded && !idResults.includes(match.id)) {
+                    idResults.push(match.id);
                 }
             }
             return acc;
@@ -515,21 +575,6 @@ function closestSubstring(query: string, actualStr: string) {
         }
     }
     return null;
-}
-
-export function isToolObject(tool: Tool | ToolSection | ToolSectionLabel) {
-    // toolbox overhaul with typing will simplify this dramatically...
-    // Right now, our shorthand is that tools have no 'text', and don't match
-    // the model_class of the section/label.
-    if (
-        !(tool as ToolSectionLabel).text &&
-        tool.model_class !== "ToolSectionLabel" &&
-        tool.model_class !== "ToolSection" &&
-        (tool as ToolSection).tools === undefined
-    ) {
-        return true;
-    }
-    return false;
 }
 
 // given array and a substring, get the closest matching term for substring

@@ -570,6 +570,11 @@ class CreatedWorkflow(NamedTuple):
     missing_tools: MissingToolsT
 
 
+class RefactorRequest(RefactorActions):
+    style: str = "export"
+    version: Optional[int] = None
+
+
 class WorkflowSerializer(sharable.SharableModelSerializer):
     """
     Interface/service object for serializing stored workflows into dictionaries.
@@ -2024,9 +2029,13 @@ class WorkflowContentsManager(UsesAnnotations):
             ]:
                 step.label = module.label = default_label
 
-    def do_refactor(self, trans, stored_workflow, refactor_request):
-        """Apply supplied actions to stored_workflow.latest_workflow to build a new version."""
-        workflow = stored_workflow.latest_workflow
+    def do_refactor(
+        self, trans: ProvidesUserContext, stored_workflow: StoredWorkflow, refactor_request: RefactorRequest
+    ):
+        """Apply supplied actions to either the latest version of the workflow or a specific version to build a new version."""
+        # Get the workflow version to refactor (latest or specific version)
+        workflow = stored_workflow.get_internal_version(refactor_request.version)
+
         as_dict = self._workflow_to_dict_export(
             trans, stored_workflow, workflow=workflow, internal=True, allow_upgrade=True
         )
@@ -2054,7 +2063,7 @@ class WorkflowContentsManager(UsesAnnotations):
         #   we send back anyway
         return refactored_workflow, action_executions
 
-    def refactor(self, trans, stored_workflow, refactor_request):
+    def refactor(self, trans: ProvidesUserContext, stored_workflow: StoredWorkflow, refactor_request: RefactorRequest):
         refactored_workflow, action_executions = self.do_refactor(trans, stored_workflow, refactor_request)
         return RefactorResponse(
             action_executions=action_executions,
@@ -2175,10 +2184,6 @@ class WorkflowContentsManager(UsesAnnotations):
         else:
             stmnt = stmnt.filter(model.StoredWorkflow.importable == true())
         return sa_session.execute(stmnt.order_by(model.StoredWorkflow.id.desc()).limit(1)).scalar()
-
-
-class RefactorRequest(RefactorActions):
-    style: str = "export"
 
 
 def safe_wraps(v: Any, nxt: SerializerFunctionWrapHandler) -> str:

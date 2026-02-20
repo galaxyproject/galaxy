@@ -8,6 +8,7 @@ and build runtime models not to use mypy to type check static code.
 from typing import (
     Any,
     cast,
+    Dict,
     List,
     Optional,
     Type,
@@ -40,6 +41,10 @@ def union_type(args: List[Type]) -> Type:
 
 def list_type(arg: Type) -> Type:
     return List[arg]  # type: ignore[valid-type]
+
+
+def dict_type(key: Type, val: Type) -> Type:
+    return Dict[key, val]  # type: ignore[valid-type]
 
 
 def cast_as_type(arg) -> Type:

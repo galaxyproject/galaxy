@@ -384,6 +384,18 @@ class safe_update(NamedTuple):
     current_version: Union[LegacyVersion, Version]
 
 
+class RawToolSource(NamedTuple):
+    """Compact representation of a tool's raw source for transport/serialization.
+
+    Attributes:
+        raw_tool_source: String form of the tool source (typically XML or YAML).
+        tool_source_class: The class name of the ToolSource implementation (e.g., 'XmlToolSource').
+    """
+
+    raw_tool_source: str
+    tool_source_class: str
+
+
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
 WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     "Filter1": safe_update(parse_version("1.1.0"), parse_version("1.1.1")),
@@ -427,16 +439,17 @@ class ToolNotFoundException(Exception):
 
 def create_tool_from_source(app, tool_source: ToolSource, config_file: Optional[StrPath] = None, **kwds):
     # Allow specifying a different tool subclass to instantiate
+    ToolClass: Optional[type[Tool]] = None
     if tool_source.parse_class() == "GalaxyUserTool":
-        return UserDefinedTool(config_file, tool_source, app, **kwds)
-    if (tool_module := tool_source.parse_tool_module()) is not None:
+        ToolClass = UserDefinedTool
+    elif (tool_module := tool_source.parse_tool_module()) is not None:
         module, cls = tool_module
         mod = __import__(module, globals(), locals(), [cls])
         ToolClass = getattr(mod, cls)
         assert issubclass(ToolClass, Tool)
     elif tool_type := tool_source.parse_tool_type():
         ToolClass = tool_types.get(tool_type)
-        if not ToolClass:
+        if ToolClass is None:
             if tool_type == "cwl":
                 raise ToolLoadError("Runtime support for CWL tools is not implemented currently")
             else:
@@ -564,12 +577,22 @@ class ToolBox(AbstractToolBox):
         section = ToolSection({"name": "Built-in Converters", "id": id})
         self._tool_panel[id] = section
 
+        # Create a separate section for the integrated tool panel as well
+        # (so panel views that include the section id "builtin_converters" will get this section from the integrated tool panel)
+        integrated_section = ToolSection({"name": "Built-in Converters", "id": id})
+        self._integrated_tool_panel[id] = integrated_section
+
         converters = {
             tool for target in self.app.datatypes_registry.datatype_converters.values() for tool in target.values()
         }
         for tool in converters:
             tool.hidden = False
             section.elems.append_tool(tool)
+            integrated_section.elems.append_tool(tool)
+
+        # Load panel views so built in converter sections are included in panel views that have the id "builtin_converters"
+        if self.app.name == "galaxy":
+            self._load_tool_panel_views()
 
     def can_load_config_file(self, config_filename):
         if config_filename == self.app.config.shed_tool_config_file and not self.app.config.is_set(
@@ -1574,7 +1597,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
     def parse_tests(self):
         if self.tool_source:
-            test_descriptions = parse_tool_test_descriptions(self.tool_source, self.id)
+            test_descriptions = parse_tool_test_descriptions(
+                self.tool_source, self.id, getattr(self, "parameters", None)
+            )
             try:
                 self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
             except Exception:
@@ -1744,6 +1769,16 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         Parse <outputs> elements and fill in self.outputs (keyed by name)
         """
         self.outputs, self.output_collections = tool_source.parse_outputs(self.app)
+
+    def to_raw_tool_source(self) -> RawToolSource:
+        """Return a compact representation of this tool's source for external processing.
+
+        Provides both the raw tool source string and the concrete ToolSource class name.
+        """
+        return RawToolSource(
+            raw_tool_source=self.tool_source.to_string(),
+            tool_source_class=type(self.tool_source).__name__,
+        )
 
     # TODO: Include the tool's name in any parsing warnings.
     def parse_stdio(self, tool_source: ToolSource):
@@ -2437,6 +2472,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             rval = self._execute(
                 trans,
                 incoming=execution_slice.param_combination,
+                validated_parameters=execution_slice.validated_param_combination,
                 history=history,
                 rerun_remap_job_id=rerun_remap_job_id,
                 execution_cache=execution_cache,
@@ -2554,6 +2590,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self,
         trans,
         incoming: Optional[ToolStateJobInstancePopulatedT] = None,
+        validated_parameters: Optional[JobInternalToolState] = None,
         history: Optional[History] = None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
         execution_cache: Optional[ToolExecutionCache] = None,

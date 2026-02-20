@@ -7,7 +7,10 @@ import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 
+import type { GalaxyConfiguration } from "@/stores/configurationStore";
 import Filtering from "@/utils/filtering";
+
+import type { GridConfig, RowData } from "./configs/types";
 
 import MountTarget from "./GridList.vue";
 
@@ -20,12 +23,13 @@ vi.mock("vue-router/composables");
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
-function createTestGrid() {
+function createTestGrid(): GridConfig {
     return {
+        id: "test-grid",
         actions: [
             {
                 title: "test",
-                icon: faCopy,
+                icon: faCopy as any,
                 handler: vi.fn(),
             },
         ],
@@ -48,21 +52,21 @@ function createTestGrid() {
                 operations: [
                     {
                         title: "operation-title-1",
-                        icon: faCog,
-                        condition: (_, config) => config.value.enabled,
+                        icon: faCog as any,
+                        condition: (_: RowData, config: GalaxyConfiguration) => config.value.enabled,
                         handler: vi.fn(),
                     },
                     {
                         title: "operation-title-2",
-                        icon: faFilter,
-                        condition: (_, config) => config.value.disabled,
+                        icon: faFilter as any,
+                        condition: (_: RowData, config: GalaxyConfiguration) => config.value.disabled,
                         handler: vi.fn(),
                     },
                     {
                         title: "operation-title-3",
-                        icon: faFolder,
-                        condition: (_, config) => config.value.enabled,
-                        handler: () => ({
+                        icon: faFolder as any,
+                        condition: (_: RowData, config: GalaxyConfiguration) => config.value.enabled,
+                        handler: async () => ({
                             status: "success",
                             message: "Operation-3 has been executed.",
                         }),
@@ -71,8 +75,8 @@ function createTestGrid() {
             },
         ],
         filtering: new Filtering({}, undefined, false, false),
-        getData: vi.fn((offset, limit) => {
-            const data = [];
+        getData: vi.fn(async (offset: number, limit: number): Promise<[RowData[], number]> => {
+            const data: RowData[] = [];
             for (let i = offset; i < offset + limit; i++) {
                 data.push({
                     id: `id-${i + 1}`,
@@ -90,9 +94,14 @@ function createTestGrid() {
     };
 }
 
-function createTarget(propsData) {
+interface TargetProps {
+    gridConfig: GridConfig;
+    limit?: number;
+}
+
+function createTarget(propsData: TargetProps) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
-    return mount(MountTarget, {
+    return mount(MountTarget as object, {
         localVue,
         propsData,
         pinia,
@@ -107,13 +116,13 @@ describe("GridList", () => {
         });
         const findInput = wrapper.find("[data-description='filter text input']");
         expect(findInput.attributes().placeholder).toBe("search tests");
-        expect(wrapper.find(".grid-initial-loading .text-muted").text()).toBe("Loading...");
+        expect(wrapper.find("[data-description='grid initial loading']").exists()).toBeTruthy();
         const findAction = wrapper.find("[data-description='grid action test']");
         expect(findAction.text()).toBe("test");
         await findAction.trigger("click");
-        expect(testGrid.actions[0].handler).toHaveBeenCalledTimes(1);
+        expect(testGrid.actions![0]!.handler).toHaveBeenCalledTimes(1);
         expect(testGrid.getData).toHaveBeenCalledTimes(1);
-        expect(testGrid.getData.mock.calls[0].slice(0, 5)).toEqual([0, 25, "", "id", true]);
+        expect(vi.mocked(testGrid.getData).mock.calls[0]!.slice(0, 5)).toEqual([0, 25, "", "id", true]);
         expect(findAction.find("svg").exists()).toBeTruthy();
         await wrapper.vm.$nextTick();
         expect(wrapper.find("[data-description='grid title']").text()).toBe("Test");
@@ -127,7 +136,7 @@ describe("GridList", () => {
         await wrapper.vm.$nextTick();
         await flushPromises();
         expect(testGrid.getData).toHaveBeenCalledTimes(2);
-        expect(testGrid.getData.mock.calls[1].slice(0, 5)).toEqual([0, 25, "", "id", false]);
+        expect(vi.mocked(testGrid.getData).mock.calls[1]!.slice(0, 5)).toEqual([0, 25, "", "id", false]);
         expect(firstHeader.find("[data-description='grid sort desc']").exists()).toBeFalsy();
         expect(firstHeader.find("[data-description='grid sort asc']").exists()).toBeTruthy();
         const secondHeader = wrapper.find("[data-description='grid header 1']");
@@ -157,9 +166,9 @@ describe("GridList", () => {
         expect(dropdownItems.at(0).text()).toBe("operation-title-1");
         expect(dropdownItems.at(1).text()).toBe("operation-title-3");
         await dropdownItems.at(0).trigger("click");
-        const clickHandler = testGrid.fields[2].operations[0].handler;
+        const clickHandler = testGrid.fields[2]!.operations![0]!.handler;
         expect(clickHandler).toHaveBeenCalledTimes(1);
-        expect(clickHandler.mock.calls[0].slice(0, 1)).toEqual([
+        expect(vi.mocked(clickHandler).mock.calls[0]!.slice(0, 1)).toEqual([
             { id: "id-1", link: "link-1", operation: "operation-1" },
         ]);
         await dropdownItems.at(1).trigger("click");
@@ -181,8 +190,8 @@ describe("GridList", () => {
         await filterInput.setValue("filter query");
         vi.runAllTimers();
         await flushPromises();
-        expect(testGrid.getData).toHaveBeenCalledTimes(2);
-        expect(testGrid.getData.mock.calls[1].slice(0, 5)).toEqual([0, 25, "filter query", "id", true]);
+        expect(vi.mocked(testGrid.getData)).toHaveBeenCalledTimes(2);
+        expect(vi.mocked(testGrid.getData).mock.calls[1]!.slice(0, 5)).toEqual([0, 25, "filter query", "id", true]);
     });
 
     it("pagination", async () => {

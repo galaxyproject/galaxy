@@ -41,10 +41,19 @@ import {
     type FetchDatasetsCallbacks,
     type FileDataElement,
     type HdasUploadTarget,
+    type HdcaUploadTarget,
+    type NestedElement,
     type PastedDataElement,
     type UrlDataElement,
 } from "@/api/tools";
+import {
+    COMMON_FILTERS,
+    DEFAULT_FILTER,
+    guessInitialFilterType,
+    guessNameForPair,
+} from "@/components/Collections/pairing";
 import type { UploadRowModel } from "@/components/Upload/model";
+import type { SupportedCollectionType } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -68,6 +77,8 @@ export type {
     FetchDatasetsCallbacks,
     FileDataElement,
     HdasUploadTarget,
+    HdcaUploadTarget,
+    NestedElement,
     PastedDataElement,
     UrlDataElement,
 } from "@/api/tools";
@@ -152,8 +163,8 @@ export type ApiUploadItem = LocalFileUploadItem | PastedContentUploadItem | UrlU
 export interface UploadPayload {
     /** Target history ID */
     history_id: string;
-    /** Upload targets with elements */
-    targets: HdasUploadTarget[];
+    /** Upload targets with elements (HDA for individual datasets, HDCA for collections) */
+    targets: (HdasUploadTarget | HdcaUploadTarget)[];
     /** Whether to auto-decompress uploads */
     auto_decompress: boolean;
     /** Local files to upload via TUS (not part of API, processed by submitUpload) */
@@ -667,6 +678,132 @@ export function buildUploadPayload(items: ApiUploadItem[], options: BuildPayload
 }
 
 // ============================================================================
+// Collection Upload Payload Building
+// ============================================================================
+
+/** Options for building collection upload payloads */
+export interface CollectionUploadOptions {
+    /** Collection display name */
+    collectionName: string;
+    /** Collection type: 'list' or 'list:paired' */
+    collectionType: SupportedCollectionType;
+}
+
+/**
+ * Builds nested paired elements from a flat list of data elements.
+ * Groups consecutive pairs with "forward"/"reverse" names inside NestedElement wrappers.
+ * Uses the shared pairing abstractions from @/components/Collections/pairing for
+ * pair name extraction (synchronized with the backend via auto_pairing_spec.yml).
+ *
+ * IMPORTANT: The files array order must match depth-first element traversal order.
+ * For list:paired, the backend's replace_file_srcs iterates depth-first:
+ * pair1-forward, pair1-reverse, pair2-forward, pair2-reverse, etc.
+ * This matches the original item order, so no reordering is needed.
+ */
+function buildPairedElements(items: ApiUploadItem[], dataElements: ApiDataElement[]): NestedElement[] {
+    const pairs: NestedElement[] = [];
+    const usedNames = new Set<string>();
+
+    // Use the shared filter detection to determine forward/reverse naming convention
+    const filterType = guessInitialFilterType(items) ?? DEFAULT_FILTER;
+    const [forwardFilter, reverseFilter] = COMMON_FILTERS[filterType];
+
+    for (let i = 0; i < items.length; i += 2) {
+        if (i + 1 >= items.length) {
+            console.warn(`Skipping unpaired file at index ${i}: ${items[i]?.name}`);
+            break;
+        }
+
+        const item1 = items[i]!;
+        const item2 = items[i + 1]!;
+
+        const basePairName =
+            guessNameForPair(item1, item2, forwardFilter, reverseFilter, true) || `pair_${Math.floor(i / 2) + 1}`;
+        let pairName = basePairName;
+        let counter = 1;
+        while (usedNames.has(pairName)) {
+            pairName = `${basePairName}_${counter}`;
+            counter++;
+        }
+        usedNames.add(pairName);
+
+        const nestedElement: NestedElement = {
+            name: pairName,
+            elements: [
+                { ...dataElements[i]!, name: "forward" },
+                { ...dataElements[i + 1]!, name: "reverse" },
+            ],
+            auto_decompress: false,
+            dbkey: "?",
+            ext: "auto",
+            space_to_tab: false,
+            to_posix_lines: false,
+            deferred: false,
+        };
+        pairs.push(nestedElement);
+    }
+
+    return pairs;
+}
+
+/**
+ * Builds an API-ready upload payload that creates a dataset collection directly.
+ * Uses HdcaDataItemsTarget with destination { type: "hdca" } so the collection
+ * is created atomically in a single /api/tools/fetch request.
+ *
+ * @param items - The upload items to include in the collection
+ * @param options - Collection configuration (name and type)
+ * @returns API-ready payload for submitUpload
+ * @throws Error if no valid items are provided or validation fails
+ */
+export function buildCollectionUploadPayload(items: ApiUploadItem[], options: CollectionUploadOptions): UploadPayload {
+    if (items.length === 0) {
+        throw new Error("No upload items provided.");
+    }
+
+    const historyId = items[0]!.historyId;
+    if (items.some((item) => item.historyId !== historyId)) {
+        throw new Error("All upload items must target the same history.");
+    }
+
+    const files: UploadableFile[] = [];
+    const dataElements: ApiDataElement[] = [];
+
+    for (const item of items) {
+        validateItemContent(item);
+        dataElements.push(buildDataElement(item));
+        if (item.src === "files") {
+            files.push(item.fileData);
+        }
+    }
+
+    let elements: HdcaUploadTarget["elements"];
+
+    if (options.collectionType === "list") {
+        elements = dataElements;
+    } else if (options.collectionType === "list:paired") {
+        elements = buildPairedElements(items, dataElements);
+    } else {
+        throw new Error(`Unsupported collection type: ${options.collectionType}`);
+    }
+
+    const target: HdcaUploadTarget = {
+        auto_decompress: false,
+        destination: { type: "hdca" },
+        collection_type: options.collectionType,
+        name: options.collectionName,
+        elements,
+    };
+
+    return {
+        history_id: historyId,
+        targets: [target],
+        auto_decompress: true,
+        files,
+    };
+}
+
+// ============================================================================
 // Upload Submission
 // ============================================================================
 
@@ -767,10 +904,20 @@ export async function submitUpload(config: UploadSubmitConfig): Promise<void> {
         // Upload files via TUS, then submit payload
         await uploadFilesViaTus(data, tusEndpoint, chunkSize, callbacks);
     } else if (data.targets && data.targets.length > 0) {
-        // Handle URL or pasted content
         const firstTarget = data.targets[0];
 
-        if (firstTarget && "elements" in firstTarget && firstTarget.elements && firstTarget.elements.length > 0) {
+        // Check if this is a collection (HDCA) target
+        if (firstTarget && "destination" in firstTarget && firstTarget.destination.type === "hdca") {
+            // HDCA collection target with no local files (all URLs/pasted) - submit directly
+            const apiPayload = toApiPayload(data);
+            await fetchDatasets(apiPayload, callbacks);
+        } else if (
+            firstTarget &&
+            "elements" in firstTarget &&
+            firstTarget.elements &&
+            firstTarget.elements.length > 0
+        ) {
+            // Handle HDA URL or pasted content
             const firstElement = firstTarget.elements[0];
 
             if (firstElement && "src" in firstElement) {
@@ -850,6 +997,56 @@ export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatas
     } catch (err) {
         const errorMessage = errorMessageAsString(err);
         config.error?.(errorMessage);
+    }
+}
+
+/**
+ * Uploads datasets as a collection directly via a single /api/tools/fetch request.
+ * Uses HdcaDataItemsTarget to create the collection atomically during the fetch.
+ *
+ * @param items - The upload items to include in the collection
+ * @param collectionOptions - Collection name and type
+ * @param config - Upload configuration and callbacks
+ *
+ * @example
+ * ```typescript
+ * await uploadCollectionDatasets(
+ *   [
+ *     createUrlUploadItem("https://example.com/1.txt", "history123"),
+ *     createUrlUploadItem("https://example.com/2.txt", "history123"),
+ *   ],
+ *   { collectionName: "My List", collectionType: "list" },
+ *   { success: (response) => console.log("Collection created", response) },
+ * );
+ * ```
+ */
+export async function uploadCollectionDatasets(
+    items: ApiUploadItem[],
+    collectionOptions: CollectionUploadOptions,
+    config: UploadDatasetsConfig = {},
+): Promise<void> {
+    const { chunkSize, success, error, warning, progress } = config;
+
+    try {
+        const payload = buildCollectionUploadPayload(items, collectionOptions);
+
+        const data: UploadDataPayload = {
+            history_id: payload.history_id,
+            targets: payload.targets,
+            auto_decompress: payload.auto_decompress,
+            files: payload.files,
+        };
+
+        await submitUpload({
+            data,
+            chunkSize,
+            success,
+            error,
+            warning,
+            progress,
+        });
+    } catch (err) {
+        config.error?.(errorMessageAsString(err));
     }
 }
 

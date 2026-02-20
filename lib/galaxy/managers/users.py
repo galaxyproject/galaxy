@@ -17,7 +17,6 @@ from markupsafe import escape
 from sqlalchemy import (
     and_,
     exc,
-    func,
     select,
     true,
 )
@@ -153,6 +152,49 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             raise exceptions.Conflict(str(db_err))
         return user
 
+    def update_email(
+        self, trans, user: User, new_email: str, *, commit: bool = True, send_activation_email: bool = True
+    ) -> None:
+        """
+        Update a user's email address, keeping the private role in sync and honoring activation settings.
+        Raises RequestParameterInvalidException on validation errors.
+        """
+        message = validate_email(trans, new_email, user)
+        if message:
+            raise exceptions.RequestParameterInvalidException(message)
+        if user.email == new_email:
+            return
+        private_role = trans.app.security_agent.get_private_user_role(user)
+        private_role.name = new_email
+        private_role.description = f"Private role for {new_email}"
+        user.email = new_email
+        session = self.session()
+        session.add_all([user, private_role])
+        if trans.app.config.user_activation_on:
+            user.active = False
+            if send_activation_email and not self.send_activation_email(trans, user.email, user.username):
+                error_message = "Unable to send activation email, please contact your local Galaxy administrator."
+                if trans.app.config.error_email_to is not None:
+                    error_message += f" Contact: {trans.app.config.error_email_to}"
+                raise exceptions.InternalServerError(error_message)
+        if commit:
+            session.commit()
+
+    def update_username(self, trans, user: User, new_username: str, *, commit: bool = True) -> None:
+        """
+        Update a user's public name after validating it. Raises RequestParameterInvalidException on validation errors.
+        """
+        message = validate_publicname(trans, new_username, user)
+        if message:
+            raise exceptions.RequestParameterInvalidException(message)
+        if user.username == new_username:
+            return
+        user.username = new_username
+        session = self.session()
+        session.add(user)
+        if commit:
+            session.commit()
+
     def delete(self, user, flush=True):
         """Mark the given user deleted."""
         if not self.app.config.allow_user_deletion:
@@ -273,24 +315,20 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
         :raises exceptions.Conflict: if any are found
         """
-        # TODO: remove this check when unique=True is added to the email column
-        if self.by_email(email) is not None:
+        if self.by_email(email, case_sensitive=False) is not None:
             raise exceptions.Conflict("Email must be unique", email=email)
 
     def by_id(self, user_id: int) -> Optional[model.User]:
         return self.app.model.session.get(self.model_class, user_id)
 
     # ---- filters
-    def by_email(self, email: str, filters=None, **kwargs) -> Optional[model.User]:
+    def by_email(self, email: str, case_sensitive: bool = True, deleted: bool | None = None) -> model.User | None:
         """
         Find a user by their email.
         """
-        filters = combine_lists(self.model_class.email == email, filters)
-        try:
-            # TODO: use one_or_none
-            return super().one(filters=filters, **kwargs)
-        except exceptions.ObjectNotFound:
-            return None
+        return get_user_by_email(
+            self.session(), email, self.model_class, case_sensitive=case_sensitive, deleted=deleted
+        )
 
     def by_api_key(self, api_key: str, sa_session=None):
         """
@@ -382,10 +420,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         user = None
         if VALID_EMAIL_RE.match(identity):
             # VALID_PUBLICNAME and VALID_EMAIL do not overlap, so 'identity' here is an email address
-            user = get_user_by_email(self.session(), identity, self.model_class)
+            user = self.by_email(identity)
             if not user:
                 # Try a case-insensitive match on the email
-                user = self._get_user_by_email_case_insensitive(self.session(), identity)
+                user = self.by_email(identity, case_sensitive=False)
         else:
             user = get_user_by_username(self.session(), identity, self.model_class)
         return user
@@ -579,9 +617,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return None
 
     def get_reset_token(self, trans, email):
-        reset_user = get_user_by_email(trans.sa_session, email, self.app.model.User)
+        reset_user = self.by_email(email)
         if not reset_user:
-            reset_user = self._get_user_by_email_case_insensitive(trans.sa_session, email)
+            reset_user = self.by_email(email, case_sensitive=False)
         if reset_user and not reset_user.deleted:
             prt = self.app.model.PasswordResetToken(reset_user)
             trans.sa_session.add(prt)
@@ -617,7 +655,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return None
         if getattr(self.app.config, "normalize_remote_user_email", False):
             remote_user_email = remote_user_email.lower()
-        user = get_user_by_email(self.session(), remote_user_email, self.app.model.User)
+        user = self.by_email(remote_user_email)
+        if not user:
+            # Try a case-insensitive match on the email
+            user = self.by_email(remote_user_email, case_sensitive=False)
         if user:
             # Ensure a private role and default permissions are set for remote users (remote user creation bug existed prior to 2009)
             self.app.security_agent.get_private_user_role(user, auto_create=True)
@@ -626,23 +667,20 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                     self.app.security_agent.user_set_default_permissions(user)
                     self.app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
         elif user is None:
+            session = self.session()
             random.seed()
-            user = self.app.model.User(email=remote_user_email)
+            username = username_from_email(session, remote_user_email, self.model_class)
+            user = self.model_class(email=remote_user_email, username=username)
             user.set_random_password(length=12)
             user.external = True
-            user.username = username_from_email(self.session(), remote_user_email, self.app.model.User)
-            self.session().add(user)
-            self.session().commit()
+            session.add(user)
+            session.commit()
             self.app.security_agent.create_private_user_role(user)
             # We set default user permissions, before we log in and set the default history permissions
             if self.app_type == "galaxy":
                 self.app.security_agent.user_set_default_permissions(user)
             # self.log_event( "Automatically created account '%s'", user.email )
         return user
-
-    def _get_user_by_email_case_insensitive(self, session, email):
-        stmt = select(self.app.model.User).where(func.lower(self.app.model.User.email) == email.lower()).limit(1)
-        return session.scalars(stmt).first()
 
 
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):

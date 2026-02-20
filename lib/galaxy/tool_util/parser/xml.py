@@ -56,6 +56,7 @@ from .interface import (
     DrillDownDynamicOptions,
     DynamicOptions,
     InputSource,
+    InputsStyleT,
     PageSource,
     PagesSource,
     RequiredFiles,
@@ -761,7 +762,7 @@ class XmlToolSource(ToolSource):
         return configfiles
 
     def parse_input_configfiles(self) -> Sequence[InputConfigFile]:
-        config_files: list[InputConfigFile] = []
+        config_files: List[InputConfigFile] = []
         if (conf_parent_elem := self.root.find("configfiles")) is not None:
             inputs_elem = conf_parent_elem.find("inputs")
             if inputs_elem is not None:
@@ -774,7 +775,7 @@ class XmlToolSource(ToolSource):
         return config_files
 
     def parse_file_sources(self) -> Sequence[FileSourceConfigFile]:
-        config_files: list[FileSourceConfigFile] = []
+        config_files: List[FileSourceConfigFile] = []
         if (conf_parent_elem := self.root.find("configfiles")) is not None:
             file_sources_elem = conf_parent_elem.find("file_sources")
             if file_sources_elem is not None:
@@ -817,6 +818,7 @@ def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
         expect_test_failure=string_as_bool(test_elem.get("expect_test_failure", False)),
         maxseconds=test_elem.get("maxseconds", None),
+        value_state_representation="test_case_xml",
     )
     _copy_to_dict_if_present(test_elem, rval, ["num_outputs"])
     return rval
@@ -1352,11 +1354,13 @@ class XmlPagesSource(PagesSource):
     def __init__(self, root):
         self.input_elem = root.find("inputs")
         page_sources = []
+        inputs_style: InputsStyleT = "none"
         if self.input_elem is not None:
+            inputs_style = "cheetah"
             pages_elem = self.input_elem.findall("page")
             for page in pages_elem or [self.input_elem]:
                 page_sources.append(XmlPageSource(page))
-        super().__init__(page_sources)
+        super().__init__(page_sources, inputs_style)
 
     @property
     def inputs_defined(self):

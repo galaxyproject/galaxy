@@ -7,6 +7,8 @@
             message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save." />
         <RefactorConfirmationModal
             :workflow-id="id"
+            :version="version"
+            :versions="versions"
             :refactor-actions="refactorActions"
             @onWorkflowError="onWorkflowError"
             @onWorkflowMessage="onWorkflowMessage"
@@ -31,6 +33,7 @@
             ref="activityBar"
             :default-activities="workflowActivities"
             :special-activities="specialWorkflowActivities"
+            :exit-activity="exitWorkflowActivity"
             activity-bar-id="workflow-editor"
             :show-admin="false"
             options-title="Options"
@@ -43,27 +46,26 @@
             @activityClicked="onActivityClicked">
             <template v-slot:side-panel="{ isActiveSideBar }">
                 <ToolPanel v-if="isActiveSideBar('workflow-editor-tools')" workflow @onInsertTool="onInsertTool" />
-                <SearchPanel v-if="isActiveSideBar('workflow-editor-search')" @result-clicked="onSearchResultClicked" />
+                <SearchPanel
+                    v-if="isActiveSideBar('workflow-editor-search')"
+                    @result-clicked="(data) => onHighlightRegion(data.bounds)" />
                 <InputPanel
                     v-if="isActiveSideBar('workflow-editor-inputs')"
                     :inputs="inputs"
                     @insertModule="onInsertModule" />
                 <WorkflowLint
                     v-else-if="isActiveSideBar('workflow-best-practices')"
-                    :untyped-parameters="parameters"
-                    :annotation="annotation"
-                    :readme="readme"
-                    :creator="creator"
-                    :license="license"
+                    :lint-data="lintData"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
+                    :has-changes="hasChanges"
+                    :on-save="onSave"
                     @onAttributes="
                         (e) => {
                             showAttributes(e);
                         }
                     "
-                    @onHighlight="onHighlight"
-                    @onUnhighlight="onUnhighlight"
+                    @onHighlightRegion="(bounds) => onHighlightRegion(bounds, false)"
                     @onRefactor="onAttemptRefactor"
                     @onScrollTo="onScrollTo" />
                 <UndoRedoStack v-else-if="isActiveSideBar('workflow-undo-redo')" :store-id="id" />
@@ -77,7 +79,7 @@
                     v-else-if="isActiveSideBar('workflow-editor-attributes')"
                     :id="id"
                     :tags="tags"
-                    :highlight="highlightAttribute"
+                    :highlight.sync="highlightAttribute"
                     :parameters="parameters"
                     :annotation="annotation"
                     :name="name"
@@ -204,13 +206,14 @@
                     @update:readmeCurrent="setReadme" />
 
                 <WorkflowGraph
-                    v-else-if="!datatypesMapperLoading"
+                    v-if="!datatypesMapperLoading"
+                    v-show="!readmeActive"
                     ref="workflowGraph"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
-                    :highlight-id="highlightId"
                     :scroll-to-id="scrollToId"
                     :initial-position="{ x: 50, y: 50 }"
+                    :loading="loadingWorkflow || initialLoading"
                     @scrollTo="scrollToId = null"
                     @transform="(value) => (transform = value)"
                     @graph-offset="(value) => (graphOffset = value)"
@@ -265,11 +268,13 @@ import { Services } from "../services";
 import { InsertStepAction, useStepActions } from "./Actions/stepActions";
 import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
+import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
 import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
 import { getWorkflowInputs } from "./modules/inputs";
 import { fromSteps } from "./modules/labels";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow } from "./modules/services";
+import { useLintData } from "./modules/useLinting";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
 
@@ -337,6 +342,9 @@ export default {
         const id = ref(props.workflowId || uid);
 
         const { connectionStore, stepStore, stateStore, commentStore, undoRedoStore } = provideScopedWorkflowStores(id);
+
+        const { getWorkflowBoundingBox, captureTransformAndBounds, calculateAdjustedTransform } =
+            useWorkflowBoundingBox(id);
 
         const { undo, redo } = undoRedoStore;
         const { ctrl_z, ctrl_shift_z, meta_z, meta_shift_z } = useMagicKeys();
@@ -585,10 +593,12 @@ export default {
         }
 
         const isNewTempWorkflow = computed(() => !props.workflowId);
+        const lintData = useLintData(id, steps, datatypesMapper, annotation, readme, license, creator);
 
-        const { specialWorkflowActivities } = useSpecialWorkflowActivities(
+        const { specialWorkflowActivities, exitWorkflowActivity } = useSpecialWorkflowActivities(
             computed(() => ({
                 hasInvalidConnections: hasInvalidConnections.value,
+                lintData: lintData,
             })),
         );
 
@@ -622,13 +632,19 @@ export default {
             ),
         );
 
-        function onSearchResultClicked(searchData) {
-            workflowGraph.value.moveToAndHighlightRegion(searchData.bounds);
+        const scrollToId = ref(null);
+
+        function onHighlightRegion(bounds, moveTo = true) {
+            workflowGraph.value.highlightGraphRegion(bounds, moveTo);
+        }
+
+        function onScrollTo(stepId) {
+            scrollToId.value = stepId;
         }
 
         function onToolClick(toolId) {
             stateStore.activeNodeId = toolId;
-            this.onScrollTo(toolId);
+            onScrollTo(toolId);
         }
 
         return {
@@ -638,7 +654,6 @@ export default {
             parameters,
             credentialSteps,
             workflowGraph,
-            onSearchResultClicked,
             ensureParametersSet,
             showAttributes,
             setName,
@@ -690,6 +705,7 @@ export default {
             markdownEditor,
             insertMarkdown,
             specialWorkflowActivities,
+            exitWorkflowActivity,
             isNewTempWorkflow,
             saveWorkflowTitle,
             confirm,
@@ -698,18 +714,24 @@ export default {
             faKey,
             faWrench,
             showDropdown: false,
+            lintData,
+            onHighlightRegion,
+            onScrollTo,
+            scrollToId,
+            getWorkflowBoundingBox,
+            captureTransformAndBounds,
+            calculateAdjustedTransform,
         };
     },
     data() {
         return {
             versions: [],
             labels: {},
+            loadingWorkflow: false,
             services: null,
             stateMessages: [],
             insertedStateMessages: [],
             refactorActions: [],
-            scrollToId: null,
-            highlightId: null,
             highlightAttribute: null,
             messageTitle: null,
             messageBody: null,
@@ -741,7 +763,7 @@ export default {
     watch: {
         id(newId, oldId) {
             if (oldId) {
-                this._loadCurrent(newId);
+                this._loadCurrent(newId, undefined, true);
             }
         },
         annotation(newAnnotation, oldAnnotation) {
@@ -781,7 +803,7 @@ export default {
     async created() {
         this.services = new Services();
         this.lastQueue = new LastQueue();
-        await this._loadCurrent(this.id, this.version);
+        await this._loadCurrent(this.id, this.version, true);
         this.initialLoading = false;
     },
     methods: {
@@ -794,7 +816,7 @@ export default {
         onUpdateStepPosition(stepId, position) {
             this.stepActions.setPosition(this.steps[stepId], position);
         },
-        onAttemptRefactor(actions) {
+        async onAttemptRefactor(actions) {
             if (this.hasChanges) {
                 const r = window.confirm(
                     "You've made changes to your workflow that need to be saved before attempting the requested action. Save those changes and continue?",
@@ -802,18 +824,10 @@ export default {
                 if (r == false) {
                     return;
                 }
-                this.onWorkflowMessage("Saving workflow...", "progress");
-                return saveWorkflow(this)
-                    .then((data) => {
-                        this.refactorActions = actions;
-                    })
-                    .catch((response) => {
-                        this.onWorkflowError("Saving workflow failed, cannot apply requested changes...", response, {
-                            Ok: () => {
-                                this.hideModal();
-                            },
-                        });
-                    });
+
+                if (await this.onSave()) {
+                    this.refactorActions = actions;
+                }
             } else {
                 this.refactorActions = actions;
             }
@@ -836,9 +850,16 @@ export default {
             this.messageIsError = false;
         },
         async onRefactor(response) {
+            // Store transform and bounds before resetting to adjust for coordinate shifts
+            const { transform: transformBefore, bounds: boundsBefore } = this.captureTransformAndBounds(this.transform);
+
             await this.resetStores();
             await fromSimple(this.id, response.workflow);
-            this._loadEditorData(response.workflow);
+            await this._loadEditorData(response.workflow);
+
+            // Adjust for coordinate shifts so nodes appear in the same position
+            // and stateStore.position is synced with the d3 transform
+            this.adjustForCoordinateShift(transformBefore, boundsBefore);
         },
         onChange() {
             this.hasChanges = true;
@@ -997,9 +1018,10 @@ export default {
             addScopePointer(id, this.id);
 
             this.id = id;
-            await this.onSave();
-            this.hasChanges = false;
-            this.$router.replace({ query: { id } });
+            if (await this.onSave()) {
+                this.hasChanges = false;
+                this.$router.replace({ query: { id } });
+            }
         },
         async onCreate() {
             if (!this.nameValidate()) {
@@ -1051,16 +1073,6 @@ export default {
         onLabel(nodeId, newLabel) {
             this.stepActions.setLabel(this.steps[nodeId], newLabel);
         },
-        onScrollTo(stepId) {
-            this.scrollToId = stepId;
-            this.onHighlight(stepId);
-        },
-        onHighlight(stepId) {
-            this.highlightId = stepId;
-        },
-        onUnhighlight(stepId) {
-            this.highlightId = null;
-        },
         onUpgrade() {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
         },
@@ -1072,16 +1084,20 @@ export default {
             this.onNavigate(`/workflows/run?id=${this.id}`, false, false, true);
         },
         async onNavigate(url, forceSave = false, ignoreChanges = false, appendVersion = false) {
+            let proceed = false;
             if (this.isNewTempWorkflow) {
                 await this.onCreate();
+                proceed = true;
             } else if (this.hasChanges && !forceSave && !ignoreChanges) {
                 // if there are changes, prompt user to save or discard or cancel
                 this.navUrl = url;
                 this.showSaveChangesModal = true;
-                return;
             } else if (forceSave) {
                 // when forceSave is true, save the workflow before navigating
-                await this.onSave();
+                proceed = await this.onSave();
+            }
+            if (!proceed) {
+                return;
             }
 
             if (appendVersion && this.version !== undefined) {
@@ -1091,25 +1107,41 @@ export default {
             await nextTick();
             this.$router.push(url);
         },
-        onSave(hideProgress = false) {
+        /** Saves the workflow, and loads it onto the editor by calling `_loadCurrent`.
+         * @returns true if save was successful, false otherwise
+         */
+        async onSave() {
             if (!this.nameValidate()) {
-                return;
+                return false;
             }
-            !hideProgress && this.onWorkflowMessage("Saving workflow...", "progress");
-            return saveWorkflow(this)
-                .then((data) => {
-                    getVersions(this.id).then((versions) => {
-                        this.versions = versions;
+            const lastActiveNodeId = this.activeNodeId;
+
+            try {
+                this.loadingWorkflow = true;
+
+                const data = await saveWorkflow(this);
+
+                const versions = await getVersions(this.id);
+                this.versions = versions;
+
+                // If version is not defined, set it to the latest version
+                if (this.version === undefined || this.version === null) {
+                    this.version = versions[versions.length - 1].version;
+                }
+
+                await this._loadCurrent(this.id, data.version);
+            } catch (response) {
+                this.onWorkflowError("Saving workflow failed...", response, {
+                    Ok: () => {
                         this.hideModal();
-                    });
-                })
-                .catch((response) => {
-                    this.onWorkflowError("Saving workflow failed...", response, {
-                        Ok: () => {
-                            this.hideModal();
-                        },
-                    });
+                    },
                 });
+                return false;
+            } finally {
+                this.stateStore.activeNodeId = lastActiveNodeId;
+                this.loadingWorkflow = false;
+            }
+            return true;
         },
         onVersion(version) {
             if (version != this.version) {
@@ -1196,14 +1228,22 @@ export default {
          * Fetches and loads the workflow data for the given id and version into the editor.
          * @param {string} id - The workflow ID
          * @param {number|undefined} version - The workflow version number
+         * @param {boolean|undefined} fitGraph - Whether to reset the workflow transform and positioning to the default fit
          */
-        async _loadCurrent(id, version) {
+        async _loadCurrent(id, version = undefined, fitGraph = false) {
             if (!this.isNewTempWorkflow) {
-                await this.resetStores();
-                this.onWorkflowMessage("Loading workflow...", "progress");
+                this.loadingWorkflow = true;
 
+                // Store the current transform and bounding box before loading; to adjust for coordinate shifts
+                const { transform: transformBefore, bounds: boundsBefore } = this.captureTransformAndBounds(
+                    this.transform,
+                );
                 try {
+                    // Load editor view workflow data
                     const data = await this.lastQueue.enqueue(() => getWorkflowFull(id, version));
+
+                    // Reset stores and load new data onto editor
+                    await this.resetStores();
                     await fromSimple(id, data);
                     await this._loadEditorData(data);
                 } catch (e) {
@@ -1213,8 +1253,31 @@ export default {
                 await until(() => this.datatypesMapperLoading).toBe(false);
                 await nextTick();
 
-                this.workflowGraph.fitWorkflow();
+                if (fitGraph) {
+                    this.workflowGraph.fitWorkflow();
+                } else {
+                    // If we are not fitting the graph, adjust for coordinate shifts so the nodes appear in the same position
+                    this.adjustForCoordinateShift(transformBefore, boundsBefore);
+                }
+                this.loadingWorkflow = false;
             }
+        },
+        /**
+         * Adjusts the workflow graph transform to account for coordinate shifts that may be
+         * computed by the backend when a workflow step order/positioning changes.
+         * @param transformBefore The transform we had before refetching the workflow
+         * @param boundsBefore The bounding box min coordinates we had before refetching the workflow
+         */
+        adjustForCoordinateShift(transformBefore, boundsBefore) {
+            const adjustedTransform = this.calculateAdjustedTransform(transformBefore, boundsBefore);
+
+            // TODO: Once we migrate to Composition API we can probably handle this within the workflowBoundingBox
+            // and d3Zoom composables
+            this.workflowGraph.setTransform(adjustedTransform);
+
+            // TODO: Verify if setting scale is still needed after setting full transform
+            //       I still needed to set scale separately otherwise it would reset to 1
+            this.stateStore.scale = adjustedTransform.k;
         },
         onLicense(license) {
             if (this.license != license) {

@@ -1,6 +1,5 @@
 from galaxy_test.base.decorators import requires_admin
 from .framework import (
-    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesLibraryAssertions,
@@ -20,25 +19,21 @@ class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
     def test_library_collection_export(self):
         self.collection_export()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @requires_admin
     def test_library_pair_export_new_history(self):
         self.collection_export(is_new_history=True, collection_option="paired")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @requires_admin
     def test_library_pair_export(self):
         self.collection_export(collection_option="paired")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @requires_admin
     def test_export_pairs_list_new_history(self):
         self.list_of_pairs_export(is_new_history=True)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @requires_admin
     def test_export_pairs_list(self):
@@ -68,12 +63,10 @@ class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
     def collection_export(self, is_new_history=False, collection_option=None):
         random_name = self._get_random_name()
         self.prepare_library_for_data_export(["1.bam", "1.bed"], random_name if is_new_history else None)
-        self.components.libraries.folder.export_to_history_options.wait_for_and_click()
-
         if collection_option is not None:
-            self.components.libraries.folder.export_to_history_paired_option(
-                collection_option=collection_option
-            ).wait_for_and_click()
+            self.select_by_value(
+                self.navigation.libraries.folder.selectors.export_to_history_options, collection_option
+            )
         self.screenshot(f"libraries_to_collection_landing_is_new_history={is_new_history}")
         self.components.libraries.folder.add_to_history_as_collection.wait_for_and_click()
         self.build_collection_and_assert()
@@ -85,10 +78,7 @@ class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
         self.prepare_library_for_data_export(
             ["bam_from_sam.bam", "asian_chars_1.txt", "1.bam", "1.bed"], history_name if is_new_history else None
         )
-        self.components.libraries.folder.export_to_history_options.wait_for_and_click()
-        self.components.libraries.folder.export_to_history_paired_option(
-            collection_option="list:paired"
-        ).wait_for_and_click()
+        self.select_by_value(self.navigation.libraries.folder.selectors.export_to_history_options, "list:paired")
         self.screenshot(f"test_export_pairs_list={is_new_history}")
         self.components.libraries.folder.add_to_history_as_collection.wait_for_and_click()
         self.collection_builder_pair_rows(0, 1)

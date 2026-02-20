@@ -20557,6 +20557,8 @@ export interface components {
              * @default export
              */
             style: string;
+            /** Version */
+            version?: number | null;
         };
         /** RefactorResponse */
         RefactorResponse: {

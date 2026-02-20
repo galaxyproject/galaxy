@@ -42,17 +42,19 @@ export interface SortChangeEvent {
 }
 
 /** Row click event payload */
-export interface RowClickEvent<T = any> {
+export interface RowClickEvent<T> {
     /** The row item data */
     item: T;
     /** The row index */
     index: number;
     /** The original mouse/keyboard event */
     event: MouseEvent | KeyboardEvent;
+    /** Toggle row details expansion */
+    toggleDetails: () => void;
 }
 
 /** Row selection event payload */
-export interface RowSelectEvent<T = any> {
+export interface RowSelectEvent<T> {
     /** The selected row item */
     item: T;
     /** The row index */

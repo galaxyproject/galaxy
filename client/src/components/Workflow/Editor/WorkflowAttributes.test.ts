@@ -4,12 +4,14 @@ import { isDate } from "date-fns";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
+import Multiselect from "vue-multiselect";
 
 import { useUserTagsStore } from "@/stores/userTagsStore";
 
 import { UntypedParameters } from "./modules/parameters";
 
 import WorkflowAttributes from "./WorkflowAttributes.vue";
+import WorkflowVersionSelector from "@/components/Workflow/WorkflowVersionSelector.vue";
 
 vi.mock("app", () => ({}));
 
@@ -62,19 +64,31 @@ describe("WorkflowAttributes", () => {
 
         expect(wrapper.find(`[itemprop='description']`).attributes("content")).toBe(TEST_ANNOTATION);
         expect(wrapper.find(`[itemprop='name']`).attributes("content")).toBe(TEST_NAME);
-        expect(wrapper.find(`#workflow-version-area > select`).exists()).toBeTruthy();
+        expect(wrapper.findComponent(WorkflowVersionSelector).exists()).toBeTruthy();
 
         const name = wrapper.find("#workflow-name");
         expect((name.element as HTMLInputElement).value).toBe(TEST_NAME);
         await wrapper.setProps({ name: "new_workflow_name" });
         expect((name.element as HTMLInputElement).value).toBe("new_workflow_name");
 
-        const version = wrapper.findAll(`#workflow-version-area > select > option`);
+        const version = wrapper.findComponent(WorkflowVersionSelector);
+        expect(version.props("version")).toBe(0);
+        expect(version.props("versions")).toHaveLength(TEST_VERSIONS.length);
 
-        expect(version).toHaveLength(TEST_VERSIONS.length);
+        // When not on latest version, "switch to latest" link should be visible
+        expect(wrapper.find("#workflow-version-area").text()).toContain("switch to latest");
 
-        for (let i = 0; i < version.length; i++) {
-            const versionLabel = version.at(i).text();
+        // When on latest version, should show "(latest version)" instead
+        await wrapper.setProps({ version: 1 });
+        expect(wrapper.find("#workflow-version-area").text()).toContain("latest version");
+        expect(wrapper.find("#workflow-version-area").text()).not.toContain("switch to latest");
+
+        // Check that version options have valid date labels
+        const multiselect = version.findComponent(Multiselect);
+        const options = multiselect.props("options") as { label: string; version: number }[];
+        expect(options).toHaveLength(TEST_VERSIONS.length);
+        for (const option of options) {
+            const versionLabel = option.label;
             const versionDate = versionLabel.substring(versionLabel.indexOf(":") + 1, versionLabel.indexOf(",")).trim();
             expect(isDate(new Date(versionDate))).toBe(true);
         }

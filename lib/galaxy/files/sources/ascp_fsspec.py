@@ -237,7 +237,8 @@ class AscpFileSystem(AbstractFileSystem):
             if self.disable_encryption:
                 cmd.append("-T")
 
-            # Add resume flag if enabled (on all attempts to handle interrupted transfers)
+            # Add resume flag if enabled
+            # Note that this must be specified for your first transfer; otherwise, it will not work for subsequent transfers
             if self.enable_resume:
                 cmd.extend(["-k", "1"])  # Resume level 1: check file size
                 if attempt > 0:

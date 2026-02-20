@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faSyncAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -102,20 +104,19 @@ onMounted(async () => {
             </h2>
         </b-container>
         <b-container class="text-center mb-5 w-75">
-            <button
-                id="refresh-disk-usage"
-                title="Recalculate disk usage"
-                :disabled="isRefreshing"
-                variant="outline-secondary"
-                size="sm"
-                pill
-                @click="onRefresh">
-                <b-spinner v-if="isRefreshing" small />
-                <span v-else v-localize>Refresh</span>
-            </button>
-            <b-alert v-if="isRefreshing" class="refreshing-alert mt-2" variant="info" show dismissible fade>
+            <b-alert v-if="isRefreshing" class="refreshing-alert" variant="info" show>
+                <b-spinner small class="mr-2" />
                 <span v-localize>Recalculating disk usage... this may take some time, please check back later.</span>
             </b-alert>
+            <b-button
+                v-else
+                id="refresh-disk-usage"
+                title="Recalculate disk usage"
+                variant="primary"
+                @click="onRefresh">
+                <FontAwesomeIcon :icon="faSyncAlt" class="mr-1" />
+                <span v-localize>Refresh</span>
+            </b-button>
         </b-container>
     </div>
 </template>

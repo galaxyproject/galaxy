@@ -1,126 +1,162 @@
 <template>
-    <dependency-index-wrapper
+    <DependencyIndexWrapper
         :error="error"
         :loading="loading"
         loading-message="Loading container resolution information">
         <template v-slot:header>
-            <b-row class="m-1">
-                <b-form inline>
+            <BRow class="m-1">
+                <BForm inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-container-type">Resolve containers of type</label>
-                    <b-form-select
+                    <BFormSelect
                         id="manage-container-type"
                         v-model="containerType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="containerTypeOptions"></b-form-select>
+                        :options="containerTypeOptions" />
+
                     <label class="mr-sm-2" for="manage-resolver-type">using resolvers of type</label>
-                    <b-form-select
+                    <BFormSelect
                         id="manage-resolver-type"
                         v-model="resolverType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="resolverTypeOptions"></b-form-select>
-                </b-form>
-            </b-row>
-            <b-row class="m-1">
-                <b-form inline>
+                        :options="resolverTypeOptions" />
+                </BForm>
+            </BRow>
+
+            <BRow class="m-1">
+                <BForm inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
-                    <b-form-select
-                        id="manage-filter-resolution"
-                        v-model="filterResolution"
-                        class="mb-2 mr-sm-2 mb-sm-0">
+                    <BFormSelect id="manage-filter-resolution" v-model="filterResolution" class="mb-2 mr-sm-2 mb-sm-0">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
-                    </b-form-select>
-                    <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-container-type"
-                        >Containers of type</label
-                    >
-                    <b-form-select
+                    </BFormSelect>
+
+                    <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-container-type">
+                        Containers of type
+                    </label>
+                    <BFormSelect
                         v-if="filterResolution != 'unresolved'"
                         id="manage-filter-container-type"
                         v-model="filterContainerType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="containerTypeOptions"></b-form-select>
-                    <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-resolver-type"
-                        >Resolvers of type</label
-                    >
-                    <b-form-select
+                        :options="containerTypeOptions" />
+
+                    <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-resolver-type">
+                        Resolvers of type
+                    </label>
+                    <BFormSelect
                         v-if="filterResolution != 'unresolved'"
                         id="manage-filter-resolver-type"
                         v-model="filterResolverType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="resolverTypeOptions"></b-form-select>
-                </b-form>
-            </b-row>
+                        :options="resolverTypeOptions" />
+                </BForm>
+            </BRow>
         </template>
+
         <template v-slot:actions>
-            <b-row class="m-1">
+            <BRow class="m-1">
                 <GButton class="mb-2 mr-sm-2 mb-sm-0" @click="installSelected">
-                    <!-- v-bind:disabled="!hasSelection"  -->
-                    <span class="fa fa-plus" />
+                    <FontAwesomeIcon :icon="faPlus" />
                     Attempt Build
                 </GButton>
-            </b-row>
+            </BRow>
         </template>
+
         <template v-slot:body>
-            <b-table id="containers-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
+            <GTable
+                id="containers-table"
+                striped
+                clickable-rows
+                :fields="fields"
+                :items="items"
+                @row-click="showRowDetails($event)">
                 <template v-slot:cell(selected)="data">
-                    <b-form-checkbox v-model="data.item.selected"></b-form-checkbox>
+                    <BFormCheckbox v-model="data.item.selected" />
                 </template>
+
                 <template v-slot:cell(requirement)="row">
-                    <requirements :requirements="row.item.requirements" />
+                    <Requirements :requirements="row.item.requirements" />
                 </template>
+
                 <template v-slot:cell(resolution)="row">
-                    <status-display :status="row.item.status" />
+                    <StatusDisplay :status="row.item.status" />
                 </template>
+
                 <template v-slot:cell(container)="row">
-                    <container-description :container-description="row.item.status.container_description" />
+                    <ContainerDescription :container-description="row.item.status.container_description" />
                 </template>
+
                 <template v-slot:cell(resolver)="row">
-                    <container-resolver :container-resolver="row.item.status.container_resolver" />
+                    <ContainerResolver :container-resolver="row.item.status.container_resolver" />
                 </template>
+
                 <template v-slot:cell(tool)="row">
-                    <tool-display :tool-id="row.item.tool_id" />
+                    <ToolDisplay :tool-id="row.item.tool_id" />
                 </template>
+
                 <template v-slot:row-details="row">
                     <ContainerResolutionDetails :resolution="row.item" />
                 </template>
-            </b-table>
+            </GTable>
         </template>
-    </dependency-index-wrapper>
+    </DependencyIndexWrapper>
 </template>
+
 <script>
-import BootstrapVue from "bootstrap-vue";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BForm, BFormCheckbox, BFormSelect, BRow } from "bootstrap-vue";
 import _ from "underscore";
-import Vue from "vue";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 
-import ContainerResolutionDetails from "./ContainerResolutionDetails.vue";
-import { DESCRIPTION } from "./ContainerResolver.vue";
+import ContainerDescription from "@/components/admin/Dependencies/ContainerDescription.vue";
+import ContainerResolutionDetails from "@/components/admin/Dependencies/ContainerResolutionDetails.vue";
+import ContainerResolver, { DESCRIPTION } from "@/components/admin/Dependencies/ContainerResolver.vue";
+import DependencyIndexWrapper from "@/components/admin/Dependencies/DependencyIndexWrapper.vue";
+import Requirements from "@/components/admin/Dependencies/Requirements.vue";
+import StatusDisplay from "@/components/admin/Dependencies/StatusDisplay.vue";
+import ToolDisplay from "@/components/admin/Dependencies/ToolDisplay.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
-
-Vue.use(BootstrapVue);
+import GTable from "@/components/Common/GTable.vue";
 
 const RESOLVER_TYPE_OPTIONS = _.keys(DESCRIPTION).map((resolverType) => ({ value: resolverType, text: resolverType }));
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
-    components: { ContainerResolutionDetails, GButton },
+    components: {
+        BForm,
+        BFormCheckbox,
+        BFormSelect,
+        BRow,
+        ContainerDescription,
+        ContainerResolutionDetails,
+        ContainerResolver,
+        DependencyIndexWrapper,
+        FontAwesomeIcon,
+        GButton,
+        GTable,
+        Requirements,
+        StatusDisplay,
+        ToolDisplay,
+    },
     mixins: [DependencyIndexMixin],
     data() {
         return {
+            faPlus,
             error: null,
             loading: true,
             fields: [
                 { key: "selected", label: "" },
-                { key: "tool" },
+                { key: "tool", label: "Tool" },
                 { key: "requirement", label: "Requirements" },
-                { key: "resolution" },
-                { key: "resolver" },
-                { key: "container" },
+                { key: "resolution", label: "Resolution" },
+                { key: "resolver", label: "Resolver" },
+                { key: "container", label: "Container" },
             ],
             containerType: null,
             containerTypeOptions: [

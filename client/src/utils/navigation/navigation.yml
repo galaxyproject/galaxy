@@ -362,14 +362,14 @@ history_storage:
   selectors:
     _: '.history-storage-overview'
     top_datasets_by_size: "[data-description='chart history top datasets by size']"
-    dataset_by_size: "[data-description='chart history top datasets by size'] rect[data-label='${name}']"
+    dataset_by_size: "[data-description='chart history top datasets by size'] [aria-roledescription='bar'][aria-label*='${name}']"
     dataset_by_size_delete: '#g-card-action-delete-selected-item-actions-dataset'
     confirm_delete: '.modal.show .confirm-delete-dataset-dialog .btn-danger'
 
 storage_dashboard:
   selectors:
-    free_space_link: '[data-description="free space card"] button'
-    explore_usage_link: '[data-description="explore usage card"] button'
+    free_space_link: '[data-description="free-space card"] button'
+    explore_usage_link: '[data-description="explore-storage card"] button'
 
 edit_dataset_attributes:
   selectors:
@@ -840,7 +840,8 @@ workflow_run:
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
-    new_history_badge: '[data-description="new history badge"]'
+    current_history_indicator: '[data-description="current history indicator"]'
+    not_current_history_indicator: '[data-description="not current history indicator"]'
     history_target_link: '[data-description="switch to history link"]'
     runtime_setting_button: '.workflow-run-settings'
     runtime_setting_target: '[data-test-id="send-to-new-history-label"]'
@@ -939,8 +940,6 @@ workflow_editor:
       selector: 'license save'
       type: data-description
     tool_menu: '.toolMenuContainer'
-    tool_menu_section_link: '.tool-menu-section-${section_name} a span'
-    tool_menu_item_link: 'a.tool-menu-item-${item_name}'
     workflow_link:
       type: xpath
       selector: '//a[contains(., "${workflow_title}")]'
@@ -1137,7 +1136,7 @@ admin:
       unused: 'a[contains(text(), "Unused")]'
       resolver_type: '#manage-resolver-type'
       container_type: '#manage-container-type'
-      unused_paths: '#unused-paths-table'
+      unused_paths: '#g-table-container-unused-paths-table'
 
   manage_jobs:
     selectors:
@@ -1203,7 +1202,7 @@ admin:
     dm_data_managers_card: '#data-managers-card'
     dm_jobs_button: '#${data_manager}-jobs'
     dm_jobs_breadcrumb: '#breadcrumb'
-    dm_jobs_table: '#jobs-table'
+    dm_jobs_table: '#g-table-container-jobs-table'
     dm_job: '#job-${job_id}'
     dm_job_breadcrumb: '#breadcrumb'
     dm_job_data_manager_card: '#data-manager-card'
@@ -1361,6 +1360,19 @@ upload:
     start_button: '#regular #btn-start'
     local_button: '#btn-local'
     explore_archive_button: '.btn-explore-archive'
+
+beta_upload:
+  selectors:
+    activity:
+      type: xpath
+      selector: '//button[contains(., "Beta Upload")]'
+    method_card: '[data-method-id="${method_id}"]'
+    paste_textarea: '#paste-links-textarea'
+    add_urls_button: '[data-test-id="add-urls"]'
+    collection_section: '[data-test-id="collection-toggle"] label'
+    collection_name_input: '#collection-name-input'
+    collection_type_select: '#collection-type-select'
+    start_button: '[data-test-id="start-upload"]'
 
 new_user_welcome:
   selectors:

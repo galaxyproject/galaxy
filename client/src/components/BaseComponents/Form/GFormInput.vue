@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
     value?: string | null;
@@ -10,6 +10,8 @@ const emit = defineEmits<{
     (e: "keydown", event: KeyboardEvent): void;
 }>();
 
+const inputRef = ref<HTMLInputElement | null>(null);
+
 const inputValue = computed({
     get() {
         return props.value;
@@ -18,10 +20,18 @@ const inputValue = computed({
         emit("input", value ?? null);
     },
 });
+
+function focus() {
+    inputRef.value?.focus();
+}
+
+defineExpose({
+    focus,
+});
 </script>
 
 <template>
-    <input v-model="inputValue" class="g-form-input" @keydown="(event) => emit('keydown', event)" />
+    <input ref="inputRef" v-model="inputValue" class="g-form-input" @keydown="(event) => emit('keydown', event)" />
 </template>
 
 <style scoped lang="scss">

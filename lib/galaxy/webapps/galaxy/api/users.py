@@ -946,36 +946,13 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         # Update email
         if "email" in payload:
             email = payload.get("email")
-            message = validate_email(trans, email, user)
-            if message:
-                raise exceptions.RequestParameterInvalidException(message)
-            if user.email != email:
-                # Update user email and user's private role name which must match
-                private_role = trans.app.security_agent.get_private_user_role(user)
-                private_role.name = email
-                private_role.description = f"Private role for {email}"
-                user.email = email
-                trans.sa_session.add(user)
-                trans.sa_session.add(private_role)
-                trans.sa_session.commit()
-                if trans.app.config.user_activation_on:
-                    # Deactivate the user if email was changed and activation is on.
-                    user.active = False
-                    if self.user_manager.send_activation_email(trans, user.email, user.username):
-                        message = "The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message."
-                    else:
-                        message = "Unable to send activation email, please contact your local Galaxy administrator."
-                        if trans.app.config.error_email_to is not None:
-                            message += f" Contact: {trans.app.config.error_email_to}"
-                        raise exceptions.InternalServerError(message)
+            self.user_manager.update_email(
+                trans, user, email, commit=False, send_activation_email=True  # commit at the end of the handler
+            )
         # Update public name
         if "username" in payload:
             username = payload.get("username")
-            message = validate_publicname(trans, username, user)
-            if message:
-                raise exceptions.RequestParameterInvalidException(message)
-            if user.username != username:
-                user.username = username
+            self.user_manager.update_username(trans, user, username, commit=False)
         # Update user custom form
         if user_info_form_id := payload.get("info|form_id"):
             prefix = "info|"

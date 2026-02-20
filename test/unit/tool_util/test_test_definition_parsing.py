@@ -65,6 +65,18 @@ RECORD_TWO_FILES_EXPECTATIONS = [
     (["inputs", "f1", "fields", 0, "name"], "parent"),
     (["inputs", "f1", "fields", 1, "type"], "File"),
 ]
+COLLECTION_TEST_PAIRED_EXPECTATIONS = [
+    (["inputs", "f1", "model_class"], "TestCollectionDef"),
+    (["inputs", "f1", "collection_type"], "paired"),
+    (["required_files", 0, 0], "simple_line.txt"),
+    (["required_files", 1, 0], "simple_line_alternative.txt"),
+]
+COLLECTION_TEST_PAIRED_Y_EXPECTATIONS = [
+    (["inputs", "f1", "model_class"], "TestCollectionDef"),
+    (["inputs", "f1", "collection_type"], "paired"),
+    (["required_files", 0, 0], "simple_line.txt"),
+    (["required_files", 1, 0], "simple_line_alternative.txt"),
+]
 
 
 class TestTestParsing(TestCase):
@@ -130,6 +142,18 @@ class TestTestParsing(TestCase):
         test_dicts = self._parse_tests()
         test_0 = test_dicts[0].to_dict()
         self._verify_each(test_0, RECORD_TWO_FILES_EXPECTATIONS)
+
+    def test_collection_inputs(self):
+        self._init_tool_for_path(functional_test_tool_path("collection_paired_test.xml"))
+        test_dicts = self._parse_tests()
+        test_0 = test_dicts[0].to_dict()
+        self._verify_each(test_0, COLLECTION_TEST_PAIRED_EXPECTATIONS)
+
+    def test_collection_inputs_from_yaml(self):
+        self._init_tool_for_path(functional_test_tool_path("collection_paired_test_y.yml"))
+        test_dicts = self._parse_tests()
+        test_0 = test_dicts[0].to_dict()
+        self._verify_each(test_0, COLLECTION_TEST_PAIRED_Y_EXPECTATIONS)
 
     def test_bigwigtowig_converter(self):
         # defines

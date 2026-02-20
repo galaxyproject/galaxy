@@ -577,6 +577,12 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
             selector_template: Either a Target or a (locator_type, value) tuple for the select element
             value: The value attribute of the option to select
         """
+        # Wait for element to be present before trying to find it
+        if isinstance(selector_template, Target):
+            locator = selector_template.element_locator
+        else:
+            locator = selector_template
+        self._wait_on_condition_visible(locator, f"select element {locator} to become visible")
         select_element = _protocol_to_webelement(self.find_element(selector_template))
         select = Select(select_element)
         select.select_by_value(value)
@@ -666,7 +672,8 @@ def exception_indicates_not_clickable(exception):
 
 
 def exception_indicates_stale_element(exception):
-    return "stale" in str(exception)
+    exception_str = str(exception)
+    return "stale" in exception_str or "not attached to the DOM" in exception_str
 
 
 __all__ = (

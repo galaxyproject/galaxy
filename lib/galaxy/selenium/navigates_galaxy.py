@@ -404,22 +404,25 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             self.remove_local_storage(key)
 
     @contextlib.contextmanager
-    def main_panel(self):
-        """Decorator to operate within the context of Galaxy's main frame."""
+    def in_frame(self, frame_reference: Union[str, int, Any] = "frame"):
+        """Context manager to operate within the context of an iframe."""
         try:
-            self.switch_to_main_panel()
+            self.switch_to_frame(frame_reference)
             yield
         finally:
             self.switch_to_default_content()
 
     @contextlib.contextmanager
+    def main_panel(self):
+        """Decorator to operate within the context of Galaxy's main frame."""
+        with self.in_frame(GALAXY_MAIN_FRAME_ID):
+            yield
+
+    @contextlib.contextmanager
     def visualization_panel(self):
         """Decorator to operate within the context of Galaxy's visualization frame."""
-        try:
-            self.switch_to_frame(GALAXY_VISUALIZATION_FRAME_ID)
+        with self.in_frame(GALAXY_VISUALIZATION_FRAME_ID):
             yield
-        finally:
-            self.switch_to_default_content()
 
     def api_get(self, endpoint, data=None, raw=False):
         data = data or {}
@@ -593,7 +596,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         def history_has_hid(driver=None):
             hids = get_hids()
-            return any(h == hid for h in hids)
+            # Return True or None (not False) so wait_on keeps polling
+            # wait_on treats any non-None value as success, including False
+            return True if any(h == hid for h in hids) else None
 
         timeout = self.wait_length(wait_type=WAIT_TYPES.JOB_COMPLETION)
         try:
@@ -741,6 +746,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             target_card.find_element(By.CSS_SELECTOR, '[id^="g-card-extra-actions-history-"]').click()
 
         action_selector = target_card.find_element(By.CSS_SELECTOR, action_selector)
+        # Hover over parent card first to activate hover state in headless mode
+        self.action_chains().move_to_element(target_card).perform()
         self.move_to_and_click(action_selector)
 
     def edit_dataset_dbkey(self, dbkey_text):
@@ -1781,7 +1788,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         else:
             page = self.page
             center_element = page.locator(selector_to_move)
-            center_element.hover()
+            center_element.hover(force=True)
         self.wait_for_selector_absent_or_hidden(".b-tooltip", wait_type=WAIT_TYPES.UX_POPUP)
 
     def pages_index_table_elements(self):

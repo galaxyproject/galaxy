@@ -73,6 +73,7 @@ from ._types import (
     RequiredFilesT,
     RequiredLocFileT,
     ToolTestDescriptionDict,
+    ValueStateRepresentationT,
 )
 from .asserts import verify_assertions
 from .wait import wait_on
@@ -123,6 +124,7 @@ class ValidToolTestDict(TypedDict):
     inputs: ExpandedToolInputs
     request: NotRequired[Optional[RawTestToolRequest]]
     request_schema: NotRequired[Optional[Dict[str, Any]]]
+    request_unavailable_reason: NotRequired[Optional[str]]
     outputs: ToolSourceTestOutputs
     output_collections: List[TestSourceTestOutputColllection]
     stdout: NotRequired[AssertionList]
@@ -141,6 +143,7 @@ class ValidToolTestDict(TypedDict):
     tool_id: str
     tool_version: str
     test_index: int
+    value_state_representation: NotRequired[ValueStateRepresentationT]
 
 
 class InvalidToolTestDict(TypedDict):
@@ -150,7 +153,9 @@ class InvalidToolTestDict(TypedDict):
     test_index: int
     inputs: Any
     exception: str
+    request_unavailable_reason: NotRequired[Optional[str]]
     maxseconds: Optional[int]
+    value_state_representation: NotRequired[ValueStateRepresentationT]
 
 
 ToolTestDict = Union[ValidToolTestDict, InvalidToolTestDict]
@@ -698,6 +703,10 @@ class GalaxyInteractorApi:
         request = testdef.request
         request_schema = testdef.request_schema
         submit_with_legacy_api = use_legacy_api == "always" or (use_legacy_api == "if_needed" and request is None)
+        if testdef.value_state_representation == "test_case_json":
+            # Don't submit user / YAML tools to the old endpoint.
+            submit_with_legacy_api = False
+
         if submit_with_legacy_api:
             inputs_tree = testdef.inputs.copy()
             for key, value in inputs_tree.items():
@@ -718,7 +727,18 @@ class GalaxyInteractorApi:
                 if isinstance(value, list) and len(value) == 1:
                     inputs_tree[key] = value[0]
         else:
-            assert request is not None, "Request not set"
+            if request is None:
+                reasons = []
+                if testdef.error:
+                    reasons.append("test has error flag set")
+                if testdef.exception:
+                    reasons.append(f"exception: {testdef.exception}")
+                if testdef.request_unavailable_reason:
+                    reasons.append(testdef.request_unavailable_reason)
+                if not reasons:
+                    reasons.append("unknown reason - possibly a bug in test parsing")
+                error_msg = f"Request not available for tool {testdef.tool_id} test {testdef.test_index}. Reasons: {'; '.join(reasons)}"
+                raise AssertionError(error_msg)
             assert request_schema is not None, "Request schema not set"
             parameters = request_schema["parameters"]
 
@@ -1917,6 +1937,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
     maxseconds: Optional[int] = None
     request: Optional[Dict[str, Any]] = None
     request_schema: Optional[Dict[str, Any]] = None
+    request_unavailable_reason: Optional[str] = None
 
     if not error_in_test_definition:
         processed_test_dict = cast(ValidToolTestDict, processed_dict)
@@ -1944,10 +1965,13 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
         inputs = processed_test_dict.get("inputs", {})
         request = processed_test_dict.get("request", None)
         request_schema = processed_test_dict.get("request_schema", None)
+        request_unavailable_reason = processed_test_dict.get("request_unavailable_reason", None)
     else:
         invalid_test_dict = cast(InvalidToolTestDict, processed_dict)
         maxseconds = DEFAULT_TOOL_TEST_WAIT
         exception = invalid_test_dict.get("exception", DEFAULT_EXCEPTION)
+        request_unavailable_reason = invalid_test_dict.get("request_unavailable_reason", None)
+    value_state_representation = processed_dict.get("value_state_representation", "test_case_xml")
 
     return ToolTestDescriptionDict(
         test_index=test_index,
@@ -1973,6 +1997,8 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
         inputs=inputs,
         request=request,
         request_schema=request_schema,
+        request_unavailable_reason=request_unavailable_reason,
+        value_state_representation=value_state_representation,
     )
 
 
@@ -1990,8 +2016,9 @@ def expanded_inputs_from_json(expanded_inputs_json: ExpandedToolInputsJsonified)
     loaded_inputs: ExpandedToolInputs = {}
     for key, value in expanded_inputs_json.items():
         if isinstance(value, dict) and value.get("model_class"):
-            collection_def_dict = cast(XmlTestCollectionDefDict, value)
-            loaded_inputs[key] = TestCollectionDef.from_dict(collection_def_dict)
+            loaded_inputs[key] = TestCollectionDef.from_dict(cast(XmlTestCollectionDefDict, value))
+        elif isinstance(value, dict) and value.get("class") == "Collection":
+            loaded_inputs[key] = TestCollectionDef.from_dict(cast(JsonTestCollectionDefDict, value))
         else:
             loaded_inputs[key] = value
     return loaded_inputs
@@ -2030,12 +2057,14 @@ class ToolTestDescription:
     expect_failure: bool
     expect_test_failure: bool
     exception: Optional[str]
+    request_unavailable_reason: Optional[str]
     inputs: ExpandedToolInputs
     request: Optional[Dict[str, Any]]
     request_schema: Optional[Dict[str, Any]]
     outputs: ToolSourceTestOutputs
     output_collections: List[TestCollectionOutputDef]
     maxseconds: Optional[int]
+    value_state_representation: ValueStateRepresentationT
 
     @staticmethod
     def from_tool_source_dict(processed_test_dict: ToolTestDict) -> "ToolTestDescription":
@@ -2046,6 +2075,7 @@ class ToolTestDescription:
         self.name = _get_test_name(json_dict, self.test_index)
         self.error = json_dict["error"]
         self.exception = json_dict.get("exception", DEFAULT_EXCEPTION)
+        self.request_unavailable_reason = json_dict.get("request_unavailable_reason", None)
         output_collections = json_dict.get("output_collections", DEFAULT_OUTPUT_COLLECTIONS)
         self.output_collections = [TestCollectionOutputDef.from_dict(d) for d in output_collections]
         self.num_outputs = json_dict.get("num_outputs", DEFAULT_NUM_OUTPUTS)
@@ -2066,6 +2096,7 @@ class ToolTestDescription:
         self.tool_id = json_dict["tool_id"]
         self.tool_version = json_dict.get("tool_version")
         self.maxseconds = json_dict.get("maxseconds")
+        self.value_state_representation = json_dict.get("value_state_representation", "test_case_xml")
 
     def test_data(self):
         """
@@ -2096,8 +2127,10 @@ class ToolTestDescription:
             "required_loc_files": self.required_loc_files,
             "request": self.request,
             "request_schema": self.request_schema,
+            "request_unavailable_reason": self.request_unavailable_reason,
             "error": self.error,
             "exception": self.exception,
+            "value_state_representation": self.value_state_representation,
         }
         if self.maxseconds is not None:
             test_description_def["maxseconds"] = self.maxseconds

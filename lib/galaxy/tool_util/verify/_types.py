@@ -9,6 +9,7 @@ from typing import (
 )
 
 from typing_extensions import (
+    Literal,
     NotRequired,
     TypedDict,
 )
@@ -33,6 +34,7 @@ RequiredFileTuple = Tuple[str, ExtraFileInfoDictT]
 RequiredFilesT = List[RequiredFileTuple]
 RequiredDataTablesT = List[str]
 RequiredLocFileT = List[str]
+ValueStateRepresentationT = Literal["test_case_xml", "test_case_json"]
 
 
 class ToolTestDescriptionDict(TypedDict):
@@ -58,4 +60,6 @@ class ToolTestDescriptionDict(TypedDict):
     required_loc_files: List[str]
     error: bool
     exception: Optional[str]
+    request_unavailable_reason: NotRequired[Optional[str]]
     maxseconds: NotRequired[Optional[int]]
+    value_state_representation: NotRequired[ValueStateRepresentationT]

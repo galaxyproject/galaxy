@@ -348,6 +348,33 @@ class TestCommandConstruction:
             assert "-k" in cmd
             assert cmd[cmd.index("-k") + 1] == "1"
 
+    def test_no_retry_on_auth_failure(self):
+        """Authentication failure → no retry, raises immediately."""
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h")
+
+            call_count = 0
+
+            def mock_run(*args, **kwargs):
+                nonlocal call_count
+                call_count += 1
+                return Mock(
+                    returncode=1,
+                    stderr="authentication failed: invalid key",
+                    stdout="",
+                )
+
+            with patch("subprocess.run", side_effect=mock_run):
+                with patch("tempfile.mkstemp", return_value=(1, "/tmp/test_key.key")):
+                    with patch("os.fdopen"):
+                        with patch("os.chmod"):
+                            with patch("os.unlink"):
+                                with pytest.raises(MessageException, match="Authentication failed"):
+                                    fs.get_file("/remote/file.txt", "/local/file.txt")
+
+                                # Should only be called once (no retry)
+                                assert call_count == 1
+
     def test_resume_disabled(self):
         """enable_resume=False → no -k flag."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):

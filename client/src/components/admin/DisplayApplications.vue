@@ -11,10 +11,11 @@
             :setter="setter" />
     </div>
 </template>
+
 <script>
 import { getDisplayApplications, reloadDisplayApplications } from "./AdminServices";
 
-import BaseList from "./BaseList.vue";
+import BaseList from "@/components/admin/BaseList.vue";
 
 export default {
     components: {
@@ -24,10 +25,10 @@ export default {
         return {
             fields: [
                 { key: "execute", label: "Refresh" },
-                { key: "name", sortable: true },
-                { key: "id", sortable: true },
-                { key: "version" },
-                { key: "links" },
+                { key: "name", label: "Name", sortable: true },
+                { key: "id", label: "ID", sortable: true },
+                { key: "version", label: "Version" },
+                { key: "links", label: "Links" },
             ],
             getter: getDisplayApplications,
             setter: reloadDisplayApplications,

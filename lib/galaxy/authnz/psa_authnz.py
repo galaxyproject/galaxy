@@ -21,7 +21,9 @@ from social_core.utils import (
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
+from galaxy import exceptions as galaxy_exceptions
 from galaxy.exceptions import MalformedContents
+from galaxy.managers import users as user_managers
 from galaxy.model import (
     PSAAssociation,
     PSACode,
@@ -49,7 +51,6 @@ if TYPE_CHECKING:
     from social_core.strategy import HttpResponseProtocol
 
     from galaxy.managers.context import ProvidesAppContext
-
 
 log = logging.getLogger(__name__)
 
@@ -129,6 +130,7 @@ AUTH_PIPELINE = (
     "social_core.pipeline.social_auth.load_extra_data",
     # Update the user record with any changed info from the auth service.
     "social_core.pipeline.user.user_details",
+    "galaxy.authnz.psa_authnz.sync_user_profile",
     "galaxy.authnz.psa_authnz.decode_access_token",
 )
 
@@ -319,7 +321,8 @@ class PSAAuthnz(IdentityProvider):
         # Always set LOGIN_REDIRECT_URL to the base URL for pipeline steps
         # We'll adjust the final redirect based on fixed_delegated_auth after do_complete
         self.config[setting_name("LOGIN_REDIRECT_URL")] = login_redirect_url
-
+        # Make Galaxy app/trans available to downstream pipeline steps that need to apply Galaxy-specific invariants.
+        self.config["GALAXY_TRANS"] = trans
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         strategy.session_set(f"{BACKENDS_NAME[self.config['provider']]}_state", state_token)
         backend = self._load_backend(strategy, self.config["redirect_uri"])
@@ -513,7 +516,7 @@ class PSAAuthnz(IdentityProvider):
         userinfo = jwt.decode(id_token, options={"verify_signature": False})
 
         email = userinfo.get("email")
-        assert email
+        assert email is not None
         username = userinfo.get("preferred_username", email)
         if "@" in username:
             username = username.split("@")[0]
@@ -738,6 +741,83 @@ def verify(strategy=None, response=None, details=None, **kwargs):
             raise Exception(res["error"]["message"])
     else:
         raise Exception(f"`{provider}` is an unsupported secondary authorization provider, contact admin.")
+
+
+def sync_user_profile(strategy=None, details=None, user=None, **kwargs):
+    """
+    Apply Galaxy-specific invariants (email + private role, validated public name) after PSA updates the user model.
+    """
+    if not strategy or not user:
+        return
+    trans = strategy.config.get("GALAXY_TRANS")
+    if not trans:
+        log.debug("OIDC sync_user_profile skipped: no Galaxy transaction available.")
+        return
+    if trans.app.config.enable_account_interface:
+        log.debug("OIDC sync_user_profile skipped: account interface enabled.")
+        return
+    fixed_delegated_auth = strategy.config.get("FIXED_DELEGATED_AUTH", False)
+    if not fixed_delegated_auth:
+        log.debug("OIDC sync_user_profile skipped: fixed_delegated_auth disabled.")
+        return
+    manager = getattr(trans.app, "user_manager", None) or user_managers.UserManager(trans.app)
+    updates: list[str] = []
+    # Update email and keep private role in sync only when changed
+    if details and details.get("email") and user.email != details["email"]:
+        try:
+            manager.update_email(trans, user, details["email"], commit=False, send_activation_email=False)
+            updates.append("email")
+        except galaxy_exceptions.MessageException as exc:
+            log.warning("OIDC email sync skipped for user %s: %s", user.id, exc)
+    # Update public name with Galaxy validation only when changed
+    if details and details.get("username") and user.username != details["username"]:
+        try:
+            manager.update_username(trans, user, details["username"], commit=False)
+            updates.append("username")
+        except galaxy_exceptions.MessageException as exc:
+            log.warning("OIDC username sync skipped for user %s: %s", user.id, exc)
+    if updates:
+        trans.sa_session.add(user)
+        trans.sa_session.commit()
+        _send_oidc_profile_update_notification(trans, user, updates)
+
+
+def _send_oidc_profile_update_notification(trans, user, updates: list[str]) -> None:
+    if not trans.app.notification_manager.notifications_enabled:
+        return
+    try:
+        from galaxy.schema.notifications import (
+            MessageNotificationContent,
+            NotificationCreateData,
+            NotificationCreateRequest,
+            NotificationRecipients,
+            NotificationVariant,
+            PersonalNotificationCategory,
+        )
+        from galaxy.webapps.galaxy.services.notifications import NotificationService
+
+        labels: dict[str, str] = {
+            "email": "email address",
+            "username": "public name",
+            "fullname": "full name",
+        }
+        field_list = [labels.get(field, field) for field in updates]
+        message = f"Your profile was updated from your identity provider: {', '.join(field_list)}."
+        request = NotificationCreateRequest(
+            recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
+            notification=NotificationCreateData(
+                source="oidc",
+                category=PersonalNotificationCategory.message,
+                variant=NotificationVariant.info,
+                content=MessageNotificationContent(subject="Profile updated", message=message),
+                publication_time=None,
+                expiration_time=None,
+            ),
+            galaxy_url=None,
+        )
+        NotificationService(trans.app.notification_manager).send_notification_internal(request, force_sync=True)
+    except Exception as exc:
+        log.warning("OIDC profile update notification failed for user %s: %s", user.id, exc)
 
 
 def allowed_to_disconnect(

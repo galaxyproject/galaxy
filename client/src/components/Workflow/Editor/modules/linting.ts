@@ -1,20 +1,22 @@
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
 import type { useWorkflowStores } from "@/composables/workflowStores";
-import type { Step, Steps } from "@/stores/workflowStepStore";
+import type { Steps } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
+import { isWorkflowInput } from "../../constants";
+import type {
+    DisconnectedInputState,
+    DuplicateLabelState,
+    ExtractInputAction,
+    ExtractUntypedParameter,
+    LintState,
+    MetadataLintState,
+    RemoveUnlabeledWorkflowOutputs,
+    UnlabeledOuputState,
+    UntypedParameterState,
+} from "./lintingTypes";
 import { terminalFactory } from "./terminals";
-
-interface LintState {
-    stepId: number;
-    stepLabel: string;
-    warningLabel: string;
-    name?: string;
-    inputName?: string;
-    autofix?: boolean;
-    data?: Record<string, string>;
-}
 
 export const bestPracticeWarningAnnotation =
     "This workflow does not provide a short description. Providing a short description helps workflow executors understand the purpose and usage of the workflow.";
@@ -32,7 +34,7 @@ export function getDisconnectedInputs(
     datatypesMapper: DatatypesMapperModel,
     stores: ReturnType<typeof useWorkflowStores>,
 ) {
-    const inputs: LintState[] = [];
+    const inputs: DisconnectedInputState[] = [];
     Object.values(steps).forEach((step) => {
         step.inputs.map((inputSource) => {
             const inputTerminal = terminalFactory(step.id, inputSource, datatypesMapper, stores);
@@ -44,6 +46,8 @@ export function getDisconnectedInputs(
                     warningLabel: inputLabel,
                     inputName: inputSource.name,
                     autofix: !inputTerminal.multiple,
+                    highlightType: "input",
+                    name: inputSource.name,
                 });
             }
         });
@@ -51,18 +55,14 @@ export function getDisconnectedInputs(
     return inputs;
 }
 
-function isInput(stepType: Step["type"]) {
-    return stepType == "data_input" || stepType == "data_collection_input" || stepType == "parameter_input";
-}
-
 export function getMissingMetadata(steps: Steps) {
-    const inputs: LintState[] = [];
+    const inputs: MetadataLintState[] = [];
     Object.values(steps).forEach((step) => {
-        if (isInput(step.type)) {
+        if (isWorkflowInput(step.type)) {
             const noAnnotation = !step.annotation;
             const noLabel = !step.label;
             let warningLabel = null;
-            const data = {
+            const data: MetadataLintState["data"] = {
                 "missing-label": "false",
                 "missing-annotation": "false",
             };
@@ -90,19 +90,49 @@ export function getMissingMetadata(steps: Steps) {
     return inputs;
 }
 
-export function dataAttributes(action: LintState): Record<string, string> {
-    const result: Record<string, string> = {};
-    for (const [key, value] of Object.entries(action.data || {})) {
-        result[`data-${key}`] = value;
+// TODO: Maybe type of action should already be `MetadataLintState`?
+export function dataAttributes(action: LintState) {
+    const result: Record<string, "true" | "false"> = {};
+    // Ensure we have an attributes lint state (`MetadataLintState` with data)
+    if (isMetadataLintState(action)) {
+        for (const [key, value] of Object.entries(action.data)) {
+            result[`data-${key}`] = value;
+        }
     }
 
     return result;
 }
 
+export function getDuplicateLabels(steps: Steps, stores: ReturnType<typeof useWorkflowStores>) {
+    const duplicates: DuplicateLabelState[] = [];
+
+    const { stepStore } = stores;
+    const labels = stepStore.duplicateLabels;
+
+    labels.forEach((label) => {
+        Object.values(steps).forEach((step) => {
+            const workflowOutputs = step.workflow_outputs || [];
+            workflowOutputs.forEach((workflowOutput) => {
+                if (workflowOutput.label === label) {
+                    duplicates.push({
+                        stepId: step.id,
+                        stepLabel: step.label || step.content_id || step.name,
+                        warningLabel: workflowOutput.output_name,
+                        name: workflowOutput.output_name,
+                        highlightType: "output",
+                    });
+                }
+            });
+        });
+    });
+
+    return duplicates;
+}
+
 export function getUnlabeledOutputs(steps: Steps) {
-    const outputs: LintState[] = [];
+    const outputs: UnlabeledOuputState[] = [];
     Object.values(steps).forEach((step) => {
-        if (isInput(step.type)) {
+        if (isWorkflowInput(step.type)) {
             // For now skip these... maybe should push this logic into linting though
             // since it is fine to have outputs on inputs.
             return;
@@ -116,6 +146,8 @@ export function getUnlabeledOutputs(steps: Steps) {
                     stepLabel: step.label || step.content_id || step.name,
                     warningLabel: workflowOutput.output_name,
                     autofix: true,
+                    highlightType: "output",
+                    name: workflowOutput.output_name,
                 });
             }
         }
@@ -124,7 +156,7 @@ export function getUnlabeledOutputs(steps: Steps) {
 }
 
 export function getUntypedParameters(untypedParameters: UntypedParameters) {
-    const items: LintState[] = [];
+    const items: UntypedParameterState[] = [];
     if (untypedParameters) {
         untypedParameters.parameters.forEach((parameter) => {
             try {
@@ -150,39 +182,35 @@ export function getUntypedParameters(untypedParameters: UntypedParameters) {
 }
 
 export function fixAllIssues(
-    steps: Steps,
-    parameters: UntypedParameters,
-    datatypesMapper: DatatypesMapperModel,
-    stores: ReturnType<typeof useWorkflowStores>,
+    untypedParameters: UntypedParameterState[],
+    disconnectedInputs: DisconnectedInputState[],
+    unlabeledOutputs: UnlabeledOuputState[],
 ) {
     const actions = [];
-    const untypedParameters = getUntypedParameters(parameters);
     for (const untypedParameter of untypedParameters) {
         if (untypedParameter.autofix) {
             actions.push(fixUntypedParameter(untypedParameter));
         }
     }
-    const disconnectedInputs = getDisconnectedInputs(steps, datatypesMapper, stores);
     for (const disconnectedInput of disconnectedInputs) {
         if (disconnectedInput.autofix) {
             actions.push(fixDisconnectedInput(disconnectedInput));
         }
     }
-    const unlabeledOutputs = getUnlabeledOutputs(steps);
     if (unlabeledOutputs.length > 0) {
         actions.push(fixUnlabeledOutputs());
     }
     return actions;
 }
 
-export function fixUntypedParameter(untypedParameter: LintState) {
+export function fixUntypedParameter(untypedParameter: UntypedParameterState): ExtractUntypedParameter {
     return {
         action_type: "extract_untyped_parameter",
         name: untypedParameter.name,
     };
 }
 
-export function fixDisconnectedInput(disconnectedInput: LintState) {
+export function fixDisconnectedInput(disconnectedInput: DisconnectedInputState): ExtractInputAction {
     return {
         action_type: "extract_input",
         input: {
@@ -192,6 +220,21 @@ export function fixDisconnectedInput(disconnectedInput: LintState) {
     };
 }
 
-export function fixUnlabeledOutputs() {
+export function fixUnlabeledOutputs(): RemoveUnlabeledWorkflowOutputs {
     return { action_type: "remove_unlabeled_workflow_outputs" };
+}
+
+export function isDisconnectedInputState(state: LintState): state is DisconnectedInputState {
+    return isStateForInputOrOutput(state) && state.highlightType === "input";
+}
+
+function isMetadataLintState(state: LintState): state is MetadataLintState {
+    return "data" in state;
+}
+
+/** Type guard for linting states that are for a workflow step input or output. */
+export function isStateForInputOrOutput(
+    state: LintState,
+): state is DisconnectedInputState | DuplicateLabelState | UnlabeledOuputState {
+    return "highlightType" in state;
 }

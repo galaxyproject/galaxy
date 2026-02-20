@@ -720,6 +720,15 @@ class UsesWorkflowAssertions(NavigatesGalaxyMixin):
         self.workflow_index_click_import()
         self.workflow_import_submit_url(url)
 
+    @retry_assertion_during_transitions
+    def assert_wf_annotation_is(self, expected_annotation):
+        edit_annotation = self.components.workflow_editor.edit_annotation
+        edit_annotation_element = edit_annotation.wait_for_visible()
+        actual_annotation = edit_annotation_element.get_attribute("value")
+        assert (
+            expected_annotation in actual_annotation
+        ), f"'{expected_annotation}' unequal annotation '{actual_annotation}'"
+
 
 class TestsGalaxyPagers(GalaxyTestSeleniumContext):
     @retry_assertion_during_transitions

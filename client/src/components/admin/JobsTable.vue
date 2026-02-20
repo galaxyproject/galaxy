@@ -1,6 +1,6 @@
 <template>
     <div class="jobs-table-wrapper">
-        <b-table
+        <GTable
             v-model="innerValue"
             :fields="fields"
             :items="items"
@@ -10,72 +10,94 @@
             striped
             caption-top
             :busy="busy"
+            clickable-rows
             class="jobs-table"
             show-empty
-            @row-clicked="toggleDetails">
+            @row-click="onRowClick($event)">
             <template v-slot:table-caption>
                 {{ tableCaption }}
             </template>
+
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading jobs" />
-                <b-alert v-else class="no-jobs" variant="info" show>
+                <BAlert v-else-if="!items || items.length === 0" class="no-jobs" variant="info" show>
                     {{ noItemsMessage }}
-                </b-alert>
+                </BAlert>
             </template>
+
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
+
             <template v-slot:row-details="row">
-                <b-card>
+                <BCard>
                     <JobDetails :job="row.item" />
-                </b-card>
+                </BCard>
             </template>
+
             <template v-slot:cell(user_email)="data">
-                <a class="job-filter-link-user" :data-user="data.value" @click="$emit('user-clicked', data.value)">{{
-                    data.value
-                }}</a>
+                <GLink class="job-filter-link-user" :data-user="data.value" @click="$emit('user-clicked', data.value)">
+                    {{ data.value }}
+                </GLink>
             </template>
+
             <template v-slot:cell(tool_id)="data">
-                <a
+                <GLink
                     class="job-filter-link-tool-id"
                     :data-tool-id="data.value"
-                    @click="$emit('tool-clicked', data.value)"
-                    >{{ data.value }}</a
-                >
+                    @click="$emit('tool-clicked', data.value)">
+                    {{ data.value }}
+                </GLink>
             </template>
-            <template v-slot:cell(job_runner_name)="data">
-                <a
-                    class="job-filter-link-runner"
-                    :data-runner="data.value"
-                    @click="$emit('runner-clicked', data.value)"
-                    >{{ data.value }}</a
-                >
-            </template>
+
             <template v-slot:cell(handler)="data">
-                <a
+                <GLink
                     class="job-filter-link-handler"
                     :data-handler="data.handler"
-                    @click="$emit('handler-clicked', data.value)"
-                    >{{ data.value }}</a
-                >
+                    @click="$emit('handler-clicked', data.value)">
+                    {{ data.value }}
+                </GLink>
             </template>
+
+            <template v-slot:cell(job_runner_name)="data">
+                <GLink
+                    class="job-filter-link-runner"
+                    :data-runner="data.value"
+                    @click="$emit('runner-clicked', data.value)">
+                    {{ data.value }}
+                </GLink>
+            </template>
+
             <template v-for="(index, name) in $slots" v-slot:[name]>
                 <slot :name="name" />
             </template>
+
             <template v-for="(index, name) in $scopedSlots" v-slot:[name]="data">
                 <slot :name="name" v-bind="data"></slot>
             </template>
-        </b-table>
+        </GTable>
     </div>
 </template>
 
 <script>
+import { BAlert, BCard } from "bootstrap-vue";
+
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GTable from "@/components/Common/GTable.vue";
 import JobDetails from "@/components/JobInformation/JobDetails.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 export default {
-    components: { UtcDate, JobDetails, LoadingSpan },
+    components: {
+        BAlert,
+        BCard,
+        GLink,
+        GTable,
+        JobDetails,
+        LoadingSpan,
+        UtcDate,
+    },
     props: {
         tableCaption: {
             type: String,
@@ -123,8 +145,8 @@ export default {
                 item._cellVariants = { state: this.translateState(item.state) };
             });
         },
-        toggleDetails(item) {
-            this.$set(item, "_showDetails", !item._showDetails);
+        onRowClick({ toggleDetails }) {
+            toggleDetails();
         },
         translateState(state) {
             const translateDict = {

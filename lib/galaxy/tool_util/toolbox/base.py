@@ -745,7 +745,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             tool_from_uuid = self._get_tool_by_uuid(tool_uuid)
             if tool_from_uuid is None:
                 raise ObjectNotFound(f"Failed to find a tool with uuid [{tool_uuid}]")
-            tool_id = tool_from_uuid.id
+            return tool_from_uuid
         assert tool_id
 
         if tool_version:
@@ -1146,6 +1146,8 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         force_watch: bool = False,
     ) -> None:
         def quick_load(tool_file: "StrPath", async_load: bool = True) -> Union[str, None]:
+            if not self._looks_like_a_tool(str(tool_file)):
+                return None
             try:
                 tool = self.load_tool(tool_file)
                 self.__add_tool(tool, load_panel_dict, elems)
