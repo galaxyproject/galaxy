@@ -33,7 +33,6 @@ from galaxy.exceptions import MessageException
 from galaxy.files.models import (
     FilesSourceRuntimeContext,
 )
-from galaxy.files.uris import stream_url_to_file
 from galaxy.files.sources._fsspec import (
     CacheOptionsDictType,
     FsspecBaseFileSourceConfiguration,
@@ -41,6 +40,7 @@ from galaxy.files.sources._fsspec import (
     FsspecFilesSource,
 )
 from galaxy.files.sources.ascp_fsspec import AscpFileSystem
+from galaxy.files.uris import stream_url_to_file
 from galaxy.util.config_templates import TemplateExpansion
 
 log = logging.getLogger(__name__)
