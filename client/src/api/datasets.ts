@@ -8,7 +8,7 @@ import {
     type HDADetailed,
 } from "@/api";
 import { withPrefix } from "@/utils/redirect";
-import { rethrowSimple } from "@/utils/simple-error";
+import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 export async function fetchDatasetTextContentDetails(params: { id: string }): Promise<DatasetTextContentDetails> {
     const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}/get_content_as_text", {
@@ -26,7 +26,7 @@ export async function fetchDatasetTextContentDetails(params: { id: string }): Pr
 }
 
 export async function fetchDatasetDetails(params: { id: string }, view: string = "detailed"): Promise<HDADetailed> {
-    const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {
+    const { data, error, response } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {
         params: {
             path: {
                 dataset_id: params.id,
@@ -36,7 +36,7 @@ export async function fetchDatasetDetails(params: { id: string }, view: string =
     });
 
     if (error) {
-        rethrowSimple(error);
+        rethrowSimpleWithStatus(error, response);
     }
     return data as HDADetailed;
 }
