@@ -141,10 +141,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         tip = self.get_repository_tip(repository)
         self.check_for_valid_tools(repository)
-        if self.is_v2:
-            strings_displayed = []
-        else:
-            strings_displayed = ["Select a revision"]
+        strings_displayed: list[str] = []
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
         self.check_count_of_metadata_revisions_associated_with_repository(repository, metadata_count=2)
         tool_guid = f"{self.url.replace('http://', '').rstrip('/')}/repos/user1/filtering_0000/Filter1/2.2.0"
@@ -214,13 +211,6 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.login(email="baduser@bx.psu.edu", username="repos")
         test_user_1 = self.test_db_util.get_user("baduser@bx.psu.edu")
         assert test_user_1 is None, 'Creating user with public name "repos" succeeded.'
-        if not self.is_v2:
-            # no longer use this terminology but the above test case ensures
-            # the important thing and caught a bug in v2
-            error_message = (
-                "The term 'repos' is a reserved word in the Tool Shed, so it cannot be used as a public user name."
-            )
-            self.check_for_strings(strings_displayed=[error_message])
 
     def test_0105_contact_repository_owner(self):
         """"""

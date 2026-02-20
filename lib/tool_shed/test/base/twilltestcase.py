@@ -692,7 +692,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     @property
     def invalid_tools_labels(self) -> str:
-        return "Invalid Tools" if self.is_v2 else "Invalid tools"
+        return "Invalid Tools"
 
     def create(
         self,
@@ -715,25 +715,6 @@ class ShedTwillTestCase(ShedApiTestCase):
         previously_created = False
         username_taken = False
         invalid_username = False
-        if not self.is_v2:
-            try:
-                self.check_page_for_string("Created new user account")
-            except AssertionError:
-                try:
-                    # May have created the account in a previous test run...
-                    self.check_page_for_string(f"User with email '{email}' already exists.")
-                    previously_created = True
-                except AssertionError:
-                    try:
-                        self.check_page_for_string("Public name is taken; please choose another")
-                        username_taken = True
-                    except AssertionError:
-                        # Note that we're only checking if the usr name is >< 4 chars here...
-                        try:
-                            self.check_page_for_string("Public name must be at least 4 characters in length")
-                            invalid_username = True
-                        except AssertionError:
-                            pass
         return previously_created, username_taken, invalid_username
 
     def last_page(self):
@@ -758,10 +739,9 @@ class ShedTwillTestCase(ShedApiTestCase):
         logout_first: bool = True,
         explicit_logout: bool = False,
     ):
-        if self.is_v2:
-            # old version had a logout URL, this one needs to check
-            # page if logged in
-            self.visit_url("/")
+        # old version had a logout URL, this one needs to check
+        # page if logged in
+        self.visit_url("/")
 
         # Clear cookies.
         if logout_first:
@@ -771,17 +751,12 @@ class ShedTwillTestCase(ShedApiTestCase):
             email=email, password=password, username=username, redirect=redirect
         )
         # v2 doesn't log you in on account creation... so force a login here
-        if previously_created or self.is_v2:
-            # The account has previously been created, so just login.
-            # HACK: don't use panels because late_javascripts() messes up the twill browser and it
-            # can't find form fields (and hence user can't be logged in).
-            params = {"use_panels": False}
-            self.visit_url("/user/login", params=params)
-            self.submit_form(button="login_button", login=email, redirect=redirect, password=password)
-
-    @property
-    def is_v2(self) -> bool:
-        return self.api_interactor.api_version == "v2"
+        # The account has previously been created, so just login.
+        # HACK: don't use panels because late_javascripts() messes up the twill browser and it
+        # can't find form fields (and hence user can't be logged in).
+        params = {"use_panels": False}
+        self.visit_url("/user/login", params=params)
+        self.submit_form(button="login_button", login=email, redirect=redirect, password=password)
 
     @property
     def _playwright_browser(self) -> PlaywrightShedBrowser:
@@ -802,14 +777,10 @@ class ShedTwillTestCase(ShedApiTestCase):
         and be explicit in logging out to provide extract test
         structure.
         """
-        if self.is_v2:
-            if explicit:
-                self._playwright_browser.explicit_logout()
-            else:
-                self._playwright_browser.logout_if_logged_in()
+        if explicit:
+            self._playwright_browser.explicit_logout()
         else:
-            self.visit_url("/user/logout")
-            self.check_page_for_string("You have been logged out")
+            self._playwright_browser.logout_if_logged_in()
 
     def submit_form(self, form_no=-1, button="runtool_btn", form=None, **kwd):
         """Populates and submits a form from the keyword arguments."""
@@ -860,15 +831,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.check_for_strings(strings_displayed=["Role", "has been associated"])
 
     def browse_category(self, category: Category, strings_displayed=None, strings_not_displayed=None):
-        if self.is_v2:
-            self.visit_url(f"/repositories_by_category/{category.id}")
-        else:
-            params = {
-                "sort": "name",
-                "operation": "valid_repositories_by_category",
-                "id": category.id,
-            }
-            self.visit_url("/repository/browse_valid_categories", params=params)
+        self.visit_url(f"/repositories_by_category/{category.id}")
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_repository(self, repository: Repository, strings_displayed=None, strings_not_displayed=None):
@@ -882,10 +845,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_tool_shed(self, url, strings_displayed=None, strings_not_displayed=None):
-        if self.is_v2:
-            url = "/repositories_by_category"
-        else:
-            url = "/repository/browse_valid_categories"
+        url = "/repositories_by_category"
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
@@ -929,14 +889,8 @@ class ShedTwillTestCase(ShedApiTestCase):
         depends_on_changeset_revision=None,
         changeset_revision=None,
     ):
-        if not self.is_v2:
-            # v2 doesn't display repository repository dependencies, they are deprecated
-            strings_displayed = [depends_on_repository.name, depends_on_repository.owner]
-            if depends_on_changeset_revision:
-                strings_displayed.append(depends_on_changeset_revision)
-            self.display_manage_repository_page(
-                repository, changeset_revision=changeset_revision, strings_displayed=strings_displayed
-            )
+        # v2 doesn't display repository repository dependencies, they are deprecated
+        pass
 
     def check_repository_metadata(self, repository: Repository, tip_only=True):
         if tip_only:
@@ -1228,9 +1182,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         params = {"id": repository.id}
         if changeset_revision:
             params["changeset_revision"] = changeset_revision
-        url = "/repository/manage_repository"
-        if self.is_v2:
-            url = f"/repositories/{repository.id}"
+        url = f"/repositories/{repository.id}"
         self.visit_url(url, params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
@@ -1648,25 +1600,11 @@ class ShedTwillTestCase(ShedApiTestCase):
             # Changeset revision should never be provided unless repository name also is.
             assert repository_name is not None, "Changeset revision is present, but repository name is not - aborting."
             url += f"/{changeset_revision}"
-        if self.is_v2:
-            # I think pagination broke this legacy test - so I added this
-            url += "?rows_per_page=250"
+        # I think pagination broke this legacy test - so I added this
+        url += "?rows_per_page=250"
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
-        if self.is_v2:
-            self.check_for_strings(strings_displayed_in_iframe, strings_not_displayed_in_iframe)
-        else:
-            # Now load the page that should be displayed inside the iframe and check for strings.
-            if encoded_repository_id:
-                params = {"id": encoded_repository_id, "operation": "view_or_manage_repository"}
-                if changeset_revision:
-                    params["changeset_revision"] = changeset_revision
-                self.visit_url("/repository/view_repository", params=params)
-                self.check_for_strings(strings_displayed_in_iframe, strings_not_displayed_in_iframe)
-            elif encoded_user_id:
-                params = {"user_id": encoded_user_id, "operation": "repositories_by_user"}
-                self.visit_url("/repository/browse_repositories", params=params)
-                self.check_for_strings(strings_displayed_in_iframe, strings_not_displayed_in_iframe)
+        self.check_for_strings(strings_displayed_in_iframe, strings_not_displayed_in_iframe)
 
     def load_changeset_in_tool_shed(
         self, repository_id, changeset_revision, strings_displayed=None, strings_not_displayed=None
@@ -1758,13 +1696,8 @@ class ShedTwillTestCase(ShedApiTestCase):
         return tip_ctx.rev() < 0
 
     def reset_metadata_on_selected_repositories(self, repository_ids):
-        if self.is_v2:
-            for repository_id in repository_ids:
-                self.populator.reset_metadata(repository_id)
-        else:
-            self.visit_url("/admin/reset_metadata_on_selected_repositories_in_tool_shed")
-            kwd = dict(repository_ids=repository_ids)
-            self.submit_form(button="reset_metadata_on_selected_repositories_button", **kwd)
+        for repository_id in repository_ids:
+            self.populator.reset_metadata(repository_id)
 
     def reset_metadata_on_installed_repositories(self, repositories):
         assert self._installation_client

@@ -41,11 +41,6 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
             strings_displayed=[],
         )
         self.add_file_to_repository(repository, "bwa/complex/tool_dependencies.xml")
-        if not self.is_v2:
-            # Visit the manage repository page for package_bwa_0_5_9_0100.
-            self.display_manage_repository_page(
-                repository, strings_displayed=["Tool dependencies", "will not be", "to this repository"]
-            )
 
     def test_0010_create_bwa_base_repository(self):
         """Create and populate bwa_base_0100."""
@@ -181,7 +176,3 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
             version="0.5.9",
         )
         self.check_repository_dependency(base_repository, depends_on_repository=tool_repository)
-        if not self.is_v2:
-            self.display_manage_repository_page(
-                base_repository, strings_displayed=["bwa", "0.5.9", "package", changeset_revision]
-            )
