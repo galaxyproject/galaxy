@@ -162,6 +162,43 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         set(meta, metaKey, value);
     }
 
+    function findById(activityId: string): Activity | undefined {
+        return activities.value.find((a: Activity) => a.id === activityId);
+    }
+
+    function setPosition(activityId: string, position: number) {
+        const currentIndex = activities.value.findIndex((a: Activity) => a.id === activityId);
+        if (currentIndex === -1) {
+            return;
+        }
+        const boundedPosition = Math.max(0, Math.min(position, activities.value.length - 1));
+        const spliced = activities.value.splice(currentIndex, 1);
+        const activity = spliced[0];
+        if (!activity) {
+            return;
+        }
+        activities.value.splice(boundedPosition, 0, activity);
+        activities.value = [...activities.value];
+    }
+
+    function ensureSideBarOpen(activityId: string) {
+        const activity = findById(activityId);
+        if (!activity || !activity.panel) {
+            return;
+        }
+        if (toggledSideBar.value !== activityId) {
+            toggledSideBar.value = activityId;
+        }
+    }
+
+    function ensureVisible(activityId: string) {
+        const activity = findById(activityId);
+        if (!activity) {
+            return;
+        }
+        activity.visible = true;
+    }
+
     watchImmediate(
         () => hashedUserId.value,
         () => {
@@ -174,13 +211,17 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         sidePanelWidth,
         toggleSideBar,
         closeSideBar,
+        ensureSideBarOpen,
+        ensureVisible,
         isSideBarOpen,
         activities,
         activityMeta,
         metaForId,
         setMeta,
         getAll,
+        findById,
         remove,
+        setPosition,
         setAll,
         restore,
         sync,
