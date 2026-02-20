@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useWizard } from "@/components/Common/Wizard/useWizard";
+import { useTargetHistoryUploadState } from "@/composables/history/useTargetHistoryUploadState";
 import {
     archiveExplorerEventBus,
     type ArchiveSource,
@@ -30,17 +32,22 @@ interface Props {
      * Useful when embedding the wizard in other components that already provide their own heading.
      */
     shouldDisplayHeading?: boolean;
+    targetHistoryId?: string;
+    showTargetHistoryWarning?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     shouldDisplayHeading: true,
+    targetHistoryId: undefined,
+    showTargetHistoryWarning: true,
 });
 
 const router = useRouter();
 
 const { importArtifacts, isZipArchiveAvailable, zipExplorer, reset: resetExplorer } = useZipExplorer();
 
-const { currentHistoryId } = storeToRefs(useHistoryStore());
+const historyStore = useHistoryStore();
+const { currentHistoryId } = storeToRefs(historyStore);
 
 const zipSource = ref<ArchiveSource>();
 
@@ -62,6 +69,17 @@ const isValidSource = computed(() => {
     }
     return false;
 });
+
+const effectiveTargetHistoryId = computed(() => {
+    return props.targetHistoryId ?? currentHistoryId.value;
+});
+
+const { uploadBlockReason, warningMessage: targetHistoryWarning } = useTargetHistoryUploadState(
+    computed(() => effectiveTargetHistoryId.value),
+);
+
+const hasRegularFilesToImport = computed(() => filesToImport.value.some((file) => file.type === "file"));
+const isBlockedForSelectedItems = computed(() => Boolean(uploadBlockReason.value && hasRegularFilesToImport.value));
 
 const wizard = useWizard({
     "zip-file-selector": {
@@ -85,12 +103,15 @@ const wizard = useWizard({
     "import-summary": {
         label: "Summary",
         instructions: `Review and confirm the items you are about to import. You can go back to select different items if needed:`,
-        isValid: () => true,
+        isValid: () => !isBlockedForSelectedItems.value,
         isSkippable: () => false,
     },
 });
 
 async function importItems() {
+    if (isBlockedForSelectedItems.value) {
+        return;
+    }
     isWizardBusy.value = true;
     try {
         router.push({
@@ -100,7 +121,9 @@ async function importItems() {
                 regularFileCount: String(filesToImport.value.filter((file) => file.type === "file").length),
             },
         });
-        await importArtifacts(filesToImport.value, currentHistoryId.value);
+        // Workflows can be imported without a target history, but regular files require a target history.
+        const targetHistoryId = hasRegularFilesToImport.value ? (effectiveTargetHistoryId.value ?? null) : null;
+        await importArtifacts(filesToImport.value, targetHistoryId);
     } catch (error) {
         errorMessage.value = errorMessageAsString(error);
     } finally {
@@ -164,6 +187,13 @@ archiveExplorerEventBus.on((key, source) => {
 
 <template>
     <div>
+        <BAlert
+            v-if="props.showTargetHistoryWarning && targetHistoryWarning && hasRegularFilesToImport"
+            show
+            variant="warning">
+            {{ targetHistoryWarning }}
+        </BAlert>
+
         <BAlert v-if="errorMessage" show dismissible fade variant="danger" @dismissed="errorMessage = undefined">
             {{ errorMessage }}
         </BAlert>

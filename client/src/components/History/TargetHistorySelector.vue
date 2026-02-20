@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
+import { useTargetHistoryUploadState } from "@/composables/history/useTargetHistoryUploadState";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -16,7 +18,7 @@ interface Props {
     modalTitle?: string;
 }
 
-const _props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     historyCaption: "Target history",
     changeLinkText: "change",
     changeLinkTooltip: "Change target history",
@@ -38,6 +40,8 @@ const { histories } = storeToRefs(historyStore);
 const canChangeHistory = computed(() => {
     return !isAnonymous.value && Array.isArray(histories.value) && histories.value.length > 1;
 });
+
+const { warningMessage } = useTargetHistoryUploadState(computed(() => props.targetHistoryId));
 
 function openHistorySelector() {
     console.debug("Opening history selector modal");
@@ -64,6 +68,10 @@ function handleHistorySelected(history: { id: string }) {
                 {{ changeLinkText }}
             </a>
         </div>
+
+        <BAlert v-if="warningMessage" show variant="warning" class="mb-2 py-1">
+            {{ warningMessage }}
+        </BAlert>
 
         <SelectorModal
             v-if="canChangeHistory"

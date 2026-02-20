@@ -20,6 +20,8 @@ import {
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import type { CollectionCreationInput, SupportedCollectionType } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
+import { useHistoryStore } from "@/stores/historyStore";
+import { getHistoryUploadActionErrorMessage, getHistoryUploadBlockReason } from "@/utils/historyUpload";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { toApiUploadItem, uploadCollectionDatasets, uploadDatasets } from "@/utils/upload";
 
@@ -197,6 +199,7 @@ export function validateUploadItem(item: NewUploadItem): string | undefined {
  */
 export function useUploadQueue() {
     const uploadState = useUploadState();
+    const historyStore = useHistoryStore();
     const queue: string[] = [];
     const batches: CollectionBatch[] = [];
     let processing = false;
@@ -383,6 +386,22 @@ export function useUploadQueue() {
         return batch.items.every((item) => item.uploadMode !== "data-library");
     }
 
+    async function validateTargetHistory(targetHistoryId: string): Promise<string | null> {
+        let history = historyStore.getHistoryById(targetHistoryId, false) ?? null;
+        if (!history) {
+            history = (await historyStore.loadHistoryById(targetHistoryId)) ?? null;
+        }
+
+        // If history still cannot be resolved, treat as no validation error here
+        // (downstream upload logic will surface appropriate API errors if needed)
+        if (!history) {
+            return null;
+        }
+
+        const blockReason = getHistoryUploadBlockReason(history);
+        return blockReason ? getHistoryUploadActionErrorMessage(blockReason) : null;
+    }
+
     /**
      * Processes an entire collection batch as a single HDCA upload.
      * All items are uploaded together in one /api/tools/fetch request with
@@ -396,6 +415,11 @@ export function useUploadQueue() {
         uploadState.updateBatchStatus(batchId, "uploading");
 
         try {
+            const historyError = await validateTargetHistory(collectionConfig.historyId);
+            if (historyError) {
+                throw new Error(historyError);
+            }
+
             // Validate all items first
             for (const item of items) {
                 const validationError = validateUploadItem(item);
@@ -555,6 +579,11 @@ export function useUploadQueue() {
         uploadState.setStatus(id, "uploading");
 
         try {
+            const historyError = await validateTargetHistory(item.targetHistoryId);
+            if (historyError) {
+                throw new Error(historyError);
+            }
+
             // Pre-validate before attempting upload
             const validationError = validateUploadItem(item);
             if (validationError) {

@@ -3,6 +3,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { useTargetHistoryUploadState } from "@/composables/history/useTargetHistoryUploadState";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import type { UploadMethod, UploadMethodComponent } from "./types";
@@ -44,6 +45,17 @@ const method = computed(() => {
     return props.methodId ? getUploadMethod(props.methodId) : null;
 });
 
+const { uploadBlockReason, warningMessage } = useTargetHistoryUploadState(computed(() => targetHistoryId.value));
+
+const canStartUpload = computed(() => !uploadBlockReason.value && canUpload.value);
+
+const startButtonTitle = computed(() => {
+    if (uploadBlockReason.value) {
+        return warningMessage.value;
+    }
+    return canUpload.value ? "Start uploading to Galaxy" : "Configure upload options first";
+});
+
 const breadcrumbItems = computed(() => {
     if (!method.value) {
         return [getUploadRootBreadcrumb()];
@@ -60,6 +72,9 @@ function handleCancel() {
 }
 
 function handleStart() {
+    if (!canStartUpload.value) {
+        return;
+    }
     uploadMethodRef.value?.startUpload();
     router.push("/upload/progress");
 }
@@ -110,8 +125,8 @@ function handleReadyStateChange(ready: boolean) {
                 <GButton
                     v-if="method.showStartButton !== false"
                     color="blue"
-                    :disabled="!canUpload"
-                    :title="canUpload ? 'Start uploading to Galaxy' : 'Configure upload options first'"
+                    :disabled="!canStartUpload"
+                    :title="startButtonTitle"
                     data-test-id="start-upload"
                     @click="handleStart">
                     <span v-localize>Start</span>
