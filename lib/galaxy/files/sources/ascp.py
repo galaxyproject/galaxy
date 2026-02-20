@@ -27,7 +27,9 @@ from typing import (
     Optional,
     Union,
 )
+from urllib.parse import urlparse
 
+from galaxy.exceptions import MessageException
 from galaxy.files.models import (
     FilesSourceRuntimeContext,
 )
@@ -38,6 +40,7 @@ from galaxy.files.sources._fsspec import (
     FsspecFilesSource,
 )
 from galaxy.files.sources.ascp_fsspec import AscpFileSystem
+from galaxy.files.uris import stream_url_to_file
 from galaxy.util.config_templates import TemplateExpansion
 
 log = logging.getLogger(__name__)
@@ -66,9 +69,12 @@ class AscpFilesSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigura
     port: Union[int, TemplateExpansion] = 33001
     disable_encryption: Union[bool, TemplateExpansion] = True
     max_retries: Union[int, TemplateExpansion] = 3
-    retry_base_delay: Union[float, TemplateExpansion] = 2.0
+    retry_base_delay: Union[float, TemplateExpansion] = 5.0
     retry_max_delay: Union[float, TemplateExpansion] = 60.0
     enable_resume: Union[bool, TemplateExpansion] = True
+    fallback_scheme: Union[str, TemplateExpansion, None] = None
+    fallback_host: Union[str, TemplateExpansion, None] = None
+    fallback_user: Union[str, TemplateExpansion, None] = None
 
 
 class AscpFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
@@ -91,9 +97,12 @@ class AscpFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
     port: int = 33001
     disable_encryption: bool = True
     max_retries: int = 3
-    retry_base_delay: float = 2.0
+    retry_base_delay: float = 5.0
     retry_max_delay: float = 60.0
     enable_resume: bool = True
+    fallback_scheme: Optional[str] = None
+    fallback_host: Optional[str] = None
+    fallback_user: Optional[str] = None
 
 
 class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, AscpFilesSourceConfiguration]):
@@ -195,6 +204,26 @@ class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, As
 
     # Extension points for subclasses
 
+    def _rewrite_url_for_fallback(self, url: str, config: AscpFilesSourceConfiguration) -> Optional[str]:
+        """Rewrite an ascp/fasp URL to the configured fallback URL.
+
+        Replaces the scheme and host, preserving the path. The user component
+        is stripped (fallback protocols like FTP are typically anonymous).
+
+        Example (ENA):
+            fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR123/file.fastq.gz
+            → ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR123/file.fastq.gz
+
+        Returns None if fallback is not configured or URL cannot be parsed.
+        """
+        if not config.fallback_scheme or not config.fallback_host:
+            return None
+        if not url.startswith(("ascp://", "fasp://")):
+            return None
+        parsed = urlparse(url)
+        path = parsed.path or ""
+        return f"{config.fallback_scheme}://{config.fallback_host}{path}"
+
     def _realize_to(
         self,
         source_path: str,
@@ -203,18 +232,36 @@ class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, As
     ) -> None:
         """Download a file from the remote source to a local path.
 
-        This method can be overridden in subclasses to add:
-        - Retry logic with exponential backoff
-        - Fallback to alternative protocols (e.g., FTP)
-        - Progress monitoring
-        - Custom error handling
+        Attempts ascp first. If ascp fails and a fallback is configured
+        (fallback_scheme + fallback_host), rewrites the URL and retries
+        via stream_url_to_file using Galaxy's standard file source machinery.
 
         Args:
             source_path: Remote source path or URL
             native_path: Local destination path
             context: Runtime context with configuration
         """
-        super()._realize_to(source_path, native_path, context)
+        config = context.config
+        fallback_url = self._rewrite_url_for_fallback(source_path, config)
+
+        try:
+            super()._realize_to(source_path, native_path, context)
+            return
+        except Exception as e:
+            if fallback_url is None:
+                raise
+            log.warning(f"ascp transfer failed for {source_path}: {e}. Falling back to {fallback_url}")
+
+        try:
+            stream_url_to_file(
+                fallback_url,
+                target_path=native_path,
+            )
+            log.info(f"Fallback download succeeded for {fallback_url}")
+        except Exception as fallback_exc:
+            raise MessageException(
+                f"ascp transfer failed for {source_path} and fallback to {fallback_url} also failed: {fallback_exc}"
+            ) from fallback_exc
 
 
 __all__ = ("AscpFilesSource",)

@@ -1,9 +1,18 @@
-"""Unit tests for Aspera ascp file source plugin."""
+"""Unit tests for Aspera ascp file source plugin.
+
+Tests verify behavior through the public API where possible:
+- Pipeline: stderr → retry decision (end-to-end)
+- Command construction: flag logic for any configuration
+- Temp file lifecycle: real file creation, permissions, cleanup
+- Retry mechanics: backoff, exhaustion, timeout
+- Fallback: URL rewriting and FTP fallback on ascp failure
+"""
 
 import os
+import stat
+import subprocess
 import tempfile
 from unittest.mock import (
-    MagicMock,
     Mock,
     patch,
 )
@@ -15,20 +24,36 @@ from galaxy.files.sources.ascp import AscpFilesSource
 from galaxy.files.sources.ascp_fsspec import AscpFileSystem
 from ._util import configured_file_sources
 
-# Test SSH key (dummy key for testing)
 TEST_SSH_KEY = """-----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEAz6scc2q19eXLfYNLcmBMjWtNoFRTVATvxbNXZJmMhHFL04TP
 rlojfBFH/3NO/Nvjg0d7vMkzU5Pq9LHlvK+9CmhJXzLzlFdWxXVVqwxLLvJGEZvD
 -----END RSA PRIVATE KEY-----"""
 
 
-class TestAscpFileSystem:
-    """Tests for the AscpFileSystem fsspec implementation."""
+@pytest.fixture
+def ascp_fs():
+    """AscpFileSystem with shutil.which patched and fast retry for testing."""
+    with patch("shutil.which", return_value="/usr/bin/ascp"):
+        yield AscpFileSystem(
+            ssh_key=TEST_SSH_KEY,
+            ssh_key_passphrase="testpass",
+            user="test-user",
+            host="test.example.com",
+            max_retries=3,
+            retry_base_delay=0.1,
+        )
 
-    # These are all AI generated, feel free to remove and add tests that don't mock out everything.
+
+# ---------------------------------------------------------------------------
+# TestAscpFileSystem: constructor, URL parsing, pure helpers
+# ---------------------------------------------------------------------------
+
+
+class TestAscpFileSystem:
+    """Tests for AscpFileSystem initialization and pure helper methods."""
 
     def test_initialization(self):
-        """Test that AscpFileSystem can be instantiated with valid parameters."""
+        """Test that constructor stores all parameters correctly."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ascp_path="ascp",
@@ -55,20 +80,27 @@ class TestAscpFileSystem:
                 AscpFileSystem(
                     ascp_path="ascp",
                     ssh_key=TEST_SSH_KEY,
-                    ssh_key_passphrase="abcdefg",
                     user="test-user",
                     host="test.example.com",
                 )
 
-    def test_parse_url_with_full_ascp_url(self):
-        """Test URL parsing with full ascp:// URL."""
+    def test_configuration_defaults(self):
+        """Test that retry/resume/timeout defaults are correct."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="default-user",
-                host="default.example.com",
+                user="test-user",
+                host="test.example.com",
             )
+            assert fs.max_retries == 3
+            assert fs.retry_base_delay == 5.0
+            assert fs.retry_max_delay == 60.0
+            assert fs.enable_resume is True
+
+    def test_parse_url_with_full_ascp_url(self):
+        """Test URL parsing with full ascp:// URL."""
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h")
             parsed = fs._parse_url("ascp://testuser@testhost:12345/path/to/file")
             assert parsed["user"] == "testuser"
             assert parsed["host"] == "testhost"
@@ -78,12 +110,7 @@ class TestAscpFileSystem:
     def test_parse_url_with_fasp_url(self):
         """Test URL parsing with fasp:// URL."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="default-user",
-                host="default.example.com",
-            )
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h")
             parsed = fs._parse_url("fasp://testuser@testhost/path/to/file")
             assert parsed["user"] == "testuser"
             assert parsed["host"] == "testhost"
@@ -92,201 +119,35 @@ class TestAscpFileSystem:
     def test_parse_url_with_path_only(self):
         """Test URL parsing with just a path."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="default-user",
-                host="default.example.com",
-            )
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h")
             parsed = fs._parse_url("/path/to/file")
             assert parsed["user"] is None
             assert parsed["host"] is None
             assert parsed["port"] is None
             assert parsed["path"] == "/path/to/file"
 
-    @patch("subprocess.run")
-    @patch("tempfile.mkstemp")
-    @patch("os.chmod")
-    @patch("os.fdopen")
-    @patch("os.unlink")
-    def test_get_file_success(self, mock_unlink, mock_fdopen, mock_chmod, mock_mkstemp, mock_subprocess):
-        """Test successful file download."""
-        # Setup mocks
-        mock_mkstemp.return_value = (123, "/tmp/test_key.key")
-        mock_file = MagicMock()
-        mock_fdopen.return_value.__enter__.return_value = mock_file
-        mock_subprocess.return_value = Mock(returncode=0, stderr="", stdout="Transfer complete")
-
-        with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ascp_path="ascp",
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
-                rate_limit="300m",
-                port=33001,
-                disable_encryption=True,
-            )
-
-            # Execute
-            fs.get_file("/remote/path/file.txt", "/local/path/file.txt")
-
-            # Verify
-            mock_mkstemp.assert_called_once()
-            mock_chmod.assert_called_once_with("/tmp/test_key.key", 0o600)
-            mock_file.write.assert_called_once_with(TEST_SSH_KEY)
-            mock_subprocess.assert_called_once()
-            mock_unlink.assert_called_once_with("/tmp/test_key.key")
-
-            # Verify command structure
-            call_args = mock_subprocess.call_args[0][0]
-            assert call_args[0] == "ascp"
-            assert "-i" in call_args
-            assert "-l" in call_args
-            assert "300m" in call_args
-            assert "-P" in call_args
-            assert "33001" in call_args
-            assert "-T" in call_args
-            assert "test-user@test.example.com:/remote/path/file.txt" in call_args
-            assert "/local/path/file.txt" in call_args
-
-    @patch("subprocess.run")
-    @patch("tempfile.mkstemp")
-    @patch("os.chmod")
-    @patch("os.fdopen")
-    @patch("os.unlink")
-    def test_get_file_authentication_failure(self, mock_unlink, mock_fdopen, mock_chmod, mock_mkstemp, mock_subprocess):
-        """Test handling of authentication failures."""
-        mock_mkstemp.return_value = (123, "/tmp/test_key.key")
-        mock_file = MagicMock()
-        mock_fdopen.return_value.__enter__.return_value = mock_file
-        mock_subprocess.return_value = Mock(returncode=1, stderr="authentication failed", stdout="")
-
-        with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
-            )
-
-            with pytest.raises(MessageException, match="Authentication failed"):
-                fs.get_file("/remote/path/file.txt", "/local/path/file.txt")
-
-            # Verify cleanup happened
-            mock_unlink.assert_called_once()
-
-    @patch("subprocess.run")
-    @patch("tempfile.mkstemp")
-    @patch("os.chmod")
-    @patch("os.fdopen")
-    @patch("os.unlink")
-    def test_get_file_not_found(self, mock_unlink, mock_fdopen, mock_chmod, mock_mkstemp, mock_subprocess):
-        """Test handling of file not found errors."""
-        mock_mkstemp.return_value = (123, "/tmp/test_key.key")
-        mock_file = MagicMock()
-        mock_fdopen.return_value.__enter__.return_value = mock_file
-        mock_subprocess.return_value = Mock(returncode=1, stderr="no such file or directory", stdout="")
-
-        with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
-            )
-
-            with pytest.raises(MessageException, match="Remote file not found"):
-                fs.get_file("/remote/path/file.txt", "/local/path/file.txt")
-
-    @patch("subprocess.run")
-    @patch("tempfile.mkstemp")
-    @patch("os.chmod")
-    @patch("os.fdopen")
-    @patch("os.unlink")
-    def test_get_file_network_error(self, mock_unlink, mock_fdopen, mock_chmod, mock_mkstemp, mock_subprocess):
-        """Test handling of network errors."""
-        mock_mkstemp.return_value = (123, "/tmp/test_key.key")
-        mock_file = MagicMock()
-        mock_fdopen.return_value.__enter__.return_value = mock_file
-        mock_subprocess.return_value = Mock(returncode=1, stderr="connection refused", stdout="")
-
-        with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
-            )
-
-            with pytest.raises(MessageException, match="Network error"):
-                fs.get_file("/remote/path/file.txt", "/local/path/file.txt")
-
-    @patch("subprocess.run")
-    @patch("tempfile.mkstemp")
-    @patch("os.chmod")
-    @patch("os.fdopen")
-    @patch("os.unlink")
-    @patch("os.close")
-    def test_key_cleanup_on_error(
-        self, mock_close, mock_unlink, mock_fdopen, mock_chmod, mock_mkstemp, mock_subprocess
-    ):
-        """Test that temporary key file is cleaned up even on error."""
-        mock_mkstemp.return_value = (123, "/tmp/test_key.key")
-        mock_file = MagicMock()
-        mock_fdopen.return_value.__enter__.return_value = mock_file
-        # Use a non-retryable error (authentication failure)
-        mock_subprocess.return_value = Mock(
-            returncode=1,
-            stderr="authentication failed: invalid key",
-            stdout="",
-        )
-
-        with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
-            )
-
-            with pytest.raises(MessageException, match="Authentication failed"):
-                fs.get_file("/remote/path/file.txt", "/local/path/file.txt")
-
-            # Verify cleanup was attempted
-            mock_unlink.assert_called_once_with("/tmp/test_key.key")
-
     def test_sanitize_cmd_for_log(self):
         """Test that SSH key path is hidden in log output."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
-            )
-
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h")
             cmd = ["ascp", "-i", "/tmp/secret_key.key", "-l", "300m", "user@host:/path", "/dest"]
             sanitized = fs._sanitize_cmd_for_log(cmd)
-
             assert "/tmp/secret_key.key" not in sanitized
             assert "<hidden>" in sanitized
             assert "ascp" in sanitized
             assert "300m" in sanitized
 
     def test_missing_user_or_host(self):
-        """Test that _get_file fails when user or host is not provided."""
+        """Test that get_file fails when user or host is not provided."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user=None,
-                host=None,
-            )
-
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user=None, host=None)
             with pytest.raises(MessageException, match="User and host must be specified"):
                 fs.get_file("/remote/path/file.txt", "/local/path/file.txt")
+
+
+# ---------------------------------------------------------------------------
+# TestAscpFilesSource: plugin registration and URL matching
+# ---------------------------------------------------------------------------
 
 
 class TestAscpFilesSource:
@@ -309,9 +170,6 @@ class TestAscpFilesSource:
         }
 
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-            from ._util import configured_file_sources
-
-            # Create a temporary config file
             with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
                 import yaml
 
@@ -338,7 +196,6 @@ class TestAscpFilesSource:
         }
 
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-
             with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
                 import yaml
 
@@ -353,7 +210,7 @@ class TestAscpFilesSource:
                 os.unlink(config_file)
 
     def test_url_matching_non_matching(self):
-        """Test that non-ascp URLs return 0 score."""
+        """Test that non-ascp URLs don't match the ascp plugin."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             config = {
                 "type": "ascp",
@@ -372,72 +229,129 @@ class TestAscpFilesSource:
 
             try:
                 file_sources = configured_file_sources(config_file)
-                # This should not match ascp plugin
                 result = file_sources.get_file_source_path("http://example.com/file")
-                # Should match a different plugin or return None
                 assert result.file_source.id != "test_ascp"
             except Exception:
-                # If no other plugin matches, that's also acceptable
-                pass
+                pass  # No other plugin matches — also acceptable
             finally:
                 os.unlink(config_file)
 
 
-class TestAscpRetryLogic:
-    """Tests for retry and resume functionality."""
+# ---------------------------------------------------------------------------
+# TestErrorPipeline: stderr → _handle_ascp_error → _is_retryable_error → retry
+# ---------------------------------------------------------------------------
 
-    def test_retry_on_network_error(self):
-        """Test that network errors trigger retry with exponential backoff."""
+
+class TestErrorPipeline:
+    """Test the full error pipeline: stderr → retry decision.
+
+    This is the chain that broke in the original bug. Tests verify that
+    stderr flows through _handle_ascp_error into a MessageException, and
+    _is_retryable_error makes the correct retry decision — end to end.
+    Only subprocess.run and shutil.which are mocked.
+    """
+
+    @staticmethod
+    def _run_pipeline(fs, stderr, max_attempts=3):
+        """Run get_file with a mock subprocess that fails with given stderr,
+        then succeeds. Returns the number of subprocess calls made."""
+        call_count = 0
+
+        def mock_run(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count < max_attempts:
+                return Mock(returncode=1, stderr=stderr, stdout="")
+            return Mock(returncode=0, stderr="", stdout="")
+
+        with patch("subprocess.run", side_effect=mock_run):
+            with patch("time.sleep"):
+                try:
+                    fs.get_file("/remote/file.txt", "/local/file.txt")
+                except MessageException:
+                    pass  # Expected for non-retryable or exhausted retries
+        return call_count
+
+    def test_retryable_stderr_is_retried(self, ascp_fs):
+        """Retryable stderr (network error) → multiple attempts."""
+        count = self._run_pipeline(ascp_fs, "network timeout error")
+        assert count == 3  # Failed twice, succeeded on third
+
+    def test_non_retryable_stderr_not_retried(self, ascp_fs):
+        """Non-retryable stderr (auth failure) → single attempt, no retry."""
+        count = self._run_pipeline(ascp_fs, "authentication failed: bad key")
+        assert count == 1
+
+    def test_non_retryable_file_not_found(self, ascp_fs):
+        """Non-retryable stderr (file not found) → single attempt."""
+        count = self._run_pipeline(ascp_fs, "no such file or directory")
+        assert count == 1
+
+    def test_unrecognized_stderr_is_retried(self, ascp_fs):
+        """Unrecognized stderr → retried (blacklist guarantee)."""
+        count = self._run_pipeline(ascp_fs, "xyzzy something never seen before 42")
+        assert count == 3
+
+    def test_session_stop_stderr_is_retried(self, ascp_fs):
+        """Session stop stderr → retried (classified as session-stop, which is retryable)."""
+        count = self._run_pipeline(ascp_fs, "Session Stop  (Error: some server reason)")
+        assert count == 3
+
+    def test_empty_stderr_is_retried(self, ascp_fs):
+        """Empty stderr on failure → retried (generic error, retryable)."""
+        count = self._run_pipeline(ascp_fs, "")
+        assert count == 3
+
+
+# ---------------------------------------------------------------------------
+# TestCommandConstruction: verify flag logic with minimal mocking
+# ---------------------------------------------------------------------------
+
+
+class TestCommandConstruction:
+    """Test ascp command construction. Only subprocess.run is mocked
+    (to capture the command); temp file operations run for real."""
+
+    def _capture_command(self, fs):
+        """Run get_file and capture the command passed to subprocess.run."""
+        captured = {}
+
+        def mock_run(cmd, *args, **kwargs):
+            captured["cmd"] = cmd
+            captured["kwargs"] = kwargs
+            return Mock(returncode=0, stderr="", stdout="")
+
+        with patch("subprocess.run", side_effect=mock_run):
+            fs.get_file("/remote/file.txt", "/local/file.txt")
+        return captured
+
+    def test_encryption_disabled(self):
+        """disable_encryption=True → -T flag present."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
-                max_retries=3,
-                retry_base_delay=0.1,  # Fast for testing
-            )
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h", disable_encryption=True)
+            result = self._capture_command(fs)
+            assert "-T" in result["cmd"]
 
-            # Mock subprocess to fail twice, then succeed
-            call_count = 0
-
-            def mock_run(*args, **kwargs):
-                nonlocal call_count
-                call_count += 1
-                if call_count < 3:
-                    # Simulate network error
-                    return Mock(
-                        returncode=1,
-                        stderr="Network error: connection timed out",
-                        stdout="",
-                    )
-                else:
-                    # Success on third attempt
-                    return Mock(returncode=0, stderr="", stdout="")
-
-            with patch("subprocess.run", side_effect=mock_run):
-                with patch("tempfile.mkstemp", return_value=(1, "/tmp/test_key.key")):
-                    with patch("os.fdopen"):
-                        with patch("os.chmod"):
-                            with patch("os.unlink"):
-                                with patch("time.sleep") as mock_sleep:
-                                    fs.get_file("/remote/file.txt", "/local/file.txt")
-
-                                    # Should have been called 3 times
-                                    assert call_count == 3
-                                    # Should have slept twice (between attempts)
-                                    assert mock_sleep.call_count == 2
-
-    def test_no_retry_on_authentication_error(self):
-        """Test that authentication errors do not trigger retry."""
+    def test_encryption_enabled(self):
+        """disable_encryption=False → no -T flag."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
-                max_retries=3,
-            )
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h", disable_encryption=False)
+            result = self._capture_command(fs)
+            assert "-T" not in result["cmd"]
+
+    def test_resume_enabled(self):
+        """enable_resume=True → -k 1 flag present on first attempt."""
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h", enable_resume=True)
+            result = self._capture_command(fs)
+            cmd = result["cmd"]
+            assert "-k" in cmd
+            assert cmd[cmd.index("-k") + 1] == "1"
+
+    def test_no_retry_on_auth_failure(self):
+        """Authentication failure → no retry, raises immediately."""
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h")
 
             call_count = 0
 
@@ -462,175 +376,418 @@ class TestAscpRetryLogic:
                                 assert call_count == 1
 
     def test_resume_disabled(self):
-        """Test that resume flag is not added when disabled."""
+        """enable_resume=False → no -k flag."""
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h", enable_resume=False)
+            result = self._capture_command(fs)
+            assert "-k" not in result["cmd"]
+
+    def test_port_and_rate(self):
+        """-P port and -l rate_limit are correct."""
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h", port=9999, rate_limit="50m")
+            result = self._capture_command(fs)
+            cmd = result["cmd"]
+            assert "9999" in cmd
+            assert "50m" in cmd
+
+    def test_user_host_path_format(self):
+        """Remote path formatted as user@host:path."""
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="myuser", host="myhost.com")
+            result = self._capture_command(fs)
+            assert "myuser@myhost.com:/remote/file.txt" in result["cmd"]
+
+    def test_passphrase_sets_env(self):
+        """Passphrase → ASPERA_SCP_PASS in subprocess env."""
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, ssh_key_passphrase="secret", user="u", host="h")
+            result = self._capture_command(fs)
+            env = result["kwargs"].get("env")
+            assert env is not None
+            assert env.get("ASPERA_SCP_PASS") == "secret"
+
+    def test_no_passphrase_no_env(self):
+        """No passphrase → env=None passed to subprocess."""
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h")
+            result = self._capture_command(fs)
+            assert result["kwargs"].get("env") is None
+
+    def test_resume_on_all_attempts(self):
+        """Resume flag (-k 1) present on both first attempt and retries."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
+                user="u",
+                host="h",
+                enable_resume=True,
                 max_retries=2,
-                retry_base_delay=0.1,
-                enable_resume=False,  # Disabled
+                retry_base_delay=0.01,
             )
-
             captured_commands = []
 
             def mock_run(cmd, *args, **kwargs):
-                captured_commands.append(cmd)
+                captured_commands.append(list(cmd))
                 if len(captured_commands) < 2:
-                    return Mock(
-                        returncode=1,
-                        stderr="Network error: timeout",
-                        stdout="",
-                    )
-                else:
-                    return Mock(returncode=0, stderr="", stdout="")
+                    return Mock(returncode=1, stderr="some transient error", stdout="")
+                return Mock(returncode=0, stderr="", stdout="")
 
             with patch("subprocess.run", side_effect=mock_run):
-                with patch("tempfile.mkstemp", return_value=(1, "/tmp/test_key.key")):
-                    with patch("os.fdopen"):
-                        with patch("os.chmod"):
-                            with patch("os.unlink"):
-                                with patch("time.sleep"):
-                                    fs.get_file("/remote/file.txt", "/local/file.txt")
+                with patch("time.sleep"):
+                    fs.get_file("/remote/file.txt", "/local/file.txt")
 
-                                    # Neither attempt should have -k flag
-                                    assert "-k" not in captured_commands[0]
-                                    assert "-k" not in captured_commands[1]
+            for i, cmd in enumerate(captured_commands):
+                assert "-k" in cmd, f"Attempt {i}: -k flag missing"
+                assert cmd[cmd.index("-k") + 1] == "1"
 
-    def test_max_retries_exhausted(self):
-        """Test that error is raised after max retries are exhausted."""
+
+# ---------------------------------------------------------------------------
+# TestTempFileLifecycle: real file creation, permissions, cleanup
+# ---------------------------------------------------------------------------
+
+
+class TestTempFileLifecycle:
+    """Test SSH key temp file lifecycle with real file operations.
+    Only subprocess.run and shutil.which are mocked."""
+
+    def test_key_file_created_with_correct_permissions(self):
+        """Temp key file has 0o600 permissions and contains the SSH key."""
+        key_paths = []
+
+        def spy_run(cmd, *args, **kwargs):
+            # Find the -i argument to get the key path
+            if "-i" in cmd:
+                key_path = cmd[cmd.index("-i") + 1]
+                key_paths.append(key_path)
+                # Verify file exists and has correct permissions while ascp "runs"
+                assert os.path.exists(key_path), "Key file should exist during transfer"
+                file_stat = os.stat(key_path)
+                assert stat.S_IMODE(file_stat.st_mode) == 0o600, "Key file should have 0o600 permissions"
+                with open(key_path) as f:
+                    assert f.read() == TEST_SSH_KEY, "Key file should contain the SSH key"
+            return Mock(returncode=0, stderr="", stdout="")
+
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
-                max_retries=2,
-                retry_base_delay=0.1,
-            )
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h")
+            with patch("subprocess.run", side_effect=spy_run):
+                fs.get_file("/remote/file.txt", "/local/file.txt")
 
-            call_count = 0
+        assert len(key_paths) == 1
+        assert not os.path.exists(key_paths[0]), "Key file should be cleaned up after transfer"
 
-            def mock_run(*args, **kwargs):
-                nonlocal call_count
-                call_count += 1
-                # Always fail with network error
-                return Mock(
-                    returncode=1,
-                    stderr="Network error: connection refused",
-                    stdout="",
-                )
+    def test_key_file_cleaned_up_on_non_retryable_error(self):
+        """Temp key file is cleaned up even when a non-retryable error occurs."""
+        key_paths = []
 
-            with patch("subprocess.run", side_effect=mock_run):
-                with patch("tempfile.mkstemp", return_value=(1, "/tmp/test_key.key")):
-                    with patch("os.fdopen"):
-                        with patch("os.chmod"):
-                            with patch("os.unlink"):
-                                with patch("time.sleep"):
-                                    with pytest.raises(MessageException, match="Network error"):
-                                        fs.get_file("/remote/file.txt", "/local/file.txt")
+        def spy_run(cmd, *args, **kwargs):
+            if "-i" in cmd:
+                key_paths.append(cmd[cmd.index("-i") + 1])
+            return Mock(returncode=1, stderr="authentication failed", stdout="")
 
-                                    # Should have tried max_retries times
-                                    assert call_count == 2
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h", max_retries=1)
+            with patch("subprocess.run", side_effect=spy_run):
+                with pytest.raises(MessageException):
+                    fs.get_file("/remote/file.txt", "/local/file.txt")
+
+        assert len(key_paths) == 1
+        assert not os.path.exists(key_paths[0]), "Key file should be cleaned up after error"
+
+    def test_key_file_cleaned_up_on_retryable_error(self):
+        """Temp key file is cleaned up after retries are exhausted."""
+        key_paths = []
+
+        def spy_run(cmd, *args, **kwargs):
+            if "-i" in cmd:
+                key_paths.append(cmd[cmd.index("-i") + 1])
+            return Mock(returncode=1, stderr="some transient error", stdout="")
+
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h", max_retries=2, retry_base_delay=0.01)
+            with patch("subprocess.run", side_effect=spy_run):
+                with patch("time.sleep"):
+                    with pytest.raises(MessageException):
+                        fs.get_file("/remote/file.txt", "/local/file.txt")
+
+        # Each attempt creates a new temp file
+        for path in key_paths:
+            assert not os.path.exists(path), f"Key file {path} should be cleaned up"
+
+
+# ---------------------------------------------------------------------------
+# TestRetryMechanics: backoff, exhaustion, timeout
+# ---------------------------------------------------------------------------
+
+
+class TestRetryMechanics:
+    """Test retry mechanics: backoff delays, max retries, timeout handling."""
+
+    def test_max_retries_exhausted(self, ascp_fs):
+        """Error is raised after max retries are exhausted."""
+        call_count = 0
+
+        def mock_run(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return Mock(returncode=1, stderr="some transient error", stdout="")
+
+        with patch("subprocess.run", side_effect=mock_run):
+            with patch("time.sleep"):
+                with pytest.raises(MessageException):
+                    ascp_fs.get_file("/remote/file.txt", "/local/file.txt")
+
+        assert call_count == 3  # ascp_fs fixture has max_retries=3
 
     def test_exponential_backoff_delays(self):
-        """Test that retry delays follow exponential backoff pattern."""
+        """Retry delays follow exponential backoff, capped at retry_max_delay."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
+                user="u",
+                host="h",
                 max_retries=4,
                 retry_base_delay=2.0,
                 retry_max_delay=10.0,
             )
 
-            def mock_run(*args, **kwargs):
-                # Always fail
-                return Mock(
-                    returncode=1,
-                    stderr="Network error: timeout",
-                    stdout="",
-                )
+        def mock_run(*args, **kwargs):
+            return Mock(returncode=1, stderr="transient error", stdout="")
 
-            with patch("subprocess.run", side_effect=mock_run):
-                with patch("tempfile.mkstemp", return_value=(1, "/tmp/test_key.key")):
-                    with patch("os.fdopen"):
-                        with patch("os.chmod"):
-                            with patch("os.unlink"):
-                                with patch("time.sleep") as mock_sleep:
-                                    with pytest.raises(MessageException):
-                                        fs.get_file("/remote/file.txt", "/local/file.txt")
+        with patch("subprocess.run", side_effect=mock_run):
+            with patch("time.sleep") as mock_sleep:
+                with pytest.raises(MessageException):
+                    fs.get_file("/remote/file.txt", "/local/file.txt")
 
-                                    # Check delay progression: 2^1=2, 2^2=4, 2^3=8 (capped at 10)
-                                    sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
-                                    assert sleep_calls[0] == 2.0  # 2^1
-                                    assert sleep_calls[1] == 4.0  # 2^2
-                                    assert sleep_calls[2] == 8.0  # 2^3
+                sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
+                assert sleep_calls[0] == 2.0  # 2^1
+                assert sleep_calls[1] == 4.0  # 2^2
+                assert sleep_calls[2] == 8.0  # 2^3, not capped (< 10)
 
-    def test_is_retryable_error_classification(self):
-        """Test error classification for retry logic."""
+    def test_transfer_timeout(self):
+        """subprocess.TimeoutExpired → MessageException."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
                 ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
+                user="u",
+                host="h",
+                max_retries=1,
             )
 
-            # Retryable errors
-            assert fs._is_retryable_error(MessageException("Network error occurred"))
-            assert fs._is_retryable_error(MessageException("Connection timed out"))
-            assert fs._is_retryable_error(MessageException("Connection refused"))
-            assert fs._is_retryable_error(MessageException("Host unreachable"))
+        def mock_run(*args, **kwargs):
+            raise subprocess.TimeoutExpired(cmd="ascp", timeout=10)
 
-            # Non-retryable errors
-            assert not fs._is_retryable_error(MessageException("Authentication failed"))
-            assert not fs._is_retryable_error(MessageException("File not found"))
-            assert not fs._is_retryable_error(MessageException("Permission denied"))
-            assert not fs._is_retryable_error(MessageException("Invalid key"))
-            assert not fs._is_retryable_error(MessageException("SSH key is required"))
+        with patch("subprocess.run", side_effect=mock_run):
+            with pytest.raises(MessageException, match="timed out"):
+                fs.get_file("/remote/file.txt", "/local/file.txt")
 
-    def test_retry_configuration_defaults(self):
-        """Test that retry configuration has correct defaults."""
+
+# ---------------------------------------------------------------------------
+# TestEdgeCases: boundary conditions
+# ---------------------------------------------------------------------------
+
+
+class TestEdgeCases:
+    """Edge cases that don't fit neatly into other categories."""
+
+    def test_empty_ssh_key_raises(self):
+        """Empty SSH key raises before attempting transfer."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
-            )
+            fs = AscpFileSystem(ssh_key="", user="u", host="h")
+            with pytest.raises(MessageException, match="SSH key is required"):
+                fs.get_file("/remote/file.txt", "/local/file.txt")
 
-            assert fs.max_retries == 3
-            assert fs.retry_base_delay == 2.0
-            assert fs.retry_max_delay == 60.0
-            assert fs.enable_resume is True
-
-    def test_ssh_key_as_content(self):
-        """Test that ssh_key can be provided as key content (original behavior)."""
+    def test_success_with_stderr_warnings(self):
+        """returncode=0 with non-empty stderr should succeed (ascp warnings)."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-            fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY,  # Pass key content
-                ssh_key_passphrase="abcdefg",
-                user="test-user",
-                host="test.example.com",
+            fs = AscpFileSystem(ssh_key=TEST_SSH_KEY, user="u", host="h")
+
+        def mock_run(*args, **kwargs):
+            return Mock(returncode=0, stderr="Warning: something non-fatal", stdout="")
+
+        with patch("subprocess.run", side_effect=mock_run):
+            # Should not raise
+            fs.get_file("/remote/file.txt", "/local/file.txt")
+
+
+# ---------------------------------------------------------------------------
+# TestFallback: URL rewriting and FTP fallback on ascp failure
+# ---------------------------------------------------------------------------
+
+
+def _make_ascp_source_with_fallback(fallback_scheme="ftp", fallback_host="ftp.sra.ebi.ac.uk"):
+    """Create an AscpFilesSource configured with fallback."""
+    import yaml
+
+    config = {
+        "type": "ascp",
+        "id": "test_ascp_fallback",
+        "label": "Test Aspera with Fallback",
+        "ssh_key_content": TEST_SSH_KEY,
+        "user": "era-fasp",
+        "host": "fasp.sra.ebi.ac.uk",
+        "fallback_scheme": fallback_scheme,
+        "fallback_host": fallback_host,
+    }
+    with patch("shutil.which", return_value="/usr/bin/ascp"):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
+            yaml.dump([config], f)
+            config_file = f.name
+        try:
+            file_sources = configured_file_sources(config_file)
+            pair = file_sources.get_file_source_path(
+                "fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR123/file.fastq.gz"
             )
+            return pair.file_source, pair, config_file
+        except Exception:
+            os.unlink(config_file)
+            raise
 
-            # Mock subprocess and tempfile to verify temp file is created and cleaned up
-            with patch("subprocess.run") as mock_run:
-                mock_run.return_value = Mock(returncode=0, stderr="", stdout="")
 
-                with patch("tempfile.mkstemp", return_value=(123, "/tmp/test_key.key")) as mock_mkstemp:
-                    with patch("os.fdopen"):
-                        with patch("os.chmod"):
-                            with patch("os.unlink") as mock_unlink:
-                                fs.get_file("/remote/file.txt", "/local/file.txt")
+class TestFallbackUrlRewrite:
+    """Test _rewrite_url_for_fallback: pure URL transformation logic."""
 
-                                # Verify temp file was created
-                                mock_mkstemp.assert_called_once()
+    def _make_source(self, fallback_scheme=None, fallback_host=None):
+        from types import SimpleNamespace
 
-                                # Verify temp file was cleaned up
-                                mock_unlink.assert_called_once_with("/tmp/test_key.key")
+        config = SimpleNamespace(
+            fallback_scheme=fallback_scheme,
+            fallback_host=fallback_host,
+        )
+        source = AscpFilesSource.__new__(AscpFilesSource)
+        return source, config
+
+    def test_ena_fasp_to_ftp(self):
+        """fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/... → ftp://ftp.sra.ebi.ac.uk/vol1/..."""
+        source, config = self._make_source(fallback_scheme="ftp", fallback_host="ftp.sra.ebi.ac.uk")
+        result = source._rewrite_url_for_fallback(
+            "fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR123/ERR123.fastq.gz", config
+        )
+        assert result == "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR123/ERR123.fastq.gz"
+
+    def test_ascp_scheme_also_rewritten(self):
+        """ascp:// URLs are also rewritten."""
+        source, config = self._make_source(fallback_scheme="ftp", fallback_host="ftp.sra.ebi.ac.uk")
+        result = source._rewrite_url_for_fallback(
+            "ascp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR123/ERR123.fastq.gz", config
+        )
+        assert result == "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR123/ERR123.fastq.gz"
+
+    def test_user_stripped_from_url(self):
+        """User component (era-fasp@) is not included in the fallback URL."""
+        source, config = self._make_source(fallback_scheme="ftp", fallback_host="ftp.sra.ebi.ac.uk")
+        result = source._rewrite_url_for_fallback(
+            "fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR123/ERR123.fastq.gz", config
+        )
+        assert "era-fasp" not in result
+        assert "@" not in result
+
+    def test_no_fallback_host_returns_none(self):
+        """No fallback_host → returns None."""
+        source, config = self._make_source(fallback_scheme="ftp", fallback_host=None)
+        result = source._rewrite_url_for_fallback("fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/file.gz", config)
+        assert result is None
+
+    def test_no_fallback_scheme_returns_none(self):
+        """No fallback_scheme → returns None."""
+        source, config = self._make_source(fallback_scheme=None, fallback_host="ftp.sra.ebi.ac.uk")
+        result = source._rewrite_url_for_fallback("fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/file.gz", config)
+        assert result is None
+
+    def test_non_ascp_url_returns_none(self):
+        """Non-ascp/fasp URL → returns None (not our URL to rewrite)."""
+        source, config = self._make_source(fallback_scheme="ftp", fallback_host="ftp.sra.ebi.ac.uk")
+        result = source._rewrite_url_for_fallback("https://example.com/file.gz", config)
+        assert result is None
+
+    def test_path_preserved_exactly(self):
+        """Deep nested path is preserved exactly in the fallback URL."""
+        source, config = self._make_source(fallback_scheme="ftp", fallback_host="ftp.sra.ebi.ac.uk")
+        result = source._rewrite_url_for_fallback(
+            "fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR999/ERR999_1.fastq.gz", config
+        )
+        assert result == "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR999/ERR999_1.fastq.gz"
+
+
+class TestFallbackInvocation:
+    """Test that fallback is triggered on ascp failure and not on success."""
+
+    def test_fallback_called_on_ascp_failure(self):
+        """When ascp fails and fallback is configured, stream_url_to_file is called."""
+        source, pair, config_file = _make_ascp_source_with_fallback()
+        try:
+            with patch("shutil.which", return_value="/usr/bin/ascp"):
+                with patch(
+                    "subprocess.run",
+                    return_value=Mock(returncode=1, stderr="Session Stop (Error: Client unable to connect)", stdout=""),
+                ):
+                    with patch("time.sleep"):
+                        with patch("galaxy.files.sources.ascp.stream_url_to_file") as mock_fallback:
+                            mock_fallback.return_value = None
+                            source.realize_to(pair.path, "/tmp/test_fallback_output.txt")
+
+            mock_fallback.assert_called_once()
+            fallback_url = mock_fallback.call_args[0][0]
+            assert fallback_url == "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR123/file.fastq.gz"
+            assert "era-fasp" not in fallback_url
+        finally:
+            os.unlink(config_file)
+
+    def test_fallback_not_called_on_ascp_success(self):
+        """When ascp succeeds, fallback is never invoked."""
+        source, pair, config_file = _make_ascp_source_with_fallback()
+        try:
+            with patch("shutil.which", return_value="/usr/bin/ascp"):
+                with patch("subprocess.run", return_value=Mock(returncode=0, stderr="", stdout="")):
+                    with patch("galaxy.files.sources.ascp.stream_url_to_file") as mock_fallback:
+                        source.realize_to(pair.path, "/tmp/test_no_fallback_output.txt")
+
+            mock_fallback.assert_not_called()
+        finally:
+            os.unlink(config_file)
+
+    def test_both_fail_raises_message_exception(self):
+        """When ascp and fallback both fail, MessageException is raised."""
+        source, pair, config_file = _make_ascp_source_with_fallback()
+        try:
+            with patch("shutil.which", return_value="/usr/bin/ascp"):
+                with patch("subprocess.run", return_value=Mock(returncode=1, stderr="Session Stop", stdout="")):
+                    with patch("time.sleep"):
+                        with patch(
+                            "galaxy.files.sources.ascp.stream_url_to_file", side_effect=Exception("FTP also down")
+                        ):
+                            with pytest.raises(MessageException, match="fallback.*also failed"):
+                                source.realize_to(pair.path, "/tmp/test_both_fail.txt")
+        finally:
+            os.unlink(config_file)
+
+    def test_no_fallback_configured_raises_original_error(self):
+        """Without fallback config, ascp failure raises directly without fallback attempt."""
+        import yaml
+
+        config = {
+            "type": "ascp",
+            "id": "test_ascp_no_fallback",
+            "label": "Test Aspera no Fallback",
+            "ssh_key_content": TEST_SSH_KEY,
+            "user": "era-fasp",
+            "host": "fasp.sra.ebi.ac.uk",
+        }
+        with patch("shutil.which", return_value="/usr/bin/ascp"):
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
+                yaml.dump([config], f)
+                config_file = f.name
+            try:
+                file_sources = configured_file_sources(config_file)
+                pair = file_sources.get_file_source_path("fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/file.gz")
+                source = pair.file_source
+
+                with patch("subprocess.run", return_value=Mock(returncode=1, stderr="Session Stop", stdout="")):
+                    with patch("time.sleep"):
+                        with patch("galaxy.files.sources.ascp.stream_url_to_file") as mock_fallback:
+                            with pytest.raises(MessageException):
+                                source.realize_to(pair.path, "/tmp/test_no_fallback.txt")
+
+                mock_fallback.assert_not_called()
+            finally:
+                os.unlink(config_file)
