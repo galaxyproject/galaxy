@@ -557,7 +557,7 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
                     else:
                         yield pixels.getPlane(z, c, 0)
 
-        with tifffile.TiffWriter(native_path, bigtiff=True, ome=True) as tif:
+        with tifffile.TiffWriter(native_path, bigtiff=True, imagej=True) as tif:
             tif.write(
                 data=plane_generator(),
                 shape=(size_z, size_c, size_y, size_x),
