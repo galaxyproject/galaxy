@@ -716,7 +716,7 @@ defineExpose({
                     </thead>
 
                     <tbody>
-                        <tr v-if="props.showEmpty && !props.items.length">
+                        <tr v-if="props.showEmpty && !props.items.length" class="g-table-empty-row">
                             <td :colspan="(selectable ? 1 : 0) + props.fields.length + (props.actions ? 1 : 0)">
                                 <slot name="empty">
                                     <BAlert v-if="!loading" variant="info" show class="w-100 m-0">
