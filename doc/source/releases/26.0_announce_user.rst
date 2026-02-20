@@ -10,7 +10,7 @@ Please see the full `release notes <https://github.com/galaxyproject/galaxy/rele
 Highlights
 ===========================================================
 
-Discover some of the most exciting new capabilities and improvements in Galaxy 26.1.
+Discover some of the most exciting new capabilities and improvements in Galaxy 26.0.
 
 .. rubric:: AI Comes to Galaxy!
 
