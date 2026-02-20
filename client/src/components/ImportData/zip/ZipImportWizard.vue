@@ -121,10 +121,9 @@ async function importItems() {
                 regularFileCount: String(filesToImport.value.filter((file) => file.type === "file").length),
             },
         });
-        await importArtifacts(
-            filesToImport.value,
-            hasRegularFilesToImport.value ? effectiveTargetHistoryId.value ?? null : null,
-        );
+        // Workflows can be imported without a target history, but regular files require a target history.
+        const targetHistoryId = hasRegularFilesToImport.value ? (effectiveTargetHistoryId.value ?? null) : null;
+        await importArtifacts(filesToImport.value, targetHistoryId);
     } catch (error) {
         errorMessage.value = errorMessageAsString(error);
     } finally {
