@@ -15,7 +15,7 @@
   # for accessing passwords stored in a vault:
   # password: ${user.user_vault.read_secret('preferences/owncloud/password')}
 
-  # By default, the plugin will use temp files to avoid loading entire files into memory. 
+  # By default, the plugin will use temp files to avoid loading entire files into memory.
   # You can change the directory here or omit to use the default temp directory.
   temp_path: /your/temp/path
   # Set writable to true if you have write access to this source
@@ -84,8 +84,8 @@
   enable_resume: true  # Enable resume for interrupted transfers
   # SSH private key for authentication (download ENA key from: https://www.ebi.ac.uk/ena/browser/about/ascp)
   # Embed the key content directly in the configuration (required - not file paths)
-  # Note: SSH key content is required because Galaxy jobs often run on clusters that don't 
-  # mount Galaxy's root or configuration directories. The configuration block is copied 
+  # Note: SSH key content is required because Galaxy jobs often run on clusters that don't
+  # mount Galaxy's root or configuration directories. The configuration block is copied
   # to the job's directory, but referenced key paths wouldn't be accessible.
   ssh_key_content: |
     -----BEGIN RSA PRIVATE KEY-----

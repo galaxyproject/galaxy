@@ -418,8 +418,12 @@ class TestCommandConstruction:
         """Resume flag (-k 1) present on both first attempt and retries."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY, user="u", host="h",
-                enable_resume=True, max_retries=2, retry_base_delay=0.01,
+                ssh_key=TEST_SSH_KEY,
+                user="u",
+                host="h",
+                enable_resume=True,
+                max_retries=2,
+                retry_base_delay=0.01,
             )
             captured_commands = []
 
@@ -539,8 +543,12 @@ class TestRetryMechanics:
         """Retry delays follow exponential backoff, capped at retry_max_delay."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY, user="u", host="h",
-                max_retries=4, retry_base_delay=2.0, retry_max_delay=10.0,
+                ssh_key=TEST_SSH_KEY,
+                user="u",
+                host="h",
+                max_retries=4,
+                retry_base_delay=2.0,
+                retry_max_delay=10.0,
             )
 
         def mock_run(*args, **kwargs):
@@ -552,15 +560,17 @@ class TestRetryMechanics:
                     fs.get_file("/remote/file.txt", "/local/file.txt")
 
                 sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
-                assert sleep_calls[0] == 2.0   # 2^1
-                assert sleep_calls[1] == 4.0   # 2^2
-                assert sleep_calls[2] == 8.0   # 2^3, not capped (< 10)
+                assert sleep_calls[0] == 2.0  # 2^1
+                assert sleep_calls[1] == 4.0  # 2^2
+                assert sleep_calls[2] == 8.0  # 2^3, not capped (< 10)
 
     def test_transfer_timeout(self):
         """subprocess.TimeoutExpired → MessageException."""
         with patch("shutil.which", return_value="/usr/bin/ascp"):
             fs = AscpFileSystem(
-                ssh_key=TEST_SSH_KEY, user="u", host="h",
+                ssh_key=TEST_SSH_KEY,
+                user="u",
+                host="h",
                 max_retries=1,
             )
 
@@ -625,7 +635,9 @@ def _make_ascp_source_with_fallback(fallback_scheme="ftp", fallback_host="ftp.sr
             config_file = f.name
         try:
             file_sources = configured_file_sources(config_file)
-            pair = file_sources.get_file_source_path("fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR123/file.fastq.gz")
+            pair = file_sources.get_file_source_path(
+                "fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/fastq/ERR123/file.fastq.gz"
+            )
             return pair.file_source, pair, config_file
         except Exception:
             os.unlink(config_file)
@@ -705,7 +717,10 @@ class TestFallbackInvocation:
         source, pair, config_file = _make_ascp_source_with_fallback()
         try:
             with patch("shutil.which", return_value="/usr/bin/ascp"):
-                with patch("subprocess.run", return_value=Mock(returncode=1, stderr="Session Stop (Error: Client unable to connect)", stdout="")):
+                with patch(
+                    "subprocess.run",
+                    return_value=Mock(returncode=1, stderr="Session Stop (Error: Client unable to connect)", stdout=""),
+                ):
                     with patch("time.sleep"):
                         with patch("galaxy.files.sources.ascp.stream_url_to_file") as mock_fallback:
                             mock_fallback.return_value = None
@@ -713,7 +728,7 @@ class TestFallbackInvocation:
 
             mock_fallback.assert_called_once()
             fallback_url = mock_fallback.call_args[0][0]
-            assert fallback_url.startswith("ftp://ftp.sra.ebi.ac.uk/")
+            assert fallback_url == "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR123/file.fastq.gz"
             assert "era-fasp" not in fallback_url
         finally:
             os.unlink(config_file)
@@ -738,7 +753,9 @@ class TestFallbackInvocation:
             with patch("shutil.which", return_value="/usr/bin/ascp"):
                 with patch("subprocess.run", return_value=Mock(returncode=1, stderr="Session Stop", stdout="")):
                     with patch("time.sleep"):
-                        with patch("galaxy.files.sources.ascp.stream_url_to_file", side_effect=Exception("FTP also down")):
+                        with patch(
+                            "galaxy.files.sources.ascp.stream_url_to_file", side_effect=Exception("FTP also down")
+                        ):
                             with pytest.raises(MessageException, match="fallback.*also failed"):
                                 source.realize_to(pair.path, "/tmp/test_both_fail.txt")
         finally:
@@ -774,4 +791,3 @@ class TestFallbackInvocation:
                 mock_fallback.assert_not_called()
             finally:
                 os.unlink(config_file)
-

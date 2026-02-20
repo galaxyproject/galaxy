@@ -96,8 +96,7 @@ class FtpFilesSource(PyFilesystem2FilesSource[FTPFileSourceTemplateConfiguration
                     time.sleep(delay)
                 else:
                     raise MessageException(
-                        f"FTP download failed after {max_retries} attempts for {source_path}. "
-                        f"Last error: {e}"
+                        f"FTP download failed after {max_retries} attempts for {source_path}. Last error: {e}"
                     ) from e
             except (fs.errors.ResourceNotFound, fs.errors.PermissionDenied) as e:
                 raise MessageException(f"FTP download failed for {source_path}: {e}") from e

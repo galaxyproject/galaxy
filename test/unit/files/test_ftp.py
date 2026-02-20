@@ -20,10 +20,7 @@ from fs.errors import (
 )
 
 from galaxy.exceptions import MessageException
-from galaxy.files.sources.ftp import (
-    FTPFileSourceConfiguration,
-    FtpFilesSource,
-)
+from galaxy.files.sources.ftp import FTPFileSourceConfiguration
 from ._util import (
     assert_realizes_contains,
     configured_file_sources,
@@ -162,11 +159,16 @@ class TestFtpRetryPipeline:
         """RemoteConnectionError → retried."""
         source, pair, fs, config_file = self._make_ftp_source()
         try:
-            count = self._run_realize(source, pair, fs, [
-                RemoteConnectionError("connection lost"),
-                RemoteConnectionError("connection lost"),
-                None,  # Success on 3rd attempt
-            ])
+            count = self._run_realize(
+                source,
+                pair,
+                fs,
+                [
+                    RemoteConnectionError("connection lost"),
+                    RemoteConnectionError("connection lost"),
+                    None,  # Success on 3rd attempt
+                ],
+            )
             assert count == 3
         finally:
             os.unlink(config_file)
@@ -175,10 +177,15 @@ class TestFtpRetryPipeline:
         """OperationTimeout → retried."""
         source, pair, fs, config_file = self._make_ftp_source()
         try:
-            count = self._run_realize(source, pair, fs, [
-                OperationTimeout("read timed out"),
-                None,  # Success on 2nd attempt
-            ])
+            count = self._run_realize(
+                source,
+                pair,
+                fs,
+                [
+                    OperationTimeout("read timed out"),
+                    None,  # Success on 2nd attempt
+                ],
+            )
             assert count == 2
         finally:
             os.unlink(config_file)
@@ -187,10 +194,15 @@ class TestFtpRetryPipeline:
         """OSError (e.g., broken pipe) → retried."""
         source, pair, fs, config_file = self._make_ftp_source()
         try:
-            count = self._run_realize(source, pair, fs, [
-                OSError("Broken pipe"),
-                None,
-            ])
+            count = self._run_realize(
+                source,
+                pair,
+                fs,
+                [
+                    OSError("Broken pipe"),
+                    None,
+                ],
+            )
             assert count == 2
         finally:
             os.unlink(config_file)
@@ -200,9 +212,14 @@ class TestFtpRetryPipeline:
         source, pair, fs, config_file = self._make_ftp_source()
         try:
             with pytest.raises(MessageException, match="FTP download failed"):
-                self._run_realize(source, pair, fs, [
-                    ResourceNotFound("/nonexistent"),
-                ])
+                self._run_realize(
+                    source,
+                    pair,
+                    fs,
+                    [
+                        ResourceNotFound("/nonexistent"),
+                    ],
+                )
         finally:
             os.unlink(config_file)
 
@@ -211,9 +228,14 @@ class TestFtpRetryPipeline:
         source, pair, fs, config_file = self._make_ftp_source()
         try:
             with pytest.raises(MessageException, match="FTP download failed"):
-                self._run_realize(source, pair, fs, [
-                    PermissionDenied("/secret"),
-                ])
+                self._run_realize(
+                    source,
+                    pair,
+                    fs,
+                    [
+                        PermissionDenied("/secret"),
+                    ],
+                )
         finally:
             os.unlink(config_file)
 
@@ -222,10 +244,15 @@ class TestFtpRetryPipeline:
         source, pair, fs, config_file = self._make_ftp_source(max_retries=2)
         try:
             with pytest.raises(MessageException, match="failed after 2 attempts"):
-                self._run_realize(source, pair, fs, [
-                    RemoteConnectionError("fail"),
-                    RemoteConnectionError("fail"),
-                ])
+                self._run_realize(
+                    source,
+                    pair,
+                    fs,
+                    [
+                        RemoteConnectionError("fail"),
+                        RemoteConnectionError("fail"),
+                    ],
+                )
         finally:
             os.unlink(config_file)
 
@@ -244,9 +271,9 @@ class TestFtpRetryPipeline:
                         source.realize_to(pair.path, "/tmp/test_output.txt")
 
                     sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
-                    assert sleep_calls[0] == 2.0   # 2^1
-                    assert sleep_calls[1] == 4.0   # 2^2
-                    assert sleep_calls[2] == 8.0   # 2^3
+                    assert sleep_calls[0] == 2.0  # 2^1
+                    assert sleep_calls[1] == 4.0  # 2^2
+                    assert sleep_calls[2] == 8.0  # 2^3
         finally:
             os.unlink(config_file)
 

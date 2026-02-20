@@ -388,9 +388,7 @@ class AscpFileSystem(AbstractFileSystem):
                 f"Network error while downloading {remote_path}. Please check your network connection and try again."
             )
         elif "session stop" in stderr.lower():
-            raise MessageException(
-                f"ascp session stopped while downloading {remote_path}. Error: {stderr.strip()}"
-            )
+            raise MessageException(f"ascp session stopped while downloading {remote_path}. Error: {stderr.strip()}")
         elif "timed out" in stderr.lower() or "timeout" in stderr.lower():
             raise MessageException(f"Transfer timed out for {remote_path}. Please try again later.")
         else:

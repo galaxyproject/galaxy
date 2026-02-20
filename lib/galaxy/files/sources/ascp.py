@@ -250,10 +250,7 @@ class AscpFilesSource(FsspecFilesSource[AscpFilesSourceTemplateConfiguration, As
         except Exception as e:
             if fallback_url is None:
                 raise
-            log.warning(
-                f"ascp transfer failed for {source_path}: {e}. "
-                f"Falling back to {fallback_url}"
-            )
+            log.warning(f"ascp transfer failed for {source_path}: {e}. Falling back to {fallback_url}")
 
         try:
             stream_url_to_file(
