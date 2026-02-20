@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ first_changeset_hash = ""
 """
 
 
-class TestRepositoryCitableURLs(ShedTwillTestCase):
+class TestRepositoryCitableURLs(ShedTestCase):
     """Test repository citable url features."""
 
     def test_0000_initiate_users(self):

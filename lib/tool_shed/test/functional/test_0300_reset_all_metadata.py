@@ -1,7 +1,7 @@
 import pytest
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_maker_repository_name = "column_maker_0020"
 column_maker_repository_description = "A flexible aligner."
@@ -40,7 +40,7 @@ category_0050_description = "Test circular dependency features"
 running_standalone = False
 
 
-class TestResetAllRepositoryMetadata(ShedTwillTestCase):
+class TestResetAllRepositoryMetadata(ShedTestCase):
     """Verify that the "Reset selected metadata" feature works."""
 
     def test_0000_initiate_users(self):

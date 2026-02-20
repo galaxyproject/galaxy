@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ category_description = "Verify the functionality of the code that handles the re
 """
 
 
-class TestRepositoryAdminRole(ShedTwillTestCase):
+class TestRepositoryAdminRole(ShedTestCase):
     """Verify that the code correctly handles the repository admin role."""
 
     def test_0000_initiate_users(self):

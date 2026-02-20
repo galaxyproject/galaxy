@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_repository_name = "column_maker_0150"
 column_repository_description = "Add column"
@@ -27,7 +27,7 @@ Verify that convert_chars was installed first, contrary to the ordering that wou
 """
 
 
-class TestSimplePriorInstallation(ShedTwillTestCase):
+class TestSimplePriorInstallation(ShedTestCase):
     """Test features related to datatype converters."""
 
     def test_0000_initiate_users(self):

@@ -1,7 +1,7 @@
 import os
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 bwa_base_repository_name = "bwa_base_repository_0100"
 bwa_base_repository_description = "BWA Base"
@@ -20,7 +20,7 @@ category_description = "Test 0100 Complex Repository Dependencies"
 running_standalone = False
 
 
-class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
+class TestInstallingComplexRepositoryDependencies(ShedTestCase):
     """Test features related to installing repositories with complex repository dependencies."""
 
     requires_galaxy = True

@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ src="/repository/static/images/<id>/count_modes.png"
 """
 
 
-class TestToolHelpImages(ShedTwillTestCase):
+class TestToolHelpImages(ShedTestCase):
     """Test features related to tool help images."""
 
     def test_0000_initiate_users(self):

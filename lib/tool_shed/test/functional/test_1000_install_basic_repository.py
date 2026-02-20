@@ -1,11 +1,11 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 repo_name = "filtering_0000"
 repo_description = "Galaxy's filtering tool"
 
 
-class TestBasicToolShedFeatures(ShedTwillTestCase):
+class TestBasicToolShedFeatures(ShedTestCase):
     """Test installing a basic repository."""
 
     requires_galaxy = True

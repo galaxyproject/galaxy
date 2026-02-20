@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ category_description = "Verify metadata updates"
 """
 
 
-class TestGetUpdatedMetadata(ShedTwillTestCase):
+class TestGetUpdatedMetadata(ShedTestCase):
     """Verify that updated repositories still have correct dependency links."""
 
     def test_0000_initiate_users(self):

@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 freebayes_repository_name = "freebayes_0040"
 freebayes_repository_description = "Galaxy's freebayes tool for test 0040"
@@ -13,7 +13,7 @@ CATEGORY_NAME = "test_0040_repository_circular_dependencies"
 CATEGORY_DESC = "Testing handling of circular repository dependencies."
 
 
-class TestRepositoryCircularDependencies(ShedTwillTestCase):
+class TestRepositoryCircularDependencies(ShedTestCase):
     """Verify that the code correctly displays repositories with circular repository dependencies."""
 
     def test_0000_initiate_users(self):

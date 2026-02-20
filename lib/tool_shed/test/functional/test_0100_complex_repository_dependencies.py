@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ category_name = "Test 0100 Complex Repository Dependencies"
 category_description = "Test 0100 Complex Repository Dependencies"
 
 
-class TestComplexRepositoryDependencies(ShedTwillTestCase):
+class TestComplexRepositoryDependencies(ShedTestCase):
     """Test features related to complex repository dependencies."""
 
     def test_0000_initiate_users(self):

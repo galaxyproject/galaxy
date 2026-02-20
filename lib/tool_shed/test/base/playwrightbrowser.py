@@ -76,7 +76,7 @@ class PlaywrightShedBrowser(ShedBrowser):
 
         from galaxy.util import smart_str
 
-        with tempfile.NamedTemporaryFile(suffix=suffix, prefix="twilltestcase-", delete=False) as fh:
+        with tempfile.NamedTemporaryFile(suffix=suffix, prefix="testcase-", delete=False) as fh:
             fh.write(smart_str(content))
         return fh.name
 

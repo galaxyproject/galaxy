@@ -7,7 +7,7 @@ Base classes and utilities for Tool Shed functional tests.
 ```
 base/
 ├── driver.py           # ToolShedTestDriver - embedded server setup
-├── twilltestcase.py    # ShedTwillTestCase - main test base class
+├── testcase.py    # ShedTestCase - main test base class
 ├── playwrighttestcase.py # PlaywrightTestCase - browser test base
 ├── playwrightbrowser.py  # PlaywrightShedBrowser - browser abstraction
 ├── browser.py          # ShedBrowser protocol
@@ -19,12 +19,12 @@ base/
 
 ## Base Classes
 
-### ShedTwillTestCase
+### ShedTestCase
 
 Main test base class with repository/category management:
 
 ```python
-class TestFeature(ShedTwillTestCase):
+class TestFeature(ShedTestCase):
     def test_repo_creation(self):
         category = self.create_category(name="Tools")
         repo = self.get_or_create_repository(

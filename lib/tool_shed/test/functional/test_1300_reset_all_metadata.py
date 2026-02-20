@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_maker_repository_name = "column_maker_0020"
 column_maker_repository_description = "A flexible aligner."
@@ -39,7 +39,7 @@ repository_datatypes_count = 0
 running_standalone = False
 
 
-class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
+class TestResetInstalledRepositoryMetadata(ShedTestCase):
     """Verify that the "Reset selected metadata" feature works."""
 
     requires_galaxy = True

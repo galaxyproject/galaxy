@@ -3,7 +3,7 @@ import logging
 import pytest
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 repository_name = "filtering_0000"
 repository_description = "Galaxy's filtering tool for test 0000"
@@ -12,7 +12,7 @@ repository_long_description = "Long description of Galaxy's filtering tool for t
 log = logging.getLogger(__name__)
 
 
-class TestBasicRepositoryFeatures(ShedTwillTestCase):
+class TestBasicRepositoryFeatures(ShedTestCase):
     """Test core repository features."""
 
     def test_0000_initiate_users(self):

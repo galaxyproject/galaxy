@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_maker_repository_name = "column_maker_0020"
 column_maker_repository_description = "A flexible aligner."
@@ -10,7 +10,7 @@ emboss_repository_description = "Galaxy wrappers for Emboss version 5.0.0 tools 
 emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 tools for test 0020"
 
 
-class TestToolWithRepositoryDependencies(ShedTwillTestCase):
+class TestToolWithRepositoryDependencies(ShedTestCase):
     """Test installing a repository with repository dependencies."""
 
     requires_galaxy = True

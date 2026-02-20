@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_repository_name = "column_maker_1085"
 column_repository_description = "Add column"
@@ -17,7 +17,7 @@ category_description = "Test circular dependency features"
 log = logging.getLogger(__name__)
 
 
-class TestRepositoryDependencies(ShedTwillTestCase):
+class TestRepositoryDependencies(ShedTestCase):
     """Testing the behavior of repository dependencies with tool panel sections."""
 
     requires_galaxy = True

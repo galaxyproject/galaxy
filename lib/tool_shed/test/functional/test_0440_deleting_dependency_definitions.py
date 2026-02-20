@@ -1,6 +1,6 @@
 from tool_shed_client.schema import Repository
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_repository_name = "column_maker_0440"
 column_repository_description = "Add column"
@@ -50,7 +50,7 @@ Tool dependencies:
 """
 
 
-class TestDeletedDependencies(ShedTwillTestCase):
+class TestDeletedDependencies(ShedTestCase):
     """Test metadata setting when dependency definitions are deleted."""
 
     def test_0000_initiate_users(self):

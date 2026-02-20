@@ -52,9 +52,9 @@ Modern Playwright/API tests:
 ### API Tests (ShedApiTestCase)
 
 ```python
-from tool_shed.test.base.twilltestcase import ShedTwillTestCase
+from tool_shed.test.base.testcase import ShedTestCase
 
-class TestMyFeature(ShedTwillTestCase):
+class TestMyFeature(ShedTestCase):
     def test_create_repo(self):
         category = self.create_category(name="Test")
         repo = self.get_or_create_repository(

@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 emboss_repository_name = "emboss_0050"
 emboss_repository_description = "Galaxy's emboss tool"
@@ -29,7 +29,7 @@ category_name = "Test 0050 Circular Dependencies 5 Levels"
 category_description = "Test circular dependency features"
 
 
-class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
+class TestRepositoryCircularDependenciesToNLevels(ShedTestCase):
     """Verify that the code correctly handles circular dependencies down to n levels."""
 
     def test_0000_initiate_users(self):

@@ -192,7 +192,7 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
 class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
     """A Galaxy API + Database as a installation target for the tool shed."""
 
-    def __init__(self, testcase: "ShedTwillTestCase"):
+    def __init__(self, testcase: "ShedTestCase"):
         self.testcase = testcase
         self._session = requests.Session()
         self._last_page_content = ""
@@ -453,7 +453,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
 
 
 class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
-    def __init__(self, testcase: "ShedTwillTestCase"):
+    def __init__(self, testcase: "ShedTestCase"):
         self.testcase = testcase
         self.temp_directory = Path(tempfile.mkdtemp(prefix="toolshedtestinstalltarget"))
         tool_shed_target = ToolShedTarget(
@@ -616,7 +616,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
 
 
 @pytest.mark.usefixtures("shed_browser")
-class ShedTwillTestCase(ShedApiTestCase):
+class ShedTestCase(ShedApiTestCase):
     """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     requires_galaxy: bool = False
@@ -835,7 +835,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         return self._browser.visit_url(url, allowed_codes=allowed_codes)
 
     def write_temp_file(self, content, suffix=".html"):
-        with tempfile.NamedTemporaryFile(suffix=suffix, prefix="twilltestcase-", delete=False) as fh:
+        with tempfile.NamedTemporaryFile(suffix=suffix, prefix="testcase-", delete=False) as fh:
             fh.write(smart_str(content))
         return fh.name
 
