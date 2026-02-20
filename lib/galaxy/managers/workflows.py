@@ -988,10 +988,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 workflow=workflow,
                 preserve_external_subworkflow_links=preserve_external_subworkflow_links,
             )
-            if preserve_external_subworkflow_links:
-                wf_dict = self._to_format2_with_preserved_links(wf_dict, to_format_2)
-            else:
-                wf_dict = to_format_2(wf_dict)
+            wf_dict = to_format_2(wf_dict)
         elif style == "format2_wrapped_yaml":
             wf_dict = self._workflow_to_dict_export(
                 trans,
@@ -999,10 +996,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 workflow=workflow,
                 preserve_external_subworkflow_links=preserve_external_subworkflow_links,
             )
-            if preserve_external_subworkflow_links:
-                wf_dict = self._to_format2_with_preserved_links(wf_dict, to_format_2, json_wrapper=True)
-            else:
-                wf_dict = to_format_2(wf_dict, json_wrapper=True)
+            wf_dict = to_format_2(wf_dict, json_wrapper=True)
         elif style == "ga":
             wf_dict = self._workflow_to_dict_export(
                 trans,
@@ -1020,41 +1014,6 @@ class WorkflowContentsManager(UsesAnnotations):
         else:
             wf_dict["version"] = len(stored.workflows) - 1
         return wf_dict
-
-    @staticmethod
-    def _to_format2_with_preserved_links(wf_dict, to_format_2, **kwds):
-        """Convert .ga dict with preserved external links to format2.
-
-        from_galaxy_native expects a ``subworkflow`` dict on subworkflow steps. When
-        external links are preserved, those steps carry ``content_source``/``content_id``
-        instead. This method injects placeholder subworkflows for conversion, then
-        replaces the resulting ``run`` values with the original URLs.
-        """
-        external_links: dict[str, str] = {}
-        for step in wf_dict.get("steps", {}).values():
-            if step.get("content_source") and step.get("type") == "subworkflow":
-                step_key = step.get("label") or str(step["id"])
-                external_links[step_key] = step.pop("content_id", "")
-                step.pop("content_source")
-                step["subworkflow"] = {
-                    "a_galaxy_workflow": "true",
-                    "format-version": "0.1",
-                    "name": "placeholder",
-                    "steps": {},
-                }
-        format2_dict = to_format_2(wf_dict, **kwds)
-        if external_links:
-            format2_steps = format2_dict.get("steps", {})
-            if isinstance(format2_steps, dict):
-                for step_key, step in format2_steps.items():
-                    if step_key in external_links:
-                        step["run"] = external_links[step_key]
-            elif isinstance(format2_steps, list):
-                for step in format2_steps:
-                    step_label = step.get("label", "")
-                    if step_label in external_links:
-                        step["run"] = external_links[step_label]
-        return format2_dict
 
     def _sync_stored_workflow(self, trans, stored_workflow):
         if trans.user_is_admin:
