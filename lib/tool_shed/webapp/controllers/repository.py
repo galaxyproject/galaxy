@@ -1623,7 +1623,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repo_name = kwd.get("repo_name", repository.name)
         changeset_revision = kwd.get("changeset_revision", repository.tip())
         repository.share_url = repository_util.generate_sharable_link_for_repository_in_tool_shed(
-            repository, changeset_revision=changeset_revision
+            repository, changeset_revision=changeset_revision, base_url=trans.app.config.tool_shed_url
         )
         repository.clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(trans.user, repository)
         remote_repository_url = kwd.get("remote_repository_url", repository.remote_repository_url)
@@ -2449,7 +2449,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         changeset_revision = kwd.get("changeset_revision", repository.tip())
         self.validate_changeset_revision(trans, changeset_revision, id)
         repository.share_url = repository_util.generate_sharable_link_for_repository_in_tool_shed(
-            repository, changeset_revision=changeset_revision
+            repository, changeset_revision=changeset_revision, base_url=trans.app.config.tool_shed_url
         )
         repository.clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(trans.user, repository)
         alerts = kwd.get("alerts", "")
