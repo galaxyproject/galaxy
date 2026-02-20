@@ -1,10 +1,11 @@
 <template>
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
-            <b-button class="mr-1" title="go to first page" @click="gotoFirstPage">
+            <BButton class="mr-1" title="go to first page" @click="gotoFirstPage">
                 <FontAwesomeIcon :icon="faHome" />
-            </b-button>
-            <b-button
+            </BButton>
+
+            <BButton
                 v-if="currentUser && currentUser.is_admin"
                 id="create-new-lib"
                 v-b-toggle.collapse-2
@@ -12,50 +13,61 @@
                 class="mr-1">
                 <FontAwesomeIcon :icon="faPlus" />
                 {{ titleLibrary }}
-            </b-button>
+            </BButton>
+
             <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
-            <b-form-checkbox
+
+            <BFormCheckbox
                 v-if="currentUser && currentUser.is_admin"
                 v-localize
                 class="mr-1"
                 @input="toggle_include_deleted($event)">
                 include deleted
-            </b-form-checkbox>
-            <b-form-checkbox v-localize class="mr-1" @input="toggle_exclude_restricted($event)">
+            </BFormCheckbox>
+
+            <BFormCheckbox v-localize class="mr-1" @input="toggle_exclude_restricted($event)">
                 exclude restricted
-            </b-form-checkbox>
+            </BFormCheckbox>
         </div>
-        <b-collapse id="collapse-2" v-model="isNewLibFormVisible">
-            <b-card>
-                <b-form @submit.prevent="newLibrary">
-                    <b-input-group class="mb-2 new-row">
-                        <b-form-input v-model="newLibraryForm.name" required :placeholder="titleName" />
-                        <b-form-input v-model="newLibraryForm.description" required :placeholder="titleDescription" />
-                        <b-form-input v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
+
+        <BCollapse id="collapse-2" v-model="isNewLibFormVisible">
+            <BCard>
+                <BForm @submit.prevent="newLibrary">
+                    <BInputGroup class="mb-2 new-row">
+                        <BFormInput v-model="newLibraryForm.name" required :placeholder="titleName" />
+
+                        <BFormInput v-model="newLibraryForm.description" required :placeholder="titleDescription" />
+
+                        <BFormInput v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
+
                         <template v-slot:append>
-                            <b-button id="save_new_library" type="submit" :title="titleSave">
+                            <BButton id="save_new_library" type="submit" :title="titleSave">
                                 <FontAwesomeIcon :icon="faSave" />
                                 {{ titleSave }}
-                            </b-button>
+                            </BButton>
                         </template>
-                    </b-input-group>
-                </b-form>
-            </b-card>
-        </b-collapse>
-        <b-table
+                    </BInputGroup>
+                </BForm>
+            </BCard>
+        </BCollapse>
+
+        <GTable
             id="libraries_list"
-            ref="libraries_list"
-            no-sort-reset
+            ref="libraryTable"
+            class="mb-4"
             striped
             hover
+            show-empty
             :fields="fields"
             :items="librariesList"
-            :sort-by.sync="sortBy"
+            :sort-by="sortBy"
+            :sort-desc="sortDesc"
             :per-page="perPage"
             :current-page="currentPage"
-            show-empty
             :filter="filter"
             :filter-included-fields="filterOn"
+            :filter-ignored-fields="excluded"
+            @sort-changed="onSortChanged"
             @filtered="onFiltered">
             <template v-slot:cell(name)="row">
                 <textarea
@@ -64,12 +76,14 @@
                     aria-label="Library name"
                     class="form-control input_library_name"
                     rows="3" />
-
-                <div v-else-if="row.item.deleted && includeDeleted" class="deleted-item">{{ row.item.name }}</div>
-                <b-link v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">
+                <div v-else-if="row.item.deleted && includeDeleted" class="deleted-item">
                     {{ row.item.name }}
-                </b-link>
+                </div>
+                <GLink v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">
+                    {{ row.item.name }}
+                </GLink>
             </template>
+
             <template v-slot:cell(description)="{ item }">
                 <LibraryEditField
                     :ref="`description-${item.id}`"
@@ -79,6 +93,7 @@
                     :changed-value.sync="item[newDescriptionProperty]"
                     @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
             </template>
+
             <template v-slot:cell(synopsis)="{ item }">
                 <LibraryEditField
                     :ref="`synopsis-${item.id}`"
@@ -88,19 +103,22 @@
                     :changed-value.sync="item[newSynopsisProperty]"
                     @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
             </template>
+
             <template v-slot:cell(is_unrestricted)="row">
                 <FontAwesomeIcon v-if="row.item.public && !row.item.deleted" title="Public library" :icon="faGlobe" />
             </template>
+
             <template v-slot:cell(buttons)="row">
-                <b-button
+                <BButton
                     v-if="row.item.deleted"
                     size="sm"
                     :title="'Undelete ' + row.item.name"
                     @click="undelete(row.item)">
                     <FontAwesomeIcon :icon="faUnlock" />
                     {{ titleUndelete }}
-                </b-button>
-                <b-button
+                </BButton>
+
+                <BButton
                     v-if="row.item.can_user_modify && row.item.editMode"
                     size="sm"
                     class="lib-btn permission_folder_btn"
@@ -108,8 +126,9 @@
                     @click="saveChanges(row.item)">
                     <FontAwesomeIcon :icon="faSave" />
                     {{ titleSave }}
-                </b-button>
-                <b-button
+                </BButton>
+
+                <BButton
                     v-if="row.item.can_user_modify && !row.item.deleted"
                     size="sm"
                     class="lib-btn edit_library_btn save_library_btn"
@@ -123,8 +142,9 @@
                         <FontAwesomeIcon :icon="faTimes" />
                         {{ titleCancel }}
                     </div>
-                </b-button>
-                <b-button
+                </BButton>
+
+                <BButton
                     v-if="currentUser && currentUser.is_admin && !row.item.deleted"
                     size="sm"
                     class="lib-btn permission_library_btn"
@@ -132,8 +152,9 @@
                     :to="{ path: `/libraries/${row.item.id}/permissions` }">
                     <FontAwesomeIcon :icon="faUsers" />
                     Manage
-                </b-button>
-                <b-button
+                </BButton>
+
+                <BButton
                     v-if="currentUser && currentUser.is_admin && row.item.editMode && !row.item.deleted"
                     size="sm"
                     class="lib-btn delete-lib-btn"
@@ -141,25 +162,25 @@
                     @click="deleteLibrary(row.item)">
                     <FontAwesomeIcon :icon="faTrash" />
                     {{ titleDelete }}
-                </b-button>
+                </BButton>
             </template>
-        </b-table>
+        </GTable>
 
-        <b-container>
-            <b-row class="justify-content-md-center">
-                <b-col md="auto">
-                    <b-pagination
+        <BContainer>
+            <BRow class="justify-content-md-center">
+                <BCol md="auto">
+                    <BPagination
                         v-model="currentPage"
                         :total-rows="rows"
                         :per-page="perPage"
-                        aria-controls="libraries_list">
-                    </b-pagination>
-                </b-col>
-                <b-col cols="1.5">
+                        aria-controls="libraries_list" />
+                </BCol>
+
+                <BCol cols="1.5">
                     <table>
                         <tr>
                             <td class="m-0 p-0">
-                                <b-form-input
+                                <BFormInput
                                     id="paginationPerPage"
                                     v-model="perPage"
                                     class="pagination-input-field"
@@ -167,16 +188,17 @@
                                     type="number"
                                     onkeyup="this.value|=0;if(this.value<1)this.value=1" />
                             </td>
+
                             <td class="text-muted ml-1 paginator-text">
-                                <span class="pagination-total-pages-text"
-                                    >{{ titlePerPage }}, {{ rows }} {{ titleTotal }}</span
-                                >
+                                <span class="pagination-total-pages-text">
+                                    {{ titlePerPage }}, {{ rows }} {{ titleTotal }}
+                                </span>
                             </td>
                         </tr>
                     </table>
-                </b-col>
-            </b-row>
-        </b-container>
+                </BCol>
+            </BRow>
+        </BContainer>
     </div>
 </template>
 
@@ -193,9 +215,20 @@ import {
     faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
+import {
+    BButton,
+    BCard,
+    BCol,
+    BCollapse,
+    BContainer,
+    BForm,
+    BFormCheckbox,
+    BFormInput,
+    BInputGroup,
+    BPagination,
+    BRow,
+} from "bootstrap-vue";
 import { mapState } from "pinia";
-import Vue from "vue";
 
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH, onError } from "@/components/Libraries/library-utils";
 import { Toast } from "@/composables/toast";
@@ -206,14 +239,27 @@ import _l from "@/utils/localization";
 import { Services } from "./services";
 import { fields } from "./table-fields";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GTable from "@/components/Common/GTable.vue";
 import LibraryEditField from "@/components/Libraries/LibraryEditField.vue";
 import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
+        BButton,
+        BCard,
+        BCol,
+        BCollapse,
+        BContainer,
+        BForm,
+        BFormCheckbox,
+        BFormInput,
+        BInputGroup,
+        BPagination,
+        BRow,
         FontAwesomeIcon,
+        GLink,
+        GTable,
         LibraryEditField,
         SearchField,
     },
@@ -259,6 +305,7 @@ export default {
             titleDelete: _l("Delete"),
             titlePerPage: _l("per page"),
             titleTotal: _l("total"),
+            sortDesc: false,
             sortBy: "name",
         };
     },
@@ -274,16 +321,23 @@ export default {
         this.loadLibraries(this.includeDeleted);
     },
     methods: {
+        refreshTable() {
+            this.$refs.libraryTable.refresh();
+        },
         loadLibraries(includeDeleted = false) {
             this.services.getLibraries(includeDeleted).then((result) => (this.librariesList = result));
         },
         toggleEditMode(item) {
             item.editMode = !item.editMode;
-            this.$refs.libraries_list.refresh();
+            this.refreshTable();
         },
         toggleDescriptionExpand(item) {
             item.isExpanded = !item.isExpanded;
-            this.$refs.libraries_list.refresh();
+            this.refreshTable();
+        },
+        onSortChanged(sortBy, sortDesc) {
+            this.sortBy = sortBy;
+            this.sortDesc = sortDesc;
         },
         saveChanges(item) {
             const description = item[this.newDescriptionProperty];
@@ -333,7 +387,7 @@ export default {
             if (this.includeDeleted) {
                 this.services.getLibraries(this.includeDeleted).then((result) => {
                     this.librariesList = this.librariesList.concat(result);
-                    this.$refs.libraries_list.refresh();
+                    this.refreshTable();
                 });
             } else {
                 this.hideOn("deleted", false);
@@ -364,7 +418,7 @@ export default {
                 () => {
                     item.deleted = false;
                     Toast.success("Library has been undeleted.");
-                    this.$refs.libraries_list.refresh();
+                    this.refreshTable();
                 },
                 (error) => onError(error),
                 true,

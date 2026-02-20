@@ -18,29 +18,30 @@
             <div>
                 <b-alert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </b-alert>
                 <div v-if="libraryDetails">
-                    <b-table-lite
+                    <GTable
+                        caption-top
+                        compact
+                        hide-header
+                        striped
                         :fields="fields"
                         :items="libraryDetails"
-                        striped
-                        small
-                        caption-top
-                        thead-class="d-none"
                         data-testid="library-table">
                         <template v-slot:table-caption>
                             <h2 class="h-sm">
                                 <b>{{ libraryHeader }}</b>
                             </h2>
                         </template>
-                    </b-table-lite>
+                    </GTable>
                 </div>
+
                 <div>
-                    <b-table-lite
+                    <GTable
+                        caption-top
+                        compact
+                        hide-header
+                        striped
                         :fields="fields"
                         :items="folderDetails"
-                        striped
-                        small
-                        caption-top
-                        thead-class="d-none"
                         data-testid="folder-table">
                         <template v-slot:table-caption>
                             <h2 class="h-sm">
@@ -53,7 +54,7 @@
                             </div>
                             <div v-else>{{ row.item.value }}</div>
                         </template>
-                    </b-table-lite>
+                    </GTable>
                 </div>
             </div>
         </b-modal>
@@ -69,11 +70,13 @@ import { buildFields } from "@/components/Libraries/library-utils";
 import { getAppRoot } from "@/onload/loadConfig";
 import _l from "@/utils/localization";
 
+import GTable from "@/components/Common/GTable.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 export default {
     components: {
         FontAwesomeIcon,
+        GTable,
         UtcDate,
     },
     props: {
@@ -101,9 +104,13 @@ export default {
             fields: [
                 {
                     key: "name",
-                    tdClass: "name-column",
+                    label: _l("Name"),
+                    class: "name-column",
                 },
-                { key: "value" },
+                {
+                    key: "value",
+                    label: _l("Value"),
+                },
             ],
             folderFieldTitles: { folder_name: _l("Name"), folder_description: _l("Description"), id: "ID" },
             libraryFieldTitles: {
