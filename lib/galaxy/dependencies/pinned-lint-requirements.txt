@@ -4,4 +4,4 @@ flake8-bugbear==25.11.29
 mccabe==0.7.0
 pycodestyle==2.14.0
 pyflakes==3.4.0
-ruff==0.15.1
+ruff==0.15.2
