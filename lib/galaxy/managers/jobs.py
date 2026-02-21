@@ -656,11 +656,13 @@ class JobSearch:
         history_id: Union[int, None],
     ) -> "Select[tuple[int]]":
         """Build subquery that selects a job with correct job parameters."""
-        job_ids_materialized_cte = stmt.cte("job_ids_cte")
-        outer_select_columns = [job_ids_materialized_cte.c[col.name] for col in stmt.selected_columns]
-        stmt = select(*outer_select_columns).select_from(job_ids_materialized_cte)
+        job_ids_cte = stmt.cte("job_ids_cte")
+        if self.use_materialized_hint:
+            job_ids_cte = job_ids_cte.prefix_with("MATERIALIZED")
+        outer_select_columns = [job_ids_cte.c[col.name] for col in stmt.selected_columns]
+        stmt = select(*outer_select_columns).select_from(job_ids_cte)
         stmt = (
-            stmt.join(model.Job, model.Job.id == job_ids_materialized_cte.c.job_id)
+            stmt.join(model.Job, model.Job.id == job_ids_cte.c.job_id)
             .join(model.History, model.Job.history_id == model.History.id)
             .where(
                 and_(
@@ -736,21 +738,26 @@ class JobSearch:
         outer_select_columns = [subquery_alias.c[col.name] for col in stmt.selected_columns]
         outer_stmt = select(*outer_select_columns).select_from(subquery_alias)
         job_id_from_subquery = subquery_alias.c.job_id
+
+        # Use explicit aliases to avoid potential conflicts with tables used in the main query
+        job_output_collection_assoc = aliased(model.JobToOutputDatasetCollectionAssociation)
+        output_hdca = aliased(model.HistoryDatasetCollectionAssociation)
         deleted_collection_exists = exists().where(
             and_(
-                model.JobToOutputDatasetCollectionAssociation.job_id == job_id_from_subquery,
-                model.JobToOutputDatasetCollectionAssociation.dataset_collection_id
-                == model.HistoryDatasetCollectionAssociation.id,
-                model.HistoryDatasetCollectionAssociation.deleted == true(),
+                job_output_collection_assoc.job_id == job_id_from_subquery,
+                job_output_collection_assoc.dataset_collection_id == output_hdca.id,
+                output_hdca.deleted == true(),
             )
         )
 
         # Subquery for deleted output datasets
+        job_output_dataset_assoc = aliased(model.JobToOutputDatasetAssociation)
+        output_hda = aliased(model.HistoryDatasetAssociation)
         deleted_dataset_exists = exists().where(
             and_(
-                model.JobToOutputDatasetAssociation.job_id == job_id_from_subquery,
-                model.JobToOutputDatasetAssociation.dataset_id == model.HistoryDatasetAssociation.id,
-                model.HistoryDatasetAssociation.deleted == true(),
+                job_output_dataset_assoc.job_id == job_id_from_subquery,
+                job_output_dataset_assoc.dataset_id == output_hda.id,
+                output_hda.deleted == true(),
             )
         )
 

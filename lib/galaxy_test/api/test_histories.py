@@ -316,7 +316,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 3
 
-            self._create_history_then_publish_and_archive_it(f"Public Archived history_{uuid4()}")
+            self._create_history_then_publish_and_archive_it(f"Public Archived history_{unique_id}")
             data = dict(search=name_contains, show_published=False)
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 3
@@ -327,28 +327,29 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             assert len(index_response) == 0
 
             # Archived public histories should be included when filtering by show_published and show_archived
-            data = dict(search="is:published", show_archived=True)
+            # Use unique_id to filter only histories created by this test
+            data = dict(search=f"{unique_id} is:published", show_archived=True)
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 2
 
             # Searching all published histories will NOT include the archived if show_archived is not set
-            data = dict(search="is:published")
+            data = dict(search=f"{unique_id} is:published")
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 1
 
             # Searching all published histories will include our own archived when show_own is false
             # as long as they are published
-            data = dict(search="is:published", show_own=False)
+            data = dict(search=f"{unique_id} is:published", show_own=False)
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 2
 
             # Publish a history and archive it by a different user
             with self._different_user(f"other_user_{uuid4()}@bx.psu.edu"):
-                self._create_history_then_publish_and_archive_it(f"Public Archived history_{uuid4()}")
+                self._create_history_then_publish_and_archive_it(f"Public Archived history_other_{unique_id}")
 
             # Searching all published histories will include archived from other users and our own
             # as long as they are published
-            data = dict(search="is:published", show_own=False)
+            data = dict(search=f"{unique_id} is:published", show_own=False)
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 3
 
