@@ -554,6 +554,7 @@ files_dialog:
 
 history_export:
   selectors:
+    # legacy history export (when STS and Celery are not enabled)
     export_link: '.export-link'
     running: '.history-export-component .loading-icon'
     generated_export_link: '.generated-export-link'
@@ -566,6 +567,15 @@ history_export:
     name_input: '.export-to-remote-file #name'
     export_button: '.export-button'
     success_message: '.history-export-component .alert-success'
+
+    # modern legacy export - unified with invocation export - these 
+    # selectors should be kept in sync with invocation selectors
+    export_output_format: '[data-history-export-format="${type}"] .card-body'
+    export_destination: '[data-history-export-destination="${destination}"] .card-body'
+    wizard_next_button: '.wizard-actions .go-next-btn'
+    wizard_export_button: '.wizard-actions .go-next-btn.btn-primary'
+    export_download_link: '.download-link'
+
 
 history_export_tasks:
   selectors:
