@@ -5,11 +5,12 @@ import { BSkeleton } from "bootstrap-vue";
 import { nextTick, onMounted, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type AgentResponse, type ChatMessage, useAgentActions } from "@/composables/agentActions";
+import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getAgentIcon, getAgentLabel } from "./ChatGXY/agentTypes";
+import type { ChatMessage } from "./ChatGXY/chatTypes";
 import { generateId, scrollToBottom } from "./ChatGXY/chatUtils";
 
 import ChatInput from "./ChatGXY/ChatInput.vue";

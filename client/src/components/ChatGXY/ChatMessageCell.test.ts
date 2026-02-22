@@ -1,8 +1,10 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
-import type { ActionSuggestion, ChatMessage } from "@/composables/agentActions";
+import type { ActionSuggestion } from "@/composables/agentActions";
 import { ActionType } from "@/composables/agentActions";
+
+import type { ChatMessage } from "./chatTypes";
 
 import ChatMessageCell from "./ChatMessageCell.vue";
 
@@ -201,6 +203,43 @@ describe("ChatMessageCell", () => {
         it("does not render ActionCard when no suggestions", () => {
             const wrapper = mountCell(makeAssistantMessage());
             expect(wrapper.find(".action-card").exists()).toBe(false);
+        });
+
+        it("emits handle-action with action and resolved agentResponse", async () => {
+            const action: ActionSuggestion = {
+                action_type: ActionType.TOOL_RUN,
+                description: "Run tool",
+                parameters: { tool_id: "filter1" },
+                confidence: "high",
+                priority: 1,
+            };
+            const agentResponse = {
+                content: "test",
+                agent_type: "auto",
+                confidence: "high" as const,
+                suggestions: [],
+                metadata: {},
+            };
+            const message = makeAssistantMessage({
+                suggestions: [action],
+                agentResponse,
+            });
+            const wrapper = mount(ChatMessageCell as any, {
+                propsData: {
+                    message,
+                    renderMarkdown: defaultRenderMarkdown,
+                    processingAction: false,
+                },
+                stubs: {
+                    FontAwesomeIcon: true,
+                },
+            });
+            await wrapper.find(".action-button").trigger("click");
+
+            const emitted = wrapper.emitted("handle-action");
+            expect(emitted).toHaveLength(1);
+            expect(emitted![0]![0]).toEqual(action);
+            expect(emitted![0]![1]).toBe(agentResponse);
         });
     });
 

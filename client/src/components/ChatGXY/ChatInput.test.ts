@@ -72,6 +72,11 @@ describe("ChatInput", () => {
             const wrapper = mountInput({ value: "hello", busy: true });
             expect((wrapper.find("button").element as HTMLButtonElement).disabled).toBe(true);
         });
+
+        it("disables send button when disabled prop is true even with content", () => {
+            const wrapper = mountInput({ value: "hello", disabled: true });
+            expect((wrapper.find("button").element as HTMLButtonElement).disabled).toBe(true);
+        });
     });
 
     describe("events", () => {

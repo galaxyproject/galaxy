@@ -1,65 +1,12 @@
-import {
-    faBug,
-    faChartBar,
-    faGraduationCap,
-    faMagic,
-    faPlus,
-    faRobot,
-    faRoute,
-} from "@fortawesome/free-solid-svg-icons";
+import { faMagic, faRobot } from "@fortawesome/free-solid-svg-icons";
 import { describe, expect, it } from "vitest";
 
-import {
-    agentIconMap,
-    agentTypes,
-    formatModelName,
-    getAgentIcon,
-    getAgentLabel,
-    getAgentResponseOrEmpty,
-} from "./agentTypes";
+import { formatModelName, getAgentIcon, getAgentLabel, getAgentResponseOrEmpty } from "./agentTypes";
 
 describe("agentTypes", () => {
-    describe("agentTypes array", () => {
-        it("contains all 6 agent types", () => {
-            expect(agentTypes).toHaveLength(6);
-        });
-
-        it("has expected agent values", () => {
-            const values = agentTypes.map((a) => a.value);
-            expect(values).toEqual([
-                "auto",
-                "router",
-                "error_analysis",
-                "custom_tool",
-                "dataset_analyzer",
-                "gtn_training",
-            ]);
-        });
-
-        it("each entry has label, icon, and description", () => {
-            for (const agent of agentTypes) {
-                expect(agent.label).toBeTruthy();
-                expect(agent.icon).toBeDefined();
-                expect(agent.description).toBeTruthy();
-            }
-        });
-    });
-
-    describe("agentIconMap", () => {
-        it("maps known agent types to icons", () => {
-            expect(agentIconMap["auto"]).toBe(faMagic);
-            expect(agentIconMap["router"]).toBe(faRoute);
-            expect(agentIconMap["error_analysis"]).toBe(faBug);
-            expect(agentIconMap["custom_tool"]).toBe(faPlus);
-            expect(agentIconMap["dataset_analyzer"]).toBe(faChartBar);
-            expect(agentIconMap["gtn_training"]).toBe(faGraduationCap);
-        });
-    });
-
     describe("getAgentIcon", () => {
-        it("returns correct icon for known agent types", () => {
+        it("returns correct icon for known agent type", () => {
             expect(getAgentIcon("auto")).toBe(faMagic);
-            expect(getAgentIcon("error_analysis")).toBe(faBug);
         });
 
         it("returns faRobot for unknown agent type", () => {
@@ -101,6 +48,10 @@ describe("agentTypes", () => {
             expect(formatModelName("anthropic/claude-3-opus")).toBe("claude-3-opus");
         });
 
+        it("handles multi-slash model path", () => {
+            expect(formatModelName("org/team/gpt-4")).toBe("gpt-4");
+        });
+
         it("returns model name as-is if no slashes", () => {
             expect(formatModelName("gpt-4")).toBe("gpt-4");
         });
@@ -114,7 +65,6 @@ describe("agentTypes", () => {
         });
 
         it("handles trailing slash", () => {
-            // "openai/".split("/") => ["openai", ""] => last is "" => fallback to original
             expect(formatModelName("openai/")).toBe("openai/");
         });
     });

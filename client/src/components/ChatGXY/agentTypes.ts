@@ -27,17 +27,8 @@ export const agentTypes: AgentType[] = [
     { value: "gtn_training", label: "GTN Training", icon: faGraduationCap, description: "Find tutorials" },
 ];
 
-export const agentIconMap: Record<string, IconDefinition> = {
-    auto: faMagic,
-    router: faRoute,
-    error_analysis: faBug,
-    custom_tool: faPlus,
-    dataset_analyzer: faChartBar,
-    gtn_training: faGraduationCap,
-};
-
 export function getAgentIcon(agentType?: string): IconDefinition {
-    return agentIconMap[agentType || ""] || faRobot;
+    return agentTypes.find((a) => a.value === agentType)?.icon || faRobot;
 }
 
 export function getAgentLabel(agentType?: string): string {
