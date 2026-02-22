@@ -113,11 +113,14 @@ class PyFilesystem2FilesSource(BaseFilesSource[TTemplateConfig, TResolvedConfig]
 
     def _realize_to(self, source_path: str, native_path: str, context: FilesSourceRuntimeContext[TResolvedConfig]):
         with open(native_path, "wb") as write_file:
-            self._open_fs(context).download(source_path, write_file)
+            with self._open_fs(context) as openfs:
+                openfs.download(source_path, write_file)
 
     def _write_from(self, target_path: str, native_path: str, context: FilesSourceRuntimeContext[TResolvedConfig]):
-        with open(native_path, "rb") as read_file:
-            openfs = self._open_fs(context)
+        with (
+            open(native_path, "rb") as read_file,
+            self._open_fs(context) as openfs,
+        ):
             dirname = fs.path.dirname(target_path)
             if not openfs.isdir(dirname):
                 openfs.makedirs(dirname)
