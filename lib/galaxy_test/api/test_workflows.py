@@ -1627,6 +1627,7 @@ steps:
         )
         outer_workflow = self._build_outer_ga_workflow(
             {"content_source": "trs_url", "content_id": trs_url},
+            input_name="input1",
         )
         workflow_id = self.workflow_populator.create_workflow(outer_workflow)
         workflow = self._download_workflow(workflow_id)
@@ -1650,7 +1651,8 @@ steps:
                 "trs_server": "dockstore",
                 "trs_tool_id": "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow",
                 "trs_version_id": "master",
-            }
+            },
+            input_name="input1",
         )
         workflow_id = self.workflow_populator.create_workflow(outer_workflow)
         workflow = self._download_workflow(workflow_id)

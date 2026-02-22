@@ -2134,6 +2134,7 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def create_workflow(self, workflow: dict[str, Any], **create_kwds) -> str:
         upload_response = self.create_workflow_response(workflow, **create_kwds)
+        api_asserts.assert_status_code_is(upload_response, 200)
         uploaded_workflow_id = upload_response.json()["id"]
         return uploaded_workflow_id
 
