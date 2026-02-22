@@ -56,8 +56,97 @@ export async function getToolFormData(tool_id, tool_version, job_id, history_id)
     }
 }
 
-export async function submitJob(jobDetails) {
-    const url = `${getAppRoot()}api/tools`;
-    const { data } = await axios.post(url, jobDetails);
+/** Submit a job via the async POST /api/jobs endpoint.
+ * Returns { tool_request_id, task_result }.
+ */
+export async function submitJobRequest(jobRequest) {
+    const url = `${getAppRoot()}api/jobs`;
+    const { data } = await axios.post(url, jobRequest);
     return data;
+}
+
+/** Poll GET /api/tool_requests/{id}/state until terminal state.
+ * Returns the ToolRequestDetailedModel on success.
+ * Throws on failure with the state_message from the server.
+ */
+export async function waitForToolRequest(toolRequestId, { pollInterval = 1000, maxAttempts = 600 } = {}) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const stateUrl = `${getAppRoot()}api/tool_requests/${toolRequestId}/state`;
+        const { data: state } = await axios.get(stateUrl);
+        if (state === "submitted") {
+            const detailUrl = `${getAppRoot()}api/tool_requests/${toolRequestId}`;
+            const { data: detail } = await axios.get(detailUrl);
+            return detail;
+        }
+        if (state === "failed") {
+            const detailUrl = `${getAppRoot()}api/tool_requests/${toolRequestId}`;
+            const { data: detail } = await axios.get(detailUrl);
+            const stateMessage = detail.state_message;
+            const error = new Error(
+                typeof stateMessage === "object" ? stateMessage?.err_msg : stateMessage || "Tool request failed",
+            );
+            if (typeof stateMessage === "object") {
+                error.err_data = stateMessage?.err_data;
+                error.err_msg = stateMessage?.err_msg;
+            }
+            throw error;
+        }
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+    throw new Error("Tool request timed out waiting for completion");
+}
+
+/** Fetch output datasets and collections for a completed job.
+ * Returns an array of JobOutputAssociation | JobOutputCollectionAssociation.
+ */
+export async function fetchJobOutputs(jobId) {
+    const url = `${getAppRoot()}api/jobs/${jobId}/outputs`;
+    const { data } = await axios.get(url);
+    return data;
+}
+
+/** Build a JobResponse-compatible object from a completed ToolRequestDetailedModel.
+ * Fetches job outputs and resolves dataset details for the success page.
+ * @param {Object} toolRequestDetail - The ToolRequestDetailedModel from polling
+ * @returns {Object} Compatible with JobResponse { produces_entry_points, jobs, outputs, output_collections }
+ */
+export async function buildJobResponse(toolRequestDetail) {
+    const jobs = toolRequestDetail.jobs.map((j) => ({ id: j.id }));
+
+    // Fetch outputs for all jobs in parallel
+    const allJobOutputs = await Promise.all(jobs.map((j) => fetchJobOutputs(j.id)));
+
+    // Collect dataset and collection IDs from job outputs
+    const datasetFetches = [];
+    const collectionFetches = [];
+
+    for (const jobOutputs of allJobOutputs) {
+        for (const out of jobOutputs) {
+            if (out.dataset) {
+                datasetFetches.push(
+                    axios
+                        .get(`${getAppRoot()}api/datasets/${out.dataset.id}`)
+                        .then((r) => ({ hid: r.data.hid, name: r.data.name })),
+                );
+            }
+            if (out.dataset_collection_instance) {
+                collectionFetches.push(
+                    axios
+                        .get(`${getAppRoot()}api/dataset_collections/${out.dataset_collection_instance.id}`)
+                        .then((r) => ({ hid: r.data.hid, name: r.data.name })),
+                );
+            }
+        }
+    }
+
+    const [outputs, output_collections] = await Promise.all([
+        Promise.all(datasetFetches),
+        Promise.all(collectionFetches),
+    ]);
+
+    return {
+        jobs,
+        outputs,
+        output_collections,
+    };
 }

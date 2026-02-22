@@ -4004,7 +4004,7 @@ class ToolRequestModel(Model):
     id: EncodedDatabaseIdField = ToolRequestIdField
     request: dict[str, Any]
     state: ToolRequestState
-    state_message: Optional[str]
+    state_message: Optional[Any] = None
 
 
 class ToolRequestJobReference(Model):

@@ -543,7 +543,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
     ) -> list[ToolRequestModel]:
         history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
         tool_requests = history.tool_requests
-        return [tool_request_to_model(tr) for tr in tool_requests]
+        return [tool_request_to_model(tr, trans.security) for tr in tool_requests]
 
     def citations(self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField):
         """

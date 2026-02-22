@@ -2344,7 +2344,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         completed_jobs: dict[int, Optional[model.Job]] = self.completed_jobs(
             request_context, use_cached_job, all_params
         )
-        execute_async(
+        return execute_async(
             request_context,
             self,
             mapping_params,

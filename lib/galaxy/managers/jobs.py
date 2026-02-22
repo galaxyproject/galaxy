@@ -40,6 +40,7 @@ from galaxy.exceptions import (
     ConfigDoesNotAllowException,
     InconsistentDatabase,
     ItemAccessibilityException,
+    MessageException,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException,
@@ -65,6 +66,7 @@ from galaxy.model import (
     Job,
     JobMetricNumeric,
     JobParameter,
+    PostJobAction,
     ToolRequest,
     User,
     Workflow,
@@ -79,6 +81,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
@@ -2187,31 +2190,61 @@ class JobSubmitter:
                 # here we just created the datasets - lets just materialize them in place
                 # and avoid extra and confusing input copies
                 self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
-            tool.handle_input_async(
+            if request.data_manager_mode:
+                tool_request.request["__data_manager_mode"] = request.data_manager_mode
+            credentials_context = (
+                CredentialsContext(root=cast(Any, request.credentials_context)) if request.credentials_context else None
+            )
+            execution_tracker = tool.handle_input_async(
                 request_context,
                 tool_request,
                 tool_state,
                 history=target_history,
                 use_cached_job=use_cached_jobs,
                 rerun_remap_job_id=rerun_remap_job_id,
+                preferred_object_store_id=request.preferred_object_store_id,
+                credentials_context=credentials_context,
             )
+            if request.tags:
+                tag_handler = request_context.tag_handler
+                for _, hda in execution_tracker.output_datasets:
+                    tag_handler.apply_item_tags(
+                        user=request_context.user, item=hda, tags_str=",".join(request.tags), flush=False
+                    )
+                for _, hdca in execution_tracker.output_collections:
+                    tag_handler.apply_item_tags(
+                        user=request_context.user, item=hdca, tags_str=",".join(request.tags), flush=False
+                    )
+            if request.send_email_notification:
+                if request_context.user is None:
+                    raise Exception("Anonymously run jobs cannot send an email notification.")
+                for job in execution_tracker.successful_jobs:
+                    job.add_post_job_action(PostJobAction("EmailAction"))
             tool_request.state = ToolRequest.states.SUBMITTED
             sa_session.add(tool_request)
             sa_session.commit()
         except Exception as e:
             log.exception("Problem validating tool state after request created")
             tool_request.state = ToolRequest.states.FAILED
-            tool_request.state_message = str(e)
+            state_message: dict = {"err_msg": str(e)}
+            if isinstance(e, MessageException) and e.extra_error_info:
+                if "err_data" in e.extra_error_info:
+                    state_message["err_data"] = e.extra_error_info["err_data"]
+            tool_request.state_message = cast(Any, state_message)
             sa_session.add(tool_request)
             sa_session.commit()
 
     def _context(self, tool_request: ToolRequest, request: QueueJobs) -> WorkRequestContext:
-        user = self.user_manager.by_id(request.user.user_id)
+        user = self.user_manager.by_id(request.user.user_id) if request.user.user_id else None
         target_history = tool_request.history
+        galaxy_session = None
+        if request.user.galaxy_session_id:
+            galaxy_session = self.app.model.context.get(model.GalaxySession, request.user.galaxy_session_id)
         trans = WorkRequestContext(
             self.app,
             user,
             history=target_history,
+            galaxy_session=galaxy_session,
         )
         return trans
 

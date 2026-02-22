@@ -268,7 +268,7 @@ function getBadgesFor(group: ServiceCredentialsGroupDetails): CardBadge[] {
             ? "This tool is no longer available."
             : "This tool is using this credentials group. Click to view.",
         label: getToolDisplayName.value(group),
-        to: toolMissing ? undefined : `/root?tool_id=${group.sourceId}&tool_version=${group.sourceVersion}`,
+        to: toolMissing ? undefined : `/?tool_id=${group.sourceId}&tool_version=${group.sourceVersion}`,
     });
 
     if (!toolMissing) {

@@ -43,9 +43,8 @@ class GeneratePdfDownload(Model):
 
 # serialize user info for tasks
 class RequestUser(Model):
-    user_id: int
-    # TODO: allow make the above optional and allow a session_id for anonymous users...
-    # session_id: Optional[str]
+    user_id: Optional[int] = None
+    galaxy_session_id: Optional[int] = None
 
 
 class GenerateHistoryDownload(ShortTermStoreExportPayload):
@@ -186,3 +185,8 @@ class QueueJobs(Model):
     user: RequestUser  # TODO: test anonymous users through this submission path
     use_cached_jobs: bool
     rerun_remap_job_id: Optional[int]  # link to a job to rerun & remap
+    preferred_object_store_id: Optional[str] = None
+    tags: Optional[list[str]] = None
+    data_manager_mode: Optional[str] = None
+    send_email_notification: bool = False
+    credentials_context: Optional[list[dict]] = None

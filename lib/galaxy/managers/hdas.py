@@ -182,6 +182,7 @@ class HDAManager(
             file_sources=self.app.file_sources,
             sa_session=session,
         )
+        assert request_user.user_id
         user = self.user_manager.by_id(request_user.user_id)
         if request.source == DatasetSourceType.hda:
             dataset_instance: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation] = self.get_accessible(
