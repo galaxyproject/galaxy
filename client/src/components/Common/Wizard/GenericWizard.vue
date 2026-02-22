@@ -77,7 +77,7 @@ const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 function dynamicIsLast() {
     if (props.use.isLast.value) {
-        return true;
+        return Boolean(props.use.isLast.value);
     }
 
     let nextStepIndex = props.use.index.value + 1;

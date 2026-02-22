@@ -697,12 +697,13 @@ workflows:
     workflows_list: '#workflows-list'
     workflows_list_empty: '#workflow-list-empty'
     workflow_not_found_message: '#no-workflow-found'
+    workflow_cards: '.workflow-card-list'
     workflow_card: '.g-card.workflow-card'
     workflow_card_title: '[id^="g-card-title-"] a'
     workflow_card_button: '[id^="g-card-action-"] button[title="${title}"]'
     workflow_copy_steps: '[id^="g-card-action-workflow-copy-steps-"]'
     workflow_insert_sub_workflow: '[id^="g-card-action-workflow-insert-sub-workflow-"]'
-    workflow_cards: '#workflow-cards'
+    workflow_trs_import: '.workflow-import-trs'
     external_link: '[id^="g-card-indicator-workflow-source-url-"]'
     trs_icon: '[id^="g-card-indicator-workflow-source-trs-"]'
     dropdown: '[id="g-card-extra-actions-${id}"]'
@@ -720,11 +721,16 @@ workflows:
     view_external_link: "[id^='g-card-action-workflow-view-external-link-']"
     bookmark_link: '[id^="g-card-bookmark-${action}-"]'
     import_file: '.workflow-import-file'
+    import_url: '.workflow-import-url'
     import_trs_search: '.workflow-import-trs-search'
     import_trs_id: '.workflow-import-trs-id'
     import_file_link: '.workflow-import-file-link'
+    import_url_link: '.workflow-import-url-link'
+    import_trs_link: '.workflow-import-trs-link'
     import_trs_search_link: '.workflow-import-trs-search-link'
     import_trs_id_link: '.workflow-import-trs-id-link'
+    import_trs_url_link: '.workflow-import-trs-url-link'
+    import_next_button: '.go-next-btn'
 
     workflow_with_name:
       type: xpath
@@ -762,7 +768,10 @@ trs_search:
       selector: "//td[contains(., '${workflow_name}')]"
     import_button: ".workflow-import"
     select_server_button: "#dropdownTrsServer"
-    import_version: '[data-version-name*="${version}"]'
+    version_select: ".workflow-version-select"
+    version_option:
+      type: xpath
+      selector: "//option[contains(text(), '${version}')]"
     select_server:
       type: xpath
       selector: "//a[contains(@class, 'dropdown-item') and normalize-space(text()) = '${server}']"
@@ -770,10 +779,11 @@ trs_search:
 trs_import:
   selectors:
     input: "#trs-id-input"
-    # *= means attribute value contains "${version}"
-    # needed because dockstore uses branch or git tag, while workflowhub
-    # concatenates name and version
-    import_version: '[data-version-name*="${version}"]'
+    version_select: ".workflow-version-select"
+    version_option:
+      type: xpath
+      selector: "//option[contains(text(), '${version}')]"
+    import_button: ".workflow-import"
     select_server_button: "#dropdownTrsServer"
     select_server:
       type: xpath
