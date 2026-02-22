@@ -48,7 +48,10 @@ from galaxy import (
     model,
     util,
 )
-from galaxy.files.uris import stream_url_to_str
+from galaxy.files.uris import (
+    stream_url_to_str,
+    validate_uri_access,
+)
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers import (
     deletable,
@@ -136,6 +139,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+MAX_SUBWORKFLOW_URL_DEPTH = 10
 
 INDEX_SEARCH_FILTERS = {
     "name": "name",
@@ -664,6 +668,7 @@ class WorkflowContentsManager(UsesAnnotations):
         add_to_menu=False,
         hidden=False,
         is_subworkflow=False,
+        resolving_urls: frozenset[str] = frozenset(),
     ) -> CreatedWorkflow:
         data = raw_workflow_description.as_dict
         # Put parameters in workflow mode
@@ -684,6 +689,7 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow_create_options,
             name=name,
             is_subworkflow=is_subworkflow,
+            resolving_urls=resolving_urls,
         )
         if "uuid" in data:
             workflow.uuid = data["uuid"]
@@ -798,6 +804,7 @@ class WorkflowContentsManager(UsesAnnotations):
         # don't commit the workflow or attach its part to the sa session - just build a
         # a transient model to operate on or render.
         dry_run = kwds.pop("dry_run", False)
+        resolving_urls: frozenset[str] = kwds.pop("resolving_urls", frozenset())
 
         data = raw_workflow_description.as_dict
         if isinstance(data, str):
@@ -854,7 +861,7 @@ class WorkflowContentsManager(UsesAnnotations):
             subworkflow_id_map = {}
             for key, subworkflow_dict in subworkflows.items():
                 subworkflow = self.__build_embedded_subworkflow(
-                    trans, subworkflow_dict, workflow_state_resolution_options
+                    trans, subworkflow_dict, workflow_state_resolution_options, resolving_urls=resolving_urls
                 )
                 subworkflow_id_map[key] = subworkflow
 
@@ -865,7 +872,12 @@ class WorkflowContentsManager(UsesAnnotations):
         for step_dict in self.__walk_step_dicts(data):
             if not dry_run:
                 self.__load_subworkflows(
-                    trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=dry_run
+                    trans,
+                    step_dict,
+                    subworkflow_id_map,
+                    workflow_state_resolution_options,
+                    dry_run=dry_run,
+                    resolving_urls=resolving_urls,
                 )
 
         module_kwds = workflow_state_resolution_options.model_dump()
@@ -920,7 +932,16 @@ class WorkflowContentsManager(UsesAnnotations):
 
         return workflow, missing_tool_tups
 
-    def workflow_to_dict(self, trans, stored, style="export", version=None, history=None, instance_id=None):
+    def workflow_to_dict(
+        self,
+        trans,
+        stored,
+        style="export",
+        version=None,
+        history=None,
+        instance_id=None,
+        preserve_external_subworkflow_links=False,
+    ):
         """Export the workflow contents to a dictionary ready for JSON-ification and to be
         sent out via API for instance. There are three styles of export allowed 'export', 'instance', and
         'editor'. The Galaxy team will do its best to preserve the backward compatibility of the
@@ -928,6 +949,10 @@ class WorkflowContentsManager(UsesAnnotations):
         time. The 'editor' style is subject to rapid and unannounced changes. The 'instance' export
         option describes the workflow in a context more tied to the current Galaxy instance and includes
         fields like 'url' and 'url' and actual unencoded step ids instead of 'order_index'.
+
+        If preserve_external_subworkflow_links is True, subworkflow steps whose subworkflow has
+        source_metadata (indicating it was fetched from a URL or TRS) will preserve the external
+        reference instead of embedding the full subworkflow content.
         """
 
         def to_format_2(wf_dict, **kwds):
@@ -957,13 +982,28 @@ class WorkflowContentsManager(UsesAnnotations):
         elif style == "preview":
             wf_dict = self._workflow_to_dict_preview(trans, workflow=workflow)
         elif style == "format2":
-            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
+            wf_dict = self._workflow_to_dict_export(
+                trans,
+                stored,
+                workflow=workflow,
+                preserve_external_subworkflow_links=preserve_external_subworkflow_links,
+            )
             wf_dict = to_format_2(wf_dict)
         elif style == "format2_wrapped_yaml":
-            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
+            wf_dict = self._workflow_to_dict_export(
+                trans,
+                stored,
+                workflow=workflow,
+                preserve_external_subworkflow_links=preserve_external_subworkflow_links,
+            )
             wf_dict = to_format_2(wf_dict, json_wrapper=True)
         elif style == "ga":
-            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
+            wf_dict = self._workflow_to_dict_export(
+                trans,
+                stored,
+                workflow=workflow,
+                preserve_external_subworkflow_links=preserve_external_subworkflow_links,
+            )
         else:
             raise exceptions.RequestParameterInvalidException(f"Unknown workflow style {style}")
         if version is not None:
@@ -1480,11 +1520,21 @@ class WorkflowContentsManager(UsesAnnotations):
                         step_data_output["collection_type"] = collection_type
         return steps
 
-    def _workflow_to_dict_export(self, trans, stored=None, workflow=None, internal=False, allow_upgrade=False):
+    def _workflow_to_dict_export(
+        self,
+        trans,
+        stored=None,
+        workflow=None,
+        internal=False,
+        allow_upgrade=False,
+        preserve_external_subworkflow_links=False,
+    ):
         """Export the workflow contents to a dictionary ready for JSON-ification and export.
 
         If internal, use content_ids instead subworkflow definitions.
         If `allow_upgrade`, the workflow and sub-workflows might use updated tool versions when refactoring.
+        If `preserve_external_subworkflow_links`, subworkflow steps with source_metadata
+        will emit content_source/content_id instead of embedding the full subworkflow.
         """
         annotation_str = ""
         tags_list = []
@@ -1598,13 +1648,28 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_dict["post_job_actions"] = pja_dict
 
             if module.type == "subworkflow" and not internal:
-                del step_dict["content_id"]
                 del step_dict["errors"]
                 del step_dict["tool_version"]
                 del step_dict["tool_state"]
                 subworkflow = step.subworkflow
-                subworkflow_as_dict = self._workflow_to_dict_export(trans, stored=None, workflow=subworkflow)
-                step_dict["subworkflow"] = subworkflow_as_dict
+                if preserve_external_subworkflow_links and subworkflow.source_metadata:
+                    del step_dict["content_id"]
+                    source_metadata = subworkflow.source_metadata
+                    if "url" in source_metadata:
+                        step_dict["content_source"] = "url"
+                        step_dict["content_id"] = source_metadata["url"]
+                    elif "trs_url" in source_metadata:
+                        step_dict["content_source"] = "trs_url"
+                        step_dict["content_id"] = source_metadata["trs_url"]
+                else:
+                    del step_dict["content_id"]
+                    subworkflow_as_dict = self._workflow_to_dict_export(
+                        trans,
+                        stored=None,
+                        workflow=subworkflow,
+                        preserve_external_subworkflow_links=preserve_external_subworkflow_links,
+                    )
+                    step_dict["subworkflow"] = subworkflow_as_dict
 
             # Data inputs, legacy section not used anywhere within core
             input_dicts = []
@@ -1845,12 +1910,23 @@ class WorkflowContentsManager(UsesAnnotations):
             yield step_dict
 
     def __load_subworkflows(
-        self, trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=False
+        self,
+        trans,
+        step_dict,
+        subworkflow_id_map,
+        workflow_state_resolution_options,
+        dry_run=False,
+        resolving_urls: frozenset[str] = frozenset(),
     ):
         step_type = step_dict.get("type", None)
         if step_type == "subworkflow":
             subworkflow = self.__load_subworkflow_from_step_dict(
-                trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=dry_run
+                trans,
+                step_dict,
+                subworkflow_id_map,
+                workflow_state_resolution_options,
+                dry_run=dry_run,
+                resolving_urls=resolving_urls,
             )
             step_dict["subworkflow"] = subworkflow
 
@@ -1941,35 +2017,153 @@ class WorkflowContentsManager(UsesAnnotations):
         return module, step
 
     def __load_subworkflow_from_step_dict(
-        self, trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=False
+        self,
+        trans,
+        step_dict,
+        subworkflow_id_map,
+        workflow_state_resolution_options,
+        dry_run=False,
+        resolving_urls: frozenset[str] = frozenset(),
     ):
         embedded_subworkflow = step_dict.get("subworkflow", None)
         subworkflow_id = step_dict.get("content_id", None)
-        if embedded_subworkflow and subworkflow_id:
+        content_source = step_dict.get("content_source", None)
+        has_trs_id = step_dict.get("trs_tool_id") and step_dict.get("trs_version_id")
+
+        if embedded_subworkflow and (subworkflow_id or content_source or has_trs_id):
             raise exceptions.RequestParameterInvalidException(
-                "Subworkflow step defines both subworkflow and content_id, only one may be specified."
+                "Subworkflow step defines both an embedded subworkflow and an external reference, only one may be specified."
             )
 
-        if not embedded_subworkflow and not subworkflow_id:
+        if not embedded_subworkflow and not subworkflow_id and not has_trs_id:
             raise exceptions.RequestParameterInvalidException(
-                "Subworkflow step must define either subworkflow or content_id."
+                "Subworkflow step must define either subworkflow, content_id, or trs_tool_id + trs_version_id."
             )
 
         if embedded_subworkflow:
             assert not dry_run
             subworkflow = self.__build_embedded_subworkflow(
-                trans, embedded_subworkflow, workflow_state_resolution_options
+                trans, embedded_subworkflow, workflow_state_resolution_options, resolving_urls=resolving_urls
             )
-        elif subworkflow_id_map is not None:
+        elif content_source == "url":
+            assert not dry_run
+            assert subworkflow_id, "content_id is required when content_source is 'url'"
+            subworkflow = self.__build_subworkflow_from_url(trans, subworkflow_id, resolving_urls)
+        elif content_source == "trs_url":
+            assert not dry_run
+            assert subworkflow_id, "content_id is required when content_source is 'trs_url'"
+            subworkflow = self.__build_subworkflow_from_trs_url(trans, subworkflow_id, resolving_urls)
+        elif content_source == "trs_id" or (not content_source and has_trs_id):
+            assert not dry_run
+            subworkflow = self.__build_subworkflow_from_trs_id(trans, step_dict, resolving_urls)
+        elif subworkflow_id and subworkflow_id_map is not None and subworkflow_id.startswith(("#", "$")):
             assert not dry_run
             # Interpret content_id as a workflow local thing.
             subworkflow = subworkflow_id_map[subworkflow_id[1:]]
-        else:
+        elif subworkflow_id and not content_source and self._is_url(subworkflow_id):
+            # Fallback URL detection for gxformat2 run: "url" (no content_source set)
+            assert not dry_run
+            if self.trs_proxy._match_url(subworkflow_id):
+                subworkflow = self.__build_subworkflow_from_trs_url(trans, subworkflow_id, resolving_urls)
+            else:
+                subworkflow = self.__build_subworkflow_from_url(trans, subworkflow_id, resolving_urls)
+        elif subworkflow_id:
             subworkflow = self.app.workflow_manager.get_owned_workflow(trans, subworkflow_id)
+        else:
+            raise exceptions.RequestParameterInvalidException(
+                "Subworkflow step must define either subworkflow, content_id, or trs_tool_id + trs_version_id."
+            )
 
         return subworkflow
 
-    def __build_embedded_subworkflow(self, trans, data, workflow_state_resolution_options):
+    @staticmethod
+    def _is_url(value: str) -> bool:
+        return value.startswith(("http://", "https://", "base64://"))
+
+    def __build_subworkflow_from_url(
+        self,
+        trans,
+        url: str,
+        resolving_urls: frozenset[str],
+    ) -> model.Workflow:
+        if url in resolving_urls:
+            raise exceptions.RequestParameterInvalidException(f"Circular subworkflow reference detected for URL: {url}")
+        if len(resolving_urls) >= MAX_SUBWORKFLOW_URL_DEPTH:
+            raise exceptions.RequestParameterInvalidException(
+                f"Maximum subworkflow URL resolution depth ({MAX_SUBWORKFLOW_URL_DEPTH}) exceeded"
+            )
+        validate_uri_access(url, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
+        workflow_content = stream_url_to_str(url, file_sources=trans.app.file_sources)
+        as_dict = yaml.safe_load(workflow_content)
+        raw_workflow_description = self.normalize_workflow_format(trans, as_dict)
+        created_workflow = self.build_workflow_from_raw_description(
+            trans,
+            raw_workflow_description,
+            WorkflowCreateOptions(archive_source=url),
+            hidden=True,
+            is_subworkflow=True,
+            resolving_urls=resolving_urls | {url},
+        )
+        return created_workflow.workflow
+
+    def __build_subworkflow_from_trs_url(
+        self,
+        trans,
+        trs_url: str,
+        resolving_urls: frozenset[str],
+    ) -> model.Workflow:
+        if trs_url in resolving_urls:
+            raise exceptions.RequestParameterInvalidException(
+                f"Circular subworkflow reference detected for TRS URL: {trs_url}"
+            )
+        if len(resolving_urls) >= MAX_SUBWORKFLOW_URL_DEPTH:
+            raise exceptions.RequestParameterInvalidException(
+                f"Maximum subworkflow URL resolution depth ({MAX_SUBWORKFLOW_URL_DEPTH}) exceeded"
+            )
+        _, trs_tool_id, trs_version_id = self.trs_proxy.get_trs_id_and_version_from_trs_url(trs_url=trs_url)
+        data = self.trs_proxy.get_version_from_trs_url(trs_url)
+        as_dict = yaml.safe_load(data)
+        raw_workflow_description = self.normalize_workflow_format(trans, as_dict)
+        created_workflow = self.build_workflow_from_raw_description(
+            trans,
+            raw_workflow_description,
+            WorkflowCreateOptions(
+                archive_source="trs_url",
+                trs_tool_id=trs_tool_id,
+                trs_version_id=trs_version_id,
+                trs_url=trs_url,
+            ),
+            hidden=True,
+            is_subworkflow=True,
+            resolving_urls=resolving_urls | {trs_url},
+        )
+        return created_workflow.workflow
+
+    def __build_subworkflow_from_trs_id(
+        self,
+        trans,
+        step_dict: dict,
+        resolving_urls: frozenset[str],
+    ) -> model.Workflow:
+        trs_server = step_dict.get("trs_server")
+        trs_tool_id = step_dict.get("trs_tool_id")
+        trs_version_id = step_dict.get("trs_version_id")
+        if not trs_tool_id or not trs_version_id:
+            raise exceptions.RequestParameterInvalidException(
+                "trs_tool_id and trs_version_id are required for TRS ID subworkflow references."
+            )
+        if trs_server:
+            server = self.trs_proxy.get_server(trs_server)
+            trs_url = server.get_trs_url(trs_tool_id, trs_version_id)
+        else:
+            raise exceptions.RequestParameterInvalidException(
+                "trs_server is required for TRS ID subworkflow references."
+            )
+        return self.__build_subworkflow_from_trs_url(trans, trs_url, resolving_urls)
+
+    def __build_embedded_subworkflow(
+        self, trans, data, workflow_state_resolution_options, resolving_urls: frozenset[str] = frozenset()
+    ):
         raw_workflow_description = self.ensure_raw_description(data)
         subworkflow = self.build_workflow_from_raw_description(
             trans,
@@ -1977,6 +2171,7 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow_state_resolution_options,
             hidden=True,
             is_subworkflow=True,
+            resolving_urls=resolving_urls,
         ).workflow
         return subworkflow
 

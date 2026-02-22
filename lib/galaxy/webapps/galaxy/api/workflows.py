@@ -350,8 +350,17 @@ class WorkflowsAPIController(
             history = self.history_manager.get_accessible(
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
+        preserve_external_subworkflow_links = util.string_as_bool(
+            kwd.get("preserve_external_subworkflow_links", "false")
+        )
         ret_dict = self.workflow_contents_manager.workflow_to_dict(
-            trans, stored_workflow, style=style, version=version, history=history, instance_id=instance_id
+            trans,
+            stored_workflow,
+            style=style,
+            version=version,
+            history=history,
+            instance_id=instance_id,
+            preserve_external_subworkflow_links=preserve_external_subworkflow_links,
         )
         if download_format == "json-download":
             sname = stored_workflow.name
