@@ -1,0 +1,47 @@
+- id: ssh
+  version: 0
+  name: SSH Server
+  description: |
+    Setup connections to SSH servers to download and upload files.
+  configuration:
+    type: ssh
+    host: "{{ variables.host }}"
+    user: "{{ variables.user }}"
+    passwd: "{{ secrets.password }}"
+    pkey: "{{ secrets.pkey }}"
+    port: "{{ variables.port }}"
+    path: "{{ variables.path }}"
+    writable: "{{ variables.writable }}"
+  variables:
+    host:
+      label: SSH Host
+      type: string
+      help: Host of SSH Server to connect to.
+    user:
+      label: SSH User
+      type: string
+      help: |
+        Username to connect with.
+    path:
+      label: Path
+      type: string
+      help: |
+        A path that is readable / writable by the user
+    writable:
+      label: Writable?
+      type: boolean
+      help: Allow Galaxy to write data to this file source. Requires that user is allowed to write to this path on the host.
+    port:
+      label: SSH Port
+      type: integer
+      help: Port used to connect to the SSH server.
+      default: 22
+  secrets:
+    password:
+      label: SSH Password
+      help: |
+        Password to connect to SSH server with.
+    pkey:
+      label: Public key
+      help: |
+        Public key.

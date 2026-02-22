@@ -19,7 +19,7 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 class SshFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     host: Union[str, TemplateExpansion]
-    user: Optional[Union[str, TemplateExpansion]] = None
+    user: Union[str, TemplateExpansion]
     passwd: Optional[Union[str, TemplateExpansion]] = None
     pkey: Optional[Union[str, TemplateExpansion]] = None
     timeout: Union[int, TemplateExpansion] = 10
@@ -31,7 +31,7 @@ class SshFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
 
 class SshFileSourceConfiguration(BaseFileSourceConfiguration):
     host: str
-    user: Optional[str] = None
+    user: str
     passwd: Optional[str] = None
     pkey: Optional[str] = None
     timeout: int = 10
@@ -58,11 +58,12 @@ class SshFilesSource(PyFilesystem2FilesSource[SshFileSourceTemplateConfiguration
             host=config.host,
             user=config.user,
             passwd=config.passwd,
-            pkey=config.pkey,
+            pkey=config.pkey if config.pkey else None,
             port=config.port,
             timeout=config.timeout,
             compress=config.compress,
             config_path=config.config_path,
+            keepalive=0,
         )
         if config.path:
             return handle.opendir(config.path)
