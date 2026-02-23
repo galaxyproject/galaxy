@@ -124,12 +124,16 @@ class DirectCredentialValue(TypedDict):
     value: str
 
 
-class DirectCredential(TypedDict):
-    """Represents a credential group with variables and secrets provided directly."""
-
+class _DirectCredentialRequired(TypedDict):
     name: str  # Name of the credentials group
     variables: List[DirectCredentialValue]
     secrets: List[DirectCredentialValue]
+
+
+class DirectCredential(_DirectCredentialRequired, total=False):
+    """Represents a credential group with variables and secrets provided directly."""
+
+    version: str  # Version of the credential definition (defaults to "1.0")
 
 
 ToolSourceTestInputs = List[ToolSourceTestInput]

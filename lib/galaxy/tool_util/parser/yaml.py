@@ -482,7 +482,11 @@ def __parse_credentials_yaml(credentials_data) -> Optional[List[DirectCredential
                 raise ValueError(f"Credential secret '{secret_name}' must have a 'value'")
             secrets.append(DirectCredentialValue(name=secret_name, value=secret_value))
 
-        credentials_list.append(DirectCredential(name=name, variables=variables, secrets=secrets))
+        cred: DirectCredential = {"name": name, "variables": variables, "secrets": secrets}
+        version = cred_data.get("version") if is_dict(cred_data) else None
+        if version is not None:
+            cred["version"] = str(version)
+        credentials_list.append(cred)
 
     return credentials_list if credentials_list else None
 
