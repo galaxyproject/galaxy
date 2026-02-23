@@ -16,6 +16,7 @@ from typing_extensions import (
 
 from galaxy.tool_util.parser.interface import (
     AssertionList,
+    DirectCredential,
     TestSourceTestOutputColllection,
     ToolSourceTestOutputs,
 )
@@ -63,3 +64,4 @@ class ToolTestDescriptionDict(TypedDict):
     request_unavailable_reason: NotRequired[Optional[str]]
     maxseconds: NotRequired[Optional[int]]
     value_state_representation: NotRequired[ValueStateRepresentationT]
+    credentials: NotRequired[Optional[List[DirectCredential]]]

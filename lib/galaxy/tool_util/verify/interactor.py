@@ -139,6 +139,7 @@ class ValidToolTestDict(TypedDict):
     required_files: NotRequired[RequiredFilesT]
     required_data_tables: NotRequired[RequiredDataTablesT]
     required_loc_files: NotRequired[RequiredLocFileT]
+    credentials: NotRequired[Optional[List[Any]]]
     error: Literal[False]
     tool_id: str
     tool_version: str
@@ -706,6 +707,9 @@ class GalaxyInteractorApi:
         if testdef.value_state_representation == "test_case_json":
             # Don't submit user / YAML tools to the old endpoint.
             submit_with_legacy_api = False
+        if testdef.credentials:
+            # Credentials require the non-legacy API path to pass credentials_context.
+            submit_with_legacy_api = False
 
         if submit_with_legacy_api:
             inputs_tree = testdef.inputs.copy()
@@ -764,62 +768,149 @@ class GalaxyInteractorApi:
                 inputs_tree[f"__job_resource|{key}"] = value
 
         submit_response = None
-        for _ in range(DEFAULT_TOOL_TEST_WAIT):
-            submit_response = self.__submit_tool(
-                history_id,
-                tool_id=testdef.tool_id,
-                tool_input=inputs_tree,
-                tool_version=testdef.tool_version,
-                use_legacy_api=submit_with_legacy_api,
-            )
-            if _are_tool_inputs_not_ready(submit_response):
-                print("Tool inputs not ready yet")
-                time.sleep(1)
-                continue
-            else:
-                break
-        submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
-        if not submit_with_legacy_api:
-            tool_request_id = submit_response_object["tool_request_id"]
-            successful = self.wait_on_tool_request(tool_request_id)
-            if not successful:
-                request = self.get_tool_request(tool_request_id) or {}
-                raise RunToolException(
-                    f"Tool request failure - state {request.get('state')}, message: {request.get('state_message')}",
-                    inputs_tree,
+
+        # Create vault-based credentials via API for test execution
+        created_credentials = []
+        credentials_context = None
+        if testdef.credentials:
+            # Get user_id for credential creation
+            whoami_response = self._get("whoami")
+            user_id = whoami_response.json()["id"]
+
+            credentials_context_list = []
+            for cred in testdef.credentials:
+                # Build payload for credential creation
+                credential_payload = {
+                    "source_type": "tool",
+                    "source_id": testdef.tool_id,
+                    "source_version": testdef.tool_version or "1.0.0",
+                    "service_credential": {
+                        "name": cred["name"],
+                        "version": "1.0",  # Default version for test credentials
+                        "group": {
+                            "name": f"test_group_{cred['name']}",
+                            "variables": cred.get("variables", []),
+                            "secrets": cred.get("secrets", []),
+                        },
+                    },
+                }
+
+                # Create credentials via API
+                create_response = self._post(f"users/{user_id}/credentials", data=credential_payload, json=True)
+                create_response.raise_for_status()
+                created_cred = create_response.json()
+
+                # Get the user_credentials_id by listing credentials
+                # (POST returns ServiceCredentialGroupResponse which only has the group id,
+                # we need UserServiceCredentialsResponse which has the user_credentials_id)
+                list_response = self._get(f"users/{user_id}/credentials")
+                list_response.raise_for_status()
+                all_credentials = list_response.json()
+
+                # Find the credential we just created by matching source
+                # Then find the group in that credential's groups that matches our created group ID
+                user_credentials_id = None
+                for user_cred in all_credentials:
+                    if user_cred["source_type"] == "tool" and user_cred["source_id"] == testdef.tool_id:
+                        # Found the right UserCredentials, now find our group within it
+                        for group in user_cred["groups"]:
+                            if group["id"] == created_cred["id"]:
+                                user_credentials_id = user_cred["id"]
+                                break
+                        if user_credentials_id:
+                            break
+
+                if not user_credentials_id:
+                    raise RuntimeError(
+                        f"Failed to find user_credentials_id for created credential group {created_cred['id']}"
+                    )
+
+                # Store for cleanup
+                created_credentials.append({"user_credentials_id": user_credentials_id, "user_id": user_id})
+
+                # Build credentials_context entry
+                credentials_context_list.append(
+                    {
+                        "user_credentials_id": user_credentials_id,
+                        "name": cred["name"],
+                        "version": "1.0",
+                        "selected_group": {"id": created_cred["id"], "name": created_cred["name"]},
+                    }
                 )
-            job_refs = self.jobs_for_tool_request(tool_request_id)
-            outputs = OutputsDict()
-            output_collections = {}
-            if len(job_refs) != 1:
-                raise Exception(
-                    f"Found incorrect number of jobs for tool request - was expecting a single job {job_refs}"
-                )
-            assert len(job_refs) == 1, job_refs
-            job_id = job_refs[0]["id"]
-            jobs = [self.__get_job(job_id).json()]
-            job_outputs = self.job_outputs(job_id)
-            for job_output in job_outputs:
-                if "dataset" in job_output:
-                    outputs[job_output["name"]] = job_output["dataset"]
-                else:
-                    output_collections[job_output["name"]] = job_output["dataset_collection_instance"]
-        else:
-            outputs = self.__dictify_outputs(submit_response_object)
-            output_collections = self.__dictify_output_collections(submit_response_object)
-            jobs = submit_response_object["jobs"]
+
+            credentials_context = credentials_context_list
+
         try:
-            return RunToolResponse(
-                inputs=inputs_tree,
-                outputs=outputs,
-                output_collections=output_collections,
-                jobs=jobs,
-            )
-        except KeyError:
-            message = (
-                f"Error creating a job for these tool inputs - {submit_response_object.get('err_msg', 'unknown error')}"
-            )
-            raise RunToolException(message, inputs_tree)
+            for _ in range(DEFAULT_TOOL_TEST_WAIT):
+                submit_response = self.__submit_tool(
+                    history_id,
+                    tool_id=testdef.tool_id,
+                    tool_input=inputs_tree,
+                    tool_version=testdef.tool_version,
+                    use_legacy_api=submit_with_legacy_api,
+                    credentials_context=credentials_context,
+                )
+                if _are_tool_inputs_not_ready(submit_response):
+                    print("Tool inputs not ready yet")
+                    time.sleep(1)
+                    continue
+                else:
+                    break
+            submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
+            if not submit_with_legacy_api:
+                tool_request_id = submit_response_object["tool_request_id"]
+                successful = self.wait_on_tool_request(tool_request_id)
+                if not successful:
+                    request = self.get_tool_request(tool_request_id) or {}
+                    raise RunToolException(
+                        f"Tool request failure - state {request.get('state')}, message: {request.get('state_message')}",
+                        inputs_tree,
+                    )
+                job_refs = self.jobs_for_tool_request(tool_request_id)
+                outputs = OutputsDict()
+                output_collections = {}
+                if len(job_refs) != 1:
+                    raise Exception(
+                        f"Found incorrect number of jobs for tool request - was expecting a single job {job_refs}"
+                    )
+                assert len(job_refs) == 1, job_refs
+                job_id = job_refs[0]["id"]
+                # If credentials were created for this test, wait for job completion
+                # before the finally block cleans them up, so the job can read them.
+                if created_credentials:
+                    self.wait_for_job(job_id, history_id, testdef.maxseconds or DEFAULT_TOOL_TEST_WAIT)
+                jobs = [self.__get_job(job_id).json()]
+                job_outputs = self.job_outputs(job_id)
+                for job_output in job_outputs:
+                    if "dataset" in job_output:
+                        outputs[job_output["name"]] = job_output["dataset"]
+                    else:
+                        output_collections[job_output["name"]] = job_output["dataset_collection_instance"]
+            else:
+                outputs = self.__dictify_outputs(submit_response_object)
+                output_collections = self.__dictify_output_collections(submit_response_object)
+                jobs = submit_response_object["jobs"]
+            try:
+                return RunToolResponse(
+                    inputs=inputs_tree,
+                    outputs=outputs,
+                    output_collections=output_collections,
+                    jobs=jobs,
+                )
+            except KeyError:
+                message = f"Error creating a job for these tool inputs - {submit_response_object.get('err_msg', 'unknown error')}"
+                raise RunToolException(message, inputs_tree)
+        finally:
+            # Clean up created credentials
+            for cred_info in created_credentials:
+                try:
+                    delete_response = self._delete(
+                        f"users/{cred_info['user_id']}/credentials/{cred_info['user_credentials_id']}"
+                    )
+                    delete_response.raise_for_status()
+                except Exception as e:
+                    # Log but don't fail the test if cleanup fails
+                    print(f"Warning: Failed to delete test credentials: {e}")
 
     def _create_collection(self, history_id, collection_def):
         create_payload = dict(
@@ -1003,6 +1094,7 @@ class GalaxyInteractorApi:
         files: Optional[dict] = None,
         tool_version: Optional[str] = None,
         use_legacy_api: bool = True,
+        credentials_context: Optional[list] = None,
     ):
         extra_data = extra_data or {}
         if use_legacy_api:
@@ -1019,6 +1111,8 @@ class GalaxyInteractorApi:
             data = dict(
                 history_id=history_id, tool_id=tool_id, inputs=tool_input, tool_version=tool_version, **extra_data
             )
+            if credentials_context:
+                data["credentials_context"] = credentials_context
             submit_tool_request_response = self._post("jobs", data=data, json=True)
             return submit_tool_request_response
 
@@ -1937,6 +2031,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
     request: Optional[Dict[str, Any]] = None
     request_schema: Optional[Dict[str, Any]] = None
     request_unavailable_reason: Optional[str] = None
+    credentials: Optional[List[Any]] = None
 
     if not error_in_test_definition:
         processed_test_dict = cast(ValidToolTestDict, processed_dict)
@@ -1965,6 +2060,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
         request = processed_test_dict.get("request", None)
         request_schema = processed_test_dict.get("request_schema", None)
         request_unavailable_reason = processed_test_dict.get("request_unavailable_reason", None)
+        credentials = processed_test_dict.get("credentials", None)
     else:
         invalid_test_dict = cast(InvalidToolTestDict, processed_dict)
         maxseconds = DEFAULT_TOOL_TEST_WAIT
@@ -1998,6 +2094,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
         request_schema=request_schema,
         request_unavailable_reason=request_unavailable_reason,
         value_state_representation=value_state_representation,
+        credentials=credentials,
     )
 
 
@@ -2064,6 +2161,7 @@ class ToolTestDescription:
     output_collections: List[TestCollectionOutputDef]
     maxseconds: Optional[int]
     value_state_representation: ValueStateRepresentationT
+    credentials: Optional[List[Any]]  # List of credential context dicts
 
     @staticmethod
     def from_tool_source_dict(processed_test_dict: ToolTestDict) -> "ToolTestDescription":
@@ -2096,6 +2194,7 @@ class ToolTestDescription:
         self.tool_version = json_dict.get("tool_version")
         self.maxseconds = json_dict.get("maxseconds")
         self.value_state_representation = json_dict.get("value_state_representation", "test_case_xml")
+        self.credentials = json_dict.get("credentials")
 
     def test_data(self):
         """
@@ -2133,6 +2232,8 @@ class ToolTestDescription:
         }
         if self.maxseconds is not None:
             test_description_def["maxseconds"] = self.maxseconds
+        if self.credentials is not None:
+            test_description_def["credentials"] = self.credentials
         return ToolTestDescriptionDict(**test_description_def)
 
 
