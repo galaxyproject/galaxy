@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormSelect } from "bootstrap-vue";
 
 import type { ExtensionDetails } from "@/composables/uploadConfigurations";
+
+import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 interface Props {
     /** Currently selected extension for this item */
@@ -28,24 +29,23 @@ const emit = defineEmits<{
     (e: "input", value: string): void;
 }>();
 
-function handleInput(value: string) {
-    emit("input", value);
+function onItemSelection(value: ExtensionDetails) {
+    emit("input", value.id);
 }
 </script>
 
 <template>
-    <div class="d-flex align-items-center">
-        <BFormSelect
+    <div class="d-flex align-items-center w-100">
+        <SingleItemSelector
             v-b-tooltip.hover.noninteractive
-            :value="value"
-            size="sm"
+            class="flex-grow-1"
+            collection-name="Data Types"
             :title="tooltip"
+            :items="extensions"
+            :current-item="extensions.find((ext) => ext.id === value)"
             :disabled="disabled"
-            @input="handleInput">
-            <option v-for="(ext, extIndex) in extensions" :key="extIndex" :value="ext.id">
-                {{ ext.text }}
-            </option>
-        </BFormSelect>
+            @update:selected-item="onItemSelection">
+        </SingleItemSelector>
         <FontAwesomeIcon
             v-if="warning"
             v-b-tooltip.hover.noninteractive

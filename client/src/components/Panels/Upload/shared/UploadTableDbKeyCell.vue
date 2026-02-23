@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { BFormSelect } from "bootstrap-vue";
-
 import type { DbKey } from "@/composables/uploadConfigurations";
+
+import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 interface Props {
     /** Currently selected database key for this item */
@@ -23,21 +23,18 @@ const emit = defineEmits<{
     (e: "input", value: string): void;
 }>();
 
-function handleInput(value: string) {
-    emit("input", value);
+function onItemSelection(item: DbKey) {
+    emit("input", item.id);
 }
 </script>
 
 <template>
-    <BFormSelect
+    <SingleItemSelector
         v-b-tooltip.hover.noninteractive
-        :value="value"
-        size="sm"
+        collection-name="References"
         :title="tooltip"
+        :items="dbKeys"
+        :current-item="dbKeys.find((dbKey) => dbKey.id === value)"
         :disabled="disabled"
-        @input="handleInput">
-        <option v-for="(dbKey, dbKeyIndex) in dbKeys" :key="dbKeyIndex" :value="dbKey.id">
-            {{ dbKey.text }}
-        </option>
-    </BFormSelect>
+        @update:selected-item="onItemSelection" />
 </template>
