@@ -1128,7 +1128,11 @@ def __parse_credentials_elems(test_elem):
                 raise ValueError(f"Credential secret '{secret_name}' must have a 'value' attribute")
             secrets.append(DirectCredentialValue(name=secret_name, value=secret_value))
 
-        credentials_list.append(DirectCredential(name=name, variables=variables, secrets=secrets))
+        cred: DirectCredential = {"name": name, "variables": variables, "secrets": secrets}
+        version = cred_elem.get("version")
+        if version is not None:
+            cred["version"] = version
+        credentials_list.append(cred)
 
     return credentials_list if credentials_list else None
 
