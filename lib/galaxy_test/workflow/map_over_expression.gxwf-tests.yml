@@ -2,12 +2,15 @@
     Test to verify text parameter can be connected to data column param
   job:
     text_input1:
+      class: Collection
       collection_type: list
       elements:
         - identifier: A
-          content: A
+          class: File
+          contents: A
         - identifier: B
-          content: B
+          class: File
+          contents: B
   outputs:
     out1:
       class: Collection
