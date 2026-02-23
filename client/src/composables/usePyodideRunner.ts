@@ -1,25 +1,9 @@
 import { reactive, ref } from "vue";
 
-export interface PyodideFile {
-    id: string;
-    url: string;
-    name?: string;
-    size?: number;
-    aliases?: string[];
-    mime_type?: string;
-}
+import type { components } from "@/api";
 
-export interface PyodideTask {
-    task_id?: string;
-    code: string;
-    packages?: string[];
-    files?: PyodideFile[];
-    timeout_ms?: number;
-    alias_map?: Record<string, string>;
-    config?: {
-        index_url?: string;
-    };
-}
+export type PyodideTask = components["schemas"]["PyodideTask"];
+export type PyodideFile = components["schemas"]["PyodideFile"];
 
 export interface PyodideArtifact {
     name?: string;

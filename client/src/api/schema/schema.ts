@@ -7365,13 +7365,8 @@ export interface components {
              * @description Main response content
              */
             content: string;
-            /**
-             * Metadata
-             * @description Additional metadata
-             */
-            metadata?: {
-                [key: string]: unknown;
-            };
+            /** @description Additional metadata */
+            metadata: components["schemas"]["ResponseMetadata"];
             /**
              * Reasoning
              * @description Explanation of the agent's reasoning
@@ -7383,6 +7378,53 @@ export interface components {
              */
             suggestions?: components["schemas"]["ActionSuggestion"][];
         };
+        /**
+         * AnalysisStep
+         * @description Structured representation of a step in the agent's reasoning process.
+         */
+        AnalysisStep: {
+            /**
+             * Content
+             * @description Content of the step
+             */
+            content: string;
+            /**
+             * Requirements
+             * @description Any requirements or dependencies for this step
+             */
+            requirements?: string[] | null;
+            /** @description Current status of this step */
+            status?: components["schemas"]["AnalysisStepStatus"] | null;
+            /**
+             * Stderr
+             * @description Captured standard error from this step
+             */
+            stderr?: string | null;
+            /**
+             * Stdout
+             * @description Captured standard output from this step
+             */
+            stdout?: string | null;
+            /**
+             * Success
+             * @description Whether this step completed successfully
+             */
+            success?: boolean | null;
+            /** @description Type of analysis step */
+            type: components["schemas"]["AnalysisStepType"];
+        };
+        /**
+         * AnalysisStepStatus
+         * @description Status of an analysis step.
+         * @enum {string}
+         */
+        AnalysisStepStatus: "pending" | "running" | "completed" | "error";
+        /**
+         * AnalysisStepType
+         * @description Types of analysis steps taken by agents.
+         * @enum {string}
+         */
+        AnalysisStepType: "thought" | "action" | "observation" | "conclusion";
         /** AnonUserModel */
         AnonUserModel: {
             /**
@@ -7648,6 +7690,37 @@ export interface components {
              * @description The relative URL to access this item.
              */
             url: string;
+        };
+        /**
+         * Artifact
+         * @description Artifact generated during execution of agent-produced code.
+         */
+        Artifact: {
+            /**
+             * Content Base64
+             * @description Base64 content when small enough to inline
+             */
+            content_base64?: string | null;
+            /**
+             * Mime Type
+             * @description Artifact MIME type
+             */
+            mime_type: string;
+            /**
+             * Name
+             * @description Human readable artifact name
+             */
+            name: string;
+            /**
+             * Size
+             * @description Artifact size in bytes
+             */
+            size: number;
+            /**
+             * Temp Path
+             * @description Temporary server-side path for larger artifacts
+             */
+            temp_path?: string | null;
         };
         /** AsyncFile */
         AsyncFile: {
@@ -12315,6 +12388,81 @@ export interface components {
              */
             src: components["schemas"]["DataItemSourceType"];
         };
+        /**
+         * ExecutionResult
+         * @description Result returned after executing a task.
+         */
+        ExecutionResult: {
+            /**
+             * Artifacts
+             * @description Artifacts generated during execution
+             */
+            artifacts?: components["schemas"]["Artifact"][];
+            /**
+             * Metadata
+             * @description Additional execution metadata
+             */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Stderr
+             * @description Captured standard error
+             * @default
+             */
+            stderr: string;
+            /**
+             * Stdout
+             * @description Captured standard output
+             * @default
+             */
+            stdout: string;
+            /**
+             * Success
+             * @description Whether execution completed successfully
+             * @default true
+             */
+            success: boolean;
+            /**
+             * Task Id
+             * @description Identifier correlating to ExecutionTask
+             */
+            task_id?: string | null;
+        };
+        /**
+         * ExecutionTask
+         * @description Code execution request emitted by an agent.
+         */
+        ExecutionTask: {
+            /**
+             * Code
+             * @description Python code to execute
+             */
+            code: string;
+            /**
+             * Inputs
+             * @description Additional inputs for the execution environment
+             */
+            inputs?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Requirements
+             * @description List of packages required
+             */
+            requirements?: string[];
+            /**
+             * Task Id
+             * @description Optional task identifier provided by agent
+             */
+            task_id?: string | null;
+            /**
+             * Timeout Seconds
+             * @description Max execution time in seconds
+             * @default 120
+             */
+            timeout_seconds: number;
+        };
         /** ExitCodeJobMessage */
         ExitCodeJobMessage: {
             /** Code Desc */
@@ -14960,6 +15108,22 @@ export interface components {
              * @default 0
              */
             waiting: number;
+        };
+        /**
+         * HandoffInfo
+         * @description Information about handoff between agents.
+         */
+        HandoffInfo: {
+            /**
+             * Source Agent
+             * @description Identifier of the agent initiating the handoff
+             */
+            source_agent: string;
+            /**
+             * Target Agent
+             * @description Identifier of the agent receiving the handoff
+             */
+            target_agent: string;
         };
         /**
          * HashFunctionNameEnum
@@ -20523,6 +20687,42 @@ export interface components {
             model_store_format: components["schemas"]["ModelStoreFormat"];
         };
         /**
+         * PyodideFile
+         * @description Representation of a file to be provided in the Pyodide environment.
+         */
+        PyodideFile: {
+            /**
+             * Aliases
+             * @description List of alternative names or aliases for the file
+             */
+            aliases?: string[];
+            /**
+             * Id
+             * @description Unique identifier for the file
+             */
+            id: string;
+            /**
+             * Mime Type
+             * @description MIME type of the file
+             */
+            mime_type?: string | null;
+            /**
+             * Name
+             * @description Human-readable name of the file
+             */
+            name?: string | null;
+            /**
+             * Size
+             * @description Size of the file in bytes
+             */
+            size?: number | null;
+            /**
+             * Url
+             * @description URL to fetch the file content from
+             */
+            url?: string | null;
+        };
+        /**
          * PyodideResultPayload
          * @description Payload submitted after client-side Pyodide execution.
          */
@@ -20531,16 +20731,9 @@ export interface components {
              * Artifacts
              * @description Artifacts generated during execution
              */
-            artifacts?: {
-                [key: string]: unknown;
-            }[];
-            /**
-             * Metadata
-             * @description Additional execution metadata
-             */
-            metadata?: {
-                [key: string]: unknown;
-            };
+            artifacts?: components["schemas"]["UploadedArtifact"][];
+            /** @description Additional execution metadata */
+            metadata: components["schemas"]["PyodideResultPayloadMetadata"];
             /**
              * Stderr
              * @description Captured stderr
@@ -20564,6 +20757,90 @@ export interface components {
              * @description Agent-specified task identifier
              */
             task_id?: string | null;
+        };
+        /**
+         * PyodideResultPayloadMetadata
+         * @description Metadata about the Pyodide execution environment and context.
+         */
+        PyodideResultPayloadMetadata: {
+            /**
+             * Agent Type
+             * @description The agent type that was used for the chat query that led to this Pyodide execution, if applicable.
+             */
+            agent_type?: string | null;
+            /**
+             * Original Query
+             * @description The original chat query that led to this Pyodide execution, if applicable.
+             */
+            original_query?: string | null;
+            /**
+             * Selected Dataset Ids
+             * @description List of encoded dataset IDs that were selected by the user in the client before executing the Pyodide code.
+             */
+            selected_dataset_ids?: string[] | null;
+        };
+        /**
+         * PyodideStatus
+         * @description Status of Pyodide code execution.
+         * @enum {string}
+         */
+        PyodideStatus: "completed" | "error" | "pending" | "timeout";
+        /**
+         * PyodideTask
+         * @description Structured representation of a Pyodide code execution task.
+         */
+        PyodideTask: {
+            /**
+             * Action
+             * @description Action to perform, e.g. 'ExecutePythonInBrowser'
+             */
+            action: string;
+            /**
+             * Alias Map
+             * @description Mapping of dataset IDs to human-readable aliases
+             */
+            alias_map?: {
+                [key: string]: string;
+            };
+            /**
+             * Code
+             * @description Python code to execute in the browser
+             */
+            code: string;
+            /** @description Additional configuration for the Pyodide task */
+            config?: components["schemas"]["PyodideTaskConfig"] | null;
+            /**
+             * Files
+             * @description List of Pyodide files to be made available during execution
+             */
+            files?: components["schemas"]["PyodideFile"][];
+            /**
+             * Packages
+             * @description List of Python packages required for execution
+             */
+            packages?: string[];
+            /**
+             * Task Id
+             * @description Unique identifier for the task
+             */
+            task_id: string;
+            /**
+             * Timeout Ms
+             * @description Execution timeout in milliseconds
+             * @default 120000
+             */
+            timeout_ms: number;
+        };
+        /**
+         * PyodideTaskConfig
+         * @description Additional configuration for Pyodide tasks.
+         */
+        PyodideTaskConfig: {
+            /**
+             * Index Url
+             * @description Custom package index URL for Pyodide to use when installing dependencies
+             */
+            index_url: string;
         };
         /** QuotaDetails */
         QuotaDetails: {
@@ -21262,6 +21539,102 @@ export interface components {
              * @constant
              */
             type: "resource";
+        };
+        /**
+         * ResponseMetadata
+         * @description Additional metadata for agent responses.
+         */
+        ResponseMetadata: {
+            /**
+             * Analysis Steps
+             * @description Detailed reasoning steps taken by the agent
+             */
+            analysis_steps?: components["schemas"]["AnalysisStep"][] | null;
+            /**
+             * Artifacts
+             * @description Artifacts generated during the agent's processing
+             */
+            artifacts?: components["schemas"]["UploadedArtifact"][] | null;
+            /**
+             * Datasets Used
+             * @description List of dataset IDs used in the agent's response
+             */
+            datasets_used?: string[] | null;
+            /**
+             * Error
+             * @description Error message if any error occurred during processing
+             */
+            error?: string | null;
+            /** @description Details of any executed task */
+            executed_task?: components["schemas"]["ExecutionTask"] | null;
+            /** @description Result of any executed task */
+            execution?: components["schemas"]["ExecutionResult"] | null;
+            /**
+             * Files
+             * @description List of file paths relevant to the response
+             */
+            files?: string[] | null;
+            /** @description Information about handoff between agents */
+            handoff_info?: components["schemas"]["HandoffInfo"] | null;
+            /**
+             * Is Complete
+             * @description Whether the agent considers its response complete or if further interaction is expected
+             */
+            is_complete?: boolean | null;
+            /**
+             * Model
+             * @description LLM model used to generate the response
+             */
+            model?: string | null;
+            /**
+             * Plots
+             * @description List of plot URLs generated by the agent
+             */
+            plots?: string[] | null;
+            /**
+             * Pyodide Retry Count
+             * @description Number of retries attempted for Pyodide execution
+             */
+            pyodide_retry_count?: number | null;
+            /** @description Status of any Pyodide code execution */
+            pyodide_status?: components["schemas"]["PyodideStatus"] | null;
+            /** @description Details of any Pyodide task */
+            pyodide_task?: components["schemas"]["PyodideTask"] | null;
+            /**
+             * Pyodide Timeout Reason
+             * @description Reason for Pyodide timeout if applicable
+             */
+            pyodide_timeout_reason?: string | null;
+            /**
+             * Pyodide Timeout Seconds
+             * @description Seconds until Pyodide timeout
+             */
+            pyodide_timeout_seconds?: number | null;
+            /**
+             * Stderr
+             * @description Captured standard error from any code execution
+             */
+            stderr?: string | null;
+            /**
+             * Stdout
+             * @description Captured standard output from any code execution
+             */
+            stdout?: string | null;
+            /**
+             * Summary
+             * @description Summary of the agent's response or reasoning
+             */
+            summary?: string | null;
+            /**
+             * Tool Yaml
+             * @description YAML definition of any tool generated by the agent
+             */
+            tool_yaml?: string | null;
+            /**
+             * Total Tokens
+             * @description Total tokens used in generating the response
+             */
+            total_tokens?: number | null;
         };
         /** RoleDefinitionModel */
         RoleDefinitionModel: {
@@ -24338,6 +24711,44 @@ export interface components {
          * @enum {string}
          */
         UploadOption: "upload_file" | "upload_paths" | "upload_directory";
+        /**
+         * UploadedArtifact
+         * @description Representation of a Pyodide artifact generated by an agent.
+         */
+        UploadedArtifact: {
+            /**
+             * Dataset ID
+             * @description The encoded ID of the dataset created to store this artifact
+             * @example 0123456789ABCDEF
+             */
+            dataset_id: string;
+            /**
+             * Download Url
+             * @description URL to download the artifact content
+             */
+            download_url: string;
+            /**
+             * History ID
+             * @description The encoded ID of the history where the dataset was created
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * Mime Type
+             * @description MIME type of the artifact
+             */
+            mime_type: string;
+            /**
+             * Name
+             * @description Human-readable name of the artifact
+             */
+            name: string;
+            /**
+             * Size
+             * @description Size of the artifact in bytes
+             */
+            size: number;
+        };
         /** UrlDataElement */
         UrlDataElement: {
             /**
@@ -26418,9 +26829,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["UploadedArtifact"];
                 };
             };
             /** @description Request Error */

@@ -35,7 +35,10 @@ from typing_extensions import (
     TypedDict,
 )
 
-from galaxy.schema.agents import AgentResponse
+from galaxy.schema.agents import (
+    AgentResponse,
+    UploadedArtifact,
+)
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -3909,14 +3912,31 @@ class ChatPayload(Model):
     )
 
 
+class PyodideResultPayloadMetadata(BaseModel):
+    """Metadata about the Pyodide execution environment and context."""
+
+    selected_dataset_ids: Optional[list[str]] = Field(
+        default=None,
+        description="List of encoded dataset IDs that were selected by the user in the client before executing the Pyodide code.",
+    )
+    agent_type: Optional[str] = Field(
+        default=None,
+        description="The agent type that was used for the chat query that led to this Pyodide execution, if applicable.",
+    )
+    original_query: Optional[str] = Field(
+        default=None,
+        description="The original chat query that led to this Pyodide execution, if applicable.",
+    )
+
+
 class PyodideResultPayload(BaseModel):
     """Payload submitted after client-side Pyodide execution."""
 
     task_id: Optional[str] = Field(default=None, description="Agent-specified task identifier")
     stdout: str = Field(default="", description="Captured stdout")
     stderr: str = Field(default="", description="Captured stderr")
-    artifacts: list[dict[str, Any]] = Field(default_factory=list, description="Artifacts generated during execution")
-    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional execution metadata")
+    artifacts: list[UploadedArtifact] = Field(default_factory=list, description="Artifacts generated during execution")
+    metadata: PyodideResultPayloadMetadata = Field(description="Additional execution metadata")
     success: bool = Field(default=True, description="Whether the execution succeeded")
 
 

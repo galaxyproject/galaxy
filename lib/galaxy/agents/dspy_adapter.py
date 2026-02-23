@@ -10,6 +10,11 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, ClassVar
 
+from galaxy.schema.agents import (
+    AnalysisStep,
+    AnalysisStepStatus,
+    AnalysisStepType,
+)
 from galaxy.util.pyodide import infer_requirements_from_python
 
 DSPY_IMPORT_ERROR: Optional[Exception] = None
@@ -254,7 +259,7 @@ class DSPyPlanResult:
     follow_up: List[str]
     plots: List[str]
     files: List[str]
-    analysis_steps: List[Dict[str, Any]]
+    analysis_steps: List[AnalysisStep]
     is_complete: bool
     raw_answer: Dict[str, Any]
     trajectory: Dict[str, Any] = field(default_factory=dict)
@@ -373,8 +378,8 @@ class GalaxyDSPyPlanner:
         finish_called: bool,
         *,
         code_tool_name: str,
-    ) -> List[Dict[str, Any]]:
-        steps: List[Dict[str, Any]] = []
+    ) -> List[AnalysisStep]:
+        steps: List[AnalysisStep] = []
 
         def _iter_indices() -> Iterable[int]:
             for key in trajectory:
@@ -389,7 +394,7 @@ class GalaxyDSPyPlanner:
                 raw_thought = trajectory.get(f"thought_{idx}")
                 thought = str(raw_thought or "").strip()
                 if thought:
-                    steps.append({"type": "thought", "content": thought})
+                    steps.append(AnalysisStep(type=AnalysisStepType.THOUGHT, content=thought))
 
                 tool_name = trajectory.get(f"tool_name_{idx}")
                 tool_args = trajectory.get(f"tool_args_{idx}") or {}
@@ -413,41 +418,41 @@ class GalaxyDSPyPlanner:
                     action_code = action_code.strip()
                     if action_code:
                         steps.append(
-                            {
-                                "type": "action",
-                                "content": action_code,
-                                "requirements": requirements,
-                                "status": "pending",
-                            }
+                            AnalysisStep(
+                                type=AnalysisStepType.ACTION,
+                                content=action_code,
+                                requirements=requirements,
+                                status=AnalysisStepStatus.PENDING,
+                            )
                         )
                     if observation:
-                        steps.append({"type": "observation", "content": observation})
+                        steps.append(AnalysisStep(type=AnalysisStepType.OBSERVATION, content=observation))
 
                 elif tool_name == "finish":
                     conclusion = summary or observation or "Analysis complete."
-                    steps.append({"type": "conclusion", "content": conclusion.strip()})
+                    steps.append(AnalysisStep(type=AnalysisStepType.CONCLUSION, content=conclusion.strip()))
 
                 elif tool_name:
                     if isinstance(tool_args, dict):
                         action_repr = json.dumps(tool_args)
                     else:
                         action_repr = str(tool_args)
-                    steps.append({"type": "action", "content": f"{tool_name} {action_repr}"})
+                    steps.append(AnalysisStep(type=AnalysisStepType.ACTION, content=f"{tool_name} {action_repr}"))
                     if observation:
-                        steps.append({"type": "observation", "content": observation})
+                        steps.append(AnalysisStep(type=AnalysisStepType.OBSERVATION, content=observation))
 
-            if finish_called and not any(step["type"] == "conclusion" for step in steps):
+            if finish_called and not any(step.type == AnalysisStepType.CONCLUSION for step in steps):
                 if summary:
-                    steps.append({"type": "conclusion", "content": summary})
+                    steps.append(AnalysisStep(type=AnalysisStepType.CONCLUSION, content=summary))
         except Exception as exc:  # pragma: no cover - defensive path
             log.debug("Failed to build analysis steps: %s", exc)
             steps = []
             summary_clean = (summary or "").strip()
             if summary_clean:
-                steps.append({"type": "thought", "content": summary_clean})
+                steps.append(AnalysisStep(type=AnalysisStepType.THOUGHT, content=summary_clean))
             code_clean = (code or "").strip()
             if code_clean:
-                steps.append({"type": "action", "content": code_clean, "requirements": requirements})
+                steps.append(AnalysisStep(type=AnalysisStepType.ACTION, content=code_clean, requirements=requirements, status=AnalysisStepStatus.PENDING))
 
         return steps
 

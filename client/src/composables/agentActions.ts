@@ -97,7 +97,7 @@ export function useAgentActions() {
      * Handle SAVE_TOOL action - save custom tool as unprivileged user tool
      */
     async function handleSaveTool(agentResponse: AgentResponse) {
-        const toolYaml = agentResponse.metadata?.tool_yaml as string;
+        const toolYaml = agentResponse.metadata?.tool_yaml;
 
         if (!toolYaml) {
             toast.error("No tool YAML provided for save action");

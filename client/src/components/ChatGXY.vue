@@ -107,7 +107,6 @@ const {
     datasets: currentHistoryDatasets,
     isFetching: loadingDatasets,
     error: datasetError,
-    // initialFetchDone: initialFetch, // TODO: Remove if we don't need this
 } = useHistoryDatasets({
     historyId: () => currentHistoryId.value || "",
     enabled: () => currentHistoryId.value !== null && allowFetchingDatasets.value,
@@ -851,8 +850,10 @@ async function submitPyodideExecutionResult(
         },
     };
 
-    // @ts-ignore TODO: We will add the pydantic model later
-    const { data, error } = await GalaxyApi().POST(`/api/chat/exchange/${currentChatId.value}/pyodide_result`, {
+    const { data, error } = await GalaxyApi().POST(`/api/chat/exchange/{exchange_id}/pyodide_result`, {
+        params: {
+            path: { exchange_id: currentChatId.value },
+        },
         body: payload,
     });
 
@@ -925,11 +926,11 @@ function normaliseArtifactList(raw: unknown): UploadedArtifact[] {
         const downloadUrl = record.download_url ? resolveDownloadUrl(String(record.download_url)) : undefined;
         artifacts.push({
             dataset_id: String(identifier),
-            name: record.name ? String(record.name) : undefined,
-            size: typeof record.size === "number" ? record.size : Number(record.size) || undefined,
-            mime_type: record.mime_type ? String(record.mime_type) : undefined,
+            name: record.name ? String(record.name) : "",
+            size: typeof record.size === "number" ? record.size : Number(record.size) || 0,
+            mime_type: record.mime_type ? String(record.mime_type) : "",
             download_url: downloadUrl || "",
-            history_id: record.history_id ? String(record.history_id) : undefined,
+            history_id: record.history_id ? String(record.history_id) : "",
         });
     }
     return artifacts;
@@ -960,6 +961,7 @@ function updateMessageOutputsFromArtifacts(message: Message, artifacts: Uploaded
     message.generatedPlots = plotNames.length ? plotNames : message.generatedPlots;
     message.generatedFiles = fileNames.length ? fileNames : message.generatedFiles;
 }
+
 function serializeUploadedArtifacts(artifacts: UploadedArtifact[] = []): any[] {
     return artifacts.map((artifact) => ({
         dataset_id: artifact.dataset_id,
@@ -996,8 +998,11 @@ function applyExecutionResultMetadata(message: Message, execResult: any) {
         task_id: execResult.task_id,
     };
     if (metadata.pyodide_task && execResult.task_id) {
-        metadata.executed_task = metadata.executed_task || { task_id: execResult.task_id };
-        metadata.executed_task.task_id = execResult.task_id;
+        metadata.executed_task = {
+            code: metadata.executed_task?.code || "",
+            timeout_seconds: metadata.executed_task?.timeout_seconds || 30,
+            task_id: execResult.task_id,
+        };
         pyodideTaskToMessage.set(String(execResult.task_id), message);
         deliveredTaskIds.add(String(execResult.task_id));
     }
@@ -1024,20 +1029,23 @@ function normaliseAnalysisSteps(raw: unknown): AnalysisStep[] {
                 return null;
             }
             const content = String(step.content ?? "");
-            const requirements = Array.isArray(step.requirements) ? step.requirements.map(String) : undefined;
+            const requirements = Array.isArray(step.requirements) ? step.requirements.map(String) : null;
             const statusValue = step.status;
-            const status: AnalysisStep["status"] | undefined =
-                statusValue === "running" || statusValue === "completed" || statusValue === "error"
+            const status: AnalysisStep["status"] =
+                statusValue === "pending" ||
+                statusValue === "running" ||
+                statusValue === "completed" ||
+                statusValue === "error"
                     ? statusValue
-                    : undefined;
-            const stdout = typeof step.stdout === "string" ? step.stdout : undefined;
-            const stderr = typeof step.stderr === "string" ? step.stderr : undefined;
-            const success = typeof step.success === "boolean" ? step.success : undefined;
+                    : null;
+            const stdout = typeof step.stdout === "string" ? step.stdout : null;
+            const stderr = typeof step.stderr === "string" ? step.stderr : null;
+            const success = typeof step.success === "boolean" ? step.success : null;
             return {
                 type,
                 content,
                 requirements,
-                status: type === "action" ? (status ?? "pending") : undefined,
+                status: type === "action" ? (status ?? "pending") : status,
                 stdout,
                 stderr,
                 success,
@@ -1164,23 +1172,18 @@ async function sendFeedback(messageId: string, value: "up" | "down") {
         message.feedback = value;
 
         if (currentChatId.value) {
-            try {
-                const feedbackValue = value === "up" ? 1 : 0;
+            const feedbackValue = value === "up" ? 1 : 0;
 
-                // @ts-ignore TODO: Add pydantic model later
-                const { error } = await GalaxyApi().PUT("/api/chat/exchange/{exchange_id}/feedback", {
-                    params: {
-                        path: { exchange_id: currentChatId.value },
-                    },
-                    body: feedbackValue,
-                });
+            const { error } = await GalaxyApi().PUT("/api/chat/exchange/{exchange_id}/feedback", {
+                params: {
+                    path: { exchange_id: currentChatId.value },
+                },
+                body: feedbackValue,
+            });
 
-                if (error) {
-                    console.error("Failed to save feedback:", error);
-                    message.feedback = null;
-                }
-            } catch (e) {
-                console.error("Failed to save feedback:", e);
+            if (error) {
+                console.error("Failed to save feedback:", error);
+                // Revert on error
                 message.feedback = null;
             }
         }

@@ -12,7 +12,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import type { ActionSuggestion, ActionType } from "@/composables/agentActions";
+import type { ActionSuggestion, ActionType } from "./types";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 
