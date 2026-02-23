@@ -334,6 +334,7 @@
   <tool file="configfile_user_defined.yml" />
   <tool file="from_work_dir_glob.xml" />
   <tool file="secret_tool.xml" />
+  <tool file="credentials_test.xml" />
 
   <!-- Tools without tool test but useful for hand-crafted, artisanal test cases. -->
   <tool file="cat_data_and_sleep.xml" />
