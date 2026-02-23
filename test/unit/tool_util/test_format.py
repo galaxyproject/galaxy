@@ -1,4 +1,7 @@
-from galaxy.tool_util.format import format_xml
+from galaxy.tool_util.format import (
+    format_xml,
+    main,
+)
 
 SIMPLE_TOOL_XML = """\
 <tool id="test" name="Test" version="1.0">
@@ -69,3 +72,64 @@ def test_idempotent():
     first = format_xml(SIMPLE_TOOL_XML)
     second = format_xml(first)
     assert first == second
+
+
+def test_cli_inplace(tmp_path):
+    tool_file = tmp_path / "tool.xml"
+    tool_file.write_text(SIMPLE_TOOL_XML)
+    main([str(tool_file)])
+    assert tool_file.read_text() == EXPECTED_FORMATTED
+
+
+def test_cli_already_formatted(tmp_path, capsys):
+    tool_file = tmp_path / "tool.xml"
+    tool_file.write_text(EXPECTED_FORMATTED)
+    main([str(tool_file)])
+    assert tool_file.read_text() == EXPECTED_FORMATTED
+    assert "already formatted" in capsys.readouterr().out
+
+
+def test_cli_diff_mode(tmp_path, capsys):
+    tool_file = tmp_path / "tool.xml"
+    tool_file.write_text(SIMPLE_TOOL_XML)
+    try:
+        main(["--diff", str(tool_file)])
+    except SystemExit as e:
+        assert e.code == 1
+    # file should be unchanged in diff mode
+    assert tool_file.read_text() == SIMPLE_TOOL_XML
+    assert "---" in capsys.readouterr().out
+
+
+def test_cli_diff_mode_no_changes(tmp_path):
+    tool_file = tmp_path / "tool.xml"
+    tool_file.write_text(EXPECTED_FORMATTED)
+    # should not raise SystemExit
+    main(["--diff", str(tool_file)])
+
+
+def test_cli_tab_size(tmp_path):
+    tool_file = tmp_path / "tool.xml"
+    tool_file.write_text(SIMPLE_TOOL_XML)
+    main(["--tab-size", "2", str(tool_file)])
+    result = tool_file.read_text()
+    assert "  <description>" in result
+    assert "    <param" in result
+
+
+def test_cli_multiple_files(tmp_path):
+    f1 = tmp_path / "tool1.xml"
+    f2 = tmp_path / "tool2.xml"
+    f1.write_text(SIMPLE_TOOL_XML)
+    f2.write_text(SIMPLE_TOOL_XML)
+    main([str(f1), str(f2)])
+    assert f1.read_text() == EXPECTED_FORMATTED
+    assert f2.read_text() == EXPECTED_FORMATTED
+
+
+def test_cli_invalid_xml_unchanged(tmp_path):
+    bad_xml = "<tool><unclosed>"
+    tool_file = tmp_path / "tool.xml"
+    tool_file.write_text(bad_xml)
+    main([str(tool_file)])
+    assert tool_file.read_text() == bad_xml
