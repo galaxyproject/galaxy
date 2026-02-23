@@ -42,7 +42,7 @@ dependencies = [
     "fs",
     "future>=1.0.0",  # Python 3.12 support
     "gravity>=1.2.0",  # Python 3.14 support
-    "gunicorn",
+    "gunicorn!=25.1.0",  # https://github.com/benoitc/gunicorn/discussions/3509
     "gxformat2>=0.21.0",
     "h5grove>=1.2.1",
     "h5py>=3.12",  # Python 3.13 support
