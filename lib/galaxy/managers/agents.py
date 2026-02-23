@@ -25,7 +25,12 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
-from galaxy.schema.agents import AgentResponse
+from galaxy.schema.agents import (
+    AgentResponse,
+    PyodideFile,
+    PyodideTask,
+    PyodideTaskConfig,
+)
 
 # Import agent system (agents are optional; optional dependencies must not break import)
 try:
@@ -355,39 +360,39 @@ class AgentService:
         dataset_descriptors: List[Dict[str, Any]],
         alias_index: Dict[str, str],
         timeout_ms: int,
-    ) -> Dict[str, Any]:
+    ) -> PyodideTask:
         code = (plan.python_code or "").strip()
         packages = sorted({pkg for pkg in (plan.requirements or []) if pkg})
-        files = []
+        files: List[PyodideFile] = []
         for descriptor in dataset_descriptors:
             dataset_id = descriptor.get("id")
             if not dataset_id:
                 continue
             files.append(
-                {
-                    "id": dataset_id,
-                    "name": descriptor.get("name") or dataset_id,
-                    "size": descriptor.get("size"),
-                    "aliases": descriptor.get("aliases") or [],
-                    "url": self._dataset_download_url(trans, dataset_id),
-                    "mime_type": self._guess_mime_type(descriptor.get("name")),
-                }
+                PyodideFile(
+                    id=dataset_id,
+                    name=descriptor.get("name") or dataset_id,
+                    size=descriptor.get("size"),
+                    aliases=descriptor.get("aliases") or [],
+                    url=self._dataset_download_url(trans, dataset_id),
+                    mime_type=self._guess_mime_type(descriptor.get("name")),
+                )
             )
-        config: Dict[str, Any] = {}
+        config: PyodideTaskConfig | None = None
         index_url = getattr(self.config, "pyodide_index_url", None)
         if index_url:
-            config["index_url"] = index_url
-        task: Dict[str, Any] = {
-            "task_id": str(uuid.uuid4()),
-            "action": "ExecutePythonInBrowser",
-            "code": code,
-            "packages": packages,
-            "files": files,
-            "timeout_ms": timeout_ms or DataAnalysisDSPyAgent.DEFAULT_TIMEOUT_MS,
-            "alias_map": alias_index,
-        }
+            config = PyodideTaskConfig(index_url=index_url)
+        task: PyodideTask = PyodideTask(
+            task_id=str(uuid.uuid4()),
+            action="ExecutePythonInBrowser",
+            code=code,
+            packages=packages,
+            files=files,
+            timeout_ms=timeout_ms or DataAnalysisDSPyAgent.DEFAULT_TIMEOUT_MS,
+            alias_map=alias_index,
+        )
         if config:
-            task["config"] = config
+            task.config = config
         return task
 
     def _dataset_download_url(self, trans: ProvidesUserContext, dataset_id: str) -> str:

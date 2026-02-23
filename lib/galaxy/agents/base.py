@@ -19,7 +19,7 @@ from typing import (
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import User
-from galaxy.schema.agents import (
+from galaxy.schema.agents import (  # TODO: We need to deal with this now, given I typed metadata fully
     ActionSuggestion,
     ActionType,
     AgentResponse,
