@@ -46,6 +46,7 @@ from galaxy.tool_util.parameters import (
 )
 from galaxy.tool_util.parser.interface import (
     AssertionList,
+    DirectCredential,
     TestCollectionDef,
     TestCollectionOutputDef,
     TestSourceTestOutputColllection,
@@ -139,7 +140,7 @@ class ValidToolTestDict(TypedDict):
     required_files: NotRequired[RequiredFilesT]
     required_data_tables: NotRequired[RequiredDataTablesT]
     required_loc_files: NotRequired[RequiredLocFileT]
-    credentials: NotRequired[Optional[List[Any]]]
+    credentials: NotRequired[Optional[List[DirectCredential]]]
     error: Literal[False]
     tool_id: str
     tool_version: str
@@ -786,7 +787,7 @@ class GalaxyInteractorApi:
                     "source_version": testdef.tool_version or "1.0.0",
                     "service_credential": {
                         "name": cred["name"],
-                        "version": "1.0",  # Default version for test credentials
+                        "version": cred.get("version", "1.0"),
                         "group": {
                             "name": f"test_group_{cred['name']}",
                             "variables": cred.get("variables", []),
@@ -807,12 +808,16 @@ class GalaxyInteractorApi:
                 list_response.raise_for_status()
                 all_credentials = list_response.json()
 
-                # Find the credential we just created by matching source
-                # Then find the group in that credential's groups that matches our created group ID
+                # Find the user_credentials_id by searching for the UserCredentials entry
+                # that contains our newly-created group (matched by group ID).
+                # Filter by source_type, source_id, and source_version to reduce the scan.
                 user_credentials_id = None
                 for user_cred in all_credentials:
-                    if user_cred["source_type"] == "tool" and user_cred["source_id"] == testdef.tool_id:
-                        # Found the right UserCredentials, now find our group within it
+                    if (
+                        user_cred["source_type"] == "tool"
+                        and user_cred["source_id"] == testdef.tool_id
+                        and user_cred.get("source_version") == (testdef.tool_version or "1.0.0")
+                    ):
                         for group in user_cred["groups"]:
                             if group["id"] == created_cred["id"]:
                                 user_credentials_id = user_cred["id"]
@@ -833,7 +838,7 @@ class GalaxyInteractorApi:
                     {
                         "user_credentials_id": user_credentials_id,
                         "name": cred["name"],
-                        "version": "1.0",
+                        "version": cred.get("version", "1.0"),
                         "selected_group": {"id": created_cred["id"], "name": created_cred["name"]},
                     }
                 )
@@ -1094,7 +1099,7 @@ class GalaxyInteractorApi:
         files: Optional[dict] = None,
         tool_version: Optional[str] = None,
         use_legacy_api: bool = True,
-        credentials_context: Optional[list] = None,
+        credentials_context: Optional[List[Dict[str, Any]]] = None,
     ):
         extra_data = extra_data or {}
         if use_legacy_api:
@@ -2031,7 +2036,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
     request: Optional[Dict[str, Any]] = None
     request_schema: Optional[Dict[str, Any]] = None
     request_unavailable_reason: Optional[str] = None
-    credentials: Optional[List[Any]] = None
+    credentials: Optional[List[DirectCredential]] = None
 
     if not error_in_test_definition:
         processed_test_dict = cast(ValidToolTestDict, processed_dict)
@@ -2161,7 +2166,7 @@ class ToolTestDescription:
     output_collections: List[TestCollectionOutputDef]
     maxseconds: Optional[int]
     value_state_representation: ValueStateRepresentationT
-    credentials: Optional[List[Any]]  # List of credential context dicts
+    credentials: Optional[List[DirectCredential]]
 
     @staticmethod
     def from_tool_source_dict(processed_test_dict: ToolTestDict) -> "ToolTestDescription":
