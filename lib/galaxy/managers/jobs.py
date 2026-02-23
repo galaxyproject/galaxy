@@ -79,6 +79,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
@@ -2186,6 +2187,9 @@ class JobSubmitter:
             target_history = request_context.history
             use_cached_jobs = request.use_cached_jobs
             rerun_remap_job_id = request.rerun_remap_job_id
+            credentials_context: Optional[CredentialsContext] = None
+            if request.credentials_context:
+                credentials_context = CredentialsContext(root=request.credentials_context)
             tool_state, new_hdas = self.dereference(request_context, tool, request, tool_request)
             to_materialize_list = [p for p in new_hdas if not p.request.deferred]
             for to_materialize in to_materialize_list:
@@ -2201,6 +2205,7 @@ class JobSubmitter:
                 history=target_history,
                 use_cached_job=use_cached_jobs,
                 rerun_remap_job_id=rerun_remap_job_id,
+                credentials_context=credentials_context,
             )
             tool_request.state = ToolRequest.states.SUBMITTED
             sa_session.add(tool_request)

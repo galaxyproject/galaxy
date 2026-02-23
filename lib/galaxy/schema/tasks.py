@@ -9,6 +9,7 @@ from pydantic import Field
 
 from galaxy.util.hash_util import HashFunctionNameEnum
 from . import PdfDocumentType
+from .credentials import ServiceCredentialsContext
 from .schema import (
     BcoGenerationParametersMixin,
     DatasetSourceType,
@@ -186,3 +187,4 @@ class QueueJobs(Model):
     user: RequestUser  # TODO: test anonymous users through this submission path
     use_cached_jobs: bool
     rerun_remap_job_id: Optional[int]  # link to a job to rerun & remap
+    credentials_context: Optional[list[ServiceCredentialsContext]] = None  # credential context for vault-based credential injection
