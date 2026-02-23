@@ -88,7 +88,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
 
     # Authentication endpoints.
     if app.config.enable_oidc:
-        webapp.add_route("/authnz/", controller="authnz", action="index", provider=None)
+        webapp.add_route("/authnz/", controller="authnz", action="index", provider=None, redirect=None)
         webapp.add_route("/authnz/{provider}/login", controller="authnz", action="login", provider=None)
         webapp.add_route("/authnz/{provider}/callback", controller="authnz", action="callback", provider=None)
         webapp.add_route(
