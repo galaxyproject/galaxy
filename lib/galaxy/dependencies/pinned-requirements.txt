@@ -102,7 +102,7 @@ griffelib==2.0.0
 groq==1.0.0
 grpcio==1.78.1
 grpcio-status==1.78.1
-gunicorn==25.1.0
+gunicorn==25.0.3
 gxformat2==0.22.0
 h11==0.16.0
 h5grove==3.0.0
