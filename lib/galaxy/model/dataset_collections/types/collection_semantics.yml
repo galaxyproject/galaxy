@@ -1012,6 +1012,8 @@
                         invocation: {inputs: {i: {type: dataset, ref: d_n}}}
                         output: o
     tests:
+        workflow_runtime:
+            framework_test: "collection_semantics_cat_4"
         workflow_editor: "accepts sample_sheet data -> data connection (maps like list)"
 
 - example:
@@ -1031,6 +1033,8 @@
         produces:
             o: {type: dataset}
     tests:
+        workflow_runtime:
+            framework_test: "collection_semantics_cat_collection_1"
         workflow_editor: "accepts sample_sheet -> list connection (canMatch)"
 
 - doc: |
@@ -1063,6 +1067,8 @@
                         invocation: {inputs: {i: {type: collection, ref: "C\\_PAIRED"}}}
                         output: o
     tests:
+        workflow_runtime:
+            framework_test: "collection_semantics_paired_or_unpaired_5"
         workflow_editor: "accepts sample_sheet:paired -> paired connection (maps over like list:paired)"
 
 - example:
@@ -1082,6 +1088,8 @@
         produces:
             o: {type: dataset}
     tests:
+        workflow_runtime:
+            framework_test: "collection_semantics_list_paired_0"
         workflow_editor: "accepts sample_sheet:paired -> list:paired connection (canMatch)"
 
 - doc: |
@@ -1142,6 +1150,8 @@
             inputs:
                 i: {type: map_over, collection: C_AS_MIXED}
     tests:
+        workflow_runtime:
+            framework_test: "collection_semantics_paired_or_unpaired_6"
         workflow_editor: "accepts sample_sheet:paired -> paired_or_unpaired connection"
 
 - example:
@@ -1161,6 +1171,8 @@
         produces:
             o: {type: dataset}
     tests:
+        workflow_runtime:
+            framework_test: "collection_semantics_list_paired_or_unpaired_1"
         workflow_editor: "accepts sample_sheet:paired_or_unpaired -> list:paired_or_unpaired connection (canMatch)"
 
 - doc: |
@@ -1223,4 +1235,6 @@
         produces:
             o: {type: dataset}
     tests:
+        workflow_runtime:
+            framework_test: "collection_semantics_cat_sample_sheet_0"
         workflow_editor: "accepts sample_sheet -> sample_sheet connection"

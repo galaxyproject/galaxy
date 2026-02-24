@@ -19,3 +19,28 @@
           text: "element 1"
         - that: has_text
           text: "element 2"
+
+- doc: |
+    SAMPLE_SHEET_MATCHES_LIST: A sample_sheet collection consumed by a list
+    collection input via canMatch (reduction).
+  job:
+    input1:
+      class: Collection
+      collection_type: sample_sheet
+      rows:
+        el1: []
+        el2: []
+      elements:
+        - identifier: el1
+          class: File
+          contents: "element 1"
+        - identifier: el2
+          class: File
+          contents: "element 2"
+  outputs:
+    wf_output:
+      asserts:
+        - that: has_text
+          text: "element 1"
+        - that: has_text
+          text: "element 2"

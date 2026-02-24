@@ -114,3 +114,53 @@
     wf_output:
       class: Collection
       collection_type: list
+
+- doc: |
+    SAMPLE_SHEET_PAIRED_MAPPING_OVER_PAIRED: A sample_sheet:paired mapped over
+    a paired_or_unpaired tool input produces a sample_sheet output.
+  job:
+    input1:
+      class: Collection
+      collection_type: sample_sheet:paired
+      rows:
+        el1: []
+      elements:
+        - identifier: el1
+          class: Collection
+          type: paired
+          elements:
+            - identifier: forward
+              class: File
+              contents: "forward content"
+            - identifier: reverse
+              class: File
+              contents: "reverse content"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: sample_sheet
+
+- doc: |
+    SAMPLE_SHEET_PAIRED_MAPPING_OVER_PAIRED_OR_UNPAIRED: A sample_sheet:paired
+    mapped over paired_or_unpaired (equiv to sample_sheet:paired_or_unpaired mapping).
+  job:
+    input1:
+      class: Collection
+      collection_type: sample_sheet:paired
+      rows:
+        el1: []
+      elements:
+        - identifier: el1
+          class: Collection
+          type: paired
+          elements:
+            - identifier: forward
+              class: File
+              contents: "forward content"
+            - identifier: reverse
+              class: File
+              contents: "reverse content"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: sample_sheet
