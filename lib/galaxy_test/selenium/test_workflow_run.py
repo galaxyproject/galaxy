@@ -21,6 +21,8 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
     WORKFLOW_WITH_DATA_TAG_FILTER,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
+    WORKFLOW_WITH_IMAGES_IN_REPORT,
+    WORKFLOW_WITH_IMAGES_IN_REPORT_TEST_DATA,
     WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_RULES_1,
@@ -605,6 +607,25 @@ steps:
         self.get(f"workflows/invocations/report?id={invocation_0['id']}")
         self.wait_for_selector_visible(".markdown-component")
         self.screenshot("workflow_report_custom_1")
+
+    @selenium_test
+    @managed_history
+    def test_execution_with_images_in_report(self):
+        """Test that images render correctly in workflow reports, including inline images in tables."""
+        history_id = self.workflow_run_and_submit(
+            WORKFLOW_WITH_IMAGES_IN_REPORT,
+            WORKFLOW_WITH_IMAGES_IN_REPORT_TEST_DATA,
+            ensure_expanded=True,
+        )
+        self.screenshot("workflow_run_images_in_report_invocation")
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
+        self.get(f"workflows/invocations/report?id={invocation_0['id']}")
+        self.wait_for_selector_visible(".markdown-component")
+        self.screenshot("workflow_report_images_rendered")
+        # Wait for the table to be present - this verifies the inline ${galaxy ...} syntax works
+        self.wait_for_selector_visible("table")
+        self.screenshot("workflow_report_with_table")
 
     @selenium_test
     @managed_history
