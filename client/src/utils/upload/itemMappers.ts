@@ -114,3 +114,48 @@ export function mapToLibraryDatasetUpload(item: LibraryDatasetItem, targetHistor
         deferred: false,
     };
 }
+
+/**
+ * Maps a CompositeFileItem to a CompositeFileUploadItem for the upload queue.
+ * Each slot is converted to a serializable CompositeSlotQueueItem; File objects
+ * survive in memory but are lost on page refresh (same as local-file uploads).
+ */
+export function mapToCompositeFileUpload(item: CompositeFileItem, targetHistoryId: string): CompositeFileUploadItem {
+    const slots: CompositeSlotQueueItem[] = item.slots.map((slot) => {
+        if (slot.mode === "local") {
+            return {
+                slotName: slot.slotName,
+                src: "files" as const,
+                file: slot.file,
+                optional: slot.optional,
+            };
+        } else if (slot.mode === "url") {
+            return {
+                slotName: slot.slotName,
+                src: "url" as const,
+                url: slot.url,
+                optional: slot.optional,
+            };
+        } else {
+            return {
+                slotName: slot.slotName,
+                src: "paste" as const,
+                content: slot.content,
+                optional: slot.optional,
+            };
+        }
+    });
+
+    return {
+        uploadMode: "composite-file" as const,
+        name: item.name,
+        size: 0,
+        targetHistoryId,
+        dbkey: item.dbkey,
+        extension: item.extension,
+        spaceToTab: false,
+        toPosixLines: false,
+        deferred: false,
+        slots,
+    };
+}
