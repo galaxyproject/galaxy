@@ -19,11 +19,18 @@ import {
 } from "@/components/Collections/pairing";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import type { CollectionCreationInput, SupportedCollectionType } from "@/composables/upload/collectionTypes";
-import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
+import type { CompositeFileUploadItem, NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { useHistoryStore } from "@/stores/historyStore";
 import { getHistoryUploadActionErrorMessage, getHistoryUploadBlockReason } from "@/utils/historyUpload";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { toApiUploadItem, uploadCollectionDatasets, uploadDatasets } from "@/utils/upload";
+import {
+    createFileUploadItem,
+    createPastedUploadItem,
+    createUrlUploadItem,
+    toApiUploadItem,
+    uploadCollectionDatasets,
+    uploadDatasets,
+} from "@/utils/upload";
 
 /**
  * Collection configuration for batch uploads that will be combined
@@ -169,6 +176,25 @@ export function validateUploadItem(item: NewUploadItem): string | undefined {
                 return `No library dataset ID provided for "${item.name}"`;
             }
             break;
+
+        case "composite-file": {
+            if (!item.extension || item.extension === "auto") {
+                return `No composite type selected for "${item.name}"`;
+            }
+            for (const slot of item.slots) {
+                if (slot.optional) {
+                    continue;
+                }
+                const isEmpty =
+                    (slot.src === "files" && !slot.file) ||
+                    (slot.src === "url" && !slot.url?.trim()) ||
+                    (slot.src === "paste" && !slot.content?.trim());
+                if (isEmpty) {
+                    return `Required slot "${slot.slotName}" has no content for "${item.name}"`;
+                }
+            }
+            break;
+        }
 
         default:
             return `Unknown upload mode: ${(item as NewUploadItem).uploadMode}`;
@@ -494,6 +520,60 @@ export function useUploadQueue() {
     }
 
     /**
+     * Processes a composite upload by converting each slot into an ApiUploadItem
+     * and submitting them together as a single composite dataset.
+     *
+     * @param id - Upload item ID
+     * @param item - CompositeFileUploadItem with all slot data
+     */
+    async function processCompositeFileUpload(id: string, item: CompositeFileUploadItem): Promise<void> {
+        const baseOptions = {
+            dbkey: item.dbkey,
+            ext: item.extension,
+            space_to_tab: item.spaceToTab,
+            to_posix_lines: item.toPosixLines,
+            deferred: false,
+        };
+        // Build one ApiUploadItem per slot, all sharing the dataset-level ext/dbkey/name
+        const slotApiItems = item.slots
+            .filter((slot) => slot.src !== "files" || !!slot.file) // skip empty optional local-file slots
+            .map((slot) => {
+                const slotOptions = {
+                    name: slot.slotName,
+                    ...baseOptions,
+                };
+
+                if (slot.src === "files") {
+                    return createFileUploadItem(slot.file!, item.targetHistoryId, {
+                        ...slotOptions,
+                        size: slot.file!.size,
+                    });
+                } else if (slot.src === "url") {
+                    return createUrlUploadItem(slot.url!, item.targetHistoryId, {
+                        ...slotOptions,
+                        size: 0,
+                    });
+                } else {
+                    return createPastedUploadItem(slot.content ?? "", item.targetHistoryId, {
+                        ...slotOptions,
+                        size: (slot.content ?? "").length,
+                    });
+                }
+            });
+
+        await uploadDatasets(slotApiItems, {
+            composite: true,
+            progress: (percentage) => uploadState.updateProgress(id, percentage),
+            success: () => {
+                uploadState.updateProgress(id, 100);
+            },
+            error: (err) => {
+                uploadState.setError(id, errorMessageAsString(err));
+            },
+        });
+    }
+
+    /**
      * Processes a regular upload (file, URL, or pasted content) via the upload API.
      *
      * @param id - Upload item ID
@@ -594,6 +674,8 @@ export function useUploadQueue() {
             // Delegate to appropriate upload handler based on upload mode
             if (item.uploadMode === "data-library") {
                 await processLibraryDatasetUpload(id, item, batch);
+            } else if (item.uploadMode === "composite-file") {
+                await processCompositeFileUpload(id, item);
             } else {
                 await processRegularUpload(id, item, batch);
             }
