@@ -48,6 +48,32 @@ export interface RemoteFileUploadItem extends UploadItemCommon {
     url: string;
 }
 
+/**
+ * A single serializable slot in a composite upload.
+ * File objects are not serializable, so `file` is marked optional and lost on refresh.
+ */
+export interface CompositeSlotQueueItem {
+    /** Machine name of the slot */
+    slotName: string;
+    /** Source discriminant mirroring ApiUploadItem.src */
+    src: "files" | "url" | "paste";
+    /** Local file (not persisted in localStorage) */
+    file?: File;
+    /** Remote URL (present when src === "url") */
+    url?: string;
+    /** Pasted content (present when src === "paste") */
+    content?: string;
+    /** Whether this slot is optional */
+    optional: boolean;
+}
+
+/** Upload item for a composite datatype (multiple files → one HDA) */
+export interface CompositeFileUploadItem extends UploadItemCommon {
+    uploadMode: "composite-file";
+    /** Component file slots */
+    slots: CompositeSlotQueueItem[];
+}
+
 /** Upload item from a Data Library dataset */
 export interface LibraryDatasetUploadItem extends UploadItemCommon {
     uploadMode: "data-library";
@@ -67,7 +93,8 @@ export type NewUploadItem =
     | PastedContentUploadItem
     | UrlUploadItem
     | RemoteFileUploadItem
-    | LibraryDatasetUploadItem;
+    | LibraryDatasetUploadItem
+    | CompositeFileUploadItem;
 
 /** Internal state tracking for an upload */
 export interface UploadState {

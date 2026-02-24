@@ -10,7 +10,8 @@ export type UploadMethod =
     | "data-source-tools"
     | "import-history"
     | "import-workflow"
-    | "rule-based-import";
+    | "rule-based-import"
+    | "composite-file";
 
 export interface UploadMethodConfig {
     /**
