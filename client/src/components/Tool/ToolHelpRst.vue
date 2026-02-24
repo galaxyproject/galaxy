@@ -29,7 +29,8 @@ const { formattedContent } = useFormattedToolHelp(props.content);
         font-weight: bold;
     }
 
-    &:deep(h5), &:deep(h6) {
+    &:deep(h5),
+    &:deep(h6) {
         font-size: $h6-font-size;
         font-weight: bold;
     }
