@@ -1,0 +1,10 @@
+- type: ssh
+  id: test1
+  writable: true
+  host: "localhost"
+  user: ""
+  passwd: ""
+  timeout: 10
+  path: "/home/berntm/"
+  # config_path: ""
+  # port: 2222
