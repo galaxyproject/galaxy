@@ -4,6 +4,7 @@
  */
 
 import type {
+    CompositeFileItem,
     LibraryDatasetItem,
     LocalFileItem,
     PasteContentItem,
@@ -11,6 +12,8 @@ import type {
     RemoteFileItem,
 } from "@/components/Panels/Upload/types/uploadItem";
 import type {
+    CompositeFileUploadItem,
+    CompositeSlotQueueItem,
     LibraryDatasetUploadItem,
     LocalFileUploadItem,
     PastedContentUploadItem,

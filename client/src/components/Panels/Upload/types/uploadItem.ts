@@ -69,6 +69,49 @@ export interface RemoteFileItem extends PasteUrlItem {
 }
 
 /**
+ * Source mode for a single slot in a composite upload
+ */
+export type CompositeSlotMode = "local" | "url" | "paste";
+
+/**
+ * Represents a single component file slot in a composite upload.
+ * Each composite datatype defines a fixed set of named slots (e.g. `.bim`, `.bed`, `.fam` for plink).
+ */
+export interface CompositeSlot {
+    /** Machine name of the slot (e.g. "bim", "affymetrix_cel") */
+    slotName: string;
+    /** Human-readable description shown to the user */
+    description: string;
+    /** Whether this slot must be filled before upload */
+    optional: boolean;
+    /** Currently selected source mode */
+    mode: CompositeSlotMode;
+    /** Local File object (only present when mode === "local") */
+    file?: File;
+    /** File size in bytes (derived from file or URL head) */
+    fileSize: number;
+    /** Remote URL (used when mode === "url") */
+    url: string;
+    /** Pasted text content (used when mode === "paste") */
+    content: string;
+}
+
+/**
+ * Composite dataset upload item (used in CompositeFileUpload.vue).
+ * Represents all component slots that together form one composite HDA.
+ */
+export interface CompositeFileItem {
+    /** Display name for the resulting dataset in history */
+    name: string;
+    /** Galaxy datatype extension (e.g. "plink", "affybatch") */
+    extension: string;
+    /** Genome build / database key */
+    dbkey: string;
+    /** Ordered list of component file slots */
+    slots: CompositeSlot[];
+}
+
+/**
  * Library dataset upload item (used in DataLibraryUpload.vue)
  * Note: Library datasets are already on the server, so no upload options are needed
  */
