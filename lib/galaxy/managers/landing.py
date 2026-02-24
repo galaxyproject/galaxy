@@ -56,6 +56,7 @@ from galaxy.tool_util.parameters import (
 from galaxy.tool_util_models.parameters import (
     DataOrCollectionRequestAdapter,
     DataRequestCollectionUri,
+    ToolParameterBundleModel,
 )
 from galaxy.util import safe_str_cmp
 from .context import ProvidesUserContext
@@ -104,10 +105,13 @@ class LandingRequestManager:
         landing_request_state = LandingRequestToolState(request_state or {})
         # Okay this is a hack until tool request API commit is merged, tools don't yet have a parameter
         # schema - so we can't do this properly.
-        if hasattr(tool, "parameters"):
-            internal_landing_request_state = landing_decode(landing_request_state, tool, self.security.decode_id)
+        if tool.parameters is not None:
+            parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
+            internal_landing_request_state = landing_decode(
+                landing_request_state, parameter_bundle, self.security.decode_id
+            )
         else:
-            assert tool.id == FETCH_TOOL_ID
+            assert tool.id == FETCH_TOOL_ID, f"tool '{tool.id}' has no parameter schema but is not {FETCH_TOOL_ID}"
             # we have validated the payload as part of the API request
             # nothing else to decode ideally so just swap to internal model state object
             internal_landing_request_state = LandingRequestInternalToolState(

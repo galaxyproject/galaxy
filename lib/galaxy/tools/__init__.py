@@ -39,6 +39,7 @@ from galaxy import (
     model,
 )
 from galaxy.exceptions import (
+    RequestParameterInvalidException,
     ToolInputsNotOKException,
     ToolInputsNotReadyException,
 )
@@ -89,7 +90,6 @@ from galaxy.tool_util.parameters import (
     input_models_for_pages,
     JobInternalToolState,
     RequestInternalDereferencedToolState,
-    ToolParameterBundle,
 )
 from galaxy.tool_util.parser import (
     get_tool_source,
@@ -125,6 +125,11 @@ from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
+)
+from galaxy.tool_util_models.parameters import (
+    MaybeToolParameterBundle,
+    ToolParameterBundleModel,
+    ToolParameterT,
 )
 from galaxy.tool_util_models.tool_source import (
     FileSourceConfigFile,
@@ -1026,7 +1031,7 @@ class JobContext(BaseJobContext):
         return self.job.implicit_collection_jobs_association and self.job.implicit_collection_jobs_association.id
 
 
-class Tool(UsesDictVisibleKeys, ToolParameterBundle):
+class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
@@ -1120,6 +1125,10 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.credentials: Optional[list[CredentialsRequirement]] = None
         self._is_workflow_compatible = None
         self.__tests: Optional[str] = None
+        self.parameters: Optional[list[ToolParameterT]] = None
+        self.template_macro_params: dict = {}
+        self._macro_paths: list = []
+        self.ports: list = []
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
@@ -1597,9 +1606,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
     def parse_tests(self):
         if self.tool_source:
-            test_descriptions = parse_tool_test_descriptions(
-                self.tool_source, self.id, getattr(self, "parameters", None)
-            )
+            test_descriptions = parse_tool_test_descriptions(self.tool_source, self.id, self.parameters)
             try:
                 self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
             except Exception:
@@ -2152,15 +2159,18 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         all_errors = []
         all_params: list[ToolStateJobInstancePopulatedT] = []
         internal_states: list[JobInternalToolState] = []
+        if self.parameters is None:
+            raise RequestParameterInvalidException(f"Tool {self.id} has no parameters defined")
+        parameter_bundle = ToolParameterBundleModel(parameters=self.parameters)
         for expanded_incoming, job_tool_state in zip(expanded_incomings, job_tool_states):
-            expanded_incoming = fill_static_defaults(expanded_incoming, self, self.profile)
-            job_tool_state = fill_static_defaults(job_tool_state, self, self.profile)
+            expanded_incoming = fill_static_defaults(expanded_incoming, parameter_bundle, self.profile)
+            job_tool_state = fill_static_defaults(job_tool_state, parameter_bundle, self.profile)
             params, errors = self._populate_async(request_context, expanded_incoming)
             # params have had dynamic defaults requiring like dataset contents expanded out
             # so we can use that backfill job_tool_state
             fill_dynamic_defaults(request_context, self.inputs, job_tool_state, params)
             internal_tool_state = JobInternalToolState(job_tool_state)
-            internal_tool_state.validate(self, f"{self.id} (job internal model)")
+            internal_tool_state.validate(parameter_bundle, f"{self.id} (job internal model)")
 
             internal_states.append(internal_tool_state)
             all_errors.append(errors)

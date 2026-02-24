@@ -2141,6 +2141,12 @@ RepeatParameterModel.model_rebuild()
 CwlUnionParameterModel.model_rebuild()
 
 
+class MaybeToolParameterBundle(Protocol):
+    """An object that may or may not be a ToolParameterModel, but if it is a model, it has a root that is a ToolParameterT"""
+
+    parameters: Optional[List[ToolParameterT]]
+
+
 class ToolParameterBundle(Protocol):
     """An object having a dictionary of input models (i.e. a 'Tool')"""
 
@@ -2159,7 +2165,9 @@ def to_simple_model(input_parameter: Union[ToolParameterModel, ToolParameterT]) 
         return cast(ToolParameterT, input_parameter)
 
 
-def simple_input_models(parameters: Union[List[ToolParameterModel], List[ToolParameterT]]) -> Iterable[ToolParameterT]:
+def simple_input_models(
+    parameters: Union[List[ToolParameterModel], List[ToolParameterT]],
+) -> Iterable[ToolParameterT]:
     return [to_simple_model(m) for m in parameters]
 
 

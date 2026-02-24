@@ -19,6 +19,7 @@ from packaging.version import Version
 
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
@@ -43,6 +44,7 @@ from galaxy.structured_app import (
 from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tool_util.parameters import JobInternalToolState
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tool_util_models.parameters import ToolParameterBundleModel
 from galaxy.tool_util_models.tool_source import (
     FileSourceConfigFile,
     InputConfigFile,
@@ -672,7 +674,7 @@ class ToolEvaluator:
         Populate InteractiveTools templated values.
         """
         it = []
-        for ep in getattr(self.tool, "ports", []):
+        for ep in self.tool.ports:
             ep_dict = {}
             for key in (
                 "port",
@@ -1094,7 +1096,10 @@ class UserToolEvaluator(ToolEvaluator):
             hda_references, adapt_datasets, adapt_collections = setup_for_runtimeify(
                 self.app, compute_environment, input_datasets, input_dataset_collections
             )
-            job_runtime_state = runtimeify(validated_tool_state, self.tool, adapt_datasets, adapt_collections)
+            if self.tool.parameters is None:
+                raise RequestParameterInvalidException(f"Tool {self.tool.id} has no parameters defined")
+            parameter_bundle = ToolParameterBundleModel(parameters=self.tool.parameters)
+            job_runtime_state = runtimeify(validated_tool_state, parameter_bundle, adapt_datasets, adapt_collections)
             cwl_style_inputs = job_runtime_state.input_state
         else:
             from galaxy.workflow.modules import to_cwl
