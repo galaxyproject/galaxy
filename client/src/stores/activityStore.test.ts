@@ -55,16 +55,18 @@ const newActivities = [
 describe("Activity Store", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
+        // ensure clean localStorage between tests (useUserLocalStorage persistence)
+        localStorage.clear();
     });
 
-    it("initialize store", async () => {
+    it("initializes with default activities after sync", async () => {
         const activityStore = useActivityStore("default");
         expect(activityStore.getAll().length).toBe(0);
         await activityStore.sync();
         expect(activityStore.getAll().length).toBe(1);
     });
 
-    it("add activity", async () => {
+    it("merges built-in and custom activities on sync", async () => {
         const activityStore = useActivityStore("default");
         await activityStore.sync();
         const initialActivities = activityStore.getAll();
@@ -82,7 +84,7 @@ describe("Activity Store", () => {
         expect(syncActivities[1]).toEqual(newActivities[1]);
     });
 
-    it("remove activity", async () => {
+    it("removes activities and restores built-ins on sync", async () => {
         const activityStore = useActivityStore("default");
         await activityStore.sync();
         const initialActivities = activityStore.getAll();
@@ -96,5 +98,94 @@ describe("Activity Store", () => {
         activityStore.remove("b-id");
         await activityStore.sync();
         expect(activityStore.getAll().length).toEqual(1);
+    });
+
+    describe("setPosition", () => {
+        it("reorders an activity to the specified position", async () => {
+            const activityStore = useActivityStore("default");
+            await activityStore.sync();
+            activityStore.setAll(newActivities);
+
+            const initialActivities = activityStore.getAll();
+            expect(initialActivities[0]?.id).toBe("a-id");
+            expect(initialActivities[1]?.id).toBe("b-id");
+
+            // initial order: [a-id, b-id]
+            activityStore.setPosition("b-id", 0);
+
+            const reorderedActivities = activityStore.getAll();
+            expect(reorderedActivities[0]?.id).toBe("b-id");
+            expect(reorderedActivities[1]?.id).toBe("a-id");
+        });
+
+        it("bounds the position within valid range", async () => {
+            const activityStore = useActivityStore("default");
+            await activityStore.sync();
+            activityStore.setAll(newActivities);
+
+            // move to an out-of-range index
+            activityStore.setPosition("a-id", 100);
+
+            const activities = activityStore.getAll();
+            expect(activities[activities.length - 1]?.id).toBe("a-id");
+        });
+
+        it("does nothing when activity does not exist", async () => {
+            const activityStore = useActivityStore("default");
+            await activityStore.sync();
+            activityStore.setAll(newActivities);
+
+            const before = activityStore.getAll().map((a) => a.id);
+            activityStore.setPosition("non-existent", 0);
+            const after = activityStore.getAll().map((a) => a.id);
+
+            expect(after).toEqual(before);
+        });
+    });
+
+    describe("ensureSideBarOpen", () => {
+        it("opens the sidebar for a panel activity", async () => {
+            const activityStore = useActivityStore("default");
+            await activityStore.sync();
+            activityStore.setAll(newActivities);
+
+            // Initially a-id is in the sidebar
+            expect(activityStore.toggledSideBar).toBe("a-id");
+
+            // Ensure b-id is open, which should set toggledSideBar to b-id
+            activityStore.ensureSideBarOpen("b-id");
+            expect(activityStore.toggledSideBar).toBe("b-id");
+        });
+
+        it("does nothing for unknown activity", async () => {
+            const activityStore = useActivityStore("default");
+            await activityStore.sync();
+
+            const previous = activityStore.toggledSideBar;
+            activityStore.ensureSideBarOpen("non-existent");
+            expect(activityStore.toggledSideBar).toBe(previous);
+        });
+    });
+
+    describe("ensureVisible", () => {
+        it("marks an existing activity as visible", async () => {
+            const activityStore = useActivityStore("default");
+            await activityStore.sync();
+            activityStore.setAll(newActivities);
+
+            const activity = activityStore.findById("a-id");
+            expect(activity?.visible).toBe(false);
+
+            activityStore.ensureVisible("a-id");
+
+            expect(activityStore.findById("a-id")?.visible).toBe(true);
+        });
+
+        it("does nothing for unknown activity", async () => {
+            const activityStore = useActivityStore("default");
+            await activityStore.sync();
+
+            expect(() => activityStore.ensureVisible("non-existent")).not.toThrow();
+        });
     });
 });
