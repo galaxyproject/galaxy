@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BFormInput, BFormTextarea } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { validateUrl } from "@/utils/url";
 import { bytesToString } from "@/utils/utils";
 
 import type { CompositeSlot, CompositeSlotMode } from "../types/uploadItem";
@@ -21,13 +22,27 @@ const emit = defineEmits<{
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const isDragging = ref(false);
 
+const urlValidation = computed(() => {
+    if (props.slotItem.mode !== "url") {
+        return null;
+    }
+    const url = props.slotItem.url.trim();
+    if (!url) {
+        return null;
+    }
+    return validateUrl(url);
+});
+
+const urlInputState = computed(() => urlValidation.value?.isValid ?? null);
+const urlValidationMessage = computed(() => urlValidation.value?.message ?? null);
+
 const isFilled = computed(() => {
     const slotItem = props.slotItem;
     if (slotItem.mode === "local") {
         return !!slotItem.file;
     }
     if (slotItem.mode === "url") {
-        return !!slotItem.url.trim();
+        return !!slotItem.url.trim() && validateUrl(slotItem.url.trim()).isValid;
     }
     return !!slotItem.content.trim();
 });
@@ -181,7 +196,11 @@ function clearSlot() {
                 size="sm"
                 placeholder="https://example.com/file.ext"
                 class="slot-url-input font-monospace"
+                :state="urlInputState"
                 @input="update({ url: $event })" />
+            <small v-if="urlValidationMessage" class="text-danger">
+                {{ urlValidationMessage }}
+            </small>
         </div>
 
         <!-- Paste content textarea -->
