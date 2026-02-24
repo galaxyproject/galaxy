@@ -127,6 +127,14 @@ class PlaywrightElement:
         """
         return self._element.is_enabled()
 
+    def is_selected(self) -> bool:
+        """
+        Check if element is selected (for checkboxes, radio buttons, options).
+
+        Maps to Playwright's is_checked() method.
+        """
+        return self._element.is_checked()
+
     def submit(self) -> None:
         """
         Submit a form element.

@@ -75,20 +75,6 @@
             }
         </style>
 
-        <script type="text/javascript">
-            $(function() {
-                $("#checkall").click( function() {
-                    $("input[type=checkbox]").attr( 'checked', true );
-                    $(".as-named-input").prop( 'disabled', false );
-                    return false;
-                }).show();
-                $("#uncheckall").click( function() {
-                    $("input[type=checkbox]").attr( 'checked', false );
-                    $(".as-named-input").prop( 'disabled', true );
-                    return false;
-                }).show();
-            });
-        </script>
     </head>
 
 <body scroll="no" class="full-content">
@@ -111,8 +97,6 @@ into a workflow will be shown in gray.</p>
 </div>
 <p>
     <input type="submit" class="btn btn-primary" value="Create Workflow" />
-    <button id="checkall" style="display: none;">Check all</button>
-    <button id="uncheckall" style="display: none;">Uncheck all</button>
 </p>
 
 <table border="0" cellspacing="0">
@@ -156,10 +140,13 @@ into a workflow will be shown in gray.</p>
 
                 <div class="toolFormTitle">${tool_name}</div>
                 <div class="toolFormBody">
+                    <%
+                        encoded_job_id = trans.app.security.encode_id(job.id)
+                    %>
                     %if disabled:
                         <div style="font-style: italic; color: gray">${disabled_why}</div>
                     %else:
-                        <div><input type="checkbox" name="job_ids" value="${job.id}" ${checked_job} />Include "${tool_name}" in workflow</div>
+                        <div><input type="checkbox" name="job_ids" value="${encoded_job_id}" ${checked_job} />Include "${tool_name}" in workflow</div>
                         %if not checked_job:
                             ${ render_msg( "All job outputs have been deleted", status="info" ) }
                         %endif

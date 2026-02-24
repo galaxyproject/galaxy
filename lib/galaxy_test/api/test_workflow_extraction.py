@@ -1,20 +1,19 @@
 import functools
-import operator
 from collections import namedtuple
 from json import (
     dumps,
     loads,
 )
-from typing import Optional
 
 from galaxy_test.base.populators import (
     skip_without_tool,
     summarize_instance_history_on_error,
 )
+from galaxy_test.base.workflow_assertions import WorkflowStructureAssertions
 from .test_workflows import BaseWorkflowsApiTestCase
 
 
-class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
+class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase, WorkflowStructureAssertions):
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
     def test_extract_from_history(self, history_id):
@@ -29,7 +28,7 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
             job_ids=[cat1_job_id],
         )
         assert downloaded_workflow["name"] == "test import from history"
-        self.__assert_looks_like_cat1_example_workflow(downloaded_workflow)
+        self.assert_cat1_workflow_structure(downloaded_workflow)
 
     @summarize_instance_history_on_error
     def test_extract_with_copied_inputs(self, history_id):
@@ -59,7 +58,7 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
             dataset_ids=input_hids,
             job_ids=[cat1_job_id],
         )
-        self.__assert_looks_like_cat1_example_workflow(downloaded_workflow)
+        self.assert_cat1_workflow_structure(downloaded_workflow)
 
     @summarize_instance_history_on_error
     def test_extract_with_copied_inputs_reimported(self, history_id):
@@ -83,7 +82,7 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
             reimport_jobs_ids=reimport_jobs_ids,
             dataset_ids=input_hids,
         )
-        self.__assert_looks_like_cat1_example_workflow(downloaded_workflow)
+        self.assert_cat1_workflow_structure(downloaded_workflow)
 
     @skip_without_tool("random_lines1")
     @summarize_instance_history_on_error
@@ -95,7 +94,7 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
             dataset_collection_ids=[hdca["hid"]],
             job_ids=[job_id1, job_id2],
         )
-        self.__assert_looks_like_randomlines_mapping_workflow(downloaded_workflow)
+        self.assert_randomlines_mapping_workflow_structure(downloaded_workflow)
 
     def test_extract_copied_mapping_from_history(self, history_id):
         hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair(history_id)
@@ -109,7 +108,7 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
             dataset_collection_ids=[hdca["hid"]],
             job_ids=[job_id1, job_id2],
         )
-        self.__assert_looks_like_randomlines_mapping_workflow(downloaded_workflow)
+        self.assert_randomlines_mapping_workflow_structure(downloaded_workflow)
 
     def test_extract_copied_mapping_from_history_reimported(self, history_id):
         import unittest
@@ -143,7 +142,7 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
             reimport_wait_on_history_length=9,  # see comments in _extract about eliminating this magic constant.
             dataset_collection_ids=[hdca["hid"]],
         )
-        self.__assert_looks_like_randomlines_mapping_workflow(downloaded_workflow)
+        self.assert_randomlines_mapping_workflow_structure(downloaded_workflow)
 
     @skip_without_tool("random_lines1")
     @skip_without_tool("multi_data_param")
@@ -173,8 +172,8 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
             job_ids=[job_id1, job_id2],
         )
         assert len(downloaded_workflow["steps"]) == 3
-        collect_step_idx = self._assert_first_step_is_paired_input(downloaded_workflow)
-        tool_steps = self._get_steps_of_type(downloaded_workflow, "tool", expected_len=2)
+        collect_step_idx = self.assert_first_step_is_paired_input(downloaded_workflow)
+        tool_steps = self.assert_steps_of_type(downloaded_workflow, "tool", expected_len=2)
         random_lines_map_step = tool_steps[0]
         reduction_step = tool_steps[1]
         assert "tool_id" in random_lines_map_step, random_lines_map_step
@@ -212,7 +211,7 @@ test_data:
             dataset_collection_ids=["1"],
             job_ids=[job_id],
         )
-        self.__check_workflow(
+        self.check_workflow(
             downloaded_workflow,
             step_count=2,
             verify_connected=True,
@@ -221,7 +220,7 @@ test_data:
             tool_ids=["collection_paired_test"],
         )
 
-        collection_step = self._get_steps_of_type(downloaded_workflow, "data_collection_input", expected_len=1)[0]
+        collection_step = self.assert_steps_of_type(downloaded_workflow, "data_collection_input", expected_len=1)[0]
         collection_step_state = loads(collection_step["tool_state"])
         assert collection_step_state["collection_type"] == "paired"
 
@@ -296,7 +295,7 @@ test_data:
             dataset_collection_ids=["1"],
             job_ids=[job1_id, job2_id],
         )
-        self.__check_workflow(
+        self.check_workflow(
             downloaded_workflow,
             step_count=3,
             verify_connected=True,
@@ -305,7 +304,7 @@ test_data:
             tool_ids=["cat_collection", "cat1"],
         )
 
-        collection_step = self._get_steps_of_type(downloaded_workflow, "data_collection_input", expected_len=1)[0]
+        collection_step = self.assert_steps_of_type(downloaded_workflow, "data_collection_input", expected_len=1)[0]
         collection_step_state = loads(collection_step["tool_state"])
         assert collection_step_state["collection_type"] == "list:paired"
 
@@ -377,7 +376,7 @@ test_data:
             dataset_ids=["1", "2"],
             job_ids=job_ids,
         )
-        self.__check_workflow(
+        self.check_workflow(
             downloaded_workflow,
             step_count=5,
             verify_connected=True,
@@ -433,7 +432,7 @@ test_data:
             dataset_collection_ids=["1"],
             job_ids=job_ids,
         )
-        self.__check_workflow(
+        self.check_workflow(
             downloaded_workflow,
             step_count=5,
             verify_connected=True,
@@ -473,35 +472,6 @@ test_data:
         _, job_id2 = self._run_tool_get_collection_and_job_id(history_id, "random_lines1", inputs2)
         return hdca, job_id1, job_id2
 
-    def __assert_looks_like_randomlines_mapping_workflow(self, downloaded_workflow):
-        # Assert workflow is input connected to a tool step with one output
-        # connected to another tool step.
-        assert len(downloaded_workflow["steps"]) == 3
-        collect_step_idx = self._assert_first_step_is_paired_input(downloaded_workflow)
-        tool_steps = self._get_steps_of_type(downloaded_workflow, "tool", expected_len=2)
-        tool_step_idxs = []
-        tool_input_step_idxs = []
-        for tool_step in tool_steps:
-            self._assert_has_key(tool_step["input_connections"], "input")
-            input_step_idx = tool_step["input_connections"]["input"]["id"]
-            tool_step_idxs.append(tool_step["id"])
-            tool_input_step_idxs.append(input_step_idx)
-
-        assert collect_step_idx not in tool_step_idxs
-        assert tool_input_step_idxs[0] == collect_step_idx
-        assert tool_input_step_idxs[1] == tool_step_idxs[0]
-
-    def __assert_looks_like_cat1_example_workflow(self, downloaded_workflow):
-        assert len(downloaded_workflow["steps"]) == 3
-        input_steps = self._get_steps_of_type(downloaded_workflow, "data_input", expected_len=2)
-        tool_step = self._get_steps_of_type(downloaded_workflow, "tool", expected_len=1)[0]
-
-        input1 = tool_step["input_connections"]["input1"]
-        input2 = tool_step["input_connections"]["queries_0|input2"]
-
-        assert input_steps[0]["id"] == input1["id"]
-        assert input_steps[1]["id"] == input2["id"]
-
     def _history_contents(self, history_id: str):
         return self._get(f"histories/{history_id}/contents").json()
 
@@ -526,14 +496,6 @@ test_data:
             history_id=history_id, workflow_id=workflow_id, invocation_id=invocation_response["id"]
         )
         return self.__cat_job_id(history_id)
-
-    def _assert_first_step_is_paired_input(self, downloaded_workflow):
-        collection_steps = self._get_steps_of_type(downloaded_workflow, "data_collection_input", expected_len=1)
-        collection_step = collection_steps[0]
-        collection_step_state = loads(collection_step["tool_state"])
-        assert collection_step_state["collection_type"] == "paired"
-        collect_step_idx = collection_step["id"]
-        return collect_step_idx
 
     def _extract_and_download_workflow(self, history_id: str, **extract_payload):
         if reimport_as := extract_payload.get("reimport_as"):
@@ -612,13 +574,6 @@ test_data:
         downloaded_workflow = download_response.json()
         return downloaded_workflow
 
-    def _get_steps_of_type(self, downloaded_workflow, type: str, expected_len: Optional[int] = None):
-        steps = [s for s in downloaded_workflow["steps"].values() if s["type"] == type]
-        if expected_len is not None:
-            n = len(steps)
-            assert n == expected_len, f"Expected {expected_len} steps of type {type}, found {n}"
-        return sorted(steps, key=operator.itemgetter("id"))
-
     def __job_id(self, history_id, dataset_id):
         url = f"histories/{history_id}/contents/{dataset_id}/provenance"
         prov_response = self._get(url, data=dict(follow=False))
@@ -642,45 +597,6 @@ test_data:
         job_id = run_output1["jobs"][0]["id"]
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         return implicit_hdca, job_id
-
-    def __check_workflow(
-        self,
-        workflow,
-        step_count: Optional[int] = None,
-        verify_connected: bool = False,
-        data_input_count: Optional[int] = None,
-        data_collection_input_count: Optional[int] = None,
-        tool_ids=None,
-    ):
-        steps = workflow["steps"]
-
-        if step_count is not None:
-            assert len(steps) == step_count
-        if verify_connected:
-            self.__assert_connected(workflow, steps)
-        if tool_ids is not None:
-            tool_steps = self._get_steps_of_type(workflow, "tool")
-            found_steps = set(map(operator.itemgetter("tool_id"), tool_steps))
-            expected_steps = set(tool_ids)
-            assert found_steps == expected_steps
-        if data_input_count is not None:
-            self._get_steps_of_type(workflow, "data_input", expected_len=data_input_count)
-        if data_collection_input_count is not None:
-            self._get_steps_of_type(workflow, "data_collection_input", expected_len=data_collection_input_count)
-
-    def __assert_connected(self, workflow, steps):
-        disconnected_inputs = []
-
-        for value in steps.values():
-            if value["type"] == "tool":
-                input_connections = value["input_connections"]
-                if not input_connections:
-                    disconnected_inputs.append(value)
-
-        if disconnected_inputs:
-            template = "%d steps disconnected in extracted workflow - disconnectect steps are %s - workflow is %s"
-            message = template % (len(disconnected_inputs), disconnected_inputs, workflow)
-            raise AssertionError(message)
 
 
 RunJobsSummary = namedtuple("RunJobsSummary", ["history_id", "workflow_id", "inputs", "jobs"])
