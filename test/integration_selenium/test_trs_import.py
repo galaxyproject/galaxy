@@ -1,5 +1,7 @@
 import os
 
+from selenium.webdriver.support.ui import Select
+
 from .framework import SeleniumIntegrationTestCase
 
 TRS_API_URL_DOCKSTORE = "https://dockstore.org/api"
@@ -64,7 +66,11 @@ class TestTrsImport(SeleniumIntegrationTestCase):
     def _import_workflow_by_url(self, import_url):
         full_url = self.build_url(import_url)
         self.driver.get(full_url)
-        self.components.workflows.workflow_cards.wait_for_visible()
+        self.components.workflows.workflow_trs_import.wait_for_visible()
+        # Wait for the wizard's Import button to become enabled and click it
+        self.components.workflows.import_next_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
 
     def test_import_by_search_dockstore(self):
@@ -73,7 +79,8 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_search.search_result(
             workflow_name="galaxy-workflow-dockstore-example-1"
         ).wait_for_and_click()
-        self.components.trs_search.import_button.wait_for_and_click()
+        # Wait for the wizard's Import button to become enabled and click it
+        self.components.workflows.import_next_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
         self.assert_workflow_imported("Test Workflow")
@@ -82,7 +89,11 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.go_to_trs_search()
         self.components.trs_search.search.wait_for_and_send_keys("organization: iwc-workflows")
         self.components.trs_search.search_result(workflow_name=TRS_NAME).wait_for_and_click()
-        self.components.trs_search.import_version(version="v0.4").wait_for_and_click()
+        # Select version from dropdown
+        version_select = self.components.trs_search.version_select.wait_for_visible()
+        Select(version_select).select_by_visible_text("v0.4")
+        # Wait for the wizard's Import button to become enabled and click it
+        self.components.workflows.import_next_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
@@ -95,7 +106,8 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_search.select_server(server="workflowhub").wait_for_and_click()
         self.components.trs_search.search.wait_for_and_send_keys(WORKFLOW_NAME)
         self.components.trs_search.search_result(workflow_name=WORKFLOW_NAME).wait_for_and_click()
-        self.components.trs_search.import_button.wait_for_and_click()
+        # Wait for the wizard's Import button to become enabled and click it
+        self.components.workflows.import_next_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
@@ -125,13 +137,17 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.trs_import.select_server_button.wait_for_and_click()
         self.components.trs_import.select_server(server=server).wait_for_and_click()
         self.components.trs_import.input.wait_for_and_send_keys(trs_id)
-        self.components.trs_import.import_version(version="v0.4").wait_for_and_click()
+        # Select version from dropdown
+        version_select = self.components.trs_import.version_select.wait_for_visible()
+        Select(version_select).select_by_visible_text("v0.4")
+        # Wait for the wizard's Import button to become enabled and click it
+        self.components.workflows.import_next_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
 
     def _import_by_trs_url(self, trs_url):
-        self.go_to_trs_by_id()
+        self.go_to_trs_by_url()
         self.components.trs_import.url_input.wait_for_and_send_keys(trs_url)
         self.components.trs_import.url_import_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
