@@ -51,7 +51,7 @@
 <%def name="render_sharable_str( repository, changeset_revision=None )">
     <%
         from tool_shed.util.repository_util import generate_sharable_link_for_repository_in_tool_shed
-        sharable_link = generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=changeset_revision )
+        sharable_link = generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=changeset_revision, base_url=trans.app.config.tool_shed_url )
     %>
     <a href="${ sharable_link }" target="_blank">${ sharable_link }</a>
 </%def>

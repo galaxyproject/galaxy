@@ -47,6 +47,7 @@ class TestToolShedConfig:
     file_path: str
     id_secret: str = "thisistheshedunittestsecret"
     smtp_server: Optional[str] = None
+    tool_shed_url: Optional[str] = "shed_unit_test://localhost"
     hgweb_repo_prefix = "repos/"
     config_hg_for_dev = False
 
