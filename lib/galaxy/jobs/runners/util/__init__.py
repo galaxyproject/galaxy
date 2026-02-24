@@ -13,6 +13,7 @@ runner_states = Bunch(
     JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER="Job output not returned from cluster",
     UNKNOWN_ERROR="unknown_error",
     GLOBAL_WALLTIME_REACHED="global_walltime_reached",
+    TOOL_TIMELIMIT_REACHED="tool_timelimit_reached",
     OUTPUT_SIZE_LIMIT="output_size_limit",
     TOOL_DETECT_ERROR="tool_detected",  # job runner interaction worked fine but the tool indicated error
 )

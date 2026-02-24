@@ -2433,12 +2433,28 @@ class MinimalJobWrapper(HasResourceParameters):
                         str(runtime).split(".")[0], self.app.job_config.limits.walltime
                     ),
                 )
+        if runtime is not None and self.tool:
+            timelimit = self.tool.timelimit
+            if timelimit and timelimit > 0:
+                timelimit_delta = datetime.timedelta(seconds=timelimit)
+                if runtime > timelimit_delta:
+                    log.warning(
+                        "(%s) Job runtime %s has exceeded the tool time limit of %ss, it will be terminated",
+                        self.get_id_tag(),
+                        runtime,
+                        timelimit,
+                    )
+                    return (
+                        JobState.runner_states.TOOL_TIMELIMIT_REACHED,
+                        f"Job exceeded tool time limit (runtime: {str(runtime).split('.')[0]}, limit: {timelimit}s)",
+                    )
         return None
 
     def has_limits(self):
         has_output_limit = self.app.job_config.limits.output_size and self.app.job_config.limits.output_size > 0
         has_walltime_limit = self.app.job_config.limits.walltime_delta is not None
-        return has_output_limit or has_walltime_limit
+        has_tool_timelimit = self.tool is not None and self.tool.timelimit is not None
+        return has_output_limit or has_walltime_limit or has_tool_timelimit
 
     def get_command_line(self):
         """Return complete command line, including possible version command."""
