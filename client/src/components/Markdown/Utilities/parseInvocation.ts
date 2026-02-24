@@ -20,7 +20,15 @@ interface ParsedAttributes {
 export function parseInput(invocation: Invocation, name: string | undefined) {
     if (name && invocation.inputs) {
         const inputs = Object.values(invocation.inputs);
-        const input = inputs.find((i) => i.label && i.label === name);
+        const input = inputs.find((i) => i.label && i.label === name && i.src !== "hdca");
+        return input?.id;
+    }
+}
+
+export function parseInputCollection(invocation: Invocation, name: string | undefined) {
+    if (name && invocation.inputs) {
+        const inputs = Object.values(invocation.inputs);
+        const input = inputs.find((i) => i.label && i.label === name && i.src === "hdca");
         return input?.id;
     }
 }
@@ -59,6 +67,7 @@ export function parseInvocation(
 ): ParsedAttributes {
     const result: ParsedAttributes = { ...attributes, invocation };
     const inputId = parseInput(invocation, result.input);
+    const inputCollectionId = parseInputCollection(invocation, result.input);
     const outputId = parseOutput(invocation, result.output);
     const outputCollectionId = parseOutputCollection(invocation, result.output);
     const step = parseStep(invocation, result.step);
@@ -67,6 +76,11 @@ export function parseInvocation(
         result.history_id = invocation.history_id;
     } else if (["workflow_display", "workflow_image", "workflow_license"].includes(name)) {
         result.workflow_id = workflowId;
+    } else if (inputCollectionId && "history_dataset_id" === requiredObject) {
+        // asked for a history_dataset_id but the input is a collection
+        result.history_dataset_collection_id = inputCollectionId;
+    } else if (inputCollectionId && "history_dataset_collection_id" === requiredObject) {
+        result.history_dataset_collection_id = inputCollectionId;
     } else if (inputId && "history_dataset_id" === requiredObject) {
         result.history_dataset_id = inputId;
     } else if (inputId && "history_dataset_collection_id" === requiredObject) {

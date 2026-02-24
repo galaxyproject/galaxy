@@ -3180,3 +3180,7 @@ galaxy:
   # ``true``. Runs in a Celery task.
   #failed_jobs_working_directory_cleanup_interval: 86400
 
+  # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
+  # for user defined tools.
+  #enable_beta_tool_formats: false
+
