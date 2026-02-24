@@ -26,6 +26,12 @@ export default {
     components: {
         Markdown,
     },
+    // Provide invocationId to all descendant components for inline directive resolution
+    provide() {
+        return {
+            invocationId: this.invocationId,
+        };
+    },
     props: {
         invocationId: {
             type: String,
