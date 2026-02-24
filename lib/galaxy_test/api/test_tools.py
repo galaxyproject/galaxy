@@ -72,6 +72,10 @@ class TestsTools:
         hdca_id = create_response.json()["outputs"][0]["id"]
         return hdca_id
 
+    def _get_build_option_values(self, build, input_name):
+        matching = [i for i in build["inputs"] if i["name"] == input_name][0]
+        return [o[1] for o in matching["options"]]
+
     def _run_cat(self, history_id, inputs, assert_ok=False, **kwargs):
         return self._run("cat", history_id, inputs, assert_ok=assert_ok, **kwargs)
 
@@ -265,17 +269,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
     def test_build_request_dbkey_filter_set(self):
         with self.dataset_populator.test_history() as history_id:
             hda = self.dataset_populator.new_dataset(history_id, content="test", dbkey="hg19", wait=True)
-            dataset_id = hda["id"]
-            payload = {
-                "history_id": history_id,
-                "inputs": {"inputs": {"src": "hda", "id": dataset_id}},
-            }
-            response = self.dataset_populator._post("tools/dbkey_filter_input/build", data=payload, json=True)
-            response.raise_for_status()
-            build = response.json()
-            index_input = [i for i in build["inputs"] if i["name"] == "index"][0]
-            options = index_input["options"]
-            option_values = [o[1] for o in options]
+            inputs = {"inputs": {"src": "hda", "id": hda["id"]}}
+            build = self.dataset_populator.build_tool_state("dbkey_filter_input", history_id, inputs=inputs)
+            option_values = self._get_build_option_values(build, "index")
             assert "hg19_value" in option_values
             assert "hg18_value" not in option_values
 
@@ -283,17 +279,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
     def test_build_request_dbkey_filter_unset(self):
         with self.dataset_populator.test_history() as history_id:
             hda = self.dataset_populator.new_dataset(history_id, content="test", wait=True)
-            dataset_id = hda["id"]
-            payload = {
-                "history_id": history_id,
-                "inputs": {"inputs": {"src": "hda", "id": dataset_id}},
-            }
-            response = self.dataset_populator._post("tools/dbkey_filter_input/build", data=payload, json=True)
-            response.raise_for_status()
-            build = response.json()
-            index_input = [i for i in build["inputs"] if i["name"] == "index"][0]
-            options = index_input["options"]
-            option_values = [o[1] for o in options]
+            inputs = {"inputs": {"src": "hda", "id": hda["id"]}}
+            build = self.dataset_populator.build_tool_state("dbkey_filter_input", history_id, inputs=inputs)
+            option_values = self._get_build_option_values(build, "index")
             # with no dbkey set, all options from test_fasta_indexes should be available
             assert "hg19_value" in option_values
             assert "hg18_value" in option_values
