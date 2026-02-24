@@ -702,20 +702,22 @@ class ShedTwillTestCase(ShedApiTestCase):
         username: str = "admin-user",
         redirect: Optional[str] = None,
     ) -> tuple[bool, bool, bool]:
-        # HACK: don't use panels because late_javascripts() messes up the twill browser and it
-        # can't find form fields (and hence user can't be logged in).
-        params = dict(cntrller=cntrller, use_panels=False)
-        self.visit_url("/user/create", params)
-        self._submit_register_form(
-            email,
-            password,
-            username,
-            redirect,
-        )
-        previously_created = False
-        username_taken = False
-        invalid_username = False
-        return previously_created, username_taken, invalid_username
+        return self._ensure_user_via_api(email, password, username)
+
+    def _ensure_user_via_api(self, email: str, password: str, username: str) -> tuple[bool, bool, bool]:
+        """Create user via admin API if not already present.
+
+        Returns (previously_created, username_taken, invalid_username).
+        """
+        admin = self.admin_api_interactor
+        all_users = admin.get("users").json()
+        if any(u["username"] == username for u in all_users):
+            return (True, False, False)
+        response = admin.post("users", json={"email": email, "username": username, "password": password})
+        if response.status_code != 200:
+            # User creation failed (e.g. reserved username)
+            return (False, False, True)
+        return (False, False, False)
 
     def last_page(self):
         """
@@ -739,24 +741,45 @@ class ShedTwillTestCase(ShedApiTestCase):
         logout_first: bool = True,
         explicit_logout: bool = False,
     ):
-        # old version had a logout URL, this one needs to check
-        # page if logged in
         self.visit_url("/")
-
-        # Clear cookies.
         if logout_first:
             self.logout(explicit=explicit_logout)
-        # test@bx.psu.edu is configured as an admin user
+        # Ensure user exists via API
         previously_created, username_taken, invalid_username = self.create(
             email=email, password=password, username=username, redirect=redirect
         )
-        # v2 doesn't log you in on account creation... so force a login here
-        # The account has previously been created, so just login.
-        # HACK: don't use panels because late_javascripts() messes up the twill browser and it
-        # can't find form fields (and hence user can't be logged in).
-        params = {"use_panels": False}
-        self.visit_url("/user/login", params=params)
-        self.submit_form(button="login_button", login=email, redirect=redirect, password=password)
+        if invalid_username:
+            return
+        # Re-visit root after logout to get fresh session + CSRF token
+        self.visit_url("/")
+        cookies = self._page.context.cookies()
+        csrf_token = ""
+        for cookie in cookies:
+            if cookie["name"] == "session_csrf_token":
+                csrf_token = cookie["value"]
+                break
+        # Establish browser session via internal login API
+        self._page.evaluate(
+            """async ([login, password, csrfToken]) => {
+                const response = await fetch('/api_internal/login', {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        login: login,
+                        password: password,
+                        session_csrf_token: csrfToken,
+                    })
+                });
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error('Login failed: ' + response.status + ' ' + text);
+                }
+                return await response.json();
+            }""",
+            [email, password, csrf_token],
+        )
+        # Reload to pick up the new session
+        self.visit_url("/")
 
     @property
     def _playwright_browser(self) -> PlaywrightShedBrowser:
