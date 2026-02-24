@@ -188,7 +188,7 @@ function _buildLevel(inputs, formData, prefix) {
 
 function _convertValue(node, value) {
     if (node.type === "data" || node.type === "data_collection") {
-        return _convertDataValue(value);
+        return _convertDataValue(value, node.multiple);
     }
     if (node.type === "data_column") {
         if (value === null || value === undefined || value === "") {
@@ -220,7 +220,7 @@ function _convertValue(node, value) {
     return value;
 }
 
-function _convertDataValue(value) {
+function _convertDataValue(value, multiple = false) {
     if (!value || !value.values || value.values.length === 0) {
         return null;
     }
@@ -230,7 +230,7 @@ function _convertDataValue(value) {
             values: value.values.map((v) => _convertDataEntry(v)),
         };
     }
-    if (value.values.length === 1) {
+    if (value.values.length === 1 && !multiple) {
         return _convertDataEntry(value.values[0]);
     }
     return value.values.map((v) => _convertDataEntry(v));

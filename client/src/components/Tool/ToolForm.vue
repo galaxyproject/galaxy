@@ -402,6 +402,7 @@ export default {
             const nestedInputs = buildNestedState(this.formConfig.inputs, this.formData);
             const jobDef = {
                 tool_id: this.formConfig.id,
+                tool_uuid: this.toolUuid,
                 tool_version: this.formConfig.version,
                 history_id: historyId,
                 inputs: nestedInputs,

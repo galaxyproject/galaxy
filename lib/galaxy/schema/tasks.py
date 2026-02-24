@@ -175,7 +175,7 @@ TOOL_SOURCE_CLASS = Literal["XmlToolSource", "YamlToolSource", "CwlToolSource"]
 
 class ToolSource(Model):
     raw_tool_source: str
-    tool_dir: str
+    tool_dir: Optional[str] = None
     tool_source_class: TOOL_SOURCE_CLASS = "XmlToolSource"
 
 
@@ -190,3 +190,4 @@ class QueueJobs(Model):
     data_manager_mode: Optional[str] = None
     send_email_notification: bool = False
     credentials_context: Optional[list[dict]] = None
+    dynamic_tool_id: Optional[int] = None  # link to DynamicTool for custom/user tools
