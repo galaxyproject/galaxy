@@ -98,4 +98,47 @@ describe("MultipleView", () => {
         // Test: current (first) history should be shown because only 4 latest are shown by default, and count = 3
         expect(wrapper.find("button[title='Current History']").exists()).toBeTruthy();
     });
+
+    it("load more button is shown when histories exceed the display limit", async () => {
+        const wrapper = await setUpWrapper(8, FIRST_HISTORY_ID);
+        expect(wrapper.find(".load-more-picker").exists()).toBeTruthy();
+    });
+
+    it("load more button is hidden when all histories fit within the display limit", async () => {
+        const wrapper = await setUpWrapper(3, FIRST_HISTORY_ID);
+        expect(wrapper.find(".load-more-picker").exists()).toBeFalsy();
+    });
+
+    it("clicking load more expands displayed histories and hides the button when all are shown", async () => {
+        const wrapper = await setUpWrapper(8, FIRST_HISTORY_ID);
+
+        // Initially 4 of 8 shown; load more is visible
+        expect(wrapper.find(".load-more-picker").exists()).toBeTruthy();
+        expect(wrapper.find("div[title='Currently showing 4 most recently updated histories']").exists()).toBeTruthy();
+
+        await wrapper.find(".load-more-picker").trigger("click");
+        await flushPromises();
+
+        // All 8 now shown; load more is gone and title reflects new count
+        expect(wrapper.find(".load-more-picker").exists()).toBeFalsy();
+        expect(wrapper.find("div[title='Currently showing 8 most recently updated histories']").exists()).toBeTruthy();
+    });
+
+    it("clicking load more multiple times progressively shows more histories", async () => {
+        const wrapper = await setUpWrapper(12, FIRST_HISTORY_ID);
+
+        expect(wrapper.find("div[title='Currently showing 4 most recently updated histories']").exists()).toBeTruthy();
+
+        // First click: 4 → 8; load more still present since 12 > 8
+        await wrapper.find(".load-more-picker").trigger("click");
+        await flushPromises();
+        expect(wrapper.find(".load-more-picker").exists()).toBeTruthy();
+        expect(wrapper.find("div[title='Currently showing 8 most recently updated histories']").exists()).toBeTruthy();
+
+        // Second click: 8 → 12; load more gone since 12 === 12
+        await wrapper.find(".load-more-picker").trigger("click");
+        await flushPromises();
+        expect(wrapper.find(".load-more-picker").exists()).toBeFalsy();
+        expect(wrapper.find("div[title='Currently showing 12 most recently updated histories']").exists()).toBeTruthy();
+    });
 });
