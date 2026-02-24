@@ -84,7 +84,6 @@
 
             <template v-slot:cell(description)="{ item }">
                 <LibraryEditField
-                    v-if="item?.editMode"
                     :ref="`description-${item.id}`"
                     :is-expanded="item.isExpanded"
                     :is-edit-mode="item.editMode"
@@ -95,7 +94,6 @@
 
             <template v-slot:cell(synopsis)="{ item }">
                 <LibraryEditField
-                    v-if="item?.editMode"
                     :ref="`synopsis-${item.id}`"
                     :is-expanded="item.isExpanded"
                     :is-edit-mode="item.editMode"
@@ -320,9 +318,15 @@ export default {
             this.$refs.libraryTable.refresh();
         },
         loadLibraries() {
-            this.services.getLibraries(this.includeDeleted).then((result) => {
-                this.librariesList = this.exclude_restricted ? result.filter((lib) => lib.public) : result;
-                this.totalRows = this.librariesList.length;
+            const active = this.services.getLibraries(false);
+            const deleted = this.includeDeleted ? this.services.getLibraries(true) : Promise.resolve([]);
+            Promise.all([active, deleted]).then(([activeLibs, deletedLibs]) => {
+                let result = [...activeLibs, ...deletedLibs];
+                if (this.exclude_restricted) {
+                    result = result.filter((lib) => lib.public);
+                }
+                this.librariesList = result;
+                this.totalRows = result.length;
             });
         },
         toggleEditMode(item) {
