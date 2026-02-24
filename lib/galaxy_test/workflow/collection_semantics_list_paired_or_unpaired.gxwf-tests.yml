@@ -23,3 +23,31 @@
           text: "forward content"
         - that: has_text
           text: "reverse content"
+
+- doc: |
+    SAMPLE_SHEET_PAIRED_OR_UNPAIRED_MATCHES_LIST_PAIRED_OR_UNPAIRED: A
+    sample_sheet:paired_or_unpaired consumed by list:paired_or_unpaired via canMatch.
+  job:
+    input1:
+      class: Collection
+      collection_type: sample_sheet:paired_or_unpaired
+      rows:
+        el1: []
+      elements:
+        - identifier: el1
+          class: Collection
+          type: paired_or_unpaired
+          elements:
+            - identifier: forward
+              class: File
+              contents: "forward content"
+            - identifier: reverse
+              class: File
+              contents: "reverse content"
+  outputs:
+    wf_output:
+      asserts:
+        - that: has_text
+          text: "forward content"
+        - that: has_text
+          text: "reverse content"

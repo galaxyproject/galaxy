@@ -365,7 +365,7 @@ def galactic_job_json(
         elements = to_elements(value, collection_type)
         kwds = {}
         if collection_type.startswith("sample_sheet"):
-            kwds["rows"] = value["rows"]
+            kwds["rows"] = value.get("rows")
         if "name" in value:
             kwds["name"] = value["name"]
         collection = collection_create_func(elements, collection_type, **kwds)
