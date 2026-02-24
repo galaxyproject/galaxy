@@ -4,6 +4,16 @@ import { computed, del, type Ref, ref, set, unref } from "vue";
 import { LastQueue } from "@/utils/lastQueue";
 import { ApiError } from "@/utils/simple-error";
 
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+const MAX_RETRIES = 3;
+
+function isRetryableError(error: Error): boolean {
+    if (error instanceof ApiError && error.status !== undefined) {
+        return RETRYABLE_STATUSES.has(error.status);
+    }
+    return false;
+}
+
 /**
  * Parameters for fetching an item from the server.
  *
@@ -30,16 +40,6 @@ type ShouldFetchHandler<T> = (item?: T) => boolean;
  */
 const fetchIfAbsent = <T>(item?: T) => item === undefined;
 
-const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
-const MAX_RETRIES = 3;
-
-function isRetryableError(error: Error): boolean {
-    if (error instanceof ApiError && error.status !== undefined) {
-        return RETRYABLE_STATUSES.has(error.status);
-    }
-    return false;
-}
-
 /**
  * A composable that provides a simple key-value cache for items fetched from the server.
  *
@@ -56,9 +56,10 @@ export function useKeyedCache<T>(
 ) {
     const storedItems = ref<{ [key: string]: T }>({});
     const loadingErrors = ref<{ [key: string]: Error }>({});
-    const retryCounts: { [key: string]: number } = {};
 
     const loadingRequests = ref<{ [key: string]: Promise<T | undefined> }>({});
+
+    const retryCounts: { [key: string]: number } = {};
 
     const fetchQueue = new LastQueue<FetchHandler<T>>();
 
@@ -66,7 +67,7 @@ export function useKeyedCache<T>(
         return (id: string) => {
             const item = storedItems.value[id];
             const existingError = loadingErrors.value[id];
-            const canRetry = existingError && isRetryableError(existingError) && (retryCounts[id] ?? 0) < MAX_RETRIES;
+            const canRetry = existingError && isRetryableError(existingError) && (retryCounts[id] ?? 0) <= MAX_RETRIES;
             if (shouldFetch(item) && (!existingError || canRetry)) {
                 fetchItemById({ id: id });
             }
@@ -105,6 +106,7 @@ export function useKeyedCache<T>(
                 const fetchItem = unref(fetchItemHandler);
                 const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
                 set(storedItems.value, itemId, item);
+                del(loadingErrors.value, itemId);
                 delete retryCounts[itemId];
                 return item;
             } catch (error) {

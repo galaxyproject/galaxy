@@ -292,4 +292,69 @@ describe("useKeyedCache", () => {
         await flushPromises();
         expect(true).toBe(true);
     });
+
+    it("should not retry after a plain Error", async () => {
+        const id = "1";
+        fetchItem.mockRejectedValue(new Error("something broke"));
+
+        const { getItemById } = useKeyedCache<ItemData>(fetchItem);
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+
+        // Subsequent calls should not re-fetch
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+    });
+
+    it("should retry up to 3 times for a retryable ApiError then stop", async () => {
+        const id = "1";
+        fetchItem.mockRejectedValue(new ApiError("rate limited", 429));
+
+        const { getItemById } = useKeyedCache<ItemData>(fetchItem);
+
+        // Initial fetch + 3 retries = 4 total calls
+        for (let i = 0; i < 5; i++) {
+            getItemById.value(id);
+            await flushPromises();
+        }
+        expect(fetchItem).toHaveBeenCalledTimes(4);
+    });
+
+    it("should not retry for a non-retryable ApiError", async () => {
+        const id = "1";
+        fetchItem.mockRejectedValue(new ApiError("forbidden", 403));
+
+        const { getItemById } = useKeyedCache<ItemData>(fetchItem);
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+    });
+
+    it("should recover after a retryable error followed by success", async () => {
+        const id = "1";
+        const item = { id, name: "Item 1" };
+        fetchItem.mockRejectedValueOnce(new ApiError("service unavailable", 503));
+        fetchItem.mockResolvedValue(item);
+
+        const { getItemById, storedItems, getItemLoadError } = useKeyedCache<ItemData>(fetchItem);
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+        expect(getItemLoadError.value(id)).toBeTruthy();
+
+        // Retry should succeed
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(2);
+        expect(storedItems.value[id]).toEqual(item);
+    });
 });
