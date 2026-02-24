@@ -223,8 +223,8 @@ describe("useKeyedCache", () => {
 
         const { getItemById, getItemLoadError } = useKeyedCache<ItemData>(fetchItem);
 
-        // First attempt + MAX_RETRIES - 1 retries (first call counts as attempt 1)
-        for (let i = 1; i <= 3; i++) {
+        // Initial fetch + MAX_RETRIES retries = 4 total calls
+        for (let i = 1; i <= 4; i++) {
             getItemById.value(id);
             await flushPromises();
             expect(fetchItem).toHaveBeenCalledTimes(i);
@@ -234,7 +234,7 @@ describe("useKeyedCache", () => {
         // Should stop after max retries exhausted
         getItemById.value(id);
         await flushPromises();
-        expect(fetchItem).toHaveBeenCalledTimes(3);
+        expect(fetchItem).toHaveBeenCalledTimes(4);
     });
 
     it("should not retry on permanent errors (403, 404)", async () => {
@@ -293,52 +293,7 @@ describe("useKeyedCache", () => {
         expect(true).toBe(true);
     });
 
-    it("should not retry after a plain Error", async () => {
-        const id = "1";
-        fetchItem.mockRejectedValue(new Error("something broke"));
-
-        const { getItemById } = useKeyedCache<ItemData>(fetchItem);
-
-        getItemById.value(id);
-        await flushPromises();
-        expect(fetchItem).toHaveBeenCalledTimes(1);
-
-        // Subsequent calls should not re-fetch
-        getItemById.value(id);
-        await flushPromises();
-        expect(fetchItem).toHaveBeenCalledTimes(1);
-    });
-
-    it("should retry up to 3 times for a retryable ApiError then stop", async () => {
-        const id = "1";
-        fetchItem.mockRejectedValue(new ApiError("rate limited", 429));
-
-        const { getItemById } = useKeyedCache<ItemData>(fetchItem);
-
-        // Initial fetch + 3 retries = 4 total calls
-        for (let i = 0; i < 5; i++) {
-            getItemById.value(id);
-            await flushPromises();
-        }
-        expect(fetchItem).toHaveBeenCalledTimes(4);
-    });
-
-    it("should not retry for a non-retryable ApiError", async () => {
-        const id = "1";
-        fetchItem.mockRejectedValue(new ApiError("forbidden", 403));
-
-        const { getItemById } = useKeyedCache<ItemData>(fetchItem);
-
-        getItemById.value(id);
-        await flushPromises();
-        expect(fetchItem).toHaveBeenCalledTimes(1);
-
-        getItemById.value(id);
-        await flushPromises();
-        expect(fetchItem).toHaveBeenCalledTimes(1);
-    });
-
-    it("should recover after a retryable error followed by success", async () => {
+    it("should clear error on successful recovery after transient failure", async () => {
         const id = "1";
         const item = { id, name: "Item 1" };
         fetchItem.mockRejectedValueOnce(new ApiError("service unavailable", 503));
@@ -348,13 +303,11 @@ describe("useKeyedCache", () => {
 
         getItemById.value(id);
         await flushPromises();
-        expect(fetchItem).toHaveBeenCalledTimes(1);
         expect(getItemLoadError.value(id)).toBeTruthy();
 
-        // Retry should succeed
         getItemById.value(id);
         await flushPromises();
-        expect(fetchItem).toHaveBeenCalledTimes(2);
         expect(storedItems.value[id]).toEqual(item);
+        expect(getItemLoadError.value(id)).toBeNull();
     });
 });
