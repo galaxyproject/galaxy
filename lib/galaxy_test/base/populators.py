@@ -2134,6 +2134,7 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def create_workflow(self, workflow: dict[str, Any], **create_kwds) -> str:
         upload_response = self.create_workflow_response(workflow, **create_kwds)
+        api_asserts.assert_status_code_is(upload_response, 200)
         uploaded_workflow_id = upload_response.json()["id"]
         return uploaded_workflow_id
 
@@ -2378,6 +2379,7 @@ class BaseWorkflowPopulator(BasePopulator):
         history_id: Optional[str] = None,
         instance: Optional[bool] = None,
         version: Optional[int] = None,
+        preserve_external_subworkflow_links: Optional[bool] = None,
     ) -> dict:
         params: dict[str, Any] = {}
         if style is not None:
@@ -2388,6 +2390,8 @@ class BaseWorkflowPopulator(BasePopulator):
             params["instance"] = instance
         if version is not None:
             params["version"] = version
+        if preserve_external_subworkflow_links is not None:
+            params["preserve_external_subworkflow_links"] = preserve_external_subworkflow_links
         response = self._get(f"workflows/{workflow_id}/download", data=params)
         api_asserts.assert_status_code_is(response, 200)
         if style != "format2":
