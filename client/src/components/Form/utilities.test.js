@@ -692,6 +692,16 @@ describe("form component utilities", () => {
             });
         });
 
+        it("should wrap single dataset value as array when multiple is true", () => {
+            const inputs = [{ name: "input1", type: "data", multiple: true }];
+            const formData = {
+                input1: { batch: false, product: false, values: [{ id: "abc123", src: "hda", map_over_type: null }] },
+            };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                input1: [{ src: "hda", id: "abc123" }],
+            });
+        });
+
         it("should return null for empty dataset values", () => {
             const inputs = [{ name: "input1", type: "data" }];
             const formData = { input1: { batch: false, values: [] } };
