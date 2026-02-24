@@ -65,8 +65,6 @@
             :per-page="perPage"
             :current-page="currentPage"
             :filter="filter"
-            :filter-included-fields="filterOn"
-            :filter-ignored-fields="excluded"
             @sort-changed="onSortChanged"
             @filtered="onFiltered">
             <template v-slot:cell(name)="row">
@@ -121,8 +119,8 @@
                 <BButton
                     v-if="row.item.can_user_modify && row.item.editMode"
                     size="sm"
-                    class="lib-btn permission_folder_btn"
-                    :title="'Permissions of ' + row.item.name"
+                    class="lib-btn save_changes_btn"
+                    :title="'Save changes to ' + row.item.name"
                     @click="saveChanges(row.item)">
                     <FontAwesomeIcon :icon="faSave" />
                     {{ titleSave }}
@@ -171,7 +169,7 @@
                 <BCol md="auto">
                     <BPagination
                         v-model="currentPage"
-                        :total-rows="rows"
+                        :total-rows="totalRows"
                         :per-page="perPage"
                         aria-controls="libraries_list" />
                 </BCol>
@@ -191,7 +189,7 @@
 
                             <td class="text-muted ml-1 paginator-text">
                                 <span class="pagination-total-pages-text">
-                                    {{ titlePerPage }}, {{ rows }} {{ titleTotal }}
+                                    {{ titlePerPage }}, {{ totalRows }} {{ titleTotal }}
                                 </span>
                             </td>
                         </tr>
@@ -230,7 +228,7 @@ import {
 } from "bootstrap-vue";
 import { mapState } from "pinia";
 
-import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH, onError } from "@/components/Libraries/library-utils";
+import { DEFAULT_PER_PAGE, onError } from "@/components/Libraries/library-utils";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useUserStore } from "@/stores/userStore";
@@ -283,11 +281,9 @@ export default {
             fields: fields,
             perPage: DEFAULT_PER_PAGE,
             librariesList: [],
-            maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
+            totalRows: 0,
             includeDeleted: false,
             exclude_restricted: false,
-            filterOn: [],
-            excluded: [],
             filter: null,
             newLibraryForm: {
                 name: "",
@@ -311,21 +307,21 @@ export default {
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
-        rows() {
-            return this.librariesList.length;
-        },
     },
     created() {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
-        this.loadLibraries(this.includeDeleted);
+        this.loadLibraries();
     },
     methods: {
         refreshTable() {
             this.$refs.libraryTable.refresh();
         },
-        loadLibraries(includeDeleted = false) {
-            this.services.getLibraries(includeDeleted).then((result) => (this.librariesList = result));
+        loadLibraries() {
+            this.services.getLibraries(this.includeDeleted).then((result) => {
+                this.librariesList = this.exclude_restricted ? result.filter((lib) => lib.public) : result;
+                this.totalRows = this.librariesList.length;
+            });
         },
         toggleEditMode(item) {
             item.editMode = !item.editMode;
@@ -365,7 +361,8 @@ export default {
                     deletedLib.deleted = true;
                     this.toggleEditMode(deletedLib);
                     if (!this.includeDeleted) {
-                        this.hideOn("deleted", false);
+                        this.librariesList = this.librariesList.filter((lib) => !lib.deleted);
+                        this.totalRows = this.librariesList.length;
                     }
                 },
                 (error) => onError(error),
@@ -375,7 +372,6 @@ export default {
             this.currentPage = 1;
         },
         onFiltered(filteredItems) {
-            // Trigger pagination to update the number of buttons/pages due to filtering
             this.totalRows = filteredItems.length;
             this.currentPage = 1;
         },
@@ -384,33 +380,11 @@ export default {
         },
         toggle_include_deleted(isDeletedIncluded) {
             this.includeDeleted = isDeletedIncluded;
-            if (this.includeDeleted) {
-                this.services.getLibraries(this.includeDeleted).then((result) => {
-                    this.librariesList = this.librariesList.concat(result);
-                    this.refreshTable();
-                });
-            } else {
-                this.hideOn("deleted", false);
-            }
+            this.loadLibraries();
         },
-        toggle_exclude_restricted(isRestrictedIncluded) {
-            this.exclude_restricted = isRestrictedIncluded;
-            if (this.exclude_restricted) {
-                this.excluded = this.hideOn("public", true);
-            } else {
-                this.librariesList = this.librariesList.concat(this.excluded);
-            }
-        },
-        hideOn(property, value) {
-            const filtered = [];
-            this.librariesList = this.librariesList.filter((lib) => {
-                if (lib[property] === value) {
-                    return lib;
-                } else {
-                    filtered.push(lib);
-                }
-            });
-            return filtered;
+        toggle_exclude_restricted(isRestrictedExcluded) {
+            this.exclude_restricted = isRestrictedExcluded;
+            this.loadLibraries();
         },
         undelete(item) {
             this.services.deleteLibrary(
@@ -431,6 +405,7 @@ export default {
                 this.newLibraryForm.synopsis,
                 (newLib) => {
                     this.librariesList.push(newLib);
+                    this.totalRows = this.librariesList.length;
                     this.newLibraryForm.name = "";
                     this.newLibraryForm.description = "";
                     this.newLibraryForm.synopsis = "";
