@@ -261,6 +261,44 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert galaxy_url.startswith("http")
             assert galaxy_url.endswith("tool_runner?tool_id=ratmine")
 
+    @skip_without_tool("dbkey_filter_input")
+    def test_build_request_dbkey_filter_set(self):
+        with self.dataset_populator.test_history() as history_id:
+            hda = self.dataset_populator.new_dataset(history_id, content="test", dbkey="hg19", wait=True)
+            dataset_id = hda["id"]
+            payload = {
+                "history_id": history_id,
+                "inputs": {"inputs": {"src": "hda", "id": dataset_id}},
+            }
+            response = self.dataset_populator._post("tools/dbkey_filter_input/build", data=payload, json=True)
+            response.raise_for_status()
+            build = response.json()
+            index_input = [i for i in build["inputs"] if i["name"] == "index"][0]
+            options = index_input["options"]
+            option_values = [o[1] for o in options]
+            assert "hg19_value" in option_values
+            assert "hg18_value" not in option_values
+
+    @skip_without_tool("dbkey_filter_input")
+    def test_build_request_dbkey_filter_unset(self):
+        with self.dataset_populator.test_history() as history_id:
+            hda = self.dataset_populator.new_dataset(history_id, content="test", wait=True)
+            dataset_id = hda["id"]
+            payload = {
+                "history_id": history_id,
+                "inputs": {"inputs": {"src": "hda", "id": dataset_id}},
+            }
+            response = self.dataset_populator._post("tools/dbkey_filter_input/build", data=payload, json=True)
+            response.raise_for_status()
+            build = response.json()
+            index_input = [i for i in build["inputs"] if i["name"] == "index"][0]
+            options = index_input["options"]
+            option_values = [o[1] for o in options]
+            # with no dbkey set, all options from test_fasta_indexes should be available
+            assert "hg19_value" in option_values
+            assert "hg18_value" in option_values
+            assert "mm10_value" in option_values
+
     @skip_without_tool("cheetah_problem_unbound_var_input")
     def test_legacy_biotools_xref_injection(self):
         url = self._api_url("tools/cheetah_problem_unbound_var_input")
