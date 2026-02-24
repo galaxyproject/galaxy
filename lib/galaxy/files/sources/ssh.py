@@ -8,16 +8,19 @@ from typing import (
     Union,
 )
 
-from galaxy.files.models import (
-    BaseFileSourceConfiguration,
-    BaseFileSourceTemplateConfiguration,
-    FilesSourceRuntimeContext,
+from galaxy.files.models import FilesSourceRuntimeContext
+from galaxy.files.sources._fsspec import (
+    CacheOptionsDictType,
+    FsspecBaseFileSourceConfiguration,
+    FsspecBaseFileSourceTemplateConfiguration,
+    FsspecFilesSource,
 )
 from galaxy.util.config_templates import TemplateExpansion
-from ._pyfilesystem2 import PyFilesystem2FilesSource
+
+from fsspec.implementations.sftp import SFTPFileSystem
 
 
-class SshFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+class SshFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
     host: Union[str, TemplateExpansion]
     user: Union[str, TemplateExpansion]
     passwd: Optional[Union[str, TemplateExpansion]] = None
@@ -29,7 +32,7 @@ class SshFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     path: Union[str, TemplateExpansion]
 
 
-class SshFileSourceConfiguration(BaseFileSourceConfiguration):
+class SshFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     host: str
     user: str
     passwd: Optional[str] = None
@@ -41,33 +44,35 @@ class SshFileSourceConfiguration(BaseFileSourceConfiguration):
     path: str
 
 
-class SshFilesSource(PyFilesystem2FilesSource[SshFileSourceTemplateConfiguration, SshFileSourceConfiguration]):
+class SshFilesSource(FsspecFilesSource[SshFileSourceTemplateConfiguration, SshFileSourceConfiguration]):
     plugin_type = "ssh"
-    required_module = SSHFS
-    required_package = "fs.sshfs"
+    required_module = SFTPFileSystem
+    required_package = "fsspec"
 
     template_config_class = SshFileSourceTemplateConfiguration
     resolved_config_class = SshFileSourceConfiguration
 
-    def _open_fs(self, context: FilesSourceRuntimeContext[SshFileSourceConfiguration]):
-        if SSHFS is None:
-            raise self.required_package_exception
-
+    def _open_fs(
+        self,
+        context: FilesSourceRuntimeContext[SshFileSourceConfiguration],
+        cache_options: CacheOptionsDictType,
+    ):
         config = context.config
-        handle = SSHFS(
+        fs = SFTPFileSystem(
             host=config.host,
-            user=config.user,
-            passwd=config.passwd,
-            pkey=config.pkey if config.pkey else None,
+            username=config.user,
+            password=config.passwd,
+            pkey=config.pkey,
             port=config.port,
             timeout=config.timeout,
-            compress=config.compress,
-            config_path=config.config_path,
-            keepalive=0,
+            # allow_agent=False,
+            # look_for_keys=False,
         )
-        if config.path:
-            return handle.opendir(config.path)
-        return handle
+        return fs
+
+    def _to_filesystem_path(self, path: str) -> str:
+        print(f"{dir(self)=}")
+        return self.template_config.path + "/" + path
 
 
 __all__ = ("SshFilesSource",)
