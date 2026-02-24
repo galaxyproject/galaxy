@@ -10,53 +10,53 @@ import type {
     WorkflowInvocationRequest,
 } from "@/api/invocations";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
-import { rethrowSimple } from "@/utils/simple-error";
+import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 export const useInvocationStore = defineStore("invocationStore", () => {
     const scrollListScrollTop = ref(0);
 
     async function fetchInvocationDetails(params: FetchParams): Promise<WorkflowInvocation> {
-        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
+        const { data, error, response } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
             params: { path: { invocation_id: params.id } },
         });
         if (error) {
-            rethrowSimple(error);
+            rethrowSimpleWithStatus(error, response);
         }
         return data;
     }
 
     async function fetchInvocationJobsSummary(params: FetchParams): Promise<InvocationJobsSummary> {
-        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/jobs_summary", {
+        const { data, error, response } = await GalaxyApi().GET("/api/invocations/{invocation_id}/jobs_summary", {
             params: { path: { invocation_id: params.id } },
         });
         if (error) {
-            rethrowSimple(error);
+            rethrowSimpleWithStatus(error, response);
         }
         return data;
     }
 
     async function fetchInvocationStepJobsSummary(params: FetchParams): Promise<StepJobSummary[]> {
-        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/step_jobs_summary", {
+        const { data, error, response } = await GalaxyApi().GET("/api/invocations/{invocation_id}/step_jobs_summary", {
             params: { path: { invocation_id: params.id } },
         });
         if (error) {
-            rethrowSimple(error);
+            rethrowSimpleWithStatus(error, response);
         }
         return data;
     }
 
     async function fetchInvocationStep(params: FetchParams): Promise<InvocationStep> {
-        const { data, error } = await GalaxyApi().GET("/api/invocations/steps/{step_id}", {
+        const { data, error, response } = await GalaxyApi().GET("/api/invocations/steps/{step_id}", {
             params: { path: { step_id: params.id } },
         });
         if (error) {
-            rethrowSimple(error);
+            rethrowSimpleWithStatus(error, response);
         }
         return data;
     }
 
     async function fetchInvocationRequest(params: FetchParams): Promise<WorkflowInvocationRequest> {
-        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/request", {
+        const { data, error, response } = await GalaxyApi().GET("/api/invocations/{invocation_id}/request", {
             params: {
                 path: {
                     invocation_id: params.id,
@@ -64,17 +64,17 @@ export const useInvocationStore = defineStore("invocationStore", () => {
             },
         });
         if (error) {
-            rethrowSimple(error);
+            rethrowSimpleWithStatus(error, response);
         }
         return data;
     }
 
     async function fetchInvocationCount(params: FetchParams): Promise<number> {
-        const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}/counts", {
+        const { data, error, response } = await GalaxyApi().GET("/api/workflows/{workflow_id}/counts", {
             params: { path: { workflow_id: params.id } },
         });
         if (error) {
-            rethrowSimple(error);
+            rethrowSimpleWithStatus(error, response);
         }
 
         let allCounts = 0;
