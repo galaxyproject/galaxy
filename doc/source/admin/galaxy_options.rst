@@ -5842,4 +5842,15 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_tool_formats``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
+    for user defined tools.
+:Default: ``false``
+:Type: bool
+
+
 
