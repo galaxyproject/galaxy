@@ -35,6 +35,7 @@ from galaxy.model import (
     ToolRequest,
     ToolSource as ToolSourceModel,
 )
+from galaxy.schema.credentials import ServiceCredentialsContext
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
@@ -47,7 +48,6 @@ from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     JobIndexQueryPayload,
 )
-from galaxy.schema.credentials import ServiceCredentialsContext
 from galaxy.schema.tasks import (
     QueueJobs,
     ToolSource,
