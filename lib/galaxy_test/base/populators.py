@@ -1216,8 +1216,12 @@ class BaseDatasetPopulator(BasePopulator):
 
         return dict(tool_id=tool_id, inputs=json.dumps(inputs), history_id=history_id, **kwds)
 
-    def build_tool_state(self, tool_id: str, history_id: str):
-        response = self._post(f"tools/{tool_id}/build?history_id={history_id}")
+    def build_tool_state(self, tool_id: str, history_id: str, inputs: Optional[dict] = None):
+        if inputs is not None:
+            payload = {"history_id": history_id, "inputs": inputs}
+            response = self._post(f"tools/{tool_id}/build", data=payload, json=True)
+        else:
+            response = self._post(f"tools/{tool_id}/build?history_id={history_id}")
         response.raise_for_status()
         return response.json()
 
