@@ -77,13 +77,14 @@
                 <div v-else-if="row.item.deleted && includeDeleted" class="deleted-item">
                     {{ row.item.name }}
                 </div>
-                <GLink v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">
+                <GLink v-else :to="`/libraries/folders/${row.item.root_folder_id}`">
                     {{ row.item.name }}
                 </GLink>
             </template>
 
             <template v-slot:cell(description)="{ item }">
                 <LibraryEditField
+                    v-if="item?.editMode"
                     :ref="`description-${item.id}`"
                     :is-expanded="item.isExpanded"
                     :is-edit-mode="item.editMode"
@@ -94,6 +95,7 @@
 
             <template v-slot:cell(synopsis)="{ item }">
                 <LibraryEditField
+                    v-if="item?.editMode"
                     :ref="`synopsis-${item.id}`"
                     :is-expanded="item.isExpanded"
                     :is-edit-mode="item.editMode"
