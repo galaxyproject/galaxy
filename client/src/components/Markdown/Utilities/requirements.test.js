@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { getRequiredLabels, getRequiredObject, hasValidLabel, hasValidName } from "./requirements";
+import { getRequiredLabels, getRequiredObject, hasValidLabel, hasValidName, hasValidObject } from "./requirements";
 
 vi.mock(
     "./requirements.yml",
@@ -76,6 +76,26 @@ describe("requirements utils", () => {
         it("returns true when requiredLabels is empty", () => {
             const args = {};
             expect(hasValidLabel("nonexistent_tool", args, labels)).toBe(true);
+        });
+    });
+
+    describe("hasValidObject", () => {
+        it("returns true when required object is present", () => {
+            expect(hasValidObject("tool_a", { history_dataset_id: "abc" })).toBe(true);
+            expect(hasValidObject("tool_d", { job_id: "abc" })).toBe(true);
+        });
+
+        it("returns false when required object is missing", () => {
+            expect(hasValidObject("tool_a", {})).toBe(false);
+            expect(hasValidObject("tool_d", {})).toBe(false);
+        });
+
+        it("accepts history_dataset_collection_id where history_dataset_id is required", () => {
+            expect(hasValidObject("tool_a", { history_dataset_collection_id: "abc" })).toBe(true);
+        });
+
+        it("accepts implicit_collection_jobs_id where job_id is required", () => {
+            expect(hasValidObject("tool_d", { implicit_collection_jobs_id: "abc" })).toBe(true);
         });
     });
 
