@@ -7,7 +7,6 @@ from typing import (
     Any,
     cast,
     Optional,
-    Union,
 )
 
 from galaxy import (
@@ -19,6 +18,7 @@ from galaxy.model import (
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    HistoryItem,
     Job,
     StoredWorkflow,
     User,
@@ -40,9 +40,6 @@ from .steps import (
     attach_ordered_steps,
     order_workflow_steps_with_levels,
 )
-
-# Type alias for history content items
-HistoryContentItem = Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]
 
 # Type alias for tool input parameter values (param name -> string value)
 ToolInputs = dict[str, Any]
@@ -257,7 +254,7 @@ class DatasetCollectionCreationJob:
 
 def summarize(
     trans: ProvidesHistoryContext, history: Optional[History] = None
-) -> tuple[dict[Any, list[tuple[Optional[str], HistoryContentItem]]], set[str]]:
+) -> tuple[dict[Any, list[tuple[Optional[str], HistoryItem]]], set[str]]:
     """Return mapping of job description to datasets for active items in
     supplied history - needed for building workflow from a history.
 
@@ -274,7 +271,7 @@ class WorkflowSummary:
         assert history is not None
         self.history: History = history
         self.warnings: set[str] = set()
-        self.jobs: dict[Any, list[tuple[Optional[str], HistoryContentItem]]] = {}
+        self.jobs: dict[Any, list[tuple[Optional[str], HistoryItem]]] = {}
         self.job_id2representative_job: dict[int, Job] = {}  # map a non-fake job id to its representative job
         self.implicit_map_jobs: list[Job] = []
         self.collection_types: dict[int, str] = {}
@@ -284,7 +281,7 @@ class WorkflowSummary:
 
         self.__summarize()
 
-    def hid(self, content: HistoryContentItem) -> int:
+    def hid(self, content: HistoryItem) -> int:
         if content.history_content_type == "dataset_collection":
             if content.id in self.hdca_hid_in_history:
                 return self.hdca_hid_in_history[content.id]
@@ -314,7 +311,7 @@ class WorkflowSummary:
         for content in self.history.visible_contents:
             self.__summarize_content(content)
 
-    def __summarize_content(self, content: HistoryContentItem) -> None:
+    def __summarize_content(self, content: HistoryItem) -> None:
         # Update internal state for history content (either an HDA or
         # an HDCA).
         if content.history_content_type == "dataset_collection":
