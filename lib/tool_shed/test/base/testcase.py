@@ -1176,15 +1176,6 @@ class ShedTestCase(ShedApiTestCase):
             repository, target, commit_message=commit_message, strings_displayed=strings_displayed
         )
 
-    def delete_repository(self, repository: Repository) -> None:
-        repository_id = repository.id
-        self.visit_url("/admin/browse_repositories")
-        params = {"operation": "Delete", "id": repository_id}
-        self.visit_url("/admin/browse_repositories", params=params)
-        strings_displayed = ["Deleted 1 repository", repository.name]
-        strings_not_displayed: list[str] = []
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def display_installed_jobs_list_page(self, installed_repository, data_manager_names=None, strings_displayed=None):
         assert self._installation_client
         self._installation_client.display_installed_jobs_list_page(
@@ -1210,25 +1201,6 @@ class ShedTestCase(ShedApiTestCase):
     ):
         url = f"/repos/{owner_name}/{repository_name}"
         self.visit_url(url)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def display_repository_file_contents(
-        self, repository: Repository, filename, filepath=None, strings_displayed=None, strings_not_displayed=None
-    ):
-        """Find a file in the repository and display the contents."""
-        basepath = self.get_repo_path(repository)
-        repository_file_list = []
-        if filepath:
-            relative_path = os.path.join(basepath, filepath)
-        else:
-            relative_path = basepath
-        repository_file_list = self.get_repository_file_list(
-            repository=repository, base_path=relative_path, current_path=None
-        )
-        assert filename in repository_file_list, f"File {filename} not found in the repository under {relative_path}."
-        params = dict(file_path=os.path.join(relative_path, filename), repository_id=repository.id)
-        url = "/repository/get_file_contents"
-        self.visit_url(url, params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def edit_repository_categories(
@@ -1266,12 +1238,6 @@ class ShedTestCase(ShedApiTestCase):
                 )
                 strings_displayed.append(self.escape_html(original_information[input_elem_name]))
             self._browser.submit_form_with_name("edit_repository", "edit_repository_button")
-
-    def enable_email_alerts(self, repository: Repository, strings_displayed=None, strings_not_displayed=None) -> None:
-        repository_id = repository.id
-        params = dict(operation="Receive email alerts", id=repository_id)
-        self.visit_url("/repository/browse_repositories", params)
-        self.check_for_strings(strings_displayed)
 
     def escape_html(self, string, unescape=False):
         html_entities = [("&", "X"), ("'", "&#39;"), ('"', "&#34;")]
@@ -1522,29 +1488,6 @@ class ShedTestCase(ShedApiTestCase):
                 )
         return valid_tools, invalid_tools
 
-    def grant_role_to_user(self, user, role):
-        strings_displayed = [self.security.encode_id(role.id), role.name]
-        strings_not_displayed: list[str] = []
-        self.visit_url("/admin/roles")
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        params = dict(operation="manage users and groups", id=self.security.encode_id(role.id))
-        url = "/admin/roles"
-        self.visit_url(url, params)
-        strings_displayed = [common.test_user_1_email, common.test_user_2_email]
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        # As elsewhere, twill limits the possibility of submitting the form, this time due to not executing the javascript
-        # attached to the role selection form. Visit the action url directly with the necessary parameters.
-        params = dict(
-            id=self.security.encode_id(role.id),
-            in_users=user.id,
-            operation="manage users and groups",
-            role_members_edit_button="Save",
-        )
-        url = "/admin/manage_users_and_groups_for_role"
-        self.visit_url(url, params)
-        strings_displayed = [f"Role '{role.name}' has been updated"]
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def grant_write_access(
         self,
         repository: Repository,
@@ -1722,36 +1665,6 @@ class ShedTestCase(ShedApiTestCase):
         self.visit_url("/repository/reset_all_metadata", params=params)
         self.check_for_strings(["All repository metadata has been reset."])
 
-    def revoke_write_access(self, repository, username):
-        params = {"user_access_button": "Remove", "id": repository.id, "remove_auth": username}
-        self.visit_url("/repository/manage_repository", params=params)
-
-    def search_for_valid_tools(
-        self,
-        search_fields=None,
-        exact_matches=False,
-        strings_displayed=None,
-        strings_not_displayed=None,
-        from_galaxy=False,
-    ):
-        params = {}
-        search_fields = search_fields or {}
-        if from_galaxy:
-            params["galaxy_url"] = self.galaxy_url
-        for field_name, search_string in search_fields.items():
-            self.visit_url("/repository/find_tools", params=params)
-            self._browser.fill_form_value("find_tools", "exact_matches", exact_matches)
-            self._browser.fill_form_value("find_tools", field_name, search_string)
-            self._browser.submit_form_with_name("find_tools", "find_tools_submit")
-            self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def set_repository_deprecated(
-        self, repository: Repository, set_deprecated=True, strings_displayed=None, strings_not_displayed=None
-    ):
-        params = {"id": repository.id, "mark_deprecated": set_deprecated}
-        self.visit_url("/repository/deprecate", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def set_repository_malicious(
         self, repository: Repository, set_malicious=True, strings_displayed=None, strings_not_displayed=None
     ) -> None:
@@ -1764,13 +1677,6 @@ class ShedTestCase(ShedApiTestCase):
         tip = self.get_repository_tip(repository)
         db_repository = self._db_repository(repository)
         return test_db_util.get_repository_metadata_by_repository_id_changeset_revision(db_repository.id, tip)
-
-    def undelete_repository(self, repository: Repository) -> None:
-        params = {"operation": "Undelete", "id": repository.id}
-        self.visit_url("/admin/browse_repositories", params=params)
-        strings_displayed = ["Undeleted 1 repository", repository.name]
-        strings_not_displayed: list[str] = []
-        self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def _uninstall_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
         assert self._installation_client
