@@ -35,7 +35,7 @@ from galaxy.model import (
     ToolRequest,
     ToolSource as ToolSourceModel,
 )
-from galaxy.schema.credentials import ServiceCredentialsContext
+from galaxy.schema.credentials import ServiceCredentialRef
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
@@ -91,7 +91,7 @@ class JobRequest(BaseModel):
         default=None, title="rerun_remap_job_id", description="TODO"
     )
     send_email_notification: bool = Field(default=False, title="Send Email Notification", description="TODO")
-    credentials_context: Optional[list[ServiceCredentialsContext]] = Field(
+    credentials_context: Optional[list[ServiceCredentialRef]] = Field(
         default=None, title="credentials_context", description="Credential context for tool execution."
     )
 
@@ -290,7 +290,7 @@ class JobsService(ServiceBase):
             tool_request_id=tool_request_id,
             use_cached_jobs=job_request.use_cached_jobs or False,
             rerun_remap_job_id=job_request.rerun_remap_job_id,
-            credentials_context=job_request.credentials_context,
+            credentials_context=job_request.credentials_context or None,
         )
         result = queue_jobs.delay(request=task_request)
         return JobCreateResponse(
