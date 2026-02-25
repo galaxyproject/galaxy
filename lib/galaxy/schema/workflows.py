@@ -13,9 +13,12 @@ from pydantic import (
     UUID4,
 )
 
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     AnnotationField,
     CreatorOrganization,
+    DatasetState,
+    HistoryContentType,
     InputDataCollectionStep,
     InputDataStep,
     InputParameterStep,
@@ -294,4 +297,108 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         ...,
         title="Source Metadata",
         description="The source metadata of the workflow.",
+    )
+
+
+class WorkflowExtractionOutput(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the history content item.",
+    )
+    hid: int = Field(
+        ...,
+        title="HID",
+        description="The history item ID (position in history).",
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the dataset or collection.",
+    )
+    state: DatasetState = Field(
+        ...,
+        title="State",
+        description="The state of the dataset or collection.",
+    )
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="Whether this item has been deleted.",
+    )
+    history_content_type: HistoryContentType = Field(
+        ...,
+        title="History Content Type",
+        description="Whether this is a dataset or dataset_collection.",
+    )
+
+
+class WorkflowExtractionJob(Model):
+    id: Optional[EncodedDatabaseIdField] = Field(
+        ...,
+        title="ID",
+        description="Encoded job ID, or null for fake input dataset entries.",
+    )
+    is_fake: bool = Field(
+        ...,
+        title="Is Fake",
+        description="True for input datasets that have no real creating job.",
+    )
+    tool_id: Optional[str] = Field(
+        None,
+        title="Tool ID",
+        description="The tool ID that created this job.",
+    )
+    tool_name: Optional[str] = Field(
+        None,
+        title="Tool Name",
+        description="Human-readable name of the tool.",
+    )
+    tool_version: Optional[str] = Field(
+        None,
+        title="Tool Version",
+        description="The tool version used by this job.",
+    )
+    workflow_compatible: bool = Field(
+        ...,
+        title="Workflow Compatible",
+        description="Whether this job's tool can be included in an extracted workflow.",
+    )
+    disabled_why: Optional[str] = Field(
+        None,
+        title="Disabled Why",
+        description="Reason this job cannot be included in a workflow, if applicable.",
+    )
+    checked: bool = Field(
+        ...,
+        title="Checked",
+        description="Whether this job should be pre-selected for extraction (True if any outputs are not deleted).",
+    )
+    tool_version_warning: Optional[str] = Field(
+        None,
+        title="Tool Version Warning",
+        description="Warning when the current tool version differs from the version used by this job.",
+    )
+    outputs: list[WorkflowExtractionOutput] = Field(
+        default_factory=list,
+        title="Outputs",
+        description="The history items produced by this job.",
+    )
+
+
+class WorkflowExtractionSummary(Model):
+    history_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="History ID",
+        description="The encoded ID of the history being extracted from.",
+    )
+    warnings: list[str] = Field(
+        default_factory=list,
+        title="Warnings",
+        description="Any warnings generated during summarization (e.g. datasets still running).",
+    )
+    jobs: list[WorkflowExtractionJob] = Field(
+        default_factory=list,
+        title="Jobs",
+        description="Ordered list of jobs (and fake input entries) found in the history.",
     )
