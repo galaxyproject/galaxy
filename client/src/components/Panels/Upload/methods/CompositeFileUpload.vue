@@ -15,6 +15,7 @@ import type { CompositeFileItem, CompositeSlot } from "../types/uploadItem";
 
 import UploadTableDbKeyCell from "../shared/UploadTableDbKeyCell.vue";
 import CompositeSlotRow from "./CompositeSlotRow.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 interface Props {
@@ -49,6 +50,10 @@ const defaultNullSelection: ExtensionDetails = {
 const availableExtensions = computed(() => [defaultNullSelection, ...compositeExtensions.value]);
 
 const slots = computed((): CompositeSlot[] => currentItem.value?.slots ?? []);
+
+const selectedExtensionDetails = computed(
+    () => availableExtensions.value.find((ext) => ext.id === selectedExtension.value) ?? null,
+);
 
 const hasAllRequiredSlots = computed((): boolean => {
     if (!currentItem.value) {
@@ -106,7 +111,7 @@ function onExtensionChange(newExtension: string) {
 
     compositeItems.value = [
         {
-            name: existingItem?.name ?? newExtension,
+            name: existingItem?.name ?? "",
             extension: newExtension,
             dbkey: existingItem?.dbkey ?? defaultDbKey.value,
             slots: extDetails.composite_files.map(
@@ -148,16 +153,14 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
 <template>
     <div class="composite-file-upload">
-        <!-- Configuration row: type, name, dbkey -->
         <div class="composite-config-panel mb-3">
-            <div class="form-row align-items-end">
+            <div class="row align-items-start no-gutters">
                 <!-- Composite type selector -->
-                <div class="col-md-4">
-                    <label class="font-weight-bold mb-1 small" for="composite-type-selector"> Composite Type </label>
+                <div class="col-md-4 pr-md-2 d-flex flex-column">
+                    <label class="font-weight-bold mb-1" for="composite-type-selector"> Composite Type </label>
                     <SingleItemSelector
                         id="composite-type-selector"
                         v-b-tooltip.hover.noninteractive
-                        class="w-100"
                         collection-name="Composite Types"
                         title="Composite Type"
                         :items="availableExtensions"
@@ -167,26 +170,37 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 </div>
 
                 <!-- Dataset name -->
-                <div class="col-md-4">
-                    <label for="composite-dataset-name" class="font-weight-bold mb-1 small"> Dataset Name </label>
+                <div class="col-md-4 px-md-2 d-flex flex-column">
+                    <label for="composite-dataset-name" class="font-weight-bold mb-1"> Dataset Name </label>
                     <BFormInput
                         id="composite-dataset-name"
                         :value="currentItem?.name ?? ''"
                         :disabled="!currentItem"
-                        size="sm"
-                        placeholder="Dataset name in history"
+                        placeholder="Provide a name for the dataset"
                         @input="updateItem({ name: $event })" />
                 </div>
 
-                <!-- DB key / Reference genome -->
-                <div class="col-md-4">
-                    <label class="font-weight-bold mb-1 small d-block" for="composite-dbkey"> Reference (dbkey) </label>
+                <!-- DB key / Reference -->
+                <div class="col-md-4 pl-md-2 d-flex flex-column">
+                    <label class="font-weight-bold mb-1 d-block" for="composite-dbkey"> Reference (dbkey) </label>
                     <UploadTableDbKeyCell
                         id="composite-dbkey"
                         :value="currentItem?.dbkey ?? defaultDbKey"
                         :db-keys="listDbKeys"
                         :disabled="!configurationsReady || !currentItem"
                         @input="updateItem({ dbkey: $event })" />
+                </div>
+            </div>
+
+            <!-- Composite type description -->
+            <div
+                v-if="selectedExtensionDetails?.description || selectedExtensionDetails?.description_url"
+                class="text-muted mt-2">
+                <div v-if="selectedExtensionDetails?.description" class="mb-1">
+                    {{ selectedExtensionDetails.description }}
+                </div>
+                <div v-if="selectedExtensionDetails?.description_url">
+                    <ExternalLink :href="selectedExtensionDetails.description_url">Learn more</ExternalLink>
                 </div>
             </div>
         </div>
