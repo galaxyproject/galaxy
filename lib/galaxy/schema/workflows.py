@@ -359,15 +359,10 @@ class WorkflowExtractionJob(Model):
         title="Tool Version",
         description="The tool version used by this job.",
     )
-    workflow_compatible: bool = Field(
-        ...,
-        title="Workflow Compatible",
-        description="Whether this job's tool can be included in an extracted workflow.",
-    )
     disabled_why: Optional[str] = Field(
         None,
         title="Disabled Why",
-        description="Reason this job cannot be included in a workflow, if applicable.",
+        description="Reason this job cannot be included in a workflow. None means the job is enabled.",
     )
     checked: bool = Field(
         ...,

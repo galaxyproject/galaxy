@@ -25400,7 +25400,7 @@ export interface components {
             checked: boolean;
             /**
              * Disabled Why
-             * @description Reason this job cannot be included in a workflow, if applicable.
+             * @description Reason this job cannot be included in a workflow. None means the job is enabled.
              */
             disabled_why?: string | null;
             /**
@@ -25438,11 +25438,6 @@ export interface components {
              * @description Warning when the current tool version differs from the version used by this job.
              */
             tool_version_warning?: string | null;
-            /**
-             * Workflow Compatible
-             * @description Whether this job's tool can be included in an extracted workflow.
-             */
-            workflow_compatible: boolean;
         };
         /** WorkflowExtractionOutput */
         WorkflowExtractionOutput: {
