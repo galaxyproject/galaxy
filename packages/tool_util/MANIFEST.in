@@ -7,3 +7,4 @@ include galaxy/tool_util/xsd/*
 include galaxy/tool_util/ontologies/*tsv
 include galaxy/tool_util/linters/datatypes_conf.xml.sample
 include galaxy/tool_util/upgrade/upgrade_codes.json
+recursive-include tests *.py

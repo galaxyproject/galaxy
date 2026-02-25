@@ -1,1 +1,2 @@
 include *.rst *.txt LICENSE */py.typed
+recursive-include tests *.py
