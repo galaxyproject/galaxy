@@ -330,8 +330,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
                         suggestions=handoff_data.get("suggestions", []),
                         metadata=metadata,
                     )
-            except (json.JSONDecodeError, TypeError, KeyError, ValidationError):
-                pass
+            except (json.JSONDecodeError, TypeError, KeyError, ValidationError) as e:
+                log.debug(f"Router: Response not a handoff (parse failed: {e}), treating as direct response")
 
             return self._build_response(
                 content=content,
@@ -353,8 +353,12 @@ class QueryRouterAgent(BaseGalaxyAgent):
         if not history:
             return query
 
+        max_history = 6
+        if len(history) > max_history:
+            log.debug(f"Router: Truncating conversation history from {len(history)} to {max_history} messages")
+
         history_text = "Previous conversation:\n"
-        for msg in history[-6:]:
+        for msg in history[-max_history:]:
             role = msg.get("role", "unknown")
             content = msg.get("content", "")
             history_text += f"{role}: {content}\n"

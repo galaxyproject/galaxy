@@ -69,11 +69,9 @@ class AgentOperationsManager:
         return self.app.toolbox_search.search(q=query, panel_view=panel_view, config=self.app.config)
 
     def _get_toolbox_tool(self, tool_id: str):
-        """Get a tool from the toolbox by ID, or None."""
         return self.app.toolbox.get_tool(tool_id)
 
     def _encode_ids_in_response(self, data: Any) -> Any:
-        """Recursively encode integer IDs in response data to strings for agent consumption."""
         if isinstance(data, dict):
             result = {}
             for key, value in data.items():
@@ -150,7 +148,6 @@ class AgentOperationsManager:
         return self._dataset_collections_service
 
     def connect(self) -> dict[str, Any]:
-        """Verify connection and return server info + current user."""
         config = self.app.config
         user = self.trans.user
 
@@ -194,7 +191,6 @@ class AgentOperationsManager:
         return {"query": query, "tools": tools, "count": len(tools)}
 
     def get_tool_details(self, tool_id: str, io_details: bool = False) -> dict[str, Any]:
-        """Get detailed information about a specific tool, optionally with I/O specs."""
         tool = self._get_toolbox_tool(tool_id)
 
         if tool is None:
@@ -261,7 +257,6 @@ class AgentOperationsManager:
         }
 
     def run_tool(self, history_id: str, tool_id: str, inputs: dict[str, Any]) -> dict[str, Any]:
-        """Execute a Galaxy tool in the given history."""
         payload = {
             "history_id": history_id,
             "tool_id": tool_id,
@@ -295,7 +290,6 @@ class AgentOperationsManager:
         return self._encode_ids_in_response(history)
 
     def get_history_details(self, history_id: str) -> dict[str, Any]:
-        """Get metadata for a history (use get_history_contents for datasets)."""
         decoded_history_id = self.trans.security.decode_id(history_id)
         serialization_params = SerializationParams(view="detailed")
 
@@ -319,7 +313,6 @@ class AgentOperationsManager:
         deleted: bool | None = None,
         visible: bool | None = None,
     ) -> dict[str, Any]:
-        """Get paginated datasets from a history."""
         decoded_history_id = self.trans.security.decode_id(history_id)
         serialization_params = SerializationParams(view="summary")
 
@@ -378,7 +371,6 @@ class AgentOperationsManager:
         }
 
     def get_collection_details(self, collection_id: str, max_elements: int = 500) -> dict[str, Any]:
-        """Get details about a dataset collection including its elements."""
         decoded_collection_id = self.trans.security.decode_id(collection_id)
 
         collection_info = self.dataset_collections_service.show(
@@ -407,7 +399,6 @@ class AgentOperationsManager:
         dbkey: str = "?",
         file_name: str | None = None,
     ) -> dict[str, Any]:
-        """Upload a file from a URL to Galaxy."""
         # The upload tool (upload1) uses files_0|url_paste for URL uploads
         inputs = {
             "files_0|url_paste": url,
@@ -437,7 +428,6 @@ class AgentOperationsManager:
         show_shared: bool = True,
         search: str | None = None,
     ) -> dict[str, Any]:
-        """List user's workflows with optional filtering."""
         from galaxy.webapps.galaxy.services.workflows import WorkflowIndexPayload
 
         payload = WorkflowIndexPayload(
@@ -490,7 +480,6 @@ class AgentOperationsManager:
         parameters: dict[str, Any] | None = None,
         history_name: str | None = None,
     ) -> dict[str, Any]:
-        """Invoke (run) a workflow. Creates a new history if history_name is given without history_id."""
         if not history_id and not history_name:
             raise ValueError("Either history_id or history_name must be provided")
 
@@ -518,7 +507,6 @@ class AgentOperationsManager:
         limit: int = 50,
         offset: int = 0,
     ) -> dict[str, Any]:
-        """List workflow invocations, optionally filtered by workflow or history."""
         decoded_workflow_id = None
         if workflow_id:
             decoded_workflow_id = self.trans.security.decode_id(workflow_id)
@@ -595,7 +583,6 @@ class AgentOperationsManager:
         return {"tool_panel": tool_panel, "view": view}
 
     def get_tool_run_examples(self, tool_id: str, tool_version: str | None = None) -> dict[str, Any]:
-        """Get test cases showing how to run a tool with real inputs."""
         tool = self._get_toolbox_tool(tool_id)
         if tool and tool_version:
             versioned = self.app.toolbox.get_tool(tool_id, tool_version=tool_version)
@@ -635,7 +622,6 @@ class AgentOperationsManager:
         }
 
     def get_tool_citations(self, tool_id: str) -> dict[str, Any]:
-        """Get citation information (DOIs, BibTeX) for a tool."""
         tool = self._get_toolbox_tool(tool_id)
 
         if tool is None:
@@ -664,7 +650,6 @@ class AgentOperationsManager:
         }
 
     def search_tools_by_keywords(self, keywords: list[str]) -> dict[str, Any]:
-        """Search for tools matching multiple keywords, ranked by relevance."""
         keywords_lower = [k.lower() for k in keywords]
         matching_tools = []
         seen_tool_ids = set()
@@ -777,7 +762,6 @@ class AgentOperationsManager:
         }
 
     def get_iwc_workflows(self) -> dict[str, Any]:
-        """Get all workflows from the IWC (Intergalactic Workflow Commission)."""
         manifest = self._get_iwc_manifest()
 
         all_workflows = []
@@ -809,7 +793,6 @@ class AgentOperationsManager:
         return {"query": query, "workflows": results, "count": len(results)}
 
     def get_iwc_workflow_details(self, trs_id: str) -> dict[str, Any]:
-        """Get detailed information about an IWC workflow before importing it."""
         manifest = self._get_iwc_manifest()
 
         for entry in manifest:
