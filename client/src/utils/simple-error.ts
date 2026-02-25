@@ -39,3 +39,15 @@ export function rethrowSimpleWithStatus(e: any, response?: { status: number }): 
     }
     throw new ApiError(errorMessageAsString(e), response?.status);
 }
+
+export type GalaxyApiResult<T> = { data: T; error: undefined } | { data: undefined; error: ApiError };
+
+export const MAX_RETRIES = 3;
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+export function isRetryableApiError(error: Error): boolean {
+    if (error instanceof ApiError && error.status !== undefined) {
+        return RETRYABLE_STATUSES.has(error.status);
+    }
+    return false;
+}

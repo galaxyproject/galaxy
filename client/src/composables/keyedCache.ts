@@ -2,17 +2,7 @@ import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
 import { computed, del, type Ref, ref, set, unref } from "vue";
 
 import { LastQueue } from "@/utils/lastQueue";
-import { ApiError } from "@/utils/simple-error";
-
-const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
-const MAX_RETRIES = 3;
-
-function isRetryableError(error: Error): boolean {
-    if (error instanceof ApiError && error.status !== undefined) {
-        return RETRYABLE_STATUSES.has(error.status);
-    }
-    return false;
-}
+import { isRetryableApiError, MAX_RETRIES } from "@/utils/simple-error";
 
 /**
  * Parameters for fetching an item from the server.
@@ -67,7 +57,8 @@ export function useKeyedCache<T>(
         return (id: string) => {
             const item = storedItems.value[id];
             const existingError = loadingErrors.value[id];
-            const canRetry = existingError && isRetryableError(existingError) && (retryCounts[id] ?? 0) <= MAX_RETRIES;
+            const canRetry =
+                existingError && isRetryableApiError(existingError) && (retryCounts[id] ?? 0) <= MAX_RETRIES;
             if (shouldFetch(item) && (!existingError || canRetry)) {
                 fetchItemById({ id: id });
             }
