@@ -212,9 +212,20 @@ function onDelete() {
                 :disabled="isAnonymous"
                 data-description="extract workflow"
                 :title="userTitle('Convert History to Workflow')"
-                @click="iframeRedirect(`/workflow/build_from_current_history?history_id=${history.id}`)">
+                :to="`/histories/${history.id}/extract_workflow`">
                 <FontAwesomeIcon fixed-width :icon="faFileExport" />
                 <span v-localize>Extract Workflow</span>
+            </BDropdownItem>
+
+            <!-- TODO: Remove this -->
+            <BDropdownItem
+                v-if="historyStore.currentHistoryId === history.id"
+                :disabled="isAnonymous"
+                data-description="extract workflow legacy"
+                :title="userTitle('Convert History to Workflow (Legacy)')"
+                @click="iframeRedirect(`/workflow/build_from_current_history?history_id=${history.id}`)">
+                <FontAwesomeIcon fixed-width :icon="faFileExport" />
+                <span v-localize>Extract Workflow (Legacy)</span>
             </BDropdownItem>
 
             <BDropdownItem
