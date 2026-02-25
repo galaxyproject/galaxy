@@ -38,7 +38,6 @@ class WebDavFileSourceConfiguration(BaseFileSourceConfiguration):
     url: Annotated[
         str,
         Field(
-            None,
             title="WebDAV URL",
             description="The URL of the WebDAV server. This is required for WebDAV file sources.",
         ),
