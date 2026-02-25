@@ -388,7 +388,8 @@ class FastAPIRepositories:
 
         # may want to set some of these to null, so we're using the exclude_unset feature
         # to just serialize the ones we want to use to a dictionary.
-        update_dictionary = request.model_dump(exclude_unset=True)
+        # by_alias=True ensures type_ → type, matching update_validated_repository's expected keys.
+        update_dictionary = request.model_dump(exclude_unset=True, by_alias=True)
         repo_result, message = update_validated_repository(trans, repository, **update_dictionary)
         if repo_result is None:
             raise ActionInputError(message)
