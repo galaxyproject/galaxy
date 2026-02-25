@@ -242,8 +242,6 @@ def create_repository(
     final_repository_path = repository.ensure_hg_repository_path(app.config.file_path)
     os.rename(repository_path, final_repository_path)
     app.hgweb_config_manager.add_entry(lhs, final_repository_path)
-    # Update the repository registry.
-    app.repository_registry.add_entry(repository)
     message = f"Repository <b>{escape(str(repository.name))}</b> has been created."
     return repository, message
 

@@ -12,7 +12,6 @@ from typing import (
     Optional,
 )
 
-import tool_shed.repository_registry
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import safe_makedirs
 from tool_shed.context import ProvidesRepositoriesContext
@@ -65,7 +64,6 @@ class TestToolShedApp(ToolShedApp):
     repository_types_registry = RepositoryTypesRegistry()
     config: TestToolShedConfig
     hgweb_config_manager = hgweb_config_manager
-    repository_registry: tool_shed.repository_registry.Registry
     security: IdEncodingHelper
     name: str = "ToolShed"
 
@@ -81,7 +79,6 @@ class TestToolShedApp(ToolShedApp):
         self.hgweb_config_manager.hgweb_repo_prefix = "repos/"
         self.config = TestToolShedConfig(temp_directory)
         self.security = IdEncodingHelper(id_secret=self.config.id_secret)
-        self.repository_registry = tool_shed.repository_registry.Registry(self)
         self.model_cache = ModelCache(os.path.join(temp_directory, "model_cache"))
         self.security_agent = self.model.security_agent
 
