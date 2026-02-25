@@ -323,7 +323,7 @@ const emit = defineEmits<{
 }>();
 
 const sortBy = ref<string>(props.sortBy || "update_time");
-const sortDesc = ref<boolean>(props.sortDesc || true);
+const sortDesc = ref<boolean>(props.sortDesc ?? false);
 const expandedRows = ref<Set<number>>(new Set());
 
 const stackedClass = computed(() => {
