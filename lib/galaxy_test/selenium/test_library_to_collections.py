@@ -48,7 +48,7 @@ class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
         self.assert_num_displayed_items_is(0)
         self.populate_library_folder_from_import_dir(self.name, files_to_import)
         for i in range(len(files_to_import)):
-            self.components.libraries.folder.select_dataset(rowindex=i + 1).wait_for_and_click()
+            self.components.libraries.folder.select_dataset(row_index=i).wait_for_and_click()
         self.components.libraries.folder.add_to_history.wait_for_and_click()
         self.components.libraries.folder.add_to_history_collection.wait_for_and_click()
         if history_name is not None:
