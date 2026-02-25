@@ -1,5 +1,6 @@
 import axios from "axios";
 
+import { GalaxyApi } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -60,8 +61,12 @@ export async function getToolFormData(tool_id, tool_version, job_id, history_id)
  * Returns { tool_request_id, task_result }.
  */
 export async function submitJobRequest(jobRequest) {
-    const url = `${getAppRoot()}api/jobs`;
-    const { data } = await axios.post(url, jobRequest);
+    const { data, error } = await GalaxyApi().POST("/api/jobs", {
+        body: jobRequest,
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
     return data;
 }
 
@@ -71,16 +76,28 @@ export async function submitJobRequest(jobRequest) {
  */
 export async function waitForToolRequest(toolRequestId, { pollInterval = 1000, maxAttempts = 600 } = {}) {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const stateUrl = `${getAppRoot()}api/tool_requests/${toolRequestId}/state`;
-        const { data: state } = await axios.get(stateUrl);
+        const { data: state, error: stateError } = await GalaxyApi().GET("/api/tool_requests/{id}/state", {
+            params: { path: { id: toolRequestId } },
+        });
+        if (stateError) {
+            rethrowSimple(stateError);
+        }
         if (state === "submitted") {
-            const detailUrl = `${getAppRoot()}api/tool_requests/${toolRequestId}`;
-            const { data: detail } = await axios.get(detailUrl);
+            const { data: detail, error: detailError } = await GalaxyApi().GET("/api/tool_requests/{id}", {
+                params: { path: { id: toolRequestId } },
+            });
+            if (detailError) {
+                rethrowSimple(detailError);
+            }
             return detail;
         }
         if (state === "failed") {
-            const detailUrl = `${getAppRoot()}api/tool_requests/${toolRequestId}`;
-            const { data: detail } = await axios.get(detailUrl);
+            const { data: detail, error: detailError } = await GalaxyApi().GET("/api/tool_requests/{id}", {
+                params: { path: { id: toolRequestId } },
+            });
+            if (detailError) {
+                rethrowSimple(detailError);
+            }
             const stateMessage = detail.state_message;
             const error = new Error(
                 typeof stateMessage === "object" ? stateMessage?.err_msg : stateMessage || "Tool request failed",
@@ -100,8 +117,12 @@ export async function waitForToolRequest(toolRequestId, { pollInterval = 1000, m
  * Returns an array of JobOutputAssociation | JobOutputCollectionAssociation.
  */
 export async function fetchJobOutputs(jobId) {
-    const url = `${getAppRoot()}api/jobs/${jobId}/outputs`;
-    const { data } = await axios.get(url);
+    const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}/outputs", {
+        params: { path: { job_id: jobId } },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
     return data;
 }
 
@@ -124,16 +145,20 @@ export async function buildJobResponse(toolRequestDetail) {
         for (const out of jobOutputs) {
             if (out.dataset) {
                 datasetFetches.push(
-                    axios
-                        .get(`${getAppRoot()}api/datasets/${out.dataset.id}`)
-                        .then((r) => ({ hid: r.data.hid, name: r.data.name })),
+                    GalaxyApi()
+                        .GET("/api/datasets/{dataset_id}", {
+                            params: { path: { dataset_id: out.dataset.id } },
+                        })
+                        .then(({ data }) => ({ hid: data.hid, name: data.name })),
                 );
             }
             if (out.dataset_collection_instance) {
                 collectionFetches.push(
-                    axios
-                        .get(`${getAppRoot()}api/dataset_collections/${out.dataset_collection_instance.id}`)
-                        .then((r) => ({ hid: r.data.hid, name: r.data.name })),
+                    GalaxyApi()
+                        .GET("/api/dataset_collections/{hdca_id}", {
+                            params: { path: { hdca_id: out.dataset_collection_instance.id } },
+                        })
+                        .then(({ data }) => ({ hid: data.hid, name: data.name })),
                 );
             }
         }
