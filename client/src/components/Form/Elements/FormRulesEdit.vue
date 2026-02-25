@@ -39,8 +39,11 @@ async function onEdit() {
         try {
             loading.value = true;
             loadError.value = undefined;
-            const collectionDetails = await fetchCollectionDetails({ hdca_id: props.target.id });
-            elements.value = collectionDetails;
+            const result = await fetchCollectionDetails({ hdca_id: props.target.id });
+            if (result.error) {
+                throw result.error;
+            }
+            elements.value = result.data;
             modal.value.show();
         } catch (e) {
             loadError.value = errorMessageAsString(e);

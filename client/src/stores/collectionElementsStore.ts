@@ -12,6 +12,7 @@ import {
 import { fetchCollectionDetails, fetchElementsFromCollection } from "@/api/datasetCollections";
 import { ensureDefined } from "@/utils/assertions";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
+import { isRetryableApiError, MAX_RETRIES } from "@/utils/simple-error";
 
 /**
  * Represents an element in a collection that has not been fetched yet.
@@ -46,6 +47,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     const loadingCollectionElements = ref<{ [key: string]: boolean }>({});
     const loadingCollectionElementsErrors = ref<{ [key: string]: Error }>({});
     const storedCollectionElements = ref<{ [key: string]: DCEEntry[] }>({});
+    const retryCounts: { [key: string]: number } = {};
 
     /**
      * Returns a key that can be used to store or retrieve the elements of a collection in the store.
@@ -185,9 +187,15 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     /** Returns collection from storedCollections, will load collection if not in store */
     const getCollectionById = computed(() => {
         return (collectionId: string) => {
-            if (!storedCollections.value[collectionId] && !loadingCollectionElementsErrors.value[collectionId]) {
-                // TODO: Try to remove this as it can cause computed side effects (use keyedCache in this store instead?)
-                fetchCollection({ id: collectionId });
+            if (!storedCollections.value[collectionId]) {
+                const existingError = loadingCollectionElementsErrors.value[collectionId];
+                const canRetry =
+                    existingError &&
+                    isRetryableApiError(existingError) &&
+                    (retryCounts[collectionId] ?? 0) <= MAX_RETRIES;
+                if (!existingError || canRetry) {
+                    fetchCollection({ id: collectionId });
+                }
             }
             return storedCollections.value[collectionId] ?? null;
         };
@@ -195,12 +203,15 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
     const getDetailedCollectionById = computed(() => {
         return (collectionId: string) => {
-            if (
-                !storedCollectionsDetailed.value[collectionId] &&
-                !loadingCollectionElementsErrors.value[collectionId]
-            ) {
-                // TODO: Try to remove this as it can cause computed side effects (use keyedCache in this store instead?)
-                fetchCollection({ id: collectionId });
+            if (!storedCollectionsDetailed.value[collectionId]) {
+                const existingError = loadingCollectionElementsErrors.value[collectionId];
+                const canRetry =
+                    existingError &&
+                    isRetryableApiError(existingError) &&
+                    (retryCounts[collectionId] ?? 0) <= MAX_RETRIES;
+                if (!existingError || canRetry) {
+                    fetchCollection({ id: collectionId });
+                }
             }
             return storedCollectionsDetailed.value[collectionId] ?? null;
         };
@@ -209,11 +220,15 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     async function fetchCollection(params: { id: string }) {
         set(loadingCollectionElements.value, params.id, true);
         try {
-            const collection = await fetchCollectionDetails({ hdca_id: params.id });
-            saveCollection(collection);
-            return collection;
-        } catch (error) {
-            set(loadingCollectionElementsErrors.value, params.id, error);
+            const result = await fetchCollectionDetails({ hdca_id: params.id });
+            if (result.error) {
+                retryCounts[params.id] = (retryCounts[params.id] ?? 0) + 1;
+                set(loadingCollectionElementsErrors.value, params.id, result.error);
+            } else {
+                saveCollection(result.data);
+                del(loadingCollectionElementsErrors.value, params.id);
+                delete retryCounts[params.id];
+            }
         } finally {
             del(loadingCollectionElements.value, params.id);
         }

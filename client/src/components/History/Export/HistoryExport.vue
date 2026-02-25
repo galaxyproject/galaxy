@@ -94,9 +94,16 @@ watch(isExportTaskRunning, (newValue, oldValue) => {
 async function loadHistory() {
     isLoadingHistory.value = true;
     try {
-        history.value =
-            historyStore.getHistoryById(props.historyId, false) ??
-            (await historyStore.loadHistoryById(props.historyId));
+        if (!historyStore.getHistoryById(props.historyId, false)) {
+            await historyStore.loadHistoryById(props.historyId);
+        }
+        history.value = historyStore.getHistoryById(props.historyId, false) ?? undefined;
+        if (!history.value) {
+            const loadError = historyStore.getHistoryLoadError(props.historyId);
+            if (loadError) {
+                throw loadError;
+            }
+        }
         return true;
     } catch (error) {
         errorMessage.value = errorMessageAsString(error);
