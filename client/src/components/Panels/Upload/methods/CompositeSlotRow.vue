@@ -51,8 +51,7 @@ const isFilled = computed(() => {
 const dropdownLabel = computed(() => {
     const slotItem = props.slotItem;
     if (slotItem.mode === "local" && slotItem.file) {
-        const name = slotItem.file.name;
-        return name.length > 24 ? `${name.slice(0, 22)}…` : name;
+        return "Local File";
     }
     if (slotItem.mode === "url") {
         return "URL";
@@ -196,6 +195,11 @@ function clearSlot() {
             </button>
             <!-- Spacer to keep layout stable when no clear button -->
             <span v-else class="slot-clear-placeholder" />
+        </div>
+
+        <!-- Local file info row -->
+        <div v-if="slotItem.mode === 'local' && slotItem.file" class="mt-2">
+            <BFormInput :value="slotItem.file.name" readonly class="slot-file-name-input font-monospace" />
         </div>
 
         <!-- URL input row -->
