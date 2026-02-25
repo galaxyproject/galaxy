@@ -9,18 +9,18 @@ import { ref } from "vue";
 import { GalaxyApi } from "@/api";
 import { type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
-import { rethrowSimple } from "@/utils/simple-error";
+import { rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 export const useJobStore = defineStore("jobStore", () => {
     const latestResponse = ref<ResponseVal | null>(null);
 
     async function fetchJobById(params: FetchParams): Promise<ShowFullJobResponse> {
-        const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
+        const { data, error, response } = await GalaxyApi().GET("/api/jobs/{job_id}", {
             params: { path: { job_id: params.id } },
             query: { full: true },
         });
         if (error) {
-            rethrowSimple(error);
+            rethrowSimpleWithStatus(error, response);
         }
         return data;
     }

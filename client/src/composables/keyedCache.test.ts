@@ -223,8 +223,8 @@ describe("useKeyedCache", () => {
 
         const { getItemById, getItemLoadError } = useKeyedCache<ItemData>(fetchItem);
 
-        // First attempt + MAX_RETRIES - 1 retries (first call counts as attempt 1)
-        for (let i = 1; i <= 3; i++) {
+        // Initial fetch + MAX_RETRIES retries = 4 total calls
+        for (let i = 1; i <= 4; i++) {
             getItemById.value(id);
             await flushPromises();
             expect(fetchItem).toHaveBeenCalledTimes(i);
@@ -234,7 +234,7 @@ describe("useKeyedCache", () => {
         // Should stop after max retries exhausted
         getItemById.value(id);
         await flushPromises();
-        expect(fetchItem).toHaveBeenCalledTimes(3);
+        expect(fetchItem).toHaveBeenCalledTimes(4);
     });
 
     it("should not retry on permanent errors (403, 404)", async () => {
@@ -291,5 +291,23 @@ describe("useKeyedCache", () => {
         vi.runOnlyPendingTimers();
         await flushPromises();
         expect(true).toBe(true);
+    });
+
+    it("should clear error on successful recovery after transient failure", async () => {
+        const id = "1";
+        const item = { id, name: "Item 1" };
+        fetchItem.mockRejectedValueOnce(new ApiError("service unavailable", 503));
+        fetchItem.mockResolvedValue(item);
+
+        const { getItemById, storedItems, getItemLoadError } = useKeyedCache<ItemData>(fetchItem);
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(getItemLoadError.value(id)).toBeTruthy();
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(storedItems.value[id]).toEqual(item);
+        expect(getItemLoadError.value(id)).toBeNull();
     });
 });

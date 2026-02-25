@@ -55,7 +55,7 @@ export async function loadDatasets(options: LoadDatasetsOptions): Promise<LoadDa
 }
 
 export async function fetchDatasetTextContentDetails(params: { id: string }): Promise<DatasetTextContentDetails> {
-    const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}/get_content_as_text", {
+    const { data, error, response } = await GalaxyApi().GET("/api/datasets/{dataset_id}/get_content_as_text", {
         params: {
             path: {
                 dataset_id: params.id,
@@ -64,7 +64,7 @@ export async function fetchDatasetTextContentDetails(params: { id: string }): Pr
     });
 
     if (error) {
-        rethrowSimple(error);
+        rethrowSimpleWithStatus(error, response);
     }
     return data;
 }

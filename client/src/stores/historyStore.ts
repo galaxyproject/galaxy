@@ -25,7 +25,7 @@ import {
     setCurrentHistoryOnServer,
     updateHistoryFields,
 } from "@/stores/services/history.services";
-import { rethrowSimple } from "@/utils/simple-error";
+import { isRetryableApiError, MAX_RETRIES, rethrowSimple } from "@/utils/simple-error";
 import { sortByObjectProp } from "@/utils/sorting";
 import {
     ACTIVE_POLLING_INTERVAL,
@@ -34,7 +34,8 @@ import {
 } from "@/watch/watchHistory";
 
 const PAGINATION_LIMIT = 10;
-const isLoadingHistory = new Set();
+const isLoadingHistory = new Set<string>();
+const retryCounts: { [key: string]: number } = {};
 const CONTENT_STATS_KEYS = ["size", "contents_active", "update_time"] as const;
 
 export const useHistoryStore = defineStore("historyStore", () => {
@@ -45,6 +46,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const storedCurrentHistoryId = ref<string | null>(null);
     const storedFilterTexts = ref<{ [key: string]: string }>({});
     const storedHistories = ref<{ [key: string]: AnyHistory }>({});
+    const historyLoadErrors = ref<{ [key: string]: Error }>({});
     const changingCurrentHistory = ref(false);
 
     const histories = computed(() => {
@@ -80,14 +82,24 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     });
 
+    const getHistoryLoadError = computed(() => {
+        return (historyId: string) => {
+            return historyLoadErrors.value[historyId] ?? null;
+        };
+    });
+
     /** Returns history from storedHistories, will load history if not in store by default.
      * If shouldFetchIfMissing is false, will return null if history is not in store.
      */
     const getHistoryById = computed(() => {
         return (historyId: string, shouldFetchIfMissing = true) => {
             if (!storedHistories.value[historyId] && shouldFetchIfMissing) {
-                // TODO: Try to remove this as it can cause computed side effects
-                loadHistoryById(historyId);
+                const existingError = historyLoadErrors.value[historyId];
+                const canRetry =
+                    existingError && isRetryableApiError(existingError) && (retryCounts[historyId] ?? 0) <= MAX_RETRIES;
+                if (!existingError || canRetry) {
+                    loadHistoryById(historyId);
+                }
             }
             return storedHistories.value[historyId] ?? null;
         };
@@ -387,15 +399,19 @@ export const useHistoryStore = defineStore("historyStore", () => {
         },
     );
 
-    async function loadHistoryById(historyId: string): Promise<HistorySummaryExtended | undefined> {
+    async function loadHistoryById(historyId: string) {
         if (!isLoadingHistory.has(historyId)) {
             isLoadingHistory.add(historyId);
             try {
-                const history = (await getHistoryByIdFromServer(historyId)) as HistorySummaryExtended;
-                setHistory(history);
-                return history;
-            } catch (error) {
-                rethrowSimple(error);
+                const result = await getHistoryByIdFromServer(historyId);
+                if (result.error) {
+                    retryCounts[historyId] = (retryCounts[historyId] ?? 0) + 1;
+                    set(historyLoadErrors.value, historyId, result.error);
+                } else {
+                    setHistory(result.data);
+                    del(historyLoadErrors.value, historyId);
+                    delete retryCounts[historyId];
+                }
             } finally {
                 isLoadingHistory.delete(historyId);
             }
@@ -489,6 +505,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         pinnedHistories,
         storedHistories,
         getHistoryById,
+        getHistoryLoadError,
         getHistoryNameById,
         setCurrentHistory,
         setCurrentHistoryId,

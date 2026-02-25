@@ -9,7 +9,7 @@ import {
     isHDCA,
 } from "@/api";
 import type { components } from "@/api/schema";
-import { rethrowSimple } from "@/utils/simple-error";
+import { ApiError, errorMessageAsString, type GalaxyApiResult, rethrowSimple } from "@/utils/simple-error";
 
 const DEFAULT_LIMIT = 50;
 
@@ -27,15 +27,15 @@ export type SampleSheetColumnValueT = string | number | boolean;
  * Fetches the details of a collection.
  * @param params.id The ID of the collection (HDCA) to fetch.
  */
-export async function fetchCollectionDetails(params: { hdca_id: string }): Promise<HDCADetailed> {
-    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}", {
+export async function fetchCollectionDetails(params: { hdca_id: string }): Promise<GalaxyApiResult<HDCADetailed>> {
+    const { data, error, response } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}", {
         params: { path: params },
     });
 
     if (error) {
-        rethrowSimple(error);
+        return { data: undefined, error: new ApiError(errorMessageAsString(error), response.status) };
     }
-    return data as HDCADetailed;
+    return { data: data as HDCADetailed, error: undefined };
 }
 
 /**

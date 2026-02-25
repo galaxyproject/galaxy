@@ -72,7 +72,7 @@ function create_datasets(historyId, count) {
 
 async function createWrapper(localVue, currentUserId, history) {
     const pinia = createPinia();
-    getHistoryByIdFromServer.mockResolvedValue(history);
+    getHistoryByIdFromServer.mockResolvedValue({ data: history, error: undefined });
     setCurrentHistoryOnServer.mockResolvedValue(history);
     const history_contents_result = create_datasets(history.id, history.count);
 
