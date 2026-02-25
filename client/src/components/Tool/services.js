@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import { GalaxyApi } from "@/api";
+import { pollUntil } from "@/composables/pollUntil";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -74,43 +75,42 @@ export async function submitJobRequest(jobRequest) {
  * Returns the ToolRequestDetailedModel on success.
  * Throws on failure with the state_message from the server.
  */
-export async function waitForToolRequest(toolRequestId, { pollInterval = 1000, maxAttempts = 600 } = {}) {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const { data: state, error: stateError } = await GalaxyApi().GET("/api/tool_requests/{id}/state", {
-            params: { path: { id: toolRequestId } },
-        });
-        if (stateError) {
-            rethrowSimple(stateError);
-        }
-        if (state === "submitted") {
-            const { data: detail, error: detailError } = await GalaxyApi().GET("/api/tool_requests/{id}", {
+export async function waitForToolRequest(toolRequestId, { pollInterval = 1000, timeout = 600000 } = {}) {
+    const terminalState = await pollUntil({
+        fn: async () => {
+            const { data, error } = await GalaxyApi().GET("/api/tool_requests/{id}/state", {
                 params: { path: { id: toolRequestId } },
             });
-            if (detailError) {
-                rethrowSimple(detailError);
+            if (error) {
+                rethrowSimple(error);
             }
-            return detail;
-        }
-        if (state === "failed") {
-            const { data: detail, error: detailError } = await GalaxyApi().GET("/api/tool_requests/{id}", {
-                params: { path: { id: toolRequestId } },
-            });
-            if (detailError) {
-                rethrowSimple(detailError);
-            }
-            const stateMessage = detail.state_message;
-            const error = new Error(
-                typeof stateMessage === "object" ? stateMessage?.err_msg : stateMessage || "Tool request failed",
-            );
-            if (typeof stateMessage === "object") {
-                error.err_data = stateMessage?.err_data;
-                error.err_msg = stateMessage?.err_msg;
-            }
-            throw error;
-        }
-        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+            return data;
+        },
+        condition: (state) => state === "submitted" || state === "failed",
+        interval: pollInterval,
+        timeout,
+    });
+
+    const { data: detail, error: detailError } = await GalaxyApi().GET("/api/tool_requests/{id}", {
+        params: { path: { id: toolRequestId } },
+    });
+    if (detailError) {
+        rethrowSimple(detailError);
     }
-    throw new Error("Tool request timed out waiting for completion");
+
+    if (terminalState === "failed") {
+        const stateMessage = detail.state_message;
+        const error = new Error(
+            typeof stateMessage === "object" ? stateMessage?.err_msg : stateMessage || "Tool request failed",
+        );
+        if (typeof stateMessage === "object") {
+            error.err_data = stateMessage?.err_data;
+            error.err_msg = stateMessage?.err_msg;
+        }
+        throw error;
+    }
+
+    return detail;
 }
 
 /** Fetch output datasets and collections for a completed job.
