@@ -67,6 +67,7 @@ from tool_shed.util import (
 from tool_shed.webapp.model import Repository as DbRepository
 from tool_shed_client.schema import (
     Category,
+    CreateRepositoryRequest,
     Repository,
     RepositoryMetadata,
 )
@@ -76,6 +77,7 @@ from . import (
 )
 from .api import ShedApiTestCase
 from .browser import ShedBrowser
+from .populators import ToolShedPopulator
 from .playwrightbrowser import PlaywrightShedBrowser
 
 if TYPE_CHECKING:
@@ -622,6 +624,7 @@ class ShedTestCase(ShedApiTestCase):
     requires_galaxy: bool = False
     _installation_client: Optional[ToolShedInstallationClient] = None
     __browser: Optional[ShedBrowser] = None
+    _logged_in_populator: Optional["ToolShedPopulator"] = None
 
     def setUp(self):
         super().setUp()
@@ -778,6 +781,8 @@ class ShedTestCase(ShedApiTestCase):
         )
         # Reload to pick up the new session
         self.visit_url("/")
+        # Store a populator for the logged-in user so API calls use correct credentials
+        self._logged_in_populator = self.user_populator(email=email, password=password)
 
     @property
     def _playwright_browser(self) -> PlaywrightShedBrowser:
@@ -1384,20 +1389,19 @@ class ShedTestCase(ShedApiTestCase):
     def get_or_create_repository(
         self, category: Category, owner: str, name: str, strings_displayed=None, strings_not_displayed=None, **kwd
     ) -> Repository:
-        # If not checking for a specific string, it should be safe to assume that
-        # we expect repository creation to be successful.
-        if strings_displayed is None:
-            strings_displayed = ["Repository", name, "has been created"]
-        if strings_not_displayed is None:
-            strings_not_displayed = []
         repository = self.populator.get_repository_for(owner, name)
         if repository is None:
             category_id = category.id
             assert category_id
-            self.visit_url("/repository/create_repository")
-            self.submit_form(button="create_repository_button", name=name, category_id=category_id, **kwd)
-            self.check_for_strings(strings_displayed, strings_not_displayed)
-            repository = self.populator.get_repository_for(owner, name)
+            # Use logged-in user's populator to create via API as the correct owner
+            populator = self._logged_in_populator or self.populator
+            request = CreateRepositoryRequest(
+                name=name,
+                synopsis=kwd.get("description", name),
+                description=kwd.get("long_description", None),
+                category_ids=category_id,
+            )
+            repository = populator.create_repository(request)
         assert repository
         return repository
 
