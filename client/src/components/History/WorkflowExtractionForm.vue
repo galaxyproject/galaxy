@@ -11,6 +11,7 @@ import type { TableField } from "../Common/GTable.types";
 import BreadcrumbHeading from "../Common/BreadcrumbHeading.vue";
 import GTable from "../Common/GTable.vue";
 import LoadingSpan from "../LoadingSpan.vue";
+import WorkflowExtractionNode from "./WorkflowExtractionNode.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 const props = defineProps<{
@@ -41,11 +42,12 @@ const tableFields: TableField[] = [
     },
     {
         key: "tool_name",
-        label: "Tool Name",
+        label: "Workflow Step",
     },
     {
         key: "outputs",
         label: "Outputs",
+        width: "25vw",
     },
 ];
 
@@ -75,6 +77,10 @@ async function extractWorkflow() {
             <GTable :hover="false" :striped="false" :fields="tableFields" :items="summary.jobs">
                 <template v-slot:cell(checked)="{ item }">
                     <BFormCheckbox v-model="item.checked" :disabled="Boolean(item.disabled_why)" @click.stop />
+                </template>
+
+                <template v-slot:cell(tool_name)="{ item }">
+                    <WorkflowExtractionNode :job="item" />
                 </template>
 
                 <template v-slot:cell(outputs)="{ item }">
