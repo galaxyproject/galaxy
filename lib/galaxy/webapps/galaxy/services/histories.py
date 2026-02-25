@@ -372,6 +372,22 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
         return self._serialize_history(trans, history, serialization_params)
 
+    def graph(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
+    ):
+        from galaxy.managers.history_graph import HistoryGraphBuilder
+
+        history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
+        builder = HistoryGraphBuilder(
+            sa_session=trans.sa_session,
+            security=self.security,
+            history_id=history.id,
+            encoded_history_id=self.encode_id(history.id),
+        )
+        return builder.build()
+
     def prepare_download(
         self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField, payload: StoreExportPayload
     ) -> AsyncFile:
