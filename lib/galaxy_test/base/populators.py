@@ -4742,6 +4742,15 @@ class TargetHistory:
             )
         )
 
+    def with_sample_sheet(self, contents: Optional[ListContentsDescription] = None) -> "HasSrcDict":
+        if contents is None:
+            contents = [("foo", "text for foo element")]
+        create_response = self._dataset_collection_populator.create_sample_sheet(
+            self._history_id, contents=contents, column_definitions=[], rows={c[0]: [] for c in contents}
+        )
+        api_asserts.assert_status_code_is_ok(create_response)
+        return HasSrcDict("hdca", create_response.json())
+
     def with_example_list_of_pairs(self) -> "HasSrcDict":
         return HasSrcDict("hdca", self._dataset_collection_populator.example_list_of_pairs(self._history_id))
 
