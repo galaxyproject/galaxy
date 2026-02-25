@@ -41,11 +41,6 @@ class TestToolWithToolDependencies(ShedTwillTestCase):
         self.browse_tool_shed(url=self.url, strings_displayed=[category_name])
         category = self.populator.get_category_with_name(category_name)
         self.browse_category(category, strings_displayed=[repository_name])
-        if not self.is_v2:
-            strings_displayed = [repository_name, "Valid tools", "Tool dependencies"]
-            self.preview_repository_in_tool_shed(
-                repository_name, common.test_user_1_name, strings_displayed=strings_displayed
-            )
 
     def test_0015_install_freebayes_repository(self):
         """Install the freebayes repository without installing tool dependencies."""

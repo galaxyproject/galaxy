@@ -58,17 +58,6 @@ class TestToolHelpImages(ShedTwillTestCase):
 
         This is a duplicate of test method _0010 in test_0140_tool_help_images.
         """
-        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        # Get the repository tip.
-        changeset_revision = self.get_repository_tip(repository)
-        # Generate the image path.
-        image_path = f'src="/repository/static/images/{repository.id}/count_modes.png"'
-        # The repository uploaded in this test should only have one metadata revision, with one tool defined, which
-        # should be the tool that contains a link to the image.
-        repository_metadata = self._db_repository(repository).metadata_revisions[0].metadata
-        tool_path = repository_metadata["tools"][0]["tool_config"]
-        # V2 is not going to have this page right? So... do we need this test at all or that route? Likely not?
-        if self._browser.is_twill and not self.is_v2:
-            self.load_display_tool_page(
-                repository, tool_path, changeset_revision, strings_displayed=[image_path], strings_not_displayed=[]
-            )
+        # TODO: replace with API-based tool metadata check or Vue route.
+        # load_display_tool_page depends on deleted Mako route (/repository/display_tool).
+        pass

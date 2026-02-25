@@ -1,8 +1,6 @@
 import logging
-import os
 
 from ..base import common
-from ..base.api import skip_if_api_v2
 from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
@@ -43,11 +41,6 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
             strings_displayed=[],
         )
         self.add_file_to_repository(repository, "bwa/complex/tool_dependencies.xml")
-        if not self.is_v2:
-            # Visit the manage repository page for package_bwa_0_5_9_0100.
-            self.display_manage_repository_page(
-                repository, strings_displayed=["Tool dependencies", "will not be", "to this repository"]
-            )
 
     def test_0010_create_bwa_base_repository(self):
         """Create and populate bwa_base_0100."""
@@ -183,43 +176,3 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
             version="0.5.9",
         )
         self.check_repository_dependency(base_repository, depends_on_repository=tool_repository)
-        if not self.is_v2:
-            self.display_manage_repository_page(
-                base_repository, strings_displayed=["bwa", "0.5.9", "package", changeset_revision]
-            )
-
-    @skip_if_api_v2
-    def test_0040_generate_tool_dependency(self):
-        """Generate and upload a new tool_dependencies.xml file that specifies an arbitrary file on the filesystem, and verify that bwa_base depends on the new changeset revision."""
-        # The base_repository named bwa_base_repository_0100 is the dependent repository.
-        base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
-        # The repository named package_bwa_0_5_9_0100 is the required repository.
-        tool_repository = self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
-        previous_changeset = self.get_repository_tip(tool_repository)
-        old_tool_dependency = self.get_filename(os.path.join("bwa", "complex", "readme", "tool_dependencies.xml"))
-        new_tool_dependency_path = self.generate_temp_path("test_1100", additional_paths=["tool_dependency"])
-        xml_filename = os.path.abspath(os.path.join(new_tool_dependency_path, "tool_dependencies.xml"))
-        # Generate a tool_dependencies.xml file that points to an arbitrary file in the local filesystem.
-        open(xml_filename, "w").write(
-            open(old_tool_dependency).read().replace("__PATH__", self.get_filename("bwa/complex"))
-        )
-        self.add_file_to_repository(tool_repository, xml_filename, "tool_dependencies.xml")
-        # Verify that the dependency display has been updated as a result of the new tool_dependencies.xml file.
-        repository_tip = self.get_repository_tip(tool_repository)
-        strings_displayed = ["bwa", "0.5.9", "package"]
-        strings_displayed.append(repository_tip)
-        strings_not_displayed = [previous_changeset]
-        self.display_manage_repository_page(
-            tool_repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
-        # Visit the manage page of the package_bwa_0_5_9_0100 to confirm the valid tool dependency definition.
-        self.display_manage_repository_page(
-            tool_repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
-        # Visit the manage page of the bwa_base_repository_0100 to confirm the valid tool dependency definition
-        # and the updated changeset revision (updated tip) of the package_bwa_0_5_9_0100 repository is displayed
-        # as the required repository revision.  The original revision defined in the previously uploaded
-        # tool_dependencies.xml file will be updated.
-        self.display_manage_repository_page(
-            base_repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )

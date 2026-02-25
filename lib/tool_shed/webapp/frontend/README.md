@@ -4,7 +4,7 @@ You will need to start the Tool Shed backend from the galaxy root directory.
 This is required if you want to develop against a local tool shed.
 
 ```shell
-TOOL_SHED_API_VERSION=v2 ./run_tool_shed.sh
+./run_tool_shed.sh
 ```
 
 Start the HMR dev server.
@@ -27,5 +27,5 @@ To run a local toolshed patched for rapid bootstrapping and in local Vite dev se
 the following command should work.
 
 ```shell
-TOOL_SHED_CONFIG_OVERRIDE_BOOTSTRAP_ADMIN_API_KEY=tsadminkey TOOL_SHED_CONFIG_CONFIG_HG_FOR_DEV=1 TOOL_SHED_VITE_PORT=4040 TOOL_SHED_API_VERSION=v2 ./run_tool_shed.sh
+TOOL_SHED_CONFIG_OVERRIDE_BOOTSTRAP_ADMIN_API_KEY=tsadminkey TOOL_SHED_CONFIG_CONFIG_HG_FOR_DEV=1 TOOL_SHED_VITE_PORT=4040 ./run_tool_shed.sh
 ```

@@ -15,10 +15,7 @@ from sqlalchemy import select
 from galaxy_test.base import api_asserts
 from tool_shed.test.base import test_db_util
 from tool_shed.webapp import model
-from ..base.api import (
-    ShedApiTestCase,
-    skip_if_api_v1,
-)
+from ..base.api import ShedApiTestCase
 
 CORRUPTED_PATH = "/old/wrong/path/column_maker.xml"
 
@@ -88,7 +85,6 @@ def metadata_has_valid_paths(metadata_dict: dict, invalid_prefix: str = "/old/wr
 
 
 class TestRepositoriesIntegration(ShedApiTestCase):
-    @skip_if_api_v1
     def test_reset_metadata_dry_run_shows_corrupted_path_fix(self):
         """Verify dry_run=True shows before/after diff for corrupted tool_config paths.
 
@@ -133,7 +129,6 @@ class TestRepositoriesIntegration(ShedApiTestCase):
             metadata_revision.metadata["tools"][0]["tool_config"] == fixture.corrupted_path
         ), "dry_run should not have modified the database"
 
-    @skip_if_api_v1
     def test_reset_metadata_fixes_corrupted_path_when_not_dry_run(self):
         """Verify non-dry-run reset actually fixes corrupted tool_config paths."""
         repository = self.populator.setup_column_maker_repo(prefix="integfix")

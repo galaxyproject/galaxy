@@ -8,10 +8,10 @@ Integration and browser tests for the Tool Shed. Requires a running server.
 # From packages/tool_shed directory
 
 # Start shed in another terminal first
-TOOL_SHED_API_VERSION=v2 ./run_tool_shed.sh
+./run_tool_shed.sh
 
 # Run all functional tests
-TOOL_SHED_API_VERSION=v2 uv run pytest tool_shed/test/functional/ -v
+uv run pytest tool_shed/test/functional/ -v
 
 # Run specific test
 uv run pytest tool_shed/test/functional/test_frontend_login.py -v
@@ -22,6 +22,7 @@ uv run pytest tool_shed/test/functional/test_frontend_login.py -v
 ### Numbered Tests (`test_0xxx`, `test_1xxx`)
 
 Legacy comprehensive tests using Twill/API:
+
 - `test_0xxx` - Tool Shed functionality (repos, dependencies, metadata)
 - `test_1xxx` - Galaxy installation scenarios
 
@@ -31,22 +32,20 @@ These test complex multi-step workflows and dependency chains.
 
 Modern Playwright/API tests:
 
-| File | Description |
-|------|-------------|
-| `test_frontend_*.py` | Browser UI tests (Playwright) |
-| `test_shed_*.py` | API-level tests |
-| `test_repositories_integration.py` | Repository operations |
-| `test_component_showcase.py` | Component visual tests |
+| File                               | Description                   |
+| ---------------------------------- | ----------------------------- |
+| `test_frontend_*.py`               | Browser UI tests (Playwright) |
+| `test_shed_*.py`                   | API-level tests               |
+| `test_repositories_integration.py` | Repository operations         |
+| `test_component_showcase.py`       | Component visual tests        |
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `TOOL_SHED_API_VERSION` | v1 | Set to `v2` for modern API |
-| `TOOL_SHED_TEST_BROWSER` | playwright | Browser: `playwright` or `twill` |
-| `TOOL_SHED_TEST_EXTERNAL` | - | Use external running shed |
-| `TOOL_SHED_TEST_HOST` | localhost | Host for external shed |
-| `TOOL_SHED_TEST_SCREENSHOTS` | - | Directory for test screenshots |
+| Variable                     | Default   | Description                    |
+| ---------------------------- | --------- | ------------------------------ |
+| `TOOL_SHED_TEST_EXTERNAL`    | -         | Use external running shed      |
+| `TOOL_SHED_TEST_HOST`        | localhost | Host for external shed         |
+| `TOOL_SHED_TEST_SCREENSHOTS` | -         | Directory for test screenshots |
 
 ## Test Patterns
 

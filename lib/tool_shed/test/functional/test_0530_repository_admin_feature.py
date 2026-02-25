@@ -1,7 +1,6 @@
 import logging
 
 from ..base import common
-from ..base.api import skip_if_api_v2
 from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
@@ -96,23 +95,6 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
         self.edit_repository_information(repository, revert=False, repo_name="renamed_filtering_0530")
         repository = self._get_repository_by_name_and_owner("renamed_filtering_0530", common.test_user_1_name)
         assert repository.name == "renamed_filtering_0530", "Repository was not renamed to renamed_filtering_0530."
-
-    @skip_if_api_v2
-    def test_0030_verify_access_denied(self):
-        """Make sure a non-admin user can't modify the repository.
-
-        This is step 6 - Log into the Tool Shed as a user that is not the repository owner (e.g., user2) and make sure the repository
-        name and description cannot be changed.
-        """
-        self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        repository = self._get_repository_by_name_and_owner("renamed_filtering_0530", common.test_user_1_name)
-        strings_not_displayed = ["Manage repository"]
-        strings_displayed = ["View repository"]
-        self.display_manage_repository_page(repository, strings_not_displayed=strings_not_displayed)
-        self.submit_form(form_no=0, button="edit_repository_button", description="This description has been modified.")
-        strings_displayed = ["You are not the owner of this repository, so you cannot administer it."]
-        strings_not_displayed = ["The repository information has been updated."]
-        self.check_for_strings(strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
 
     def test_0035_grant_admin_role(self):
         """Grant the repository admin role to user2.

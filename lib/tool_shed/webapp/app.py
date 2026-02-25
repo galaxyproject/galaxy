@@ -105,10 +105,7 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
         self.hgweb_config_manager.hgweb_repo_prefix = self.config.hgweb_repo_prefix
         # Initialize the repository registry.
-        if config.SHED_API_VERSION != "v2":
-            self.repository_registry = tool_shed.repository_registry.Registry(self)
-        else:
-            self.repository_registry = tool_shed.repository_registry.NullRepositoryRegistry(self)
+        self.repository_registry = tool_shed.repository_registry.NullRepositoryRegistry(self)
         # Configure Sentry client if configured
         self.configure_sentry_client()
         #  used for cachebusting -- refactor this into a *SINGLE* UniverseApplication base.

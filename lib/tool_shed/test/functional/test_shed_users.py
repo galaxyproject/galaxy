@@ -7,10 +7,7 @@ from tool_shed_client.schema import (
     CreateUserRequest,
     User,
 )
-from ..base.api import (
-    ShedApiTestCase,
-    skip_if_api_v1,
-)
+from ..base.api import ShedApiTestCase
 from ..base.api_util import (
     email_to_username,
     ensure_user_with_email,
@@ -80,7 +77,6 @@ class TestShedUsersApi(ShedApiTestCase):
         assert show_response.json()["username"] == username
         assert show_response.json()["id"] == user_id
 
-    @skip_if_api_v1
     def test_api_key_endpoints(self):
         email = "testindexapi@bx.psu.edu"
         password = "mycoolpassword123"

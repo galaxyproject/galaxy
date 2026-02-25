@@ -1,5 +1,4 @@
 from ..base import common
-from ..base.api import skip_if_api_v2
 from ..base.twilltestcase import ShedTwillTestCase
 
 freebayes_repository_name = "freebayes_0040"
@@ -127,13 +126,3 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
         )
         for repository in [freebayes_repository, filtering_repository]:
             self.verify_unchanged_repository_metadata(repository)
-
-    @skip_if_api_v2
-    def test_0040_verify_tool_dependencies(self):
-        """Verify that freebayes displays tool dependencies."""
-        repository = self._get_repository_by_name_and_owner(freebayes_repository_name, common.test_user_1_name)
-        self.display_manage_repository_page(
-            repository,
-            strings_displayed=["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18", "Valid tools", "package"],
-            strings_not_displayed=["Invalid tools"],
-        )

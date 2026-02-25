@@ -1,6 +1,5 @@
 from playwright.sync_api import expect
 
-from ..base.api import skip_if_api_v1
 from ..base.playwrighttestcase import PlaywrightTestCase
 
 TEST_CATEGORY_PREFIX = "guitestcategory"
@@ -31,7 +30,6 @@ class TestFrontendRepositories(PlaywrightTestCase):
         self.visit_url(f"/repositories/{repository.id}/metadata-inspector")
         return repository
 
-    @skip_if_api_v1
     def test_metadata_inspector_loads(self):
         """Verify Metadata Inspector page loads with repository data."""
         self._setup_repo_and_visit_inspector()
@@ -43,7 +41,6 @@ class TestFrontendRepositories(PlaywrightTestCase):
         expect(page.locator("[role=tab]").filter(has_text="Tool History")).to_be_visible()
         expect(page.locator("[role=tab]").filter(has_text="Raw JSON")).to_be_visible()
 
-    @skip_if_api_v1
     def test_metadata_inspector_default_tab(self):
         """Verify Revisions is the default landing tab."""
         repository = self._setup_repo_and_visit_inspector()
@@ -52,7 +49,6 @@ class TestFrontendRepositories(PlaywrightTestCase):
         # Revisions tab active by default, repo name visible
         expect(page.locator("body")).to_contain_text(repository.name)
 
-    @skip_if_api_v1
     def test_metadata_inspector_revisions_tab(self):
         """Verify Revisions tab shows changeset data."""
         self._setup_repo_and_visit_inspector()
@@ -62,7 +58,6 @@ class TestFrontendRepositories(PlaywrightTestCase):
         # RevisionsTab uses q-list with expansion items showing changeset hashes
         expect(page.locator(".q-list")).to_be_visible()
 
-    @skip_if_api_v1
     def test_metadata_inspector_reset_tab(self):
         """Verify Reset Metadata tab with admin login."""
         self.login()
@@ -77,7 +72,6 @@ class TestFrontendRepositories(PlaywrightTestCase):
         # Preview button should be visible
         expect(page.get_by_role("button", name="Preview")).to_be_visible()
 
-    @skip_if_api_v1
     def test_metadata_inspector_screenshots(self):
         """Capture screenshots of metadata inspector tabs."""
         self.login()
@@ -114,7 +108,6 @@ class TestFrontendRepositories(PlaywrightTestCase):
         page.wait_for_selector("text=Preview Results")  # Wait for results
         self.screenshot("metadata_inspector_reset_preview")
 
-    @skip_if_api_v1
     def test_metadata_inspector_reset_full(self):
         """Perform a full metadata reset and verify completion."""
         self.login()

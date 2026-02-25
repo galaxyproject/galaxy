@@ -12,10 +12,7 @@ from fastapi import (
     Depends,
     FastAPI,
 )
-from fastapi.responses import (
-    HTMLResponse,
-    RedirectResponse,
-)
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import (
     _rate_limit_exceeded_handler,
@@ -61,7 +58,7 @@ api_tags_metadata = [
 # Run vite with:
 #   pnpm dev
 # Start tool shed with:
-#   TOOL_SHED_VITE_PORT=4040 TOOL_SHED_API_VERSION=v2 ./run_tool_shed.sh
+#   TOOL_SHED_VITE_PORT=4040 ./run_tool_shed.sh
 TOOL_SHED_VITE_PORT: Optional[str] = os.environ.get("TOOL_SHED_VITE_PORT", None)
 TOOL_SHED_FRONTEND_TARGET: str = os.environ.get("TOOL_SHED_FRONTEND_TARGET") or "auto"  # auto, src, or node
 TOOL_SHED_USE_HMR: bool = TOOL_SHED_VITE_PORT is not None
@@ -111,12 +108,6 @@ def frontend_controller(app):
     return app, index
 
 
-def redirect_route(app, from_url: str, to_url: str):
-    @app.get(from_url)
-    def redirect():
-        return RedirectResponse(to_url)
-
-
 def frontend_route(controller, path):
     app, index = controller
     app.get(path, response_class=HTMLResponse)(index)
@@ -148,11 +139,6 @@ FRONT_END_ROUTES = [
     "/view/{username}/{repository_name}",
     "/view/{username}/{repository_name}/{changeset_revision}",
 ]
-LEGACY_ROUTES = {
-    "/user/create": "/register",  # for twilltestcase
-    "/user/login": "/login",  # for twilltestcase
-}
-
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -163,29 +149,23 @@ def initialize_fast_app(gx_webapp, tool_shed_app):
     add_request_id_middleware(app)
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
-    from .config import SHED_API_VERSION
 
     def mount_static(directory: Path):
         name = directory.name
         if directory.exists():
             app.mount(f"/{name}", StaticFiles(directory=directory), name=name)
 
-    if SHED_API_VERSION == "v2":
-        controller = frontend_controller(app)
-        for route in FRONT_END_ROUTES:
-            frontend_route(controller, route)
+    controller = frontend_controller(app)
+    for route in FRONT_END_ROUTES:
+        frontend_route(controller, route)
 
-        for from_route, to_route in LEGACY_ROUTES.items():
-            redirect_route(app, from_route, to_route)
+    mount_static(FRONTEND / "static")
+    if TOOL_SHED_USE_HMR:
+        mount_static(FRONTEND / "node_modules")
+    else:
+        mount_static(find_frontend_target() / "assets")
 
-        mount_static(FRONTEND / "static")
-        if TOOL_SHED_USE_HMR:
-            mount_static(FRONTEND / "node_modules")
-        else:
-            mount_static(find_frontend_target() / "assets")
-
-    routes_package = "tool_shed.webapp.api" if SHED_API_VERSION == "v1" else "tool_shed.webapp.api2"
-    include_all_package_routers(app, routes_package)
+    include_all_package_routers(app, "tool_shed.webapp.api2")
     wsgi_handler = WSGIMiddleware(gx_webapp)
     tool_shed_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
     # https://github.com/abersheeran/a2wsgi/issues/44
