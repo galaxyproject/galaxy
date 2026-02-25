@@ -124,9 +124,7 @@ function clearSlot() {
         tabindex="0"
         :aria-label="`Upload slot for ${slotItem.description}`"
         @dragover.prevent
-        @drop.prevent="onDrop"
-        @keydown.enter.prevent="openFileBrowser"
-        @keydown.space.prevent="openFileBrowser">
+        @drop.prevent="onDrop">
         <!-- Main row -->
         <div class="d-flex align-items-center">
             <!-- Status icon -->
