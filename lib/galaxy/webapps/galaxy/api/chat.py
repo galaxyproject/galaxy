@@ -20,11 +20,15 @@ from fastapi import (
 from pydantic import Field
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import ConfigurationError
+from galaxy.exceptions import (
+    ConfigurationError,
+    ObjectNotFound,
+)
 from galaxy.managers.agents import AgentService
 from galaxy.managers.chat import ChatManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
+from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -41,11 +45,15 @@ from galaxy.webapps.galaxy.api import (
 
 # Import agent system
 try:
-    from galaxy.agents import GalaxyAgentDependencies
+    from galaxy.agents import (
+        AgentType,
+        GalaxyAgentDependencies,
+    )
 
     HAS_AGENTS = True
 except ImportError:
     HAS_AGENTS = False
+    AgentType = None  # type: ignore[assignment,misc,unused-ignore]
     GalaxyAgentDependencies = None  # type: ignore[assignment,misc,unused-ignore]
 
 # Import pydantic-ai components (required dependency)
@@ -92,6 +100,7 @@ class ChatAPI:
     chat_manager: ChatManager = depends(ChatManager)
     job_manager: JobManager = depends(JobManager)
     agent_service: AgentService = depends(AgentService)
+    workflow_manager: WorkflowsManager = depends(WorkflowsManager)
 
     @router.post("/api/chat", unstable=True)
     async def query(
@@ -329,6 +338,32 @@ class ChatAPI:
         job = self.job_manager.get_accessible_job(trans, job_id)
         chat_response = self.chat_manager.set_feedback_for_job(trans, job.id, feedback)
         return chat_response.messages[0].feedback
+
+    @router.get("/api/chat/{workflow_id}/generate_report", unstable=True)
+    async def generate_report(
+        self,
+        workflow_id: str = Path(..., description="Workflow ID to generate the report for"),
+        version: Optional[int] = Query(None, description="Version of the workflow"),
+        instance: bool = Query(False, description="Whether the workflow_id is an instance ID"),
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> str | None:
+        """Generate a report for the specified workflow."""
+        # TODO: Need to handle version (ik there's a way to first deal with version, then check instance)
+        workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
+        if not workflow:
+            raise ObjectNotFound("Workflow not found.")
+        if not HAS_AGENTS:
+            raise ConfigurationError("AI agent system is not available.")
+        assert AgentType is not None
+
+        response = await self.agent_service.execute_agent(
+            agent_type=AgentType.WORKFLOW_REPORT,
+            query=workflow.name,
+            trans=trans,
+            user=user,
+        )
+        return response.content
 
     @router.put("/api/chat/exchange/{exchange_id}/feedback", unstable=True)
     def set_exchange_feedback(

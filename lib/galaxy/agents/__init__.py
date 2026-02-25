@@ -16,6 +16,7 @@ from .orchestrator import WorkflowOrchestratorAgent
 from .registry import AgentRegistry
 from .router import QueryRouterAgent
 from .tools import ToolRecommendationAgent
+from .workflow_report import WorkflowReportAgent
 
 __all__ = [
     "AgentType",
@@ -27,6 +28,7 @@ __all__ = [
     "CustomToolAgent",
     "WorkflowOrchestratorAgent",
     "ToolRecommendationAgent",
+    "WorkflowReportAgent",
 ]
 
 # Global agent registry instance
@@ -38,3 +40,4 @@ agent_registry.register(AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent)
 agent_registry.register(AgentType.CUSTOM_TOOL, CustomToolAgent)
 agent_registry.register(AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
 agent_registry.register(AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)
+agent_registry.register(AgentType.WORKFLOW_REPORT, WorkflowReportAgent)
