@@ -3,7 +3,7 @@ import axios, { type AxiosResponse } from "axios";
 import type { AnyHistory, HistorySummaryExtended } from "@/api";
 import { GalaxyApi } from "@/api";
 import { prependPath } from "@/utils/redirect";
-import { rethrowSimple } from "@/utils/simple-error";
+import { ApiError, errorMessageAsString, type GalaxyApiResult, rethrowSimple } from "@/utils/simple-error";
 
 /**
  * Generic json getter
@@ -97,8 +97,8 @@ export async function getHistoryList(offset = 0, limit: number | null = null, qu
 }
 
 /** Load one history by id */
-export async function getHistoryByIdFromServer(id: string) {
-    const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
+export async function getHistoryByIdFromServer(id: string): Promise<GalaxyApiResult<HistorySummaryExtended>> {
+    const { data, error, response } = await GalaxyApi().GET("/api/histories/{history_id}", {
         params: {
             path: { history_id: id },
             query: extendedHistoryParams,
@@ -106,12 +106,12 @@ export async function getHistoryByIdFromServer(id: string) {
     });
 
     if (error) {
-        rethrowSimple(error);
+        return { data: undefined, error: new ApiError(errorMessageAsString(error), response.status) };
     }
 
     // We know that the data is a HistorySummaryExtended because we requested it
     // with the extendedHistoryParams
-    return data as HistorySummaryExtended;
+    return { data: data as HistorySummaryExtended, error: undefined };
 }
 
 /**
@@ -127,9 +127,12 @@ export async function secureHistoryOnServer(history: AnyHistory) {
     if (response.status !== 200) {
         throw new Error(response.statusText);
     }
-    const securedHistory = await getHistoryByIdFromServer(id);
+    const result = await getHistoryByIdFromServer(id);
+    if (result.error) {
+        throw result.error;
+    }
     return {
-        securedHistory,
+        securedHistory: result.data,
         message: response.data.message as string,
         sharingStatusChanged: response.data.sharing_status_changed as boolean,
     };
