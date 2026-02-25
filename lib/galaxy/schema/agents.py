@@ -233,3 +233,11 @@ class SystemStatus(BaseModel):
     agent_statuses: list[AgentStatus] = Field(description="Status of each agent")
     system_health: str = Field(description="Overall system health")
     last_check: str = Field(description="Last health check timestamp")
+
+
+class WorkflowReportResponse(BaseModel):
+    """Response from the workflow report generation agent."""
+
+    report: str = Field(description="Generated markdown report for the workflow")
+    total_tokens: Optional[int] = Field(default=None, description="Total tokens consumed by the generation")
+    model: Optional[str] = Field(default=None, description="LLM model used to generate the report")

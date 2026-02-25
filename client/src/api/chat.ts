@@ -16,5 +16,5 @@ export async function generateAIReport(workflowId: string, version?: number, ins
         rethrowSimple(error);
     }
 
-    return data as string;
+    return data;
 }

@@ -25681,6 +25681,27 @@ export interface components {
              */
             workflow_target_type: "stored_workflow" | "workflow" | "trs_url" | "url";
         };
+        /**
+         * WorkflowReportResponse
+         * @description Response from the workflow report generation agent.
+         */
+        WorkflowReportResponse: {
+            /**
+             * Model
+             * @description LLM model used to generate the report
+             */
+            model?: string | null;
+            /**
+             * Report
+             * @description Generated markdown report for the workflow
+             */
+            report: string;
+            /**
+             * Total Tokens
+             * @description Total tokens consumed by the generation
+             */
+            total_tokens?: number | null;
+        };
         /** WorkflowTypeVersion */
         WorkflowTypeVersion: {
             /**
@@ -26360,7 +26381,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": string | null;
+                    "application/json": components["schemas"]["WorkflowReportResponse"];
                 };
             };
             /** @description Request Error */

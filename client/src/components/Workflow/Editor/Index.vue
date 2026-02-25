@@ -1113,9 +1113,12 @@ export default {
 
             this.onWorkflowMessage("Generating AI Report", "progress");
             try {
-                const generatedReport = await generateAIReport(this.id, this.version);
-                this.onReportUpdate(generatedReport);
-                Toast.success("AI Report generated successfully.");
+                const { model, report, total_tokens } = await generateAIReport(this.id, this.version);
+                this.onReportUpdate(report);
+                Toast.success(
+                    `Report generated using ${model}${total_tokens ? `, total tokens used: ${total_tokens}` : ""}.`,
+                    "AI Report generated successfully.",
+                );
             } catch (e) {
                 this.onWorkflowError(
                     "Generating AI report failed",
