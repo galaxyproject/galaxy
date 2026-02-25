@@ -237,7 +237,6 @@
                         :value="currentPage"
                         :total-rows="total_rows"
                         :per-page="perPage"
-                        aria-controls="folder_list_body"
                         @input="changePage">
                     </BPagination>
                 </BCol>

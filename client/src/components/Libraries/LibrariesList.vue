@@ -167,11 +167,7 @@
         <BContainer>
             <BRow class="justify-content-md-center">
                 <BCol md="auto">
-                    <BPagination
-                        v-model="currentPage"
-                        :total-rows="totalRows"
-                        :per-page="perPage"
-                        aria-controls="libraries_list" />
+                    <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
                 </BCol>
 
                 <BCol cols="1.5">
