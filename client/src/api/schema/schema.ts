@@ -2755,6 +2755,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/extraction_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return jobs and dataset summary for extracting a workflow from a history. */
+        get: operations["extraction_summary_api_histories__history_id__extraction_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/jobs_summary": {
         parameters: {
             query?: never;
@@ -25353,6 +25370,112 @@ export interface components {
              */
             workflow_engine_version?: string[] | null;
         };
+        /** WorkflowExtractionJob */
+        WorkflowExtractionJob: {
+            /**
+             * Checked
+             * @description Whether this job should be pre-selected for extraction (True if any outputs are not deleted).
+             */
+            checked: boolean;
+            /**
+             * Disabled Why
+             * @description Reason this job cannot be included in a workflow, if applicable.
+             */
+            disabled_why?: string | null;
+            /**
+             * ID
+             * @description Encoded job ID, or null for fake input dataset entries.
+             */
+            id: string | null;
+            /**
+             * Is Fake
+             * @description True for input datasets that have no real creating job.
+             */
+            is_fake: boolean;
+            /**
+             * Outputs
+             * @description The history items produced by this job.
+             */
+            outputs?: components["schemas"]["WorkflowExtractionOutput"][];
+            /**
+             * Tool ID
+             * @description The tool ID that created this job.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool Name
+             * @description Human-readable name of the tool.
+             */
+            tool_name?: string | null;
+            /**
+             * Tool Version
+             * @description The tool version used by this job.
+             */
+            tool_version?: string | null;
+            /**
+             * Tool Version Warning
+             * @description Warning when the current tool version differs from the version used by this job.
+             */
+            tool_version_warning?: string | null;
+            /**
+             * Workflow Compatible
+             * @description Whether this job's tool can be included in an extracted workflow.
+             */
+            workflow_compatible: boolean;
+        };
+        /** WorkflowExtractionOutput */
+        WorkflowExtractionOutput: {
+            /**
+             * Deleted
+             * @description Whether this item has been deleted.
+             */
+            deleted: boolean;
+            /**
+             * HID
+             * @description The history item ID (position in history).
+             */
+            hid: number;
+            /**
+             * History Content Type
+             * @description Whether this is a dataset or dataset_collection.
+             */
+            history_content_type: components["schemas"]["HistoryContentType"];
+            /**
+             * ID
+             * @description Encoded ID of the history content item.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the dataset or collection.
+             */
+            name: string;
+            /**
+             * State
+             * @description The state of the dataset or collection.
+             */
+            state: components["schemas"]["DatasetState"];
+        };
+        /** WorkflowExtractionSummary */
+        WorkflowExtractionSummary: {
+            /**
+             * History ID
+             * @description The encoded ID of the history being extracted from.
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * Jobs
+             * @description Ordered list of jobs (and fake input entries) found in the history.
+             */
+            jobs?: components["schemas"]["WorkflowExtractionJob"][];
+            /**
+             * Warnings
+             * @description Any warnings generated during summarization (e.g. datasets still running).
+             */
+            warnings?: string[];
+        };
         /** WorkflowInput */
         WorkflowInput: {
             /**
@@ -34740,6 +34863,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    extraction_summary_api_histories__history_id__extraction_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowExtractionSummary"];
+                };
             };
             /** @description Request Error */
             "4XX": {

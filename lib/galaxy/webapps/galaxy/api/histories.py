@@ -65,6 +65,11 @@ from galaxy.schema.schema import (
     WriteStoreToPayload,
 )
 from galaxy.schema.types import LatestLiteral
+from galaxy.schema.workflows import (
+    WorkflowExtractionJob,
+    WorkflowExtractionOutput,
+    WorkflowExtractionSummary,
+)
 from galaxy.webapps.base.api import GalaxyFileResponse
 from galaxy.webapps.galaxy.api import (
     as_form,
@@ -82,6 +87,7 @@ from galaxy.webapps.galaxy.api.common import (
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
+from galaxy.workflow.extract import summarize
 from .common import HistoryIDPathParam
 
 log = logging.getLogger(__name__)
@@ -777,3 +783,74 @@ class FastAPIHistories:
         """Sets a new slug to access this item by URL. The new slug must be unique."""
         self.service.shareable_service.set_slug(trans, history_id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.get(
+        "/api/histories/{history_id}/extraction_summary",
+        summary="Return jobs and dataset summary for extracting a workflow from a history.",
+    )
+    def extraction_summary(
+        self,
+        history_id: HistoryIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> WorkflowExtractionSummary:
+        history = self.service.manager.get_accessible(history_id, trans.user, current_history=trans.history)
+        jobs, warnings = summarize(trans, history)
+
+        def serialize_output(content) -> WorkflowExtractionOutput:
+            return WorkflowExtractionOutput(
+                id=content.id,  # type: ignore[arg-type]
+                hid=content.hid,
+                name=content.name,
+                state=content.state,
+                deleted=content.deleted,
+                history_content_type=content.history_content_type,
+            )
+
+        jobs_list = []
+        for job, datasets in jobs.items():
+            is_fake = getattr(job, "is_fake", False)
+            outputs = [serialize_output(data) for _, data in datasets]
+            if is_fake:
+                jobs_list.append(
+                    WorkflowExtractionJob(
+                        id=None,
+                        is_fake=True,
+                        tool_name=getattr(job, "name", None),
+                        tool_id=None,
+                        tool_version=None,
+                        workflow_compatible=False,
+                        disabled_why=getattr(job, "disabled_why", "Input dataset"),
+                        checked=False,
+                        tool_version_warning=None,
+                        outputs=outputs,
+                    )
+                )
+            else:
+                tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
+                workflow_compatible = bool(tool and tool.is_workflow_compatible)
+                tool_version_warning = None
+                if tool and tool.version != job.tool_version:
+                    tool_version_warning = (
+                        f'Dataset was created with tool version "{job.tool_version}", '
+                        f'but workflow extraction will use version "{tool.version}".'
+                    )
+                jobs_list.append(
+                    WorkflowExtractionJob(
+                        id=job.id,  # type: ignore[arg-type]
+                        is_fake=False,
+                        tool_name=tool.name if tool else "Unknown",
+                        tool_id=job.tool_id,
+                        tool_version=job.tool_version,
+                        workflow_compatible=workflow_compatible,
+                        disabled_why=None if workflow_compatible else "This tool cannot be used in workflows",
+                        checked=any(not data.deleted for _, data in datasets),
+                        tool_version_warning=tool_version_warning,
+                        outputs=outputs,
+                    )
+                )
+
+        return WorkflowExtractionSummary(
+            history_id=history.id,  # type: ignore[arg-type]
+            warnings=list(warnings),
+            jobs=jobs_list,
+        )
