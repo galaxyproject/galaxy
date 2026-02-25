@@ -178,6 +178,91 @@ def convert_memory_to_mib(memory_str):
         return int(value)
 
 
+DEFAULT_MAX_RUN_DURATION = "86400s"
+
+
+def convert_to_duration(value):
+    """
+    Convert a duration value to GCP Batch duration format (e.g., '3600s').
+
+    Accepts:
+        - Duration string with suffix: '3600s', '60m', '2h', '1d'
+        - Numeric string or number (treated as seconds): '3600', 3600
+    """
+    if not value:
+        return DEFAULT_MAX_RUN_DURATION
+
+    value_str = str(value).strip()
+
+    # Already has a unit suffix
+    if value_str.endswith("s"):
+        try:
+            seconds = int(float(value_str[:-1]))
+            return f"{seconds}s"
+        except ValueError:
+            log.warning("Invalid duration format: %s, using default", value_str)
+            return DEFAULT_MAX_RUN_DURATION
+    elif value_str.endswith("m"):
+        try:
+            seconds = int(float(value_str[:-1]) * 60)
+            return f"{seconds}s"
+        except ValueError:
+            log.warning("Invalid duration format: %s, using default", value_str)
+            return DEFAULT_MAX_RUN_DURATION
+    elif value_str.endswith("h"):
+        try:
+            seconds = int(float(value_str[:-1]) * 3600)
+            return f"{seconds}s"
+        except ValueError:
+            log.warning("Invalid duration format: %s, using default", value_str)
+            return DEFAULT_MAX_RUN_DURATION
+    elif value_str.endswith("d"):
+        try:
+            seconds = int(float(value_str[:-1]) * 86400)
+            return f"{seconds}s"
+        except ValueError:
+            log.warning("Invalid duration format: %s, using default", value_str)
+            return DEFAULT_MAX_RUN_DURATION
+
+    # Plain number — treat as seconds
+    try:
+        seconds = int(float(value_str))
+        return f"{seconds}s"
+    except ValueError:
+        log.warning("Invalid duration format: %s, using default", value_str)
+        return DEFAULT_MAX_RUN_DURATION
+
+
+def resolve_max_run_duration(destination_params, runner_params, resource_params):
+    """
+    Resolve the maximum run duration from multiple configuration sources.
+
+    Resolution order (highest priority first):
+        1. Destination param 'max_run_duration' (e.g., from TPV per-tool config)
+        2. Galaxy job resource parameter 'walltime' (user selection in tool form)
+        3. TPV-style 'walltime' in destination params
+        4. Runner-level default from runner_params
+
+    Args:
+        destination_params: dict of job destination parameters
+        runner_params: dict of runner-level parameters (fallback defaults)
+        resource_params: dict of Galaxy job resource parameters (user selections)
+
+    Returns:
+        Duration string in GCP Batch format (e.g., '86400s')
+    """
+    if "max_run_duration" in destination_params:
+        return convert_to_duration(destination_params["max_run_duration"])
+
+    if resource_params.get("walltime"):
+        return convert_to_duration(resource_params["walltime"])
+
+    if "walltime" in destination_params:
+        return convert_to_duration(destination_params["walltime"])
+
+    return convert_to_duration(runner_params.get("max_run_duration", DEFAULT_MAX_RUN_DURATION))
+
+
 def compute_machine_type(cpu_milli, memory_mib, machine_type_family="n2"):
     """
     Compute an appropriate GCP machine type based on resource requirements.

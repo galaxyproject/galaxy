@@ -27,12 +27,14 @@ from galaxy.jobs.runners.util.gcp_batch import (
     convert_cpu_to_milli,
     convert_memory_to_mib,
     DEFAULT_CVMFS_DOCKER_VOLUME,
+    DEFAULT_MAX_RUN_DURATION,
     DEFAULT_MEMORY_MIB,
     DEFAULT_NFS_MOUNT_PATH,
     DEFAULT_NFS_PATH,
     DIRECT_SCRIPT_TEMPLATE,
     parse_docker_volumes_param,
     parse_volumes_param,
+    resolve_max_run_duration,
     sanitize_label_value,
 )
 
@@ -63,7 +65,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "boot_disk_size_gb": dict(map=int, default=100),
             "boot_disk_type": dict(map=str, default="pd-standard"),
             "max_retry_count": dict(map=int, default=3),
-            "max_run_duration": dict(map=str, default="3600s"),
+            "max_run_duration": dict(map=str, default=DEFAULT_MAX_RUN_DURATION),
             "polling_interval": dict(map=int, default=30),
             # Volume configuration (generic format: "server:/remote_path:/mount_path[:ro],...")
             "gcp_batch_volumes": dict(map=str, default=None),
@@ -265,6 +267,11 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         # Get compute resources first so we can pass them to script creation
         cpu_milli, memory_mib = self._get_job_resources(job_wrapper, params)
 
+        # Get max run duration (resolves per-job from destination, resource params, or default)
+        max_run_duration = resolve_max_run_duration(
+            job_wrapper.job_destination.params, params, job_wrapper.get_resource_parameters()
+        )
+
         # Create the execution script based on whether we use containers or not
         if params.get("use_container", True):
             execution_script = self._create_container_execution_script(
@@ -282,7 +289,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         task_spec = batch_v1.TaskSpec()
         task_spec.runnables = [runnable]
         task_spec.max_retry_count = params["max_retry_count"]
-        task_spec.max_run_duration = params["max_run_duration"]
+        task_spec.max_run_duration = max_run_duration
 
         # Set compute resources
         compute_resource = batch_v1.ComputeResource()
@@ -291,10 +298,11 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         task_spec.compute_resource = compute_resource
 
         log.debug(
-            "Configured compute resources for job %s: %d mCPU, %d MiB memory",
+            "Configured compute resources for job %s: %d mCPU, %d MiB memory, max_run_duration=%s",
             job_wrapper.get_id_tag(),
             cpu_milli,
             memory_mib,
+            max_run_duration,
         )
 
         # Configure NFS volumes from gcp_batch_volumes parameter
