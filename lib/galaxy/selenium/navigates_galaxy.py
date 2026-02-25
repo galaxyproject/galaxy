@@ -1647,6 +1647,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         quota_component.add_form_submit.wait_for_and_click()
 
     def select_dataset_from_lib_import_modal(self, filenames):
+        self.wait_for_selector_visible(".directory-dataset-picker-list")
         for name in filenames:
             self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
         self.components.libraries.folder.import_dir_btn.wait_for_and_click()
@@ -1701,11 +1702,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         search_element.click()
         return search_element
 
-    def libraries_index_sort_selector(self):
-        return "th[aria-sort]"
-
     def libraries_index_sort_click(self):
-        sort_element = self.wait_for_selector_clickable(self.libraries_index_sort_selector())
+        sort_element = self.wait_for_selector_clickable(".g-table-sortable")
         sort_element.click()
         return sort_element
 
@@ -1746,6 +1744,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_dataset_search,
                 to_select_item,
             )
+            self.sleep_for(self.wait_types.UX_RENDER)
             self.components.libraries.folder.import_datasets_from_history_modal_select_list_item_by_index(
                 row_index=1
             ).wait_for_and_click()
