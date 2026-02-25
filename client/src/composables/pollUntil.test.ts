@@ -71,7 +71,7 @@ describe("pollUntil", () => {
         const fn = vi.fn().mockResolvedValue({ status: "complete", value: 42 });
         const result = await pollUntil({
             fn,
-            condition: (r) => r.status === "complete",
+            condition: (r: { status: string; value: number }) => r.status === "complete",
         });
         expect(result).toEqual({ status: "complete", value: 42 });
     });
