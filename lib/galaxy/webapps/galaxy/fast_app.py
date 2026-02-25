@@ -236,6 +236,7 @@ def get_mcp_lifespan(gx_app):
     except ImportError:
         return None, None
     except Exception:
+        log.exception("Failed to initialize MCP server")
         return None, None
 
 

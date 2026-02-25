@@ -4,6 +4,7 @@ Base classes for Galaxy AI agents.
 
 import asyncio
 import logging
+import random
 from abc import (
     ABC,
     abstractmethod,
@@ -298,7 +299,7 @@ class BaseGalaxyAgent(ABC):
                 if not is_retryable or attempt == max_retries:
                     raise e
 
-                delay = base_delay * (2**attempt)
+                delay = base_delay * (2**attempt) + random.uniform(0, 0.5)
 
                 log.warning(
                     f"Retryable error in {self.agent_type} agent (attempt {attempt + 1}/{max_retries + 1}): {e}. "
