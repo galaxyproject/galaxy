@@ -11,6 +11,7 @@ import { getJobDuration } from "./utilities";
 
 import Heading from "../Common/Heading.vue";
 import DecodedId from "../DecodedId.vue";
+import JobState from "../JobStates/JobState.vue";
 import CodeRow from "./CodeRow.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import HelpText from "@/components/Help/HelpText.vue";
@@ -144,7 +145,10 @@ watch(
             :stderr_position="stderr_position"
             :stderr_length="stderr_length"
             @update:result="updateConsoleOutputs" />
-        <Heading id="job-information-heading" h1 separator inline size="md"> Job Information </Heading>
+        <Heading id="job-information-heading" h1 separator inline size="md">
+            Job Information
+            <JobState v-if="job" class="job-information-state-badge" :job="job" />
+        </Heading>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
                 <tr v-if="job && job.tool_id">
@@ -261,9 +265,15 @@ watch(
         </table>
     </div>
 </template>
-<style scoped>
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
 .tooltipJobInfo {
     text-decoration-line: underline;
     text-decoration-style: dashed;
+}
+
+.job-information-state-badge {
+    font-size: $h5-font-size;
 }
 </style>
