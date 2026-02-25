@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
+import { BAlert, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { extractWorkflowFromHistory, type WorkflowExtractionSummary } from "@/api/histories";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import type { TableField } from "../Common/GTable.types";
+
 import BreadcrumbHeading from "../Common/BreadcrumbHeading.vue";
+import GTable from "../Common/GTable.vue";
 import LoadingSpan from "../LoadingSpan.vue";
+import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 const props = defineProps<{
     historyId: string;
@@ -29,6 +33,21 @@ const breadcrumbItems = computed(() => [
 const loading = ref(true);
 const errorMessage = ref<string | null>(null);
 const summary = ref<WorkflowExtractionSummary | null>(null);
+
+const tableFields: TableField[] = [
+    {
+        key: "checked",
+        label: "",
+    },
+    {
+        key: "tool_name",
+        label: "Tool Name",
+    },
+    {
+        key: "outputs",
+        label: "Outputs",
+    },
+];
 
 extractWorkflow();
 
@@ -53,7 +72,19 @@ async function extractWorkflow() {
         </BAlert>
 
         <div v-else-if="summary">
-            <!-- TODO: Implement full workflow extraction here -->
+            <GTable :hover="false" :striped="false" :fields="tableFields" :items="summary.jobs">
+                <template v-slot:cell(checked)="{ item }">
+                    <BFormCheckbox v-model="item.checked" :disabled="Boolean(item.disabled_why)" @click.stop />
+                </template>
+
+                <template v-slot:cell(outputs)="{ item }">
+                    <div v-for="(output, index) in item.outputs" :key="index">
+                        <GenericHistoryItem
+                            :item-id="output.id"
+                            :item-src="output.history_content_type === 'dataset' ? 'hda' : 'hdca'" />
+                    </div>
+                </template>
+            </GTable>
         </div>
 
         <BAlert v-else variant="info" show> No workflow could be extracted from this history. </BAlert>
