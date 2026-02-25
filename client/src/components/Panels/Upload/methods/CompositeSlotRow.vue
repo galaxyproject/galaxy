@@ -108,6 +108,14 @@ const { isFileOverDropZone } = useFileDrop({
 function clearSlot() {
     update({ mode: "local", file: undefined, fileSize: 0, url: "", content: "" });
 }
+
+function onUrlInput(value: string) {
+    update({ url: value });
+}
+
+function onPasteInput(value: string) {
+    update({ content: value, fileSize: new Blob([value]).size });
+}
 </script>
 
 <template>
@@ -208,7 +216,7 @@ function clearSlot() {
                 placeholder="https://example.com/file.ext"
                 class="slot-url-input font-monospace"
                 :state="urlInputState"
-                @input="update({ url: $event })" />
+                @input="onUrlInput" />
             <small v-if="urlValidationMessage" class="text-danger">
                 {{ urlValidationMessage }}
             </small>
@@ -221,7 +229,7 @@ function clearSlot() {
                 rows="3"
                 size="sm"
                 placeholder="Paste file content here"
-                @input="update({ content: $event })" />
+                @input="onPasteInput" />
         </div>
 
         <!-- Hidden file input -->
