@@ -49,3 +49,31 @@ Added in:
 
 - https://github.com/galaxyproject/galaxy/pull/3626/files
 - Likely no longer used?
+
+## Legacy /repository/* endpoints required by Galaxy install client
+
+Galaxy's install code (`lib/galaxy/tool_shed/galaxy_install/`) makes server-to-server HTTP
+calls to the Tool Shed using legacy WSGI `/repository/{action}` endpoints. These are **not**
+part of the `/api/` surface but are critical for repository installation, update checking, and
+dependency resolution. They must remain available for backward compatibility with older Galaxy
+instances.
+
+These endpoints are served by `RepositoryController` in
+`lib/tool_shed/webapp/controllers/repository.py` via the catch-all `/{controller}/{action}`
+route in `buildapp.py`.
+
+| Endpoint                                        | Galaxy caller                                                  | Purpose                                              |
+| ----------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------- |
+| `/repository/get_ctx_rev`                        | `lib/galaxy/tool_shed/util/shed_util_common.py`                | Get hg ctx.rev() for a changeset during clone        |
+| `/repository/get_changeset_revision_and_ctx_rev` | `lib/galaxy/tool_shed/galaxy_install/update_repository_manager.py` | Check for updates to installed repos             |
+| `/repository/get_repository_dependencies`        | `lib/galaxy/tool_shed/galaxy_install/repository_dependencies/repository_dependency_manager.py` | Resolve repo dependencies during install |
+| `/repository/get_required_repo_info_dict`        | `lib/galaxy/tool_shed/galaxy_install/repository_dependencies/repository_dependency_manager.py` | Get install info for dependency repos    |
+| `/repository/next_installable_changeset_revision`| `lib/galaxy/tool_shed/util/repository_util.py`                 | Find next installable revision                       |
+| `/repository/previous_changeset_revisions`       | `lib/galaxy/tool_shed/util/repository_util.py`                 | List changeset hashes for update range               |
+| `/repository/updated_changeset_revisions`        | `lib/galaxy/tool_shed/util/metadata_util.py`                   | List revisions an installed repo can update to        |
+| `/repository/get_repository_type`                | (not currently called but was available)                        | Return repository type string                        |
+| `/repository/get_tool_dependencies`              | (not currently called but was available)                        | Return tool dependencies for a changeset             |
+
+**Do not delete these endpoints** without first migrating Galaxy's install client code to use
+`/api/` equivalents. The Galaxy-side callers are in `lib/galaxy/tool_shed/` and use
+`galaxy.util.url_get()` or `urllib` directly with `pathspec=["repository", "<action>"]`.

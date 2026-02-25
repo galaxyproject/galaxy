@@ -107,11 +107,6 @@ def app_pair(global_conf, load_app_kwds=None, **kwargs):
     # Create the universe WSGI application
     webapp = CommunityWebApplication(app, session_cookie="galaxycommunitysession", name="tool_shed")
     add_ui_controllers(webapp, app)
-    webapp.add_route("/view/{owner}", controller="repository", action="sharable_owner")
-    webapp.add_route("/view/{owner}/{name}", controller="repository", action="sharable_repository")
-    webapp.add_route(
-        "/view/{owner}/{name}/{changeset_revision}", controller="repository", action="sharable_repository_revision"
-    )
     # Handle displaying tool help images and README file images for tools contained in repositories.
     webapp.add_route(
         "/repository/static/images/{repository_id}/{image_file:.+?}",
@@ -120,6 +115,8 @@ def app_pair(global_conf, load_app_kwds=None, **kwargs):
         repository_id=None,
         image_file=None,
     )
+    # Catch-all route for /repository/* endpoints used by Galaxy's install client
+    # (e.g. get_ctx_rev, get_required_repo_info_dict, etc.)
     webapp.add_route("/{controller}/{action}", action="index")
     webapp.add_route("/{action}", controller="repository", action="index")
     # Enable 'hg clone' functionality on repos by letting hgwebapp handle the request

@@ -16,7 +16,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import joinedload
 
-import tool_shed.dependencies.repository
+import tool_shed.dependencies.repository.relation_builder
 from galaxy import (
     util,
     web,
