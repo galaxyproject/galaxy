@@ -93,8 +93,8 @@
       collection_type: list:list
 
 - doc: |
-    MAPPING_LIST_OVER_PAIRED_OR_UNPAIRED: A list:paired_or_unpaired collection mapped over
-    a paired_or_unpaired tool input produces a list output collection.
+    MAPPING_LIST_PAIRED_OR_UNPAIRED_OVER_PAIRED_OR_UNPAIRED: A list:paired_or_unpaired
+    collection mapped over a paired_or_unpaired tool input produces a list output collection.
   job:
     input1:
       class: Collection
@@ -160,6 +160,47 @@
             - identifier: reverse
               class: File
               contents: "reverse content"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: sample_sheet
+
+- doc: |
+    MAPPING_LIST_OVER_PAIRED_OR_UNPAIRED: A flat list mapped over a
+    paired_or_unpaired tool input via single_datasets produces a list output.
+  job:
+    input1:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "element 1"
+        - identifier: el2
+          class: File
+          contents: "element 2"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: list
+
+- doc: |
+    SAMPLE_SHEET_MAPPING_OVER_PAIRED_OR_UNPAIRED: A flat sample_sheet mapped over
+    a paired_or_unpaired tool input via single_datasets produces a sample_sheet output.
+  job:
+    input1:
+      class: Collection
+      collection_type: sample_sheet
+      rows:
+        el1: []
+        el2: []
+      elements:
+        - identifier: el1
+          class: File
+          contents: "element 1"
+        - identifier: el2
+          class: File
+          contents: "element 2"
   outputs:
     wf_output:
       class: Collection
