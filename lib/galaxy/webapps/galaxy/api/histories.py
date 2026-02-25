@@ -814,6 +814,9 @@ class FastAPIHistories:
             is_fake = getattr(job, "is_fake", False)
             outputs = [serialize_output(data) for _, data in datasets]
             if is_fake:
+                # FakeJob / DatasetCollectionCreationJob: always disabled.
+                # Use the job's own disabled_why if present (e.g. collection jobs)
+                disabled_why = getattr(job, "disabled_why", "This tool cannot be used in workflows")
                 jobs_list.append(
                     WorkflowExtractionJob(
                         id=None,
@@ -821,8 +824,7 @@ class FastAPIHistories:
                         tool_name=getattr(job, "name", None),
                         tool_id=None,
                         tool_version=None,
-                        workflow_compatible=False,
-                        disabled_why=getattr(job, "disabled_why", "Input dataset"),
+                        disabled_why=disabled_why,
                         checked=False,
                         tool_version_warning=None,
                         outputs=outputs,
@@ -830,7 +832,11 @@ class FastAPIHistories:
                 )
             else:
                 tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
-                workflow_compatible = bool(tool and tool.is_workflow_compatible)
+                # Disabled if tool missing or not workflow compatible.
+                if tool is None or not tool.is_workflow_compatible:
+                    disabled_why = "This tool cannot be used in workflows"
+                else:
+                    disabled_why = None
                 tool_version_warning = None
                 if tool and tool.version != job.tool_version:
                     tool_version_warning = (
@@ -844,8 +850,7 @@ class FastAPIHistories:
                         tool_name=tool.name if tool else "Unknown",
                         tool_id=job.tool_id,
                         tool_version=job.tool_version,
-                        workflow_compatible=workflow_compatible,
-                        disabled_why=None if workflow_compatible else "This tool cannot be used in workflows",
+                        disabled_why=disabled_why,
                         checked=any(not data.deleted for _, data in datasets),
                         tool_version_warning=tool_version_warning,
                         outputs=outputs,
