@@ -22,7 +22,7 @@ from typing_extensions import (
 from ._base import ToolSourceBaseModel
 
 AnyT = TypeVar("AnyT")
-NotRequired = Annotated[Optional[AnyT], Field(None)]
+NotRequired = Annotated[Optional[AnyT], Field()]
 IncomingNotRequiredBoolT = TypeVar("IncomingNotRequiredBoolT")
 IncomingNotRequiredStringT = TypeVar("IncomingNotRequiredStringT")
 
@@ -106,7 +106,12 @@ class IncomingToolOutputDataset(
         NotRequired[bool],
         NotRequired[str],
     ]
-): ...
+):
+    name: Annotated[
+        Optional[str], Field(description="Parameter name. Used when referencing parameter in workflows.")
+    ] = None
+    hidden: Annotated[Optional[bool], Field(description="If true, the output will not be shown in the history.")] = None
+    format: Annotated[Optional[str], Field(description="The short name for the output datatype.")] = None
 
 
 class ToolOutputCollectionStructure(ToolSourceBaseModel):
@@ -128,7 +133,11 @@ class GenericToolOutputCollection(
 class ToolOutputCollection(GenericToolOutputCollection[bool, str]): ...
 
 
-class IncomingToolOutputCollection(GenericToolOutputCollection[NotRequired[bool], NotRequired[str]]): ...
+class IncomingToolOutputCollection(GenericToolOutputCollection[NotRequired[bool], NotRequired[str]]):
+    name: Annotated[
+        Optional[str], Field(description="Parameter name. Used when referencing parameter in workflows.")
+    ] = None
+    hidden: Annotated[Optional[bool], Field(description="If true, the output will not be shown in the history.")] = None
 
 
 class ToolOutputSimple(GenericToolOutputBaseModel):

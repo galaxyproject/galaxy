@@ -42,7 +42,7 @@ Exclusions = Union[
     ExcludeToolRegex,
     ExcludeTypes,
 ]
-OptionalExclusionList = Annotated[Optional[List[Exclusions]], Field(None)]
+OptionalExclusionList = Annotated[Optional[List[Exclusions]], Field()]
 
 
 class Tool(BaseModel):
@@ -72,7 +72,7 @@ class Workflow(BaseModel):
 class ItemsFrom(BaseModel):
     content_type: Literal["items_from"] = "items_from"
     items_from: str
-    excludes: OptionalExclusionList
+    excludes: OptionalExclusionList = None
 
 
 SectionContent = Union[
@@ -121,7 +121,7 @@ class Section(BaseModel, HasItems):
     id: Optional[str] = None
     name: Optional[str] = None
     items: Optional[List[SectionContent]] = None
-    excludes: OptionalExclusionList
+    excludes: OptionalExclusionList = None
     model_config = ConfigDict(populate_by_name=True)
 
 
@@ -164,7 +164,7 @@ class StaticToolBoxView(BaseModel, HasItems):
     description: Optional[str] = None
     view_type: StaticToolBoxViewTypeEnum = Field(alias="type")
     items: Optional[List[RootContent]] = None  # if empty, use integrated tool panel
-    excludes: OptionalExclusionList
+    excludes: OptionalExclusionList = None
 
     @staticmethod
     def from_dict(as_dict):
