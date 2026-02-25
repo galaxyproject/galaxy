@@ -236,21 +236,21 @@ class TestConvertToDuration:
 class TestResolveMaxRunDuration:
     """Tests for resolve_max_run_duration priority resolution."""
 
-    def test_destination_max_run_duration_highest_priority(self):
-        """Destination param 'max_run_duration' wins over everything."""
+    def test_resource_param_walltime_highest_priority(self):
+        """User-specified walltime wins over everything."""
         result = resolve_max_run_duration(
             destination_params={"max_run_duration": "2h"},
             runner_params={"max_run_duration": "1h"},
             resource_params={"walltime": "3600"},
         )
-        assert result == "7200s"
+        assert result == "3600s"
 
-    def test_resource_param_walltime_over_dest_walltime(self):
-        """Resource param 'walltime' beats destination 'walltime'."""
+    def test_destination_max_run_duration_over_dest_walltime(self):
+        """Destination 'max_run_duration' beats destination 'walltime'."""
         result = resolve_max_run_duration(
-            destination_params={"walltime": "1h"},
+            destination_params={"max_run_duration": "2h", "walltime": "1h"},
             runner_params={"max_run_duration": "86400s"},
-            resource_params={"walltime": "7200"},
+            resource_params={},
         )
         assert result == "7200s"
 
@@ -281,10 +281,10 @@ class TestResolveMaxRunDuration:
         )
         assert result == DEFAULT_MAX_RUN_DURATION
 
-    def test_walltime_with_suffix(self):
-        """Resource param walltime with duration suffix is converted correctly."""
+    def test_resource_walltime_over_destination_max_run_duration(self):
+        """User walltime overrides destination max_run_duration."""
         result = resolve_max_run_duration(
-            destination_params={},
+            destination_params={"max_run_duration": "1h"},
             runner_params={"max_run_duration": "86400s"},
             resource_params={"walltime": "2d"},
         )

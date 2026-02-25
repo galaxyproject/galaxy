@@ -238,8 +238,8 @@ def resolve_max_run_duration(destination_params, runner_params, resource_params)
     Resolve the maximum run duration from multiple configuration sources.
 
     Resolution order (highest priority first):
-        1. Destination param 'max_run_duration' (e.g., from TPV per-tool config)
-        2. Galaxy job resource parameter 'walltime' (user selection in tool form)
+        1. Galaxy job resource parameter 'walltime' (user selection in tool form)
+        2. Destination param 'max_run_duration' (e.g., from TPV per-tool config)
         3. TPV-style 'walltime' in destination params
         4. Runner-level default from runner_params
 
@@ -251,11 +251,11 @@ def resolve_max_run_duration(destination_params, runner_params, resource_params)
     Returns:
         Duration string in GCP Batch format (e.g., '86400s')
     """
-    if "max_run_duration" in destination_params:
-        return convert_to_duration(destination_params["max_run_duration"])
-
     if resource_params.get("walltime"):
         return convert_to_duration(resource_params["walltime"])
+
+    if "max_run_duration" in destination_params:
+        return convert_to_duration(destination_params["max_run_duration"])
 
     if "walltime" in destination_params:
         return convert_to_duration(destination_params["walltime"])
