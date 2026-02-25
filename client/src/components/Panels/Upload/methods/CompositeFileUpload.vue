@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faLayerGroup } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormInput } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
@@ -15,6 +14,7 @@ import type { CompositeFileItem, CompositeSlot } from "../types/uploadItem";
 
 import UploadTableDbKeyCell from "../shared/UploadTableDbKeyCell.vue";
 import CompositeSlotRow from "./CompositeSlotRow.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
@@ -130,6 +130,16 @@ function onExtensionChange(newExtension: string) {
     ];
 }
 
+function onDatasetNameInput(name: string | null) {
+    updateItem({ name: name ?? "" });
+}
+
+function onDbKeyInput(dbkey: string | null) {
+    if (dbkey !== null) {
+        updateItem({ dbkey });
+    }
+}
+
 function clearAll() {
     compositeItems.value = [];
     clearStaging();
@@ -154,9 +164,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
 <template>
     <div class="composite-file-upload">
         <div class="composite-config-panel mb-3">
-            <div class="row align-items-start no-gutters">
+            <div class="d-flex flex-wrap flex-gapx-1 flex-gapy-1">
                 <!-- Composite type selector -->
-                <div class="col-md-4 pr-md-2 d-flex flex-column">
+                <div class="d-flex flex-column">
                     <label class="font-weight-bold mb-1" for="composite-type-selector"> Composite Type </label>
                     <SingleItemSelector
                         id="composite-type-selector"
@@ -170,25 +180,26 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 </div>
 
                 <!-- Dataset name -->
-                <div class="col-md-4 px-md-2 d-flex flex-column">
+                <div class="d-flex flex-column">
                     <label for="composite-dataset-name" class="font-weight-bold mb-1"> Dataset Name </label>
-                    <BFormInput
+                    <GFormInput
                         id="composite-dataset-name"
+                        class="form-control"
                         :value="currentItem?.name ?? ''"
                         :disabled="!currentItem"
                         placeholder="Provide a name for the dataset"
-                        @input="updateItem({ name: $event })" />
+                        @input="onDatasetNameInput" />
                 </div>
 
                 <!-- DB key / Reference -->
-                <div class="col-md-4 pl-md-2 d-flex flex-column">
+                <div class="d-flex flex-column">
                     <label class="font-weight-bold mb-1 d-block" for="composite-dbkey"> Reference (dbkey) </label>
                     <UploadTableDbKeyCell
                         id="composite-dbkey"
                         :value="currentItem?.dbkey ?? defaultDbKey"
                         :db-keys="listDbKeys"
                         :disabled="!configurationsReady || !currentItem"
-                        @input="updateItem({ dbkey: $event })" />
+                        @input="onDbKeyInput" />
                 </div>
             </div>
 
@@ -214,7 +225,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 v-for="(slot, index) in slots"
                 :key="slot.slotName"
                 :slot-item="slot"
-                @update:slotItem="updateSlot(index, $event)" />
+                @update:slotItem="(updated) => updateSlot(index, updated)" />
 
             <!-- Actions footer -->
             <div class="d-flex justify-content-end mt-2">
