@@ -526,6 +526,18 @@ def test_map_over_paired_or_unpaired_with_list(target_history: TargetHistory, re
 
 
 @requires_tool_id("collection_paired_or_unpaired")
+def test_map_over_paired_or_unpaired_with_sample_sheet(target_history: TargetHistory, required_tool: RequiredTool):
+    contents = [("foo", "text for foo element")]
+    hdca = target_history.with_sample_sheet(contents)
+    execute = required_tool.execute().with_inputs(
+        {"f1": {"batch": True, "values": [{"map_over_type": "single_datasets", **hdca.src_dict}]}}
+    )
+    execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_has_dataset_element("foo").with_contents_stripped("text for foo element")
+
+
+@requires_tool_id("collection_paired_or_unpaired")
 def test_map_over_paired_or_unpaired_with_list_of_lists(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_example_list_of_lists()
     execute = required_tool.execute().with_inputs(
