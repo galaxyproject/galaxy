@@ -161,6 +161,13 @@ watch(
                 v-else-if="name == 'history_dataset_as_image' && args.history_dataset_id"
                 :dataset-id="args.history_dataset_id"
                 :path="args.path" />
+            <DatasetCollectionElementPicker
+                v-else-if="name == 'history_dataset_as_image' && args.history_dataset_collection_id"
+                :hdca-id="args.history_dataset_collection_id">
+                <template v-slot:element="{ element }">
+                    <HistoryDatasetAsImage v-if="element" :key="element" :dataset-id="element" :path="args.path" />
+                </template>
+            </DatasetCollectionElementPicker>
             <HistoryDatasetAsTable
                 v-else-if="name == 'history_dataset_as_table' && args.history_dataset_id"
                 :compact="compact"
