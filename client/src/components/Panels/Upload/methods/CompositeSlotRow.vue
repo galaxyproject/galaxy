@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BFormInput, BFormTextarea } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { useFileDrop } from "@/composables/fileDrop";
 import { validateUrl } from "@/utils/url";
 import { bytesToString } from "@/utils/utils";
 
@@ -20,7 +21,7 @@ const emit = defineEmits<{
 }>();
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
-const isDragging = ref(false);
+const dropZoneRef = ref<HTMLElement | null>(null);
 
 const urlValidation = computed(() => {
     if (props.slotItem.mode !== "url") {
@@ -91,12 +92,19 @@ function onFileInputChange(event: Event) {
 }
 
 function onDrop(evt: DragEvent) {
-    isDragging.value = false;
     const file = evt.dataTransfer?.files?.[0];
     if (file) {
         update({ mode: "local", file, fileSize: file.size });
     }
 }
+
+const { isFileOverDropZone } = useFileDrop({
+    dropZone: dropZoneRef,
+    onDrop: () => {},
+    onDropCancel: () => {},
+    solo: false,
+    ignoreChildrenOnLeave: true,
+});
 
 function clearSlot() {
     update({ mode: "local", file: undefined, fileSize: 0, url: "", content: "" });
@@ -105,17 +113,18 @@ function clearSlot() {
 
 <template>
     <div
+        ref="dropZoneRef"
         class="composite-slot-row rounded border p-2 mb-2"
         :class="{
-            'slot-dragging': isDragging,
+            'slot-dragging': isFileOverDropZone,
             'slot-filled': isFilled,
             'slot-required-empty': !isFilled && !slotItem.optional,
         }"
+        data-galaxy-file-drop-target
         role="button"
         tabindex="0"
         :aria-label="`Upload slot for ${slotItem.description}`"
-        @dragover.prevent="isDragging = true"
-        @dragleave.prevent="isDragging = false"
+        @dragover.prevent
         @drop.prevent="onDrop"
         @keydown.enter.prevent="openFileBrowser"
         @keydown.space.prevent="openFileBrowser">
