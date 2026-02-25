@@ -882,7 +882,7 @@
         tool_runtime:
             api_test: "test_tool_execute.py::test_map_over_paired_or_unpaired_with_list"
         workflow_runtime:
-            framework_test: "collection_semantics_paired_or_unpaired_4"
+            framework_test: "collection_semantics_paired_or_unpaired_7"
         workflow_editor: "accepts list -> paired_or_unpaired connection"
 
 - doc: |
@@ -1129,6 +1129,10 @@
                         invocation: {inputs: {i: {type: collection, ref: C_AS_UNPAIRED_n}}}
                         output: o
     tests:
+        tool_runtime:
+            api_test: "test_tool_execute.py::test_map_over_paired_or_unpaired_with_sample_sheet"
+        workflow_runtime:
+            framework_test: "collection_semantics_paired_or_unpaired_8"
         workflow_editor: "accepts sample_sheet -> paired_or_unpaired connection"
 
 - example:
