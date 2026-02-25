@@ -46,15 +46,15 @@ from galaxy.webapps.galaxy.api import (
 # Import agent system
 try:
     from galaxy.agents import (
-        AgentType,
         GalaxyAgentDependencies,
     )
+    from galaxy.agents.workflow_report import WorkflowReportAgent
 
     HAS_AGENTS = True
 except ImportError:
     HAS_AGENTS = False
-    AgentType = None  # type: ignore[assignment,misc,unused-ignore]
     GalaxyAgentDependencies = None  # type: ignore[assignment,misc,unused-ignore]
+    WorkflowReportAgent = None  # type: ignore[assignment,misc,unused-ignore]
 
 # Import pydantic-ai components (required dependency)
 from pydantic_ai import Agent
@@ -349,20 +349,23 @@ class ChatAPI:
         user: User = DependsOnUser,
     ) -> str | None:
         """Generate a report for the specified workflow."""
-        # TODO: Need to handle version (ik there's a way to first deal with version, then check instance)
-        workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
-        if not workflow:
+        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(
+            trans, workflow_id, by_stored_id=not instance
+        )
+        if not stored_workflow:
             raise ObjectNotFound("Workflow not found.")
+        if version is None and instance:
+            decoded_id = trans.app.security.decode_id(workflow_id)
+            workflow = stored_workflow.get_internal_version_by_id(decoded_id)
+        else:
+            workflow = stored_workflow.get_internal_version(version)
         if not HAS_AGENTS:
             raise ConfigurationError("AI agent system is not available.")
-        assert AgentType is not None
+        assert WorkflowReportAgent is not None
 
-        response = await self.agent_service.execute_agent(
-            agent_type=AgentType.WORKFLOW_REPORT,
-            query=workflow.name,
-            trans=trans,
-            user=user,
-        )
+        deps = self.agent_service.create_dependencies(trans, user)
+        agent = WorkflowReportAgent(deps)
+        response = await agent.generate_report(workflow)
         return response.content
 
     @router.put("/api/chat/exchange/{exchange_id}/feedback", unstable=True)
