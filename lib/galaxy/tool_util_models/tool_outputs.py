@@ -22,7 +22,7 @@ from typing_extensions import (
 from ._base import ToolSourceBaseModel
 
 AnyT = TypeVar("AnyT")
-NotRequired = Annotated[Optional[AnyT], Field()]
+NotRequired = Optional[AnyT]
 IncomingNotRequiredBoolT = TypeVar("IncomingNotRequiredBoolT")
 IncomingNotRequiredStringT = TypeVar("IncomingNotRequiredStringT")
 

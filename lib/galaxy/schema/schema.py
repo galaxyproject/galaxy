@@ -76,7 +76,7 @@ INVOCATION_STEP_MODEL_CLASS = Literal["WorkflowInvocationStep"]
 INVOCATION_REPORT_MODEL_CLASS = Literal["Report"]
 IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = Literal["ImplicitCollectionJobs"]
 
-OptionalNumberT = Annotated[Optional[Union[int, float]], Field()]
+OptionalNumberT = Optional[Union[int, float]]
 
 TAG_ITEM_PATTERN = r"^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$"
 

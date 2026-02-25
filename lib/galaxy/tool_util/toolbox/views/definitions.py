@@ -13,7 +13,6 @@ from pydantic import (
     Field,
 )
 from typing_extensions import (
-    Annotated,
     Literal,
 )
 
@@ -42,7 +41,7 @@ Exclusions = Union[
     ExcludeToolRegex,
     ExcludeTypes,
 ]
-OptionalExclusionList = Annotated[Optional[List[Exclusions]], Field()]
+OptionalExclusionList = Optional[List[Exclusions]]
 
 
 class Tool(BaseModel):
