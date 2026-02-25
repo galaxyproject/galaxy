@@ -12,6 +12,7 @@ export type UpdateHistoryPayload = components["schemas"]["UpdateHistoryPayload"]
 
 export type CustomHistoryView = components["schemas"]["CustomHistoryView"];
 
+export type WorkflowExtractionJob = components["schemas"]["WorkflowExtractionJob"];
 export type WorkflowExtractionSummary = components["schemas"]["WorkflowExtractionSummary"];
 
 export type HistoryCounts = Pick<CustomHistoryView, "nice_size" | "contents_active" | "contents_states">;
