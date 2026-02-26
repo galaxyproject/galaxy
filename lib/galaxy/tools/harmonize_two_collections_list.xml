@@ -2,8 +2,11 @@
       name="Harmonize two collections"
       version="1.0.0"
       tool_type="harmonize_list">
-    <description></description>
+    <description>to match identifiers and order</description>
     <type class="HarmonizeTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <edam_operations>
@@ -209,9 +212,13 @@
 Synopsis
 ========
 
-Harmonize 2 collections: Inputs are 2 collections. Outputs are 2 collections with:
-- Same identifiers (identifiers which are specific to one or the other are removed)
-- Identifiers are in the same order
+Harmonizes two collections so they contain the same element identifiers in the same order.
+
+===========
+Description
+===========
+
+This tool takes two collections and produces two output collections that share exactly the same set of identifiers in the same order. Any identifiers that are present in only one of the two input collections are removed from both outputs. The order of the first input collection is preserved.
 
 =======
 Example
@@ -219,26 +226,29 @@ Example
 
 If the inputs are::
 
- Collection1: [Horse123] 
-              [Donkey543] 
-              [Mule176]
+ Collection 1: [Horse123]
+               [Donkey543]
+               [Mule176]
 
- Collection2: [Horse] 
-              [Mule176] 
-              [Donkey543]
+ Collection 2: [Horse]
+               [Mule176]
+               [Donkey543]
+
 The tool will output::
 
- Collection1: [Donkey543] 
-              [Mule176]
+ Collection 1: [Donkey543]
+               [Mule176]
 
- Collection2: [Donkey543] 
-              [Mule176]
+ Collection 2: [Donkey543]
+               [Mule176]
+
+Note that ``Horse123`` and ``Horse`` are removed because they do not match between collections.
 
 -------
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
      ]]></help>
 </tool>

@@ -2,7 +2,7 @@
       name="Flatten collection"
       version="1.0.0"
       tool_type="flatten_collection">
-    <description></description>
+    <description>to a simple list</description>
     <type class="FlattenTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
@@ -57,14 +57,14 @@ Description
 This tool takes nested collections such as a list of lists or a list of dataset pairs and produces a flat list from the inputs. It effectively "flattens" the hierarchy. The collection identifiers are merged together (using "_" as default) to create new collection identifiers in the flattened result:
 
 .. image:: ${static_path}/images/tools/collection_ops/flatten.svg
-  :width: 500
   :alt: Flattening operation
+  :width: 500
 
 ----
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
      ]]></help>
 </tool>

@@ -2,8 +2,11 @@
       name="Keep success"
       version="1.1.0"
       tool_type="keep_success_datasets_collection">
-    <description></description>
+    <description>datasets in a collection</description>
     <type class="KeepSuccessDatasetsTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <edam_operations>
@@ -14,7 +17,7 @@
         <param type="data" name="replacement" optional="true" label="Replace unsuccessful elements with this dataset" help="If provided, unsuccessful elements will be replaced with this dataset"/>
     </inputs>
     <outputs>
-        <collection name="output" format_source="input" type_source="input" label="${on_string} (only successed datasets)" >
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (only successful datasets)" >
         </collection>
     </outputs>
     <tests>
@@ -43,23 +46,25 @@
 Synopsis
 ========
 
-Keep datasets in success (green) from a collection.
+Keeps only datasets in the success (green) state from a collection.
 
 ===========
 Description
 ===========
 
-This tool takes a dataset collection and filters in (keep) datasets in the success (green) state. This is useful for continuing a multi-sample analysis when one of more of the samples fails or is in paused state.
+This tool takes a dataset collection and retains only datasets in the success (green) state, removing any that are failed, paused, or in other non-success states. This is useful for continuing a multi-sample analysis when one or more of the samples fails or is in a paused state.
+
+Optionally, you can provide a replacement dataset. When a replacement is specified, unsuccessful elements are replaced with that dataset instead of being removed.
 
 .. image:: ${static_path}/images/tools/collection_ops/keep_success.svg
-  :width: 500
   :alt: Keep success datasets
+  :width: 500
 
 -----
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
       ]]></help>
 </tool>

@@ -2,8 +2,11 @@
       name="Zip collections"
       version="1.0.0"
       tool_type="zip_collection">
-  <description></description>
+  <description>into a paired collection</description>
   <type class="ZipCollectionTool" module="galaxy.tools" />
+  <macros>
+    <import>model_operation_macros.xml</import>
+  </macros>
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
   <edam_operations>
@@ -31,18 +34,18 @@ Takes two collections and creates a paired collection from them.
 Description
 ===========
 
-If you have one collection containing only forward reads and one containing only reverse, this tools will "zip" them together into a simple paired collection. For example, given two collections with `forward` and `reverse` reads they can be "zipped" into a single paired collection:
+If you have one collection containing only forward reads and one containing only reverse, this tool will "zip" them together into a simple paired collection. For example, given two collections with `forward` and `reverse` reads they can be "zipped" into a single paired collection:
 
 .. image:: ${static_path}/images/tools/collection_ops/zip.svg
-  :width: 500
   :alt: Zipping operation
+  :width: 500
 
 
 -----
     
 .. class:: infomark
 
-This tool will create new history datasets for your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
   ]]></help>
 </tool>

@@ -2,15 +2,18 @@
       name="Tag elements"
       version="1.0.0"
       tool_type="tag_from_file">
-    <description></description>
+    <description>from a tabular file of tags</description>
     <type class="TagFromFileTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <edam_operations>
         <edam_operation>operation_3096</edam_operation>
     </edam_operations>
     <inputs>
-        <param type="data_collection" name="input" label="Input Collection" help="A tabular file indicating how to tag collection elements."/>
+        <param type="data_collection" name="input" label="Input Collection" help="The collection whose elements will be tagged."/>
         <param type="data" name="tags" format="tabular" label="Tag collection elements according to this file"/>
         <param name="how" type="select" label="How should the tags be updated">
             <option value="add">New tags will be added, existing tags will be kept</option>
@@ -90,7 +93,7 @@ Adds tags (including name: and group: tags) to collection elements.
 Description
 ===========
 
-The relationship between element names and tags is specified in a two column tab-delimited file. This file may contain less entries than elements in the collection. In that case only matching list identifiers will be tagged.
+The relationship between element names and tags is specified in a two column tab-delimited file. This file may contain fewer entries than elements in the collection. In that case only matching list identifiers will be tagged.
 
 To create name: or group: tags prepend them with ``#`` (you can also use ``name:``) or ``group:``, respectively.
 
@@ -98,13 +101,17 @@ To create name: or group: tags prepend them with ``#`` (you can also use ``name:
 More about tags
 ===============
 
-Galaxy allows tagging datasets to facilitate analyses. There are several types of tags including simple tags, name tags, and group tags. **Simple** tags allow you to attach an alternative label to a dataset, which will make it easier to find it later. **Name** tags allow you to track propagation of a dataset through the analyses: all datasets derived from the initial dataset labeled with a name tag will inherit it. Finally, **group** tags allow you to label group of datasets. This is useful. for example, for differential expression analysis where you can have two groups of datasets labeled as "treatment" and "control".
+Galaxy allows tagging datasets to facilitate analyses. There are several types of tags including simple tags, name tags, and group tags. **Simple** tags allow you to attach an alternative label to a dataset, which will make it easier to find it later. **Name** tags allow you to track propagation of a dataset through the analyses: all datasets derived from the initial dataset labeled with a name tag will inherit it. Finally, **group** tags allow you to label groups of datasets. This is useful, for example, for differential expression analysis where you can have two groups of datasets labeled as "treatment" and "control".
 
-To learn mote about tags go to `our training site`_.
+To learn more about tags go to `our training site`_.
 
 .. _our training site: https://training.galaxyproject.org/training-material/search?query=tags
 
+-----
 
+.. class:: infomark
+
+@QUOTA_USAGE_NOTE@
 
     ]]></help>
 </tool>

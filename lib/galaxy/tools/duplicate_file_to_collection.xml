@@ -2,8 +2,11 @@
       name="Duplicate file to collection"
       version="1.0.0"
       tool_type="duplicate_file_to_collection">
-    <description></description>
+    <description>by duplicating a dataset N times</description>
     <type class="DuplicateFileToCollectionTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <!-- <edam_operations>
@@ -49,8 +52,11 @@ Description
 
 This tool allows creation of a dataset collection of arbitrary size. It takes an input dataset and an integer parameter, which specifies the number of times to duplicate the dataset in the output collection. In addition, the user can specify the base name for the element identifier to use in the output. For example, if `Number` is specified as 3 and `Element identifier` as 'Element', the output collection will contain three identical datasets, with the identifiers `Element 1`, `Element 2` and `Element 3`.
 
+-----
+
 .. class:: infomark
 
-This tool will create new history datasets but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
+
     ]]></help>
 </tool>

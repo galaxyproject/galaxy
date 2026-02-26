@@ -1,7 +1,7 @@
 <tool id="__CROSS_PRODUCT_NESTED__"
       name="Nested Cross Product"
       version="1.0.0">
-    <description></description>
+    <description>of two collections into nested lists for all-vs-all comparison</description>
     <type class="CrossProductNestedCollectionTool" module="galaxy.tools" />
     <macros>
         <import>model_operation_macros.xml</import>

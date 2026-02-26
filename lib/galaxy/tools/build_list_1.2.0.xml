@@ -2,8 +2,11 @@
       name="Build list"
       version="1.2.0"
       tool_type="build_list">
-  <description></description>
+  <description>from individual datasets or existing collections</description>
   <type class="BuildListCollectionTool" module="galaxy.tools" />
+  <macros>
+    <import>model_operation_macros.xml</import>
+  </macros>
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
   <edam_operations>
@@ -21,7 +24,7 @@
           <when value="idx"/>
           <when value="identifier"/>
           <when value="manual">
-            <param name="identifier" type="text" lable="Identifier"/>
+            <param name="identifier" type="text" label="Identifier"/>
           </when>
       </conditional>
     </repeat>
@@ -42,7 +45,7 @@ Builds a new list collection from individual datasets or collections.
 Description
 ===========
 
-This tool combines individual datasets or collections into a new collection. The simplest scenario is building a new colection from individual datasets (case **A** in the image below). You can merge a collection with individual dataset(s). In this case (see **B** in the image below) the individual dataset(s) will be merged with each element of the input collection to create a nested collection. Finally, two or more collection can be merged together creating a nested collection (case **C** in the image below).
+This tool combines individual datasets or collections into a new collection. The simplest scenario is building a new collection from individual datasets (case **A** in the image below). You can merge a collection with individual dataset(s). In this case (see **B** in the image below) the individual dataset(s) will be merged with each element of the input collection to create a nested collection. Finally, two or more collections can be merged together creating a nested collection (case **C** in the image below).
 
 .. class:: warningmark
 
@@ -51,15 +54,14 @@ This tool combines individual datasets or collections into a new collection. The
 ------
 
 .. image:: ${static_path}/images/tools/collection_ops/build_list.svg
+  :alt: Build list operation
   :width: 800
-  :alt: Unzipping operation
 
 -------
 
 .. class:: infomark
 
-
-This tool will create a new collection from your history datasets but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
   ]]></help>
   <tests>

@@ -2,8 +2,11 @@
       name="Unzip collection"
       version="1.0.0"
       tool_type="unzip_collection">
-  <description></description>
+  <description>into forward and reverse datasets</description>
   <type class="UnzipCollectionTool" module="galaxy.tools" />
+  <macros>
+    <import>model_operation_macros.xml</import>
+  </macros>
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
     <edam_operations>
@@ -18,7 +21,6 @@
   </outputs>
   <help><![CDATA[
 
-
 ========
 Synopsis
 ========
@@ -32,14 +34,14 @@ Description
 Given a paired collection of forward and reverse reads this tool will "unzip" it into two collections containing forward and reverse reads, respectively:
 
 .. image:: ${static_path}/images/tools/collection_ops/unzip.svg
-  :width: 500
   :alt: Unzipping operation
+  :width: 500
 
 -----
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
   ]]></help>
 </tool>
