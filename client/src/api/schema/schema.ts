@@ -12848,6 +12848,7 @@ export interface components {
                 | "huggingface"
                 | "iiif"
                 | "omero";
+                | "ssh";
             /** Variables */
             variables?:
                 | (
@@ -24488,6 +24489,7 @@ export interface components {
                 | "huggingface"
                 | "iiif"
                 | "omero";
+                | "ssh";
             /** Uri Root */
             uri_root: string;
             /**
