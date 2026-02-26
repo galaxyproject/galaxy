@@ -60,18 +60,18 @@ class ChatManager:
         trans.sa_session.commit()
         return chat_exchange
 
-    def create_notebook_chat(
+    def create_page_chat(
         self,
         trans: ProvidesUserContext,
-        notebook_id: int,
+        page_id: int,
         query: str,
         response_data: Any,
         agent_type: str = "notebook_assistant",
     ) -> ChatExchange:
-        """Create a chat exchange scoped to a notebook."""
+        """Create a chat exchange scoped to a page."""
         import json
 
-        chat_exchange = ChatExchange(user=trans.user, notebook_id=notebook_id)
+        chat_exchange = ChatExchange(user=trans.user, page_id=page_id)
 
         conversation_data: dict[str, Any]
         if isinstance(response_data, str):
@@ -94,17 +94,15 @@ class ChatManager:
         trans.sa_session.commit()
         return chat_exchange
 
-    def get_notebook_chat_history(
-        self, trans: ProvidesUserContext, notebook_id: int, limit: int = 50
-    ) -> list[ChatExchange]:
-        """Get chat exchanges scoped to a notebook, ordered most-recent first."""
+    def get_page_chat_history(self, trans: ProvidesUserContext, page_id: int, limit: int = 50) -> list[ChatExchange]:
+        """Get chat exchanges scoped to a page, ordered most-recent first."""
         try:
             stmt = (
                 select(ChatExchange)
                 .where(
                     and_(
                         ChatExchange.user_id == trans.user.id,
-                        ChatExchange.notebook_id == notebook_id,
+                        ChatExchange.page_id == page_id,
                     )
                 )
                 .order_by(ChatExchange.id.desc())
@@ -112,7 +110,7 @@ class ChatManager:
             )
             return trans.sa_session.execute(stmt).scalars().all()
         except Exception as e:
-            raise InternalServerError(f"Error loading notebook chat history: {unicodify(e)}")
+            raise InternalServerError(f"Error loading page chat history: {unicodify(e)}")
 
     def create_general_chat(
         self, trans: ProvidesUserContext, query: str, response_data: Any, agent_type: str = "unknown"
@@ -369,14 +367,14 @@ class ChatManager:
         trans: ProvidesUserContext,
         limit: int = 50,
         include_job_chats: bool = False,
-        include_notebook_chats: bool = False,
+        include_page_chats: bool = False,
     ) -> list[ChatExchange]:
         """
         Get all chat exchanges for a user.
 
         :param limit: Maximum number of exchanges to return
         :param include_job_chats: Whether to include job-related chats
-        :param include_notebook_chats: Whether to include notebook-scoped chats
+        :param include_page_chats: Whether to include page-scoped chats
         :returns: List of ChatExchange objects
         """
         try:
@@ -385,8 +383,8 @@ class ChatManager:
             if not include_job_chats:
                 stmt = stmt.where(ChatExchange.job_id.is_(None))
 
-            if not include_notebook_chats:
-                stmt = stmt.where(ChatExchange.notebook_id.is_(None))
+            if not include_page_chats:
+                stmt = stmt.where(ChatExchange.page_id.is_(None))
 
             stmt = stmt.order_by(ChatExchange.id.desc()).limit(limit)
 

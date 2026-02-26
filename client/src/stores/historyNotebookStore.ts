@@ -2,26 +2,26 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 import {
-    createHistoryNotebook,
-    type CreateNotebookPayload,
-    deleteHistoryNotebook,
-    fetchHistoryNotebook,
-    fetchHistoryNotebooks,
-    fetchNotebookRevision,
-    fetchNotebookRevisions,
-    type HistoryNotebookDetails,
-    type HistoryNotebookRevisionDetails,
-    type HistoryNotebookRevisionSummary,
-    type HistoryNotebookSummary,
-    revertNotebookRevision,
-    updateHistoryNotebook,
-    type UpdateNotebookPayload,
-} from "@/api/historyNotebooks";
+    createHistoryPage,
+    type CreateHistoryPagePayload,
+    deleteHistoryPage,
+    fetchHistoryPage,
+    fetchHistoryPages,
+    fetchPageRevision,
+    fetchPageRevisions,
+    type HistoryPageDetails,
+    type HistoryPageSummary,
+    type PageRevisionDetails,
+    type PageRevisionSummary,
+    revertPageRevision,
+    updateHistoryPage,
+    type UpdateHistoryPagePayload,
+} from "@/api/historyPages";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
-    const notebooks = ref<HistoryNotebookSummary[]>([]);
-    const currentNotebook = ref<HistoryNotebookDetails | null>(null);
+    const notebooks = ref<HistoryPageSummary[]>([]);
+    const currentNotebook = ref<HistoryPageDetails | null>(null);
     const originalContent = ref("");
     const currentContent = ref("");
     const originalTitle = ref("");
@@ -32,24 +32,22 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
     const error = ref<string | null>(null);
     const historyId = ref<string | null>(null);
 
-    // Per-history "current notebook" ID persisted across sessions
-    const currentNotebookIds = useUserLocalStorage<Record<string, string>>("history-notebook-current", {});
+    // Per-history "current page" ID persisted across sessions
+    // Read old key as fallback for transition from notebook → page
+    const currentNotebookIds = useUserLocalStorage<Record<string, string>>("history-page-current", {});
 
-    // Per-notebook chat exchange ID persisted across panel close/reopen
-    const currentChatExchangeIds = useUserLocalStorage<Record<string, number | null>>(
-        "history-notebook-chat-exchange",
-        {},
-    );
+    // Per-page chat exchange ID persisted across panel close/reopen
+    const currentChatExchangeIds = useUserLocalStorage<Record<string, number | null>>("history-page-chat-exchange", {});
 
-    // Per-notebook dismissed proposal message IDs
+    // Per-page dismissed proposal message IDs
     const dismissedChatProposals = useUserLocalStorage<Record<string, string[]>>(
-        "history-notebook-dismissed-proposals",
+        "history-page-dismissed-proposals",
         {},
     );
 
     // Revision state
-    const revisions = ref<HistoryNotebookRevisionSummary[]>([]);
-    const selectedRevision = ref<HistoryNotebookRevisionDetails | null>(null);
+    const revisions = ref<PageRevisionSummary[]>([]);
+    const selectedRevision = ref<PageRevisionDetails | null>(null);
     const isLoadingRevisions = ref(false);
     const isLoadingRevision = ref(false);
     const isReverting = ref(false);
@@ -70,22 +68,22 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
         isLoadingList.value = true;
         error.value = null;
         try {
-            notebooks.value = await fetchHistoryNotebooks(newHistoryId);
+            notebooks.value = await fetchHistoryPages(newHistoryId);
         } catch (e: any) {
-            error.value = e.message || "Failed to load notebooks";
+            error.value = e.message || "Failed to load pages";
         } finally {
             isLoadingList.value = false;
         }
     }
 
-    async function loadNotebook(notebookId: string) {
+    async function loadNotebook(pageId: string) {
         if (!historyId.value) {
             return;
         }
         isLoadingNotebook.value = true;
         error.value = null;
         try {
-            const data = await fetchHistoryNotebook(historyId.value, notebookId);
+            const data = await fetchHistoryPage(pageId);
             currentNotebook.value = data;
             // Use content_editor (raw) for the editor, not content (expanded for rendering)
             const editorContent = data.content_editor ?? data.content ?? "";
@@ -93,25 +91,26 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
             currentContent.value = editorContent;
             originalTitle.value = data.title || "";
             currentTitle.value = data.title || "";
-            setCurrentNotebookId(historyId.value, notebookId);
+            setCurrentNotebookId(historyId.value, pageId);
         } catch (e: any) {
-            error.value = e.message || "Failed to load notebook";
+            error.value = e.message || "Failed to load page";
         } finally {
             isLoadingNotebook.value = false;
         }
     }
 
-    async function createNotebook(payload?: Partial<CreateNotebookPayload>): Promise<HistoryNotebookDetails | null> {
+    async function createNotebook(payload?: Partial<CreateHistoryPagePayload>): Promise<HistoryPageDetails | null> {
         if (!historyId.value) {
             return null;
         }
         isLoadingNotebook.value = true;
         error.value = null;
         try {
-            const data = await createHistoryNotebook(historyId.value, {
-                content: null,
+            const data = await createHistoryPage({
+                title: payload?.title || "",
+                history_id: historyId.value,
+                content: payload?.content ?? null,
                 content_format: "markdown",
-                ...payload,
             });
             currentNotebook.value = data;
             const editorContent = data.content_editor ?? data.content ?? "";
@@ -122,7 +121,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
             await loadNotebooks(historyId.value);
             return data;
         } catch (e: any) {
-            error.value = e.message || "Failed to create notebook";
+            error.value = e.message || "Failed to create page";
             throw e;
         } finally {
             isLoadingNotebook.value = false;
@@ -136,19 +135,19 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
         isSaving.value = true;
         error.value = null;
         try {
-            const payload: UpdateNotebookPayload = {
+            const payload: UpdateHistoryPagePayload = {
                 content: currentContent.value,
                 content_format: "markdown",
                 title: currentTitle.value || undefined,
                 edit_source: editSource,
             };
-            const data = await updateHistoryNotebook(historyId.value, currentNotebook.value.id, payload);
+            const data = await updateHistoryPage(currentNotebook.value.id, payload);
             currentNotebook.value = data;
             // Use current values (what the user typed) as the baseline, not data values
             // which may be transformed by rewrite_content_for_export for rendering.
             originalContent.value = currentContent.value;
             originalTitle.value = currentTitle.value;
-            // Sync the notebooks list so handleSelect reads the updated title (e.g. for WM window titles)
+            // Sync the notebooks list so handleSelect reads the updated title
             const idx = notebooks.value.findIndex((n) => n.id === data.id);
             if (idx !== -1) {
                 notebooks.value[idx] = {
@@ -158,7 +157,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
                 };
             }
         } catch (e: any) {
-            error.value = e.message || "Failed to save notebook";
+            error.value = e.message || "Failed to save page";
             throw e;
         } finally {
             isSaving.value = false;
@@ -171,7 +170,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
         }
         try {
             const deletedId = currentNotebook.value.id;
-            await deleteHistoryNotebook(historyId.value, deletedId);
+            await deleteHistoryPage(deletedId);
             clearCurrentNotebookId(historyId.value);
             clearCurrentChatExchangeId(deletedId);
             clearDismissedProposals(deletedId);
@@ -182,7 +181,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
             currentTitle.value = "";
             await loadNotebooks(historyId.value);
         } catch (e: any) {
-            error.value = e.message || "Failed to delete notebook";
+            error.value = e.message || "Failed to delete page";
             throw e;
         }
     }
@@ -201,27 +200,27 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
     }
 
     function clearCurrentNotebook() {
-        const notebookId = currentNotebook.value?.id;
+        const pageId = currentNotebook.value?.id;
         currentNotebook.value = null;
         originalContent.value = "";
         currentContent.value = "";
         originalTitle.value = "";
         currentTitle.value = "";
         showChatPanel.value = false;
-        if (notebookId) {
-            clearCurrentChatExchangeId(notebookId);
+        if (pageId) {
+            clearCurrentChatExchangeId(pageId);
         }
         clearRevisionState();
     }
 
-    // --- Current notebook resolution ---
+    // --- Current page resolution ---
 
     function getCurrentNotebookId(forHistoryId: string): string | null {
         return currentNotebookIds.value[forHistoryId] || null;
     }
 
-    function setCurrentNotebookId(forHistoryId: string, notebookId: string) {
-        currentNotebookIds.value = { ...currentNotebookIds.value, [forHistoryId]: notebookId };
+    function setCurrentNotebookId(forHistoryId: string, pageId: string) {
+        currentNotebookIds.value = { ...currentNotebookIds.value, [forHistoryId]: pageId };
     }
 
     function clearCurrentNotebookId(forHistoryId: string) {
@@ -231,42 +230,42 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
 
     // --- Chat exchange persistence ---
 
-    function getCurrentChatExchangeId(notebookId: string): number | null {
-        return currentChatExchangeIds.value[notebookId] ?? null;
+    function getCurrentChatExchangeId(pageId: string): number | null {
+        return currentChatExchangeIds.value[pageId] ?? null;
     }
 
-    function setCurrentChatExchangeId(notebookId: string, exchangeId: number | null) {
-        currentChatExchangeIds.value = { ...currentChatExchangeIds.value, [notebookId]: exchangeId };
+    function setCurrentChatExchangeId(pageId: string, exchangeId: number | null) {
+        currentChatExchangeIds.value = { ...currentChatExchangeIds.value, [pageId]: exchangeId };
     }
 
-    function clearCurrentChatExchangeId(notebookId: string) {
-        const { [notebookId]: _removed, ...rest } = currentChatExchangeIds.value;
+    function clearCurrentChatExchangeId(pageId: string) {
+        const { [pageId]: _removed, ...rest } = currentChatExchangeIds.value;
         currentChatExchangeIds.value = rest;
     }
 
     // --- Dismissed proposals persistence ---
 
-    function getDismissedProposals(notebookId: string): string[] {
-        return dismissedChatProposals.value[notebookId] ?? [];
+    function getDismissedProposals(pageId: string): string[] {
+        return dismissedChatProposals.value[pageId] ?? [];
     }
 
-    function addDismissedProposal(notebookId: string, messageId: string) {
-        const current = dismissedChatProposals.value[notebookId] ?? [];
+    function addDismissedProposal(pageId: string, messageId: string) {
+        const current = dismissedChatProposals.value[pageId] ?? [];
         if (!current.includes(messageId)) {
             dismissedChatProposals.value = {
                 ...dismissedChatProposals.value,
-                [notebookId]: [...current, messageId],
+                [pageId]: [...current, messageId],
             };
         }
     }
 
-    function clearDismissedProposals(notebookId: string) {
-        const { [notebookId]: _removed, ...rest } = dismissedChatProposals.value;
+    function clearDismissedProposals(pageId: string) {
+        const { [pageId]: _removed, ...rest } = dismissedChatProposals.value;
         dismissedChatProposals.value = rest;
     }
 
     async function resolveCurrentNotebook(forHistoryId: string): Promise<string> {
-        // Always populate the notebooks list so callers can look up titles
+        // Always populate the list so callers can look up titles
         await loadNotebooks(forHistoryId);
 
         const storedId = getCurrentNotebookId(forHistoryId);
@@ -288,8 +287,10 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
             return id;
         }
 
-        // No notebooks exist — create one
-        const created = await createHistoryNotebook(forHistoryId, {
+        // No pages exist — create one
+        const created = await createHistoryPage({
+            title: "",
+            history_id: forHistoryId,
             content: null,
             content_format: "markdown",
         });
@@ -305,7 +306,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
         }
         isLoadingRevisions.value = true;
         try {
-            revisions.value = await fetchNotebookRevisions(historyId.value, currentNotebook.value.id);
+            revisions.value = await fetchPageRevisions(currentNotebook.value.id);
         } catch (e: any) {
             error.value = e.message || "Failed to load revisions";
         } finally {
@@ -319,7 +320,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
         }
         isLoadingRevision.value = true;
         try {
-            selectedRevision.value = await fetchNotebookRevision(historyId.value, currentNotebook.value.id, revisionId);
+            selectedRevision.value = await fetchPageRevision(currentNotebook.value.id, revisionId);
         } catch (e: any) {
             error.value = e.message || "Failed to load revision";
         } finally {
@@ -333,11 +334,9 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
         }
         isReverting.value = true;
         try {
-            const data = await revertNotebookRevision(historyId.value, currentNotebook.value.id, revisionId);
-            currentNotebook.value = data;
-            const editorContent = data.content_editor ?? data.content ?? "";
-            originalContent.value = editorContent;
-            currentContent.value = editorContent;
+            await revertPageRevision(currentNotebook.value.id, revisionId);
+            // Revert returns the new revision; reload the full page to get updated details
+            await loadNotebook(currentNotebook.value.id);
             selectedRevision.value = null;
             showRevisions.value = false;
             await loadRevisions();
@@ -419,7 +418,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
         updateTitle,
         discardChanges,
         clearCurrentNotebook,
-        // Current notebook resolution
+        // Current page resolution
         currentNotebookIds,
         getCurrentNotebookId,
         setCurrentNotebookId,

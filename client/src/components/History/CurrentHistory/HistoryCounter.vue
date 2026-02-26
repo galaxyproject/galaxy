@@ -123,25 +123,25 @@ async function navigateToCurrentNotebook() {
     const toast = useToast();
     isResolvingNotebook.value = true;
     try {
-        const notebookId = await notebookStore.resolveCurrentNotebook(props.history.id);
+        const pageId = await notebookStore.resolveCurrentNotebook(props.history.id);
         const Galaxy = getGalaxyInstance();
         const isWmActive = Galaxy?.frame?.active;
 
         if (isWmActive) {
-            const notebook = notebookStore.notebooks.find((n) => n.id === notebookId);
-            const title = notebook?.title || "Notebook";
-            const url = `/histories/${props.history.id}/notebooks/${notebookId}?displayOnly=true`;
+            const page = notebookStore.notebooks.find((n) => n.id === pageId);
+            const title = page?.title || "Page";
+            const url = `/histories/${props.history.id}/pages/${pageId}?displayOnly=true`;
             const options: RouterPushOptions = {
-                title: `Notebook: ${title}`,
+                title: `Page: ${title}`,
                 preventWindowManager: false,
             };
             // @ts-ignore - monkeypatched router, drop with migration.
             router.push(url, options);
         } else {
-            router.push(`/histories/${props.history.id}/notebooks/${notebookId}`);
+            router.push(`/histories/${props.history.id}/pages/${pageId}`);
         }
     } catch (e: any) {
-        toast.error(e.message || "Failed to open notebook");
+        toast.error(e.message || "Failed to open page");
     } finally {
         isResolvingNotebook.value = false;
     }

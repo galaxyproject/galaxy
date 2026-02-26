@@ -10,8 +10,8 @@ import { BButton, BSkeleton } from "bootstrap-vue";
 import { nextTick, onMounted, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { generateId, scrollToBottom } from "@/components/ChatGXY/chatUtils";
 import type { ChatMessage } from "@/components/ChatGXY/chatTypes";
+import { generateId, scrollToBottom } from "@/components/ChatGXY/chatUtils";
 import { type AgentResponse, type EditProposal, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
 import { useHistoryNotebookStore } from "@/stores/historyNotebookStore";
@@ -27,7 +27,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps<{
     historyId: string;
-    notebookId: string;
+    pageId: string;
     notebookContent: string;
 }>();
 
@@ -65,7 +65,7 @@ onMounted(async () => {
 
 async function loadNotebookChat() {
     // Try store-cached exchange ID first (avoids API round-trip on panel reopen)
-    const storedExchangeId = store.getCurrentChatExchangeId(props.notebookId);
+    const storedExchangeId = store.getCurrentChatExchangeId(props.pageId);
     if (storedExchangeId !== null) {
         try {
             await loadConversation(storedExchangeId);
@@ -73,14 +73,14 @@ async function loadNotebookChat() {
                 return;
             }
         } catch {
-            store.clearCurrentChatExchangeId(props.notebookId);
+            store.clearCurrentChatExchangeId(props.pageId);
         }
     }
 
     // Fall back to API
     try {
-        const { data, error } = await GalaxyApi().GET("/api/chat/notebook/{notebook_id}/history", {
-            params: { path: { notebook_id: props.notebookId }, query: { limit: 1 } },
+        const { data, error } = await GalaxyApi().GET("/api/chat/page/{page_id}/history" as any, {
+            params: { path: { page_id: props.pageId }, query: { limit: 1 } },
         });
 
         if (data && !error && data.length > 0) {
@@ -121,8 +121,8 @@ async function loadConversation(exchangeId: number) {
                 return m;
             });
             currentChatId.value = exchangeId;
-            store.setCurrentChatExchangeId(props.notebookId, exchangeId);
-            dismissedProposals.value = new Set(store.getDismissedProposals(props.notebookId));
+            store.setCurrentChatExchangeId(props.pageId, exchangeId);
+            dismissedProposals.value = new Set(store.getDismissedProposals(props.pageId));
         }
     } catch {
         // silent
@@ -158,7 +158,7 @@ async function submitQuery() {
                 query: currentQuery,
                 context: null,
                 exchange_id: currentChatId.value,
-                notebook_id: props.notebookId,
+                page_id: props.pageId,
             },
         });
 
@@ -176,7 +176,7 @@ async function submitQuery() {
         } else if (data) {
             if (data.exchange_id) {
                 currentChatId.value = data.exchange_id;
-                store.setCurrentChatExchangeId(props.notebookId, data.exchange_id);
+                store.setCurrentChatExchangeId(props.pageId, data.exchange_id);
             }
 
             const agentResponse = data.agent_response as AgentResponse | undefined;
@@ -310,19 +310,19 @@ async function applyFullReplacement(msg: ChatMessage) {
     store.updateContent(proposal.content);
     await store.saveNotebook("agent");
     dismissedProposals.value.add(msg.id);
-    store.addDismissedProposal(props.notebookId, msg.id);
+    store.addDismissedProposal(props.pageId, msg.id);
 }
 
 async function applySectionPatched(patchedContent: string, msg: ChatMessage) {
     store.updateContent(patchedContent);
     await store.saveNotebook("agent");
     dismissedProposals.value.add(msg.id);
-    store.addDismissedProposal(props.notebookId, msg.id);
+    store.addDismissedProposal(props.pageId, msg.id);
 }
 
 function dismissProposal(msg: ChatMessage) {
     dismissedProposals.value.add(msg.id);
-    store.addDismissedProposal(props.notebookId, msg.id);
+    store.addDismissedProposal(props.pageId, msg.id);
 }
 
 function startNewConversation() {
@@ -339,10 +339,10 @@ function startNewConversation() {
         },
     ];
     currentChatId.value = null;
-    store.setCurrentChatExchangeId(props.notebookId, null);
+    store.setCurrentChatExchangeId(props.pageId, null);
     query.value = "";
     dismissedProposals.value = new Set();
-    store.clearDismissedProposals(props.notebookId);
+    store.clearDismissedProposals(props.pageId);
 }
 </script>
 

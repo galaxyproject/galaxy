@@ -241,6 +241,8 @@ const buttonElementRef = useResolveElement(buttonRef);
         background-color: var(--color-grey-100) !important;
         border-color: var(--color-grey-200) !important;
         color: var(--color-grey-500) !important;
+        cursor: default;
+        pointer-events: none;
 
         &:focus-visible {
             border-color: var(--color-grey-500) !important;

@@ -56,7 +56,7 @@ vi.mock("@/app", () => ({
 const localVue = getLocalVue();
 
 const HISTORY_ID = "history-1";
-const NOTEBOOK_ID = "notebook-1";
+const PAGE_ID = "page-1";
 
 const SELECTORS = {
     INFO_ALERT: "balert-stub[variant='info']",
@@ -67,7 +67,6 @@ const SELECTORS = {
     MANAGE_BUTTON: ".notebook-toolbar bbutton-stub[variant='link']",
     UNSAVED_INDICATOR: ".notebook-toolbar .text-warning",
     REVISIONS_BUTTON: "[data-description='notebook revisions button']",
-    EXPORT_BUTTON: "[data-description='notebook export to page button']",
     REVISION_PANEL: ".notebook-revision-panel",
     CHAT_BUTTON: "[data-description='notebook chat button']",
     PREVIEW_BUTTON: "[data-description='notebook preview button']",
@@ -77,7 +76,7 @@ const SELECTORS = {
 
 let pinia: Pinia;
 
-function mountComponent(propsData: { historyId: string; notebookId?: string; displayOnly?: boolean }) {
+function mountComponent(propsData: { historyId: string; pageId?: string; displayOnly?: boolean }) {
     return shallowMount(HistoryNotebookView as object, {
         localVue,
         propsData,
@@ -112,7 +111,7 @@ describe("HistoryNotebookView", () => {
             await flushPromises();
 
             const alerts = wrapper.findAll(SELECTORS.INFO_ALERT);
-            const loadingAlert = alerts.wrappers.find((w) => w.text().includes("Loading notebooks"));
+            const loadingAlert = alerts.wrappers.find((w) => w.text().includes("Loading pages"));
             expect(loadingAlert).toBeTruthy();
         });
 
@@ -123,11 +122,11 @@ describe("HistoryNotebookView", () => {
             // hasCurrentNotebook is a computed - set currentNotebook to null so
             // hasCurrentNotebook evaluates to false, falling through to the loading check
             store.currentNotebook = null;
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             const alerts = wrapper.findAll(SELECTORS.INFO_ALERT);
-            const loadingAlert = alerts.wrappers.find((w) => w.text().includes("Loading notebook"));
+            const loadingAlert = alerts.wrappers.find((w) => w.text().includes("Loading page"));
             expect(loadingAlert).toBeTruthy();
         });
     });
@@ -178,14 +177,14 @@ describe("HistoryNotebookView", () => {
             store.isLoadingNotebook = false;
             store.error = null;
             store.currentNotebook = {
-                id: NOTEBOOK_ID,
+                id: PAGE_ID,
                 history_id: HISTORY_ID,
                 title: "My Notebook",
                 content: "# Hello",
             } as any;
             store.currentContent = "# Hello";
             store.currentTitle = "My Notebook";
-            wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
         });
 
@@ -205,7 +204,7 @@ describe("HistoryNotebookView", () => {
             await wrapper.vm.$nextTick();
 
             const clickToEdit = wrapper.findComponent(ClickToEdit);
-            expect(clickToEdit.props("value")).toBe("Untitled Notebook");
+            expect(clickToEdit.props("value")).toBe("Untitled Page");
         });
 
         it("shows 'Unsaved' indicator when store.isDirty is true", async () => {
@@ -252,7 +251,7 @@ describe("HistoryNotebookView", () => {
             const previewBtn = wrapper.find(SELECTORS.PREVIEW_BUTTON);
             await previewBtn.trigger("click");
 
-            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/notebooks/${NOTEBOOK_ID}?displayOnly=true`);
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/${PAGE_ID}?displayOnly=true`);
         });
 
         it("ClickToEdit input updates store title", async () => {
@@ -274,7 +273,7 @@ describe("HistoryNotebookView", () => {
             list.vm.$emit("select", "nb-1");
             await wrapper.vm.$nextTick();
 
-            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/notebooks/nb-1`);
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/nb-1`);
         });
 
         it("handleCreate calls store.createNotebook and navigates on success", async () => {
@@ -282,7 +281,7 @@ describe("HistoryNotebookView", () => {
             vi.mocked(store.createNotebook).mockResolvedValue({
                 id: "new-notebook",
                 history_id: HISTORY_ID,
-                title: "Untitled Notebook",
+                title: "Untitled Page",
                 content: "",
             } as any);
             const wrapper = mountComponent({ historyId: HISTORY_ID });
@@ -292,23 +291,23 @@ describe("HistoryNotebookView", () => {
             list.vm.$emit("create");
             await flushPromises();
 
-            expect(store.createNotebook).toHaveBeenCalledWith({ title: "Untitled Notebook" });
-            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/notebooks/new-notebook`);
+            expect(store.createNotebook).toHaveBeenCalledWith({ title: "Untitled Page" });
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/new-notebook`);
         });
 
         it("Manage History Notebooks calls clearCurrentNotebook and navigates to list", async () => {
             const store = setupListViewStore();
             store.isLoadingNotebook = false;
-            store.currentNotebook = { id: NOTEBOOK_ID, history_id: HISTORY_ID, title: "NB", content: "" } as any;
+            store.currentNotebook = { id: PAGE_ID, history_id: HISTORY_ID, title: "NB", content: "" } as any;
             store.currentTitle = "NB";
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             const manageBtn = wrapper.find(SELECTORS.MANAGE_BUTTON);
             await manageBtn.trigger("click");
 
             expect(store.clearCurrentNotebook).toHaveBeenCalled();
-            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/notebooks`);
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages`);
         });
 
         it("view emit from list navigates to displayOnly URL", async () => {
@@ -320,17 +319,17 @@ describe("HistoryNotebookView", () => {
             list.vm.$emit("view", "nb-1");
             await wrapper.vm.$nextTick();
 
-            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/notebooks/nb-1?displayOnly=true`);
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/nb-1?displayOnly=true`);
         });
 
         it("handleSave calls store.saveNotebook", async () => {
             const store = setupListViewStore();
             store.isLoadingNotebook = false;
-            store.currentNotebook = { id: NOTEBOOK_ID, history_id: HISTORY_ID, title: "NB", content: "" } as any;
+            store.currentNotebook = { id: PAGE_ID, history_id: HISTORY_ID, title: "NB", content: "" } as any;
             store.currentTitle = "NB";
             // canSave is true because currentContent differs from originalContent (defaults to "")
             store.currentContent = "# Modified";
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             expect(store.canSave).toBe(true);
@@ -349,7 +348,7 @@ describe("HistoryNotebookView", () => {
             store.isLoadingNotebook = false;
             store.error = null;
             store.currentNotebook = {
-                id: NOTEBOOK_ID,
+                id: PAGE_ID,
                 history_id: HISTORY_ID,
                 title: "My Notebook",
                 content: "# Hello",
@@ -362,7 +361,7 @@ describe("HistoryNotebookView", () => {
 
         it("renders editor when displayOnly is false", async () => {
             setupLoadedNotebook();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID, displayOnly: false });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: false });
             await flushPromises();
 
             expect(wrapper.find(SELECTORS.TOOLBAR).exists()).toBe(true);
@@ -372,7 +371,7 @@ describe("HistoryNotebookView", () => {
 
         it("renders Markdown when displayOnly is true", async () => {
             setupLoadedNotebook();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID, displayOnly: true });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
             expect(wrapper.findComponent(Markdown).exists()).toBe(true);
@@ -382,19 +381,19 @@ describe("HistoryNotebookView", () => {
 
         it("passes correct markdownConfig to Markdown", async () => {
             setupLoadedNotebook();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID, displayOnly: true });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
             const md = wrapper.findComponent(Markdown);
             const config = md.props("markdownConfig");
-            expect(config.id).toBe(NOTEBOOK_ID);
+            expect(config.id).toBe(PAGE_ID);
             expect(config.title).toBe("My Notebook");
             expect(config.content).toBe("# Hello");
         });
 
         it("shows display toolbar with Edit button", async () => {
             setupLoadedNotebook();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID, displayOnly: true });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
             expect(wrapper.find(SELECTORS.DISPLAY_TOOLBAR).exists()).toBe(true);
@@ -405,13 +404,13 @@ describe("HistoryNotebookView", () => {
 
         it("Edit button navigates to edit mode (no displayOnly)", async () => {
             setupLoadedNotebook();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID, displayOnly: true });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
             const editBtn = wrapper.find(SELECTORS.EDIT_BUTTON);
             await editBtn.trigger("click");
 
-            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/notebooks/${NOTEBOOK_ID}`);
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/${PAGE_ID}`);
         });
 
         it("list view renders normally regardless of displayOnly", async () => {
@@ -425,7 +424,7 @@ describe("HistoryNotebookView", () => {
         it("does not call store.$reset on unmount in displayOnly mode", async () => {
             setupLoadedNotebook();
             const store = useHistoryNotebookStore();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID, displayOnly: true });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
             wrapper.destroy();
@@ -448,8 +447,8 @@ describe("HistoryNotebookView", () => {
             list.vm.$emit("select", "nb-1");
             await wrapper.vm.$nextTick();
 
-            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/notebooks/nb-1?displayOnly=true`, {
-                title: "Notebook: NB1",
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/nb-1?displayOnly=true`, {
+                title: "Page: NB1",
                 preventWindowManager: false,
             });
         });
@@ -466,10 +465,10 @@ describe("HistoryNotebookView", () => {
 
         it("calls store.loadNotebook on mount if notebookId provided", async () => {
             const store = useHistoryNotebookStore();
-            mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
-            expect(store.loadNotebook).toHaveBeenCalledWith(NOTEBOOK_ID);
+            expect(store.loadNotebook).toHaveBeenCalledWith(PAGE_ID);
         });
 
         it("does not call store.loadNotebook on mount when no notebookId", async () => {
@@ -497,7 +496,7 @@ describe("HistoryNotebookView", () => {
             store.isLoadingNotebook = false;
             store.error = null;
             store.currentNotebook = {
-                id: NOTEBOOK_ID,
+                id: PAGE_ID,
                 history_id: HISTORY_ID,
                 title: "My Notebook",
                 content: "# Hello",
@@ -510,7 +509,7 @@ describe("HistoryNotebookView", () => {
 
         it("shows Revisions button in toolbar", async () => {
             setupEditorView();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             const revBtn = wrapper.find(SELECTORS.REVISIONS_BUTTON);
@@ -520,7 +519,7 @@ describe("HistoryNotebookView", () => {
 
         it("clicking Revisions button calls store.toggleRevisions", async () => {
             const store = setupEditorView();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             const revBtn = wrapper.find(SELECTORS.REVISIONS_BUTTON);
@@ -533,7 +532,7 @@ describe("HistoryNotebookView", () => {
             const store = setupEditorView();
             store.showRevisions = true;
             store.revisions = [] as any;
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             expect(wrapper.find(SELECTORS.REVISION_PANEL).exists()).toBe(true);
@@ -542,7 +541,7 @@ describe("HistoryNotebookView", () => {
 
         it("hides revision panel when store.showRevisions is false", async () => {
             setupEditorView();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             expect(wrapper.find(SELECTORS.REVISION_PANEL).exists()).toBe(false);
@@ -552,14 +551,14 @@ describe("HistoryNotebookView", () => {
             const store = setupEditorView();
             store.selectedRevision = {
                 id: "rev-1",
-                notebook_id: NOTEBOOK_ID,
+                page_id: PAGE_ID,
                 content: "# Old content",
                 content_format: "markdown",
                 edit_source: "user",
                 create_time: "2024-01-01T00:00:00",
                 update_time: "2024-01-01T00:00:00",
             } as any;
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             expect(wrapper.findComponent(NotebookRevisionView).exists()).toBe(true);
@@ -570,10 +569,10 @@ describe("HistoryNotebookView", () => {
         it("revision badge shows count when revisions loaded", async () => {
             const store = setupEditorView();
             store.revisions = [
-                { id: "rev-1", notebook_id: NOTEBOOK_ID, edit_source: "user", create_time: "", update_time: "" },
-                { id: "rev-2", notebook_id: NOTEBOOK_ID, edit_source: "user", create_time: "", update_time: "" },
+                { id: "rev-1", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
+                { id: "rev-2", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
             ] as any;
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             const badge = wrapper.find(SELECTORS.REVISIONS_BUTTON + " bbadge-stub");
@@ -585,14 +584,14 @@ describe("HistoryNotebookView", () => {
             const store = setupEditorView();
             store.selectedRevision = {
                 id: "rev-1",
-                notebook_id: NOTEBOOK_ID,
+                page_id: PAGE_ID,
                 content: "# Old",
                 content_format: "markdown",
                 edit_source: "user",
                 create_time: "2024-01-01T00:00:00",
                 update_time: "2024-01-01T00:00:00",
             } as any;
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             const revView = wrapper.findComponent(NotebookRevisionView);
@@ -606,14 +605,14 @@ describe("HistoryNotebookView", () => {
             const store = setupEditorView();
             store.selectedRevision = {
                 id: "rev-1",
-                notebook_id: NOTEBOOK_ID,
+                page_id: PAGE_ID,
                 content: "# Old",
                 content_format: "markdown",
                 edit_source: "user",
                 create_time: "2024-01-01T00:00:00",
                 update_time: "2024-01-01T00:00:00",
             } as any;
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             const revView = wrapper.findComponent(NotebookRevisionView);
@@ -627,9 +626,9 @@ describe("HistoryNotebookView", () => {
             const store = setupEditorView();
             store.showRevisions = true;
             store.revisions = [
-                { id: "rev-1", notebook_id: NOTEBOOK_ID, edit_source: "user", create_time: "", update_time: "" },
+                { id: "rev-1", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
             ] as any;
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             const revList = wrapper.findComponent(NotebookRevisionList);
@@ -640,62 +639,6 @@ describe("HistoryNotebookView", () => {
         });
     });
 
-    describe("Export to Page", () => {
-        function setupEditorView() {
-            const store = useHistoryNotebookStore();
-            store.isLoadingList = false;
-            store.isLoadingNotebook = false;
-            store.error = null;
-            store.currentNotebook = {
-                id: NOTEBOOK_ID,
-                history_id: HISTORY_ID,
-                title: "My Notebook",
-                content: "# Hello",
-                update_time: "2024-01-01T00:00:00",
-            } as any;
-            store.currentContent = "# Hello";
-            store.currentTitle = "My Notebook";
-            return store;
-        }
-
-        it("shows Export to Page button in toolbar", async () => {
-            setupEditorView();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
-            await flushPromises();
-
-            const exportBtn = wrapper.find(SELECTORS.EXPORT_BUTTON);
-            expect(exportBtn.exists()).toBe(true);
-            expect(exportBtn.text()).toContain("Export to Page");
-        });
-
-        it("clicking Export to Page navigates to page create with notebook params", async () => {
-            setupEditorView();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
-            await flushPromises();
-
-            const exportBtn = wrapper.find(SELECTORS.EXPORT_BUTTON);
-            await exportBtn.trigger("click");
-            await flushPromises();
-
-            expect(mockPush).toHaveBeenCalledWith(`/pages/create?notebook_id=${NOTEBOOK_ID}&history_id=${HISTORY_ID}`);
-        });
-
-        it("saves unsaved changes before exporting", async () => {
-            const store = setupEditorView();
-            // isDirty = true because currentContent != originalContent (default "")
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
-            await flushPromises();
-
-            expect(store.isDirty).toBe(true);
-            const exportBtn = wrapper.find(SELECTORS.EXPORT_BUTTON);
-            await exportBtn.trigger("click");
-            await flushPromises();
-
-            expect(store.saveNotebook).toHaveBeenCalled();
-            expect(mockPush).toHaveBeenCalled();
-        });
-    });
-
     describe("Chat Panel", () => {
         function setupEditorView() {
             const store = useHistoryNotebookStore();
@@ -703,7 +646,7 @@ describe("HistoryNotebookView", () => {
             store.isLoadingNotebook = false;
             store.error = null;
             store.currentNotebook = {
-                id: NOTEBOOK_ID,
+                id: PAGE_ID,
                 history_id: HISTORY_ID,
                 title: "My Notebook",
                 content: "# Hello",
@@ -716,7 +659,7 @@ describe("HistoryNotebookView", () => {
 
         it("shows Chat button in toolbar", async () => {
             setupEditorView();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             const chatBtn = wrapper.find(SELECTORS.CHAT_BUTTON);
@@ -726,7 +669,7 @@ describe("HistoryNotebookView", () => {
 
         it("clicking Chat button calls store.toggleChatPanel", async () => {
             const store = setupEditorView();
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             const chatBtn = wrapper.find(SELECTORS.CHAT_BUTTON);
@@ -739,7 +682,7 @@ describe("HistoryNotebookView", () => {
         it("renders split view when store.showChatPanel is true", async () => {
             const store = setupEditorView();
             store.showChatPanel = true;
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             expect(wrapper.findComponent(HistoryNotebookSplit).exists()).toBe(true);
@@ -749,7 +692,7 @@ describe("HistoryNotebookView", () => {
         it("hides split view when store.showChatPanel is false", async () => {
             const store = setupEditorView();
             store.showChatPanel = false;
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             expect(wrapper.findComponent(HistoryNotebookSplit).exists()).toBe(false);
@@ -758,7 +701,7 @@ describe("HistoryNotebookView", () => {
         it("hides Chat button when llm_api_configured is false", async () => {
             setupEditorView();
             mockConfig.value = { llm_api_configured: false };
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             expect(wrapper.find(SELECTORS.CHAT_BUTTON).exists()).toBe(false);
@@ -767,7 +710,7 @@ describe("HistoryNotebookView", () => {
         it("shows Chat button when llm_api_configured is true", async () => {
             setupEditorView();
             mockConfig.value = { llm_api_configured: true };
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             expect(wrapper.find(SELECTORS.CHAT_BUTTON).exists()).toBe(true);
@@ -776,7 +719,7 @@ describe("HistoryNotebookView", () => {
         it("hides Chat button when config is null (not yet loaded)", async () => {
             setupEditorView();
             mockConfig.value = null;
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             expect(wrapper.find(SELECTORS.CHAT_BUTTON).exists()).toBe(false);
@@ -785,12 +728,12 @@ describe("HistoryNotebookView", () => {
         it("passes notebook props to NotebookChatPanel", async () => {
             const store = setupEditorView();
             store.showChatPanel = true;
-            const wrapper = mountComponent({ historyId: HISTORY_ID, notebookId: NOTEBOOK_ID });
+            const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             const panel = wrapper.findComponent(NotebookChatPanel);
             expect(panel.props("historyId")).toBe(HISTORY_ID);
-            expect(panel.props("notebookId")).toBe(NOTEBOOK_ID);
+            expect(panel.props("pageId")).toBe(PAGE_ID);
             expect(panel.props("notebookContent")).toBe("# Hello");
         });
     });

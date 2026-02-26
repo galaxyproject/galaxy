@@ -32,14 +32,12 @@ vi.mock("vue-router/composables", () => ({
 const localVue = getLocalVue();
 
 const HISTORY_ID = "history-1";
-const NOTEBOOK_ID = "notebook-1";
+const PAGE_ID = "page-1";
 const NOTEBOOK_CONTENT = "# Intro\nSome intro text\n# Methods\nSome methods text";
 
 let pinia: Pinia;
 
-function mountComponent(
-    propsData = { historyId: HISTORY_ID, notebookId: NOTEBOOK_ID, notebookContent: NOTEBOOK_CONTENT },
-) {
+function mountComponent(propsData = { historyId: HISTORY_ID, pageId: PAGE_ID, notebookContent: NOTEBOOK_CONTENT }) {
     return mount(NotebookChatPanel as any, {
         localVue,
         propsData,
@@ -276,7 +274,7 @@ describe("NotebookChatPanel", () => {
             await wrapper.find(".send-button").trigger("click");
             await flushPromises();
 
-            expect(store.setCurrentChatExchangeId).toHaveBeenCalledWith(NOTEBOOK_ID, 77);
+            expect(store.setCurrentChatExchangeId).toHaveBeenCalledWith(PAGE_ID, 77);
         });
 
         it("clears stored exchange ID on new conversation", async () => {
@@ -287,7 +285,7 @@ describe("NotebookChatPanel", () => {
             await wrapper.find('[data-description="new conversation button"]').trigger("click");
             await flushPromises();
 
-            expect(store.setCurrentChatExchangeId).toHaveBeenCalledWith(NOTEBOOK_ID, null);
+            expect(store.setCurrentChatExchangeId).toHaveBeenCalledWith(PAGE_ID, null);
         });
 
         it("checks store for cached exchange ID on mount", async () => {
@@ -305,7 +303,7 @@ describe("NotebookChatPanel", () => {
             const wrapper = mountComponent();
             await flushPromises();
 
-            expect(store.getCurrentChatExchangeId).toHaveBeenCalledWith(NOTEBOOK_ID);
+            expect(store.getCurrentChatExchangeId).toHaveBeenCalledWith(PAGE_ID);
             // Should have loaded 2 messages from the cached conversation
             const cells = wrapper.findAllComponents(ChatMessageCell);
             expect(cells.length).toBe(2);

@@ -178,6 +178,9 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         if payload.user_id:
             stmt = stmt.where(self.model_class.user_id == payload.user_id)
 
+        if payload.history_id:
+            stmt = stmt.where(self.model_class.history_id == payload.history_id)
+
         if payload.search:
             search_query = payload.search
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
@@ -250,20 +253,35 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
 
     def create_page(self, trans, payload: CreatePagePayload):
         user = trans.get_user()
+        history_id = getattr(payload, "history_id", None)
 
-        # Validate payload
-        if page_exists(trans.sa_session, user, payload.slug):
-            raise exceptions.DuplicatedSlugException("Page identifier must be unique")
+        # Slug validation: required for non-history pages
+        if history_id:
+            # History-attached pages don't need a slug
+            content_format = payload.content_format or "markdown"
+            content = payload.content or ""
+            # Auto-title from history name if not provided
+            if not payload.title or payload.title == "":
+                history = trans.sa_session.get(model.History, history_id)
+                if history:
+                    payload.title = history.name
+        else:
+            if not payload.title:
+                raise exceptions.RequestParameterInvalidException("title is required for non-history pages")
+            if not payload.slug:
+                raise exceptions.RequestParameterInvalidException("slug is required for non-history pages")
+            if page_exists(trans.sa_session, user, payload.slug):
+                raise exceptions.DuplicatedSlugException("Page identifier must be unique")
+            content_format = payload.content_format
+            content = payload.content
 
-        # Populate content from invocation or payload
+        # Populate content from invocation if specified
         if payload.invocation_id:
             invocation_id = payload.invocation_id
             invocation_report = self.workflow_manager.get_invocation_report(trans, invocation_id)
             content = invocation_report.get("markdown")
             content_format = "markdown"
-        else:
-            content = payload.content
-            content_format = payload.content_format
+
         content = self.rewrite_content_for_import(trans, content, content_format)
 
         # Create the new stored page
@@ -273,12 +291,12 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         page.user = user
         if payload.invocation_id:
             page.source_invocation_id = payload.invocation_id
-        if payload.history_notebook_id:
-            page.source_history_notebook_id = payload.history_notebook_id
+        if history_id:
+            page.history_id = history_id
         if payload.annotation is not None:
             self.add_item_annotation(trans.sa_session, trans.get_user(), page, payload.annotation)
 
-        # And the first (empty) page revision
+        # First page revision
         page_revision = model.PageRevision()
         page_revision.title = payload.title
         page_revision.page = page
@@ -301,15 +319,33 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
             raise exceptions.ObjectNotFound("Page not found")
         page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
 
-        # Validate payload
-        if payload.slug != page.slug and page_exists(trans.sa_session, user, payload.slug):
-            raise exceptions.DuplicatedSlugException("Page identifier must be unique")
+        # Validate slug changes (only for non-history pages)
+        if payload.slug is not None and payload.slug != page.slug:
+            if page_exists(trans.sa_session, user, payload.slug):
+                raise exceptions.DuplicatedSlugException("Page identifier must be unique")
+            page.slug = payload.slug
 
         # Update page attributes
-        page.title = payload.title
-        page.slug = payload.slug
+        if payload.title:
+            page.title = payload.title
         if payload.annotation is not None:
             self.add_item_annotation(trans.sa_session, trans.get_user(), page, payload.annotation)
+
+        # If content provided, create a new revision
+        if payload.content is not None:
+            content_format = payload.content_format or (
+                page.latest_revision.content_format if page.latest_revision else PageContentFormat.html.value
+            )
+            self.save_new_revision(
+                trans,
+                page,
+                {
+                    "content": payload.content,
+                    "content_format": content_format,
+                    "title": payload.title or page.title,
+                    "edit_source": payload.edit_source,
+                },
+            )
 
         # Persist
         session = trans.sa_session
@@ -321,6 +357,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         # Assumes security has already been checked by caller.
         content = payload.get("content", None)
         content_format = payload.get("content_format", None)
+        edit_source = payload.get("edit_source", None)
         if not content:
             raise exceptions.ObjectAttributeMissingException("content undefined or empty")
         if content_format not in [None, PageContentFormat.html.value, PageContentFormat.markdown.value]:
@@ -343,11 +380,37 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         page.latest_revision = page_revision
         page_revision.content = content
         page_revision.content_format = content_format
+        page_revision.edit_source = edit_source
 
         # Persist
         session = trans.sa_session
         session.commit()
         return page_revision
+
+    def list_revisions(self, trans, page):
+        page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
+        return sorted(page.revisions, key=lambda r: r.create_time)
+
+    def get_revision(self, trans, page, revision_id):
+        page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
+        revision = trans.sa_session.get(model.PageRevision, revision_id)
+        if not revision or revision.page_id != page.id:
+            raise exceptions.ObjectNotFound("Page revision not found")
+        return revision
+
+    def restore_revision(self, trans, page, revision_id):
+        page = base.security_check(trans, page, check_ownership=True, check_accessible=True)
+        old_revision = self.get_revision(trans, page, revision_id)
+        return self.save_new_revision(
+            trans,
+            page,
+            {
+                "content": old_revision.content,
+                "content_format": old_revision.content_format,
+                "title": old_revision.title,
+                "edit_source": "restore",
+            },
+        )
 
     def rewrite_content_for_import(self, trans, content, content_format: str):
         if content_format == PageContentFormat.html.value:

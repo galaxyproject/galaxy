@@ -1,173 +1,174 @@
+/**
+ * Tests for the historyPages API client (replaces old historyNotebooks tests).
+ * The historyPages module uses plain axios, but MSW intercepts all HTTP.
+ */
 import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
-import type { HistoryNotebookDetails, HistoryNotebookSummary } from "./historyNotebooks";
+import type { HistoryPageDetails, HistoryPageSummary } from "./historyPages";
 import {
-    createHistoryNotebook,
-    deleteHistoryNotebook,
-    fetchHistoryNotebook,
-    fetchHistoryNotebooks,
-    updateHistoryNotebook,
-} from "./historyNotebooks";
+    createHistoryPage,
+    deleteHistoryPage,
+    fetchHistoryPage,
+    fetchHistoryPages,
+    updateHistoryPage,
+} from "./historyPages";
 
 const { server, http } = useServerMock();
 
 const TEST_HISTORY_ID = "abc123historyid";
-const TEST_NOTEBOOK_ID = "def456notebookid";
+const TEST_PAGE_ID = "def456pageid";
 const TEST_REVISION_ID = "rev789revisionid";
 
-const TEST_NOTEBOOK_SUMMARY: HistoryNotebookSummary = {
-    id: TEST_NOTEBOOK_ID,
+const TEST_PAGE_SUMMARY: HistoryPageSummary = {
+    id: TEST_PAGE_ID,
     history_id: TEST_HISTORY_ID,
     title: "My Analysis Notes",
+    slug: null,
+    source_invocation_id: null,
+    published: false,
+    importable: false,
+    deleted: false,
     latest_revision_id: TEST_REVISION_ID,
     revision_ids: [TEST_REVISION_ID],
-    deleted: false,
     create_time: "2025-06-15T10:30:00Z",
     update_time: "2025-06-15T12:45:00Z",
+    username: "test",
+    email_hash: "",
+    author_deleted: false,
+    model_class: "Page",
+    tags: [],
 };
 
-const TEST_NOTEBOOK_DETAILS: HistoryNotebookDetails = {
-    id: TEST_NOTEBOOK_ID,
-    history_id: TEST_HISTORY_ID,
-    title: "My Analysis Notes",
-    latest_revision_id: TEST_REVISION_ID,
-    revision_ids: [TEST_REVISION_ID],
-    deleted: false,
-    create_time: "2025-06-15T10:30:00Z",
-    update_time: "2025-06-15T12:45:00Z",
+const TEST_PAGE_DETAILS: HistoryPageDetails = {
+    ...TEST_PAGE_SUMMARY,
     content: "# Analysis\n\nSome markdown content here.",
+    content_editor: "# Analysis\n\nSome markdown content here.",
     content_format: "markdown",
     edit_source: "user",
+    annotation: null,
 };
 
-describe("historyNotebooks API", () => {
-    describe("fetchHistoryNotebooks", () => {
-        it("returns list of notebooks for a history", async () => {
+describe("historyPages API", () => {
+    describe("fetchHistoryPages", () => {
+        it("returns list of pages for a history", async () => {
             server.use(
-                http.get("/api/histories/{history_id}/notebooks", ({ params, response }) => {
-                    expect(params.history_id).toBe(TEST_HISTORY_ID);
-                    return response(200).json([TEST_NOTEBOOK_SUMMARY]);
-                }),
+                http.get("/api/pages", ({ response }) => {
+                    return response(200).json([TEST_PAGE_SUMMARY]);
+                }) as any,
             );
 
-            const result = await fetchHistoryNotebooks(TEST_HISTORY_ID);
+            const result = await fetchHistoryPages(TEST_HISTORY_ID);
 
-            expect(result).toEqual([TEST_NOTEBOOK_SUMMARY]);
+            expect(result).toEqual([TEST_PAGE_SUMMARY]);
         });
 
-        it("returns empty list when history has no notebooks", async () => {
+        it("returns empty list when history has no pages", async () => {
             server.use(
-                http.get("/api/histories/{history_id}/notebooks", ({ response }) => {
+                http.get("/api/pages", ({ response }) => {
                     return response(200).json([]);
-                }),
+                }) as any,
             );
 
-            const result = await fetchHistoryNotebooks(TEST_HISTORY_ID);
+            const result = await fetchHistoryPages(TEST_HISTORY_ID);
 
             expect(result).toEqual([]);
         });
 
         it("throws on server error", async () => {
             server.use(
-                http.get("/api/histories/{history_id}/notebooks", ({ response }) => {
+                http.get("/api/pages", ({ response }) => {
                     return response("4XX").json({ err_msg: "History not found", err_code: 404 }, { status: 404 });
-                }),
+                }) as any,
             );
 
-            await expect(fetchHistoryNotebooks(TEST_HISTORY_ID)).rejects.toThrow("History not found");
+            await expect(fetchHistoryPages(TEST_HISTORY_ID)).rejects.toThrow();
         });
     });
 
-    describe("fetchHistoryNotebook", () => {
-        it("returns notebook details by id", async () => {
+    describe("fetchHistoryPage", () => {
+        it("returns page details by id", async () => {
             server.use(
-                http.get("/api/histories/{history_id}/notebooks/{notebook_id}", ({ params, response }) => {
-                    expect(params.history_id).toBe(TEST_HISTORY_ID);
-                    expect(params.notebook_id).toBe(TEST_NOTEBOOK_ID);
-                    return response(200).json(TEST_NOTEBOOK_DETAILS);
-                }),
+                http.get("/api/pages/:id", ({ response }) => {
+                    return response(200).json(TEST_PAGE_DETAILS);
+                }) as any,
             );
 
-            const result = await fetchHistoryNotebook(TEST_HISTORY_ID, TEST_NOTEBOOK_ID);
+            const result = await fetchHistoryPage(TEST_PAGE_ID);
 
-            expect(result).toEqual(TEST_NOTEBOOK_DETAILS);
+            expect(result).toEqual(TEST_PAGE_DETAILS);
         });
 
-        it("throws on notebook not found", async () => {
+        it("throws on page not found", async () => {
             server.use(
-                http.get("/api/histories/{history_id}/notebooks/{notebook_id}", ({ response }) => {
-                    return response("4XX").json({ err_msg: "Notebook not found", err_code: 404 }, { status: 404 });
-                }),
+                http.get("/api/pages/:id", ({ response }) => {
+                    return response("4XX").json({ err_msg: "Page not found", err_code: 404 }, { status: 404 });
+                }) as any,
             );
 
-            await expect(fetchHistoryNotebook(TEST_HISTORY_ID, "nonexistent")).rejects.toThrow("Notebook not found");
+            await expect(fetchHistoryPage("nonexistent")).rejects.toThrow();
         });
     });
 
-    describe("createHistoryNotebook", () => {
+    describe("createHistoryPage", () => {
         const CREATE_PAYLOAD = {
-            content: "# New Notebook\n\nInitial content.",
-            content_format: "markdown" as const,
-            title: "New Notebook",
+            content: "# New Page\n\nInitial content.",
+            content_format: "markdown",
+            title: "New Page",
+            history_id: TEST_HISTORY_ID,
         };
 
-        it("returns created notebook details", async () => {
+        it("returns created page details", async () => {
             server.use(
-                http.post("/api/histories/{history_id}/notebooks", ({ params, response }) => {
-                    expect(params.history_id).toBe(TEST_HISTORY_ID);
+                http.post("/api/pages", ({ response }) => {
                     return response(200).json({
-                        ...TEST_NOTEBOOK_DETAILS,
-                        title: "New Notebook",
-                        content: "# New Notebook\n\nInitial content.",
+                        ...TEST_PAGE_DETAILS,
+                        title: "New Page",
+                        content: "# New Page\n\nInitial content.",
                     });
-                }),
+                }) as any,
             );
 
-            const result = await createHistoryNotebook(TEST_HISTORY_ID, CREATE_PAYLOAD);
+            const result = await createHistoryPage(CREATE_PAYLOAD);
 
-            expect(result.title).toBe("New Notebook");
-            expect(result.content).toBe("# New Notebook\n\nInitial content.");
+            expect(result.title).toBe("New Page");
+            expect(result.content).toBe("# New Page\n\nInitial content.");
             expect(result.history_id).toBe(TEST_HISTORY_ID);
-            expect(result.id).toBe(TEST_NOTEBOOK_ID);
+            expect(result.id).toBe(TEST_PAGE_ID);
         });
 
         it("throws on creation error", async () => {
             server.use(
-                http.post("/api/histories/{history_id}/notebooks", ({ response }) => {
-                    return response("4XX").json({ err_msg: "Cannot create notebook", err_code: 400 }, { status: 400 });
-                }),
+                http.post("/api/pages", ({ response }) => {
+                    return response("4XX").json({ err_msg: "Cannot create page", err_code: 400 }, { status: 400 });
+                }) as any,
             );
 
-            await expect(createHistoryNotebook(TEST_HISTORY_ID, CREATE_PAYLOAD)).rejects.toThrow(
-                "Cannot create notebook",
-            );
+            await expect(createHistoryPage(CREATE_PAYLOAD)).rejects.toThrow();
         });
     });
 
-    describe("updateHistoryNotebook", () => {
+    describe("updateHistoryPage", () => {
         const UPDATE_PAYLOAD = {
             content: "# Updated Content\n\nRevised analysis.",
-            content_format: "markdown" as const,
+            content_format: "markdown",
             title: "Updated Title",
         };
 
-        it("returns updated notebook details", async () => {
+        it("returns updated page details", async () => {
             server.use(
-                http.put("/api/histories/{history_id}/notebooks/{notebook_id}", ({ params, response }) => {
-                    expect(params.history_id).toBe(TEST_HISTORY_ID);
-                    expect(params.notebook_id).toBe(TEST_NOTEBOOK_ID);
+                http.put("/api/pages/:id", ({ response }) => {
                     return response(200).json({
-                        ...TEST_NOTEBOOK_DETAILS,
+                        ...TEST_PAGE_DETAILS,
                         title: "Updated Title",
                         content: "# Updated Content\n\nRevised analysis.",
                         update_time: "2025-06-16T09:00:00Z",
                     });
-                }),
+                }) as any,
             );
 
-            const result = await updateHistoryNotebook(TEST_HISTORY_ID, TEST_NOTEBOOK_ID, UPDATE_PAYLOAD);
+            const result = await updateHistoryPage(TEST_PAGE_ID, UPDATE_PAYLOAD);
 
             expect(result.title).toBe("Updated Title");
             expect(result.content).toBe("# Updated Content\n\nRevised analysis.");
@@ -176,40 +177,34 @@ describe("historyNotebooks API", () => {
 
         it("throws on update error", async () => {
             server.use(
-                http.put("/api/histories/{history_id}/notebooks/{notebook_id}", ({ response }) => {
-                    return response("4XX").json({ err_msg: "Notebook is deleted", err_code: 400 }, { status: 400 });
-                }),
+                http.put("/api/pages/:id", ({ response }) => {
+                    return response("4XX").json({ err_msg: "Page is deleted", err_code: 400 }, { status: 400 });
+                }) as any,
             );
 
-            await expect(updateHistoryNotebook(TEST_HISTORY_ID, TEST_NOTEBOOK_ID, UPDATE_PAYLOAD)).rejects.toThrow(
-                "Notebook is deleted",
-            );
+            await expect(updateHistoryPage(TEST_PAGE_ID, UPDATE_PAYLOAD)).rejects.toThrow();
         });
     });
 
-    describe("deleteHistoryNotebook", () => {
+    describe("deleteHistoryPage", () => {
         it("resolves without error on success", async () => {
             server.use(
-                http.delete("/api/histories/{history_id}/notebooks/{notebook_id}", ({ params, response }) => {
-                    expect(params.history_id).toBe(TEST_HISTORY_ID);
-                    expect(params.notebook_id).toBe(TEST_NOTEBOOK_ID);
+                http.delete("/api/pages/:id", ({ response }) => {
                     return response(204).empty();
-                }),
+                }) as any,
             );
 
-            await expect(deleteHistoryNotebook(TEST_HISTORY_ID, TEST_NOTEBOOK_ID)).resolves.toBeUndefined();
+            await expect(deleteHistoryPage(TEST_PAGE_ID)).resolves.toBeUndefined();
         });
 
         it("throws on deletion error", async () => {
             server.use(
-                http.delete("/api/histories/{history_id}/notebooks/{notebook_id}", ({ response }) => {
-                    return response("4XX").json({ err_msg: "Notebook not found", err_code: 404 }, { status: 404 });
-                }),
+                http.delete("/api/pages/:id", ({ response }) => {
+                    return response("4XX").json({ err_msg: "Page not found", err_code: 404 }, { status: 404 });
+                }) as any,
             );
 
-            await expect(deleteHistoryNotebook(TEST_HISTORY_ID, TEST_NOTEBOOK_ID)).rejects.toThrow(
-                "Notebook not found",
-            );
+            await expect(deleteHistoryPage(TEST_PAGE_ID)).rejects.toThrow();
         });
     });
 });

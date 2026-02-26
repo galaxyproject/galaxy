@@ -3,20 +3,20 @@ import { faChevronRight, faEye, faPlus } from "@fortawesome/free-solid-svg-icons
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 
-import type { HistoryNotebookSummary } from "@/api/historyNotebooks";
+import type { HistoryPageSummary } from "@/api/historyPages";
 
 defineProps<{
-    notebooks: HistoryNotebookSummary[];
+    notebooks: HistoryPageSummary[];
 }>();
 
 defineEmits<{
-    (e: "select", notebookId: string): void;
-    (e: "view", notebookId: string): void;
+    (e: "select", pageId: string): void;
+    (e: "view", pageId: string): void;
     (e: "create"): void;
 }>();
 
-function getNotebookTitle(notebook: HistoryNotebookSummary): string {
-    return notebook.title || "Untitled Notebook";
+function getNotebookTitle(notebook: HistoryPageSummary): string {
+    return notebook.title || "Untitled Page";
 }
 
 function formatDate(dateStr: string): string {
@@ -32,17 +32,17 @@ function formatDate(dateStr: string): string {
 <template>
     <div class="history-notebook-list" data-description="history notebook list">
         <div class="list-header d-flex justify-content-between align-items-center p-3 border-bottom">
-            <h4 class="mb-0">Notebooks</h4>
-            <BButton variant="primary" size="sm" data-description="create notebook button" @click="$emit('create')">
+            <h4 class="mb-0">Pages</h4>
+            <BButton variant="primary" size="sm" data-description="create page button" @click="$emit('create')">
                 <FontAwesomeIcon :icon="faPlus" />
-                New Notebook
+                New Page
             </BButton>
         </div>
 
-        <div v-if="notebooks.length === 0" class="empty-state text-center p-4" data-description="notebook empty state">
-            <p class="text-muted">No notebooks yet</p>
+        <div v-if="notebooks.length === 0" class="empty-state text-center p-4" data-description="page empty state">
+            <p class="text-muted">No pages yet</p>
             <p class="text-muted small">
-                Create a notebook to document your analysis with rich markdown, embedded datasets, and visualizations.
+                Create a page to document your analysis with rich markdown, embedded datasets, and visualizations.
             </p>
         </div>
 

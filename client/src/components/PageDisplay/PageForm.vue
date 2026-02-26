@@ -49,8 +49,6 @@ const props = defineProps<{
     mode: "create" | "edit";
     id?: string;
     invocationId?: string;
-    notebookId?: string;
-    historyId?: string;
 }>();
 
 const annotation = ref("");
@@ -78,24 +76,6 @@ async function fetchData() {
             content.value = data.invocation_markdown || "";
             slug.value = `invocation-${data.id}`;
             title.value = data.title;
-        }
-        loading.value = false;
-    } else if (props.mode === "create" && props.notebookId && props.historyId) {
-        loading.value = true;
-        const { data, error } = await GalaxyApi().GET(
-            "/api/histories/{history_id}/notebooks/{notebook_id}/prepare-for-page",
-            { params: { path: { history_id: props.historyId, notebook_id: props.notebookId } } },
-        );
-        if (error) {
-            errorMessage.value = error.err_msg;
-        } else {
-            errorMessage.value = "";
-            content.value = data.content;
-            title.value = data.title;
-            slug.value = `notebook-${data.title
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/(^-|-$)/g, "")}`;
         }
         loading.value = false;
     } else if (props.mode === "edit" && props.id) {
@@ -131,7 +111,6 @@ async function onSubmit() {
                 slug: slug.value,
                 title: title.value,
                 ...(props.invocationId && { invocation_id: props.invocationId }),
-                ...(props.notebookId && { history_notebook_id: props.notebookId }),
             },
         });
         if (error) {
@@ -156,5 +135,5 @@ async function onSubmit() {
     }
 }
 
-watch(() => [props.id, props.invocationId, props.notebookId], fetchData, { immediate: true });
+watch(() => [props.id, props.invocationId], fetchData, { immediate: true });
 </script>

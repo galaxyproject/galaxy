@@ -4,12 +4,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
-import type { HistoryNotebookRevisionDetails } from "@/api/historyNotebooks";
+import type { PageRevisionDetails } from "@/api/historyPages";
 
 import Markdown from "@/components/Markdown/Markdown.vue";
 
 const props = defineProps<{
-    revision: HistoryNotebookRevisionDetails;
+    revision: PageRevisionDetails;
     isReverting: boolean;
 }>();
 
@@ -22,7 +22,7 @@ const markdownConfig = computed(() => ({
     id: props.revision.id,
     title: `Revision Preview`,
     content: props.revision.content || "",
-    model_class: "HistoryNotebook",
+    model_class: "Page",
     update_time: props.revision.update_time,
 }));
 </script>

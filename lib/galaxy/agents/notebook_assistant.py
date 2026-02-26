@@ -167,9 +167,9 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
 
     agent_type = AgentType.NOTEBOOK_ASSISTANT
 
-    def __init__(self, deps: GalaxyAgentDependencies, history_id: int = 0, notebook_content: str = ""):
+    def __init__(self, deps: GalaxyAgentDependencies, history_id: int = 0, page_content: str = ""):
         self.history_id: int = history_id
-        self.notebook_content: str = notebook_content
+        self.page_content: str = page_content
         super().__init__(deps)
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
@@ -199,7 +199,7 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
                 deps_type=GalaxyAgentDependencies,
             )
 
-        # Dynamic system prompt — reads self.notebook_content at call time
+        # Dynamic system prompt — reads self.page_content at call time
         @agent.system_prompt
         def _system_prompt() -> str:
             if agent_self._supports_structured_output():
@@ -296,15 +296,15 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
         """Load system prompt and inject notebook content and directive reference."""
         prompt_path = Path(__file__).parent / "prompts" / "notebook_assistant.md"
         template = prompt_path.read_text()
-        content = self.notebook_content or "(empty document)"
+        content = self.page_content or "(empty document)"
         directive_ref = _build_directive_reference()
-        return template.replace("{notebook_content}", content).replace("{directive_reference}", directive_ref)
+        return template.replace("{page_content}", content).replace("{directive_reference}", directive_ref)
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """Process a notebook editing or history question."""
         ctx = context or {}
         self.history_id = ctx.get("history_id", 0)
-        self.notebook_content = ctx.get("notebook_content", "")
+        self.page_content = ctx.get("page_content", "")
         try:
             enhanced_query = self._prepare_prompt(query, ctx)
             result = await self._run_with_retry(enhanced_query)
@@ -312,7 +312,7 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
             # Extract the result data
             result_data = result.output if hasattr(result, "output") else result.data
 
-            content_hash = _djb2_hash(self.notebook_content)
+            content_hash = _djb2_hash(self.page_content)
 
             if isinstance(result_data, FullReplacementEdit):
                 return self._build_response(
@@ -366,7 +366,7 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
 
     def _get_simple_system_prompt(self) -> str:
         """Fallback prompt for models without structured output."""
-        content = self.notebook_content or "(empty document)"
+        content = self.page_content or "(empty document)"
         directive_ref = _build_directive_reference()
         return f"""You are a Galaxy History Notebook editing assistant. Help users edit their
 markdown notebooks that document scientific analysis workflows.

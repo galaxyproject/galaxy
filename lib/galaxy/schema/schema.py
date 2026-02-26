@@ -1696,6 +1696,9 @@ class PageIndexQueryPayload(Model):
     sort_by: PageSortByEnum = Field("update_time", title="Sort By", description="Sort pages by this attribute.")
     sort_desc: Optional[bool] = Field(default=False, title="Sort descending", description="Sort in descending order.")
     user_id: Optional[DecodedDatabaseIdField] = None
+    history_id: Optional[DecodedDatabaseIdField] = Field(
+        default=None, title="History ID", description="Filter pages by history."
+    )
 
 
 class CreateHistoryPayload(Model):
@@ -3843,10 +3846,10 @@ class PageSummaryBase(Model):
         description="The name of the page.",
         min_length=1,
     )
-    slug: str = Field(
-        ...,  # Required
+    slug: Optional[str] = Field(
+        default=None,
         title="Identifier",
-        description="The identifying slug for the page URL, must be unique.",
+        description="The identifying slug for the page URL, must be unique. Required for non-history pages.",
         pattern=r"^[a-z0-9-]+$",
     )
 
@@ -3886,10 +3889,10 @@ class ChatPayload(Model):
         title="Exchange ID",
         description="The ID of an existing chat exchange to continue.",
     )
-    notebook_id: Optional[DecodedDatabaseIdField] = Field(
+    page_id: Optional[DecodedDatabaseIdField] = Field(
         default=None,
-        title="Notebook ID",
-        description="Scope this chat exchange to a history notebook.",
+        title="Page ID",
+        description="Scope this chat exchange to a history-attached page.",
     )
     regenerate: Optional[bool] = Field(
         default=None,
@@ -3958,6 +3961,11 @@ class GenerateTourResponse(Model):
 
 
 class CreatePagePayload(PageSummaryBase):
+    title: Optional[str] = Field(  # type: ignore[assignment]
+        default=None,
+        title="Title",
+        description="The name of the page. Auto-generated from history name if not provided for history-attached pages.",
+    )
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
     annotation: Optional[str] = Field(
@@ -3970,19 +3978,38 @@ class CreatePagePayload(PageSummaryBase):
         title="Workflow invocation ID",
         description="Encoded ID used by workflow generated reports.",
     )
-    history_notebook_id: Optional[DecodedDatabaseIdField] = Field(
+    history_id: Optional[DecodedDatabaseIdField] = Field(
         None,
-        title="History Notebook ID",
-        description="Encoded ID of the history notebook used to create this page.",
+        title="History ID",
+        description="Encoded ID of the history to attach this page to.",
     )
     model_config = ConfigDict(use_enum_values=True, extra="allow")
 
 
 class UpdatePagePayload(PageSummaryBase):
+    title: Optional[str] = Field(  # type: ignore[assignment]
+        default=None,
+        title="Title",
+        description="The name of the page.",
+    )
+    content: Optional[str] = Field(
+        default=None,
+        title="Content",
+        description="New content for the page (creates a new revision).",
+    )
+    content_format: Optional[PageContentFormat] = Field(
+        default=None,
+        title="Content format",
+    )
     annotation: Optional[str] = Field(
         default=None,
         title="Annotation",
         description="Annotation that will be attached to the page.",
+    )
+    edit_source: Optional[str] = Field(
+        default=None,
+        title="Edit source",
+        description="Source of edit: 'user' or 'agent'.",
     )
 
 
@@ -4099,10 +4126,10 @@ class PageSummary(PageSummaryBase, WithModelClass):
         title="Source Invocation ID",
         description="The workflow invocation this page was created from, if any.",
     )
-    source_history_notebook_id: Optional[EncodedDatabaseIdField] = Field(
+    history_id: Optional[EncodedDatabaseIdField] = Field(
         None,
-        title="Source History Notebook ID",
-        description="The history notebook this page was created from, if any.",
+        title="History ID",
+        description="The history this page is attached to, if any.",
     )
 
 
@@ -4135,6 +4162,11 @@ class PageDetails(PageSummary):
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
     content_editor: Optional[str] = ContentEditorField
+    edit_source: Optional[str] = Field(
+        default=None,
+        title="Edit source",
+        description="Source of the latest revision: 'user', 'agent', or 'restore'.",
+    )
     generate_version: Optional[str] = GenerateVersionField
     generate_time: Optional[str] = GenerateTimeField
     model_config = ConfigDict(extra="allow")
@@ -4154,91 +4186,22 @@ class PageSummaryList(RootModel):
     )
 
 
-# History Notebook schemas
-
-
-class NotebookContentFormat(str, Enum):
-    markdown = "markdown"
-
-
-class CreateHistoryNotebookPayload(Model):
-    title: Optional[str] = Field(
-        default=None,
-        title="Title",
-        description="Optional title for the notebook. Defaults to history name.",
-    )
-    content: Optional[str] = Field(
-        default="",
-        title="Content",
-        description="Initial markdown content.",
-    )
-    content_format: NotebookContentFormat = Field(
-        default=NotebookContentFormat.markdown,
-        title="Content format",
-    )
-
-
-class UpdateHistoryNotebookPayload(Model):
-    title: Optional[str] = Field(default=None, title="Title")
-    content: str = Field(..., title="Content", description="New markdown content.")
-    content_format: NotebookContentFormat = Field(default=NotebookContentFormat.markdown)
-    edit_source: Optional[str] = Field(
-        default=None, title="Edit source", description="Source of edit: 'user' or 'agent'."
-    )
-
-
-class HistoryNotebookSummary(Model):
+class PageRevisionSummary(Model):
     id: EncodedDatabaseIdField
-    history_id: EncodedDatabaseIdField
-    title: Optional[str] = None
-    latest_revision_id: Optional[EncodedDatabaseIdField] = None
-    revision_ids: list[EncodedDatabaseIdField] = Field(default=[])
-    deleted: bool = Field(default=False)
-    create_time: datetime
-    update_time: datetime
-
-
-class HistoryNotebookDetails(HistoryNotebookSummary):
-    content: Optional[str] = Field(
-        default=None,
-        title="Content",
-        description="Notebook content with embedded directives expanded and IDs encoded (for rendering).",
-    )
-    content_editor: Optional[str] = Field(
-        default=None,
-        title="Content for Editor",
-        description="Raw notebook content preserved for editing.",
-    )
-    content_format: NotebookContentFormat = NotebookContentFormat.markdown
-    edit_source: Optional[str] = Field(default="user")
-
-
-class HistoryNotebookRevisionSummary(Model):
-    id: EncodedDatabaseIdField
-    notebook_id: EncodedDatabaseIdField
+    page_id: EncodedDatabaseIdField
     edit_source: Optional[str] = None
     create_time: datetime
     update_time: datetime
 
 
-class HistoryNotebookRevisionDetails(HistoryNotebookRevisionSummary):
+class PageRevisionDetails(PageRevisionSummary):
+    title: Optional[str] = None
     content: Optional[str] = None
-    content_format: NotebookContentFormat = NotebookContentFormat.markdown
+    content_format: Optional[PageContentFormat] = None
 
 
-class HistoryNotebookRevisionList(RootModel):
-    root: list[HistoryNotebookRevisionSummary] = Field(default=[])
-
-
-class HistoryNotebookList(RootModel):
-    """List of notebooks for a history."""
-
-    root: list[HistoryNotebookSummary] = Field(default=[])
-
-
-class PrepareNotebookForPageResponse(Model):
-    content: str = Field(description="Notebook markdown with encoded IDs, ready for Page creation.")
-    title: str = Field(description="Notebook title (suggested Page title).")
+class PageRevisionList(RootModel):
+    root: list[PageRevisionSummary] = Field(default=[])
 
 
 class LandingRequestState(str, Enum):

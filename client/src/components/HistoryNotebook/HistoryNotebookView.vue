@@ -4,7 +4,6 @@ import {
     faComments,
     faEdit,
     faEye,
-    faFileExport,
     faHistory,
     faSave,
     faSpinner,
@@ -31,7 +30,7 @@ import Markdown from "@/components/Markdown/Markdown.vue";
 
 const props = defineProps<{
     historyId: string;
-    notebookId?: string;
+    pageId?: string;
     displayOnly?: boolean;
 }>();
 
@@ -57,17 +56,17 @@ const markdownConfig = computed(() => {
     const content = props.displayOnly ? (store.currentNotebook.content ?? store.currentContent) : store.currentContent;
     return {
         id: store.currentNotebook.id,
-        title: store.currentTitle || "Untitled Notebook",
+        title: store.currentTitle || "Untitled Page",
         content,
-        model_class: "HistoryNotebook",
+        model_class: "Page",
         update_time: store.currentNotebook.update_time,
     };
 });
 
 onMounted(async () => {
     await store.loadNotebooks(props.historyId);
-    if (props.notebookId) {
-        await store.loadNotebook(props.notebookId);
+    if (props.pageId) {
+        await store.loadNotebook(props.pageId);
     }
 });
 
@@ -81,14 +80,14 @@ watch(
     () => props.historyId,
     async (newId) => {
         await store.loadNotebooks(newId);
-        if (props.notebookId) {
-            await store.loadNotebook(props.notebookId);
+        if (props.pageId) {
+            await store.loadNotebook(props.pageId);
         }
     },
 );
 
 watch(
-    () => props.notebookId,
+    () => props.pageId,
     async (newId) => {
         if (newId) {
             await store.loadNotebook(newId);
@@ -98,51 +97,51 @@ watch(
     },
 );
 
-function handleSelect(notebookId: string) {
+function handleSelect(pageId: string) {
     const Galaxy = getGalaxyInstance();
     const isWmActive = Galaxy?.frame?.active;
 
     if (isWmActive) {
-        const notebook = store.notebooks.find((n) => n.id === notebookId);
-        const title = notebook?.title || "Notebook";
-        const url = `/histories/${props.historyId}/notebooks/${notebookId}?displayOnly=true`;
+        const page = store.notebooks.find((n) => n.id === pageId);
+        const title = page?.title || "Page";
+        const url = `/histories/${props.historyId}/pages/${pageId}?displayOnly=true`;
         const options: RouterPushOptions = {
-            title: `Notebook: ${title}`,
+            title: `Page: ${title}`,
             preventWindowManager: false,
         };
         // @ts-ignore - monkeypatched router, drop with migration.
         router.push(url, options);
     } else {
-        router.push(`/histories/${props.historyId}/notebooks/${notebookId}`);
+        router.push(`/histories/${props.historyId}/pages/${pageId}`);
     }
 }
 
 async function handleCreate() {
-    const notebook = await store.createNotebook({ title: "Untitled Notebook" });
-    if (notebook) {
-        router.push(`/histories/${props.historyId}/notebooks/${notebook.id}`);
+    const page = await store.createNotebook({ title: "Untitled Page" });
+    if (page) {
+        router.push(`/histories/${props.historyId}/pages/${page.id}`);
     }
 }
 
-function handleView(notebookId: string) {
-    router.push(`/histories/${props.historyId}/notebooks/${notebookId}?displayOnly=true`);
+function handleView(pageId: string) {
+    router.push(`/histories/${props.historyId}/pages/${pageId}?displayOnly=true`);
 }
 
 function handlePreview() {
-    if (props.notebookId) {
-        router.push(`/histories/${props.historyId}/notebooks/${props.notebookId}?displayOnly=true`);
+    if (props.pageId) {
+        router.push(`/histories/${props.historyId}/pages/${props.pageId}?displayOnly=true`);
     }
 }
 
 function handleEdit() {
-    if (props.notebookId) {
-        router.push(`/histories/${props.historyId}/notebooks/${props.notebookId}`);
+    if (props.pageId) {
+        router.push(`/histories/${props.historyId}/pages/${props.pageId}`);
     }
 }
 
 function handleBack() {
     store.clearCurrentNotebook();
-    router.push(`/histories/${props.historyId}/notebooks`);
+    router.push(`/histories/${props.historyId}/pages`);
 }
 
 async function handleSave() {
@@ -151,16 +150,6 @@ async function handleSave() {
 
 function handleTitleChange(newTitle: string) {
     store.updateTitle(newTitle);
-}
-
-async function handleExportToPage() {
-    if (store.isDirty) {
-        await store.saveNotebook();
-    }
-    const notebook = store.currentNotebook;
-    if (notebook) {
-        router.push(`/pages/create?notebook_id=${notebook.id}&history_id=${props.historyId}`);
-    }
 }
 
 function handleRevisionSelect(revisionId: string) {
@@ -176,14 +165,14 @@ function handleRevisionRestore(revisionId: string) {
     <div class="history-notebook-view d-flex flex-column h-100" data-description="history notebook view">
         <BAlert v-if="store.isLoadingList" variant="info" show>
             <FontAwesomeIcon :icon="faSpinner" spin />
-            Loading notebooks...
+            Loading pages...
         </BAlert>
 
         <BAlert v-else-if="store.error" variant="danger" show dismissible @dismissed="store.error = null">
             {{ store.error }}
         </BAlert>
 
-        <template v-else-if="!notebookId">
+        <template v-else-if="!pageId">
             <HistoryNotebookList
                 :notebooks="store.notebooks"
                 @select="handleSelect"
@@ -198,10 +187,10 @@ function handleRevisionRestore(revisionId: string) {
                 data-description="notebook display toolbar">
                 <BButton variant="link" size="sm" data-description="notebook manage button" @click="handleBack">
                     <FontAwesomeIcon :icon="faArrowLeft" />
-                    Manage History Notebooks
+                    Manage History Pages
                 </BButton>
                 <span class="flex-grow-1 text-center font-weight-bold">
-                    {{ store.currentTitle || "Untitled Notebook" }}
+                    {{ store.currentTitle || "Untitled Page" }}
                 </span>
                 <BButton
                     variant="outline-primary"
@@ -237,12 +226,12 @@ function handleRevisionRestore(revisionId: string) {
                 data-description="notebook toolbar">
                 <BButton variant="link" size="sm" data-description="notebook manage button" @click="handleBack">
                     <FontAwesomeIcon :icon="faArrowLeft" />
-                    Manage History Notebooks
+                    Manage History Pages
                 </BButton>
                 <ClickToEdit
-                    :value="store.currentTitle || 'Untitled Notebook'"
+                    :value="store.currentTitle || 'Untitled Page'"
                     tag-name="span"
-                    placeholder="Untitled Notebook"
+                    placeholder="Untitled Page"
                     class="flex-grow-1 text-center font-weight-bold"
                     data-description="notebook toolbar title"
                     @input="handleTitleChange" />
@@ -257,15 +246,6 @@ function handleRevisionRestore(revisionId: string) {
                     <BBadge v-if="store.revisionCount > 0" variant="light" class="ml-1">
                         {{ store.revisionCount }}
                     </BBadge>
-                </BButton>
-                <BButton
-                    variant="outline-primary"
-                    size="sm"
-                    class="mr-2"
-                    data-description="notebook export to page button"
-                    @click="handleExportToPage">
-                    <FontAwesomeIcon :icon="faFileExport" />
-                    Export to Page
                 </BButton>
                 <BButton
                     variant="outline-primary"
@@ -304,7 +284,7 @@ function handleRevisionRestore(revisionId: string) {
             </div>
 
             <div class="notebook-body d-flex flex-grow-1 overflow-hidden">
-                <HistoryNotebookSplit v-if="store.showChatPanel && notebookId">
+                <HistoryNotebookSplit v-if="store.showChatPanel && pageId">
                     <template v-slot:editor>
                         <HistoryNotebookEditor
                             :history-id="historyId"
@@ -314,7 +294,7 @@ function handleRevisionRestore(revisionId: string) {
                     <template v-slot:chat>
                         <NotebookChatPanel
                             :history-id="historyId"
-                            :notebook-id="notebookId"
+                            :page-id="pageId"
                             :notebook-content="store.currentContent" />
                     </template>
                 </HistoryNotebookSplit>
@@ -339,7 +319,7 @@ function handleRevisionRestore(revisionId: string) {
 
         <BAlert v-else-if="store.isLoadingNotebook" variant="info" show>
             <FontAwesomeIcon :icon="faSpinner" spin />
-            Loading notebook...
+            Loading page...
         </BAlert>
     </div>
 </template>

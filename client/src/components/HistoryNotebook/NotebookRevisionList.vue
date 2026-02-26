@@ -3,10 +3,10 @@ import { faSpinner, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 
-import type { HistoryNotebookRevisionSummary } from "@/api/historyNotebooks";
+import type { PageRevisionSummary } from "@/api/historyPages";
 
 defineProps<{
-    revisions: HistoryNotebookRevisionSummary[];
+    revisions: PageRevisionSummary[];
     isLoading: boolean;
     isReverting: boolean;
 }>();

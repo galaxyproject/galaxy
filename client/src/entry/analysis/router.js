@@ -422,18 +422,18 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "histories/:historyId/notebooks",
+                        path: "histories/:historyId/pages",
                         component: HistoryNotebookView,
                         props: (route) => ({
                             historyId: route.params.historyId,
                         }),
                     },
                     {
-                        path: "histories/:historyId/notebooks/:notebookId",
+                        path: "histories/:historyId/pages/:pageId",
                         component: HistoryNotebookView,
                         props: (route) => ({
                             historyId: route.params.historyId,
-                            notebookId: route.params.notebookId,
+                            pageId: route.params.pageId,
                             displayOnly: route.query.displayOnly === "true",
                         }),
                     },
@@ -522,8 +522,6 @@ export function getRouter(Galaxy) {
                         component: PageForm,
                         props: (route) => ({
                             invocationId: route.query.invocation_id,
-                            notebookId: route.query.notebook_id,
-                            historyId: route.query.history_id,
                             mode: "create",
                         }),
                     },

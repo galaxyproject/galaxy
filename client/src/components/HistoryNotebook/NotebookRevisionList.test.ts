@@ -2,16 +2,16 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type Wrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { HistoryNotebookRevisionSummary } from "@/api/historyNotebooks";
+import type { PageRevisionSummary } from "@/api/historyPages";
 
 import NotebookRevisionList from "./NotebookRevisionList.vue";
 
 const localVue = getLocalVue();
 
-function makeRevision(overrides: Partial<HistoryNotebookRevisionSummary> = {}): HistoryNotebookRevisionSummary {
+function makeRevision(overrides: Partial<PageRevisionSummary> = {}): PageRevisionSummary {
     return {
         id: "rev-1",
-        notebook_id: "notebook-1",
+        page_id: "page-1",
         edit_source: "user",
         create_time: "2025-06-15T10:30:00Z",
         update_time: "2025-06-15T12:45:00Z",
@@ -29,7 +29,7 @@ const SELECTORS = {
 };
 
 interface MountOptions {
-    revisions?: HistoryNotebookRevisionSummary[];
+    revisions?: PageRevisionSummary[];
     isLoading?: boolean;
     isReverting?: boolean;
 }
@@ -111,7 +111,6 @@ describe("NotebookRevisionList", () => {
             const items = wrapper.findAll(SELECTORS.REVISION_ITEM);
             for (let i = 0; i < items.length; i++) {
                 const text = items.at(i).text();
-                // The formatted date should contain month abbreviation and a digit
                 expect(text).toMatch(/\w{3}\s+\d/);
             }
         });
