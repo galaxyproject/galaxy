@@ -23481,8 +23481,7 @@ export interface components {
                 [key: string]: unknown;
             };
             state: components["schemas"]["ToolRequestState"];
-            /** State Message */
-            state_message?: unknown | null;
+            state_message?: components["schemas"]["ToolRequestStateMessage"] | null;
         };
         /** ToolRequestImplicitCollectionReference */
         ToolRequestImplicitCollectionReference: {
@@ -23525,14 +23524,22 @@ export interface components {
                 [key: string]: unknown;
             };
             state: components["schemas"]["ToolRequestState"];
-            /** State Message */
-            state_message?: unknown | null;
+            state_message?: components["schemas"]["ToolRequestStateMessage"] | null;
         };
         /**
          * ToolRequestState
          * @enum {string}
          */
         ToolRequestState: "new" | "submitted" | "failed";
+        /** ToolRequestStateMessage */
+        ToolRequestStateMessage: {
+            /** Err Data */
+            err_data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Err Msg */
+            err_msg: string;
+        };
         /** ToolStep */
         ToolStep: {
             /**

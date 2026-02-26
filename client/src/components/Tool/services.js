@@ -100,13 +100,9 @@ export async function waitForToolRequest(toolRequestId, { pollInterval = 1000, t
 
     if (terminalState === "failed") {
         const stateMessage = detail.state_message;
-        const error = new Error(
-            typeof stateMessage === "object" ? stateMessage?.err_msg : stateMessage || "Tool request failed",
-        );
-        if (typeof stateMessage === "object") {
-            error.err_data = stateMessage?.err_data;
-            error.err_msg = stateMessage?.err_msg;
-        }
+        const error = new Error(stateMessage?.err_msg || "Tool request failed");
+        error.err_data = stateMessage?.err_data;
+        error.err_msg = stateMessage?.err_msg;
         throw error;
     }
 
