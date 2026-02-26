@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { faCheck, faEdit, faExclamation, faLaptop, faLink, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faCloud, faEdit, faExclamation, faLaptop, faLink, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BFormInput, BFormTextarea } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useFileDrop } from "@/composables/fileDrop";
 import { validateUrl } from "@/utils/url";
 import { bytesToString } from "@/utils/utils";
 
 import type { CompositeSlot, CompositeSlotMode } from "../types/uploadItem";
+
+import RemoteFileBrowserModal from "@/components/FileBrowser/RemoteFileBrowserModal.vue";
 
 interface Props {
     slotItem: CompositeSlot;
@@ -22,6 +25,7 @@ const emit = defineEmits<{
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const dropZoneRef = ref<HTMLElement | null>(null);
+const showRemoteBrowser = ref(false);
 
 const urlValidation = computed(() => {
     if (props.slotItem.mode !== "url") {
@@ -45,6 +49,9 @@ const isFilled = computed(() => {
     if (slotItem.mode === "url") {
         return !!slotItem.url.trim() && validateUrl(slotItem.url.trim()).isValid;
     }
+    if (slotItem.mode === "remote") {
+        return !!slotItem.remoteUri;
+    }
     return !!slotItem.content.trim();
 });
 
@@ -59,6 +66,9 @@ const dropdownLabel = computed(() => {
     if (slotItem.mode === "paste") {
         return "Paste";
     }
+    if (slotItem.mode === "remote") {
+        return "Remote File";
+    }
     return "Select";
 });
 
@@ -71,7 +81,7 @@ function openFileBrowser() {
 }
 
 function selectMode(mode: CompositeSlotMode) {
-    update({ mode, file: undefined, fileSize: 0, url: "", content: "" });
+    update({ mode, file: undefined, fileSize: 0, url: "", content: "", remoteUri: "" });
 }
 
 function onFileSelected(files: FileList | null) {
@@ -106,7 +116,15 @@ const { isFileOverDropZone } = useFileDrop({
 });
 
 function clearSlot() {
-    update({ mode: "local", file: undefined, fileSize: 0, url: "", content: "" });
+    update({ mode: "local", file: undefined, fileSize: 0, url: "", content: "", remoteUri: "" });
+}
+
+function onRemoteFileSelected(items: SelectionItem[]) {
+    const item = items[0];
+    if (item) {
+        update({ mode: "remote", remoteUri: item.url, fileSize: 0, file: undefined, url: "", content: "" });
+    }
+    showRemoteBrowser.value = false;
 }
 
 function onUrlInput(value: string) {
@@ -180,6 +198,10 @@ function onPasteInput(value: string) {
                     <FontAwesomeIcon :icon="faLaptop" fixed-width class="mr-1" />
                     Choose local file
                 </BDropdownItem>
+                <BDropdownItem @click="showRemoteBrowser = true">
+                    <FontAwesomeIcon :icon="faCloud" fixed-width class="mr-1" />
+                    Browse remote files
+                </BDropdownItem>
                 <BDropdownItem @click="selectMode('url')">
                     <FontAwesomeIcon :icon="faLink" fixed-width class="mr-1" />
                     Enter URL
@@ -232,8 +254,25 @@ function onPasteInput(value: string) {
                 @input="onPasteInput" />
         </div>
 
+        <!-- Remote URI display row -->
+        <div v-if="slotItem.mode === 'remote' && slotItem.remoteUri" class="mt-2">
+            <BFormInput :value="slotItem.remoteUri" readonly class="slot-file-name-input font-monospace" />
+        </div>
+        <div v-else-if="slotItem.mode === 'remote' && !slotItem.remoteUri" class="mt-2 text-muted small">
+            No file selected — click the dropdown to browse remote sources.
+        </div>
+
         <!-- Hidden file input -->
         <input ref="fileInputRef" type="file" class="d-none" @change="onFileInputChange" />
+
+        <!-- Remote file browser modal -->
+        <RemoteFileBrowserModal
+            :show.sync="showRemoteBrowser"
+            title="Browse Remote Files"
+            mode="file"
+            :multiple="false"
+            ok-text="Select File"
+            @select="onRemoteFileSelected" />
     </div>
 </template>
 

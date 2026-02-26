@@ -129,7 +129,7 @@ export function mapToCompositeFileUpload(item: CompositeFileItem, targetHistoryI
                 file: slot.file,
                 optional: slot.optional,
             };
-        } else if (slot.mode === "url") {
+        } else if (slot.mode === "url" || slot.mode === "remote") {
             return {
                 slotName: slot.slotName,
                 src: "url" as const,

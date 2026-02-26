@@ -124,6 +124,7 @@ function onExtensionChange(newExtension: string) {
                     fileSize: 0,
                     url: "",
                     content: "",
+                    remoteUri: "",
                 }),
             ),
         },

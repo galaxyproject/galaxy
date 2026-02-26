@@ -71,7 +71,7 @@ export interface RemoteFileItem extends PasteUrlItem {
 /**
  * Source mode for a single slot in a composite upload
  */
-export type CompositeSlotMode = "local" | "url" | "paste";
+export type CompositeSlotMode = "local" | "url" | "paste" | "remote";
 
 /**
  * Represents a single component file slot in a composite upload.
@@ -94,6 +94,8 @@ export interface CompositeSlot {
     url: string;
     /** Pasted text content (used when mode === "paste") */
     content: string;
+    /** Remote file source URI (used when mode === "remote") */
+    remoteUri: string;
 }
 
 /**
