@@ -188,6 +188,9 @@ test/functional/tools/cwl_tools/v1.?/
 # Involucro tool
 involucro
 
+# GTN search database (downloaded on first use)
+lib/galaxy/agents/gtn/data/gtn_search.db
+
 # Misc
 *.orig
 .DS_Store

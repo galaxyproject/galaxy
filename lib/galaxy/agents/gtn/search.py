@@ -1,13 +1,14 @@
 """
 GTN Search Library - Interface to the GTN SQLite database.
 
-This module provides search capabilities for Galaxy Training Network content
+Provides search over Galaxy Training Network tutorials and FAQs
 using SQLite FTS5 full-text search with BM25 ranking.
 """
 
 import logging
 import re
 import sqlite3
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
@@ -15,36 +16,20 @@ from typing import (
     Optional,
 )
 
+GTN_DATABASE_URL = "https://depot.galaxyproject.org/gtn/gtn_search.db"
+
 log = logging.getLogger(__name__)
 
 
 def sanitize_fts5_query(query: str, preserve_phrases: bool = True) -> str:
-    """
-    Sanitize a query string for use with SQLite FTS5 full-text search.
+    """Strip FTS5 operators from user input to prevent syntax errors.
 
-    FTS5 has special operators that can cause syntax errors if present in user input:
-    - Commas (,) are used for column specifications
-    - Parentheses () are used for grouping
-    - Colons (:) are used for column prefixes
-    - Plus (+) and minus (-) are used for AND/NOT operators
-    - Asterisk (*) is used for prefix matching
-    - Double quotes (") are used for phrase matching
-
-    Args:
-        query: Raw user query string
-        preserve_phrases: If True, keeps double quotes for phrase matching
-                         If False, removes all quotes to prevent unmatched quote errors
-
-    Returns:
-        Sanitized query string safe for FTS5 MATCH operations
-
-    Example:
-        >>> sanitize_fts5_query("climate data, help me analyze (temperature)")
-        'climate data help me analyze temperature'
-        >>> sanitize_fts5_query('find "exact phrase" in data', preserve_phrases=True)
-        'find "exact phrase" in data'
-        >>> sanitize_fts5_query('find "exact phrase" in data', preserve_phrases=False)
-        'find exact phrase in data'
+    >>> sanitize_fts5_query("climate data, help me analyze (temperature)")
+    'climate data help me analyze temperature'
+    >>> sanitize_fts5_query('find "exact phrase" in data', preserve_phrases=True)
+    'find "exact phrase" in data'
+    >>> sanitize_fts5_query('find "exact phrase" in data', preserve_phrases=False)
+    'find exact phrase in data'
     """
     if not query or not query.strip():
         return ""
@@ -147,24 +132,18 @@ class FAQResult:
 class GTNSearchDB:
     """Interface to the GTN search database."""
 
-    def __init__(self, db_path: Optional[str] = None):
-        """
-        Initialize connection to GTN search database.
-
-        Args:
-            db_path: Path to the database file. If None, uses default location.
-        """
+    def __init__(self, db_path: Optional[str] = None, download_url: Optional[str] = None):
         if db_path is None:
-            # Default to the bundled database
             current_dir = Path(__file__).parent
             self.db_path = current_dir / "data" / "gtn_search.db"
         else:
             self.db_path = Path(db_path)
 
-        if not self.db_path.exists():
-            raise FileNotFoundError(f"GTN database not found at {self.db_path}")
+        self.download_url = download_url or GTN_DATABASE_URL
 
-        # Test connection
+        if not self.db_path.exists():
+            self._download_database()
+
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -173,6 +152,19 @@ class GTNSearchDB:
                 log.info(f"GTN database loaded with {count} tutorials")
         except sqlite3.Error as e:
             raise RuntimeError(f"Failed to initialize GTN database: {e}") from e
+
+    def _download_database(self):
+        """Download the GTN database from the configured URL."""
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = self.db_path.with_suffix(".db.tmp")
+        try:
+            log.info(f"GTN database not found locally, downloading from {self.download_url} ...")
+            urllib.request.urlretrieve(self.download_url, tmp_path)
+            tmp_path.rename(self.db_path)
+            log.info(f"GTN database downloaded to {self.db_path}")
+        except OSError as e:
+            tmp_path.unlink(missing_ok=True)
+            raise FileNotFoundError(f"GTN database not found at {self.db_path} and download failed: {e}") from e
 
     def _get_connection(self) -> sqlite3.Connection:
         """Get a database connection."""
@@ -188,19 +180,7 @@ class GTNSearchDB:
         difficulty: Optional[str] = None,
         hands_on_only: bool = False,
     ) -> list[SearchResult]:
-        """
-        Search tutorials using FTS5.
-
-        Args:
-            query: Search terms (supports phrases with quotes)
-            limit: Maximum results to return
-            topic: Filter by topic (e.g., "transcriptomics")
-            difficulty: Filter by difficulty level
-            hands_on_only: Only return hands-on tutorials
-
-        Returns:
-            List of SearchResult objects with tutorial info and relevance scores
-        """
+        """Search tutorials using FTS5 full-text search with optional filters."""
         if not query:
             return []
 
@@ -208,11 +188,7 @@ class GTNSearchDB:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                # Sanitize query for FTS5 to prevent syntax errors
                 fts_query = sanitize_fts5_query(query, preserve_phrases=True)
-
-                # Build the base query
-                # Note: FTS5 tables are separate, so we join on rowid
                 sql = """
                     SELECT
                         t.id,
@@ -233,7 +209,6 @@ class GTNSearchDB:
 
                 params: list[Any] = [fts_query]
 
-                # Add filters
                 conditions = []
                 if topic:
                     conditions.append("t.topic = ?")
@@ -249,14 +224,10 @@ class GTNSearchDB:
                 if conditions:
                     sql += " AND " + " AND ".join(conditions)
 
-                # Add ordering and limit
                 sql += " ORDER BY score LIMIT ?"
                 params.append(limit)
 
-                # Execute query
                 results = cursor.execute(sql, params)
-
-                # Convert to SearchResult objects
                 search_results = []
                 for row in results:
                     search_results.append(
@@ -288,18 +259,7 @@ class GTNSearchDB:
         category: Optional[str] = None,
         area: Optional[str] = None,
     ) -> list[FAQResult]:
-        """
-        Search FAQs using FTS5.
-
-        Args:
-            query: Search terms
-            limit: Maximum results to return
-            category: Filter by category (galaxy or gtn)
-            area: Filter by area (e.g., "analysis", "account")
-
-        Returns:
-            List of FAQResult objects
-        """
+        """Search FAQs using FTS5 full-text search with optional filters."""
         if not query:
             return []
 
@@ -307,10 +267,7 @@ class GTNSearchDB:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                # Sanitize query for FTS5 to prevent syntax errors
                 fts_query = sanitize_fts5_query(query, preserve_phrases=True)
-
-                # Build the query
                 sql = """
                     SELECT
                         f.id,
@@ -328,7 +285,6 @@ class GTNSearchDB:
 
                 params: list[Any] = [fts_query]
 
-                # Add filters
                 conditions = []
                 if category:
                     conditions.append("f.category = ?")
@@ -341,14 +297,11 @@ class GTNSearchDB:
                 if conditions:
                     sql += " AND " + " AND ".join(conditions)
 
-                # Add ordering and limit
                 sql += " ORDER BY score LIMIT ?"
                 params.append(limit)
 
-                # Execute query
                 results = cursor.execute(sql, params)
 
-                # Convert to FAQResult objects
                 faq_results = []
                 for row in results:
                     faq_results.append(
@@ -371,17 +324,7 @@ class GTNSearchDB:
             return []
 
     def get_tutorial_content(self, topic: str, tutorial: str, max_length: Optional[int] = None) -> Optional[str]:
-        """
-        Retrieve full or truncated tutorial content.
-
-        Args:
-            topic: Topic of the tutorial
-            tutorial: Tutorial name
-            max_length: Maximum content length to return
-
-        Returns:
-            Tutorial content or None if not found
-        """
+        """Retrieve tutorial content, optionally truncated to max_length."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -405,12 +348,7 @@ class GTNSearchDB:
             return None
 
     def get_topics(self) -> list[str]:
-        """
-        List all available topics.
-
-        Returns:
-            List of topic names
-        """
+        """List all available topics."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -424,12 +362,7 @@ class GTNSearchDB:
             return []
 
     def get_metadata(self) -> dict[str, Any]:
-        """
-        Get database version and build information.
-
-        Returns:
-            Dictionary with metadata
-        """
+        """Get database version and build information."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -447,20 +380,11 @@ class GTNSearchDB:
             return {}
 
     def suggest_queries(self, partial: str) -> list[str]:
-        """
-        Suggest queries based on partial input.
-
-        Args:
-            partial: Partial query string
-
-        Returns:
-            List of suggested queries
-        """
+        """Suggest queries based on partial input."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                # Get example queries that match the partial
                 results = cursor.execute(
                     "SELECT query FROM example_queries WHERE query LIKE ? LIMIT 5",
                     (f"%{partial}%",),
@@ -468,7 +392,6 @@ class GTNSearchDB:
 
                 suggestions = [row["query"] for row in results]
 
-                # Also suggest popular topics
                 if len(suggestions) < 5:
                     topic_results = cursor.execute(
                         """
@@ -492,15 +415,7 @@ class GTNSearchDB:
             return []
 
     def get_tutorial_by_id(self, tutorial_id: int) -> Optional[dict[str, Any]]:
-        """
-        Get complete tutorial information by ID.
-
-        Args:
-            tutorial_id: Tutorial database ID
-
-        Returns:
-            Dictionary with tutorial information or None
-        """
+        """Get complete tutorial information by ID."""
         try:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
@@ -529,16 +444,7 @@ class GTNSearchDB:
             return None
 
     def search_by_tools(self, tool_names: list[str], limit: int = 5) -> list[SearchResult]:
-        """
-        Search for tutorials that use specific tools.
-
-        Args:
-            tool_names: List of tool names to search for
-            limit: Maximum results to return
-
-        Returns:
-            List of SearchResult objects
-        """
+        """Search for tutorials that use specific tools."""
         if not tool_names:
             return []
 
@@ -546,7 +452,6 @@ class GTNSearchDB:
             with self._get_connection() as conn:
                 cursor = conn.cursor()
 
-                # Build query to search in tools_json field
                 tool_conditions = []
                 params: list[Any] = []
                 for tool in tool_names:

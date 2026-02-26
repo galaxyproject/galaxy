@@ -31,6 +31,8 @@ from typing import (
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger(__name__)
 
+DB_VERSION = "1.1.0"
+
 
 @dataclass
 class FAQ:
@@ -77,13 +79,6 @@ class GTNDatabaseBuilder:
     """Builds SQLite database from GTN repository."""
 
     def __init__(self, gtn_path: Path, output_path: Optional[Path] = None):
-        """
-        Initialize the database builder.
-
-        Args:
-            gtn_path: Path to the GTN repository
-            output_path: Path for the output database file
-        """
         self.gtn_path = gtn_path
         self.output_path = output_path or Path("gtn_search.db")
         self.tutorials: list[Tutorial] = []
@@ -150,7 +145,7 @@ class GTNDatabaseBuilder:
                         if tutorial:
                             self.tutorials.append(tutorial)
                             log.debug(f"Parsed tutorial: {topic}/{tutorial_name}")
-                    except Exception as e:
+                    except (OSError, ValueError, KeyError) as e:
                         log.warning(f"Failed to parse {topic}/{tutorial_name}: {e}")
 
     def collect_faqs(self):
@@ -171,7 +166,7 @@ class GTNDatabaseBuilder:
                         if faq:
                             self.faqs.append(faq)
                             log.debug(f"Parsed FAQ: galaxy/{faq_file.name}")
-                    except Exception as e:
+                    except (OSError, ValueError, KeyError) as e:
                         log.warning(f"Failed to parse FAQ galaxy/{faq_file.name}: {e}")
 
         # Process GTN FAQs
@@ -184,20 +179,11 @@ class GTNDatabaseBuilder:
                         if faq:
                             self.faqs.append(faq)
                             log.debug(f"Parsed FAQ: gtn/{faq_file.name}")
-                    except Exception as e:
+                    except (OSError, ValueError, KeyError) as e:
                         log.warning(f"Failed to parse FAQ gtn/{faq_file.name}: {e}")
 
     def parse_faq(self, faq_file: Path, category: str) -> Optional[FAQ]:
-        """
-        Parse a FAQ markdown file.
-
-        Args:
-            faq_file: Path to the FAQ markdown file
-            category: Category (galaxy or gtn)
-
-        Returns:
-            FAQ object or None if parsing fails
-        """
+        """Parse a FAQ markdown file, returning None on failure."""
         try:
             with open(faq_file, encoding="utf-8") as f:
                 content = f.read()
@@ -248,22 +234,12 @@ class GTNDatabaseBuilder:
 
             return faq
 
-        except Exception as e:
+        except (OSError, ValueError, KeyError) as e:
             log.warning(f"Error parsing FAQ {faq_file}: {e}")
             return None
 
     def parse_tutorial(self, tutorial_file: Path, topic: str, tutorial_name: str) -> Optional[Tutorial]:
-        """
-        Parse a tutorial markdown file.
-
-        Args:
-            tutorial_file: Path to the tutorial.md file
-            topic: Topic name
-            tutorial_name: Tutorial directory name
-
-        Returns:
-            Tutorial object or None if parsing fails
-        """
+        """Parse a tutorial markdown file, returning None on failure."""
         try:
             with open(tutorial_file, encoding="utf-8") as f:
                 content = f.read()
@@ -321,17 +297,12 @@ class GTNDatabaseBuilder:
 
             return tutorial
 
-        except Exception as e:
+        except (OSError, ValueError, KeyError) as e:
             log.warning(f"Error parsing tutorial {tutorial_file}: {e}")
             return None
 
     def parse_yaml_simple(self, yaml_content: str) -> dict[str, Any]:
-        """
-        Simple YAML parser for frontmatter.
-
-        This is a basic parser that handles common YAML structures
-        without requiring external dependencies.
-        """
+        """Simple YAML frontmatter parser (no external dependencies)."""
         result: dict[str, Any] = {}
         current_list: Optional[list[str]] = None
 
@@ -383,11 +354,11 @@ class GTNDatabaseBuilder:
 
     def extract_section(self, content: str, section_name: str) -> str:
         """Extract a section from markdown content."""
-        # Look for sections like {: .objectives} or > ### {% icon objectives %} Objectives
+        escaped = re.escape(section_name)
         patterns = [
-            rf"{{:\s*\.{section_name}.*?}}(.*?)(?:{{:|^#|\Z)",
-            rf">{{\%\s*icon\s+{section_name}.*?\%}}.*?\n(.*?)(?:^#|\Z)",
-            rf"<{section_name}.*?>(.*?)</{section_name}>",
+            rf"{{:\s*\.{escaped}.*?}}(.*?)(?:{{:|^#|\Z)",
+            rf">{{\%\s*icon\s+{escaped}.*?\%}}.*?\n(.*?)(?:^#|\Z)",
+            rf"<{escaped}.*?>(.*?)</{escaped}>",
         ]
 
         for pattern in patterns:
@@ -413,285 +384,236 @@ class GTNDatabaseBuilder:
 
     def create_database(self):
         """Create the SQLite database with FTS5 tables."""
-        # Remove existing database
         if self.output_path.exists():
             self.output_path.unlink()
 
-        conn = sqlite3.connect(str(self.output_path))
-        cursor = conn.cursor()
+        with sqlite3.connect(str(self.output_path)) as conn:
+            cursor = conn.cursor()
 
-        # Create main tutorials table
-        cursor.execute("""
-            CREATE TABLE tutorials (
-                id INTEGER PRIMARY KEY,
-                topic TEXT NOT NULL,
-                tutorial TEXT NOT NULL,
-                title TEXT NOT NULL,
-                description TEXT,
-                url TEXT NOT NULL,
-                difficulty TEXT,
-                hands_on BOOLEAN DEFAULT 1,
-                time_estimation TEXT,
-                content TEXT NOT NULL,
-                questions TEXT,
-                objectives TEXT,
-                key_points TEXT,
-                tools_json TEXT,
-                requirements_json TEXT,
-                tags_json TEXT,
-                content_hash TEXT NOT NULL,
-                last_modified TEXT,
-                gtn_commit TEXT,
-                zenodo_link TEXT,
-                workflows_json TEXT,
-                UNIQUE(topic, tutorial)
+            cursor.execute(
+                """
+                CREATE TABLE tutorials (
+                    id INTEGER PRIMARY KEY,
+                    topic TEXT NOT NULL,
+                    tutorial TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    url TEXT NOT NULL,
+                    difficulty TEXT,
+                    hands_on BOOLEAN DEFAULT 1,
+                    time_estimation TEXT,
+                    content TEXT NOT NULL,
+                    questions TEXT,
+                    objectives TEXT,
+                    key_points TEXT,
+                    tools_json TEXT,
+                    requirements_json TEXT,
+                    tags_json TEXT,
+                    content_hash TEXT NOT NULL,
+                    last_modified TEXT,
+                    gtn_commit TEXT,
+                    zenodo_link TEXT,
+                    workflows_json TEXT,
+                    UNIQUE(topic, tutorial)
+                )
+            """
             )
-        """)
 
-        # Create FTS5 virtual table for search (simpler version)
-        cursor.execute("""
-            CREATE VIRTUAL TABLE tutorials_fts USING fts5(
-                title,
-                description,
-                content,
-                topic,
-                tokenize='porter unicode61'
+            # FTS5 content tables track the source table automatically
+            cursor.execute(
+                """
+                CREATE VIRTUAL TABLE tutorials_fts USING fts5(
+                    title, description, content, topic,
+                    content=tutorials, content_rowid=id,
+                    tokenize='porter unicode61'
+                )
+            """
             )
-        """)
 
-        # Create metadata table
-        cursor.execute("""
-            CREATE TABLE metadata (
-                key TEXT PRIMARY KEY,
-                value TEXT NOT NULL
+            cursor.execute(
+                """
+                CREATE TABLE metadata (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                )
+            """
             )
-        """)
 
-        # Create example queries table
-        cursor.execute("""
-            CREATE TABLE example_queries (
-                id INTEGER PRIMARY KEY,
-                query TEXT NOT NULL,
-                description TEXT,
-                category TEXT
+            cursor.execute(
+                """
+                CREATE TABLE example_queries (
+                    id INTEGER PRIMARY KEY,
+                    query TEXT NOT NULL,
+                    description TEXT,
+                    category TEXT
+                )
+            """
             )
-        """)
 
-        # Create FAQs table
-        cursor.execute("""
-            CREATE TABLE faqs (
-                id INTEGER PRIMARY KEY,
-                category TEXT NOT NULL,
-                filename TEXT NOT NULL,
-                title TEXT NOT NULL,
-                area TEXT,
-                box_type TEXT,
-                content TEXT NOT NULL,
-                content_hash TEXT NOT NULL,
-                last_modified TEXT,
-                contributors_json TEXT,
-                UNIQUE(category, filename)
+            cursor.execute(
+                """
+                CREATE TABLE faqs (
+                    id INTEGER PRIMARY KEY,
+                    category TEXT NOT NULL,
+                    filename TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    area TEXT,
+                    box_type TEXT,
+                    content TEXT NOT NULL,
+                    content_hash TEXT NOT NULL,
+                    last_modified TEXT,
+                    contributors_json TEXT,
+                    UNIQUE(category, filename)
+                )
+            """
             )
-        """)
 
-        # Create FTS5 virtual table for FAQ search
-        cursor.execute("""
-            CREATE VIRTUAL TABLE faqs_fts USING fts5(
-                title,
-                content,
-                category,
-                area,
-                tokenize='porter unicode61'
+            cursor.execute(
+                """
+                CREATE VIRTUAL TABLE faqs_fts USING fts5(
+                    title, content, category, area,
+                    content=faqs, content_rowid=id,
+                    tokenize='porter unicode61'
+                )
+            """
             )
-        """)
 
-        # Create indexes
-        cursor.execute("CREATE INDEX idx_topic_difficulty ON tutorials(topic, difficulty)")
-        cursor.execute("CREATE INDEX idx_hands_on ON tutorials(hands_on)")
-        cursor.execute("CREATE INDEX idx_content_hash ON tutorials(content_hash)")
-        cursor.execute("CREATE INDEX idx_faq_category ON faqs(category)")
-        cursor.execute("CREATE INDEX idx_faq_area ON faqs(area)")
+            cursor.execute("CREATE INDEX idx_topic_difficulty ON tutorials(topic, difficulty)")
+            cursor.execute("CREATE INDEX idx_hands_on ON tutorials(hands_on)")
+            cursor.execute("CREATE INDEX idx_content_hash ON tutorials(content_hash)")
+            cursor.execute("CREATE INDEX idx_faq_category ON faqs(category)")
+            cursor.execute("CREATE INDEX idx_faq_area ON faqs(area)")
 
-        conn.commit()
-        conn.close()
+            conn.commit()
 
     def insert_tutorials(self):
         """Insert tutorials into the database."""
-        conn = sqlite3.connect(str(self.output_path))
-        cursor = conn.cursor()
+        with sqlite3.connect(str(self.output_path)) as conn:
+            cursor = conn.cursor()
 
-        for tutorial in self.tutorials:
-            try:
-                # Prepare JSON fields
-                tools_json = json.dumps(tutorial.tools)
-                requirements_json = json.dumps(tutorial.requirements)
-                tags_json = json.dumps(tutorial.tags)
-                workflows_json = json.dumps(tutorial.workflows)
+            for tutorial in self.tutorials:
+                try:
+                    cursor.execute(
+                        """
+                        INSERT OR REPLACE INTO tutorials (
+                            topic, tutorial, title, description, url, difficulty,
+                            hands_on, time_estimation, content, questions, objectives,
+                            key_points, tools_json, requirements_json, tags_json,
+                            content_hash, last_modified, gtn_commit, zenodo_link, workflows_json
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                        (
+                            tutorial.topic,
+                            tutorial.tutorial,
+                            tutorial.title,
+                            tutorial.description,
+                            tutorial.url,
+                            tutorial.difficulty,
+                            int(tutorial.hands_on),
+                            tutorial.time_estimation,
+                            tutorial.content,
+                            tutorial.questions,
+                            tutorial.objectives,
+                            tutorial.key_points,
+                            json.dumps(tutorial.tools),
+                            json.dumps(tutorial.requirements),
+                            json.dumps(tutorial.tags),
+                            tutorial.content_hash,
+                            tutorial.last_modified,
+                            tutorial.gtn_commit,
+                            tutorial.zenodo_link,
+                            json.dumps(tutorial.workflows),
+                        ),
+                    )
+                except sqlite3.Error as e:
+                    log.warning(f"Failed to insert tutorial {tutorial.topic}/{tutorial.tutorial}: {e}")
 
-                # Insert into main table
-                cursor.execute(
-                    """
-                    INSERT OR REPLACE INTO tutorials (
-                        topic, tutorial, title, description, url, difficulty,
-                        hands_on, time_estimation, content, questions, objectives,
-                        key_points, tools_json, requirements_json, tags_json,
-                        content_hash, last_modified, gtn_commit, zenodo_link, workflows_json
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                    (
-                        tutorial.topic,
-                        tutorial.tutorial,
-                        tutorial.title,
-                        tutorial.description,
-                        tutorial.url,
-                        tutorial.difficulty,
-                        int(tutorial.hands_on),
-                        tutorial.time_estimation,
-                        tutorial.content,
-                        tutorial.questions,
-                        tutorial.objectives,
-                        tutorial.key_points,
-                        tools_json,
-                        requirements_json,
-                        tags_json,
-                        tutorial.content_hash,
-                        tutorial.last_modified,
-                        tutorial.gtn_commit,
-                        tutorial.zenodo_link,
-                        workflows_json,
-                    ),
-                )
-
-                # Also insert into FTS5 table for searching
-                cursor.execute(
-                    """
-                    INSERT OR REPLACE INTO tutorials_fts (
-                        title, description, content, topic
-                    ) VALUES (?, ?, ?, ?)
-                """,
-                    (
-                        tutorial.title,
-                        tutorial.description,
-                        tutorial.content,
-                        tutorial.topic,
-                    ),
-                )
-
-            except Exception as e:
-                log.warning(f"Failed to insert tutorial {tutorial.topic}/{tutorial.tutorial}: {e}")
-
-        conn.commit()
-        conn.close()
+            # Rebuild FTS index from content table
+            cursor.execute("INSERT INTO tutorials_fts(tutorials_fts) VALUES('rebuild')")
+            conn.commit()
 
     def insert_faqs(self):
         """Insert FAQs into the database."""
-        conn = sqlite3.connect(str(self.output_path))
-        cursor = conn.cursor()
+        with sqlite3.connect(str(self.output_path)) as conn:
+            cursor = conn.cursor()
 
-        for faq in self.faqs:
-            try:
-                # Prepare JSON field
-                contributors_json = json.dumps(faq.contributors)
+            for faq in self.faqs:
+                try:
+                    cursor.execute(
+                        """
+                        INSERT OR REPLACE INTO faqs (
+                            category, filename, title, area, box_type,
+                            content, content_hash, last_modified, contributors_json
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                        (
+                            faq.category,
+                            faq.filename,
+                            faq.title,
+                            faq.area,
+                            faq.box_type,
+                            faq.content,
+                            faq.content_hash,
+                            faq.last_modified,
+                            json.dumps(faq.contributors),
+                        ),
+                    )
+                except sqlite3.Error as e:
+                    log.warning(f"Failed to insert FAQ {faq.category}/{faq.filename}: {e}")
 
-                # Insert into main FAQs table
-                cursor.execute(
-                    """
-                    INSERT OR REPLACE INTO faqs (
-                        category, filename, title, area, box_type,
-                        content, content_hash, last_modified, contributors_json
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                    (
-                        faq.category,
-                        faq.filename,
-                        faq.title,
-                        faq.area,
-                        faq.box_type,
-                        faq.content,
-                        faq.content_hash,
-                        faq.last_modified,
-                        contributors_json,
-                    ),
-                )
-
-                # Also insert into FTS5 table for searching
-                cursor.execute(
-                    """
-                    INSERT OR REPLACE INTO faqs_fts (
-                        title, content, category, area
-                    ) VALUES (?, ?, ?, ?)
-                """,
-                    (faq.title, faq.content, faq.category, faq.area),
-                )
-
-            except Exception as e:
-                log.warning(f"Failed to insert FAQ {faq.category}/{faq.filename}: {e}")
-
-        conn.commit()
-        conn.close()
+            # Rebuild FTS index from content table
+            cursor.execute("INSERT INTO faqs_fts(faqs_fts) VALUES('rebuild')")
+            conn.commit()
 
     def add_metadata(self):
         """Add metadata to the database."""
-        conn = sqlite3.connect(str(self.output_path))
-        cursor = conn.cursor()
+        with sqlite3.connect(str(self.output_path)) as conn:
+            cursor = conn.cursor()
 
-        # Add version and build information
-        metadata = {
-            "version": "1.1.0",  # Bumped version for FAQ support
-            "build_date": datetime.now().isoformat(),
-            "tutorial_count": str(len(self.tutorials)),
-            "faq_count": str(len(self.faqs)),
-            "gtn_repository": "https://github.com/galaxyproject/training-material",
-            "builder_version": "1.1.0",
-        }
+            metadata = {
+                "version": DB_VERSION,
+                "build_date": datetime.now().isoformat(),
+                "tutorial_count": str(len(self.tutorials)),
+                "faq_count": str(len(self.faqs)),
+                "gtn_repository": "https://github.com/galaxyproject/training-material",
+                "builder_version": DB_VERSION,
+            }
 
-        for key, value in metadata.items():
-            cursor.execute(
-                "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
-                (key, value),
-            )
+            for key, value in metadata.items():
+                cursor.execute(
+                    "INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)",
+                    (key, value),
+                )
 
-        # Add example queries
-        example_queries = [
-            ("RNA-seq", "Find RNA sequencing tutorials", "analysis"),
-            (
-                "differential expression",
-                "Tutorials on differential expression analysis",
-                "analysis",
-            ),
-            ("quality control", "QC and data preprocessing tutorials", "preprocessing"),
-            ("workflow", "Workflow creation and management", "galaxy"),
-            ("beginner", "Tutorials for beginners", "skill-level"),
-            ("tool development", "Creating custom Galaxy tools", "development"),
-        ]
+            example_queries = [
+                ("RNA-seq", "Find RNA sequencing tutorials", "analysis"),
+                ("differential expression", "Tutorials on differential expression analysis", "analysis"),
+                ("quality control", "QC and data preprocessing tutorials", "preprocessing"),
+                ("workflow", "Workflow creation and management", "galaxy"),
+                ("beginner", "Tutorials for beginners", "skill-level"),
+                ("tool development", "Creating custom Galaxy tools", "development"),
+            ]
 
-        for query, description, category in example_queries:
-            cursor.execute(
-                "INSERT INTO example_queries (query, description, category) VALUES (?, ?, ?)",
-                (query, description, category),
-            )
+            for query, description, category in example_queries:
+                cursor.execute(
+                    "INSERT INTO example_queries (query, description, category) VALUES (?, ?, ?)",
+                    (query, description, category),
+                )
 
-        conn.commit()
-        conn.close()
+            conn.commit()
 
     def optimize_database(self):
         """Optimize the database for size and performance."""
-        conn = sqlite3.connect(str(self.output_path))
-        cursor = conn.cursor()
+        with sqlite3.connect(str(self.output_path)) as conn:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO tutorials_fts(tutorials_fts) VALUES('optimize')")
+            cursor.execute("INSERT INTO faqs_fts(faqs_fts) VALUES('optimize')")
+            cursor.execute("ANALYZE")
+            conn.commit()
 
-        # Optimize FTS index
-        cursor.execute("INSERT INTO tutorials_fts(tutorials_fts) VALUES('optimize')")
-
-        # Analyze tables for query optimization
-        cursor.execute("ANALYZE")
-
-        conn.commit()
-        conn.close()
-
-        # VACUUM needs to be run outside of a transaction
-        conn = sqlite3.connect(str(self.output_path))
-        conn.execute("VACUUM")
-        conn.close()
+        # VACUUM must run outside a transaction
+        with sqlite3.connect(str(self.output_path)) as conn:
+            conn.execute("VACUUM")
 
 
 def main():
