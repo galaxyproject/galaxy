@@ -48,8 +48,8 @@ from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DE
 from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
 from galaxy.schema.credentials import (
     CredentialsContext,
-    SelectedGroup,
-    ServiceCredentialsContext,
+    SelectedGroupRef,
+    ServiceCredentialRef,
 )
 from galaxy.schema.invocation import (
     CancelReason,
@@ -2679,11 +2679,11 @@ class ToolModule(WorkflowModule):
         for user_cred, group, _cred in results:
             key = (user_cred.id, user_cred.name, user_cred.version)
             if key not in seen:
-                seen[key] = ServiceCredentialsContext(
+                seen[key] = ServiceCredentialRef(
                     user_credentials_id=encode(user_cred.id),
                     name=user_cred.name,
                     version=user_cred.version,
-                    selected_group=SelectedGroup(
+                    selected_group=SelectedGroupRef(
                         id=encode(group.id),
                         name=group.name,
                     ),
