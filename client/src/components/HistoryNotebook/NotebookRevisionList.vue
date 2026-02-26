@@ -62,7 +62,7 @@ function formatDate(dateStr: string): string {
                 </div>
                 <BButton
                     v-if="index > 0"
-                    variant="outline-secondary"
+                    variant="outline-primary"
                     size="sm"
                     data-description="restore revision button"
                     :disabled="isReverting"
