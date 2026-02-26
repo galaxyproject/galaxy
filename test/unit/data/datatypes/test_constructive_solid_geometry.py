@@ -1,4 +1,4 @@
-from lib.galaxy.datatypes.constructive_solid_geometry import VtkXml, GocadSGrid, FeflowFem
+from lib.galaxy.datatypes.constructive_solid_geometry import VtkXml, GocadSGrid, FeflowFem, AsciiRaster
 from .util import (
     get_dataset,
     MockDatasetDataset,
@@ -34,3 +34,12 @@ def test_FeflowFem_set_meta():
 
     assert dataset.metadata.feflow_version == "v.6.004"
     assert dataset.metadata.problem_type == "A new FEFLOW problem"
+
+def test_AsciiRaster_set_meta():
+    asciiRaster = AsciiRaster()
+    with get_dataset("testfile.asc") as dataset:
+        dataset.dataset = MockDatasetDataset(dataset.get_file_name())
+        asciiRaster.set_meta(dataset)
+
+    assert dataset.metadata.ncols == 100
+    assert dataset.metadata.nrows == 200

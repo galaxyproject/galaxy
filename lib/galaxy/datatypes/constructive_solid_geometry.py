@@ -1106,3 +1106,38 @@ class FeflowFem(data.Text):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Check for the key string 'PROBLEM:' at the start of the file."""
         return file_prefix.text_io(errors="ignore").readline().startswith("PROBLEM:")
+    
+
+@build_sniff_from_prefix
+class AsciiRaster(data.Text):
+    """Esri ASCII Raster file format (.asc)"""
+
+    file_ext = "asc"
+
+    MetadataElement(name="ncols", default=0, desc="Number of columns", readonly=True, visible=True)
+    MetadataElement(name="nrows", default=0, desc="Number of rows", readonly=True, visible=True)
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        if dataset.has_data():
+            with open(dataset.get_file_name(), errors="ignore") as fh:
+                for line in fh:
+                    line = line.strip().lower()
+                    if not line: continue
+                    if line.startswith("ncols"):
+                        dataset.metadata.ncols = int(line.split()[1])
+                    elif line.startswith("nrows"):
+                        dataset.metadata.nrows = int(line.split()[1])
+                    if dataset.metadata.nrows > 0 and dataset.metadata.ncols > 0:
+                        break
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.get_file_name())
+            dataset.blurb = f"Raster: {str(dataset.metadata.ncols)} cols, {str(dataset.metadata.nrows)} rows"
+        else:
+            dataset.peek = "File does not exist"
+            dataset.blurb = "File purged from disk"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """Checks for 'ncols' at the beginning of the file."""
+        return file_prefix.text_io(errors="ignore").readline().lower().startswith("ncols")
