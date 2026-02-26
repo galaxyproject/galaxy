@@ -2632,6 +2632,12 @@ galaxy:
   # handler processes. Float values are allowed.
   #workflow_monitor_sleep: 1.0
 
+  # Time in seconds between workflow completion monitor iterations. The
+  # completion monitor checks for workflows that have all jobs completed
+  # and triggers completion hooks (e.g., exports, notifications). Float
+  # values are allowed.
+  #workflow_completion_monitor_sleep: 5.0
+
   # In which cases Galaxy should calculate a hash for a new dataset.
   # Dataset hashes can be used by the Galaxy job cache/search to check
   # if job inputs match. Setting the 'enable_celery_tasks' option to
