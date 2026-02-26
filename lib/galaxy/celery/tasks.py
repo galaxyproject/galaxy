@@ -243,6 +243,11 @@ def setup_fetch_data(
     mini_job_wrapper.change_state(model.Job.states.QUEUED, flush=False, job=job)
     # Set object store after job destination so can leverage parameters...
     mini_job_wrapper._set_object_store_ids(job)
+    # Now that we have the object store id, check if we are over the limit
+    mini_job_wrapper._pause_job_if_over_quota(job)
+    if job.state == model.Job.states.PAUSED:
+        sa_session.commit()
+        return None
     request_json = Path(mini_job_wrapper.working_directory) / "request.json"
     request_json_value = next(iter(p.value for p in job.parameters if p.name == "request_json"))
     request_json.write_text(json.loads(request_json_value))
@@ -268,7 +273,8 @@ def finish_job(
     tool = cached_create_tool_from_representation(app=app, raw_tool_source=raw_tool_source)
     job = sa_session.get(Job, job_id)
     assert job
-    # TODO: assert state ?
+    if job.state == model.Job.states.PAUSED:
+        return
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app, tool=tool)
     mini_job_wrapper.finish("", "")
 
@@ -327,7 +333,9 @@ def fetch_data(
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
     task_user_id: Optional[int] = None,
-) -> str:
+) -> Optional[str]:
+    if setup_return is None:
+        return None
     job = sa_session.get(Job, job_id)
     assert job
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app)
