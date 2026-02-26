@@ -6,16 +6,13 @@ from typing import (
 )
 
 from pydantic import (
-    BeforeValidator,
     Field,
     RootModel,
 )
 
 from galaxy.schema.fields import (
-    decode_id,
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
-    ensure_valid_id,
 )
 from galaxy.schema.schema import Model
 
@@ -402,40 +399,13 @@ class ServiceCredentialsContextResponse(Model):
     ]
 
 
-def _flexible_decode_id(v: object) -> int:
-    """Accept both hex-encoded ID strings (API) and plain ints (Celery/internal)."""
-    if isinstance(v, int):
-        return v
-    return decode_id(ensure_valid_id(str(v)))
-
-
-FlexibleDatabaseIdField = Annotated[int, BeforeValidator(_flexible_decode_id)]
-
-
-class SelectedGroupRef(Model):
-    """Reference to a credential group; accepts hex-string IDs (API) or plain ints (Celery)."""
-
-    id: FlexibleDatabaseIdField
-    name: str
-
-
-class ServiceCredentialRef(Model):
-    """Reference to service credentials; accepts hex-string IDs (API) or plain ints (Celery).
-    Used internally in the tool execution chain and Celery tasks."""
-
-    user_credentials_id: FlexibleDatabaseIdField
-    name: str
-    version: str
-    selected_group: SelectedGroupRef
-
-
 class CredentialsContext(RootModel):
     """Context for credentials to be used during tool execution.
 
     Contains the list of selected service credentials provided by the user.
     """
 
-    root: list[ServiceCredentialRef]
+    root: list[ServiceCredentialsContext]
 
 
 class CredentialsContextResponse(RootModel):
