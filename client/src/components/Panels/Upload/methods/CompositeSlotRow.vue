@@ -72,8 +72,10 @@ const dropdownLabel = computed(() => {
     return "Select";
 });
 
-function update(patch: Partial<CompositeSlot>) {
-    emit("update:slotItem", { ...props.slotItem, ...patch });
+/** Extracts the shared base fields from the current slot to build a fresh typed variant */
+function base() {
+    const { slotName, description, optional } = props.slotItem;
+    return { slotName, description, optional };
 }
 
 function openFileBrowser() {
@@ -81,13 +83,21 @@ function openFileBrowser() {
 }
 
 function selectMode(mode: CompositeSlotMode) {
-    update({ mode, file: undefined, fileSize: 0, url: "", content: "", remoteUri: "" });
+    if (mode === "local") {
+        emit("update:slotItem", { ...base(), mode: "local", fileSize: 0 });
+    } else if (mode === "url") {
+        emit("update:slotItem", { ...base(), mode: "url", url: "" });
+    } else if (mode === "paste") {
+        emit("update:slotItem", { ...base(), mode: "paste", content: "" });
+    } else {
+        emit("update:slotItem", { ...base(), mode: "remote", remoteUri: "", remoteName: "", fileSize: 0 });
+    }
 }
 
 function onFileSelected(files: FileList | null) {
     const file = files?.[0] ?? null;
     if (file) {
-        update({ mode: "local", file, fileSize: file.size });
+        emit("update:slotItem", { ...base(), mode: "local", file, fileSize: file.size });
     }
     // Reset input so the same file can be re-selected if cleared
     if (fileInputRef.value) {
@@ -103,7 +113,7 @@ function onFileInputChange(event: Event) {
 function onDrop(evt: DragEvent) {
     const file = evt.dataTransfer?.files?.[0];
     if (file) {
-        update({ mode: "local", file, fileSize: file.size });
+        emit("update:slotItem", { ...base(), mode: "local", file, fileSize: file.size });
     }
 }
 
@@ -116,24 +126,40 @@ const { isFileOverDropZone } = useFileDrop({
 });
 
 function clearSlot() {
-    update({ mode: "local", file: undefined, fileSize: 0, url: "", content: "", remoteUri: "" });
+    emit("update:slotItem", { ...base(), mode: "local", fileSize: 0 });
 }
 
 function onRemoteFileSelected(items: SelectionItem[]) {
     const item = items[0];
     if (item) {
-        update({ mode: "remote", remoteUri: item.url, fileSize: 0, file: undefined, url: "", content: "" });
+        const fileSize = (item.entry as { size?: number }).size ?? 0;
+        emit("update:slotItem", { ...base(), mode: "remote", remoteUri: item.url, remoteName: item.label, fileSize });
     }
     showRemoteBrowser.value = false;
 }
 
 function onUrlInput(value: string) {
-    update({ url: value });
+    emit("update:slotItem", { ...base(), mode: "url", url: value });
 }
 
 function onPasteInput(value: string) {
-    update({ content: value, fileSize: new Blob([value]).size });
+    emit("update:slotItem", { ...base(), mode: "paste", content: value });
 }
+
+const display = computed(() => {
+    const slotItem = props.slotItem;
+    const isLocal = slotItem.mode === "local";
+    const isRemote = slotItem.mode === "remote";
+    const isPaste = slotItem.mode === "paste";
+    return {
+        fileSize: isLocal || isRemote ? slotItem.fileSize : isPaste ? new Blob([slotItem.content]).size : 0,
+        localFileName: isLocal ? slotItem.file?.name : undefined,
+        urlValue: slotItem.mode === "url" ? slotItem.url : "",
+        pasteContent: slotItem.mode === "paste" ? slotItem.content : "",
+        remoteName: isRemote ? slotItem.remoteName || slotItem.remoteUri : "",
+        hasRemoteFile: isRemote && !!slotItem.remoteUri,
+    };
+});
 </script>
 
 <template>
@@ -185,8 +211,8 @@ function onPasteInput(value: string) {
             </div>
 
             <!-- File size badge -->
-            <small v-if="slotItem.fileSize > 0" class="text-muted mr-2 flex-shrink-0">
-                {{ bytesToString(slotItem.fileSize) }}
+            <small v-if="display.fileSize > 0" class="text-muted mr-2 flex-shrink-0">
+                {{ bytesToString(display.fileSize) }}
             </small>
 
             <!-- Source mode dropdown -->
@@ -226,14 +252,14 @@ function onPasteInput(value: string) {
         </div>
 
         <!-- Local file info row -->
-        <div v-if="slotItem.mode === 'local' && slotItem.file" class="mt-2">
-            <BFormInput :value="slotItem.file.name" readonly class="slot-file-name-input font-monospace" />
+        <div v-if="display.localFileName" class="mt-2">
+            <BFormInput :value="display.localFileName" readonly class="slot-file-name-input font-monospace" />
         </div>
 
         <!-- URL input row -->
         <div v-if="slotItem.mode === 'url'" class="mt-2">
             <BFormInput
-                :value="slotItem.url"
+                :value="display.urlValue"
                 size="sm"
                 placeholder="https://example.com/file.ext"
                 class="slot-url-input font-monospace"
@@ -247,18 +273,18 @@ function onPasteInput(value: string) {
         <!-- Paste content textarea -->
         <div v-if="slotItem.mode === 'paste'" class="mt-2">
             <BFormTextarea
-                :value="slotItem.content"
+                :value="display.pasteContent"
                 rows="3"
                 size="sm"
                 placeholder="Paste file content here"
                 @input="onPasteInput" />
         </div>
 
-        <!-- Remote URI display row -->
-        <div v-if="slotItem.mode === 'remote' && slotItem.remoteUri" class="mt-2">
-            <BFormInput :value="slotItem.remoteUri" readonly class="slot-file-name-input font-monospace" />
+        <!-- Remote file display row -->
+        <div v-if="display.hasRemoteFile" class="mt-2">
+            <BFormInput :value="display.remoteName" readonly class="slot-file-name-input font-monospace" />
         </div>
-        <div v-else-if="slotItem.mode === 'remote' && !slotItem.remoteUri" class="mt-2 text-muted small">
+        <div v-else-if="slotItem.mode === 'remote'" class="mt-2 text-muted small">
             No file selected — click the dropdown to browse remote sources.
         </div>
 
