@@ -2,42 +2,47 @@
     <div v-if="dataset">
         <div v-if="!isEditMode">
             <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
+
             <!-- Toolbar -->
-            <b-button
+            <BButton
                 title="Download dataset"
                 class="mr-1 mb-2"
                 data-test-id="download-btn"
                 @click="download(datasetDownloadFormat, dataset_id)">
                 <FontAwesomeIcon :icon="faDownload" />
                 Download
-            </b-button>
-            <b-button
+            </BButton>
+
+            <BButton
                 title="Import dataset into history"
                 class="mr-1 mb-2"
                 data-test-id="import-history-btn"
                 @click="importToHistory">
                 <FontAwesomeIcon :icon="faBook" />
                 to History
-            </b-button>
+            </BButton>
+
             <span v-if="dataset.can_user_modify">
-                <b-button
+                <BButton
                     title="Modify library item"
                     class="mr-1 mb-2"
                     data-test-id="modify-btn"
                     @click="isEditMode = true">
                     <FontAwesomeIcon :icon="faPencilAlt" />
                     Modify
-                </b-button>
-                <b-button
+                </BButton>
+
+                <BButton
                     title="Attempt to detect the format of dataset"
                     class="mr-1 mb-2"
                     data-test-id="auto-detect-btn"
                     @click="detectDatatype">
                     <FontAwesomeIcon :icon="faRedo" />
                     Auto-detect datatype
-                </b-button>
+                </BButton>
             </span>
-            <b-button
+
+            <BButton
                 v-if="currentUser?.is_admin"
                 title="Manage permissions"
                 class="mr-1 mb-2"
@@ -48,8 +53,9 @@
                 data-test-id="permissions-btn">
                 <FontAwesomeIcon :icon="faUsers" />
                 Permissions
-            </b-button>
+            </BButton>
         </div>
+
         <div v-if="dataset.is_unrestricted" data-test-id="unrestricted-msg">
             This dataset is unrestricted so everybody with the link can access it.
             <CopyToClipboard
@@ -74,7 +80,7 @@
 
             <template v-slot:cell(value)="row">
                 <div v-if="isEditMode">
-                    <b-form-input
+                    <BFormInput
                         v-if="row.item.name === fieldTitles.name"
                         v-model="modifiedDataset.name"
                         :value="row.item.value" />
@@ -98,11 +104,11 @@
                             :current-item="dbkeys?.find((dbkey) => dbkey.id === dataset.genome_build)"
                             @update:selected-item="onSelectedDbKey" />
                     </DbKeyProvider>
-                    <b-form-input
+                    <BFormInput
                         v-else-if="row.item.name === fieldTitles.message"
                         v-model="modifiedDataset.message"
                         :value="row.item.value" />
-                    <b-form-input
+                    <BFormInput
                         v-else-if="row.item.name === fieldTitles.misc_info"
                         v-model="modifiedDataset.misc_info"
                         :value="row.item.value" />
@@ -116,15 +122,17 @@
 
         <!-- Edit Controls -->
         <div v-if="isEditMode">
-            <b-button class="mr-1 mb-2" @click="isEditMode = false">
+            <BButton class="mr-1 mb-2" @click="isEditMode = false">
                 <FontAwesomeIcon :icon="faTimes" />
                 Cancel
-            </b-button>
-            <b-button class="mr-1 mb-2" @click="updateDataset">
+            </BButton>
+
+            <BButton class="mr-1 mb-2" @click="updateDataset">
                 <FontAwesomeIcon :icon="faSave" />
                 Save
-            </b-button>
+            </BButton>
         </div>
+
         <!-- Peek View -->
         <div v-if="dataset.peek" data-test-id="peek-view" class="break-word" v-html="dataset.peek" />
     </div>
@@ -134,6 +142,7 @@
 import { faSave } from "@fortawesome/free-regular-svg-icons";
 import { faBook, faDownload, faPencilAlt, faRedo, faTimes, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BFormInput } from "bootstrap-vue";
 import { mapState } from "pinia";
 
 import { buildFields } from "@/components/Libraries/library-utils";
@@ -152,6 +161,8 @@ import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 export default {
     components: {
+        BButton,
+        BFormInput,
         LibraryBreadcrumb,
         CopyToClipboard,
         FontAwesomeIcon,
