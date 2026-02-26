@@ -1022,7 +1022,7 @@ class VtpAscii(Vtp, data.Text):
 class GocadSGrid(data.Text):
     """Format for defining Gocad SGrid (.sg)"""
 
-    file_ext = "sg"
+    file_ext = "gocad.sg"
 
     MetadataElement(name="gocad_version", default=None, desc="Gocad version", readonly=True, optional=True, visible=True)
     MetadataElement(name="name", default=None, desc="Grid name", readonly=True, optional=True, visible=True)
@@ -1068,7 +1068,7 @@ class GocadSGrid(data.Text):
 class FeflowFem(data.Text):
     """Format for FEFLOW Model files (.fem)"""
 
-    file_ext = "fem"
+    file_ext = "feflow.fem"
 
     MetadataElement(name="feflow_version", default=None, desc="Feflow version", readonly=True, optional=True, visible=True)
     MetadataElement(name="problem_type", default=None, desc="Problem type", readonly=True, optional=True, visible=True)
@@ -1112,7 +1112,7 @@ class FeflowFem(data.Text):
 class AsciiRaster(data.Text):
     """Esri ASCII Raster file format (.asc)"""
 
-    file_ext = "asc"
+    file_ext = "raster.asc"
 
     MetadataElement(name="ncols", default=0, desc="Number of columns", readonly=True, visible=True)
     MetadataElement(name="nrows", default=0, desc="Number of rows", readonly=True, visible=True)

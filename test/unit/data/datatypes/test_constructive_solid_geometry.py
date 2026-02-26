@@ -1,4 +1,4 @@
-from lib.galaxy.datatypes.constructive_solid_geometry import VtkXml, GocadSGrid, FeflowFem, AsciiRaster
+from galaxy.datatypes.constructive_solid_geometry import VtkXml, GocadSGrid, FeflowFem, AsciiRaster
 from .util import (
     get_dataset,
     MockDatasetDataset,
