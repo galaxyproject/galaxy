@@ -359,7 +359,6 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
         from galaxy.managers.agent_operations import AgentOperationsManager
         from galaxy.managers.context import ProvidesUserContext
 
-        # Create a minimal transaction context just for encoding
         class MinimalTrans(ProvidesUserContext):
             def __init__(self, app):
                 self._app = app
@@ -373,6 +372,10 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
                 return None
 
             @property
+            def url_builder(self):
+                return None
+
+            @property
             def security(self):
                 return self._app.security
 
@@ -383,7 +386,6 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
         trans = MinimalTrans(self._app)
         ops = AgentOperationsManager(app=self._app, trans=trans)
 
-        # Test data with nested structure containing integer IDs
         test_data = {
             "id": 123,
             "name": "test",
@@ -423,6 +425,10 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
 
             @property
             def user(self):
+                return None
+
+            @property
+            def url_builder(self):
                 return None
 
             @property
@@ -471,6 +477,10 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
 
             @property
             def user(self):
+                return None
+
+            @property
+            def url_builder(self):
                 return None
 
             @property
