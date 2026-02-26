@@ -52,7 +52,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         error_handoff = self._create_error_analysis_handoff()
         tool_handoff = self._create_custom_tool_handoff()
         tool_rec_handoff = self._create_tool_recommendation_handoff()
-        history_handoff = self._create_history_analyzer_handoff()
+        history_handoff = self._create_history_handoff()
         next_step_handoff = self._create_next_step_advisor_handoff()
         orchestrator_handoff = self._create_orchestrator_handoff()
 
@@ -198,12 +198,12 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         return hand_off_to_tool_recommendation
 
-    def _create_history_analyzer_handoff(self):
-        async def hand_off_to_history_analyzer(
+    def _create_history_handoff(self):
+        async def hand_off_to_history_agent(
             ctx: RunContext[GalaxyAgentDependencies],
             request: str,
         ) -> str:
-            """Route to history analyzer agent for summarizing and understanding Galaxy histories.
+            """Route to history agent for questions about Galaxy histories, datasets, and results.
 
             Use this when the user:
             - Asks to summarize or describe their history or analysis
@@ -212,6 +212,9 @@ class QueryRouterAgent(BaseGalaxyAgent):
             - Wants to understand the workflow or steps in a history
             - Asks about tools used, inputs, or outputs in their analysis
             - Mentions "my history", "my analysis", or similar
+            - Asks about specific datasets or outputs ("is this result good?", "what does this dataset mean?")
+            - Wants to know what's in their history
+            - Asks about data quality or result interpretation
 
             Examples:
             - "Summarize my history"
@@ -219,23 +222,26 @@ class QueryRouterAgent(BaseGalaxyAgent):
             - "Generate a methods section"
             - "What tools did I use?"
             - "Describe my RNA-seq analysis"
+            - "Is the last dataset in my history a good result?"
+            - "What does this output mean?"
+            - "What's in my history?"
 
             Args:
                 request: The user's request about their history/analysis
             """
-            from .history_analyzer import HistoryAnalyzerAgent
+            from .history import HistoryAgent
 
-            log.info(f"Router handing off to history_analyzer: '{request[:100]}...'")
+            log.info(f"Router handing off to history: '{request[:100]}...'")
 
             try:
-                agent = HistoryAnalyzerAgent(ctx.deps)
+                agent = HistoryAgent(ctx.deps)
                 response = await agent.process(request, context=None)
-                return self._serialize_handoff(response, "history_analyzer")
+                return self._serialize_handoff(response, "history")
             except Exception as e:
-                log.error(f"History analyzer handoff failed: {e}")
+                log.error(f"History handoff failed: {e}")
                 return f"I encountered an issue while analyzing your history. Please try again or contact support. Error: {e}"
 
-        return hand_off_to_history_analyzer
+        return hand_off_to_history_agent
 
     def _create_next_step_advisor_handoff(self):
         async def hand_off_to_next_step_advisor(
@@ -277,7 +283,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             """Route to orchestrator for queries requiring multiple agents to work together.
 
             Use this when the user's query explicitly requires multiple capabilities:
-            - "Summarize my history AND find tutorials" (history_analyzer + gtn_training)
+            - "Summarize my history AND find tutorials" (history + gtn_training)
             - "Debug this error AND show me how to avoid it" (error_analysis + gtn_training)
             - "Analyze my workflow AND suggest improvements" (multiple agents)
             - Any request with "and" connecting distinct capabilities
