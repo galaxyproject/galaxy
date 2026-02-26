@@ -1,7 +1,5 @@
 import os
 
-import pytest
-
 from ._util import assert_simple_file_realize, assert_can_write_and_read_to_conf, write_from, configured_file_sources
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
