@@ -11,6 +11,7 @@ import { bytesToString } from "@/utils/utils";
 
 import type { CompositeSlot, CompositeSlotMode } from "../types/uploadItem";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import RemoteFileBrowserModal from "@/components/FileBrowser/RemoteFileBrowserModal.vue";
 
 interface Props {
@@ -239,14 +240,17 @@ const display = computed(() => {
             </BDropdown>
 
             <!-- Clear button -->
-            <button
+            <GButton
                 v-if="isFilled"
-                v-b-tooltip.hover.noninteractive
-                class="btn btn-sm btn-link text-muted p-0 flex-shrink-0"
+                size="small"
+                transparent
+                icon-only
+                tooltip
                 title="Clear this slot"
+                class="flex-shrink-0"
                 @click="clearSlot">
                 <FontAwesomeIcon :icon="faTimes" fixed-width />
-            </button>
+            </GButton>
             <!-- Spacer to keep layout stable when no clear button -->
             <span v-else class="slot-clear-placeholder" />
         </div>
