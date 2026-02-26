@@ -122,6 +122,7 @@ import { useJobStore } from "@/stores/jobStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
+import { parseBool } from "@/utils/parseBool";
 
 import {
     buildJobResponse,
@@ -460,7 +461,7 @@ export default {
                 if (prevRoute === this.$route.fullPath) {
                     this.$router.push(`/jobs/submission/success`);
                 } else {
-                    if ([true, "true"].includes(config.enable_tool_recommendations)) {
+                    if (parseBool(config.enable_tool_recommendations)) {
                         this.showRecommendation = true;
                     }
                     document.querySelector("#center").scrollTop = 0;
