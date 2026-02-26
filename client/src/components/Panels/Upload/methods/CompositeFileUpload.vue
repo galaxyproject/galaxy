@@ -15,6 +15,7 @@ import type { CompositeFileItem, CompositeSlot } from "../types/uploadItem";
 import UploadTableDbKeyCell from "../shared/UploadTableDbKeyCell.vue";
 import CompositeSlotRow from "./CompositeSlotRow.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
@@ -229,13 +230,14 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
             <!-- Actions footer -->
             <div class="d-flex justify-content-end mt-2">
-                <button
-                    v-b-tooltip.hover.noninteractive
-                    class="btn btn-sm btn-outline-secondary"
+                <GButton
+                    size="small"
+                    outline
+                    tooltip
                     title="Clear the type selection and all slot data"
                     @click="clearAll">
                     Reset
-                </button>
+                </GButton>
             </div>
         </div>
 
