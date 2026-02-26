@@ -2,8 +2,11 @@
       name="Extract dataset"
       version="1.0.2"
       tool_type="extract_element">
-  <description></description>
+  <description>from a collection by index or identifier</description>
   <type class="ExtractDatasetCollectionTool" module="galaxy.tools" />
+  <macros>
+    <import>model_operation_macros.xml</import>
+  </macros>
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
   <edam_operations>
@@ -44,21 +47,25 @@
 Synopsis
 ========
 
-Extracts datasets from a collection based on either position or identifier.
+Extracts a single dataset from a collection based on either position or identifier.
 
 ===========
 Description
 ===========
 
-The tool allow extracting datasets based on position (**The first dataset** and **Select by index** options) or name (**Select by element identifier** option). This tool effectively collapses the inner-most collection into a dataset. For nested collections (e.g a list of lists of lists: outer:middle:inner, extracting the inner dataset element) a new list is created where the selected element takes the position of the inner-most collection (so outer:middle, where middle is not a collection but the inner dataset element).
+This tool allows extracting datasets based on position (**The first dataset** and **Select by index** options) or name (**Select by element identifier** option). It effectively collapses the inner-most collection into a dataset.
+
+For nested collections (e.g., a list of lists of lists: ``outer:middle:inner``, extracting the inner dataset element) a new list is created where the selected element takes the position of the inner-most collection (so ``outer:middle``, where ``middle`` is not a collection but the inner dataset element).
 
 .. class:: warningmark
 
 **Note**: Dataset index (numbering) begins with 0 (zero).
 
+-----
+
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
   ]]></help>
   <tests>

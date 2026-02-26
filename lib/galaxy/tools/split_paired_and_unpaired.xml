@@ -2,8 +2,11 @@
       name="Split Paired and Unpaired"
       version="1.0.0"
       tool_type="split_paired_and_unpaired">
-  <description></description>
+  <description>into separate paired and unpaired collections</description>
   <type class="SplitPairedAndUnpairedTool" module="galaxy.tools" />
+  <macros>
+    <import>model_operation_macros.xml</import>
+  </macros>
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
   <edam_operations>
@@ -118,15 +121,37 @@
 Synopsis
 ========
 
+Splits a collection into two output collections: one containing paired elements and one containing unpaired (single) elements.
 
 ===========
 Description
 ===========
 
+This tool is designed to separate mixed collections that may contain both paired-end and single-end datasets. It accepts a ``list``, ``list:paired``, or ``list:paired_or_unpaired`` collection and produces two outputs:
+
+- **Paired output**: A ``list:paired`` collection containing all elements that have both forward and reverse components.
+- **Unpaired output**: A ``list`` collection containing all single (unpaired) elements.
+
+For example, given a ``list:paired_or_unpaired`` collection::
+
+ Input: [el1: forward + reverse]
+        [el2: single dataset]
+        [el3: single dataset]
+
+The tool produces::
+
+ Paired:   [el1: forward + reverse]
+
+ Unpaired: [el2]
+           [el3]
+
+If the input is a plain ``list`` (all unpaired), all elements go to the unpaired output. If the input is a ``list:paired`` (all paired), all elements go to the paired output.
+
+-----
 
 .. class:: infomark
 
-This tool will create new history datasets for your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
   ]]></help>
 </tool>

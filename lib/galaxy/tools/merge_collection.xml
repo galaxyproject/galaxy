@@ -2,7 +2,7 @@
       name="Merge collections"
       version="1.0.0"
       tool_type="merge_collection">
-  <description></description>
+  <description>into a single collection</description>
   <type class="MergeCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
@@ -10,8 +10,9 @@
     <edam_operation>operation_2409</edam_operation>
   </edam_operations>
   <macros>
+      <import>model_operation_macros.xml</import>
       <xml name="suffix_param">
-          <param name="suffix_pattern" label="Use the follow suffix pattern:" help="Describe the suffix pattern to use when joing element name and data copy number. For instance, the default is '_#', which will produce _1 as the first suffix used." value="_#" type="text">
+          <param name="suffix_pattern" label="Use the following suffix pattern:" help="Describe the suffix pattern to use when joining element name and data copy number. For instance, the default is '_#', which will produce _1 as the first suffix used." value="_#" type="text">
               <sanitizer invalid_char="">
                   <valid initial="string.ascii_letters,string.digits">
                       <add value="_" />
@@ -60,9 +61,9 @@
         <conditional name="conflict">
           <param name="duplicate_options" type="select" label="How should conflicts (or potential conflicts) be handled?"
                  help="Collection elements must have unique element identifiers, when appending how should unique identifiers be assured. See Help section below for examples.">
-            <option value="suffix_conflict">Append suffix to conflicted element identifers</option>
-            <option value="suffix_conflict_rest">Append suffix to conflicted element identifers after first one encountered</option>
-            <option value="suffix_every">Append suffix to every element identifer</option>
+            <option value="suffix_conflict">Append suffix to conflicted element identifiers</option>
+            <option value="suffix_conflict_rest">Append suffix to conflicted element identifiers after first one encountered</option>
+            <option value="suffix_every">Append suffix to every element identifier</option>
             <option value="keep_first" selected="true">Keep first instance</option>
             <option value="keep_last">Keep last instance</option>
             <option value="fail">Fail collection creation</option>
@@ -285,7 +286,7 @@ Takes two or more collections and creates a single collection from them.
 Description
 ===========
 
-By default the tool assumes that collections that are being merged have unique dataset names. If it not the case only one (the first) of the datasets with a repeated name will be included in the merged collection. For example, suppose you have two collections. Each has two datasets named "A" and "B"::
+By default the tool assumes that collections that are being merged have unique dataset names. If it is not the case only one (the first) of the datasets with a repeated name will be included in the merged collection. For example, suppose you have two collections with some overlapping dataset names::
 
  Collection 1: [Dataset A] 
                [Dataset B] 
@@ -321,28 +322,29 @@ Output::
                     [Dataset X] 
                     [Dataset Y]
 
-Here if two collection have identical dataset names, a dataset is chosen from the *first* collection.
+Here if two collections have identical dataset names, a dataset is chosen from the *first* collection.
 
 -----
 
-**Keep first instance**
+**Keep last instance**
 
 Input::
 
- Collection 1: [Dataset A] 
-               [Dataset B] 
+ Collection 1: [Dataset A]
+               [Dataset B]
                [Dataset X]
- Collection 2: [Dataset A] 
-               [Dataset B] 
+ Collection 2: [Dataset A]
+               [Dataset B]
                [Dataset Y]
+
 Output::
 
- Merged Collection: [Dataset A] 
-                    [Dataset B] 
-                    [Dataset X] 
+ Merged Collection: [Dataset A]
+                    [Dataset B]
+                    [Dataset X]
                     [Dataset Y]
 
-Here if two collection have identical dataset names, a dataset is chosen from the *last* collection.
+Here if two collections have identical dataset names, a dataset is chosen from the *last* collection.
 
 -----
 
@@ -368,7 +370,7 @@ Output::
 
 ----
 
-**Append suffix to conflicted element identifiers after first on encountered**
+**Append suffix to conflicted element identifiers after first one encountered**
 
 Input::
 
@@ -403,11 +405,11 @@ Input::
 
 Output::
 
- Merged Collection: [Dataset A_1] 
+ Merged Collection: [Dataset A_1]
+                    [Dataset B_1]
+                    [Dataset A_2]
                     [Dataset B_2]
-                    [Dataset A_2] 
-                    [Dataset B_2]  
-                    [Dataset X_1] 
+                    [Dataset X_1]
                     [Dataset Y_2]
 
 -----
@@ -420,7 +422,7 @@ This option will simply trigger an error.
 
 .. class:: infomark
 
-This tool will create new history datasets for your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
   ]]></help>
 </tool>

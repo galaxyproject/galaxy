@@ -2,7 +2,11 @@
       name="Apply rules"
       version="1.1.0"
       tool_type="apply_rules_to_collection">
+    <description>to reorganize a collection using the rule builder</description>
     <type class="ApplyRulesTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <edam_operations>
         <edam_operation>operation_2409</edam_operation>
         <edam_operation>operation_3695</edam_operation>
@@ -40,11 +44,11 @@ More information about the rule processor in general can be found at `our traini
 
 .. _our training site: https://training.galaxyproject.org/training-material/search?query=rule+builder
 
-
+-----
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
       ]]></help>
 </tool>

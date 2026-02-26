@@ -2,8 +2,11 @@
       name="Sort collection"
       version="1.0.0"
       tool_type="sort_collection">
-    <description></description>
+    <description>elements alphabetically, numerically, or by a custom order</description>
     <type class="SortTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <edam_operations>
@@ -152,9 +155,15 @@ Sorts dataset collection alphabetically, numerically, or using predetermined ord
 Description
 ===========
 
+**Alphabetical sort**
+
+When *alphabetical* sort is chosen, the tool sorts elements by their identifiers in ascending alphabetical order.
+
+-------
+
 **Numeric sort**
 
-The tool sort in ascending order. When *numeric* sort is chosen, the tool ignores non-numeric characters. For example, if a collection contains the following elements::
+When *numeric* sort is chosen, the tool sorts elements in ascending order and ignores non-numeric characters. For example, if a collection contains the following elements::
 
  Collection: [Horse123] 
              [Donkey543] 
@@ -170,7 +179,7 @@ The tool will output::
 
 **Sorting from file**
 
-Alternative, one can supply a single column text file containing elements identifiers in the desired sort order. For example, suppose there a collection::
+Alternatively, you can supply a single-column text file containing element identifiers in the desired sort order. For example, suppose there is a collection::
 
  Collection: [Horse123] 
              [Donkey543] 
@@ -192,7 +201,7 @@ the output will predictably look like this::
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
      ]]></help>
 </tool>

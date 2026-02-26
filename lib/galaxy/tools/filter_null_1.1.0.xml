@@ -1,6 +1,9 @@
 <tool id="__FILTER_NULL__" name="Filter null elements" version="1.1.0" tool_type="filter_null">
-    <description/>
+    <description>from a collection</description>
     <type class="FilterNullTool" module="galaxy.tools"/>
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations" class="ModelOperationToolAction"/>
     <edam_operations>
         <edam_operation>operation_3695</edam_operation>
@@ -35,13 +38,21 @@
 Synopsis
 ========
 
-Removes null elements from a collection.
+Removes null (missing) elements from a collection.
 
-This tool takes a dataset collection and filters out nulls. This is useful for removing elements that resulted from conditional execution of jobs.
+===========
+Description
+===========
+
+This tool takes a dataset collection and filters out null elements. Null elements can appear when workflows use conditional steps -- if a step is skipped, it may produce a null placeholder instead of a real dataset.
+
+Optionally, you can provide a replacement dataset. When a replacement is specified, null elements are replaced with that dataset instead of being removed.
+
+-----
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
       ]]></help>
 </tool>

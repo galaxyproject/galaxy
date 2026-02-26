@@ -2,7 +2,7 @@
       name="Nest collection"
       version="1.0.0"
       tool_type="nest_collection">
-    <description></description>
+    <description>by adding a nesting level</description>
     <type class="NestTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
@@ -16,7 +16,7 @@
         <param type="data_collection" collection_type="list,paired" name="input" label="Input Collection" />
     </inputs>
     <outputs>
-        <collection name="output" format_source="input" type="list:list" label="${on_string} (flattened)" >
+        <collection name="output" format_source="input" type="list:list" label="${on_string} (nested)" >
         </collection>
     </outputs>
     <tests>
@@ -97,15 +97,15 @@ This tool takes a collection and creates a collection of collections where the t
 For instance, for a simple list (of datasets) the tool will produce a list of lists where the inner lists each contain one of the datasets.
 
 .. image:: ${static_path}/images/tools/collection_ops/nest.svg
-  :width: 500
   :alt: Nest operation
+  :width: 500
 
 =======
 Purpose
 =======
 
 Assume a tool processes an item of type X (where X can be a dataset, a dataset pair, a collection). Galaxy also allows to input a collection of items of type X.
-In this case Galaxy will map-over the elements of the collection, i.e. create separete jobs (each processing one item of type X).
+In this case Galaxy will map-over the elements of the collection, i.e. create separate jobs (each processing one item of type X).
 If X is a list (of datasets, pairs, or lists) then one needs to add an extra nesting level to the collection, such that Galaxy maps-over the elements of X instead
 of processing the elements of X jointly.
 
@@ -113,7 +113,7 @@ of processing the elements of X jointly.
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
      ]]></help>
 </tool>

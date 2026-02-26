@@ -2,8 +2,11 @@
       name="Filter empty datasets"
       version="1.1.0"
       tool_type="filter_empty_datasets_collection">
-    <description></description>
+    <description>from a collection</description>
     <type class="FilterEmptyDatasetsTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <edam_operations>
@@ -39,19 +42,25 @@
 Synopsis
 ========
 
-Removes empty elements from a collection.
+Removes empty datasets from a collection.
 
-This tool takes a dataset collection and filters out (removes) empty datasets. This is useful for continuing a multi-sample analysis when downstream tools require datasets to have content.
+===========
+Description
+===========
+
+This tool takes a dataset collection and filters out (removes) datasets that have no content (zero bytes). This is useful for continuing a multi-sample analysis when downstream tools require datasets to have content.
+
+Optionally, you can provide a replacement dataset. When a replacement is specified, empty elements are replaced with that dataset instead of being removed.
 
 .. image:: ${static_path}/images/tools/collection_ops/filter_empty.svg
-  :width: 500
   :alt: Filtering empty datasets
+  :width: 500
 
 -----
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
       ]]></help>
 </tool>

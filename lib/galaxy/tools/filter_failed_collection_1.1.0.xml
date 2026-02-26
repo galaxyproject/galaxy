@@ -2,8 +2,11 @@
       name="Filter failed datasets"
       version="1.1.0"
       tool_type="filter_failed_datasets_collection">
-    <description></description>
+    <description>from a collection</description>
     <type class="FilterFailedDatasetsTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <edam_operations>
@@ -44,7 +47,7 @@
 Synopsis
 ========
 
-Removes datasets in error (red) from a collection.
+Removes datasets in the error (red) state from a collection.
 
 ===========
 Description
@@ -52,15 +55,17 @@ Description
 
 This tool takes a dataset collection and filters out (removes) datasets in the failed (red) state. This is useful for continuing a multi-sample analysis when one or more of the samples fails at some point.
 
+Optionally, you can provide a replacement dataset. When a replacement is specified, failed elements are replaced with that dataset instead of being removed.
+
 .. image:: ${static_path}/images/tools/collection_ops/filter_error.svg
-  :width: 500
   :alt: Filter failed datasets
+  :width: 500
 
 -----
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
       ]]></help>
 </tool>

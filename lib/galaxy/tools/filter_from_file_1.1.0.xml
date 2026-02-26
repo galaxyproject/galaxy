@@ -2,8 +2,11 @@
       name="Filter collection"
       version="1.1.0"
       tool_type="filter_from_file">
-    <description></description>
+    <description>using a list of identifiers from a file</description>
     <type class="FilterFromFileTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <edam_operations>
@@ -92,7 +95,7 @@ Filters elements from a collection using a list supplied in a file.
 Description
 ===========
 
-This tools allow filtering elements from a data collection.  It takes an input collection and a text file with names (i.e. identifiers). The tool behavious is controlled by **How should the elements to remove be determined?** drop-down. It has the following options:
+This tool allows filtering elements from a data collection. It takes an input collection and a text file with element identifiers (one per line). The tool behavior is controlled by the **How should the elements to remove be determined?** drop-down, which has the following options:
 
 **Remove if identifiers are ABSENT from file**
 
@@ -142,9 +145,11 @@ the tool will return two collections::
 
 **Note** how the tool deals with the ``Z`` entry.
 
+-----
+
 .. class:: infomark
 
+@QUOTA_USAGE_NOTE@
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
     ]]></help>
 </tool>
