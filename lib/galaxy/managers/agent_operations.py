@@ -5,15 +5,10 @@ Delegates to the Galaxy service layer for validation, permission checks, and pag
 """
 
 import logging
-import re
-import time
 from typing import Any
-
-import httpx
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.hdas import HDAManager
-from galaxy.managers.workflows import WorkflowsManager
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
@@ -57,8 +52,6 @@ class AgentOperationsManager:
         self._invocations_service = None
         self._hda_manager = None
         self._dataset_collections_service = None
-        self._iwc_manifest_cache: list[dict[str, Any]] | None = None
-        self._iwc_manifest_cache_time: float = 0.0
         log.debug("AgentOperationsManager initialized")
 
     def _encode_id(self, value: int) -> str:
@@ -692,174 +685,6 @@ class AgentOperationsManager:
             "keywords": keywords,
             "tools": matching_tools,
             "count": len(matching_tools),
-        }
-
-    def _get_iwc_manifest(self) -> list[dict[str, Any]]:
-        """Fetch the IWC workflow manifest, cached for 10 minutes."""
-        if self._iwc_manifest_cache is not None and (time.time() - self._iwc_manifest_cache_time) < 600:
-            return self._iwc_manifest_cache
-        response = httpx.get("https://iwc.galaxyproject.org/workflow_manifest.json", timeout=30.0)
-        response.raise_for_status()
-        self._iwc_manifest_cache = response.json()
-        self._iwc_manifest_cache_time = time.time()
-        return self._iwc_manifest_cache
-
-    def _extract_tool_names_from_steps(self, steps: dict) -> list[str]:
-        """Extract unique tool names from workflow step definitions."""
-        tool_names = []
-        seen = set()
-        for step in steps.values():
-            tool_id = step.get("tool_id") or step.get("content_id")
-            if tool_id and tool_id not in seen:
-                seen.add(tool_id)
-                label = step.get("name") or step.get("label") or tool_id
-                tool_names.append(label)
-        return tool_names
-
-    def _clean_readme_summary(self, readme: str, max_length: int = 300) -> str:
-        """Extract a short summary from a markdown readme."""
-        lines = readme.strip().splitlines()
-        content_lines = []
-        for line in lines:
-            stripped = line.strip()
-            if stripped.startswith("#"):
-                continue
-            if stripped.startswith("!["):
-                continue
-            if stripped.startswith("```"):
-                break
-            if stripped:
-                content_lines.append(stripped)
-            if len(" ".join(content_lines)) > max_length:
-                break
-        summary = " ".join(content_lines)
-        summary = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", summary)
-        if len(summary) > max_length:
-            summary = summary[:max_length].rsplit(" ", 1)[0] + "..."
-        return summary
-
-    def _enrich_iwc_workflow(self, wf: dict) -> dict[str, Any]:
-        """Build an enriched result dict from an IWC manifest workflow entry."""
-        definition = wf.get("definition", {})
-        steps = definition.get("steps", {})
-        readme = wf.get("readme", "") or definition.get("readme", "")
-        authors = [a.get("name", "") for a in wf.get("authors", []) if a.get("name")]
-        if not authors:
-            authors = [
-                c.get("name", "") for c in definition.get("creator", []) if c.get("class") == "Person" and c.get("name")
-            ]
-
-        return {
-            "trsID": wf.get("trsID"),
-            "name": definition.get("name", ""),
-            "description": definition.get("annotation", ""),
-            "tags": definition.get("tags", []),
-            "readme_summary": self._clean_readme_summary(readme) if readme else "",
-            "step_count": len(steps),
-            "authors": authors,
-            "categories": wf.get("categories", []),
-            "tools_used": self._extract_tool_names_from_steps(steps),
-        }
-
-    def get_iwc_workflows(self) -> dict[str, Any]:
-        manifest = self._get_iwc_manifest()
-
-        all_workflows = []
-        for entry in manifest:
-            if "workflows" in entry:
-                for wf in entry["workflows"]:
-                    all_workflows.append(self._enrich_iwc_workflow(wf))
-
-        return {"workflows": all_workflows, "count": len(all_workflows)}
-
-    def search_iwc_workflows(self, query: str) -> dict[str, Any]:
-        manifest = self._get_iwc_manifest()
-        query_lower = query.lower()
-
-        results = []
-        for entry in manifest:
-            if "workflows" not in entry:
-                continue
-
-            for wf in entry["workflows"]:
-                definition = wf.get("definition", {})
-                name = definition.get("name", "").lower()
-                description = definition.get("annotation", "").lower()
-                tags_lower = [t.lower() for t in definition.get("tags", [])]
-
-                if query_lower in name or query_lower in description or any(query_lower in tag for tag in tags_lower):
-                    results.append(self._enrich_iwc_workflow(wf))
-
-        return {"query": query, "workflows": results, "count": len(results)}
-
-    def get_iwc_workflow_details(self, trs_id: str) -> dict[str, Any]:
-        manifest = self._get_iwc_manifest()
-
-        for entry in manifest:
-            for wf in entry.get("workflows", []):
-                if wf.get("trsID") == trs_id:
-                    result = self._enrich_iwc_workflow(wf)
-
-                    definition = wf.get("definition", {})
-                    steps = definition.get("steps", {})
-
-                    inputs = []
-                    outputs = []
-                    for step in steps.values():
-                        step_type = step.get("type", "")
-                        if step_type in ("data_input", "data_collection_input", "parameter_input"):
-                            inputs.append(
-                                {
-                                    "label": step.get("label") or step.get("annotation") or step_type,
-                                    "type": step_type,
-                                }
-                            )
-                        for output in step.get("workflow_outputs", []):
-                            if output.get("label"):
-                                outputs.append({"label": output["label"]})
-
-                    result.pop("readme_summary", None)
-                    result["readme"] = wf.get("readme", "") or definition.get("readme", "")
-                    result["license"] = definition.get("license", "")
-                    result["release"] = definition.get("release", "")
-                    result["inputs"] = inputs
-                    result["outputs"] = outputs
-                    return result
-
-        raise ValueError(
-            f"Workflow with trsID '{trs_id}' not found in IWC manifest. "
-            "Use search_iwc_workflows() to find valid trsIDs."
-        )
-
-    def import_workflow_from_iwc(self, trs_id: str) -> dict[str, Any]:
-        manifest = self._get_iwc_manifest()
-
-        workflow_def = None
-        for entry in manifest:
-            if "workflows" not in entry:
-                continue
-            for wf in entry["workflows"]:
-                if wf.get("trsID") == trs_id:
-                    workflow_def = wf.get("definition")
-                    break
-            if workflow_def:
-                break
-
-        if not workflow_def:
-            raise ValueError(
-                f"Workflow with trsID '{trs_id}' not found in IWC manifest. "
-                "Use search_iwc_workflows() to find valid trsIDs."
-            )
-
-        workflows_manager = WorkflowsManager(self.app)
-        imported = workflows_manager.import_workflow_dict(self.trans, workflow_def, publish=False)
-
-        return {
-            "imported_workflow": {
-                "id": self.trans.security.encode_id(imported.id),
-                "name": imported.name,
-            },
-            "trs_id": trs_id,
         }
 
     def list_history_ids(self, limit: int = 100) -> dict[str, Any]:
