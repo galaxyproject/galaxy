@@ -30,11 +30,11 @@ class DataManager(BaseUIController):
         status = kwd.get("status", "info")
         data_managers = []
         for data_manager_id, data_manager in sorted(
-            trans.app.data_managers.data_managers.items(), key=lambda dm: dm[1].name
+            trans.app.data_managers.data_managers.items(), key=lambda dm: dm[1].name.lower()
         ):
             data_managers.append(
                 {
-                    "toolUrl": web.url_for(controller="root", tool_id=data_manager.tool.id),
+                    "toolUrl": web.url_for(f"/?tool_id={data_manager.tool.id}"),
                     "id": data_manager_id,
                     "name": data_manager.name,
                     "description": data_manager.description.lower(),
@@ -90,7 +90,7 @@ class DataManager(BaseUIController):
             "dataManager": {
                 "name": data_manager.name,
                 "description": data_manager.description.lower(),
-                "toolUrl": web.url_for(controller="root", tool_id=data_manager.tool.id),
+                "toolUrl": web.url_for(f"/?tool_id={data_manager.tool.id}"),
             },
             "jobs": jobs,
             "viewOnly": not_is_admin,
@@ -155,7 +155,7 @@ class DataManager(BaseUIController):
                 "id": data_manager_id,
                 "name": data_manager.name,
                 "description": data_manager.description.lower(),
-                "toolUrl": web.url_for(controller="root", tool_id=data_manager.tool.id),
+                "toolUrl": web.url_for(f"/?tool_id={data_manager.tool.id}"),
             },
             "hdaInfo": hda_info,
             "dataManagerOutput": data_manager_output,

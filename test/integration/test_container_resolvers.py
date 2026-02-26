@@ -4,12 +4,12 @@ import re
 from typing import (
     Any,
     ClassVar,
+    Literal,
     Optional,
     TYPE_CHECKING,
 )
 
 from typing_extensions import (
-    Literal,
     Protocol,
 )
 

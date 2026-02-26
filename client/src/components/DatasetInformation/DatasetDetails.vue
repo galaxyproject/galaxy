@@ -155,7 +155,8 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-
+    overflow-x: hidden;
+    overflow-y: auto;
     .dataset-peek {
         word-break: break-all;
     }

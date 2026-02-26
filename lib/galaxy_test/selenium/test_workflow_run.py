@@ -1,10 +1,10 @@
 import json
+from typing import Literal
 from uuid import uuid4
 
 import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from typing_extensions import Literal
 
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.workflow_fixtures import (
@@ -21,6 +21,8 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
     WORKFLOW_WITH_DATA_TAG_FILTER,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
+    WORKFLOW_WITH_IMAGES_IN_REPORT,
+    WORKFLOW_WITH_IMAGES_IN_REPORT_TEST_DATA,
     WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_RULES_1,
@@ -28,6 +30,7 @@ from galaxy_test.base.workflow_fixtures import (
 from .framework import (
     managed_history,
     RunsWorkflows,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
@@ -38,6 +41,7 @@ from .test_workflow_editor import CHIPSEQ_COLUMNS
 class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
     ensure_registered = True
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_workflow_export_file_rocrate(self):
@@ -47,7 +51,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocations.export_tab_disabled.wait_for_absent()
         invocations.export_tab.wait_for_and_click()
         self.screenshot("invocation_export_formats")
-        invocations.export_output_format(type="ro-crate").wait_for_and_click()
+        invocations.export_output_format(type="rocrate.zip").wait_for_and_click()
         invocations.wizard_next_button.wait_for_and_click()
         download_option = invocations.export_destination(destination="download")
         download_option.wait_for_present()
@@ -63,6 +67,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocations.export_download_link.wait_for_present()
         self.screenshot("invocation_export_crate_download_ready")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_workflow_export_file_native(self):
@@ -72,7 +77,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocations.export_tab_disabled.wait_for_absent()
         invocations.export_tab.wait_for_and_click()
         self.screenshot("invocation_export_formats")
-        invocations.export_output_format(type="default-file").wait_for_and_click()
+        invocations.export_output_format(type="tgz").wait_for_and_click()
         invocations.wizard_next_button.wait_for_and_click()
         download_option = invocations.export_destination(destination="download")
         download_option.wait_for_present()
@@ -88,6 +93,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocations.export_download_link.wait_for_present()
         self.screenshot("invocation_export_native_download_ready")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_simple_execution(self):
@@ -102,6 +108,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         self.assert_item_summary_includes(2, "2 sequences")
         self.screenshot("workflow_run_simple_complete")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_expanded_execution_of_simple_workflow(self):
@@ -241,6 +248,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
             sample_sheet.select_picker.wait_for_and_click()
             sample_sheet.select_item(item=control).wait_for_and_click()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_collection_input_sample_sheet_chipseq_example_from_uris(self):
@@ -311,6 +319,7 @@ SRR5681005\tinput\t\t
             contents == expected_contents
         ), f"Expected chipseq sample sheet table:\n{expected_contents}\nGot:\n{contents}"
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_collection_input_sample_sheet_chipseq_example_from_list_pairs(self):
@@ -373,6 +382,7 @@ SRR5681005\tinput\t\t
         self.workflow_run_submit()
         self._expect_chipseq_table(history_id, 51)
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_runtime_parameters_simple(self):
@@ -387,11 +397,11 @@ SRR5681005\tinput\t\t
 
         self._assert_has_3_lines_after_run(hid=2)
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_runtime_parameters_simple_optional(self):
-        self.workflow_run_open_workflow(
-            """
+        self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
 inputs: {}
 steps:
@@ -399,8 +409,7 @@ steps:
     tool_id: expression_null_handling_integer
     runtime_inputs:
       - int_input
-"""
-        )
+""")
         self.tool_parameter_div("int_input")
         self._set_num_lines_to_3("int_input")
         self.screenshot("workflow_run_optional_runtime_parameters_modified")
@@ -410,6 +419,7 @@ steps:
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
         assert json.loads(content) == 3
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_subworkflows_expanded(self):
@@ -422,6 +432,7 @@ steps:
         self.components.workflow_run.subworkflow_step_icon.wait_for_and_click()
         self.screenshot("workflow_run_nested_open")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_subworkflow_runtime_parameters(self):
@@ -438,6 +449,7 @@ steps:
 
         self._assert_has_3_lines_after_run(hid=2)
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_replacement_parameters(self):
@@ -455,13 +467,13 @@ steps:
         details = self.dataset_populator.get_history_dataset_details(history_id, hid=output_hid)
         assert details["name"] == "moocow suffix", details
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_step_parameter_inputs(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.workflow_run_open_workflow(
-            """
+        self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
 inputs:
   input_int: integer
@@ -473,8 +485,7 @@ steps:
     in:
       inttest: input_int
       files_0|file: input_data
-"""
-        )
+""")
         self.workflow_run_ensure_expanded()
         workflow_run = self.components.workflow_run
         input_div_element = workflow_run.input_div(label="input_int").wait_for_visible()
@@ -491,6 +502,7 @@ steps:
         assert "12345" in content, content
         assert "chr6_hla_hap2" in content
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_replacement_parameters_on_subworkflows(self):
@@ -508,6 +520,7 @@ steps:
         details = self.dataset_populator.get_history_dataset_details(history_id, hid=output_hid)
         assert details["name"] == "moocow suffix", details
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_execution_with_tool_upgrade(self):
         name = self.workflow_upload_yaml_with_random_name(WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True)
@@ -517,6 +530,7 @@ steps:
         self.assert_message(self.components.workflow_run.warning, contains="tools which have changed")
         self.screenshot("workflow_run_tool_upgrade")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_form_safe_upgrade_handling(self):
         workflow_with_rules = yaml.safe_load(WORKFLOW_WITH_RULES_1)
@@ -549,11 +563,11 @@ steps:
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
         assert "10.0\n30.0\n20.0\n40.0\n" == content
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_execution_with_text_default_value_connected_to_restricted_select(self):
-        self.workflow_run_open_workflow(
-            """
+        self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
 inputs:
   text_param:
@@ -567,8 +581,7 @@ steps:
     in:
       select_ex:
         source: text_param
-"""
-        )
+""")
         element = self.components.workflow_run.input_select_field(label="text_param").wait_for_present()
         assert element.text == "Ex2"
         self.workflow_run_submit()
@@ -608,6 +621,25 @@ steps:
 
     @selenium_test
     @managed_history
+    def test_execution_with_images_in_report(self):
+        """Test that images render correctly in workflow reports, including inline images in tables."""
+        history_id = self.workflow_run_and_submit(
+            WORKFLOW_WITH_IMAGES_IN_REPORT,
+            WORKFLOW_WITH_IMAGES_IN_REPORT_TEST_DATA,
+            ensure_expanded=True,
+        )
+        self.screenshot("workflow_run_images_in_report_invocation")
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
+        self.get(f"workflows/invocations/report?id={invocation_0['id']}")
+        self.wait_for_selector_visible(".markdown-component")
+        self.screenshot("workflow_report_images_rendered")
+        # Wait for the table to be present - this verifies the inline ${galaxy ...} syntax works
+        self.wait_for_selector_visible("table")
+        self.screenshot("workflow_report_with_table")
+
+    @selenium_test
+    @managed_history
     def test_execution_with_null_optional_select_from_data(self):
         history_id = self.workflow_run_and_submit(
             WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
@@ -617,8 +649,7 @@ steps:
     @selenium_test
     @managed_history
     def test_workflow_run_button_disabled_when_required_input_missing(self):
-        self.workflow_run_open_workflow(
-            """
+        self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
 inputs:
   text_param:
@@ -629,8 +660,7 @@ inputs:
   collection_param:
     type: data_collection
 steps: {}
-"""
-        )
+""")
         workflow_run = self.components.workflow_run
         # None of the required parameters are present
         workflow_run.run_workflow_disabled.wait_for_present()
@@ -661,6 +691,7 @@ steps: {}
         invocation = self.workflow_populator.get_invocation(invocations[-1]["id"])
         assert invocation["inputs"]["0"]["id"] == dataset["id"]
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_workflow_run_list_paired_or_unpaired_with_paired_list(self):
@@ -682,6 +713,7 @@ steps: {}
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=6)
         assert content.strip() == "forward content\nreverse content"
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_workflow_run_list_paired_or_unpaired_with_flat_list(self):
@@ -703,6 +735,7 @@ steps: {}
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=6)
         assert content.strip() == "reverse content\nforward content"
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_workflow_run_list_paired_or_unpaired_with_mixed_list(self):
@@ -725,6 +758,7 @@ steps: {}
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=8)
         assert content.strip() == "forward content\nreverse content\nunpaired content"
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_upload_dataset_from_workflow_simple(self):
@@ -739,6 +773,7 @@ steps: {}
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=2)
         assert content.strip() == "hello world\nhello world"
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_modal_upload_updates_form(self):
@@ -771,6 +806,7 @@ steps: {}
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=6)
         assert content.strip() == "hello world"
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_upload_list_from_workflow_simple(self):
@@ -785,6 +821,7 @@ steps: {}
         self.workflow_run_submit()
         self.history_panel_wait_for_hid_ok(6)
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_upload_list_paired_from_workflow(self):
@@ -802,6 +839,7 @@ steps: {}
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
         assert content.strip() == "hello world\nhello world"
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @managed_history
     def test_upload_list_paired_or_unpaired_from_workflow(self):

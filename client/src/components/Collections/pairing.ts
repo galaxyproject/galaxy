@@ -1,4 +1,4 @@
-import type { GenericPair } from "@/components/History/adapters/buildCollectionModal";
+import type { GenericPair } from "@/components/Collections/common/buildCollectionModal";
 
 export const COMMON_FILTERS = {
     illumina: ["_1", "_2"] as [string, string],

@@ -37,25 +37,39 @@ if (!majorMatch) {
 }
 
 // Parse Galaxy version components
-const galaxyMajor = majorMatch[1].split(".")[0];
-const galaxyMinor = majorMatch[1].split(".")[1] || "0";
-const preRelease = minorMatch && minorMatch[1] ? minorMatch[1] : null;
+// VERSION_MAJOR is like "25.0" or "25.1"
+const [galaxyMajor, galaxyMinor] = majorMatch[1].split(".");
+const versionMinor = minorMatch && minorMatch[1] ? minorMatch[1] : "";
 
 // Read current package.json
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
 const currentVersion = packageJson.version;
 
 // Create npm-compatible version
+// VERSION_MINOR can be:
+//   - "" or "0" → stable initial release (25.0.0)
+//   - "4" → stable patch release (25.0.4)
+//   - "dev0" → prerelease (25.0.0-dev.0)
+//   - "5.dev0" → patch prerelease (25.0.5-dev.0)
 let newVersion;
 
-if (preRelease) {
-    // Handle prerelease versions (dev0, rc1, etc.)
-    const type = preRelease.match(/^([a-z]+)/)[1]; // dev, rc, etc.
-    const num = preRelease.match(/\d+$/)[0]; // The trailing number
-    newVersion = `${galaxyMajor}.${galaxyMinor}.0-${type}.${num}`;
-} else {
-    // Stable release
+if (!versionMinor || versionMinor === "0") {
+    // Initial stable release
     newVersion = `${galaxyMajor}.${galaxyMinor}.0`;
+} else if (/^\d+$/.test(versionMinor)) {
+    // Stable patch release (just a number like "4")
+    newVersion = `${galaxyMajor}.${galaxyMinor}.${versionMinor}`;
+} else if (/^\d+\./.test(versionMinor)) {
+    // Patch prerelease like "5.dev0" → 25.0.5-dev.0
+    const [patch, prerelease] = versionMinor.split(".");
+    const type = prerelease.match(/^([a-z]+)/)[1];
+    const num = prerelease.match(/\d+$/)[0];
+    newVersion = `${galaxyMajor}.${galaxyMinor}.${patch}-${type}.${num}`;
+} else {
+    // Initial prerelease like "dev0" or "rc1" → 25.0.0-dev.0
+    const type = versionMinor.match(/^([a-z]+)/)[1];
+    const num = versionMinor.match(/\d+$/)[0];
+    newVersion = `${galaxyMajor}.${galaxyMinor}.0-${type}.${num}`;
 }
 
 // Update if different

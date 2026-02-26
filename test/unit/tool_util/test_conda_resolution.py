@@ -152,18 +152,18 @@ def test_best_search_result(tmp_path) -> None:
         condarc_override=os.path.join(tmp_path, "_condarc"),
     )
     install_conda(conda_context)
-    (hit, exact) = best_search_result(CondaTarget("samtools"), conda_context)
+    hit, exact = best_search_result(CondaTarget("samtools"), conda_context)
     assert hit is not None
     assert hit["name"] == "samtools"
     assert exact is True
-    (hit, exact) = best_search_result(CondaTarget("samtools", version="1.3.1", build="h0cf4675_11"), conda_context)
+    hit, exact = best_search_result(CondaTarget("samtools", version="1.3.1", build="h0cf4675_11"), conda_context)
     assert hit is not None
     assert hit["name"] == "samtools"
     assert hit["version"] == "1.3.1"
     assert hit["build"] == "h0cf4675_11"
     assert exact is True
     # Search non-existent version
-    (hit, exact) = best_search_result(CondaTarget("samtools", version="1.16"), conda_context)
+    hit, exact = best_search_result(CondaTarget("samtools", version="1.16"), conda_context)
     assert hit is not None
     assert hit["name"] == "samtools"
     assert exact is False

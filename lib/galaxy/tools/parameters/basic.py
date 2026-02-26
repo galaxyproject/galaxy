@@ -2257,7 +2257,7 @@ class DataToolParameter(BaseDataToolParameter):
                     )
                 match = dataset_matcher.hda_match(value_to_check)
                 if match and match.implicit_conversion:
-                    value_to_check.implicit_conversion = True  # type:ignore[attr-defined]
+                    value_to_check.implicit_conversion = True  # type: ignore[attr-defined]
             elif isinstance(value_to_check, HistoryDatasetCollectionAssociation):
                 if value_to_check.deleted:
                     raise ParameterValueError("the previously selected dataset collection has been deleted.", self.name)
@@ -2740,6 +2740,11 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
         super().validate(value, trans=trans)
         if not value:
             return  # value is not set yet, do not validate
+        # Skip file source validation in workflow building mode to allow workflows
+        # referencing removed file sources to be exported/viewed. Users can then
+        # download and edit them. Validation still occurs during tool execution.
+        if trans.workflow_building_mode:
+            return
         file_source_path = trans.app.file_sources.get_file_source_path(value)
         file_source = file_source_path.file_source
         if file_source is None:

@@ -4,8 +4,6 @@ from typing import (
     Union,
 )
 
-from sqlalchemy import false
-
 from galaxy.managers import base
 from galaxy.managers.sharable import (
     SharableModelManager,
@@ -156,9 +154,12 @@ class ShareableService:
                 email_address = email_or_id.strip()
                 if not email_address:
                     continue
-                send_to_user = self.manager.user_manager.by_email(
-                    email_address, filters=[User.table.c.deleted == false()]
-                )
+                send_to_user = self.manager.user_manager.by_email(email_address, deleted=False)
+                if not send_to_user:
+                    # Try a case-insensitive match on the email
+                    send_to_user = self.manager.user_manager.by_email(
+                        email_address, case_sensitive=False, deleted=False
+                    )
 
             if not send_to_user:
                 send_to_err.add(f"{email_or_id} is not a valid Galaxy user.")

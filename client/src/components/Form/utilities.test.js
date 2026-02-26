@@ -1,5 +1,7 @@
+import { describe, expect, it } from "vitest";
+
 import toolModel from "./test-data/tool";
-import { matchCase, matchInputs, validateInputs, visitInputs } from "./utilities";
+import { matchCase, matchInputs, validateInputs, visitAllInputs, visitInputs } from "./utilities";
 
 function visitInputsString(inputs) {
     let results = "";
@@ -133,5 +135,393 @@ describe("form component utilities", () => {
         expect(result["input_a"]).toEqual("error_a");
         expect(result["input_b_0"]).toEqual("error_b");
         expect(result["input_c|input_d"]).toEqual("error_d");
+    });
+
+    it("test multiple validators", () => {
+        const index = {
+            path: {
+                validators: [
+                    {
+                        type: "regex",
+                        expression: "^.*[^/]$",
+                        message: "Value cannot end with a trailing slash",
+                        negate: false,
+                    },
+                    {
+                        type: "regex",
+                        expression: "^(?!\\s)(?!.*\\s$).*$",
+                        message: "Value cannot have leading or trailing whitespace",
+                        negate: false,
+                    },
+                ],
+            },
+        };
+
+        // Valid path
+        let values = { path: "clean/path" };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // Invalid: trailing slash
+        values = { path: "path/" };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["path", "Value cannot end with a trailing slash"]);
+
+        // Invalid: trailing whitespace
+        values = { path: "path " };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["path", "Value cannot have leading or trailing whitespace"]);
+    });
+
+    it("test validators skip empty optional values", () => {
+        const index = {
+            optional_field: {
+                optional: true,
+                validators: [
+                    {
+                        type: "regex",
+                        expression: "^(?!\\s)(?!.*\\s$)(?!.*/$).+$",
+                        message: "Value cannot have leading/trailing spaces or trailing slashes",
+                        negate: false,
+                    },
+                ],
+            },
+        };
+
+        // Empty value should not trigger validator
+        const values = { optional_field: "" };
+        const result = validateInputs(index, values);
+        expect(result).toEqual(null);
+    });
+
+    it("test validators skip null values", () => {
+        const index = {
+            optional_field: {
+                optional: true, // Make it optional so null is allowed
+                validators: [
+                    {
+                        type: "regex",
+                        expression: "^(?!\\s)(?!.*\\s$)(?!.*/$).+$",
+                        message: "Value cannot have leading/trailing spaces or trailing slashes",
+                        negate: false,
+                    },
+                ],
+            },
+        };
+
+        // Null value should not trigger validator for optional fields
+        const values = { optional_field: null };
+        const result = validateInputs(index, values);
+        expect(result).toEqual(null);
+    });
+
+    it("test length validator", () => {
+        const index = {
+            username: {
+                validators: [
+                    {
+                        type: "length",
+                        min: 3,
+                        max: 20,
+                        message: "Username must be between 3 and 20 characters",
+                    },
+                ],
+            },
+        };
+
+        // Valid length
+        let values = { username: "john" };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { username: "a".repeat(20) };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // Too short
+        values = { username: "ab" };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["username", "Username must be between 3 and 20 characters"]);
+
+        // Too long
+        values = { username: "a".repeat(21) };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["username", "Username must be between 3 and 20 characters"]);
+    });
+
+    it("test in_range validator", () => {
+        const index = {
+            age: {
+                validators: [
+                    {
+                        type: "in_range",
+                        min: 18,
+                        max: 120,
+                        message: "Age must be between 18 and 120",
+                    },
+                ],
+            },
+        };
+
+        // Valid range
+        let values = { age: 25 };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { age: 18 };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { age: 120 };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // Too small
+        values = { age: 17 };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["age", "Age must be between 18 and 120"]);
+
+        // Too large
+        values = { age: 121 };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["age", "Age must be between 18 and 120"]);
+    });
+
+    it("test in_range validator with non-numeric value", () => {
+        const index = {
+            age: {
+                validators: [
+                    {
+                        type: "in_range",
+                        min: 18,
+                        max: 120,
+                        message: "Age must be between 18 and 120",
+                    },
+                ],
+            },
+        };
+
+        // Non-numeric value
+        const values = { age: "not a number" };
+        const result = validateInputs(index, values);
+        expect(result).toEqual(["age", "Value must be numeric for range validation"]);
+    });
+
+    it("test validators run on optional fields with values", () => {
+        const index = {
+            optional_field: {
+                optional: true,
+                validators: [
+                    {
+                        type: "length",
+                        min: 3,
+                        message: "Must be at least 3 characters",
+                    },
+                ],
+            },
+        };
+
+        // Empty value should not trigger validator
+        let values = { optional_field: "" };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // null value should not trigger validator
+        values = { optional_field: null };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // undefined should not trigger validator
+        values = { optional_field: undefined };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // But when optional field has a value, validator should run
+        values = { optional_field: "ab" }; // Too short
+        result = validateInputs(index, values);
+        expect(result).toEqual(["optional_field", "Must be at least 3 characters"]);
+
+        // Valid value should pass
+        values = { optional_field: "valid" };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+    });
+
+    it("test validators with undefined min or max values", () => {
+        const index = {
+            field_with_undefined_min: {
+                validators: [
+                    {
+                        type: "length",
+                        min: undefined,
+                        max: 10,
+                        message: "Must be at most 10 characters",
+                    },
+                ],
+            },
+        };
+
+        // Should only validate max when min is undefined
+        let values = { field_with_undefined_min: "a" }; // Very short but no min
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { field_with_undefined_min: "a".repeat(11) }; // Too long
+        result = validateInputs(index, values);
+        expect(result).toEqual(["field_with_undefined_min", "Must be at most 10 characters"]);
+    });
+
+    it("test validators with null min or max values", () => {
+        const index = {
+            field_with_null_max: {
+                validators: [
+                    {
+                        type: "length",
+                        min: 3,
+                        max: null,
+                        message: "Must be at least 3 characters",
+                    },
+                ],
+            },
+        };
+
+        // Should only validate min when max is null
+        let values = { field_with_null_max: "a".repeat(100) }; // Very long but no max
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { field_with_null_max: "ab" }; // Too short
+        result = validateInputs(index, values);
+        expect(result).toEqual(["field_with_null_max", "Must be at least 3 characters"]);
+    });
+
+    it("test required field validation with empty string vs undefined vs null", () => {
+        const index = {
+            required_field: {
+                optional: false,
+            },
+        };
+
+        // Empty string should PASS for required field (default behavior - allowEmptyValueOnRequiredInput=false)
+        // Note: allowEmptyValueOnRequiredInput is misnamed - it should be rejectEmptyRequiredInputs
+        let values = { required_field: "" };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // undefined should fail for required field
+        values = { required_field: undefined };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["required_field", "Please provide a value for this option."]);
+
+        // null should fail for required field
+        values = { required_field: null };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["required_field", "Please provide a value for this option."]);
+
+        // Non-empty value should pass
+        values = { required_field: "value" };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // When allowEmptyValueOnRequiredInput=true (misnamed, really means reject empty strings too),
+        // empty string should also fail
+        values = { required_field: "" };
+        result = validateInputs(index, values, true);
+        expect(result).toEqual(["required_field", "Please provide a value for this option."]);
+    });
+
+    describe("visitAllInputs", () => {
+        it("should match visitInputs traversal order for non-conditional inputs", () => {
+            const inputs = [
+                { name: "a", type: "text", value: "a" },
+                {
+                    name: "r",
+                    type: "repeat",
+                    cache: [
+                        [
+                            { name: "x", type: "text", value: "x" },
+                            { name: "y", type: "text", value: "y" },
+                        ],
+                    ],
+                    inputs: [
+                        { name: "x", type: "text", value: "x" },
+                        { name: "y", type: "text", value: "y" },
+                    ],
+                },
+                {
+                    name: "s",
+                    type: "section",
+                    inputs: [
+                        { name: "p", type: "text", value: "p" },
+                        { name: "q", type: "text", value: "q" },
+                    ],
+                },
+            ];
+            const visitOrder = [];
+            const allOrder = [];
+            visitInputs(inputs, (node, name) => visitOrder.push(name));
+            visitAllInputs(inputs, (node, name) => allOrder.push(name));
+            expect(allOrder).toEqual(visitOrder);
+        });
+
+        it("should visit all conditional cases, not just the active one", () => {
+            const inputs = [
+                {
+                    name: "cond",
+                    type: "conditional",
+                    test_param: { name: "tp", type: "select", value: "a" },
+                    cases: [
+                        {
+                            value: "a",
+                            inputs: [{ name: "in_a", type: "text", value: "va" }],
+                        },
+                        {
+                            value: "b",
+                            inputs: [{ name: "in_b", type: "text", value: "vb" }],
+                        },
+                    ],
+                },
+            ];
+            const visitNames = [];
+            const allNames = [];
+            visitInputs(inputs, (node, name) => visitNames.push(name));
+            visitAllInputs(inputs, (node, name) => allNames.push(name));
+            // visitInputs only visits active case (a)
+            expect(visitNames).toEqual(["cond|tp", "cond|in_a"]);
+            // visitAllInputs visits both cases
+            expect(allNames).toEqual(["cond|tp", "cond|in_a", "cond|in_b"]);
+        });
+
+        it("should visit nested conditional inside repeat", () => {
+            const inputs = [
+                {
+                    name: "rep",
+                    type: "repeat",
+                    cache: [
+                        [
+                            {
+                                name: "nested_cond",
+                                type: "conditional",
+                                test_param: { name: "sel", type: "select", value: "x" },
+                                cases: [
+                                    {
+                                        value: "x",
+                                        inputs: [{ name: "leaf_x", type: "text", value: "1" }],
+                                    },
+                                    {
+                                        value: "y",
+                                        inputs: [{ name: "leaf_y", type: "text", value: "2" }],
+                                    },
+                                ],
+                            },
+                        ],
+                    ],
+                    inputs: [],
+                },
+            ];
+            const allNames = [];
+            visitAllInputs(inputs, (node, name) => allNames.push(name));
+            expect(allNames).toEqual(["rep_0|nested_cond|sel", "rep_0|nested_cond|leaf_x", "rep_0|nested_cond|leaf_y"]);
+        });
     });
 });

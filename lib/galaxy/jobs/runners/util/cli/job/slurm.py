@@ -115,7 +115,7 @@ class Slurm(BaseJobExec):
 
                 splitjobdata = jobline.split("|")
                 if len(splitjobdata) >= 2:
-                    (s_jobid, s_jobstate) = splitjobdata
+                    s_jobid, s_jobstate = splitjobdata
                     if " " in s_jobstate:
                         s_jobstate, s_jobotherinfo = s_jobstate.split(" ", 1)
                     state = self.slurm_longjobstate_to_shortjobstate.get(s_jobstate, "UN")
@@ -158,7 +158,7 @@ class Slurm(BaseJobExec):
             splitjobdata = line.split("|")
             log.debug(f"State split line: {len(splitjobdata)}")
             if len(splitjobdata) >= 2:
-                (s_jobid, s_jobstate) = splitjobdata
+                s_jobid, s_jobstate = splitjobdata
                 if " " in s_jobstate:
                     s_jobstate, s_jobotherinfo = s_jobstate.split(" ", 1)
                     log.debug(f"Found space in jobstate, split into: {s_jobstate} - {s_jobotherinfo}")

@@ -1,23 +1,27 @@
 import { createTestingPinia } from "@pinia/testing";
+import { dispatchEvent, getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { dispatchEvent, getLocalVue, mockUnprivilegedToolsRequest } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import { useConfig } from "@/composables/config";
 import { useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
 
 import mountTarget from "./ActivityBar.vue";
 
-jest.mock("composables/config");
-useConfig.mockReturnValue({
-    config: {},
-    isConfigLoaded: true,
-});
+const mockConfig = ref({});
 
-jest.mock("vue-router/composables", () => ({
-    useRoute: jest.fn(() => ({})),
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
+        config: mockConfig,
+        isConfigLoaded: true,
+    })),
+}));
+
+vi.mock("vue-router/composables", () => ({
+    useRoute: vi.fn(() => ({})),
 }));
 
 const { server, http } = useServerMock();
@@ -47,10 +51,16 @@ describe("ActivityBar", () => {
     let wrapper;
 
     beforeEach(async () => {
-        const pinia = createTestingPinia({ stubActions: false });
+        mockConfig.value = {};
+        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         activityStore = useActivityStore("default");
         eventStore = useEventStore();
         mockUnprivilegedToolsRequest(server, http);
+        server.use(
+            http.get("/api/configuration", ({ response }) => {
+                return response(200).json({});
+            }),
+        );
         wrapper = shallowMount(mountTarget, {
             localVue,
             pinia,
@@ -76,5 +86,36 @@ describe("ActivityBar", () => {
         dispatchEvent(bar, "dragenter");
         const emittedEvent = wrapper.emitted()["dragstart"][0][0];
         expect(emittedEvent.to).toBe("/workflows/run?id=workflow-id");
+    });
+
+    describe("interactivetools visibility", () => {
+        async function mountWithInteractiveToolsConfig(enabled, activityBarId) {
+            mockConfig.value = { interactivetools_enable: enabled };
+            const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
+            const testStore = useActivityStore(activityBarId);
+            testStore.setAll([
+                testActivity("1"),
+                testActivity("interactivetools", { id: "interactivetools", title: "Interactive Tools" }),
+                testActivity("3"),
+            ]);
+            mockUnprivilegedToolsRequest(server, http);
+            const testWrapper = shallowMount(mountTarget, {
+                localVue,
+                pinia,
+                propsData: { activityBarId },
+            });
+            await testWrapper.vm.$nextTick();
+            return testWrapper;
+        }
+
+        it("hides interactivetools activity when interactivetools_enable is false", async () => {
+            const testWrapper = await mountWithInteractiveToolsConfig(false, "it-test-hide");
+            expect(testWrapper.findAll("[id='interactivetools']").length).toBe(0);
+        });
+
+        it("shows interactivetools activity when interactivetools_enable is true", async () => {
+            const testWrapper = await mountWithInteractiveToolsConfig(true, "it-test-show");
+            expect(testWrapper.findAll("[id='interactivetools']").length).toBe(1);
+        });
     });
 });

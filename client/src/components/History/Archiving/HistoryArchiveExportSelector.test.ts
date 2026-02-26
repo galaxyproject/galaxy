@@ -1,7 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { BFormCheckbox } from "bootstrap-vue";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
 import type { HistorySummary, ObjectExportTaskResponse } from "@/api";
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";

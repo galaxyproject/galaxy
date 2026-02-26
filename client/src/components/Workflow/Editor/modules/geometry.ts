@@ -6,6 +6,13 @@ export interface Rectangle {
     height: number;
 }
 
+/** The workflow editor transform, containing the current pan and zoom values. */
+export interface WorkflowTransform {
+    x: number;
+    y: number;
+    k: number;
+}
+
 /**
  * Class compatible with rectangle interface.
  * Provides additional properties and methods specific to bounding boxes.

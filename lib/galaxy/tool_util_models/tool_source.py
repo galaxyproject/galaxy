@@ -82,15 +82,13 @@ class JavascriptRequirement(ToolSourceBaseModel):
                 Field(
                     title="expression_lib",
                     description="Provide Javascript/ECMAScript 5.1 code here that will be available for expressions inside the `shell_command` field.",
-                    examples=[
-                        r"""function pickValue() {
+                    examples=[r"""function pickValue() {
     if (inputs.conditional_parameter.test_parameter == "a") {
         return inputs.conditional_parameter.integer_parameter
     } else {
         return inputs.conditional_parameter.boolean_parameter
     }
-}"""
-                    ],
+}"""],
                 ),
             ]
         ]
@@ -170,7 +168,8 @@ CwlType = Literal["File", "null", "boolean", "int", "float", "string"]
 FieldType = Union[CwlType, List[CwlType]]
 
 
-class FieldDict(TypedDict):
+# type ignore because mypy can't handle closed TypedDicts yet
+class FieldDict(TypedDict, closed=True):  # type: ignore[call-arg]
     name: str
     type: FieldType
     format: NotRequired[Optional[str]]
@@ -235,5 +234,6 @@ JsonTestCollectionDefDict = TypedDict(
         "collection_type": Optional[str],
         "elements": NotRequired[Optional[List[JsonTestCollectionDefElementDict]]],
         "name": NotRequired[Optional[str]],
+        "fields": NotRequired[Optional[List[FieldDict]]],
     },
 )

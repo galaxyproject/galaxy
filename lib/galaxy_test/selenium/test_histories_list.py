@@ -2,18 +2,21 @@ from selenium.webdriver.common.by import By
 
 from .framework import (
     retry_assertion_during_transitions,
+    selenium_only,
     selenium_test,
     SharedStateSeleniumTestCase,
 )
 
 
 class TestSavedHistories(SharedStateSeleniumTestCase):
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_histories_list(self):
         self._login()
         self.navigate_to_histories_page()
         self.assert_histories_in_list([self.history2_name, self.history3_name])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_switch(self):
         self._login()
@@ -28,6 +31,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         assert_history_name_switched()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_view(self):
         self._login()
@@ -36,6 +40,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         history_name = self.wait_for_selector("[data-description='name display']")
         assert history_name.text == self.history2_name
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_history_publish(self):
         self._login()
@@ -52,6 +57,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_list([self.history2_name])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rename_history(self):
         self._login()
@@ -70,6 +76,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_list([self.history1_name, self.history2_name, self.history3_name])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_delete_and_undelete_history(self):
         self._login()
@@ -94,6 +101,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_list([self.history2_name])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_permanently_delete_history(self):
         self._login()
@@ -114,6 +122,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         self.assert_histories_in_list([self.history4_name])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_delete_and_undelete_multiple_histories(self):
         self._login()
@@ -142,13 +151,87 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.components.histories.reset_input.wait_for_and_click()
         self.assert_histories_in_list([self.history2_name, self.history3_name])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
+    @selenium_test
+    def test_bulk_open_in_multiview(self):
+        self._login()
+        self.navigate_to_histories_page()
+
+        # Select multiple histories
+        self.toggle_card_selection_in_list("#history-list", [self.history2_name, self.history3_name])
+
+        # Open selected histories in multiview
+        self.components.histories.bulk_open_multiview_button.wait_for_and_click()
+
+        # Wait for navigation to multiview page
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        # Verify we are on the multiview page
+        assert "/histories/view_multiple" in self.current_url
+
+        # Verify the selected histories are present in the multiview panel
+        present_histories = self.components.multi_history_panel.histories.all()
+        present_history_names = [self.get_history_name(history) for history in present_histories]
+        assert set(present_history_names) == {self.history2_name, self.history3_name}
+
+    @selenium_only("Not yet migrated to support Playwright backend")
+    @selenium_test
+    def test_bulk_open_in_multiview_limit_confirmation(self):
+        self._login()
+
+        # Create additional histories to exceed the limit (10 is the max)
+        additional_histories = []
+        for _i in range(10 + 1):
+            history_name = self._get_random_name()
+            self.create_history(history_name)
+            additional_histories.append(history_name)
+
+        self.navigate_to_histories_page()
+
+        # Select more than 10 histories (we'll select 11)
+        all_histories_to_select = additional_histories
+        self.toggle_card_selection_in_list("#history-list", all_histories_to_select)
+
+        # Click the bulk open multiview button
+        self.components.histories.bulk_open_multiview_button.wait_for_and_click()
+
+        # Wait for the confirmation dialog to appear
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        # Verify the confirmation dialog is displayed
+        confirm_dialog = self.wait_for_selector("#bulk-open-multiview-histories")
+        assert confirm_dialog.is_displayed()
+
+        # Verify the dialog contains information about the limit
+        dialog_text = confirm_dialog.text
+        assert "10" in dialog_text  # The maximum number of histories
+        assert "11" in dialog_text  # The number of histories selected
+
+        # Click confirm to proceed despite the limit
+        self.wait_for_and_click(self.components.histories.bulk_open_multiview_limit_confirm_button)
+
+        # Wait for dialog to close
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        # Verify we are on the multiview page
+        assert "/histories/view_multiple" in self.current_url
+
+        # Verify the maximum allowed histories are opened in multiview
+        present_histories = self.components.multi_history_panel.histories.all()
+        assert len(present_histories) == 10
+
+    def get_history_name(self, history):
+        history_name_element = history.find_element(By.CSS_SELECTOR, "[data-description='name display']")
+        return history_name_element.text
+
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_sort_by_name(self):
         self._login()
         self.navigate_to_histories_page()
 
-        self.wait_for_and_click_selector('[data-title="Sort by name ascending"]')
-        self.wait_for_and_click_selector('[data-title="Sort by name ascending"]')
+        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
+        self.wait_for_and_click_selector('[data-title="Sort by Name ascending"]')
         self.sleep_for(self.wait_types.UX_RENDER)
 
         expected_histories = [self.history2_name, self.history3_name]
@@ -164,6 +247,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         assert actual_histories == expected_histories
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_standard_search(self):
         self._login()
@@ -174,6 +258,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.components.histories.search_input.wait_for_and_send_keys(self.history4_name)
         self.assert_histories_sorted_in_list([])
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_advanced_search(self):
         self._login()
@@ -214,6 +299,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         return self.components.histories.history_cards.all()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_tags(self):
         self._login()

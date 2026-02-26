@@ -4,6 +4,8 @@
  * does a lot of broken type casting to get the tests to run on actual
  * valid data that doesn't match the stated typescript types.
  */
+import { describe, expect, it } from "vitest";
+
 import type { AnyFetchTarget, NestedElementItem, UrlDataElement } from "@/api/tools";
 
 import type { ParsedFetchWorkbookColumnType } from "../Collections/wizard/types";

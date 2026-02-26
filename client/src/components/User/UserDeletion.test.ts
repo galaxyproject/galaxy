@@ -1,10 +1,9 @@
-import "tests/jest/mockHelpPopovers";
-
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
@@ -12,11 +11,11 @@ import { userLogoutClient } from "@/utils/logout";
 
 import UserDeletion from "./UserDeletion.vue";
 
-jest.mock("@/utils/logout", () => ({
-    userLogoutClient: jest.fn(),
+vi.mock("@/utils/logout", () => ({
+    userLogoutClient: vi.fn(),
 }));
 
-const userLogoutClientMock = jest.mocked(userLogoutClient);
+const userLogoutClientMock = vi.mocked(userLogoutClient);
 
 const localVue = getLocalVue(true);
 const { server, http } = useServerMock();
@@ -42,7 +41,7 @@ async function mountComponent() {
 
 describe("UserDeletion.vue", () => {
     beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it("renders the deletion modal with warning", async () => {

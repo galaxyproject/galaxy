@@ -1,0 +1,147 @@
+{
+    "0:a1a1a1a1a1a1": {
+        "model_class": "RepositoryMetadata",
+        "id": "sim00000000002",
+        "repository_id": "sim00000000002",
+        "numeric_revision": 0,
+        "changeset_revision": "a1a1a1a1a1a1",
+        "malicious": false,
+        "downloadable": true,
+        "missing_test_components": false,
+        "has_repository_dependencies": true,
+        "includes_datatypes": false,
+        "includes_tools": true,
+        "includes_tool_dependencies": false,
+        "includes_tools_for_display_in_tool_panel": true,
+        "includes_workflows": false,
+        "repository": {
+            "model_class": "Repository",
+            "id": "sim00000000002",
+            "name": "tool_with_deps_simulated",
+            "type": "unrestricted",
+            "remote_repository_url": null,
+            "homepage_url": null,
+            "description": "A simulated repository with repository dependencies",
+            "user_id": "sim00000000002",
+            "private": false,
+            "deleted": false,
+            "times_downloaded": 5,
+            "deprecated": false,
+            "create_time": "2025-01-01T00:00:00.000000",
+            "update_time": "2025-01-01T00:00:00.000000",
+            "owner": "simulated_user"
+        },
+        "repository_dependencies": [
+            {
+                "model_class": "RepositoryMetadata",
+                "id": "dep0000000001",
+                "repository_id": "dep0000000001",
+                "numeric_revision": 0,
+                "changeset_revision": "d1d1d1d1d1d1",
+                "malicious": false,
+                "downloadable": true,
+                "missing_test_components": false,
+                "has_repository_dependencies": false,
+                "includes_datatypes": true,
+                "includes_tools": false,
+                "includes_tool_dependencies": false,
+                "includes_tools_for_display_in_tool_panel": false,
+                "includes_workflows": false,
+                "repository": {
+                    "model_class": "Repository",
+                    "id": "dep0000000001",
+                    "name": "datatypes_dependency",
+                    "type": "unrestricted",
+                    "remote_repository_url": null,
+                    "homepage_url": null,
+                    "description": "Datatypes required by tool_with_deps",
+                    "user_id": "simulated_user",
+                    "private": false,
+                    "deleted": false,
+                    "times_downloaded": 10,
+                    "deprecated": false,
+                    "create_time": "2024-06-01T00:00:00.000000",
+                    "update_time": "2024-06-01T00:00:00.000000",
+                    "owner": "simulated_user"
+                },
+                "repository_dependencies": [],
+                "tools": [],
+                "invalid_tools": []
+            },
+            {
+                "model_class": "RepositoryMetadata",
+                "id": "dep0000000002",
+                "repository_id": "dep0000000002",
+                "numeric_revision": 0,
+                "changeset_revision": "d2d2d2d2d2d2",
+                "malicious": false,
+                "downloadable": true,
+                "missing_test_components": false,
+                "has_repository_dependencies": false,
+                "includes_datatypes": false,
+                "includes_tools": true,
+                "includes_tool_dependencies": false,
+                "includes_tools_for_display_in_tool_panel": true,
+                "includes_workflows": false,
+                "repository": {
+                    "model_class": "Repository",
+                    "id": "dep0000000002",
+                    "name": "helper_tools_dependency",
+                    "type": "unrestricted",
+                    "remote_repository_url": null,
+                    "homepage_url": null,
+                    "description": "Helper tools required by tool_with_deps",
+                    "user_id": "simulated_user",
+                    "private": false,
+                    "deleted": false,
+                    "times_downloaded": 8,
+                    "deprecated": false,
+                    "create_time": "2024-07-01T00:00:00.000000",
+                    "update_time": "2024-07-01T00:00:00.000000",
+                    "owner": "another_user"
+                },
+                "repository_dependencies": [],
+                "tools": [
+                    {
+                        "add_to_tool_panel": true,
+                        "description": "Helper utility tool",
+                        "guid": "toolshed.example.org/repos/another_user/helper_tools_dependency/helper_util/1.0.0",
+                        "id": "helper_util",
+                        "name": "Helper Utility",
+                        "profile": 16.01,
+                        "requirements": [],
+                        "tests": [],
+                        "tool_config": "helper_util.xml",
+                        "tool_type": "default",
+                        "version": "1.0.0",
+                        "version_string_cmd": null
+                    }
+                ],
+                "invalid_tools": []
+            }
+        ],
+        "tools": [
+            {
+                "add_to_tool_panel": true,
+                "description": "A tool that depends on other repositories",
+                "guid": "toolshed.example.org/repos/simulated_user/tool_with_deps_simulated/dependent_tool/2.0.0",
+                "id": "dependent_tool",
+                "name": "Dependent Tool",
+                "profile": 16.01,
+                "requirements": [
+                    {
+                        "name": "samtools",
+                        "type": "package",
+                        "version": "1.9"
+                    }
+                ],
+                "tests": [],
+                "tool_config": "dependent_tool.xml",
+                "tool_type": "default",
+                "version": "2.0.0",
+                "version_string_cmd": null
+            }
+        ],
+        "invalid_tools": []
+    }
+}

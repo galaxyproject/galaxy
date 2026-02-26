@@ -9,6 +9,7 @@ usage: %prog $input $out_file1
     -F, --fasta=<genomic_sequences>: genomic sequences to use for extraction
     -G, --gff: input and output file, when it is interval, coordinates are treated as GFF format (1-based, half-open) rather than 'traditional' 0-based, closed format.
 """
+
 from __future__ import print_function
 
 import os

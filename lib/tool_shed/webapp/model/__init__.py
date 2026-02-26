@@ -140,9 +140,10 @@ class User(Base, Dictifiable):
         ),
     )
 
-    def __init__(self, email=None, password=None):
+    def __init__(self, email=None, password=None, username=None) -> None:
         self.email = email
         self.password = password
+        self.username = username
         self.external = False
         self.deleted = False
         self.purged = False
@@ -435,6 +436,12 @@ class Repository(Base, Dictifiable):
         self.deprecated = deprecated
         self.name = self.name or "Unnamed repository"
         self.user = user
+
+    @property
+    def last_updated_time(self):
+        if downloadable_revisions := self.downloadable_revisions:
+            return downloadable_revisions[0].create_time
+        return self.create_time
 
     @property
     def hg_repo(self):

@@ -38,4 +38,6 @@ class TestEdamToolPanelViewsSelenium(SeleniumTestCase):
         labels = tool_panel.panel_labels.all()
         assert len(labels) > 0
         label0 = labels[0]
-        assert label0.text.strip().startswith("ANALYSIS")
+        # oh dear Selenium and Playwright are returning very different things
+        # for label.text here. ANALYSIS vs "Analysis    \n\nn Link Link"
+        assert "ANALYSIS" in label0.text.strip().upper()

@@ -1,26 +1,31 @@
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import testInteractiveToolsResponse from "../components/InteractiveTools/testData/testInteractiveToolsResponse";
 import { useEntryPointStore } from "./entryPointStore";
 
+const { server, http } = useServerMock();
+
 describe("stores/EntryPointStore", () => {
-    let axiosMock;
     let store;
 
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
+        server.use(
+            http.untyped.get("/api/entry_points", ({ request }) => {
+                const url = new URL(request.url);
+                if (url.searchParams.get("running") === "true") {
+                    return HttpResponse.json(testInteractiveToolsResponse);
+                }
+                return HttpResponse.json([]);
+            }),
+        );
         setActivePinia(createPinia());
-        axiosMock.onGet("/api/entry_points", { params: { running: true } }).reply(200, testInteractiveToolsResponse);
         store = useEntryPointStore();
         await store.fetchEntryPoints();
         await flushPromises();
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
     });
 
     it("performs a partial update", async () => {
@@ -38,7 +43,7 @@ describe("stores/EntryPointStore", () => {
         ];
         store.updateEntryPoints(updateData);
         expect(store.entryPoints.length).toBe(1);
-        expect(store.entryPoints[0].name === "Oh there you go, bringing class into it again.").toBeTruthy();
+        expect(store.entryPoints[0].name).toBe("Oh there you go, bringing class into it again.");
         expect(store.entryPoints[0].active).toBeTruthy();
     });
     it("removes an entry point of given id", async () => {
@@ -51,13 +56,13 @@ describe("stores/EntryPointStore", () => {
     it("retrieves entry point for a given job", async () => {
         const entryPointForJob = store.entryPointsForJob("6fc9fbb81c497f69");
         expect(entryPointForJob.length).toBe(1);
-        expect(entryPointForJob[0].id === "52e496b945151ee8").toBeTruthy();
+        expect(entryPointForJob[0].id).toBe("52e496b945151ee8");
         expect(entryPointForJob[0].active).toBeTruthy();
     });
     it("retrieves entry points for a given hda", async () => {
         const entryPointForHda = store.entryPointsForHda("4e9e0c7225b0bb81");
         expect(entryPointForHda.length).toBe(1);
-        expect(entryPointForHda[0].id === "52e496b945151ee8").toBeTruthy();
+        expect(entryPointForHda[0].id).toBe("52e496b945151ee8");
         expect(entryPointForHda[0].active).toBeTruthy();
     });
 });

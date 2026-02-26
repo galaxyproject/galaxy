@@ -12,7 +12,7 @@ from sqlalchemy import (
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
-from galaxy.web.legacy_framework import grids
+from tool_shed.grids import framework as grids
 from tool_shed.util import (
     hg_util,
     metadata_util,

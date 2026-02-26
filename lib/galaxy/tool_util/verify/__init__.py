@@ -595,6 +595,12 @@ def files_image_diff(file1: str, file2: str, attributes: Optional[Dict[str, Any]
     if arr1.shape != arr2.shape:
         raise AssertionError(f"Image dimensions did not match ({arr1.shape}, {arr2.shape}).")
 
+    # Handle `bool` images by converting them to `uint8`
+    if numpy.issubdtype(arr1.dtype, bool):
+        arr1 = arr1.astype(numpy.uint8)
+    if numpy.issubdtype(arr2.dtype, bool):
+        arr2 = arr2.astype(numpy.uint8)
+
     distance = get_image_metric(attributes)(arr1, arr2)
     distance_eps = attributes.get("eps", DEFAULT_EPS)
     if distance > distance_eps:

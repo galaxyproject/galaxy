@@ -13,6 +13,7 @@
     port:
       label: iRODS host port
       type: integer
+      optional: true
       help: Host port to connect to.
       default: 1247
     username:
@@ -23,91 +24,104 @@
     logical_path:
       label: Logical path
       type: string
+      optional: true
       help: |
-        All Data Objects stored in an iRODS system are stored in some Collection, 
+        All Data Objects stored in an iRODS system are stored in some Collection,
         which is a logical name for that set of Data Objects.
         All Galaxy output will be stored in this collection
       default: ""
     timeout:
       label: Connection timeout
       type: integer
+      optional: true
       help: Connection timeout in seconds.
       default: 30
     refresh_time:
       label: Refresh time
       type: integer
+      optional: true
       help: Connection refresh time in seconds.
       default: 300
     connection_pool_monitor_interval:
       label: Connection pool monitor interval
       type: integer
+      optional: true
       help: Interval for monitoring the connection pool in seconds.
       default: 3600
     zone:
       label: iRODS zone
       type: string
       help: |
-        An iRODS Zone is an independent iRODS system consisting of a Catalog Service 
+        An iRODS Zone is an independent iRODS system consisting of a Catalog Service
         Provider
     resource:
       label: Resource
       type: string
+      optional: true
       help: |
         The iRODS resource to use
       default: "default"
     client_server_negotiation:
       label: Server negotiation
       type: string
+      optional: true
       help: |
         Server negotiation
       default: "request_server_negotiation"
     client_server_policy:
       label: Server policy
       type: string
+      optional: true
       help: |
         Server policy
       default: "CS_NEG_REQUIRE"
     encryption_algorithm:
       label: Encryption algorithm
       type: string
+      optional: true
       help: |
         EVP-supplied encryption algorithm for parallel transfer encryption
       default: "AES-256-CBC"
     encryption_key_size:
       label: Encryption key size
       type: integer
+      optional: true
       help: |
         Key size for parallel transfer encryption
       default: 32
     encryption_num_hash_rounds:
       label: Number of hash rounds for encryption
       type: integer
+      optional: true
       help: |
         Number of hash rounds for parallel transfer encryption
       default: 16
     encryption_salt_size:
       label: Salt size
       type: integer
+      optional: true
       help: |
         Salt size for parallel transfer encryption
       default: 8
     ssl_verify_server:
       label: Ssl verify server
       type: string
+      optional: true
       help: |
-        What level of server certificate based authentication to perform. 
-        'none' means not to perform any authentication at all. 
-        'cert' means to verify the certificate validity (i.e. that it was signed by a trusted CA). 
-        'hostname' means to validate the certificate and to verify that the irods_host's 
-        FQDN matches either the common name or one of the subjectAltNames of the certificate. 
+        What level of server certificate based authentication to perform.
+        'none' means not to perform any authentication at all.
+        'cert' means to verify the certificate validity (i.e. that it was signed by a trusted CA).
+        'hostname' means to validate the certificate and to verify that the irods_host's
+        FQDN matches either the common name or one of the subjectAltNames of the certificate.
         'hostname' is the default setting.
       default: "hostname"
     ssl_ca_certificate_file:
       label: Ssl ca certificate file path
       type: string
+      optional: true
       help: |
-        Location of a file of trusted CA certificates in PEM format. 
-        Note that the certificates in this file are used in conjunction with the system default 
+        Location of a file of trusted CA certificates in PEM format.
+        Note that the certificates in this file are used in conjunction with the system default
         trusted certificates
       default: "/etc/irods/ssl/irods.crt"
   secrets:
@@ -141,4 +155,3 @@
       ssl_ca_certificate_file: '{{ variables.ssl_ca_certificate_file }}'
     logical:
       path: '{{ variables.logical_path }}'
-

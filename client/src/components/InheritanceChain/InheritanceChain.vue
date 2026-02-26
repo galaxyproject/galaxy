@@ -4,7 +4,7 @@
         <div class="current-dataset chain-box">{{ datasetName }}</div>
         <div v-if="inherit_chain && inherit_chain.length > 0">
             <div v-for="({ name, dep }, i) in inherit_chain" :key="i">
-                <FontAwesomeIcon class="inheritance-arrow" size="3x" :icon="['fas', 'long-arrow-alt-up']" />
+                <FontAwesomeIcon class="inheritance-arrow" size="3x" :icon="faLongArrowAltUp" />
                 <div class="chain-box">{{ name }} in {{ dep }}</div>
             </div>
         </div>
@@ -12,15 +12,12 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faLongArrowAltUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import { Services } from "./services";
 
 import Heading from "../Common/Heading.vue";
-
-library.add(faLongArrowAltUp);
 
 export default {
     components: { FontAwesomeIcon, Heading },
@@ -37,6 +34,7 @@ export default {
     data() {
         return {
             inherit_chain: [],
+            faLongArrowAltUp,
         };
     },
     created() {

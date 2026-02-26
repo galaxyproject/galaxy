@@ -1,8 +1,7 @@
-import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { describe, expect, it } from "vitest";
 
-import StateUpgradeModal from "./StateUpgradeModal";
-
-const localVue = createLocalVue();
+import StateUpgradeModal from "./StateUpgradeModal.vue";
 
 describe("StateUpgradeModal.vue", () => {
     let wrapper;
@@ -12,7 +11,6 @@ describe("StateUpgradeModal.vue", () => {
             propsData: {
                 stateMessages,
             },
-            localVue,
         });
         await wrapper.vm.$nextTick();
     }

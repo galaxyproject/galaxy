@@ -26,7 +26,8 @@ export interface Props {
     activityBarId: string;
     title?: string;
     icon?: IconDefinition;
-    indicator?: number;
+    indicator?: number | IconDefinition;
+    indicatorVariant?: ActivityVariant;
     isActive?: boolean;
     tooltip?: string;
     tooltipPlacement?: Placement;
@@ -41,6 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
     title: undefined,
     icon: () => faQuestion,
     indicator: 0,
+    indicatorVariant: "danger",
     isActive: false,
     options: undefined,
     progressPercentage: 0,
@@ -89,12 +91,23 @@ const meta = computed(() => store.metaForId(props.id));
                         }" />
                 </span>
                 <div class="nav-icon">
-                    <span v-if="indicator > 0" class="nav-indicator" data-description="activity indicator">
+                    <span
+                        v-if="typeof indicator === 'number' && indicator > 0"
+                        class="nav-indicator"
+                        :class="`${indicatorVariant}-indicator`"
+                        data-description="activity indicator">
                         {{ Math.min(indicator, 99) }}
+                    </span>
+                    <span
+                        v-else-if="typeof indicator !== 'number'"
+                        class="nav-indicator"
+                        :class="`${indicatorVariant}-indicator`"
+                        data-description="activity indicator">
+                        <FontAwesomeIcon :icon="indicator" />
                     </span>
                     <FontAwesomeIcon :icon="icon" />
                 </div>
-                <TextShort v-if="title" :text="title" class="nav-title" />
+                <TextShort v-if="title" :text="localize(title)" class="nav-title" />
             </b-nav-item>
         </template>
         <div class="text-center px-2 py-1">
@@ -112,7 +125,7 @@ const meta = computed(() => store.metaForId(props.id));
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .activity-item {
     position: relative;
@@ -137,8 +150,16 @@ const meta = computed(() => store.metaForId(props.id));
 }
 
 .nav-indicator {
+    &.danger-indicator {
+        background: $brand-danger;
+    }
+    &.primary-indicator {
+        background: $brand-primary;
+    }
+    &.disabled-indicator {
+        background: $brand-secondary;
+    }
     align-items: center;
-    background: $brand-danger;
     border-radius: 50%;
     color: $brand-light;
     display: flex;

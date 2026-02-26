@@ -3,9 +3,9 @@ import { computed, type Ref } from "vue";
 
 import { type HDASummary, type HistoryItemSummary, isHDA } from "@/api";
 import type { ComponentColor } from "@/components/BaseComponents/componentVariants";
-import type { UploadItem } from "@/components/Upload/model";
-import STATES from "@/mvc/dataset/states";
+import type { UploadRowModel } from "@/components/Upload/model";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
+import STATES from "@/utils/datasetStates";
 
 const REFER_TO_HISTORY_MSG = "Refer to the history panel to view dataset state.";
 
@@ -25,7 +25,7 @@ const UNUSABLE_FROM_UPLOAD_STATES = Object.values(STATES.READY_STATES).filter(
  *                             or `list:paired` collection JUST from these uploads
  */
 export function monitorUploadedHistoryItems(
-    uploadValues: Ref<UploadItem[]>,
+    uploadValues: Ref<UploadRowModel[]>,
     historyId: Ref<string>,
     enableStart: Ref<boolean>,
     creatingPairedType: Ref<boolean>,

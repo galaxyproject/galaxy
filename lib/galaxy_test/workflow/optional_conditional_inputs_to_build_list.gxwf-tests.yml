@@ -2,9 +2,9 @@
     Test optional unspecified input into conditional step works
   job:
     required_dataset:
-      type: File
-      value: 2.tabular
-      file_type: tabular
+      class: File
+      path: 2.tabular
+      filetype: tabular
   outputs:
     out:
       class: Collection

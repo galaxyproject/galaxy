@@ -1,3 +1,5 @@
+import { describe, expect, test } from "vitest";
+
 import AUTO_PAIRING_SPECIFICATION from "./auto_pairing_spec.yml";
 import {
     autoDetectPairs,

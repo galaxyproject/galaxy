@@ -1,9 +1,10 @@
 import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
-import { setupMockConfig } from "tests/jest/mockConfig";
+import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useHistoryStore } from "@/stores/historyStore";

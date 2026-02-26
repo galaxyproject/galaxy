@@ -1,6 +1,5 @@
 from typing import (
     cast,
-    List,
 )
 from uuid import uuid4
 
@@ -60,8 +59,10 @@ class MockToolbox:
 
 class MockTool:
 
+    id = TEST_TOOL_ID
+
     @property
-    def parameters(self) -> List[ToolParameterT]:
+    def parameters(self) -> list[ToolParameterT]:
         return [DataParameterModel(type="data", name="input1")]
 
 
@@ -75,6 +76,7 @@ class TestLanding(BaseTestCase):
             self.app.security,
             self.workflow_contents_manager,
             cast(MinimalManagerApp, MockApp()),
+            self.app.config,
         )
         self.trans.app.trs_proxy = TrsProxy(GalaxyAppConfiguration(override_tempdir=False))
 

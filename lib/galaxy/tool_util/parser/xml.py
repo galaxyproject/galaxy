@@ -56,6 +56,7 @@ from .interface import (
     DrillDownDynamicOptions,
     DynamicOptions,
     InputSource,
+    InputsStyleT,
     PageSource,
     PagesSource,
     RequiredFiles,
@@ -761,7 +762,7 @@ class XmlToolSource(ToolSource):
         return configfiles
 
     def parse_input_configfiles(self) -> Sequence[InputConfigFile]:
-        config_files: list[InputConfigFile] = []
+        config_files: List[InputConfigFile] = []
         if (conf_parent_elem := self.root.find("configfiles")) is not None:
             inputs_elem = conf_parent_elem.find("inputs")
             if inputs_elem is not None:
@@ -774,7 +775,7 @@ class XmlToolSource(ToolSource):
         return config_files
 
     def parse_file_sources(self) -> Sequence[FileSourceConfigFile]:
-        config_files: list[FileSourceConfigFile] = []
+        config_files: List[FileSourceConfigFile] = []
         if (conf_parent_elem := self.root.find("configfiles")) is not None:
             file_sources_elem = conf_parent_elem.find("file_sources")
             if file_sources_elem is not None:
@@ -817,6 +818,7 @@ def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
         expect_test_failure=string_as_bool(test_elem.get("expect_test_failure", False)),
         maxseconds=test_elem.get("maxseconds", None),
+        value_state_representation="test_case_xml",
     )
     _copy_to_dict_if_present(test_elem, rval, ["num_outputs"])
     return rval
@@ -922,6 +924,17 @@ def __parse_test_attributes(
         count = int(attrib.pop("count"))
     except KeyError:
         pass
+    min: Optional[int] = None
+    try:
+        min = int(attrib.pop("min"))
+    except KeyError:
+        pass
+    max: Optional[int] = None
+    try:
+        max = int(attrib.pop("max"))
+    except KeyError:
+        pass
+    has_count_assertions = count is not None or min is not None or max is not None
     extra_files: List[Dict[str, Any]] = []
     ftype: Optional[str] = None
     if "ftype" in attrib:
@@ -949,7 +962,7 @@ def __parse_test_attributes(
     has_checksum = md5sum or checksum
     has_nested_tests = extra_files or element_tests or primary_datasets
     has_object = value_object is not VALUE_OBJECT_UNSET
-    if not (assert_list or file or metadata or has_checksum or has_nested_tests or has_object):
+    if not (assert_list or file or metadata or has_checksum or has_nested_tests or has_object or has_count_assertions):
         raise Exception(
             "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)"
         )
@@ -966,6 +979,8 @@ def __parse_test_attributes(
         pin_labels=pin_labels,
         location=location,
         count=count,
+        min=min,
+        max=max,
         metadata=metadata,
         md5=md5sum,
         checksum=checksum,
@@ -1339,11 +1354,13 @@ class XmlPagesSource(PagesSource):
     def __init__(self, root):
         self.input_elem = root.find("inputs")
         page_sources = []
+        inputs_style: InputsStyleT = "none"
         if self.input_elem is not None:
+            inputs_style = "cheetah"
             pages_elem = self.input_elem.findall("page")
             for page in pages_elem or [self.input_elem]:
                 page_sources.append(XmlPageSource(page))
-        super().__init__(page_sources)
+        super().__init__(page_sources, inputs_style)
 
     @property
     def inputs_defined(self):

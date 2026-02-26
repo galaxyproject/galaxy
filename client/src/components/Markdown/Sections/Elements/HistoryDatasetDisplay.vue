@@ -1,59 +1,60 @@
 <template>
-    <b-card body-class="p-0">
-        <b-card-header v-if="!embedded">
+    <BCard body-class="p-0">
+        <BCardHeader v-if="!embedded">
             <span class="float-right">
-                <b-button
-                    v-b-tooltip.hover
+                <GButton
                     :href="downloadUrl"
-                    variant="link"
-                    size="sm"
-                    role="button"
+                    tooltip
+                    transparent
+                    color="blue"
+                    size="small"
                     title="Download Dataset"
-                    type="button"
                     class="py-0 px-1">
-                    <span class="fa fa-download" />
-                </b-button>
-                <b-button
-                    v-b-tooltip.hover
+                    <FontAwesomeIcon :icon="faDownload" fixed-width />
+                </GButton>
+
+                <GButton
                     :href="importUrl"
-                    role="button"
-                    variant="link"
+                    tooltip
+                    transparent
+                    color="blue"
+                    size="small"
                     title="Import Dataset"
-                    type="button"
                     class="py-0 px-1">
-                    <span class="fa fa-file-import" />
-                </b-button>
-                <b-button
+                    <FontAwesomeIcon :icon="faFileImport" fixed-width />
+                </GButton>
+
+                <GButton
                     v-if="expandable && expanded"
-                    v-b-tooltip.hover
-                    href="#"
-                    role="button"
-                    variant="link"
+                    tooltip
+                    transparent
+                    color="blue"
+                    size="small"
                     title="Collapse"
-                    type="button"
                     class="py-0 px-1"
                     @click="onExpand">
-                    <span class="fa fa-angle-double-up" />
-                </b-button>
-                <b-button
+                    <FontAwesomeIcon :icon="faAngleDoubleUp" fixed-width />
+                </GButton>
+                <GButton
                     v-else-if="expandable"
-                    v-b-tooltip.hover
-                    href="#"
-                    role="button"
-                    variant="link"
+                    tooltip
+                    transparent
+                    color="blue"
+                    size="small"
                     title="Expand"
-                    type="button"
                     class="py-0 px-1"
                     @click="onExpand">
-                    <span class="fa fa-angle-double-down" />
-                </b-button>
+                    <FontAwesomeIcon :icon="faAngleDoubleDown" fixed-width />
+                </GButton>
             </span>
+
             <span>
                 <span>Dataset:</span>
                 <span class="font-weight-light">{{ metaContent?.name || "..." }}</span>
             </span>
-        </b-card-header>
-        <b-card-body>
+        </BCardHeader>
+
+        <BCardBody>
             <div v-if="metaError">{{ metaError }}</div>
             <LoadingSpan v-else-if="!metaType" message="Loading Metadata" />
             <LoadingSpan v-else-if="dataLoading" message="Loading Dataset" />
@@ -61,7 +62,7 @@
             <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
             <div v-else-if="!datatypesMapper">Datatypes not loaded.</div>
             <div v-else>
-                <b-embed
+                <BEmbed
                     v-if="datatypesMapper.isSubTypeOfAny(metaType, ['pdf', 'html'])"
                     type="iframe"
                     aspect="16by9"
@@ -71,17 +72,17 @@
                     :dataset-id="datasetId" />
                 <div v-else-if="dataContent?.item_data">
                     <div v-if="datatypesMapper.isSubTypeOfAny(metaType, ['tabular'])">
-                        <b-table
+                        <GTable
                             id="tabular-dataset-table"
+                            class="mb-2"
                             sticky-header
-                            thead-tr-class="sticky-top"
                             striped
                             hover
                             :per-page="perPage"
                             :current-page="currentPage"
                             :fields="getFields(metaContent)"
                             :items="getItems(dataContent.item_data, metaContent)" />
-                        <b-pagination
+                        <BPagination
                             v-model="currentPage"
                             align="center"
                             :total-rows="getItems(dataContent.item_data, metaContent).length"
@@ -93,23 +94,31 @@
                     </pre>
                 </div>
                 <div v-else>No content found.</div>
-                <b-link v-if="dataContent?.truncated" :href="dataContent?.item_url"> Show More... </b-link>
+
+                <GLink v-if="dataContent?.truncated" :href="dataContent?.item_url"> Show More... </GLink>
             </div>
-        </b-card-body>
-    </b-card>
+        </BCardBody>
+    </BCard>
 </template>
 
 <script setup lang="ts">
+import { faAngleDoubleDown, faAngleDoubleUp, faDownload, faFileImport } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BCard, BCardBody, BCardHeader, BEmbed, BPagination } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
+import type { TableField } from "@/components/Common/GTable.types";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatasetTextContentStore } from "@/stores/datasetTextContentStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
-import HistoryDatasetAsImage from "./HistoryDatasetAsImage.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
+import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import HistoryDatasetAsImage from "@/components/Markdown/Sections/Elements/HistoryDatasetAsImage.vue";
 
 interface Dataset {
     name?: string;
@@ -165,14 +174,14 @@ const metaContent = computed(() => getDataset(props.datasetId) as Dataset);
 const metaError = computed(() => getDatasetError(props.datasetId));
 const metaType = computed(() => metaContent.value?.extension);
 
-const getFields = (metaContent: Dataset) => {
-    const fields = [];
+const getFields = (metaContent: Dataset): TableField[] => {
+    const fields: TableField[] = [];
     const columnNames = metaContent.metadata_column_names || [];
     const columnCount = metaContent.metadata_columns || 0;
     for (let i = 0; i < columnCount; i++) {
         fields.push({
             key: `${i}`,
-            label: columnNames[i] || i,
+            label: columnNames[i] || String(i),
             sortable: true,
         });
     }
@@ -180,7 +189,7 @@ const getFields = (metaContent: Dataset) => {
 };
 
 const getItems = (textData: string, metaData: Dataset) => {
-    const tableData: any[] = [];
+    const tableData: Record<string, string>[] = [];
     const delimiter = metaData.metadata_delimiter || "\t";
     const comments = metaData.metadata_comment_lines || 0;
     const lines = textData.split("\n");

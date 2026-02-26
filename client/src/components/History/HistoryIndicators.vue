@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive, faBurn, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
@@ -10,8 +9,6 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import UtcDate from "../UtcDate.vue";
-
-library.add(faArchive, faBurn, faTrash);
 
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);

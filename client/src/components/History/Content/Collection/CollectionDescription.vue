@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import { computed } from "vue";
 
@@ -114,7 +116,7 @@ function pluralize(word: string) {
                 :title="`${datasetStateSummary.elements_deleted} deleted ${
                     datasetStateSummary.elements_deleted === 1 ? 'dataset' : 'datasets'
                 } in collection`">
-                <icon icon="trash" /> {{ datasetStateSummary.elements_deleted }} deleted
+                <FontAwesomeIcon :icon="faTrash" /> {{ datasetStateSummary.elements_deleted }} deleted
             </BBadge>
         </div>
 
@@ -124,7 +126,7 @@ function pluralize(word: string) {
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .description {
     font-size: $h6-font-size;

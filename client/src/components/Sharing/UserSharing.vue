@@ -94,7 +94,7 @@ function onBlur() {
 }
 
 function onRemove(user: { email: string }) {
-    const index = sharingCandidates.value.indexOf(user);
+    const index = sharingCandidates.value.findIndex((candidate) => candidate.email === user.email);
 
     if (index >= 0) {
         sharingCandidates.value.splice(index, 1);
@@ -170,7 +170,7 @@ defineExpose({
                     :internal-search="false"
                     :max-height="exposeEmails ? 300 : 0"
                     label="email"
-                    tack-by="email"
+                    track-by="email"
                     placeholder="Please specify user email"
                     @remove="onRemove"
                     @search-change="onSearchChanged"
@@ -225,6 +225,7 @@ defineExpose({
             no-close-on-backdrop
             scrollable
             dialog-class="user-sharing-modal"
+            data-description="sharing permissions change required"
             @ok="onUpdatePermissions"
             @cancel="onCancel"
             @close="onCancel">
@@ -250,7 +251,7 @@ defineExpose({
                 header-bg-variant="primary"
                 header-text-variant="white"
                 class="mb-4">
-                <BFormSelect v-model="selectedSharingOption">
+                <BFormSelect v-model="selectedSharingOption" data-description="sharing permissions change required how">
                     <BFormSelectOption value="make_public"> Make datasets public </BFormSelectOption>
                     <BFormSelectOption value="make_accessible_to_shared">
                         Make datasets private to me and users this {{ modelClass }} is shared with

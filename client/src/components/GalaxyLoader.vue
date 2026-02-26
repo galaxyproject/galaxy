@@ -45,24 +45,39 @@ export default {
     border-radius: 50px;
     position: relative;
     overflow: hidden;
+    animation: galaxy-loader_pulse 2s ease-in-out infinite;
 }
 
 .galaxy-loader_light {
     background-color: transparent;
-    border: 2px solid #58585a;
+    border: 1px solid #58585a;
     box-sizing: border-box;
+    box-shadow:
+        0 8px 32px rgba(88, 88, 90, 0.1),
+        0 4px 16px rgba(88, 88, 90, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(1px);
 }
 
 .galaxy-loader_dark {
     background-color: #2c3143;
-    border: 2px solid #2c3143;
+    border: 1px solid #2c3143;
     box-sizing: border-box;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        0 4px 16px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .galaxy-loader_eu {
     background-color: transparent;
-    border: 2px solid #063591;
+    border: 1px solid #063591;
     box-sizing: border-box;
+    box-shadow:
+        0 8px 32px rgba(6, 53, 145, 0.15),
+        0 4px 16px rgba(6, 53, 145, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(1px);
 }
 
 .galaxy-loader > div {
@@ -158,6 +173,16 @@ export default {
     40% {
         transform: scaleX(1.2);
         -webkit-transform: scaleX(1.2);
+    }
+}
+
+@keyframes galaxy-loader_pulse {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
     }
 }
 </style>

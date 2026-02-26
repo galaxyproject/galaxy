@@ -27,6 +27,8 @@ from sqlalchemy.orm import (
 from galaxy.util.bunch import Bunch
 
 if TYPE_CHECKING:
+    from sqlalchemy.engine import Engine
+
     from galaxy.model import (
         APIKeys as GalaxyAPIKeys,
         GalaxySession as GalaxyGalaxySession,
@@ -61,14 +63,14 @@ def check_database_connection(session):
     if isinstance(session, scoped_session):
         session = session()
     trans = session.get_transaction()
-    if (trans and not trans.is_active) or session.connection().invalidated:
+    if trans and (not trans.is_active or session.connection().invalidated):
         session.rollback()
         log.error("Database transaction rolled back due to inactive session transaction or invalid connection state.")
 
 
 # TODO: Refactor this to be a proper class, not a bunch.
 class ModelMapping(Bunch):
-    def __init__(self, model_modules: list[ModuleType], engine):
+    def __init__(self, model_modules: list[ModuleType], engine: "Engine") -> None:
         self.engine = engine
         self._SessionLocal = sessionmaker(autoflush=False)
         versioned_session(self._SessionLocal)

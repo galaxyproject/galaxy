@@ -409,6 +409,7 @@ class TestToolsUpload(ApiTestCase):
         assert dataset["state"] == "error"
         assert dataset["name"] == "html_file.txt"
 
+    @skip_if_site_down("https://httpstat.us")
     def test_abort_fetch_job(self, history_id):
         # This should probably be an integration test that also verifies
         # that the celery chord is properly canceled.

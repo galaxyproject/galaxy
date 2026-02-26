@@ -7,7 +7,6 @@ from collections.abc import (
     Mapping,
     MutableMapping,
 )
-from json import dumps
 from typing import (
     Any,
     cast,
@@ -504,7 +503,7 @@ class DefaultToolAction(ToolAction):
                 incoming[f"{name}|__identifier__"] = identifier
 
         # Collect chromInfo dataset and add as parameters to incoming
-        (chrom_info, db_dataset) = execution_cache.get_chrom_info(tool.id, input_dbkey)
+        chrom_info, db_dataset = execution_cache.get_chrom_info(tool.id, input_dbkey)
 
         if db_dataset:
             inp_data.update({"chromInfo": db_dataset})
@@ -512,11 +511,19 @@ class DefaultToolAction(ToolAction):
 
         if not completed_job:
             # Determine output dataset permission/roles list
+            default_history_permissions = app.security_agent.history_get_default_permissions(history)
             if all_permissions:
                 output_permissions = app.security_agent.guess_derived_permissions(all_permissions)
+                # Ensure history default access restrictions are applied even when
+                # inputs are less restrictive (e.g. public library datasets). The
+                # history defaults reflect the user's intent for output privacy.
+                # See https://github.com/galaxyproject/galaxy/issues/21802
+                access_action = app.security_agent.get_action("access")
+                if access_action in default_history_permissions and access_action not in output_permissions:
+                    output_permissions[access_action] = default_history_permissions[access_action]
             else:
                 # No valid inputs, we will use history defaults
-                output_permissions = app.security_agent.history_get_default_permissions(history)
+                output_permissions = default_history_permissions
 
         # Add the dbkey to the incoming parameters
         incoming["dbkey"] = input_dbkey
@@ -750,8 +757,6 @@ class DefaultToolAction(ToolAction):
         # execute immediate post job actions and associate post job actions that are to be executed after the job is complete
         if job_callback:
             job_callback(job)
-        if job_params:
-            job.params = dumps(job_params)
         if completed_job:
             job.set_copied_from_job_id(completed_job.id)
         trans.sa_session.add(job)

@@ -6,9 +6,9 @@ import signal
 import sys
 import threading
 import time
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
     Optional,
 )
 
@@ -70,6 +70,7 @@ from galaxy.managers.tasks import (
 )
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.users import UserManager
+from galaxy.managers.workflow_completion import WorkflowCompletionManager
 from galaxy.managers.workflows import (
     WorkflowContentsManager,
     WorkflowsManager,
@@ -170,6 +171,8 @@ from galaxy.web_stack import (
 )
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow import scheduling_manager
+from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
+from galaxy.workflow.completion_monitor import WorkflowCompletionMonitor
 from galaxy.workflow.trs_proxy import TrsProxy
 from .di import Container
 from .structured_app import (
@@ -266,9 +269,13 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     container_finder: containers.ContainerFinder
     install_model: ModelMapping
     object_store: BaseObjectStore
+    _tool_data_tables: Optional[BaseToolDataTableManager]
+    _genome_builds: Optional[GenomeBuilds]
 
     def __init__(self, fsmon=False, **kwargs) -> None:
         super().__init__()
+        self._genome_builds = None
+        self._tool_data_tables = None
         self.haltables = [
             ("object store", self._shutdown_object_store),
             ("database connection", self._shutdown_model),
@@ -314,7 +321,15 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             self.trace_logger = None
 
     def _configure_genome_builds(self, data_table_name="__dbkeys__", load_old_style=True):
-        self.genome_builds = GenomeBuilds(self, data_table_name=data_table_name, load_old_style=load_old_style)
+        self._genome_builds = GenomeBuilds(self, data_table_name=data_table_name, load_old_style=load_old_style)
+
+    # lazy initialize genome_builds so tool_data_tables is also lazy
+    @property
+    def genome_builds(self) -> GenomeBuilds:
+        if self._genome_builds is None:
+            self._configure_genome_builds()
+        assert self._genome_builds is not None
+        return self._genome_builds
 
     def wait_for_toolbox_reload(self, old_toolbox):
         timer = ExecutionTimer()
@@ -412,22 +427,30 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
 
     def _configure_tool_data_tables(self, from_shed_config):
         # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
-        self.tool_data_tables: BaseToolDataTableManager = ToolDataTableManager(
+        tool_data_tables: BaseToolDataTableManager = ToolDataTableManager(
             tool_data_path=self.config.tool_data_path,
             config_filename=self.config.tool_data_table_config_path,
             other_config_dict=self.config,
         )
         # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
         try:
-            self.tool_data_tables.load_from_config_file(
+            tool_data_tables.load_from_config_file(
                 config_filename=self.config.shed_tool_data_table_config,
-                tool_data_path=self.tool_data_tables.tool_data_path,
+                tool_data_path=tool_data_tables.tool_data_path,
                 from_shed_config=from_shed_config,
             )
         except OSError as exc:
             # Missing shed_tool_data_table_config is okay if it's the default
             if exc.errno != errno.ENOENT or self.config.is_set("shed_tool_data_table_config"):
                 raise
+        self._tool_data_tables = tool_data_tables
+
+    @property
+    def tool_data_tables(self) -> BaseToolDataTableManager:
+        if self._tool_data_tables is None:
+            self._configure_tool_data_tables(from_shed_config=False)
+        assert self._tool_data_tables is not None
+        return self._tool_data_tables
 
     def _configure_datatypes_registry(self, use_display_applications=True, use_converters=True):
         # Create an empty datatypes registry.
@@ -668,6 +691,10 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self._register_singleton(Registry, self.datatypes_registry)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
         self.configure_sentry_client()
+        # Load dbkey / genome build manager
+        self._configure_genome_builds(data_table_name="__dbkeys__", load_old_style=True)
+        # Tool Data Tables
+        self._configure_tool_data_tables(from_shed_config=False)
 
         self._configure_tool_shed_registry()
         self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
@@ -746,11 +773,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         )
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
 
-        # Tool Data Tables
-        self._configure_tool_data_tables(from_shed_config=False)
-        # Load dbkey / genome build manager
-        self._configure_genome_builds(data_table_name="__dbkeys__", load_old_style=True)
-
         # Genomes
         self.genomes = self._register_singleton(Genomes)
         # Data providers registry.
@@ -790,7 +812,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             VisualizationsRegistry(
                 self,
                 directories_setting=self.config.visualization_plugins_directory,
-                template_cache_dir=self.config.template_cache_path,
             ),
         )
         # Tours registry
@@ -839,6 +860,20 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
 
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
+
+        # Initialize workflow completion monitoring (manager is always available,
+        # but monitor only runs on workflow scheduler processes)
+        self.workflow_completion_manager = WorkflowCompletionManager(self)
+        self.workflow_completion_hook_registry = WorkflowCompletionHookRegistry(self)
+        self.workflow_completion_monitor: Optional[WorkflowCompletionMonitor] = None
+        if self.workflow_scheduling_manager._is_workflow_handler():
+            self.workflow_completion_monitor = WorkflowCompletionMonitor(
+                self,
+                self.workflow_completion_manager,
+                self.workflow_completion_hook_registry,
+            )
+            self.application_stack.register_postfork_function(self.workflow_completion_monitor.start)
+            self.haltables.append(("WorkflowCompletionMonitor", self.workflow_completion_monitor.shutdown_monitor))
 
         # Start the job manager
         self.application_stack.register_postfork_function(self.job_manager.start)

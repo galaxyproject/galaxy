@@ -3,6 +3,7 @@ from enum import Enum
 from typing import (
     Annotated,
     Any,
+    Literal,
     Optional,
     Union,
 )
@@ -17,17 +18,16 @@ from pydantic import (
     TypeAdapter,
     UUID4,
 )
-from typing_extensions import Literal
 
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
-    Model,
-    SampleSheetColumnDefinitions,
-    SampleSheetRow,
-)
+from galaxy.schema.schema import Model
 from galaxy.schema.terms import HelpTerms
 from galaxy.schema.types import CoercedStringType
 from galaxy.tool_util_models.parameters import FileOrCollectionRequest
+from galaxy.tool_util_models.sample_sheet import (
+    SampleSheetColumnDefinitions,
+    SampleSheetRow,
+)
 from galaxy.util.hash_util import HashFunctionNames
 
 HELP_TERMS = HelpTerms()
@@ -95,6 +95,7 @@ class BaseCollectionTarget(BaseFetchDataTarget):
     tags: Optional[list[str]] = None
     name: Optional[str] = None
     column_definitions: Optional[SampleSheetColumnDefinitions] = None
+    rows: Optional[dict[str, SampleSheetRow]] = None
 
 
 class LibraryDestination(FetchBaseModel):
@@ -157,6 +158,7 @@ class PastedDataElement(BaseDataElement):
 class UrlDataElement(BaseDataElement):
     src: Literal["url"]
     url: str = Field(..., description="URL to upload")
+    headers: Optional[dict[str, str]] = Field(None, description="Optional headers to include in the URL fetch request")
 
 
 class ServerDirElement(BaseDataElement):

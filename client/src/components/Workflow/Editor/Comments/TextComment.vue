@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
 import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
 import { BButton, BButtonGroup } from "bootstrap-vue";
-import { sanitize } from "dompurify";
+import purify from "dompurify";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
+import { textLarger, textSmaller } from "@/components/icons/galaxyIcons";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TextWorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 
@@ -17,8 +17,6 @@ import { selectAllText } from "./utilities";
 
 import ColorSelector from "./ColorSelector.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
-
-library.add(faTrashAlt, faPalette);
 
 const props = defineProps<{
     comment: TextWorkflowComment;
@@ -48,7 +46,7 @@ useResizable(
 );
 
 function escapeAndSanitize(text: string) {
-    return sanitize(text, { ALLOWED_TAGS: ["br"] }).replace(/(?:^(\s|&nbsp;)+)|(?:(\s|&nbsp;)+$)/g, "");
+    return purify.sanitize(text, { ALLOWED_TAGS: ["br"] }).replace(/(?:^(\s|&nbsp;)+)|(?:(\s|&nbsp;)+$)/g, "");
 }
 
 const editableElement = ref<HTMLSpanElement>();
@@ -239,24 +237,24 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 title="Color"
                 :pressed="showColorSelector"
                 @click="() => (showColorSelector = !showColorSelector)">
-                <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="faPalette" class="prevent-zoom" />
             </BButton>
             <BButton
                 class="button prevent-zoom"
                 variant="primary"
                 :title="decreaseFontSizeTitle"
                 @click="decreaseFontSize">
-                <FontAwesomeIcon :icon="['gxd', 'textSmaller']" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="textSmaller" class="prevent-zoom" />
             </BButton>
             <BButton
                 class="button prevent-zoom"
                 variant="primary"
                 :title="increaseFontSizeTitle"
                 @click="increaseFontSize">
-                <FontAwesomeIcon :icon="['gxd', 'textLarger']" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="textLarger" class="prevent-zoom" />
             </BButton>
             <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
-                <FontAwesomeIcon icon="far fa-trash-alt" class="prevent-zoom" />
+                <FontAwesomeIcon :icon="faTrashAlt" class="prevent-zoom" />
             </BButton>
         </BButtonGroup>
 
@@ -269,7 +267,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "buttonGroup.scss";
 
 .text-workflow-comment {

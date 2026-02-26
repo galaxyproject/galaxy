@@ -9,7 +9,6 @@ import { buildTopNDatasetsBySizeData, byteFormattingForChart, useDataLoading, us
 
 import BarChart from "./Charts/BarChart.vue";
 import OverviewPage from "./OverviewPage.vue";
-import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
 import WarnDeletedDatasets from "./WarnDeletedDatasets.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -25,9 +24,6 @@ const router = useRouter();
 const { getObjectStoreNameById } = useObjectStoreStore();
 
 const {
-    numberOfDatasetsToDisplayOptions,
-    numberOfDatasetsToDisplay,
-    numberOfDatasetsLimit,
     datasetsSizeSummaryMap,
     topNDatasetsBySizeData,
     isRecoverableDataPoint,
@@ -38,10 +34,7 @@ const {
 const { isLoading, loadDataOnMount } = useDataLoading();
 
 loadDataOnMount(async () => {
-    const allDatasetsInObjectStoreSizeSummary = await fetchObjectStoreContentsSizeSummary(
-        props.objectStoreId,
-        numberOfDatasetsLimit,
-    );
+    const allDatasetsInObjectStoreSizeSummary = await fetchObjectStoreContentsSizeSummary(props.objectStoreId, 50);
     allDatasetsInObjectStoreSizeSummary.forEach((dataset) => datasetsSizeSummaryMap.set(dataset.id, dataset));
 
     buildGraphsData();
@@ -49,10 +42,7 @@ loadDataOnMount(async () => {
 
 function buildGraphsData() {
     const allDatasetsInObjectStoreSizeSummary = Array.from(datasetsSizeSummaryMap.values());
-    topNDatasetsBySizeData.value = buildTopNDatasetsBySizeData(
-        allDatasetsInObjectStoreSizeSummary,
-        numberOfDatasetsToDisplay.value,
-    );
+    topNDatasetsBySizeData.value = buildTopNDatasetsBySizeData(allDatasetsInObjectStoreSizeSummary, 50);
 }
 
 async function onViewDataset(datasetId: string) {
@@ -89,29 +79,14 @@ function onUndelete(datasetId: string) {
                 v-if="topNDatasetsBySizeData"
                 :description="
                     localize(
-                        `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`,
+                        'These are the 50 datasets that take the most space in this storage location. Click on a bar to see more information about the dataset.',
                     )
                 "
                 v-bind="byteFormattingForChart"
                 :enable-selection="true"
                 :data="topNDatasetsBySizeData">
                 <template v-slot:title>
-                    <b>{{ localize(`Top ${numberOfDatasetsToDisplay} Datasets by Size`) }}</b>
-                    <b-form-select
-                        v-model="numberOfDatasetsToDisplay"
-                        :options="numberOfDatasetsToDisplayOptions"
-                        :disabled="isLoading"
-                        title="Number of datasets to show"
-                        class="float-right w-auto"
-                        size="sm"
-                        @change="buildGraphsData()">
-                    </b-form-select>
-                </template>
-                <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip
-                        v-if="data"
-                        :data="data"
-                        :is-recoverable="isRecoverableDataPoint(data)" />
+                    <b>{{ localize("Top 50 Datasets by Size") }}</b>
                 </template>
                 <template v-slot:selection="{ data }">
                     <SelectedItemActions

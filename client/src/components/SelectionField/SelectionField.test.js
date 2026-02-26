@@ -1,7 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, defineStore, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -9,19 +10,19 @@ import { getDataset } from "./services";
 
 import SelectionField from "./SelectionField.vue";
 
-jest.mock("@/stores/eventStore", () => ({
+vi.mock("@/stores/eventStore", () => ({
     useEventStore: () => ({
-        getDragItems: jest.fn(() => [{ id: "item1", name: "Item One", history_content_type: "dataset" }]),
+        getDragItems: vi.fn(() => [{ id: "item1", name: "Item One", history_content_type: "dataset" }]),
     }),
 }));
 
-jest.mock("./services", () => ({
-    getHistories: jest.fn(() => Promise.resolve([{ id: "1", name: "History One" }])),
-    getDataset: jest.fn(() => Promise.resolve([{ id: "ds1", name: "Dataset A" }])),
-    getDatasetCollection: jest.fn(),
-    getInvocations: jest.fn(),
-    getJobs: jest.fn(),
-    getWorkflows: jest.fn(),
+vi.mock("./services", () => ({
+    getHistories: vi.fn(() => Promise.resolve([{ id: "1", name: "History One" }])),
+    getDataset: vi.fn(() => Promise.resolve([{ id: "ds1", name: "Dataset A" }])),
+    getDatasetCollection: vi.fn(),
+    getInvocations: vi.fn(),
+    getJobs: vi.fn(),
+    getWorkflows: vi.fn(),
 }));
 
 const localVue = getLocalVue();
@@ -33,7 +34,7 @@ const waitForDebouncedSearch = async () => {
     await flushPromises();
 };
 
-jest.mock("@/stores/historyStore", () => {
+vi.mock("@/stores/historyStore", () => {
     return {
         useHistoryStore: () => mockedStore,
     };
@@ -107,7 +108,7 @@ describe("SelectionField.vue", () => {
     });
 
     it("uses custom objectQuery function when provided", async () => {
-        const mockQuery = jest.fn(() => Promise.resolve([{ id: "custom1", name: "Custom Result" }]));
+        const mockQuery = vi.fn(() => Promise.resolve([{ id: "custom1", name: "Custom Result" }]));
         const wrapper = mountComponent({ objectQuery: mockQuery });
         await waitForDebouncedSearch();
         const multiselect = wrapper.findComponent(Multiselect);

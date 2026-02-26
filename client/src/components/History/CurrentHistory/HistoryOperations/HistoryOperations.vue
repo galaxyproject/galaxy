@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faCompress } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { HistorySummaryExtended } from "@/api";
+import localize from "@/utils/localization";
 
 import DefaultOperations from "@/components/History/CurrentHistory/HistoryOperations/DefaultOperations.vue";
-
-library.add(faCheckSquare, faCompress);
 
 interface Props {
     history: HistorySummaryExtended;
@@ -37,7 +35,7 @@ function onUpdateOperationStatus(updateTime: number) {
             <BButtonGroup>
                 <BButton
                     v-b-tooltip.hover
-                    title="Select Items"
+                    :title="localize('Select Items')"
                     class="show-history-content-selectors-btn rounded-0"
                     size="sm"
                     variant="link"
@@ -49,7 +47,7 @@ function onUpdateOperationStatus(updateTime: number) {
 
                 <BButton
                     v-b-tooltip.hover
-                    title="Collapse Items"
+                    :title="localize('Collapse Items')"
                     class="rounded-0"
                     size="sm"
                     variant="link"
@@ -72,7 +70,7 @@ function onUpdateOperationStatus(updateTime: number) {
         <nav v-else-if="isMultiViewItem" class="content-operations bg-secondary">
             <BButton
                 v-b-tooltip.hover
-                title="Collapse Items"
+                :title="localize('Collapse Items')"
                 class="rounded-0"
                 size="sm"
                 variant="link"

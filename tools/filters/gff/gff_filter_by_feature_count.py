@@ -5,6 +5,7 @@ Filter a gff file using a criterion based on feature counts for a transcript.
 Usage:
 %prog input_name output_name feature_name condition
 """
+
 from __future__ import print_function
 
 import sys

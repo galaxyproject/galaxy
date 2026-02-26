@@ -25,9 +25,7 @@
                     :placeholder="placeholder"
                     :state="showState ? (!currentValue && currentValue !== 0 ? (optional ? null : false) : true) : null"
                     @change="onInputChange"
-                    @keypress="isNumberOrDecimal"
-                    @keydown.190.capture="onFloatInput"
-                    @keydown.110.capture="onFloatInput" />
+                    @keypress="isNumberOrDecimal" />
             </b-col>
             <b-col v-if="isRangeValid" class="pl-0">
                 <b-form-input v-model="currentValue" class="ui-input" :min="min" :max="max" :step="step" type="range" />
@@ -37,6 +35,8 @@
 </template>
 
 <script>
+import { isDefined } from "@/utils/validation";
+
 export default {
     props: {
         value: {
@@ -82,7 +82,8 @@ export default {
             dismissSecs: 4,
             dismissCountDown: 0,
             errorMessage: "",
-            fractionWarning: "This output doesn't allow fractions!",
+            fractionWarning: "This input doesn't allow fractions!",
+            negativeWarning: "This input doesn't allow negative numbers!",
             decimalPlaces: this.type.toLowerCase() === "integer" ? 0 : this.getNumberOfDecimals(this.value),
         };
     },
@@ -109,6 +110,9 @@ export default {
         isFloat() {
             return !this.isInteger;
         },
+        canBeNegative() {
+            return !isDefined(this.min) || (typeof this.min == "number" && this.min < 0);
+        },
         /**
          * Dynamically sets the step value depending on the
          * current value precision when float number.
@@ -128,12 +132,6 @@ export default {
         },
     },
     methods: {
-        onFloatInput(e) {
-            if (this.isInteger) {
-                e.preventDefault();
-                this.showAlert(this.fractionWarning);
-            }
-        },
         onInputChange(value) {
             this.resetAlert();
             if (this.isOutOfRange(value)) {
@@ -150,12 +148,36 @@ export default {
                 this.dismissCountDown = this.dismissSecs;
             }
         },
-        /** To only allow numbers and decimal points as input for this number field */
+        /** To only allow numbers, decimal points, and minus sign at the start */
         isNumberOrDecimal(event) {
             const key = event.key;
-            if ((key >= "0" && key <= "9") || key === ".") {
+
+            // Allow numbers
+            if (key >= "0" && key <= "9") {
                 return true;
             }
+
+            // Allow decimal point
+            if (key === ".") {
+                if (this.isFloat) {
+                    return true;
+                }
+                event.preventDefault();
+                this.showAlert(this.fractionWarning);
+                return false;
+            }
+
+            // Allow minus sign at the beginning (if negative numbers are valid)
+            if (key === "-") {
+                if (this.canBeNegative) {
+                    return true;
+                }
+                event.preventDefault();
+                this.showAlert(this.negativeWarning);
+                return false;
+            }
+
+            // Prevent all other characters
             event.preventDefault();
             return false;
         },

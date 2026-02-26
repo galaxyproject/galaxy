@@ -14,7 +14,7 @@ import {
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
+import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
 import { deleteSelectedItems } from "@/components/Libraries/LibraryFolder/TopToolbar/delete-selected";
 import download from "@/components/Libraries/LibraryFolder/TopToolbar/download";

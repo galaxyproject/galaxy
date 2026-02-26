@@ -1,7 +1,10 @@
+// index.ts
 import { createPinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
 
-import { addInitialization, standardInit } from "@/onload";
+import { initGalaxyInstance } from "@/app";
+import { initSentry } from "@/app/addons/sentry";
+import { initWebhooks } from "@/app/addons/webhooks";
 
 import { getRouter } from "./router";
 
@@ -10,19 +13,22 @@ import App from "./App.vue";
 Vue.use(PiniaVuePlugin);
 const pinia = createPinia();
 
-addInitialization((Galaxy: any) => {
-    console.log("App setup");
+window.addEventListener("load", async () => {
+    // Create Galaxy object
+    const Galaxy = await initGalaxyInstance();
+
+    // Build router
     const router = getRouter(Galaxy);
-    // When initializing the primary app we bind the routing back to Galaxy for
-    // external use (e.g. gtn webhook) -- longer term we discussed plans to
-    // parameterize webhooks and initialize them explicitly with state.
-    Galaxy.router = router;
+
+    // Initialize globals
+    await initSentry(Galaxy, router);
+    await initWebhooks(Galaxy);
+
+    // Mount application
     new Vue({
         el: "#app",
         render: (h) => h(App),
-        router: router,
-        pinia: pinia,
+        router,
+        pinia,
     });
 });
-
-window.addEventListener("load", () => standardInit("app"));

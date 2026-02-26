@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faDatabase, faEyeSlash, faMapMarker, faSync, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
 import { BButton, BButtonGroup } from "bootstrap-vue";
@@ -14,10 +13,9 @@ import { type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
 import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-
-library.add(faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash);
 
 const props = withDefaults(
     defineProps<{
@@ -40,7 +38,7 @@ const props = withDefaults(
 const emit = defineEmits(["update:filter-text", "reloadContents"]);
 
 const router = useRouter();
-const { currentUser } = storeToRefs(useUserStore());
+const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useHistoryContentStats(
     toRef(props, "history"),
 );
@@ -56,9 +54,7 @@ watchImmediate(
 );
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
-const canManageStorage = computed(
-    () => userOwnsHistory(currentUser.value, props.history) && !currentUser.value?.isAnonymous,
-);
+const canManageStorage = computed(() => !isAnonymous.value && userOwnsHistory(currentUser.value, props.history));
 
 function onDashboard() {
     router.push({ name: "HistoryOverviewInAnalysis", params: { historyId: props.history.id } });
@@ -119,7 +115,7 @@ onMounted(() => {
     <div class="history-size my-1 d-flex justify-content-between">
         <GButton
             tooltip
-            title="History Size"
+            :title="localize('History Size')"
             transparent
             size="small"
             color="blue"
@@ -135,7 +131,7 @@ onMounted(() => {
             <BButtonGroup>
                 <BButton
                     v-b-tooltip.hover
-                    title="Show active"
+                    :title="localize('Show active')"
                     variant="link"
                     size="sm"
                     class="rounded-0 text-decoration-none"
@@ -148,7 +144,7 @@ onMounted(() => {
                 <BButton
                     v-if="numItemsDeleted"
                     v-b-tooltip.hover
-                    title="Include deleted"
+                    :title="localize('Include deleted')"
                     variant="link"
                     size="sm"
                     class="rounded-0 text-decoration-none"
@@ -162,7 +158,7 @@ onMounted(() => {
                 <BButton
                     v-if="numItemsHidden"
                     v-b-tooltip.hover
-                    title="Include hidden"
+                    :title="localize('Include hidden')"
                     variant="link"
                     size="sm"
                     class="rounded-0 text-decoration-none"

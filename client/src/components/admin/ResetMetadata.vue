@@ -8,9 +8,11 @@
         :getter="getter"
         :setter="setter" />
 </template>
+
 <script>
 import { getInstalledRepositories, resetRepositoryMetadata } from "./AdminServices";
-import BaseList from "./BaseList";
+
+import BaseList from "@/components/admin/BaseList.vue";
 
 export default {
     components: {
@@ -21,7 +23,7 @@ export default {
             fields: [
                 { key: "execute", label: "Reset" },
                 { key: "name", label: "Metadata", sortable: true },
-                { key: "owner", sortable: true },
+                { key: "owner", label: "Owner", sortable: true },
                 { key: "ctx_rev", label: "Revision" },
             ],
             getter: getInstalledRepositories,

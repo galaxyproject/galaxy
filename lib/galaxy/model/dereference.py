@@ -1,9 +1,8 @@
 import logging
 import os.path
+from collections.abc import Sequence
 from typing import (
-    List,
     Optional,
-    Sequence,
     Union,
 )
 
@@ -17,6 +16,7 @@ from sqlalchemy.orm import (
     Session,
 )
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
     Dataset,
     DatasetCollection,
@@ -30,6 +30,10 @@ from galaxy.model import (
     REQUESTED_TRANSFORM_ACTIONS,
     User,
 )
+from galaxy.model.dataset_collections.types.sample_sheet_util import (
+    validate_column_definitions,
+    validate_row,
+)
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.tool_util_models.parameters import (
     CollectionElementCollectionRequestUri,
@@ -38,6 +42,7 @@ from galaxy.tool_util_models.parameters import (
     DataRequestUri,
     FileRequestUri,
 )
+from galaxy.tool_util_models.sample_sheet import SampleSheetRow
 
 log = logging.getLogger(__name__)
 
@@ -98,13 +103,21 @@ def derefence_collection_element(
     element: CollectionElementCollectionRequestUri,
     parent_dataset_collection: DatasetCollection,
     element_index: int,
+    rows: Optional[dict[str, SampleSheetRow]] = None,
 ):
     child_dataset_collection = DatasetCollection(collection_type=element.collection_type)
+
+    # Extract row for this element if present
+    columns = None
+    if rows and element.identifier in rows:
+        columns = rows[element.identifier]
+
     DatasetCollectionElement(
         collection=parent_dataset_collection,
         element=child_dataset_collection,
         element_identifier=element.identifier,
         element_index=element_index,
+        columns=columns,
     )
     sa_session.add(child_dataset_collection)
     for index, child_element in enumerate(element.elements):
@@ -127,16 +140,59 @@ def dereference_collection_dataset_element(
     element: CollectionElementDataRequestUri,
     parent_dataset_collection: DatasetCollection,
     element_index: int,
+    rows: Optional[dict[str, SampleSheetRow]] = None,
 ):
     hda = dereference_to_model(sa_session, user, history, element, add_to_history=False, visible=False)
     history.stage_addition(hda)
+
+    # Extract row for this element if present
+    columns = None
+    if rows and element.identifier in rows:
+        columns = rows[element.identifier]
+
     dce = DatasetCollectionElement(
         collection=parent_dataset_collection,
         element=hda,
         element_identifier=element.identifier,
         element_index=element_index,
+        columns=columns,
     )
     parent_dataset_collection.elements.append(dce)
+
+
+def _validate_sample_sheet_metadata(
+    data_request_uri: DataRequestCollectionUri,
+):
+    """Validate sample sheet metadata for landing requests."""
+    # Extract metadata from data request
+    collection_type = data_request_uri.collection_type
+    column_definitions = data_request_uri.column_definitions
+    rows = data_request_uri.rows
+
+    # Validate that sample sheet metadata is only used with sample_sheet collection types
+    is_sample_sheet = collection_type.startswith("sample_sheet")
+    has_sample_sheet_metadata = column_definitions is not None or rows is not None
+
+    if has_sample_sheet_metadata and not is_sample_sheet:
+        raise RequestParameterInvalidException(
+            f"Sample sheet metadata (column_definitions, rows) can only be used with collection_type 'sample_sheet' or 'sample_sheet:<type>', not '{collection_type}'"
+        )
+
+    # Validate column definitions structure
+    if column_definitions is not None:
+        validate_column_definitions(column_definitions)
+
+    # Validate each row
+    if rows:
+        # Get element identifiers for validation
+        element_identifiers = [elem.identifier for elem in data_request_uri.elements]
+
+        for identifier, row in rows.items():
+            if identifier not in element_identifiers:
+                raise RequestParameterInvalidException(
+                    f"Row identifier '{identifier}' not found in collection elements"
+                )
+            validate_row(row, column_definitions, element_identifiers)
 
 
 def derefence_collection_to_model(
@@ -146,20 +202,31 @@ def derefence_collection_to_model(
     data_request_uri: DataRequestCollectionUri,
     collection_name: str = "Collection",
 ) -> HistoryDatasetCollectionAssociation:
+    # Validate sample sheet metadata before creating any objects
+    _validate_sample_sheet_metadata(data_request_uri)
+
     name = data_request_uri.name or collection_name
     hdca = HistoryDatasetCollectionAssociation(
         name=name,
         history=history,
     )
     sa_session.add(hdca)
-    dc = DatasetCollection(collection_type=data_request_uri.collection_type)
+    dc = DatasetCollection(
+        collection_type=data_request_uri.collection_type,
+        column_definitions=data_request_uri.column_definitions,
+    )
     sa_session.add(dc)
     hdca.collection = dc
+
+    # Extract rows for passing to element creation
+    rows = data_request_uri.rows
+
     for i, element in enumerate(data_request_uri.elements):
         if element.class_ == "File":
-            dereference_collection_dataset_element(sa_session, user, history, element, dc, element_index=i)
+            dereference_collection_dataset_element(sa_session, user, history, element, dc, element_index=i, rows=rows)
         elif element.class_ == "Collection":
-            derefence_collection_element(sa_session, user, history, element, dc, i)
+            derefence_collection_element(sa_session, user, history, element, dc, i, rows=rows)
+
     dc.populated_state = "ok"
     dc.element_count = len(data_request_uri.elements)
     history.stage_addition(hdca)
@@ -169,7 +236,7 @@ def derefence_collection_to_model(
 def get_replacement_dataset(
     session: Session,
     user: Optional[User],
-    dataset_sources: List[DatasetSource],
+    dataset_sources: list[DatasetSource],
     dataset_hashes: Sequence[Union[DatasetHash, DatasetSourceHash]],
     extension: str,
     object_store_id: str,

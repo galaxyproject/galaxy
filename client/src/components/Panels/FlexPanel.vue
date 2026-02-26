@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
 
 import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
-
-library.add(faChevronLeft, faChevronRight);
 
 const DEFAULT_WIDTH = 300;
 
@@ -83,6 +80,10 @@ const sideClasses = computed(() => ({
     left: props.side === "left",
     right: props.side === "right",
 }));
+
+defineExpose({
+    show,
+});
 </script>
 
 <template>
@@ -111,8 +112,8 @@ const sideClasses = computed(() => ({
             @focusin="hoverToggle = true"
             @mouseout="hoverToggle = false"
             @focusout="hoverToggle = false">
-            <FontAwesomeIcon v-if="side === 'left'" fixed-width icon="fa-chevron-left" />
-            <FontAwesomeIcon v-else icon="fa-chevron-right" fixed-width />
+            <FontAwesomeIcon v-if="side === 'left'" fixed-width :icon="faChevronLeft" />
+            <FontAwesomeIcon v-else :icon="faChevronRight" fixed-width />
         </button>
 
         <slot />
@@ -128,14 +129,14 @@ const sideClasses = computed(() => ({
                 show = true;
                 hoverToggle = false;
             ">
-            <FontAwesomeIcon v-if="side === 'right'" fixed-width icon="fa-chevron-left" />
-            <FontAwesomeIcon v-else icon="fa-chevron-right" fixed-width />
+            <FontAwesomeIcon v-if="side === 'right'" fixed-width :icon="faChevronLeft" />
+            <FontAwesomeIcon v-else :icon="faChevronRight" fixed-width />
         </button>
     </div>
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 $border-width: 6px;
 

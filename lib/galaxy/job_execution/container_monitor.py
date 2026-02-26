@@ -6,8 +6,8 @@ import sys
 import tempfile
 import time
 import traceback
+from collections.abc import Callable
 from functools import partial
-from typing import Callable
 
 from galaxy.tool_util.deps import docker_util
 from galaxy.util import (

@@ -15,12 +15,12 @@ from typing import (
     cast,
     Optional,
     TYPE_CHECKING,
+    TypeAlias,
     Union,
 )
 
 from typing_extensions import (
     Self,
-    TypeAlias,
 )
 
 from galaxy.model import (
@@ -33,8 +33,8 @@ from galaxy.model import (
 )
 from galaxy.model.metadata import FileParameter
 from galaxy.model.none_like import NoneDataset
-from galaxy.schema.schema import SampleSheetRow
 from galaxy.security.object_wrapper import wrap_with_safe_string
+from galaxy.tool_util_models.sample_sheet import SampleSheetRow
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     TextToolParameter,
@@ -391,7 +391,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             if isinstance(dataset_instance, HasTags):
                 self.groups = {
                     tag.user_value.lower()
-                    for tag in dataset_instance.tags  # type:ignore[unused-ignore, attr-defined]
+                    for tag in dataset_instance.tags  # type: ignore[unused-ignore, attr-defined]
                     if tag.user_tname == "group"
                 }
             else:

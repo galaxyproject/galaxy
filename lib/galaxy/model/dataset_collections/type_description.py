@@ -84,7 +84,8 @@ class CollectionTypeDescription:
         """
         if hasattr(other_collection_type, "collection_type"):
             other_collection_type = other_collection_type.collection_type
-        collection_type = self.collection_type
+        collection_type = _normalize_collection_type(self.collection_type)
+        other_collection_type = _normalize_collection_type(other_collection_type)
         if collection_type == other_collection_type:
             return False
         if collection_type.endswith(other_collection_type):
@@ -106,7 +107,8 @@ class CollectionTypeDescription:
     def can_match_type(self, other_collection_type) -> bool:
         if hasattr(other_collection_type, "collection_type"):
             other_collection_type = other_collection_type.collection_type
-        collection_type = self.collection_type
+        collection_type = _normalize_collection_type(self.collection_type)
+        other_collection_type = _normalize_collection_type(other_collection_type)
         if other_collection_type == collection_type:
             return True
         elif other_collection_type == "paired" and collection_type == "paired_or_unpaired":
@@ -170,6 +172,16 @@ def map_over_collection_type(mapped_over_collection_type, target_collection_type
             target_collection_type = target_collection_type.collection_type
 
         return f"{mapped_over_collection_type}:{target_collection_type}"
+
+
+def _normalize_collection_type(collection_type: str) -> str:
+    """Normalize collection type for comparison purposes.
+
+    sample_sheet behaves like list for mapping/matching.
+    """
+    if collection_type.startswith("sample_sheet"):
+        return "list" + collection_type[len("sample_sheet") :]
+    return collection_type
 
 
 COLLECTION_TYPE_DESCRIPTION_FACTORY = CollectionTypeDescriptionFactory()

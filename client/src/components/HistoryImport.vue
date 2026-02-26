@@ -37,15 +37,15 @@
                         stacked>
                         <b-form-radio value="externalUrl">
                             Export URL from another Galaxy instance
-                            <FontAwesomeIcon icon="external-link-alt" />
+                            <FontAwesomeIcon :icon="faExternalLinkAlt" />
                         </b-form-radio>
                         <b-form-radio value="upload">
                             Upload local file from your computer
-                            <FontAwesomeIcon icon="upload" />
+                            <FontAwesomeIcon :icon="faUpload" />
                         </b-form-radio>
                         <b-form-radio v-if="hasFileSources" value="remoteFilesUri">
                             Select a repository (e.g. Galaxy's FTP)
-                            <FontAwesomeIcon icon="folder-open" />
+                            <FontAwesomeIcon :icon="faFolderOpen" />
                         </b-form-radio>
                     </b-form-radio-group>
                 </b-form-group>
@@ -90,31 +90,26 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import ImportSuccess from "components/ImportSuccess";
-import JobError from "components/JobInformation/JobError";
-import { waitOnJob } from "components/JobStates/wait";
-import LoadingSpan from "components/LoadingSpan";
-import { getAppRoot } from "onload/loadConfig";
-import { errorMessageAsString } from "utils/simple-error";
-import { capitalizeFirstLetter } from "utils/strings";
 import Vue, { ref, watch } from "vue";
 
 import { fetchFileSources } from "@/api/remoteFiles";
-
-import ExternalLink from "./ExternalLink";
+import { waitOnJob } from "@/components/JobStates/wait";
+import { getAppRoot } from "@/onload/loadConfig";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
 import GButton from "./BaseComponents/GButton.vue";
-import FilesInput from "components/FilesDialog/FilesInput.vue";
+import ExternalLink from "./ExternalLink.vue";
+import FilesInput from "@/components/FilesDialog/FilesInput.vue";
+import ImportSuccess from "@/components/ImportSuccess.vue";
+import JobError from "@/components/JobInformation/JobError.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
-library.add(faFolderOpen);
-library.add(faUpload);
-library.add(faExternalLinkAlt);
 Vue.use(BootstrapVue);
 
 export default {
@@ -158,6 +153,9 @@ export default {
             jobError: null,
             jobId: null,
             hasFileSources: false,
+            faExternalLinkAlt,
+            faFolderOpen,
+            faUpload,
         };
     },
     computed: {

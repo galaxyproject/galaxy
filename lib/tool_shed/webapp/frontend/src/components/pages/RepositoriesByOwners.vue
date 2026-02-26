@@ -17,6 +17,10 @@ const username = ref<string | null>(props.username)
 function onSelectUser(usernameStr: string) {
     username.value = usernameStr
 }
+
+function onCleared() {
+    username.value = null
+}
 </script>
 <template>
     <page-container>
@@ -25,6 +29,7 @@ function onSelectUser(usernameStr: string) {
             label="Select user to browse owner properties"
             v-if="!props.username"
             @selected-user="onSelectUser"
+            @cleared="onCleared"
             class="q-ma-md"
             :dense="false"
         >

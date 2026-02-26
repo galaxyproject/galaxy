@@ -1,10 +1,10 @@
-[Galaxy uses Jest](https://jestjs.io/) for its client-side unit testing
+[Galaxy uses Vitest](https://vitest.dev/) for its client-side unit testing
 framework.
 
 For testing Vue components, we use the [Vue testing
 utils](https://vue-test-utils.vuejs.org/) to mount individual components in a
-test bed and check them for rendered features. Please use jest-based mocking
-for isolating test functionality.
+test bed and check them for rendered features. Please use Vitest's mocking
+capabilities for isolating test functionality.
 
 ### Specific test scenarios & examples
 

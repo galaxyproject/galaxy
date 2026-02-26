@@ -7,6 +7,8 @@ and from bootstrapped tool sheds.
 from pathlib import Path
 from typing import (
     Any,
+    cast,
+    TYPE_CHECKING,
 )
 
 from galaxy.model.tool_shed_install import ToolShedRepository
@@ -15,6 +17,9 @@ from galaxy.tool_shed.unittest_utils import StandaloneInstallationTarget
 from galaxy.tool_shed.util.repository_util import check_for_updates
 from galaxy.util.tool_shed.tool_shed_registry import DEFAULT_TOOL_SHED_URL
 from galaxy.util.unittest_utils import skip_if_site_down
+
+if TYPE_CHECKING:
+    from galaxy.model.scoped_session import install_model_scoped_session
 
 
 @skip_if_site_down(DEFAULT_TOOL_SHED_URL)
@@ -50,7 +55,7 @@ def test_against_production_shed(tmp_path: Path):
     )
     assert tool_data_table_path.exists()
 
-    install_model_context = install_target.install_model.context
+    install_model_context = cast("install_model_scoped_session", install_target.install_model.session)
     query = install_model_context.query(ToolShedRepository).where(ToolShedRepository.name == repo_name)
     tsr = query.first()
     assert tsr

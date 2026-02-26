@@ -1,5 +1,6 @@
 import os
 import uuid
+from collections.abc import Callable
 from functools import (
     lru_cache,
     wraps,
@@ -8,7 +9,6 @@ from multiprocessing import get_context
 from threading import local
 from typing import (
     Any,
-    Callable,
 )
 
 import pebble

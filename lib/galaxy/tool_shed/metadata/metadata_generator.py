@@ -392,7 +392,9 @@ class BaseMetadataGenerator:
         if invalid_tool_configs:
             metadata_dict["invalid_tools"] = invalid_tool_configs
         self.metadata_dict = metadata_dict
-        remove_dir(work_dir)
+        # Only remove work_dir if not resetting all metadata - in that case the caller handles cleanup
+        if not self.resetting_all_metadata_on_repository:
+            remove_dir(work_dir)
 
     def generate_package_dependency_metadata(self, elem, valid_tool_dependencies_dict, invalid_tool_dependencies_dict):
         """
@@ -868,7 +870,7 @@ class GalaxyMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on Galaxy's app and repository constructs."""
 
     app: InstallationTarget
-    repository: Optional[ToolShedRepository]  # type:ignore[assignment]
+    repository: Optional[ToolShedRepository]  # type: ignore[assignment]
 
     def __init__(
         self,

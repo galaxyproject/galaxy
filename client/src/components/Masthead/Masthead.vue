@@ -1,23 +1,27 @@
 <script setup>
+import { faQuestion, faSignOutAlt, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
+import { faGear } from "font-awesome-6";
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router/composables";
+
 import {
     getOIDCIdpsWithRegistration,
     isOnlyOneOIDCProviderConfigured,
     redirectToSingleProvider,
-} from "components/User/ExternalIdentities/ExternalIDHelper";
-import { storeToRefs } from "pinia";
-import { userLogout } from "utils/logout";
-import { withPrefix } from "utils/redirect";
-import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
-
+} from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
+import { userLogout } from "@/utils/logout";
+import { withPrefix } from "@/utils/redirect";
 
 import { loadMastheadWebhooks } from "./_webhooks";
-import MastheadDropdown from "./MastheadDropdown";
-import MastheadItem from "./MastheadItem";
-import QuotaMeter from "./QuotaMeter";
+
+import MastheadDropdown from "./MastheadDropdown.vue";
+import MastheadItem from "./MastheadItem.vue";
+import QuotaMeter from "./QuotaMeter.vue";
 
 const { isAnonymous, currentUser } = storeToRefs(useUserStore());
 
@@ -160,7 +164,7 @@ onMounted(() => {
                 @click="extensionTabClick(tab)" />
             <MastheadItem
                 id="help"
-                icon="fa-question"
+                :icon="faQuestion"
                 url="/about"
                 tooltip="Support, Contact, and Community"
                 @click="openUrl('/about')" />
@@ -183,18 +187,18 @@ onMounted(() => {
                 v-if="currentUser && !isAnonymous && !config.single_user"
                 id="user"
                 class="loggedin-only"
-                icon="fa-user"
+                :icon="faUser"
                 :title="currentUser.username"
                 tooltip="User Preferences"
                 :menu="[
                     {
                         title: 'Preferences',
-                        icon: 'fa-gear',
+                        icon: faGear,
                         handler: () => openUrl('/user'),
                     },
                     {
                         title: 'Sign Out',
-                        icon: 'fa-sign-out-alt',
+                        icon: faSignOutAlt,
                         handler: () => userLogout(),
                     },
                 ]"
@@ -203,24 +207,24 @@ onMounted(() => {
                 v-if="currentUser && !isAnonymous && config.single_user"
                 id="user"
                 class="loggedin-only"
-                icon="fa-user"
+                :icon="faUser"
                 :title="currentUser.username"
                 tooltip="User Preferences"
                 :menu="[
                     {
                         title: 'Preferences',
-                        icon: 'fa-gear',
+                        icon: faGear,
                         handler: () => openUrl('/user'),
                     },
                 ]"
                 @click="user" />
         </BNavbarNav>
-        <Icon v-else icon="spinner" class="fa-spin mr-2 text-light" />
+        <FontAwesomeIcon v-else :icon="faSpinner" class="fa-spin mr-2 text-light" />
     </BNavbar>
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 #masthead {
     padding: 0;

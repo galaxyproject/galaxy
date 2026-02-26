@@ -5,6 +5,7 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 import datetime
 import json
 import logging
+from typing import TYPE_CHECKING
 
 import jwt
 
@@ -14,7 +15,10 @@ from galaxy import (
 )
 from galaxy.util import url_get
 from galaxy.web import url_for
-from galaxy.webapps.base.controller import JSAppLauncher
+from galaxy.webapps.base.controller import BaseUIController
+
+if TYPE_CHECKING:
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +26,7 @@ PROVIDER_COOKIE_NAME = "galaxy-oidc-provider"
 LOGIN_NEXT_COOKIE_NAME = "galaxy-oidc-login-next"
 
 
-class OIDC(JSAppLauncher):
+class OIDC(BaseUIController):
     @web.json
     @web.expose
     @web.require_login("list third-party identities")
@@ -40,44 +44,45 @@ class OIDC(JSAppLauncher):
         :return: a list of third-party identities associated with the user account.
         """
         rtv = []
+
+        # Process PSA tokens (unified authentication system)
         for authnz in trans.user.social_auth:
-            rtv.append(
-                {"id": trans.app.security.encode_id(authnz.id), "provider": authnz.provider, "email": authnz.uid}
+            token_info = {
+                "id": trans.app.security.encode_id(authnz.id),
+                "provider": authnz.provider,
+                "email": authnz.uid,
+            }
+
+            # Add provider label if available
+            provider_label = trans.app.authnz_manager.oidc_backends_config.get(authnz.provider, {}).get(
+                "label", authnz.provider
             )
-        # Add cilogon and custos identities
-        for token in trans.user.custos_auth:
-            # for purely displaying the info to user, we bypass verification of
-            # signature, audience, and expiration as that's potentially useful
-            # information to share with the end user
-            try:
-                userinfo = jwt.decode(
-                    token.id_token, options={"verify_signature": False, "verify_aud": False, "verify_exp": False}
-                )
-                provider_label = trans.app.authnz_manager.oidc_backends_config.get(token.provider, {}).get(
-                    "label", token.provider
-                )
-                rtv.append(
-                    {
-                        "id": trans.app.security.encode_id(token.id),
-                        "provider": token.provider,
-                        "provider_label": provider_label,
-                        "email": userinfo["email"],
-                        "expiration": str(datetime.datetime.utcfromtimestamp(userinfo["exp"])),
-                    }
-                )
-            except Exception:
-                rtv.append(
-                    {
-                        "id": trans.app.security.encode_id(token.id),
-                        "provider": token.provider,
-                        "error": "Unable to decode token",
-                    }
-                )
+            if provider_label != authnz.provider:
+                token_info["provider_label"] = provider_label
+
+            # Try to extract expiration from id_token if available
+            if authnz.extra_data and "id_token" in authnz.extra_data:
+                try:
+                    userinfo = jwt.decode(
+                        authnz.extra_data["id_token"],
+                        options={"verify_signature": False, "verify_aud": False, "verify_exp": False},
+                    )
+                    if "exp" in userinfo:
+                        token_info["expiration"] = str(datetime.datetime.utcfromtimestamp(userinfo["exp"]))
+                    # Update email from token if available and different
+                    if "email" in userinfo:
+                        token_info["email"] = userinfo["email"]
+                except Exception:
+                    # If token decoding fails, continue without expiration info
+                    pass
+
+            rtv.append(token_info)
+
         return rtv
 
     @web.json
     @web.expose
-    def login(self, trans, provider, idphint=None, next=None):
+    def login(self, trans, provider, idphint=None, next=None, redirect=None):
         if not trans.app.config.enable_oidc:
             msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
             log.debug(msg)
@@ -89,7 +94,10 @@ class OIDC(JSAppLauncher):
             trans.set_cookie(value="/", name=LOGIN_NEXT_COOKIE_NAME)
         success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans, idphint)
         if success:
-            return {"redirect_uri": redirect_uri}
+            if redirect and redirect.lower() == "true":
+                return trans.response.send_redirect(redirect_uri)
+            else:
+                return {"redirect_uri": redirect_uri}
         else:
             raise exceptions.AuthenticationFailed(message)
 
@@ -116,11 +124,17 @@ class OIDC(JSAppLauncher):
                 "Error handling authentication callback from `{}` identity provider for user `{}` login request."
                 " Error message: {}".format(provider, user, kwargs.get("error", "None"))
             )
-            return trans.show_error_message(
-                f"Failed to handle authentication callback from {provider}. "
-                "Please try again, and if the problem persists, contact "
-                "the Galaxy instance admin"
-            )
+            error_description = kwargs.get("error_description")
+            if error_description:
+                error_msg = error_description
+            else:
+                error_msg = (
+                    f"Failed to handle authentication callback from {provider}. "
+                    "Please try again, and if the problem persists, contact "
+                    "the Galaxy instance admin."
+                )
+            redirect_to = trans.url_builder("/login/start", message=error_msg, status="danger")
+            return trans.response.send_redirect(redirect_to)
         try:
             success, message, (redirect_url, user) = trans.app.authnz_manager.callback(
                 provider,
@@ -156,7 +170,7 @@ class OIDC(JSAppLauncher):
         return trans.response.send_redirect(url_for(redirect_url))
 
     @web.expose
-    def create_user(self, trans, provider, **kwargs):
+    def create_user(self, trans: "GalaxyWebTransaction", provider: str, **kwargs):
         try:
             success, message, (redirect_url, user) = trans.app.authnz_manager.create_user(
                 provider, token=kwargs.get("token", " "), trans=trans, login_redirect_url=url_for("/")

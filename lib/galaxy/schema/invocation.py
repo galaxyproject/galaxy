@@ -4,6 +4,7 @@ from typing import (
     Annotated,
     Any,
     Generic,
+    Literal,
     Optional,
     Union,
 )
@@ -17,7 +18,6 @@ from pydantic import (
     UUID4,
 )
 from typing_extensions import (
-    Literal,
     TypeAliasType,
 )
 
@@ -116,6 +116,10 @@ class CancelReason(str, Enum):
 
 class InvocationMessageBase(GenericModel):
     reason: Union[CancelReason, FailureReason, WarningReason]
+    workflow_step_index_path: Optional[list[int]] = Field(
+        None,
+        description="Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).",
+    )
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
@@ -313,6 +317,7 @@ class InvocationState(str, Enum):
     CANCELLED = "cancelled"
     CANCELLING = "cancelling"  # invocation scheduler will cancel job in next iteration.
     FAILED = "failed"
+    COMPLETED = "completed"  # All jobs have reached terminal states (ok, error, deleted, skipped, paused, stopped)
 
 
 class InvocationStepState(str, Enum):
@@ -596,6 +601,11 @@ class WorkflowInvocationCollectionView(Model, WithModelClass):
         title="Landing UUID",
         description="The UUID of the workflow landing request associated with this invocation.",
     )
+    on_complete: Optional[list[dict[str, Any]]] = Field(
+        default=None,
+        title="On Complete Actions",
+        description="Actions to be executed when the workflow invocation completes.",
+    )
     model_class: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
 
 
@@ -708,6 +718,26 @@ class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseMod
         default=...,
         title="ID",
         description="The encoded ID of the collection job.",
+    )
+
+
+class WorkflowInvocationCompletionResponse(Model):
+    """Response model for workflow invocation completion details."""
+
+    completion_time: datetime = Field(
+        ...,
+        title="Completion Time",
+        description="The time when the workflow invocation completed.",
+    )
+    job_state_summary: dict[str, int] = Field(
+        ...,
+        title="Job State Summary",
+        description="Summary of job states, mapping state names to counts.",
+    )
+    hooks_executed: list[str] = Field(
+        default_factory=list,
+        title="Hooks Executed",
+        description="List of completion hook names that have been executed.",
     )
 
 

@@ -1,11 +1,13 @@
-- doc: | 
+- doc: |
     Test to verify collection flatten collection operation mid workflow.
   job:
     input_fastqs:
+      class: Collection
       collection_type: list
       elements:
         - identifier: samp1
-          content: "0 mycoolline\n1 mysecondline\n"
+          class: File
+          contents: "0 mycoolline\n1 mysecondline\n"
   outputs:
     out:
       class: Collection

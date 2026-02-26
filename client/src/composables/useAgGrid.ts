@@ -19,7 +19,7 @@ export function useAgGrid(forceGridSize: () => void) {
     }
 
     const AgGridVue = defineAsyncComponent(async () => {
-        const { AgGridVue } = await import(/* webpackChunkName: "agGrid" */ "ag-grid-vue");
+        const { AgGridVue } = await import("ag-grid-vue");
         return AgGridVue;
     });
 

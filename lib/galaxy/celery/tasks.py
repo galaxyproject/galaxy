@@ -1,12 +1,12 @@
 import datetime
 import json
 import shutil
+from collections.abc import Callable
 from concurrent.futures import TimeoutError
 from functools import lru_cache
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
     Optional,
 )
 
@@ -31,11 +31,13 @@ from galaxy.managers.datasets import (
     DatasetManager,
 )
 from galaxy.managers.hdas import HDAManager
+from galaxy.managers.jobs import JobSubmitter
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.tool_data import ToolDataImportManager
+from galaxy.managers.workflow_completion import WorkflowCompletionManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model import (
     Job,
@@ -56,7 +58,9 @@ from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
     PrepareDatasetCollectionDownload,
     PurgeDatasetsTaskRequest,
+    QueueJobs,
     SetupHistoryExportJob,
+    TOOL_SOURCE_CLASS,
     WriteHistoryContentTo,
     WriteHistoryTo,
     WriteInvocationTo,
@@ -67,18 +71,21 @@ from galaxy.tools import create_tool_from_representation
 from galaxy.tools.data_fetch import do_fetch
 from galaxy.util import galaxy_directory
 from galaxy.util.custom_logging import get_logger
+from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
 
 log = get_logger(__name__)
 
 
 @lru_cache
-def setup_data_table_manager(app):
-    app._configure_tool_data_tables(from_shed_config=False)
-
-
-@lru_cache
-def cached_create_tool_from_representation(app: MinimalManagerApp, raw_tool_source: str):
-    return create_tool_from_representation(app=app, raw_tool_source=raw_tool_source, tool_source_class="XmlToolSource")
+def cached_create_tool_from_representation(
+    app: MinimalManagerApp,
+    raw_tool_source: str,
+    tool_source_class: TOOL_SOURCE_CLASS,
+    tool_dir: str = "",
+):
+    return create_tool_from_representation(
+        app=app, raw_tool_source=raw_tool_source, tool_dir=tool_dir, tool_source_class=tool_source_class
+    )
 
 
 @galaxy_task(action="recalculate a user's disk usage")
@@ -228,11 +235,14 @@ def setup_fetch_data(
     self,
     job_id: int,
     raw_tool_source: str,
+    tool_source_class: TOOL_SOURCE_CLASS,
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
     task_user_id: Optional[int] = None,
 ):
-    tool = cached_create_tool_from_representation(app=app, raw_tool_source=raw_tool_source)
+    tool = cached_create_tool_from_representation(
+        app=app, raw_tool_source=raw_tool_source, tool_source_class=tool_source_class
+    )
     job = sa_session.get(Job, job_id)
     assert job
     # self.request.hostname is the actual worker name given by the `-n` argument, not the hostname as you might think.
@@ -261,11 +271,14 @@ def setup_fetch_data(
 def finish_job(
     job_id: int,
     raw_tool_source: str,
+    tool_source_class: TOOL_SOURCE_CLASS,
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
     task_user_id: Optional[int] = None,
 ):
-    tool = cached_create_tool_from_representation(app=app, raw_tool_source=raw_tool_source)
+    tool = cached_create_tool_from_representation(
+        app=app, raw_tool_source=raw_tool_source, tool_source_class=tool_source_class
+    )
     job = sa_session.get(Job, job_id)
     assert job
     # TODO: assert state ?
@@ -333,6 +346,23 @@ def fetch_data(
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app)
     mini_job_wrapper.change_state(model.Job.states.RUNNING, flush=True, job=job)
     return abort_when_job_stops(_fetch_data, session=sa_session, job_id=job_id, setup_return=setup_return)
+
+
+@galaxy_task(action="queuing up submitted jobs")
+def queue_jobs(request: QueueJobs, app: MinimalManagerApp, job_submitter: JobSubmitter):
+    raw_tool_source = request.tool_source.raw_tool_source
+    tool_source_class = request.tool_source.tool_source_class
+    tool = cached_create_tool_from_representation(
+        app=app,
+        raw_tool_source=raw_tool_source,
+        tool_dir=request.tool_source.tool_dir,
+        tool_source_class=tool_source_class,
+    )
+
+    job_submitter.queue_jobs(
+        tool,
+        request,
+    )
 
 
 @galaxy_task(ignore_result=True, action="setting up export history job")
@@ -450,7 +480,6 @@ def import_data_bundle(
     tool_data_file_path: Optional[str] = None,
     task_user_id: Optional[int] = None,
 ):
-    setup_data_table_manager(app)
     if src == "uri":
         assert uri
         tool_data_import_manager.import_data_bundle_by_uri(config, uri, tool_data_file_path=tool_data_file_path)
@@ -540,3 +569,34 @@ def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStor
     for job in failed_jobs:
         delete_jwd(job)
         log.info("Deleted job working directory for job %s", job.id)
+
+
+@galaxy_task(action="execute workflow completion hook")
+def execute_workflow_completion_hook(
+    invocation_id: int,
+    hook_name: str,
+    workflow_completion_manager: WorkflowCompletionManager,
+    app: MinimalManagerApp,
+):
+    """Execute a workflow completion hook asynchronously."""
+    # Get the completion record
+    completion = workflow_completion_manager.get_completion(invocation_id)
+    if not completion:
+        log.warning(f"No completion record found for invocation {invocation_id}")
+        return
+
+    # Check if hook already executed (idempotency)
+    if workflow_completion_manager.is_hook_executed(invocation_id, hook_name):
+        log.debug(f"Hook '{hook_name}' already executed for invocation {invocation_id}")
+        return
+
+    # Get the hook registry and execute the hook
+    hook_registry = WorkflowCompletionHookRegistry(app)
+    success = hook_registry.execute_hook(hook_name, completion)
+
+    if success:
+        # Mark the hook as executed
+        workflow_completion_manager.mark_hook_executed(invocation_id, hook_name)
+        log.info(f"Successfully executed hook '{hook_name}' for invocation {invocation_id}")
+    else:
+        log.error(f"Failed to execute hook '{hook_name}' for invocation {invocation_id}")

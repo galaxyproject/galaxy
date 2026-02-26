@@ -121,6 +121,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
             bootstrap_admin_api_key=get_admin_api_key(),
             allow_local_account_creation=True,
             allow_user_deletion=True,
+            config_hg_for_dev=True,  # Allow hg push without authentication for tests
             datatype_converters_config_file="datatype_converters_conf.xml.sample",
             file_path=shed_file_path,
             hgweb_config_dir=hgweb_config_dir,

@@ -360,7 +360,7 @@ class DatatypesEntryT(TypedDict):
     message: str
 
 
-class AdminGalaxy(controller.JSAppLauncher):
+class AdminGalaxy(controller.BaseUIController):
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
@@ -628,7 +628,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     trans.handle_user_logout()
                     trans.handle_user_login(user)
                     return trans.show_message(
-                        f"You are now logged in as {user.email}, <a target=\"_top\" href=\"{url_for(controller='root')}\">return to the home page</a>",
+                        f"You are now logged in as {user.email}, <a target=\"_top\" href=\"{url_for('/')}\">return to the home page</a>",
                         use_panels=True,
                     )
             except Exception:

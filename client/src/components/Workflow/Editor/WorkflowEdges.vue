@@ -6,6 +6,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 import type { Connection, OutputTerminal } from "@/stores/workflowStoreTypes";
 
+import type { WorkflowTransform } from "./modules/geometry";
 import type { OutputTerminals } from "./modules/terminals";
 
 import SVGConnection from "./SVGConnection.vue";
@@ -13,7 +14,7 @@ import SVGConnection from "./SVGConnection.vue";
 const props = defineProps<{
     draggingConnection: TerminalPosition | null;
     draggingTerminal: OutputTerminals | null;
-    transform: { x: number; y: number; k: number };
+    transform: WorkflowTransform;
 }>();
 
 const { connectionStore } = useWorkflowStores();

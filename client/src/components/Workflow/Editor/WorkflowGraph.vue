@@ -21,6 +21,7 @@ import WorkflowComment from "./Comments/WorkflowComment.vue";
 import BoxSelectPreview from "./Tools/BoxSelectPreview.vue";
 import InputCatcher from "./Tools/InputCatcher.vue";
 import ToolBar from "./Tools/ToolBar.vue";
+import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
 import AreaHighlight from "@/components/Workflow/Editor/AreaHighlight.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
@@ -31,7 +32,6 @@ const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo", "
 const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
-    highlightId: { type: Number as PropType<number | null>, default: null },
     scrollToId: { type: Number as PropType<number | null>, default: null },
     readonly: { type: Boolean, default: false },
     initialPosition: { type: Object as PropType<{ x: number; y: number }>, default: () => ({ x: 50, y: 20 }) },
@@ -40,6 +40,7 @@ const props = defineProps({
     showZoomControls: { type: Boolean, default: true },
     fixedHeight: { type: Number, default: undefined },
     populatedInputs: { type: Boolean, default: false },
+    loading: { type: Boolean, default: false },
 });
 
 const { stateStore, stepStore } = useWorkflowStores();
@@ -48,14 +49,13 @@ const canvas: Ref<HTMLElement | null> = ref(null);
 
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
 const scroll = useScroll(canvas);
-const { transform, panBy, setZoom, moveTo } = useD3Zoom(
-    scale.value,
-    minZoom,
-    maxZoom,
-    canvas,
-    scroll,
-    props.initialPosition,
-);
+const {
+    transform,
+    panBy,
+    setZoom,
+    moveTo,
+    setTransform: d3SetTransform,
+} = useD3Zoom(scale.value, minZoom, maxZoom, canvas, scroll, props.initialPosition);
 
 watch(
     () => transform.value,
@@ -166,22 +166,26 @@ const { comments } = storeToRefs(commentStore);
 
 const areaHighlight = ref<InstanceType<typeof AreaHighlight>>();
 
-function moveToAndHighlightRegion(bounds: Rectangle) {
+function highlightGraphRegion(bounds: Rectangle, moveToPosition: boolean = true) {
     const centerPosition = { x: bounds.x + bounds.width / 2.0, y: bounds.y + bounds.height / 2.0 };
     areaHighlight.value?.show(bounds);
-    moveTo(centerPosition);
+    if (moveToPosition) {
+        moveTo(centerPosition);
+    }
 }
 
 defineExpose({
     fitWorkflow,
     setZoom,
     moveTo,
-    moveToAndHighlightRegion,
+    highlightGraphRegion,
+    setTransform: d3SetTransform,
 });
 </script>
 
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
+        <LoadingOverlay v-if="props.loading" />
         <ZoomControl
             v-if="props.showZoomControls"
             :zoom-level="scale"

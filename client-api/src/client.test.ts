@@ -33,7 +33,7 @@ describe("Galaxy API Client", () => {
 
         const api = createGalaxyApi();
 
-        expect(createClient).toHaveBeenCalledWith({ baseUrl: "https://test-galaxy.org" });
+        expect(createClient).toHaveBeenCalledWith({ baseUrl: "https://test-galaxy.org", headers: {} });
 
         // Restore window.location
         window.location = originalLocation;
@@ -43,7 +43,7 @@ describe("Galaxy API Client", () => {
         const customUrl = "https://usegalaxy.org";
         const api = createGalaxyApi(customUrl);
 
-        expect(createClient).toHaveBeenCalledWith({ baseUrl: customUrl });
+        expect(createClient).toHaveBeenCalledWith({ baseUrl: customUrl, headers: {} });
     });
 
     it("strips trailing slash from base URL", () => {
@@ -51,7 +51,7 @@ describe("Galaxy API Client", () => {
         const expectedUrl = "https://usegalaxy.org";
         const api = createGalaxyApi(customUrl);
 
-        expect(createClient).toHaveBeenCalledWith({ baseUrl: expectedUrl });
+        expect(createClient).toHaveBeenCalledWith({ baseUrl: expectedUrl, headers: {} });
     });
 
     it("returns the configured client", () => {

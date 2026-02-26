@@ -27,6 +27,11 @@
       <param name="in" value="im4_float.tif" />
       <output name="out" value="im4_float.tif" compare="image_diff" />
     </test>
+    <!-- test pair of equal images (bool tiff) -->
+    <test>
+      <param name="in" value="im3_b_bool.tiff" />
+      <output name="out" value="im3_b_bool.tiff" compare="image_diff" metric="iou" pin_labels="0" />
+    </test>
     <!-- test pair of different images -->
     <test>
       <param name="in" value="im2_a.png" />

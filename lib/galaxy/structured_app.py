@@ -51,6 +51,7 @@ if TYPE_CHECKING:
     from galaxy.managers.interactivetool import InteractiveToolManager
     from galaxy.managers.jobs import JobSearch
     from galaxy.managers.tools import DynamicToolManager
+    from galaxy.managers.users import UserManager
     from galaxy.managers.workflows import (
         WorkflowContentsManager,
         WorkflowsManager,
@@ -80,7 +81,10 @@ class BasicSharedApp(Container):
     auth_manager: AuthManager
     security_agent: Any
     quota_agent: QuotaAgent
-    tool_data_tables: "ToolDataTableManager"
+
+    @property
+    def tool_data_tables(self) -> "ToolDataTableManager":
+        raise NotImplementedError()
 
     @property
     def toolbox(self) -> "ToolBox":
@@ -95,9 +99,12 @@ class MinimalToolApp(Protocol):
     config: Any
     datatypes_registry: Registry
     object_store: BaseObjectStore
-    tool_data_tables: "ToolDataTableManager"
     file_sources: ConfiguredFileSources
     security: IdEncodingHelper
+
+    @property
+    def tool_data_tables(self) -> "ToolDataTableManager":
+        raise NotImplementedError()
 
 
 class MinimalApp(BasicSharedApp):
@@ -125,7 +132,7 @@ class MinimalManagerApp(MinimalApp):
     library_folder_manager: "FolderManager"
     library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
-    user_manager: Any
+    user_manager: "UserManager"
     job_config: "JobConfiguration"
     job_manager: "JobManager"
     job_search: "JobSearch"

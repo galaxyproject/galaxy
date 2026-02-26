@@ -1,0 +1,52 @@
+<tool id="__CONVERT_SAMPLE_SHEET__"
+      name="Convert sample sheet"
+      version="1.0.0"
+      tool_type="convert_sample_sheet">
+    <description>to list collection</description>
+    <type class="ConvertSampleSheetTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_2409</edam_operation>
+    </edam_operations>
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
+    <inputs>
+        <param type="data_collection" collection_type="sample_sheet,sample_sheet:paired,sample_sheet:paired_or_unpaired,sample_sheet" name="input" label="Sample sheet to convert" />
+    </inputs>
+    <outputs>
+        <!-- type_source is a lie, we don't have a way to encode the transform that is actually happening -->
+        <collection name="output" format_source="input" type_source="input" label="${on_string} (converted)" >
+        </collection>
+    </outputs>
+    <help><![CDATA[
+
+========
+Synopsis
+========
+
+Converts a sample sheet collection back to its corresponding list collection type.
+
+===========
+Description
+===========
+
+This tool takes a sample sheet collection and produces a regular list collection, removing all sample sheet metadata (column definitions and row values).
+
+The conversion follows this mapping:
+
+- ``sample_sheet`` becomes ``list``
+- ``sample_sheet:paired`` becomes ``list:paired``
+- ``sample_sheet:paired_or_unpaired`` becomes ``list:paired_or_unpaired``
+
+Use this tool when you need to pass a sample sheet to a tool that expects a regular list collection, or when you want to discard the sample sheet metadata.
+
+----
+
+.. class:: infomark
+
+@QUOTA_USAGE_NOTE@
+
+     ]]></help>
+</tool>

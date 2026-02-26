@@ -3,6 +3,7 @@ from enum import Enum
 from typing import (
     Annotated,
     Any,
+    Literal,
     Optional,
     Union,
 )
@@ -13,9 +14,6 @@ from pydantic import (
     RootModel,
 )
 from pydantic.functional_validators import field_validator
-from typing_extensions import (
-    Literal,
-)
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,

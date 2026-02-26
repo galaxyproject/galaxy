@@ -12,10 +12,12 @@ histories, libraries, etc... should be annotated ideally.
 import os
 import unittest
 from functools import wraps
-from typing import Union
+from typing import (
+    Literal,
+    Union,
+)
 
 import pytest
-from typing_extensions import Literal
 
 KnownRequirementT = Union[
     Literal["admin"],

@@ -86,7 +86,7 @@ def __main__():
     parser.add_option(
         "-s", "--seed", dest="seed", action="store", type="string", default=None, help="Set the random seed."
     )
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     assert len(args) == 3, "Invalid command line specified."
 

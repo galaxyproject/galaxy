@@ -196,3 +196,69 @@ To enable Celery in your instance you need to follow some additional steps:
 -   Set `enable_celery_tasks: true` in the Galaxy config.
 -   Configure the `backend` under `celery_conf` to store the results of the tasks. For example, you can use [`redis` as the backend](https://docs.celeryq.dev/en/stable/getting-started/backends-and-brokers/redis.html#broker-redis). If you are using `redis`, make sure to install the `redis` dependency in your Galaxy environment with `pip install redis`. You can find more information on how to configure other backends in the [Celery documentation](https://docs.celeryq.dev/en/stable/userguide/tasks.html#task-result-backends). Keep in mind that you should not reuse the main Galaxy database as a backend for Celery.
 -   Configure one or more workers to handle the tasks. You can find more information on how to configure workers in the [Celery documentation](https://docs.celeryq.dev/en/stable/userguide/workers.html). If you are using [Gravity](https://github.com/galaxyproject/gravity) it will simplify the process of setting up Celery workers.
+
+#### Celery result expiration
+
+By default, Celery stores task results in the result backend for only 1 day before expiring them. This can cause issues with long-running operations, such as exporting very large histories, where the task may take longer than 1 day to complete. When a task result expires, you lose the ability to track the task's status and retrieve its results.
+
+To prevent task results from expiring prematurely, you can configure the `result_expires` option within `celery_conf` in your Galaxy configuration:
+
+```yaml
+celery_conf:
+  broker_url: redis://localhost:6379/0
+  result_backend: redis://localhost:6379/0
+  result_expires: null  # Disable result expiration entirely
+```
+
+Setting `result_expires` to `null` prevents task results from being automatically deleted. Alternatively, you can set it to a longer duration (in seconds) that accommodates your expected maximum task duration:
+
+```yaml
+celery_conf:
+  broker_url: redis://localhost:6379/0
+  result_backend: redis://localhost:6379/0
+  result_expires: 604800  # Keep results for 7 days
+```
+
+For more details on Celery result backend configuration, see the [Celery documentation](https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-expires).
+
+#### Short-term storage configuration
+
+Galaxy uses short-term storage to temporarily hold downloadable content, such as history exports. By default, files in short-term storage are cleaned up after 1 day (86400 seconds). For large history exports that take a long time to generate or download, you may need to increase this duration.
+
+Cleanup of expired short-term storage files is managed by Celery Beat, which schedules periodic tasks. The cleanup task runs automatically at the interval specified by `short_term_storage_cleanup_interval`.
+
+The following configuration options in `galaxy.yml` control short-term storage behavior:
+
+-   `short_term_storage_default_duration`: Duration in seconds before files are cleaned up (default: 86400, i.e., 1 day)
+-   `short_term_storage_maximum_duration`: Maximum allowed duration; set to 0 for no limit (default: 0)
+-   `short_term_storage_cleanup_interval`: How often the Celery Beat cleanup task runs in seconds (default: 3600, i.e., 1 hour)
+
+To increase the retention period for large exports, adjust these settings in your Galaxy configuration:
+
+```yaml
+short_term_storage_default_duration: 604800  # Keep files for 7 days
+```
+
+#### Configuring for large history exports
+
+When your users need to export very large histories (hundreds of gigabytes or more), both Celery result expiration and short-term storage duration need to be coordinated. A task result expiring before the export completes, or the exported file being cleaned up before the user downloads it, will result in a failed export.
+
+For environments handling large history exports, consider the following configuration:
+
+```yaml
+# Celery configuration
+enable_celery_tasks: true
+celery_conf:
+  broker_url: redis://localhost:6379/0
+  result_backend: redis://localhost:6379/0
+  result_expires: null  # Disable result expiration
+
+# Short-term storage configuration
+short_term_storage_default_duration: 604800  # 7 days
+```
+
+This configuration ensures that:
+1. Task results are retained until explicitly cleaned up
+2. Exported files remain available for 7 days after generation
+
+You can monitor Celery task status using [Flower](https://flower.readthedocs.io/en/latest/), a real-time web-based monitoring tool for Celery.

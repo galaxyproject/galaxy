@@ -18,7 +18,7 @@ defineProps<Props>();
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .help-popover-content {
     font-size: $font-size-base;

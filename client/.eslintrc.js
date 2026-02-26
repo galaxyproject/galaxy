@@ -113,9 +113,17 @@ module.exports = {
     plugins: basePlugins,
     overrides: [
         {
-            files: ["**/*.test.js", "**/*.test.ts", "**/tests/jest/**"],
-            env: {
-                jest: true,
+            files: ["**/*.test.js", "**/*.test.ts", "**/tests/vitest/**"],
+            globals: {
+                vi: "readonly",
+                describe: "readonly",
+                it: "readonly",
+                expect: "readonly",
+                beforeEach: "readonly",
+                afterEach: "readonly",
+                beforeAll: "readonly",
+                afterAll: "readonly",
+                test: "readonly",
             },
         },
         {

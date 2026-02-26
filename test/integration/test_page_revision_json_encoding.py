@@ -51,9 +51,7 @@ class TestPageJsonEncodingIntegration(integration_util.IntegrationTestCase):
             title="MY PAGE",
             content="""```galaxy
 history_dataset_display(history_dataset_id={})
-```""".format(
-                dataset["id"]
-            ),
+```""".format(dataset["id"]),
             content_format="markdown",
         )
         page_response = self._post("pages", request, json=True)
@@ -61,12 +59,9 @@ history_dataset_display(history_dataset_id={})
         sa_session = self._app.model.session
         page_revision = sa_session.scalars(select(model.PageRevision).filter_by(content_format="markdown")).all()[0]
         assert page_revision.content is not None
-        assert (
-            """```galaxy
+        assert """```galaxy
 history_dataset_display(history_dataset_id=1)
-```"""
-            in page_revision.content
-        ), page_revision.content
+```""" in page_revision.content, page_revision.content
         assert (
             f"""::: history_dataset_display history_dataset_id={dataset_id}""" not in page_revision.content
         ), page_revision.content
@@ -74,15 +69,9 @@ history_dataset_display(history_dataset_id=1)
         show_page_response = self._get("pages/{}".format(page_response.json()["id"]))
         api_asserts.assert_status_code_is_ok(show_page_response)
         content = show_page_response.json()["content"]
-        assert (
-            """```galaxy
+        assert """```galaxy
 history_dataset_display(history_dataset_id=1)
-```"""
-            not in content
-        ), content
-        assert (
-            f"""```galaxy
+```""" not in content, content
+        assert f"""```galaxy
 history_dataset_display(history_dataset_id={dataset_id})
-```"""
-            in content
-        ), content
+```""" in content, content

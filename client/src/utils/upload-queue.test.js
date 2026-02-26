@@ -1,9 +1,20 @@
-import { sendPayload } from "@/utils/upload-submit.js";
+import { describe, expect, test, vi } from "vitest";
+
+import { fetchDatasets } from "@/utils/upload";
 
 import { UploadQueue } from "./upload-queue.js";
 
-jest.mock("@/utils/upload-submit.js");
-sendPayload.mockImplementation(() => jest.fn());
+vi.mock("@/utils/upload", async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        fetchDatasets: vi.fn(),
+        submitUpload: vi.fn((config) => {
+            // Simulate calling success callback
+            config.success?.();
+        }),
+    };
+});
 
 function StubFile(name = null, size = 0, mode = "local") {
     return { name, size, mode };
@@ -49,7 +60,7 @@ describe("UploadQueue", () => {
 
     test("calling start sets isRunning to true", () => {
         const q = instrumentedUploadQueue();
-        q._process = jest.fn(); // mock this, otherwise it'll reset isRunning after it's done.
+        q._process = vi.fn(); // mock this, otherwise it'll reset isRunning after it's done.
         expect(q.isRunning).toBe(false);
         q.start();
         expect(q.isRunning).toBe(true);
@@ -58,11 +69,11 @@ describe("UploadQueue", () => {
 
     test("calling start is a noop if queue is running", () => {
         const q = instrumentedUploadQueue();
-        const mockedProcess = jest.fn();
-        q._process = mockedProcess();
+        const mockedProcess = vi.fn();
+        q._process = mockedProcess;
         q.isRunning = true;
         q.start();
-        expect(mockedProcess.mock.calls.length === 0); // function was not called
+        expect(mockedProcess.mock.calls.length).toBe(0); // function was not called
         expect(q.encountedErrors).toBeFalsy();
     });
 
@@ -76,12 +87,13 @@ describe("UploadQueue", () => {
                     fileName: file.name,
                     fileSize: file.size,
                     fileContent: "fileContent",
+                    fileData: new File(["test content"], file.name || "test.txt", { type: "text/plain" }),
                     targetHistoryId: "mockhistoryid",
                 };
             },
         });
-        const spy = jest.spyOn(q, "_process");
-        const mockedSubmit = jest.fn(() => q._process());
+        const spy = vi.spyOn(q, "_process");
+        const mockedSubmit = vi.fn(() => q._process());
         q._processSubmit = mockedSubmit;
         q.add([StubFile("a"), StubFile("b")]);
         q.start();
@@ -130,7 +142,7 @@ describe("UploadQueue", () => {
     });
 
     test("adding a file calls opts.announce with correct arguments", () => {
-        const mockAnnounce = jest.fn();
+        const mockAnnounce = vi.fn();
         const q = instrumentedUploadQueue({ announce: mockAnnounce });
         const file = StubFile("a");
         expect(mockAnnounce.mock.calls.length).toBe(0);
@@ -203,15 +215,17 @@ describe("UploadQueue", () => {
         q.add([StubFile("a"), StubFile("b"), StubFile("c")]);
         expect(q.size).toEqual(3);
         q.start();
-        expect(sendPayload.mock.calls[0][0]).toEqual({
+        expect(fetchDatasets.mock.calls[0][0]).toEqual({
             auto_decompress: true,
             files: [],
             history_id: "historyId",
             targets: [
                 {
+                    auto_decompress: false,
                     destination: { type: "hdas" },
                     elements: [
                         {
+                            auto_decompress: false,
                             dbkey: "?",
                             deferred: true,
                             ext: "auto",
@@ -222,6 +236,7 @@ describe("UploadQueue", () => {
                             url: "http://test.me.0",
                         },
                         {
+                            auto_decompress: false,
                             dbkey: "?",
                             deferred: true,
                             ext: "auto",
@@ -232,6 +247,7 @@ describe("UploadQueue", () => {
                             url: "http://test.me.1",
                         },
                         {
+                            auto_decompress: false,
                             dbkey: "?",
                             deferred: true,
                             ext: "auto",

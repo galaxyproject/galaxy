@@ -1,25 +1,102 @@
 <script setup lang="ts">
+import { faBroom, faChevronDown, faChevronRight, faStar } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
 import type { ToolSectionLabel } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
+
+import { PANEL_LABEL_IDS } from "../panelViews";
 
 import ToolPanelLinks from "./ToolPanelLinks.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
-const props = defineProps<{
-    definition: ToolSectionLabel;
+const props = withDefaults(
+    defineProps<{
+        definition: ToolSectionLabel;
+        collapsed?: boolean;
+    }>(),
+    {
+        collapsed: undefined,
+    },
+);
+
+const emit = defineEmits<{
+    (e: "toggle", labelId: string): void;
 }>();
 
+const favoritesLabelIds = new Set<string>([PANEL_LABEL_IDS.FAVORITES_RESULTS_LABEL, PANEL_LABEL_IDS.FAVORITES_LABEL]);
+const collapsibleLabelIds = new Set<string>([
+    PANEL_LABEL_IDS.FAVORITES_RESULTS_LABEL,
+    PANEL_LABEL_IDS.FAVORITES_LABEL,
+    PANEL_LABEL_IDS.RECENT_TOOLS_LABEL,
+]);
 const description = computed(() => props.definition.description || undefined);
+const isFavoritesDivider = computed(() => favoritesLabelIds.has(props.definition.id));
+const isRecentLabel = computed(() => props.definition.id === PANEL_LABEL_IDS.RECENT_TOOLS_LABEL);
+const isCollapsible = computed(() => collapsibleLabelIds.has(props.definition.id) && props.collapsed !== undefined);
+const isCollapsed = computed(() => props.collapsed ?? false);
+const toggleIcon = computed(() => (isCollapsed.value ? faChevronRight : faChevronDown));
+
+const { clearRecentTools } = useUserStore();
+
+function onToggle() {
+    if (isCollapsible.value) {
+        emit("toggle", props.definition.id);
+    }
+}
+
+function onKeydown(event: KeyboardEvent) {
+    if (!isCollapsible.value) {
+        return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        emit("toggle", props.definition.id);
+    }
+}
 </script>
 
 <template>
-    <div v-b-tooltip.topright.hover.noninteractive class="tool-panel-label" tabindex="0" :title="description">
-        {{ definition.text }}
-        <ToolPanelLinks :links="definition.links || undefined" />
+    <div
+        v-b-tooltip.topright.hover.noninteractive
+        :class="['tool-panel-label', 'tool-panel-divider', { 'tool-panel-label-clickable': isCollapsible }]"
+        :tabindex="isCollapsible ? 0 : undefined"
+        :title="description"
+        :role="isCollapsible ? 'button' : undefined"
+        :aria-expanded="isCollapsible ? (!isCollapsed ? 'true' : 'false') : undefined"
+        v-on="isCollapsible ? { click: onToggle, keydown: onKeydown } : {}">
+        <span class="tool-panel-label-divider-text tool-panel-divider-text">
+            <FontAwesomeIcon
+                v-if="isCollapsible"
+                :icon="toggleIcon"
+                class="tool-panel-label-toggle tool-panel-divider-toggle" />
+            <FontAwesomeIcon
+                v-if="isFavoritesDivider"
+                :icon="faStar"
+                class="tool-panel-label-divider-icon tool-panel-divider-icon" />
+            {{ definition.text }}
+            <GButton
+                v-if="isRecentLabel"
+                class="tool-panel-label-divider-action tool-panel-divider-action"
+                size="small"
+                color="grey"
+                icon-only
+                transparent
+                title="Clear recent tools"
+                data-description="clear-recent-tools"
+                @click.stop="clearRecentTools">
+                <FontAwesomeIcon :icon="faBroom" />
+            </GButton>
+            <ToolPanelLinks v-if="definition.links" :links="definition.links" />
+        </span>
     </div>
 </template>
 
 <style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+@import "@/style/scss/tool-panel-divider.scss";
+
 .tool-panel-label {
     &:deep(.tool-panel-links) {
         display: none;
@@ -32,5 +109,10 @@ const description = computed(() => props.definition.description || undefined);
             display: inline;
         }
     }
+}
+
+.tool-panel-label-clickable {
+    cursor: pointer;
+    user-select: none;
 }
 </style>

@@ -1,16 +1,17 @@
-import "jest-location-mock";
-
+import { getLocalVue } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
-import { setupMockConfig } from "tests/jest/mockConfig";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import StsDownloadButton from "./StsDownloadButton.vue";
 
 const localVue = getLocalVue();
+const { server, http } = useServerMock();
+
 const NO_TASKS_CONFIG = {
     enable_celery_tasks: false,
 };
@@ -39,18 +40,12 @@ async function mountStsDownloadButtonWrapper(config) {
 }
 
 describe("StsDownloadButton", () => {
-    let axiosMock;
-
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-    });
-
-    afterEach(async () => {
-        axiosMock.reset();
+        // Reset handlers before each test
     });
 
     it("should fallback to a URL if tasks not enabled", async () => {
-        const windowSpy = jest.spyOn(window, "open");
+        const windowSpy = vi.spyOn(window, "open");
         windowSpy.mockImplementation(() => {});
         const wrapper = await mountStsDownloadButtonWrapper(NO_TASKS_CONFIG);
         wrapper.vm.onDownload(NO_TASKS_CONFIG);
@@ -59,9 +54,15 @@ describe("StsDownloadButton", () => {
     });
 
     it("should poll until ready", async () => {
-        axiosMock.onPost(DOWNLOAD_ENDPOINT).reply(200, { storage_request_id: STORAGE_REQUEST_ID });
+        server.use(
+            http.untyped.post(DOWNLOAD_ENDPOINT, () => {
+                return HttpResponse.json({ storage_request_id: STORAGE_REQUEST_ID });
+            }),
+            http.untyped.get(`api/short_term_storage/${STORAGE_REQUEST_ID}/ready`, () => {
+                return HttpResponse.json(true);
+            }),
+        );
         const wrapper = await mountStsDownloadButtonWrapper(TASKS_CONFIG);
-        axiosMock.onGet(`api/short_term_storage/${STORAGE_REQUEST_ID}/ready`).reply(200, true);
 
         wrapper.vm.onDownload(TASKS_CONFIG);
         await flushPromises();
@@ -69,9 +70,15 @@ describe("StsDownloadButton", () => {
     });
 
     it("should be in a waiting state while polling", async () => {
-        axiosMock.onPost(DOWNLOAD_ENDPOINT).reply(200, { storage_request_id: STORAGE_REQUEST_ID });
+        server.use(
+            http.untyped.post(DOWNLOAD_ENDPOINT, () => {
+                return HttpResponse.json({ storage_request_id: STORAGE_REQUEST_ID });
+            }),
+            http.untyped.get(`api/short_term_storage/${STORAGE_REQUEST_ID}/ready`, () => {
+                return HttpResponse.json(false);
+            }),
+        );
         const wrapper = await mountStsDownloadButtonWrapper(TASKS_CONFIG);
-        axiosMock.onGet(`api/short_term_storage/${STORAGE_REQUEST_ID}/ready`).reply(200, false);
 
         expect(wrapper.vm.waiting).toBeFalsy();
         wrapper.vm.onDownload(TASKS_CONFIG);

@@ -46,6 +46,9 @@ class TestAuthenticateApi(ApiTestCase):
         tool_runner_response.raise_for_status()
         # Verify that we're not returning the sessioncookie
         assert "galaxysession" not in tool_runner_response.cookies
+        # Verify text message
+        text = tool_runner_response.text
+        assert "A job has been successfully added to the queue." in text
         # Make sure history for original session received job
         current_history_json_response = get(
             urljoin(self.url, "history/current_history_json"), cookies={"galaxysession": galaxy_session_cookie}

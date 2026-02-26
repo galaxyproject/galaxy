@@ -331,13 +331,11 @@ class TestDatasetsApi(ApiTestCase):
         assert input_hda["id"] == query_hda["id"]
 
     def test_display(self, history_id):
-        contents = textwrap.dedent(
-            """\
+        contents = textwrap.dedent("""\
         1   2   3   4
         A   B   C   D
         10  20  30  40
-        """
-        )
+        """)
         hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
         display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
         self._assert_status_code_is(display_response, 200)
@@ -376,13 +374,11 @@ class TestDatasetsApi(ApiTestCase):
         )
 
     def test_get_content_as_text(self, history_id):
-        contents = textwrap.dedent(
-            """\
+        contents = textwrap.dedent("""\
         1   2   3   4
         A   B   C   D
         10  20  30  40
-        """
-        )
+        """)
         hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
         get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
         self._assert_status_code_is(get_content_as_text_response, 200)
@@ -414,13 +410,11 @@ class TestDatasetsApi(ApiTestCase):
             self._assert_status_code_is(get_content_as_text_response, 403)
 
     def test_dataprovider_chunk(self, history_id):
-        contents = textwrap.dedent(
-            """\
+        contents = textwrap.dedent("""\
         1   2   3   4
         A   B   C   D
         10  20  30  40
-        """
-        )
+        """)
         # test first chunk
         hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
         kwds = {
@@ -488,13 +482,11 @@ class TestDatasetsApi(ApiTestCase):
         return self.dataset_populator.display_chunk(dataset_id, offset, ck_size)
 
     def test_tabular_chunking_through_display_endpoint(self, history_id):
-        contents = textwrap.dedent(
-            """\
+        contents = textwrap.dedent("""\
         1   2   3   4
         A   B   C   D
         10  20  30  40
-        """
-        )
+        """)
         # test first chunk
         hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
         dataset_id = hda1["id"]

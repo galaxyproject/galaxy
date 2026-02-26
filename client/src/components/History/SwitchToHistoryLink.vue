@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive, faBurn } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
@@ -14,8 +13,6 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import GLink from "@/components/BaseComponents/GLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faArchive, faBurn);
 
 const router = useRouter();
 const historyStore = useHistoryStore();
@@ -46,7 +43,7 @@ const canSwitch = computed(
 
 const linkTitle = computed(() => {
     if (props.filters && history.value && userOwnsHistory(userStore.currentUser, history.value)) {
-        return "Show in history";
+        return "Switch to history and view dataset";
     }
 
     if (historyStore.currentHistoryId === props.historyId) {

@@ -2,10 +2,12 @@
     Test to verify filter null tool keeps non-null datasets.
   job:
     input_collection:
+      class: Collection
       collection_type: list
       elements:
         - identifier: first
-          content: "abc"
+          class: File
+          contents: "abc"
     when:
       value: true
       type: raw
@@ -18,10 +20,12 @@
     Test to verify filter null tool discards null datasets.
   job:
     input_collection:
+      class: Collection
       collection_type: list
       elements:
         - identifier: first
-          content: "abc"
+          class: File
+          contents: "abc"
     when:
       value: false
       type: raw

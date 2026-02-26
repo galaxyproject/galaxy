@@ -5,7 +5,7 @@ import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { HDASummary } from "@/api";
-import { COLLECTION_TYPE_TO_LABEL } from "@/components/History/adapters/buildCollectionModal";
+import { COLLECTION_TYPE_TO_LABEL } from "@/components/Collections/common/buildCollectionModal";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 import localize from "@/utils/localization";
 
@@ -230,10 +230,10 @@ watch(
 
 <style lang="scss">
 $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
-@import "~@fortawesome/fontawesome-free/scss/solid";
-@import "~@fortawesome/fontawesome-free/scss/fontawesome";
-@import "~@fortawesome/fontawesome-free/scss/brands";
+@import "@fortawesome/fontawesome-free/scss/_variables";
+@import "@fortawesome/fontawesome-free/scss/solid";
+@import "@fortawesome/fontawesome-free/scss/fontawesome";
+@import "@fortawesome/fontawesome-free/scss/brands";
 
 // Outside the modal - we need to set a max width on the help so ellipses display
 // doesn't cause it to grow without bound. Would greater appreciate a better workaround.

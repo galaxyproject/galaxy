@@ -13,6 +13,7 @@ from galaxy import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.workflows import (
+    RefactorRequest,
     RefactorResponse,
     WorkflowContentsManager,
     WorkflowSerializer,
@@ -24,6 +25,7 @@ from galaxy.model import (
     WorkflowInvocation,
     WorkflowLandingRequest,
 )
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import WorkflowInvocationResponse
 from galaxy.schema.schema import (
     InvocationsStateCounts,
@@ -228,9 +230,9 @@ class WorkflowsService(ServiceBase):
 
     def refactor(
         self,
-        trans,
-        workflow_id,
-        payload,
+        trans: ProvidesUserContext,
+        workflow_id: DecodedDatabaseIdField,
+        payload: RefactorRequest,
         instance: bool,
     ) -> RefactorResponse:
         stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)

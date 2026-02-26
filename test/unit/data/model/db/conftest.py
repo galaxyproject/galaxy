@@ -37,7 +37,7 @@ def engine(db_url: str) -> "Engine":
 @pytest.fixture
 def session(engine: "Engine") -> Session:
     session = Session(engine)
-    # For sqlite, we need to explicitly enale foreign key constraints.
+    # For sqlite, we need to explicitly enable foreign key constraints.
     if engine.name == "sqlite":
         session.execute(text("PRAGMA foreign_keys = ON;"))
     return session
@@ -52,7 +52,7 @@ def init_database(engine: "Engine") -> None:
 
 @pytest.fixture(autouse=True, scope="module")
 def init_object_store() -> None:
-    m.Dataset.object_store = MockObjectStore()  # type:ignore[assignment]
+    m.Dataset.object_store = MockObjectStore()  # type: ignore[assignment]
 
 
 @pytest.fixture(autouse=True, scope="module")

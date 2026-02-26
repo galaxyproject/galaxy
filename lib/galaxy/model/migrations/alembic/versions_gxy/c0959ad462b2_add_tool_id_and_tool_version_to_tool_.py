@@ -13,6 +13,7 @@ from sqlalchemy import (
 
 from galaxy.model.migrations.util import (
     add_column,
+    column_exists,
     drop_column,
     transaction,
 )
@@ -31,8 +32,10 @@ tool_version_column = "tool_version"
 
 def upgrade():
     with transaction():
-        add_column(table_name, Column(tool_id_column, String(255), nullable=False))
-        add_column(table_name, Column(tool_version_column, String(255), nullable=True))
+        if not column_exists(table_name, tool_id_column, False):
+            add_column(table_name, Column(tool_id_column, String(255), nullable=False))
+        if not column_exists(table_name, tool_version_column, False):
+            add_column(table_name, Column(tool_version_column, String(255), nullable=True))
 
 
 def downgrade():

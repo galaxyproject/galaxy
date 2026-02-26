@@ -1,9 +1,9 @@
 import logging
 import os
 from collections import defaultdict
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
     NamedTuple,
     Optional,
     Protocol,

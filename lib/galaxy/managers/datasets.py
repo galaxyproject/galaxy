@@ -288,7 +288,10 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
         # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
             if not dataset.purged:
-                return dataset.get_file_name(sync_cache=False)
+                try:
+                    return dataset.get_file_name(sync_cache=False)
+                except exceptions.ObjectNotFound:
+                    return None
         self.skip()
 
     def serialize_extra_files_path(self, item, key, user=None, **context):
@@ -884,6 +887,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         assert (
             trans
         ), "Logic error in Galaxy, deserialize_datatype not send a transation object"  # TODO: restructure this for stronger typing
+        assert self.app.datatypes_registry.set_external_metadata_tool is not None
         job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute_via_trans(
             self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={"input1": item}, overwrite=False
         )  # overwrite is False as per existing behavior

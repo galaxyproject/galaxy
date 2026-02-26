@@ -77,7 +77,7 @@ const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 function dynamicIsLast() {
     if (props.use.isLast.value) {
-        return true;
+        return Boolean(props.use.isLast.value);
     }
 
     let nextStepIndex = props.use.index.value + 1;
@@ -216,9 +216,12 @@ const bodyStyle = computed(() => {
                 </div>
             </div>
             <div class="wizard-actions">
-                <button v-if="!props.use.isFirst.value" class="go-back-btn" :disabled="isBusy" @click="goBack">
-                    Back
-                </button>
+                <div class="wizard-actions-left">
+                    <slot name="cancel-button" />
+                    <button v-if="!props.use.isFirst.value" class="go-back-btn" :disabled="isBusy" @click="goBack">
+                        Back
+                    </button>
+                </div>
 
                 <button
                     class="go-next-btn"
@@ -233,7 +236,7 @@ const bodyStyle = computed(() => {
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .wizard {
     padding: 0;
@@ -327,13 +330,14 @@ const bodyStyle = computed(() => {
 
     .wizard-actions {
         padding: 1rem 1rem 0rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
 
-        .go-back-btn {
-            float: left;
-        }
-
-        .go-next-btn {
-            float: right;
+        .wizard-actions-left {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
         }
     }
 

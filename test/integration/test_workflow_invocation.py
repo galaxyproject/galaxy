@@ -140,8 +140,7 @@ test_data:
     def test_run_workflow_with_missing_tool(self):
         self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
         with self.dataset_populator.test_history() as history_id:
-            workflow_id = self.workflow_populator.upload_yaml_workflow(
-                """
+            workflow_id = self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
   nonexistent:
@@ -152,8 +151,7 @@ steps:
     tool_id: compose_text_param
     tool_version: "0.0.1"
     label: compose_text_param
-"""
-            )
+""")
             # should fail and return both tool ids since version 0.0.1 of compose_text_param does not exist
             invocation_response = self.workflow_populator.invoke_workflow(
                 workflow_id, history_id=history_id, request={"require_exact_tool_versions": True}

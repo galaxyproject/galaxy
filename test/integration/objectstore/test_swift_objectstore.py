@@ -18,6 +18,8 @@ TEST_TOOL_IDS = [
     "tool_provided_metadata_10",
     "tool_provided_metadata_11",
     "tool_provided_metadata_12",
+    # Transiently fails - see issue #21226 - I'd love to mark this with the decorator but
+    # the test framework here doesn't support it yet.
     "composite_output",
     "composite_output_tests",
     "metadata",

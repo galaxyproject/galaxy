@@ -6,6 +6,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -18,6 +19,7 @@ class TestCustomTools(SeleniumTestCase):
         """Skip accessibility checks for custom tools tests due to Monaco editor issues."""
         pass
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_create_custom_tool(self):
         """Test creating a new custom tool through the UI."""
@@ -26,6 +28,7 @@ class TestCustomTools(SeleniumTestCase):
             assert tool_uuid, "Tool UUID should be returned after saving."
             self.components.custom_tools.tool_link(tool_uuid=tool_uuid).wait_for_clickable()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_run_custom_tool(self):
         test_path = self.get_filename("1.fasta")
@@ -85,22 +88,20 @@ inputs:
 type: data
 
 """
-        tool_yaml_three = (
-            """
+        tool_yaml_three = """
 outputs:
 - name: output1
   type: data
 format_source: datasets
 from_work_dir: output.txt
 """
-            ""
-        )
-        # Try finding Monaco editor textarea and replace skeleton content
-        self.sleep_for(self.wait_types.UX_RENDER)  # Allow editor to focus
-        editor = self.wait_for_selector_visible(".monaco-editor div.view-line")
+        # Try finding Monaco editor and replace skeleton content
+        self.sleep_for(self.wait_types.UX_RENDER)  # Allow editor to initialize
+        # Use the stable .monaco-editor container, not .view-line which gets re-rendered
+        editor_container = self.wait_for_selector_visible(".monaco-editor")
 
-        # Focus the editor first
-        editor.click()
+        # Focus the editor by clicking on the stable container
+        editor_container.click()
         self.sleep_for(self.wait_types.UX_RENDER)  # Allow editor to focus
 
         is_mac = platform.system() == "Darwin"

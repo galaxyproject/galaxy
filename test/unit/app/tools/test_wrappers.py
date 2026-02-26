@@ -41,13 +41,11 @@ def with_mock_tool(func):
 def selectwrapper(tool, value, multiple=False, optional=False):
     optional = 'optional="true"' if optional else ""
     multiple = 'multiple="true"' if multiple else ""
-    xml = XML(
-        f"""<param name="blah" type="select" {multiple} {optional}>
+    xml = XML(f"""<param name="blah" type="select" {multiple} {optional}>
         <option value="x">I am X</option>
         <option value="y" selected="true">I am Y</option>
         <option value="z">I am Z</option>
-    </param>"""
-    )
+    </param>""")
     parameter = SelectToolParameter(tool, xml)
     return SelectToolParameterWrapper(parameter, value)
 
@@ -265,8 +263,7 @@ def test_dataset_false_extra_files_path():
 
 
 def _drilldown_parameter(tool):
-    xml = XML(
-        """<param name="some_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
+    xml = XML("""<param name="some_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
         <options>
             <option name="Heading 1" value="heading1">
                 <option name="Option 1" value="option1"/>
@@ -278,23 +275,20 @@ def _drilldown_parameter(tool):
             </option>
            <option name="Option 5" value="option5"/>
       </options>
-    </param>"""
-    )
+    </param>""")
     parameter = DrillDownSelectToolParameter(tool, xml)
     return parameter
 
 
 def _setup_blast_tool(tool, multiple=False):
     tool.app.write_test_tool_data("blastdb.loc", "val1\tname1\tpath1\nval2\tname2\tpath2\n")
-    xml = XML(
-        f"""<param name="database" type="select" label="Nucleotide BLAST database" multiple="{multiple}">
+    xml = XML(f"""<param name="database" type="select" label="Nucleotide BLAST database" multiple="{multiple}">
         <options from_file="blastdb.loc">
             <column name="value" index="0"/>
             <column name="name" index="1"/>
             <column name="path" index="2"/>
         </options>
-    </param>"""
-    )
+    </param>""")
     parameter = SelectToolParameter(tool, xml)
     return parameter
 

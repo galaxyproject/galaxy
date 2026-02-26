@@ -21,7 +21,7 @@
                     <span v-html="config.message_box_content"></span>
                 </Alert>
                 <Alert
-                    v-if="config.show_inactivity_warning && config.inactivity_box_content"
+                    v-if="showInactivityWarning && config.inactivity_box_content"
                     id="inactivebox"
                     class="rounded-0 m-0 p-2"
                     variant="warning">
@@ -47,34 +47,33 @@
     </div>
 </template>
 <script>
-import { getGalaxyInstance } from "app";
-import ConfirmDialog from "components/ConfirmDialog";
-import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
-import Toast from "components/Toast";
-import { setConfirmDialogComponentRef } from "composables/confirmDialog";
-import { setGlobalUploadModal } from "composables/globalUploadModal";
-import { setToastComponentRef } from "composables/toast";
-import { WindowManager } from "layout/window-manager";
-import Modal from "mvc/ui/ui-modal";
-import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
+import { getGalaxyInstance } from "@/app";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import short from "@/components/plugins/short";
+import Toast from "@/components/Toast";
+import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
+import { setGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useRouteQueryBool } from "@/composables/route";
+import { setToastComponentRef } from "@/composables/toast";
+import { getAppRoot } from "@/onload";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 
+import { WindowManager } from "./window-manager";
+
 import Alert from "@/components/Alert.vue";
 import DragGhost from "@/components/DragGhost.vue";
+import Masthead from "@/components/Masthead/Masthead.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 import TourRunner from "@/components/Tour/TourRunner.vue";
-import Masthead from "components/Masthead/Masthead.vue";
-import UploadModal from "components/Upload/UploadModal.vue";
+import UploadModal from "@/components/Upload/UploadModal.vue";
 
 export default {
     components: {
@@ -96,7 +95,6 @@ export default {
 
         const userStore = useUserStore();
         const { currentTheme } = storeToRefs(userStore);
-        const { currentHistory } = storeToRefs(useHistoryStore());
 
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
@@ -108,6 +106,8 @@ export default {
         setGlobalUploadModal(uploadModal);
 
         const embedded = useRouteQueryBool("embed");
+        const historyStore = useHistoryStore();
+        historyStore.startWatchingHistory();
 
         watch(
             () => embedded.value,
@@ -146,7 +146,6 @@ export default {
             confirmDialogRef,
             uploadModal,
             currentTheme,
-            currentHistory,
             embedded,
             currentTour,
         };
@@ -159,6 +158,9 @@ export default {
         };
     },
     computed: {
+        showInactivityWarning() {
+            return this.config.user_activation_on && this.Galaxy?.user?.id && !this.Galaxy.user.get("active");
+        },
         showMasthead() {
             const masthead = this.$route.query.hide_masthead;
             if (masthead !== undefined) {
@@ -188,17 +190,10 @@ export default {
             console.debug("App - Confirmation before route change: ", this.confirmation);
             this.$router.confirmation = this.confirmation;
         },
-        currentHistory() {
-            if (!this.embedded) {
-                this.Galaxy.currHistoryPanel.syncCurrentHistoryModel(this.currentHistory);
-            }
-        },
     },
     mounted() {
         if (!this.embedded) {
             this.Galaxy = getGalaxyInstance();
-            this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
-            this.Galaxy.modal = new Modal.View();
             this.Galaxy.frame = this.windowManager;
             if (this.Galaxy.config.interactivetools_enable) {
                 this.startWatchingEntryPoints();
@@ -233,5 +228,5 @@ export default {
 </script>
 
 <style lang="scss">
-@import "custom_theme_variables.scss";
+@import "../../style/scss/custom_theme_variables.scss";
 </style>

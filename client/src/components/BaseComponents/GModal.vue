@@ -22,6 +22,8 @@ const props = withDefaults(
         show?: boolean;
         /** Controls the modals size. If unset, size can be controlled via css `width` and `height` */
         size?: ComponentSize;
+        /** Makes the modal fill most of the screen with a small margin. If set, ignores other size settings */
+        fullscreen?: boolean;
         /** Shows confirm an cancel buttons in the footer, and sends out `ok` and `cancel` events */
         confirm?: boolean;
         /** Custom text for the Ok confirm button */
@@ -46,6 +48,7 @@ const props = withDefaults(
         show: false,
         confirm: false,
         size: undefined,
+        fullscreen: false,
         okText: undefined,
         cancelText: undefined,
         footer: false,
@@ -72,7 +75,7 @@ const sizeClass = computed(() => {
         classObject[prefix(props.size)] = true;
     }
 
-    return { ...classObject, "g-fixed-height": props.fixedHeight };
+    return { ...classObject, "g-fixed-height": props.fixedHeight, "g-fullscreen": props.fullscreen };
 });
 
 const dialog = ref<HTMLDialogElement | null>(null);
@@ -264,6 +267,13 @@ defineExpose({ showModal, hideModal });
         &.g-fixed-height {
             height: 800px;
         }
+    }
+
+    &.g-fullscreen {
+        width: calc(100vw - 6rem);
+        height: calc(100vh - 6rem);
+        max-width: calc(100vw - 6rem);
+        max-height: calc(100vh - 6rem);
     }
 
     header {

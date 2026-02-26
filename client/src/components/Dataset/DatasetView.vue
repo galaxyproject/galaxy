@@ -8,19 +8,20 @@ import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useDatatypeStore } from "@/stores/datatypeStore";
+import STATES from "@/utils/datasetStates";
 import { withPrefix } from "@/utils/redirect";
 import { bytesToString } from "@/utils/utils";
 
 import DatasetError from "../DatasetInformation/DatasetError.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import DatasetAsImage from "./DatasetAsImage/DatasetAsImage.vue";
+import DatasetDisplay from "./DatasetDisplay.vue";
 import DatasetState from "./DatasetState.vue";
 import Heading from "@/components/Common/Heading.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
-import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
-import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
+import VisualizationDisplay from "@/components/Visualizations/VisualizationDisplay.vue";
 
 const datasetStore = useDatasetStore();
 const datatypeStore = useDatatypeStore();
@@ -41,6 +42,8 @@ const props = withDefaults(defineProps<Props>(), {
 const iframeLoading = ref(true);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
+const loadError = computed(() => datasetStore.getDatasetError(props.datasetId));
+const downloadUrl = computed(() => withPrefix(`/datasets/${props.datasetId}/display`));
 const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
 
 // Track datatype loading state
@@ -51,16 +54,16 @@ const isLoading = computed(() => {
     return datasetStore.isLoadingDataset(props.datasetId) || isDatatypeLoading.value || datatypesMapperStore.loading;
 });
 
-const showError = computed(
-    () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata"),
-);
+// Match datatype variant
 const isAutoDownloadType = computed(
     () => dataset.value && datatypeStore.isDatatypeAutoDownload(dataset.value.file_ext),
 );
-const downloadUrl = computed(() => withPrefix(`/datasets/${props.datasetId}/display`));
-const preferredVisualization = computed(
-    () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext),
-);
+const isBinaryDataset = computed(() => {
+    if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
+        return false;
+    }
+    return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, ["galaxy.datatypes.binary"]);
+});
 const isImageDataset = computed(() => {
     if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
         return false;
@@ -69,10 +72,18 @@ const isImageDataset = computed(() => {
         "galaxy.datatypes.images.Image",
     ]);
 });
-
 const isPdfDataset = computed(() => {
     return dataset.value?.file_ext === "pdf";
 });
+
+// Has a preferred visualization?
+const preferredVisualization = computed(
+    () => dataset.value && datatypeStore.getPreferredVisualization(dataset.value.file_ext),
+);
+
+// Match dataset state
+const showError = computed(() => dataset.value && STATES.ERROR === dataset.value.state);
+const showOk = computed(() => dataset.value && STATES.OK_STATES.includes(dataset.value.state));
 
 // Watch for changes to the dataset to fetch datatype info
 watch(
@@ -92,8 +103,17 @@ watch(
 </script>
 
 <template>
-    <LoadingSpan v-if="isLoading || !dataset" message="Loading dataset details" />
-    <div v-else class="dataset-view d-flex flex-column h-100">
+    <div v-if="loadError" class="alert alert-danger m-4">
+        <h4 class="alert-heading">Dataset Not Available</h4>
+        <p>
+            {{
+                loadError.message ||
+                "This dataset could not be loaded. It may not exist or you may not have permission to access it."
+            }}
+        </p>
+    </div>
+    <LoadingSpan v-else-if="isLoading || !dataset" message="Loading dataset details" />
+    <div v-else class="dataset-view d-flex flex-column">
         <header v-if="!displayOnly" :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
             <div class="d-flex">
                 <Heading
@@ -142,20 +162,21 @@ watch(
         </header>
         <BNav v-if="!displayOnly" pills class="my-2 p-2 bg-light border-bottom">
             <BNavItem
+                v-if="showOk"
                 title="View a preview of the dataset contents"
                 :active="tab === 'preview'"
                 :to="`/datasets/${datasetId}/preview`">
                 <FontAwesomeIcon :icon="faEye" class="mr-1" /> Preview
             </BNavItem>
             <BNavItem
-                v-if="preferredVisualization"
+                v-if="showOk && preferredVisualization"
                 title="View raw dataset contents"
                 :active="tab === 'raw'"
                 :to="`/datasets/${datasetId}/raw`">
                 <FontAwesomeIcon :icon="faFileAlt" class="mr-1" /> Raw
             </BNavItem>
             <BNavItem
-                v-if="!showError"
+                v-if="showOk"
                 title="Explore available visualizations for this dataset"
                 :active="tab === 'visualize'"
                 :to="`/datasets/${datasetId}/visualize`">
@@ -181,18 +202,13 @@ watch(
                 <FontAwesomeIcon :icon="faBug" class="mr-1" /> Error
             </BNavItem>
         </BNav>
-        <div v-if="tab === 'preview'" class="h-100">
-            <VisualizationFrame
+        <div v-if="tab === 'preview'" class="tab-content-panel">
+            <VisualizationDisplay
                 v-if="preferredVisualization"
                 :dataset-id="datasetId"
                 :visualization="preferredVisualization"
                 @load="iframeLoading = false" />
-            <CenterFrame
-                v-else-if="isPdfDataset"
-                :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is-preview="true"
-                @load="iframeLoading = false" />
-            <div v-else-if="isAutoDownloadType" class="auto-download-message p-4">
+            <div v-else-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">
                 <div class="alert alert-info">
                     <h4>Download Required</h4>
                     <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
@@ -203,23 +219,14 @@ watch(
                 </div>
             </div>
             <DatasetAsImage
-                v-else-if="isImageDataset"
+                v-else-if="isImageDataset && !isPdfDataset"
                 :history-dataset-id="datasetId"
                 :allow-size-toggle="true"
                 class="p-3" />
-            <CenterFrame
-                v-else
-                :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is-preview="true"
-                @load="iframeLoading = false" />
+            <DatasetDisplay v-else :dataset-id="datasetId" :is-binary="isBinaryDataset" @load="iframeLoading = false" />
         </div>
-        <div v-else-if="tab === 'raw'" class="h-100">
-            <CenterFrame
-                v-if="isPdfDataset"
-                :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is-preview="true"
-                @load="iframeLoading = false" />
-            <div v-else-if="isAutoDownloadType" class="auto-download-message p-4">
+        <div v-else-if="tab === 'raw'" class="tab-content-panel">
+            <div v-if="isAutoDownloadType && !isPdfDataset" class="auto-download-message p-4">
                 <div class="alert alert-info">
                     <h4>Download Required</h4>
                     <p>This file type ({{ dataset.file_ext }}) will download automatically when accessed directly.</p>
@@ -229,11 +236,7 @@ watch(
                     </a>
                 </div>
             </div>
-            <CenterFrame
-                v-else
-                :src="`/datasets/${datasetId}/display/?preview=True`"
-                :is-preview="true"
-                @load="iframeLoading = false" />
+            <DatasetDisplay v-else :dataset-id="datasetId" :is-binary="isBinaryDataset" @load="iframeLoading = false" />
         </div>
         <div v-else-if="tab === 'visualize'" class="tab-content-panel">
             <VisualizationsList :dataset-id="datasetId" />
@@ -251,7 +254,7 @@ watch(
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .header-details {
     padding-left: 1rem;
@@ -318,8 +321,7 @@ watch(
 .tab-content-panel {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-    overflow-y: auto;
+    overflow: auto;
     height: 100%;
 }
 

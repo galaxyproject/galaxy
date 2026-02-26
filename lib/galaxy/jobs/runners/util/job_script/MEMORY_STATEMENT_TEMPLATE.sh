@@ -1,4 +1,4 @@
-if [ -n "$SLURM_JOB_ID" ]; then
+if [ -z "$GALAXY_MEMORY_MB" -a -n "$SLURM_JOB_ID" ]; then
     GALAXY_MEMORY_MB=`scontrol -do show job "$SLURM_JOB_ID" | sed 's/.*\( \|^\)Mem=\([0-9][0-9]*\)\( \|$\).*/\2/p;d'` 2>$metadata_directory/memory_statement.log
 fi
 if [ -n "$SGE_HGR_h_vmem" ]; then

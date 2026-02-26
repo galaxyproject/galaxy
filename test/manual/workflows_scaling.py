@@ -5,6 +5,7 @@
 $ .venv/bin/python scripts/summarize_timings.py --file /tmp/<work_dir>/handler1.log --pattern 'Workflow step'
 $ .venv/bin/python scripts/summarize_timings.py --file /tmp/<work_dir>/handler1.log --pattern 'Created step'
 """
+
 import functools
 import json
 import os

@@ -1,3 +1,5 @@
+import { describe, expect, test } from "vitest";
+
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 
 const filterTexts = [

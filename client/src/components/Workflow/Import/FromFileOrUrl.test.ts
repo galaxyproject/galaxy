@@ -1,15 +1,19 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 
-import FromFileOrUrl from "./FromFileOrUrl.vue";
+import FromFile from "./FromFile.vue";
+import FromUrl from "./FromUrl.vue";
 
 let lastPostRequest: Map<string, string>;
 
-jest.mock("axios", () => ({
-    post: jest.fn((_url, request) => {
-        lastPostRequest = request;
-    }),
-    isAxiosError: jest.fn(() => true),
+vi.mock("axios", () => ({
+    default: {
+        post: vi.fn((_url, request) => {
+            lastPostRequest = request;
+        }),
+        isAxiosError: vi.fn(() => true),
+    },
 }));
 
 const localVue = getLocalVue(true);
@@ -19,9 +23,9 @@ const sharedUrlTrailingSlash = "http://127.0.0.1:8081/u/admin/w/unnamed-workflow
 const sharedUrlJson = "http://127.0.0.1:8081/u/admin/w/unnamed-workflow/json";
 const invalidUrl = "http://127.0.0.1:8081/u/admin/w/unnamed-workflow/additional-stuff/";
 
-describe("FromFileOrUrl", () => {
+describe("FromUrl", () => {
     it("converts shared urls to json urls", async () => {
-        const wrapper = mount(FromFileOrUrl as object, { localVue });
+        const wrapper = mount(FromUrl as object, { localVue });
 
         {
             const input = wrapper.find("#workflow-import-url-input");
@@ -62,5 +66,12 @@ describe("FromFileOrUrl", () => {
 
             expect(lastPostRequest.get("archive_source")).toEqual(invalidUrl);
         }
+    });
+});
+
+describe("FromFile", () => {
+    it("can mount the component", async () => {
+        const wrapper = mount(FromFile as object, { localVue });
+        expect(wrapper.find("#workflow-import-button").exists()).toBe(true);
     });
 });

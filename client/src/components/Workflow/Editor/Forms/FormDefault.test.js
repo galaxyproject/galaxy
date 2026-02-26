@@ -1,9 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import FormDefault from "./FormDefault";
+import FormDefault from "./FormDefault.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
@@ -34,7 +35,7 @@ describe("FormDefault", () => {
                 },
             },
             localVue,
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
             provide: {
                 workflowId: "mock-workflow",
             },

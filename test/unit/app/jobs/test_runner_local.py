@@ -14,6 +14,8 @@ from galaxy import (
     model,
 )
 from galaxy.app_unittest_utils.tools_support import UsesTools
+from galaxy.jobs import MinimalJobWrapper
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
 from galaxy.util.unittest import TestCase
@@ -35,19 +37,19 @@ class TestLocalJobRunner(TestCase, UsesTools):
     def test_run(self):
         self.job_wrapper.command_line = "echo HelloWorld"
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.stdout.strip() == "HelloWorld"
 
     def test_galaxy_lib_on_path(self):
         self.job_wrapper.command_line = '''python -c "import galaxy.util"'''
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.exit_code == 0
 
     def test_default_slots(self):
         self.job_wrapper.command_line = """echo $GALAXY_SLOTS"""
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.stdout.strip() == "1"
 
     def test_slots_override(self):
@@ -56,18 +58,18 @@ class TestLocalJobRunner(TestCase, UsesTools):
         self.job_wrapper.job_destination.params["local_slots"] = 3
         self.job_wrapper.command_line = """echo $GALAXY_SLOTS"""
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.stdout.strip() == "3"
 
     def test_exit_code(self):
         self.job_wrapper.command_line = '''sh -c "exit 4"'''
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.exit_code == 4
 
     def test_metadata_gets_set(self):
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert os.path.exists(self.job_wrapper.mock_metadata_path)
 
     def test_metadata_gets_set_if_embedded(self):
@@ -78,7 +80,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
         self.app.datatypes_registry.set_external_metadata_tool = None
 
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert os.path.exists(self.job_wrapper.mock_metadata_path)
 
     def test_stopping_job(self):
@@ -86,7 +88,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
         runner = local.LocalJobRunner(self.app, 1)
 
         def queue():
-            runner.queue_job(self.job_wrapper)
+            runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
 
         t = threading.Thread(target=queue)
         t.start()
@@ -110,7 +112,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
         self.app.config.monitor_thread_join_timeout = 15
 
         def queue():
-            runner.queue_job(self.job_wrapper)
+            runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
 
         t = threading.Thread(target=queue)
         t.start()
@@ -139,7 +141,7 @@ class MockJobWrapper:
         self.working_directory = working_directory
         self.tool_working_directory = tool_working_directory
         self.requires_setting_metadata = True
-        self.job_destination = bunch.Bunch(id="default", params={})
+        self.job_destination = JobDestination(id="default", params={})
         self.galaxy_lib_dir = os.path.abspath("lib")
         self.job = model.Job()
         self.job_id = 1

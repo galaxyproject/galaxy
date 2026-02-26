@@ -1,6 +1,7 @@
 from typing import (
     Any,
 )
+from urllib.parse import urljoin
 
 from a2wsgi import WSGIMiddleware
 from fastapi import (
@@ -8,7 +9,14 @@ from fastapi import (
     Request,
 )
 from fastapi.openapi.constants import REF_TEMPLATE
+from slowapi import (
+    _rate_limit_exceeded_handler,
+    Limiter,
+)
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from starlette.middleware.cors import CORSMiddleware
+from tuspyserver import create_tus_router
 
 from galaxy.schema.generics import CustomJsonSchema
 from galaxy.version import VERSION
@@ -87,6 +95,14 @@ api_tags_metadata = [
         "description": "Operations with remote dataset sources.",
     },
     {"name": "undocumented", "description": "API routes that have not yet been ported to FastAPI."},
+    {
+        "name": "ai",
+        "description": "**BETA**: AI agent operations. This API is experimental and may change without notice.",
+    },
+    {
+        "name": "chat",
+        "description": "**BETA**: Chat interface for AI agents. This API is experimental and may change without notice.",
+    },
 ]
 
 
@@ -165,11 +181,30 @@ def get_openapi_schema() -> dict[str, Any]:
     )
 
 
+def include_tus(app: FastAPI, gx_app):
+    config = gx_app.config
+    root_path = "" if config.galaxy_url_prefix == "/" else config.galaxy_url_prefix
+    upload_tus_router = create_tus_router(
+        prefix=urljoin(root_path, "api/upload/resumable_upload"),
+        files_dir=config.tus_upload_store or config.new_file_path,
+        max_size=config.maximum_upload_file_size,
+    )
+    job_files_tus_router = create_tus_router(
+        prefix=urljoin(root_path, "api/job_files/resumable_upload"),
+        files_dir=config.tus_upload_store_job_files or config.tus_upload_store or config.new_file_path,
+        max_size=config.maximum_upload_file_size,
+    )
+    app.include_router(upload_tus_router)
+    app.include_router(job_files_tus_router)
+
+
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
     app = get_fastapi_instance(root_path=root_path)
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
     if gx_app.config.use_access_logging_middleware:
         add_raw_context_middlewares(app)
     else:
@@ -178,6 +213,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     include_legacy_openapi(app, gx_app)
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
+    include_tus(app, gx_app)
     app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()
@@ -185,6 +221,18 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
         return parent_app
     return app
 
+
+def galaxy_rate_limit_key(request: Request) -> str:
+    api_key = request.headers.get("x-api-key") or request.query_params.get("key")
+    if api_key:
+        return f"api_key:{api_key}"
+    session_key = request.cookies.get("galaxysession")
+    if session_key:
+        return f"session:{session_key}"
+    return get_remote_address(request)
+
+
+limiter = Limiter(key_func=galaxy_rate_limit_key)
 
 __all__ = (
     "add_galaxy_middleware",

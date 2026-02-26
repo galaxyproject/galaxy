@@ -6,7 +6,7 @@ from json import dumps
 from typing import (
     Any,
     cast,
-    Literal,
+    get_args,
     Optional,
     Union,
 )
@@ -18,6 +18,7 @@ from galaxy import (
     util,
 )
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.exceptions.utils import api_error_to_dict
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.context import (
@@ -51,6 +52,7 @@ from galaxy.schema.fetch_data import (
 )
 from galaxy.schema.schema import CreateToolLandingRequestPayload
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.tool_util.parameters import ToolParameterT
 from galaxy.tool_util_models.parameters import (
     CollectionElementCollectionRequestUri,
     CollectionElementDataRequestUri,
@@ -59,6 +61,7 @@ from galaxy.tool_util_models.parameters import (
     FileRequestUri,
 )
 from galaxy.tools import Tool
+from galaxy.tools._types import InputFormatT
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
@@ -107,6 +110,17 @@ def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandin
 
     This function transforms data/collection requests (used in workflow landing and data request payloads) into the fetch API's target format.
     """
+    # Validate sample sheet metadata before conversion
+    for request_item in data_landing_payload.request_state:
+        if isinstance(request_item, DataRequestCollectionUri):
+            has_sample_sheet_metadata = request_item.column_definitions is not None or request_item.rows is not None
+            if has_sample_sheet_metadata:
+                collection_type = request_item.collection_type
+                if not collection_type.startswith("sample_sheet"):
+                    raise RequestParameterInvalidException(
+                        f"Sample sheet metadata (column_definitions, rows) can only be used with collection_type 'sample_sheet' or 'sample_sheet:<type>', not '{collection_type}'"
+                    )
+
     targets: list[Union[DataElementsTarget, HdcaDataItemsTarget]] = []
 
     for request_item in data_landing_payload.request_state:
@@ -172,6 +186,8 @@ def file_landing_payload_to_fetch_targets(data_landing_payload: CreateFileLandin
                     elements=elements,
                     collection_type=request_item.collection_type,
                     name=request_item.name,
+                    column_definitions=request_item.column_definitions,
+                    rows=request_item.rows,
                 )
             )
 
@@ -235,6 +251,16 @@ class ToolsService(ServiceBase):
             client_secret=data_landing_payload.client_secret,
             public=data_landing_payload.public,
         )
+
+    def inputs(
+        self,
+        trans: ProvidesHistoryContext,
+        tool_ref: ToolRunReference,
+    ) -> list[ToolParameterT]:
+        tool = get_tool(trans, tool_ref)
+        if tool.parameters is None:
+            raise exceptions.RequestParameterInvalidException("Tool input parameter schema could not be retrieved.")
+        return tool.parameters
 
     def create_fetch(
         self,
@@ -326,9 +352,9 @@ class ToolsService(ServiceBase):
         preferred_object_store_id = payload.get("preferred_object_store_id")
         credentials_context = payload.get("credentials_context")
         input_format = str(payload.get("input_format", "legacy"))
-        if input_format not in ("legacy", "21.01"):
+        if input_format not in get_args(InputFormatT):
             raise exceptions.RequestParameterInvalidException(f"input_format invalid {input_format}")
-        input_format = cast(Literal["legacy", "21.01"], input_format)
+        input_format = cast(InputFormatT, input_format)  # https://github.com/python/mypy/issues/15106
         if "data_manager_mode" in payload:
             incoming["__data_manager_mode"] = payload["data_manager_mode"]
         tags = payload.get("__tags")

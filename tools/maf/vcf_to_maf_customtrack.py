@@ -77,7 +77,7 @@ def main():
         default=False,
         help="Tool is being executed by Galaxy (adds extra error messaging).",
     )
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     if len(args) < 3:
         if options.galaxy:

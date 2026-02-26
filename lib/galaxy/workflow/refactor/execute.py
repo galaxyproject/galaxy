@@ -22,6 +22,7 @@ from .schema import (
     FillStepDefaultsAction,
     InputReferenceByOrderIndex,
     OutputReferenceByOrderIndex,
+    Position,
     RefactorActionExecution,
     RefactorActionExecutionMessage,
     RefactorActionExecutionMessageTypeEnum,
@@ -50,6 +51,11 @@ log = logging.getLogger(__name__)
 
 
 class WorkflowRefactorExecutor:
+    # Constants for automatic input positioning
+    BASE_POSITION = 10
+    VERTICAL_SPACING = 120
+    HORIZONTAL_SPACING = 220
+
     def __init__(self, raw_workflow_description, workflow, module_injector: WorkflowModuleInjector):
         # we mostly use the ga representation, but there may be cases where the
         # models/modules of existing workflow are more usable.
@@ -61,6 +67,8 @@ class WorkflowRefactorExecutor:
             ignore_tool_missing_exception=True,
             allow_tool_state_corrections=module_injector.allow_tool_state_corrections,
         )
+        # Track positions of newly created input steps during refactoring
+        self._new_input_positions: list[Position] = []
 
     def refactor(self, refactor_request: RefactorActions):
         action_executions = []
@@ -115,6 +123,64 @@ class WorkflowRefactorExecutor:
     def _apply_update_report(self, action: UpdateReportAction, execution: RefactorActionExecution):
         self._as_dict["report"] = {"markdown": action.report.markdown}
 
+    def _get_next_input_position(self):
+        """
+        Calculate a non-overlapping position for a new input step.
+        Places inputs to the left of all existing non-input workflow steps,
+        and stacks them vertically to avoid overlapping with existing inputs.
+        """
+        # Find the minimum left position of all existing non-input workflow steps
+        min_left_non_input = None
+        # Find all existing input step positions to avoid overlaps
+        existing_input_positions = []
+
+        for step in self._as_dict["steps"].values():
+            if "position" in step and step["position"]:
+                step_left = step["position"].get("left")
+                step_top = step["position"].get("top")
+
+                if step_left is not None:
+                    # Track existing input positions
+                    if step.get("type") in ["data_input", "data_collection_input", "parameter_input"]:
+                        if step_top is not None:
+                            existing_input_positions.append((step_left, step_top))
+                    else:
+                        # Track minimum left position of non-input steps
+                        if min_left_non_input is None or step_left < min_left_non_input:
+                            min_left_non_input = step_left
+
+        if min_left_non_input is not None:
+            # Place inputs one column to the left (subtract HORIZONTAL_SPACING)
+            # (Negative positions are normalized?)
+            left = min_left_non_input - self.HORIZONTAL_SPACING
+        else:
+            left = self.BASE_POSITION
+
+        # Calculate top position: stack vertically, avoiding existing inputs
+        # Start with the base position and increment by VERTICAL_SPACING
+        position_index = len(self._new_input_positions)
+        top = self.BASE_POSITION + (self.VERTICAL_SPACING * position_index)
+
+        # Check if this position overlaps with any existing input at the same left coordinate
+        overlap_found = True
+        while overlap_found:
+            overlap_found = False
+            for existing_left, existing_top in existing_input_positions:
+                # If inputs are in approximately the same column (within HORIZONTAL_SPACING/2)
+                if abs(existing_left - left) < (self.HORIZONTAL_SPACING / 2):
+                    # Check if they overlap vertically (within VERTICAL_SPACING)
+                    if abs(existing_top - top) < self.VERTICAL_SPACING:
+                        # Overlap detected, move down
+                        top += self.VERTICAL_SPACING
+                        overlap_found = True
+                        break
+
+        position = Position(left=left, top=top)
+
+        # Track this new input position
+        self._new_input_positions.append(position)
+        return position
+
     def _apply_add_step(self, action: AddStepAction, execution: RefactorActionExecution):
         steps = self._as_dict["steps"]
         order_index = len(steps)
@@ -159,8 +225,13 @@ class WorkflowRefactorExecutor:
         if action.label:
             add_step_kwds["label"] = action.label
 
+        # If no position is provided, calculate a non-overlapping position
+        position = action.position
+        if position is None:
+            position = self._get_next_input_position()
+
         add_step_action = AddStepAction(
-            action_type="add_step", type=module_type, tool_state=tool_state, position=action.position, **add_step_kwds
+            action_type="add_step", type=module_type, tool_state=tool_state, position=position, **add_step_kwds
         )
         self._apply_add_step(add_step_action, execution)
 

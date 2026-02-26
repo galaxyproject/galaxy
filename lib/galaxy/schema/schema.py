@@ -9,7 +9,9 @@ from enum import Enum
 from typing import (
     Annotated,
     Any,
+    Literal,
     Optional,
+    TypeAlias,
     Union,
 )
 from uuid import UUID
@@ -29,11 +31,11 @@ from pydantic import (
 )
 from pydantic_core import core_schema
 from typing_extensions import (
-    Literal,
     NotRequired,
     TypedDict,
 )
 
+from galaxy.schema.agents import AgentResponse
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -48,6 +50,11 @@ from galaxy.schema.tours import TourDetails
 from galaxy.schema.types import (
     OffsetNaiveDatetime,
     RelativeUrl,
+)
+from galaxy.tool_util_models.sample_sheet import (
+    SampleSheetColumnDefinitions,
+    SampleSheetRow,
+    SampleSheetRows,
 )
 from galaxy.tool_util_models.tool_source import FieldDict
 from galaxy.util.config_templates import partial_model
@@ -375,33 +382,6 @@ class LimitedUserModel(Model):
 
 MaybeLimitedUserModel = Union[UserModel, LimitedUserModel]
 
-# named in compatibility with CWL - trying to keep CWL fields in mind with
-# this implementation. https://www.commonwl.org/user_guide/topics/inputs.html#inputs
-# element_identifier is not like CWL - it is used to specify the value in the row should
-# be the element_identifier for another element if present. It is a way to specify relationships
-# between elements in the collection - specifically implemented for the "control" use case.
-SampleSheetColumnType = Literal[
-    "string", "int", "float", "boolean", "element_identifier"
-]  # excluding "long" and "double" and composite types from CWL for now - we don't think at this level of abstraction in Galaxy generally
-NoneType = type(None)
-SampleSheetColumnValueT = Union[int, float, bool, str, NoneType]
-
-
-class SampleSheetColumnDefinition(TypedDict):
-    name: str
-    description: NotRequired[Optional[str]]
-    type: SampleSheetColumnType
-    optional: bool
-    default_value: NotRequired[Optional[SampleSheetColumnValueT]]
-    validators: NotRequired[Optional[list[dict[str, Any]]]]
-    restrictions: NotRequired[Optional[list[SampleSheetColumnValueT]]]
-    suggestions: NotRequired[Optional[list[SampleSheetColumnValueT]]]
-
-
-SampleSheetColumnDefinitions = list[SampleSheetColumnDefinition]
-SampleSheetRow = list[SampleSheetColumnValueT]
-SampleSheetRows = dict[str, SampleSheetRow]
-
 
 class DiskUsageUserModel(Model):
     total_disk_usage: float = TotalDiskUsageField
@@ -595,18 +575,15 @@ class HistoryContentSource(str, Enum):
 DatasetCollectionInstanceType = Literal["history", "library"]
 
 
-TagItem = Annotated[str, Field(..., pattern=TAG_ITEM_PATTERN)]
-
-
-class TagCollection(RootModel):
-    """Represents the collection of tags associated with an item."""
-
-    root: list[TagItem] = Field(
-        default=...,
+TagItem: TypeAlias = Annotated[str, Field(pattern=TAG_ITEM_PATTERN)]
+TagCollection: TypeAlias = Annotated[
+    list[TagItem],
+    Field(
         title="Tags",
         description="The collection of tags associated with an item.",
         examples=["COVID-19", "#myFancyTag", "covid19.galaxyproject.org"],
-    )
+    ),
+]
 
 
 class MetadataFile(Model):
@@ -1672,6 +1649,7 @@ class JobIndexQueryPayload(Model):
     workflow_id: Optional[DecodedDatabaseIdField] = None
     invocation_id: Optional[DecodedDatabaseIdField] = None
     implicit_collection_jobs_id: Optional[DecodedDatabaseIdField] = None
+    tool_request_id: Optional[DecodedDatabaseIdField] = None
     order_by: JobIndexSortByEnum = JobIndexSortByEnum.update_time
     search: Optional[str] = None
     limit: int = 500
@@ -1798,7 +1776,7 @@ class CreateNewCollectionPayload(Model):
     column_definitions: Optional[SampleSheetColumnDefinitions] = Field(
         default=None,
         title="Column Definitions",
-        description="Specify definitions for row data if collection_type if sample_sheet",
+        description="Specify definitions for row data if collection_type is sample_sheet",
     )
     rows: Optional[SampleSheetRows] = Field(
         default=None,
@@ -1861,10 +1839,28 @@ class ModelStoreFormat(str, Enum):
         return value in [cls.BAG_DOT_TAR, cls.BAG_DOT_TGZ, cls.BAG_DOT_ZIP]
 
 
+class DiscardedDataType(str, Enum):
+    """Options for handling discarded datasets on import."""
+
+    # Don't allow discarded 'okay' datasets on import, datasets will be marked deleted.
+    FORBID = "forbid"
+    # Allow datasets to be imported as DISCARDED datasets that are not deleted if file data is unavailable.
+    ALLOW = "allow"
+    # Import all datasets as discarded regardless of whether file data is available in the store.
+    FORCE = "force"
+
+
 class StoreContentSource(Model):
     store_content_uri: Optional[str] = None
     store_dict: Optional[dict[str, Any]] = None
     model_store_format: Optional["ModelStoreFormat"] = None
+    discarded_data: DiscardedDataType = Field(
+        default=DiscardedDataType.ALLOW,
+        title="Discarded Data",
+        description="How to handle datasets with unavailable data. 'forbid': mark as deleted, "
+        "'allow': import as discarded but not deleted, 'force': import all datasets as discarded "
+        "regardless of whether file data is available (useful for importing metadata only).",
+    )
 
 
 class CreateHistoryFromStore(StoreContentSource):
@@ -2351,7 +2347,7 @@ class JobMetric(Model):
 class WorkflowJobMetric(JobMetric):
     tool_id: str
     job_id: str
-    step_index: int
+    step_index: Union[int, str]  # int for top-level steps, str for subworkflow steps (e.g., "1.0")
     step_label: Optional[str]
 
 
@@ -2608,7 +2604,7 @@ class Creator(Model):
     )
 
 
-class Organization(Creator):
+class CreatorOrganization(Creator):
     class_: str = Field(
         "Organization",
         alias="class",
@@ -2825,7 +2821,7 @@ class WorkflowToExport(Model):
         title="UUID",
         description="Universal unique identifier of the workflow.",
     )
-    creator: Optional[list[Union[Person, Organization]]] = Field(
+    creator: Optional[list[Union[Person, CreatorOrganization]]] = Field(
         None,
         title="Creator",
         description=("Additional information about the creator (or multiple creators) of this workflow."),
@@ -3887,6 +3883,16 @@ class ChatPayload(Model):
         title="Context",
         description="The context for the chatbot.",
     )
+    exchange_id: Optional[int] = Field(
+        default=None,
+        title="Exchange ID",
+        description="The ID of an existing chat exchange to continue.",
+    )
+    regenerate: Optional[bool] = Field(
+        default=None,
+        title="Regenerate",
+        description="Force fresh analysis even if a cached response exists (for job-based queries). Defaults to false if not provided.",
+    )
 
 
 class ChatResponse(BaseModel):
@@ -3904,6 +3910,21 @@ class ChatResponse(BaseModel):
         ...,
         title="Error Message",
         description="The error message, if any, for the chat query.",
+    )
+    agent_response: Optional[AgentResponse] = Field(
+        default=None,
+        title="Agent Response",
+        description="Full structured agent response with metadata and suggestions.",
+    )
+    exchange_id: Optional[int] = Field(
+        default=None,
+        title="Exchange ID",
+        description="The ID of the chat exchange for continuing conversations.",
+    )
+    processing_time: Optional[float] = Field(
+        default=None,
+        title="Processing Time",
+        description="Time taken to process the query in seconds.",
     )
 
 
@@ -3984,6 +4005,22 @@ class ToolRequestModel(Model):
     request: dict[str, Any]
     state: ToolRequestState
     state_message: Optional[str]
+
+
+class ToolRequestJobReference(Model):
+    src: Literal["job"]
+    id: EncodedDatabaseIdField
+
+
+class ToolRequestImplicitCollectionReference(Model):
+    src: Literal["hdca"]
+    id: EncodedDatabaseIdField
+    output_name: str
+
+
+class ToolRequestDetailedModel(ToolRequestModel):
+    jobs: list[ToolRequestJobReference] = Field(default=[])
+    implicit_collections: list[ToolRequestImplicitCollectionReference] = Field(default=[])
 
 
 class AsyncFile(Model):
@@ -4111,7 +4148,7 @@ class CreateToolLandingRequestPayload(Model):
 
 class CreateWorkflowLandingRequestPayload(Model):
     workflow_id: str
-    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url"]
+    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url", "url"]
     request_state: Optional[dict[str, Any]] = None
     client_secret: Optional[str] = None
     public: bool = Field(
@@ -4137,7 +4174,7 @@ class ToolLandingRequest(Model):
 class WorkflowLandingRequest(Model):
     uuid: UuidField
     workflow_id: str
-    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url"]
+    workflow_target_type: Literal["stored_workflow", "workflow", "trs_url", "url"]
     request_state: dict[str, Any]
     state: LandingRequestState
     origin: Optional[HttpUrl] = None

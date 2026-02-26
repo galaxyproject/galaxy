@@ -1,17 +1,16 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
-import { HttpResponse } from "@/api/client/__mocks__/index";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import MountTarget from "./LoginForm.vue";
 
 const localVue = getLocalVue(true);
-const testingPinia = createTestingPinia({ stubActions: false });
+const router = injectTestRouter(localVue);
+const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
 
 const { server, http } = useServerMock();
 
@@ -20,12 +19,20 @@ const SELECTORS = {
     REGISTRATION_DISABLED: "[data-description='registration disabled message']",
 };
 
+interface PostRequest {
+    url: string;
+    data: Record<string, unknown>;
+}
+
+let postRequests: PostRequest[] = [];
+
 async function mountLoginForm() {
     const wrapper = mount(MountTarget as object, {
         propsData: {
             sessionCsrfToken: "sessionCsrfToken",
         },
         localVue,
+        router,
         stubs: {
             ExternalLogin: true,
         },
@@ -36,19 +43,19 @@ async function mountLoginForm() {
 }
 
 describe("LoginForm", () => {
-    let axiosMock: MockAdapter;
-
     beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
+        postRequests = [];
         server.use(
             http.get("/api/configuration", ({ response }) => {
-                return response.untyped(HttpResponse.json({ oidc: { cilogon: false, custos: false } }));
+                return response.untyped(HttpResponse.json({ oidc: { cilogon: false } }));
+            }),
+            http.untyped.post(/.*\/user\/login.*/, async ({ request }) => {
+                const url = request.url;
+                const data = (await request.json()) as Record<string, unknown>;
+                postRequests.push({ url, data });
+                return HttpResponse.json({});
             }),
         );
-    });
-
-    afterEach(() => {
-        axiosMock.reset();
     });
 
     it("basics", async () => {
@@ -72,10 +79,11 @@ describe("LoginForm", () => {
 
         const submitButton = wrapper.find("button[type='submit']");
         await submitButton.trigger("submit");
+        await flushPromises();
 
-        const postedData = JSON.parse(axiosMock.history.post?.[0]?.data);
-        expect(postedData.login).toBe("test_user");
-        expect(postedData.password).toBe("test_pwd");
+        expect(postRequests.length).toBe(1);
+        expect(postRequests[0]?.data.login).toBe("test_user");
+        expect(postRequests[0]?.data.password).toBe("test_pwd");
     });
 
     it("props", async () => {
@@ -104,16 +112,30 @@ describe("LoginForm", () => {
         await flushPromises();
     });
 
+    it("hides register link when local accounts are disabled", async () => {
+        const wrapper = await mountLoginForm();
+
+        await wrapper.setProps({
+            allowUserCreation: true,
+            disableLocalAccounts: true,
+        });
+
+        expect(wrapper.findAll(SELECTORS.REGISTER_TOGGLE).length).toBe(0);
+        expect(wrapper.find(SELECTORS.REGISTRATION_DISABLED).exists()).toBeTruthy();
+    });
+
     it("connect external provider", async () => {
         const external_email = "test@test.com";
         const provider_id = "test_provider";
         const provider_label = "Provider";
 
-        const originalLocation = window.location;
-        jest.spyOn(window, "location", "get").mockImplementation(() => ({
-            ...originalLocation,
-            search: `?connect_external_email=${external_email}&connect_external_provider=${provider_id}&connect_external_label=${provider_label}`,
-        }));
+        // Mock window.location.search by overriding the property
+        const originalSearch = window.location.search;
+        Object.defineProperty(window.location, "search", {
+            configurable: true,
+            writable: true,
+            value: `?connect_external_email=${external_email}&connect_external_provider=${provider_id}&connect_external_label=${provider_label}`,
+        });
 
         const wrapper = await mountLoginForm();
 
@@ -142,13 +164,33 @@ describe("LoginForm", () => {
         const submitButton = wrapper.find("button[type='submit']");
 
         await submitButton.trigger("submit");
-
-        const postedData = JSON.parse(axiosMock.history.post?.[0]?.data);
-        expect(postedData.login).toBe(external_email);
-        expect(postedData.password).toBe("test_pwd");
-
-        const postedURL = axiosMock.history.post?.[0]?.url;
-        expect(postedURL).toBe("/user/login");
         await flushPromises();
+
+        expect(postRequests.length).toBe(1);
+        expect(postRequests[0]?.data.login).toBe(external_email);
+        expect(postRequests[0]?.data.password).toBe("test_pwd");
+        expect(postRequests[0]?.url).toContain("/user/login");
+
+        // Restore original search
+        Object.defineProperty(window.location, "search", {
+            configurable: true,
+            writable: true,
+            value: originalSearch,
+        });
+    });
+
+    it("renders message from query params", async () => {
+        const originalHref = window.location.href;
+        window.location.href = `${window.location.origin}/login/start?message=auth-error&status=info`;
+
+        const wrapper = await mountLoginForm();
+        await flushPromises();
+
+        const alert = wrapper.find(".alert");
+        expect(alert.exists()).toBe(true);
+        expect(alert.text()).toContain("auth-error");
+        expect(alert.classes()).toContain("alert-info");
+
+        window.location.href = originalHref;
     });
 });

@@ -3,6 +3,7 @@
 """
 Reads a list of intervals and a maf. Outputs a new set of intervals with statistics appended.
 """
+
 from __future__ import print_function
 
 import sys

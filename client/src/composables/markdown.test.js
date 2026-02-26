@@ -1,4 +1,6 @@
-import { useMarkdown } from "composables/markdown";
+import { describe, expect, it } from "vitest";
+
+import { useMarkdown } from "@/composables/markdown";
 
 describe("useMarkdown", () => {
     describe("renderMarkdown", () => {

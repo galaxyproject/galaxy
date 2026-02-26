@@ -24,7 +24,7 @@ import ListCollectionCreator from "./ListCollectionCreator.vue";
 import WhichBuilder from "./ListWizard/WhichBuilder.vue";
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
-import RuleCollectionBuilder from "components/RuleCollectionBuilder.vue";
+import RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
 
 interface Props {
     initialAdvanced: boolean;

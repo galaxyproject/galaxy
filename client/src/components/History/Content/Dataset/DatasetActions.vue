@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
@@ -14,8 +13,6 @@ import { absPath, prependPath } from "@/utils/redirect";
 import type { ItemUrls } from ".";
 
 import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownload.vue";
-
-library.add(faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap);
 
 interface Props {
     item: HDADetailed;

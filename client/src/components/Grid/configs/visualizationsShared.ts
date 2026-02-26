@@ -3,7 +3,6 @@ import { useEventBus } from "@vueuse/core";
 
 import { GalaxyApi } from "@/api";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
-import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import type { FieldArray, GridConfig } from "./types";
@@ -57,13 +56,9 @@ const fields: FieldArray = [
                 title: "View",
                 icon: faEye,
                 handler: (data: VisualizationEntry) => {
-                    if (data.type === "trackster") {
-                        window.location.href = withPrefix(`/visualization/${data.type}?id=${data.id}`);
-                    } else {
-                        emit(`/visualizations/display?visualization=${data.type}&visualization_id=${data.id}`, {
-                            title: data.title,
-                        });
-                    }
+                    emit(`/visualizations/display?visualization=${data.type}&visualization_id=${data.id}`, {
+                        title: data.title,
+                    });
                 },
             },
         ],

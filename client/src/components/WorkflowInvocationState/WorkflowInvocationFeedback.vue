@@ -114,7 +114,8 @@ async function submit(message: string): Promise<string[][] | undefined> {
             <InvocationMessageView
                 v-for="message in props.invocationMessages"
                 :key="message.reason"
-                :invocation-message="message" />
+                :invocation-message="message"
+                :invocation="props.invocation" />
         </div>
 
         <div v-if="steps && stepsWithErrors.length">

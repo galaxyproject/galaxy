@@ -3,6 +3,7 @@ Determine what optional dependencies are needed.
 """
 
 import os
+import re
 import sys
 from os.path import (
     dirname,
@@ -20,6 +21,7 @@ from galaxy.util import (
     parse_xml,
     which,
 )
+from galaxy.util.config_templates import apply_syntactic_sugar
 from galaxy.util.properties import (
     find_config_file,
     load_app_properties,
@@ -151,13 +153,20 @@ class ConditionalDependencies:
 
         # Parse file sources config
         file_sources_conf_yml = self.config_object.file_sources_config_file
-
         if exists(file_sources_conf_yml):
             with open(file_sources_conf_yml) as f:
                 file_sources_conf = yaml.safe_load(f)
         else:
             file_sources_conf = []
         self.file_sources = [c.get("type", None) for c in file_sources_conf]
+
+        # Parse file source templates config
+        file_source_templates_conf_yml = self.config_object.file_source_templates_config_file
+        if exists(file_source_templates_conf_yml):
+            with open(file_source_templates_conf_yml) as f:
+                file_source_templates_conf = apply_syntactic_sugar(yaml.safe_load(f))
+            for file_source_template in file_source_templates_conf:
+                self.file_sources.append(file_source_template["configuration"].get("type"))
 
         # Parse vault config
         vault_conf_yml = self.config_object.vault_config_file
@@ -263,10 +272,7 @@ class ConditionalDependencies:
     def check_fs_googledrivefs(self):
         return "googledrive" in self.file_sources
 
-    def check_fs_gcsfs(self):
-        return "googlecloudstorage" in self.file_sources
-
-    def check_google_cloud_storage(self):
+    def check_gcsfs(self):
         return "googlecloudstorage" in self.file_sources
 
     def check_onedatafilerestclient(self):
@@ -300,6 +306,11 @@ class ConditionalDependencies:
     def check_openai(self):
         return self.config.get("openai_api_key", None) is not None
 
+    def check_pydantic_ai(self):
+        return (
+            self.config.get("ai_api_key", None) is not None or self.config.get("inference_services", None) is not None
+        )
+
     def check_weasyprint(self):
         # See notes in ./conditional-requirements.txt for more information.
         return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
@@ -307,9 +318,6 @@ class ConditionalDependencies:
     def check_pydyf(self):
         # See notes in ./conditional-requirements.txt for more information.
         return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
-
-    def check_custos_sdk(self):
-        return "custos" == self.vault_type
 
     def check_hvac(self):
         return "hashicorp" == self.vault_type
@@ -333,8 +341,20 @@ class ConditionalDependencies:
 
         return celery_enabled and is_redis_url(celery_result_backend) or is_redis_url(celery_broker_url)
 
+    def check_adlfs(self):
+        return "azureflat" in self.file_sources
+
     def check_huggingface_hub(self):
         return "huggingface" in self.file_sources
+
+    def check_omero_py(self):
+        return "omero" in self.file_sources
+
+
+def strip_comment(line):
+    # lifted from https://github.com/tox-dev/tox/commit/3c6b4f204e89852c4b7536b246a66d20be6d39ec
+    # xref https://github.com/pyupio/dparse/issues/34
+    return re.sub(r"\s+#.*", "", line).strip()
 
 
 def optional(config_file=None):
@@ -347,5 +367,5 @@ def optional(config_file=None):
     conditional = ConditionalDependencies(config_file)
     for dependency in conditional.conditional_reqs:
         if conditional.check(dependency.name):
-            rval.append(dependency.line)
+            rval.append(strip_comment(dependency.line))
     return rval

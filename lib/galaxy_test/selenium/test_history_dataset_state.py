@@ -49,12 +49,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
         item.dbkey.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("history_panel_edit_dbkey_post_click")
-        self.components.edit_dataset_attributes.dbkey_dropdown.wait_for_and_click()
-        # choose database option from 'Database/Build' dropdown, that equals to dbkey_text
-        self.components.edit_dataset_attributes.dbkey_dropdown_results.dbkey_dropdown_option(
-            dbkey_text=TEST_DBKEY_TEXT
-        ).wait_for_and_click()
-        self.components.edit_dataset_attributes.save_button.wait_for_and_click()
+        self.edit_dataset_dbkey(TEST_DBKEY_TEXT)
         self.sleep_for(self.wait_types.JOB_COMPLETION)
         self.history_panel_wait_for_hid_ok(FIRST_HID)
         self.assert_item_dbkey_displayed_as(FIRST_HID, "apiMel3")
@@ -67,6 +62,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
         self.dataset_populator.create_contents_from_store(
             history_id,
             store_dict=one_hda_model_store_dict(include_source=False),
+            discarded_data="force",
         )
         # regression after 3/24/2022 - explicit refresh now required.
         self.home()

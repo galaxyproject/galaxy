@@ -24,6 +24,7 @@ from ._types import (
     XmlBool,
     XmlRegex,
 )
+from ._util import _assert_presence_number
 
 Path = Annotated[str, AssertionParameter("The Python xpath-like expression to find the target element.")]
 ElementExpression = Annotated[
@@ -256,7 +257,7 @@ def assert_xml_element(
     # assert that path is in output (the specified number of times)
 
     xml = parse_xml_string(output)
-    asserts._util._assert_presence_number(
+    _assert_presence_number(
         xml,
         path,
         n,

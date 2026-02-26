@@ -4,8 +4,8 @@ spaln Composite Dataset
 
 import logging
 import os.path
+from collections.abc import Callable
 from typing import (
-    Callable,
     Optional,
 )
 

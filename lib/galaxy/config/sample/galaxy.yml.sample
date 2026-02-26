@@ -23,7 +23,8 @@ gravity:
   # Process manager to use.
   # ``supervisor`` is the default process manager when Gravity is invoked as a non-root user.
   # ``systemd`` is the default when Gravity is invoked as root.
-  # Valid options are: supervisor, systemd
+  # ``multiprocessing`` is the default when Gravity is invoked as the foreground shortcut ``galaxy`` instead of ``galaxyctl``
+  # Valid options are: supervisor, systemd, multiprocessing
   # process_manager:
 
   # What command to write to the process manager configs
@@ -46,6 +47,11 @@ gravity:
   # is ``supervisor``.
   # memory_limit:
 
+  # Memory usage throttle limit (in GB), processes exceeding the limit are throttled and put under heavy reclaim pressure.
+  # If set, this is the default value for all services. Setting ``memory_high`` on an individual service overrides this
+  # value. Ignored if ``process_manager`` is ``supervisor``.
+  # memory_high:
+
   # Specify Galaxy config file (galaxy.yml), if the Gravity config is separate from the Galaxy config. Assumed to be the
   # same file as the Gravity config if a ``galaxy`` key exists at the root level, otherwise, this option is required.
   # galaxy_config_file:
@@ -66,6 +72,11 @@ gravity:
   # If not specified defaults to ``<galaxy_data_dir>/gravity/log``.
   # log_dir:
 
+  # Run Galaxy processes in the specified journal namespace (sets the value of ``LogNamespace=`` in the systemd service
+  # units). This allows you to keep Galaxy log messages separate in the system journal from other log messages. Ignored if
+  # ``process_manager`` is not ``systemd``. See ``systemd.exec(5)`` for details.
+  # log_namespace:
+
   # Set to Galaxy's virtualenv directory.
   # If not specified, Gravity assumes all processes are on PATH. This option is required in most circumstances when using
   # the ``systemd`` process manager.
@@ -73,9 +84,7 @@ gravity:
 
   # Select the application server.
   # ``gunicorn`` is the default application server.
-  # ``unicornherder`` is a production-oriented manager for (G)unicorn servers that automates zero-downtime Galaxy server restarts,
-  # similar to uWSGI Zerg Mode used in the past.
-  # Valid options are: gunicorn, unicornherder
+  # Valid options are: gunicorn
   # app_server: gunicorn
 
   # Override the default instance name.
@@ -106,8 +115,8 @@ gravity:
     # extra_args:
 
     # Use Gunicorn's --preload option to fork workers after loading the Galaxy Application.
-    # Consumes less memory when multiple processes are configured. Default is ``false`` if using unicornherder, else ``true``.
-    # preload:
+    # Consumes less memory when multiple processes are configured.
+    # preload: true
 
     # umask under which service should be executed
     # umask:
@@ -125,6 +134,11 @@ gravity:
     # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
     # ``supervisor``.
     # memory_limit:
+
+    # Memory usage throttle limit (in GB). If the service exceeds the limit, processes are throttled and put under heavy
+    # reclaim pressure. Default is no limit or the value of the ``memory_high`` setting at the top level of the Gravity
+    # configuration, if set. Ignored if ``process_manager`` is ``supervisor``.
+    # memory_high:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -169,6 +183,11 @@ gravity:
     # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
     # ``supervisor``.
     # memory_limit:
+
+    # Memory usage throttle limit (in GB). If the service exceeds the limit, processes are throttled and put under heavy
+    # reclaim pressure. Default is no limit or the value of the ``memory_high`` setting at the top level of the Gravity
+    # configuration, if set. Ignored if ``process_manager`` is ``supervisor``.
+    # memory_high:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -222,6 +241,11 @@ gravity:
     # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
     # ``supervisor``.
     # memory_limit:
+
+    # Memory usage throttle limit (in GB). If the service exceeds the limit, processes are throttled and put under heavy
+    # reclaim pressure. Default is no limit or the value of the ``memory_high`` setting at the top level of the Gravity
+    # configuration, if set. Ignored if ``process_manager`` is ``supervisor``.
+    # memory_high:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -285,6 +309,11 @@ gravity:
     # ``supervisor``.
     # memory_limit:
 
+    # Memory usage throttle limit (in GB). If the service exceeds the limit, processes are throttled and put under heavy
+    # reclaim pressure. Default is no limit or the value of the ``memory_high`` setting at the top level of the Gravity
+    # configuration, if set. Ignored if ``process_manager`` is ``supervisor``.
+    # memory_high:
+
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
     # environment: {}
@@ -336,6 +365,11 @@ gravity:
     # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
     # ``supervisor``.
     # memory_limit:
+
+    # Memory usage throttle limit (in GB). If the service exceeds the limit, processes are throttled and put under heavy
+    # reclaim pressure. Default is no limit or the value of the ``memory_high`` setting at the top level of the Gravity
+    # configuration, if set. Ignored if ``process_manager`` is ``supervisor``.
+    # memory_high:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -855,8 +889,7 @@ galaxy:
   # <tool_data_path>.
   #builds_file_path: shared/ucsc/builds.txt
 
-  # Directory where chrom len files are kept, currently mainly used by
-  # trackster.
+  # Directory where chrom len files are kept.
   # The value of this option will be resolved with respect to
   # <tool_data_path>.
   #len_file_path: shared/ucsc/chrom
@@ -1518,7 +1551,7 @@ galaxy:
 
   # The BibTeX citation for Galaxy, to be displayed in the History Tool
   # Reference List
-  #citation_bibtex: '@article{Galaxy2024, title={The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update}, author={{The Galaxy Community}}, journal={Nucleic Acids Research}, year={2024}, doi={10.1093/nar/gkae410}, url={https://doi.org/10.1093/nar/gkae410}}'
+  #citation_bibtex: '@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}'
 
   # The URL linked by the "Galaxy Version" link in the "Help" menu.
   #release_doc_base_url: https://docs.galaxyproject.org/en/release_
@@ -2111,19 +2144,19 @@ galaxy:
   # page (even if require_login is true).
   #show_welcome_with_login: false
 
-  # Controls the order of the login page to prefer Custos-based login
-  # and registration.
-  #prefer_custos_login: false
+  # Controls the order of the login page to prefer OIDC-based login and
+  # registration.
+  #prefer_oidc_login: false
 
   # Allow unregistered users to create new local (non-OIDC) accounts
   # (otherwise, they will have to be created by an admin). This option
-  # will be overridden to false in case disable_local_accounts  is set
-  # to true.
+  # will be overridden to false in case disable_local_accounts is set to
+  # true.
   #allow_local_account_creation: true
 
   # Disable local accounts. If this option is set to true, at least one
-  # OIDC provider needs  to be configured and will serve as the account
-  # provider. If this option is set to true,  allow_local_account
+  # OIDC provider needs to be configured and will serve as the account
+  # provider. If this option is set to true, allow_local_account
   # creation will be overridden with false.
   #disable_local_accounts: false
 
@@ -2955,8 +2988,15 @@ galaxy:
   # AI API base URL. Needs to be OpenAI compatible, defaults to OpenAI
   #ai_api_base_url: null
 
-  # AI model to enable the wizard.
+  # AI model to enable the wizard. Global fallback for all AI agents.
   #ai_model: gpt-4o
+
+  # Configuration for AI inference services used by agents. Supports
+  # per-agent model, temperature, and token settings. Agents inherit
+  # from 'default' configuration, which itself falls back to global
+  # ai_model/ai_api_key settings. Example: inference_services: {
+  # default: { model: gpt-4o-mini, temperature: 0.7 } }
+  #inference_services: null
 
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please
@@ -3007,6 +3047,18 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #vault_config_file: vault_conf.yml
+
+  # Configuration file for URL request headers allow-list with URL
+  # pattern matching. This file defines which HTTP headers are allowed
+  # in URL fetch requests based on URL patterns, and whether they should
+  # be treated as sensitive (encrypted in the vault) or not. If no
+  # allow-list is specified, no headers will be allowed in URL requests.
+  # This provides fine-grained security control over what headers can be
+  # sent when Galaxy fetches external URLs on behalf of users, allowing
+  # different headers for different target domains or services.
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #url_headers_config_file: url_headers_conf.yml
 
   # Display built-in converters in the tool panel.
   #display_builtin_converters: true
@@ -3127,4 +3179,8 @@ galaxy:
   # default) if enable_failed_jobs_working_directory_cleanup is
   # ``true``. Runs in a Celery task.
   #failed_jobs_working_directory_cleanup_interval: 86400
+
+  # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
+  # for user defined tools.
+  #enable_beta_tool_formats: false
 

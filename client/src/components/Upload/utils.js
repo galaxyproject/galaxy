@@ -1,10 +1,9 @@
 /*
  * Utilities for working with upload data structures.
  */
-import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
-
 import { GalaxyApi } from "@/api";
 import { getDbKeys } from "@/api/dbKeys";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 export const AUTO_EXTENSION = {
     id: "auto",

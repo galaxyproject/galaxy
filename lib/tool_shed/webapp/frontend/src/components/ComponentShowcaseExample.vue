@@ -4,6 +4,10 @@ defineProps({
         type: String,
         required: true,
     },
+    description: {
+        type: String,
+        default: "",
+    },
 })
 </script>
 <template>
@@ -11,6 +15,7 @@ defineProps({
         <q-item class="fit">
             <q-item-section>
                 <q-item-label caption>{{ title }}</q-item-label>
+                <q-item-label v-if="description" caption class="text-grey-6">{{ description }}</q-item-label>
             </q-item-section>
         </q-item>
         <q-separator horizontal />

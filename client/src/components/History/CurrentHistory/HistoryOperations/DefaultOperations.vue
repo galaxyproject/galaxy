@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCog } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem, BDropdownText, BModal } from "bootstrap-vue";
+import { BDropdown, BDropdownItem, BModal } from "bootstrap-vue";
 import { toRef } from "vue";
 
 import type { HistorySummaryExtended } from "@/api";
@@ -11,10 +10,7 @@ import {
     purgeAllDeletedContent,
     unhideAllHiddenContent,
 } from "@/components/History/model/crud";
-import { iframeRedirect } from "@/components/plugins/legacyNavigation";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
-
-library.add(faCog);
 
 interface Props {
     history: HistorySummaryExtended;
@@ -25,10 +21,6 @@ const props = defineProps<Props>();
 const emit = defineEmits(["update:operation-running"]);
 
 const { numItemsDeleted, numItemsHidden } = useHistoryContentStats(toRef(props, "history"));
-
-function onCopy() {
-    iframeRedirect("/dataset/copy_datasets");
-}
 
 function unhideAll() {
     runOperation(() => unhideAllHiddenContent(props.history));
@@ -50,9 +42,9 @@ async function runOperation(operation: () => Promise<unknown>) {
 </script>
 
 <template>
-    <section>
+    <section v-if="numItemsHidden || numItemsHidden || numItemsDeleted">
         <BDropdown
-            v-b-tooltip.hover
+            v-b-tooltip.hover.noninteractive
             no-caret
             size="sm"
             variant="link"
@@ -65,14 +57,6 @@ async function runOperation(operation: () => Promise<unknown>) {
 
                 <FontAwesomeIcon :icon="faCog" />
             </template>
-
-            <BDropdownText id="history-op-all-content">
-                <span v-localize>With entire history...</span>
-            </BDropdownText>
-
-            <BDropdownItem data-description="copy datasets" @click="onCopy">
-                <span v-localize>Copy Datasets</span>
-            </BDropdownItem>
 
             <BDropdownItem v-if="numItemsHidden" v-b-modal:show-all-hidden-content>
                 <span v-localize>Unhide All Hidden Content</span>

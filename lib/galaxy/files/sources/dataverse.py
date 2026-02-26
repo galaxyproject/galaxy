@@ -4,6 +4,7 @@ import urllib.request
 from typing import (
     Any,
     cast,
+    get_args,
     Optional,
 )
 from urllib.error import HTTPError
@@ -11,7 +12,11 @@ from urllib.parse import quote
 
 from typing_extensions import TypedDict
 
-from galaxy.exceptions import AuthenticationRequired
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    MessageException,
+    ObjectNotFound,
+)
 from galaxy.files.models import (
     AnyRemoteEntry,
     Entry,
@@ -19,6 +24,7 @@ from galaxy.files.models import (
     FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
+    RemoteFileHash,
 )
 from galaxy.files.sources import DEFAULT_PAGE_LIMIT
 from galaxy.files.sources._defaults import DEFAULT_SCHEME
@@ -35,11 +41,8 @@ from galaxy.util import (
     requests,
     stream_to_open_named_file,
 )
-
-
-class NotFoundException(Exception):
-    def __init__(self, message):
-        super().__init__(message)
+from galaxy.util.hash_util import HashFunctionNames
+from galaxy.util.user_agent import get_default_headers
 
 
 class DataverseDataset(TypedDict):
@@ -94,31 +97,86 @@ class DataverseRDMFilesSource(RDMFilesSource):
     def parse_path(self, source_path: str, container_id_only: bool = False) -> ContainerAndFileIdentifier:
         """Parses the given source path and returns the dataset_id and/or the file_id.
 
-        The source path must either have the format '/<dataset_id>' or '/<file_id>' where <dataset_id> is a subset of <file_id>.
-        If dataset_id_only is True, the source path must have the format '/<dataset_id>' and an empty file_id will be returned.
+        The source path must either have the format '/<dataset_id>' or '/<dataset_id>/<file_identifier>'.
+        If container_id_only is True, the source path must have the format '/<dataset_id>' and an empty file_id will be returned.
 
-        Example dataset_id:
-        doi:10.70122/FK2/DIG2DG
+        The dataset_id can have variable number of parts depending on the identifier scheme:
+        - doi:10.70122/FK2 (2 parts)
+        - doi:10.70122/FK2/DIG2DG (3 parts)
+        - perma:BSC/3ST00L (2 parts)
 
-        Example file_id:
-        doi:10.70122/FK2/DIG2DG/AVNCLL
+        Example file paths with file identifiers:
+        - doi:10.70122/FK2/AVNCLL (persistent ID)
+        - doi:10.70122/FK2/DIG2DG/AVNCLL (persistent ID)
+        - doi:10.70122/FK2/DIG2DG/id:12345 (database ID)
+        - doi:10.5072/FK2/doi:10.70122/AVNCLL (persistent ID)
+        - perma:BSC/3ST00L/id:9056 (database ID)
         """
         if not source_path.startswith("/"):
             raise ValueError(f"Invalid source path: '{source_path}'. Must start with '/'.")
 
-        parts = source_path[1:].split("/", 3)
-        dataset_id = "/".join(parts[:3])
+        path_without_slash = source_path[1:]
 
         if container_id_only:
-            if len(parts) != 3:
+            # For container-only paths, the entire path is the dataset ID
+            if not path_without_slash:
                 raise ValueError(f"Invalid source path: '{source_path}'. Expected format: '/<dataset_id>'.")
-            return ContainerAndFileIdentifier(container_id=dataset_id, file_identifier="")
+            return ContainerAndFileIdentifier(container_id=path_without_slash, file_identifier="")
 
-        if len(parts) != 4:
-            raise ValueError(f"Invalid source path: '{source_path}'. Expected format: '/<file_id>'.")
+        # For file paths, the last part is the file identifier, everything before is the dataset ID
+        parts = path_without_slash.split("/")
+        if len(parts) < 2:
+            raise ValueError(
+                f"Invalid source path: '{source_path}'. Expected format: '/<dataset_id>/<file_identifier>'."
+            )
 
-        file_id = dataset_id + "/" + parts[3]
+        dataset_id, file_id_part = self._split_dataset_and_file_pid(parts)
+
+        # The file identifier can be either:
+        # - A persistent ID suffix (e.g., 'AVNCLL' -> full ID is 'doi:10.70122/FK2/DIG2DG/AVNCLL')
+        # - A database ID with 'id:' prefix (e.g., 'id:12345' -> file_identifier is 'id:12345')
+        if file_id_part.startswith("id:"):
+            # Database ID format - keep the 'id:' prefix as the file identifier
+            file_id = file_id_part
+        elif re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:.*", file_id_part):
+            # Full persistent identifier (e.g. doi:, hdl:, ark:, or custom PID providers).
+            # Files in Dataverse may have their own independent persistent IDs that are
+            # not hierarchically related to the dataset persistent ID.
+            file_id = file_id_part
+        else:
+            # Dataset-scoped persistent ID suffix - construct full persistent ID
+            file_id = f"{dataset_id}/{file_id_part}"
         return ContainerAndFileIdentifier(container_id=dataset_id, file_identifier=file_id)
+
+    @staticmethod
+    def _split_dataset_and_file_pid(parts: list[str]) -> tuple[str, str]:
+        """
+        Split a Dataverse source path into dataset ID and file identifier parts.
+
+        Dataverse file-level persistent IDs may themselves contain slashes and are not
+        necessarily hierarchically related to the dataset persistent ID. For example:
+
+            /doi:10.57745/I8EUTL/doi:10.57745/L7SOAJ
+
+        In this case:
+            dataset_id = doi:10.57745/I8EUTL
+            file_id     = doi:10.57745/L7SOAJ
+
+        This helper detects such cases by recognizing URI-scheme prefixes in path segments
+        and grouping them accordingly.
+        """
+        # Default: last segment is the file identifier
+        file_id_part = parts[-1]
+        dataset_id = "/".join(parts[:-1])
+
+        # Heuristic: if the penultimate segment starts a URI scheme (e.g. doi:, hdl:, ark:),
+        # then the file persistent ID spans the last two segments.
+        pid_scheme_re = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
+        if len(parts) >= 3 and pid_scheme_re.match(parts[-2]):
+            file_id_part = f"{parts[-2]}/{parts[-1]}"
+            dataset_id = "/".join(parts[:-2])
+
+        return dataset_id, file_id_part
 
     def get_container_id_from_path(self, source_path: str) -> str:
         return self.parse_path(source_path, container_id_only=True).container_id
@@ -166,7 +224,7 @@ class DataverseRDMFilesSource(RDMFilesSource):
         dataset_id, file_id = self.parse_path(source_path)
         try:
             self.repository.download_file_from_container(dataset_id, file_id, native_path, context)
-        except NotFoundException:
+        except ObjectNotFound:
             filename = file_id.split("/")[-1]
             is_zip_file = self._is_zip_archive(filename)
             if is_zip_file:
@@ -176,6 +234,8 @@ class DataverseRDMFilesSource(RDMFilesSource):
                 # So, if a zip is not found, we suppose we are trying to reimport an archived history
                 # and make an API call to Dataverse to download the dataset as a zip.
                 self.repository._download_dataset_as_zip(dataset_id, native_path, context)
+            else:
+                raise
 
     def _is_zip_archive(self, file_name: str) -> bool:
         return file_name.endswith(".zip")
@@ -191,6 +251,11 @@ class DataverseRDMFilesSource(RDMFilesSource):
 class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     """In Dataverse a "Dataset" represents what we refer to as container in the rdm base class"""
 
+    _SUPPORTED_HASHES: set[HashFunctionNames] = set(get_args(HashFunctionNames))
+    _LEGACY_HASH_MAP: dict[str, HashFunctionNames] = {
+        hash_name.lower().replace("-", ""): hash_name for hash_name in _SUPPORTED_HASHES
+    }
+
     @property
     def api_base_url(self) -> str:
         return f"{self.repository_url}/api/v1"
@@ -199,9 +264,21 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     def search_url(self) -> str:
         return f"{self.api_base_url}/search"
 
-    def file_access_url(self, file_id: str) -> str:
-        encoded_file_id = quote(file_id, safe="")
-        return f"{self.api_base_url}/access/datafile/:persistentId?persistentId={encoded_file_id}"
+    def file_access_url(self, file_identifier: str) -> str:
+        """Build the access URL for a file.
+
+        The file_identifier can be either:
+        - A persistent ID (DOI) like 'doi:10.70122/FK2/DIG2DG/AVNCLL'
+        - A database ID prefixed with 'id:' like 'id:12345'
+        """
+        if file_identifier.startswith("id:"):
+            # Use database ID for access
+            database_id = file_identifier[3:]  # Remove 'id:' prefix
+            return f"{self.api_base_url}/access/datafile/{database_id}"
+        else:
+            # Use persistent ID for access
+            encoded_file_id = quote(file_identifier, safe="")
+            return f"{self.api_base_url}/access/datafile/:persistentId?persistentId={encoded_file_id}"
 
     def download_dataset_as_zip_url(self, dataset_id: str) -> str:
         return f"{self.api_base_url}/access/dataset/:persistentId/?persistentId={dataset_id}"
@@ -222,7 +299,29 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         return f"{self.repository_url}/dataset.xhtml?persistentId={dataset_id}"
 
     def to_plugin_uri(self, dataset_id: str, file_identifier: Optional[str] = None) -> str:
-        return f"{self.plugin.get_uri_root()}/{f'{file_identifier}' if file_identifier else f'{dataset_id}'}"
+        """Build a plugin URI for a dataset or file.
+
+        For datasets: dataverse://source/doi:10.70122/FK2/DIG2DG
+        For files: dataverse://source/doi:10.70122/FK2/DIG2DG/AVNCLL (persistent ID)
+                   dataverse://source/doi:10.70122/FK2/DIG2DG/id:12345 (database ID)
+        """
+        if file_identifier:
+            # For files, we need both the dataset_id and file_identifier in the path
+            # Extract just the file-specific part from the file_identifier
+            if file_identifier.startswith("id:"):
+                # Database ID format: keep as is (e.g., 'id:12345')
+                file_part = file_identifier
+            elif "/" in file_identifier and file_identifier.startswith(dataset_id):
+                # Full persistent ID format: extract just the suffix after dataset_id
+                # e.g., 'doi:10.70122/FK2/DIG2DG/AVNCLL' -> 'AVNCLL'
+                file_part = file_identifier[len(dataset_id) + 1 :]
+            else:
+                # Already just the suffix
+                file_part = file_identifier
+            return f"{self.plugin.get_uri_root()}/{dataset_id}/{file_part}"
+        else:
+            # For datasets, just use the dataset_id
+            return f"{self.plugin.get_uri_root()}/{dataset_id}"
 
     def _is_api_url(self, url: str) -> bool:
         return "/api/" in url
@@ -281,14 +380,14 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         collection_payload = self._prepare_collection_data(title, public_name, user_email)
         collection = self._create_collection(":root", collection_payload, context)
         if not collection or "data" not in collection or "alias" not in collection["data"]:
-            raise Exception("Could not create collection in Dataverse or response has an unexpected format.")
+            raise MessageException("Could not create collection in Dataverse or response has an unexpected format.")
         collection_alias = collection["data"]["alias"]
 
         # Prepare and create the dataset
         dataset_payload = self._prepare_dataset_data(title, public_name, user_email)
         dataset = self._create_dataset(collection_alias, dataset_payload, context)
         if not dataset or "data" not in dataset:
-            raise Exception("Could not create dataset in Dataverse or response has an unexpected format.")
+            raise MessageException("Could not create dataset in Dataverse or response has an unexpected format.")
 
         dataset["data"]["name"] = title
         return dataset["data"]
@@ -348,11 +447,11 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         download_file_content_url: str,
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
     ):
-        headers = {}
+        headers = get_default_headers()
 
         if self._is_api_url(download_file_content_url):
             # pass the token as a header only when using the API
-            headers = self._get_request_headers(context)
+            headers.update(self._get_request_headers(context))
         try:
             req = urllib.request.Request(download_file_content_url, headers=headers)
             with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
@@ -361,11 +460,23 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                     page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
                 )
         except HTTPError as e:
-            # TODO: We can only download files from published datasets for now
-            if e.code in [401, 403, 404]:
-                raise NotFoundException(
-                    f"Cannot download file from URL '{file_path}'. Please make sure the dataset and/or file exists and it is public."
+            if e.code == 401:
+                raise AuthenticationRequired(
+                    f"Authentication required to download file from '{download_file_content_url}'. "
+                    f"Please provide a valid API token in your user preferences."
                 )
+            if e.code == 403:
+                # Permission denied: dataset may be unpublished or user lacks access rights
+                raise ObjectNotFound(
+                    f"Access forbidden when downloading file from '{download_file_content_url}'. "
+                    f"You may not have permission to access this file, or the dataset is not published."
+                )
+            if e.code == 404:
+                raise ObjectNotFound(
+                    f"File not found at '{download_file_content_url}'. "
+                    f"Please make sure the dataset and file exist and are published."
+                )
+            raise
 
     def _get_datasets_from_response(self, response: dict) -> list[RemoteDirectory]:
         rval: list[RemoteDirectory] = []
@@ -384,7 +495,17 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         rval: list[RemoteFile] = []
         for entry in response:
             dataFile = entry.get("dataFile")
-            uri = self.to_plugin_uri(dataset_id, dataFile.get("persistentId"))
+            # Use persistentId if available, otherwise fall back to database id
+            # The database id is prefixed with 'id:' to distinguish from DOI-based persistent IDs
+            file_persistent_id = dataFile.get("persistentId")
+            if file_persistent_id:
+                file_identifier = file_persistent_id
+            else:
+                # Fallback to database id when persistentId is not available
+                # (e.g., when FilePIDsEnabled is false on the Dataverse instance)
+                file_identifier = f"id:{dataFile.get('id')}"
+            uri = self.to_plugin_uri(dataset_id, file_identifier)
+            hashes = self._get_file_hashes(dataFile)
             rval.append(
                 RemoteFile(
                     name=dataFile.get("filename"),
@@ -392,9 +513,42 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                     ctime=dataFile.get("creationDate"),
                     uri=uri,
                     path=self.plugin.to_relative_path(uri),
+                    hashes=hashes,
                 )
             )
         return rval
+
+    def _get_file_hashes(self, dataFile: dict) -> Optional[list[RemoteFileHash]]:
+        hashes: list[RemoteFileHash] = []
+
+        # Preferred: extract from "checksum" field
+        supported_hashes = self._SUPPORTED_HASHES
+        checksum = dataFile.get("checksum")
+        if isinstance(checksum, dict):
+            hash_type = str(checksum.get("type") or "").upper()
+            hash_value = checksum.get("value")
+            if hash_value and hash_type in supported_hashes:
+                return [
+                    RemoteFileHash(
+                        hash_function=cast(HashFunctionNames, hash_type),
+                        hash_value=str(hash_value),
+                    )
+                ]
+
+        # Fallback to legacy flat fields (md5, sha1, sha256, sha512, ...)
+        legacy_map = self._LEGACY_HASH_MAP
+        for key, normalized in legacy_map.items():
+            value = dataFile.get(key)
+            if value:
+                if not any(h.hash_function == normalized for h in hashes):
+                    hashes.append(
+                        RemoteFileHash(
+                            hash_function=normalized,
+                            hash_value=value,
+                        )
+                    )
+
+        return hashes or None
 
     def _get_response(
         self,
@@ -422,7 +576,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             error_message = self._get_response_error_message(response)
             if response.status_code == 403:
                 self._raise_auth_required(error_message)
-            raise Exception(
+            raise MessageException(
                 f"Request to {response.url} failed with status code {response.status_code}: {error_message}"
             )
 

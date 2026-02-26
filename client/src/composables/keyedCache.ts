@@ -2,6 +2,7 @@ import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
 import { computed, del, type Ref, ref, set, unref } from "vue";
 
 import { LastQueue } from "@/utils/lastQueue";
+import { isRetryableApiError, MAX_RETRIES } from "@/utils/simple-error";
 
 /**
  * Parameters for fetching an item from the server.
@@ -48,12 +49,17 @@ export function useKeyedCache<T>(
 
     const loadingRequests = ref<{ [key: string]: Promise<T | undefined> }>({});
 
+    const retryCounts: { [key: string]: number } = {};
+
     const fetchQueue = new LastQueue<FetchHandler<T>>();
 
     const getItemById = computed(() => {
         return (id: string) => {
             const item = storedItems.value[id];
-            if (shouldFetch(item)) {
+            const existingError = loadingErrors.value[id];
+            const canRetry =
+                existingError && isRetryableApiError(existingError) && (retryCounts[id] ?? 0) <= MAX_RETRIES;
+            if (shouldFetch(item) && (!existingError || canRetry)) {
                 fetchItemById({ id: id });
             }
             return item ?? null;
@@ -91,8 +97,11 @@ export function useKeyedCache<T>(
                 const fetchItem = unref(fetchItemHandler);
                 const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
                 set(storedItems.value, itemId, item);
+                del(loadingErrors.value, itemId);
+                delete retryCounts[itemId];
                 return item;
             } catch (error) {
+                retryCounts[itemId] = (retryCounts[itemId] ?? 0) + 1;
                 set(loadingErrors.value, itemId, error as Error);
             } finally {
                 del(loadingRequests.value, itemId);

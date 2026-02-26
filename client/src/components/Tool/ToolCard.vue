@@ -2,10 +2,6 @@
 import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BModal, BPopover } from "bootstrap-vue";
-import Heading from "components/Common/Heading";
-import FormMessage from "components/Form/FormMessage";
-import ToolFooter from "components/Tool/ToolFooter";
-import ToolHelp from "components/Tool/ToolHelp";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
@@ -14,18 +10,21 @@ import { useConfigStore } from "@/stores/configurationStore";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserStore } from "@/stores/userStore";
 
-import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
-import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
-
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import ToolCredentials from "./ToolCredentials.vue";
 import ToolHelpForum from "./ToolHelpForum.vue";
+import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore.vue";
+import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
+import Heading from "@/components/Common/Heading.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
-import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
-import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
-import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
+import FormMessage from "@/components/Form/FormMessage.vue";
+import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
+import ToolOptionsButton from "@/components/Tool/Buttons/ToolOptionsButton.vue";
+import ToolVersionsButton from "@/components/Tool/Buttons/ToolVersionsButton.vue";
+import ToolFooter from "@/components/Tool/ToolFooter.vue";
+import ToolHelp from "@/components/Tool/ToolHelp.vue";
 
 const props = defineProps({
     id: {
@@ -184,26 +183,26 @@ onBeforeMount(() => {
                     @click="onShowObjectStoreSelect">
                     <FontAwesomeIcon :icon="faHdd" />
                 </GButton>
-                <ToolTargetPreferredObjectStorePopover
-                    v-if="allowObjectStoreSelection"
-                    :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                    :user="currentUser" />
-                <BModal
-                    id="modal-select-preferred-object-store"
-                    v-model="showPreferredObjectStoreModal"
-                    :title="storageLocationModalTitle"
-                    scrollable
-                    centered
-                    modal-class="tool-preferred-object-store-modal"
-                    title-tag="h3"
-                    size="lg"
-                    ok-only
-                    ok-title="Close">
-                    <ToolSelectPreferredObjectStore
-                        :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                        @updated="onUpdatePreferredObjectStoreId" />
-                </BModal>
             </GButtonGroup>
+            <ToolTargetPreferredObjectStorePopover
+                v-if="allowObjectStoreSelection"
+                :tool-preferred-object-store-id="toolPreferredObjectStoreId"
+                :user="currentUser" />
+            <BModal
+                id="modal-select-preferred-object-store"
+                v-model="showPreferredObjectStoreModal"
+                :title="storageLocationModalTitle"
+                scrollable
+                centered
+                modal-class="tool-preferred-object-store-modal"
+                title-tag="h3"
+                size="lg"
+                ok-only
+                ok-title="Close">
+                <ToolSelectPreferredObjectStore
+                    :tool-preferred-object-store-id="toolPreferredObjectStoreId"
+                    @updated="onUpdatePreferredObjectStoreId" />
+            </BModal>
             <slot name="buttons" />
         </template>
 
@@ -247,9 +246,11 @@ onBeforeMount(() => {
         </template>
 
         <template v-slot:footer>
-            <slot name="buttons" />
+            <div class="mt-2 mb-4">
+                <slot name="buttons" />
+            </div>
             <div v-if="props.options.help" class="mt-2 mb-4">
-                <Heading h2 separator bold size="sm">Help</Heading>
+                <Heading v-localize h2 separator bold size="sm">Help</Heading>
                 <ToolHelp :content="props.options.help" :format="props.options.help_format" />
             </div>
 
@@ -277,8 +278,9 @@ onBeforeMount(() => {
     cursor: unset;
 }
 
-.tool-card-buttons {
-    height: 2em;
+.tool-card-buttons :deep(.dropdown .btn) {
+    display: flex;
+    border: none;
 }
 
 .portlet-backdrop {

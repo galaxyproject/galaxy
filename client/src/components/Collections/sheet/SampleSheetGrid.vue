@@ -643,8 +643,8 @@ defineExpose({ attemptCreate });
 </style>
 
 <style>
-// doesn't work with scoped style, newer AG Grid lets specifying style directly
-// in ColDef but this deson't seem work with this older AG Grid we're using Vue 2.
+/* doesn't work with scoped style, newer AG Grid lets specifying style directly
+   in ColDef but this doesn't seem work with this older AG Grid we're using Vue 2. */
 .ag-grid-column-has-custom-header-description {
     text-decoration-line: underline;
     text-decoration-style: dashed;

@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from galaxy_test.selenium.framework import (
     selenium_test,
     SeleniumTestCase,
@@ -22,11 +24,11 @@ class TestManageInformation(SeleniumTestCase):
         self.components.preferences.get_new_key.wait_for_and_click()
         api_key_input = self.components.preferences.api_key_input.wait_for_visible()
         new_api_key = self.get_api_key()
-        input_value = api_key_input.get_property("value")
+        input_value = api_key_input.get_attribute("value")
         assert new_api_key == input_value
         # Hover the input to view the key
-        self.action_chains().move_to_element(api_key_input).perform()
-        hover_value = api_key_input.get_property("value")
+        self.hover(api_key_input)
+        hover_value = api_key_input.get_attribute("value")
         assert new_api_key == hover_value
 
     @selenium_test
@@ -135,9 +137,7 @@ class TestManageInformation(SeleniumTestCase):
         element.send_keys(new_input_text)
 
     def get_address_input_field(self, address_form, input_field_label):
-        return address_form.find_element(
-            self.by.CSS_SELECTOR, f"[data-label='{input_field_label}'] > div > div > input"
-        )
+        return address_form.find_element(By.CSS_SELECTOR, f"[data-label='{input_field_label}'] > div > div > input")
 
 
 class TestDeleteCurrentAccount(SeleniumTestCase):

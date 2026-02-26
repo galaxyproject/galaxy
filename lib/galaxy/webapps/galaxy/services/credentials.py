@@ -1,6 +1,6 @@
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
     cast,
     Optional,
     Union,
@@ -272,14 +272,30 @@ class CredentialsService:
 
         for user_credentials, credentials_group, credential in existing_user_credentials:
             cred_id = user_credentials.id
-            definition = self._get_credentials_definition(
-                user,
-                cast(SOURCE_TYPE, user_credentials.source_type),
-                user_credentials.source_id,
-                user_credentials.source_version,
-                user_credentials.name,
-                user_credentials.version,
-            )
+            definition = None
+            try:
+                definition = self._get_credentials_definition(
+                    user,
+                    cast(SOURCE_TYPE, user_credentials.source_type),
+                    user_credentials.source_id,
+                    user_credentials.source_version,
+                    user_credentials.name,
+                    user_credentials.version,
+                )
+            except ObjectNotFound:
+                # Tool was removed or is no longer available - create a minimal fallback definition
+                # using the stored credential data so the UI can still display the credentials
+                if include_definition:
+                    definition = CredentialsRequirement(
+                        name=user_credentials.name,
+                        version=user_credentials.version,
+                        description="",
+                        label="",
+                        optional=False,
+                        variables=[],
+                        secrets=[],
+                    )
+
             user_credentials_dict.setdefault(
                 cred_id,
                 {
@@ -295,7 +311,7 @@ class CredentialsService:
                 },
             )
 
-            if include_definition:
+            if include_definition and definition:
                 user_credentials_dict[cred_id]["definition"] = {
                     "name": definition.name,
                     "version": definition.version,
@@ -437,8 +453,7 @@ class CredentialsService:
 
         user_cred_map, group_map, cred_map = self.credentials_manager.index_credentials(existing_user_credentials)
 
-        user_credentials = user_cred_map.get((service_name, service_version))
-        if user_credentials:
+        if user_credentials := user_cred_map.get((service_name, service_version)):
             user_credentials_id = user_credentials.id
         else:
             user_credentials_id = self.credentials_manager.add_user_credentials(

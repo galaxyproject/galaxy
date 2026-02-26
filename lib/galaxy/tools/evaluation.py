@@ -5,10 +5,10 @@ import re
 import shlex
 import string
 import tempfile
+from collections.abc import Callable
 from datetime import datetime
 from typing import (
     Any,
-    Callable,
     Literal,
     Optional,
     TYPE_CHECKING,
@@ -19,10 +19,16 @@ from packaging.version import Version
 
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.managers.credentials import UserCredentialsEnvironmentBuilder
+from galaxy.model import (
+    InpDataDictT,
+    OutCollectionsDictT,
+    OutDataDictT,
+)
 from galaxy.model.deferred import (
     materialize_collection_input,
     materializer_factory,
@@ -36,7 +42,9 @@ from galaxy.structured_app import (
     StructuredApp,
 )
 from galaxy.tool_util.data import TabularToolDataTable
+from galaxy.tool_util.parameters import JobInternalToolState
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tool_util_models.parameters import ToolParameterBundleModel
 from galaxy.tool_util_models.tool_source import (
     FileSourceConfigFile,
     InputConfigFile,
@@ -209,14 +217,18 @@ class ToolEvaluator:
             self.execute_tool_hooks(inp_data=inp_data, out_data=out_data, incoming=incoming)
 
         else:
+            tool_state: Optional[JobInternalToolState] = None
+            if job.tool_state:
+                tool_state = JobInternalToolState(job.tool_state)
             self.param_dict = self.build_param_dict(
                 incoming,
                 inp_data,
                 out_data,
                 output_collections=out_collections,
+                validated_tool_state=tool_state,
             )
 
-    def execute_tool_hooks(self, inp_data, out_data, incoming):
+    def execute_tool_hooks(self, inp_data: InpDataDictT, out_data: OutDataDictT, incoming):
         # Certain tools require tasks to be completed prior to job execution
         # ( this used to be performed in the "exec_before_job" hook, but hooks are deprecated ).
         self.tool.exec_before_job(self.app, inp_data, out_data, self.param_dict)
@@ -225,7 +237,14 @@ class ToolEvaluator:
             "exec_before_job", self.app, inp_data=inp_data, out_data=out_data, tool=self.tool, param_dict=incoming
         )
 
-    def build_param_dict(self, incoming, input_datasets, output_datasets, output_collections):
+    def build_param_dict(
+        self,
+        incoming,
+        input_datasets: InpDataDictT,
+        output_datasets: OutDataDictT,
+        output_collections: OutCollectionsDictT,
+        validated_tool_state: Optional[JobInternalToolState] = None,
+    ):
         """
         Build the dictionary of parameters for substituting into the command
         line. Each value is wrapped in a `InputValueWrapper`, which allows
@@ -374,7 +393,7 @@ class ToolEvaluator:
 
     def _deferred_objects(
         self,
-        input_datasets: dict[str, Optional[model.DatasetInstance]],
+        input_datasets: InpDataDictT,
         incoming: dict,
     ) -> dict[str, DeferrableObjectsT]:
         """Collect deferred objects required for execution.
@@ -655,7 +674,7 @@ class ToolEvaluator:
         Populate InteractiveTools templated values.
         """
         it = []
-        for ep in getattr(self.tool, "ports", []):
+        for ep in self.tool.ports:
             ep_dict = {}
             for key in (
                 "port",
@@ -1047,17 +1066,49 @@ class UserToolEvaluator(ToolEvaluator):
     def __sanitize_param_dict(self, param_dict):
         pass
 
-    def build_param_dict(self, incoming, input_datasets, output_datasets, output_collections):
+    def build_param_dict(
+        self,
+        incoming,
+        input_datasets: InpDataDictT,
+        output_datasets: OutDataDictT,
+        output_collections: OutCollectionsDictT,
+        validated_tool_state: Optional[JobInternalToolState] = None,
+    ):
         """
         Build the dictionary of parameters for substituting into the command
-        line. We're effecively building the CWL job object here.
+        line. We're effectively building the CWL job object here.
         """
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
-        from galaxy.workflow.modules import to_cwl
+        hda_references: list[model.HistoryDatasetAssociation]
+        if validated_tool_state is not None:
+            from galaxy.tool_util.parameters.convert import runtimeify
+            from galaxy.tools.runtime import setup_for_runtimeify
 
-        hda_references: list[model.HistoryDatasetAssociation] = []
-        cwl_style_inputs = to_cwl(incoming, hda_references=hda_references, compute_environment=compute_environment)
+            # Get input collections from job for collection parameter support
+            input_dataset_collections: dict[
+                str, model.HistoryDatasetCollectionAssociation | model.DatasetCollectionElement
+            ] = {assoc.name: assoc.dataset_collection for assoc in self.job.input_dataset_collections}
+            # Also include DCE associations for subcollection mapping
+            for assoc in self.job.input_dataset_collection_elements:
+                input_dataset_collections[assoc.name] = assoc.dataset_collection_element
+
+            hda_references, adapt_datasets, adapt_collections = setup_for_runtimeify(
+                self.app, compute_environment, input_datasets, input_dataset_collections
+            )
+            if self.tool.parameters is None:
+                raise RequestParameterInvalidException(f"Tool {self.tool.id} has no parameters defined")
+            parameter_bundle = ToolParameterBundleModel(parameters=self.tool.parameters)
+            job_runtime_state = runtimeify(validated_tool_state, parameter_bundle, adapt_datasets, adapt_collections)
+            cwl_style_inputs = job_runtime_state.input_state
+        else:
+            from galaxy.workflow.modules import to_cwl
+
+            log.info(
+                "Building CWL style inputs using deprecated to_cwl function - tool may work differently in the future."
+            )
+            hda_references = []
+            cwl_style_inputs = to_cwl(incoming, hda_references=hda_references, compute_environment=compute_environment)
         return {"inputs": cwl_style_inputs, "outdir": job_working_directory}
 
     def _build_command_line(self):

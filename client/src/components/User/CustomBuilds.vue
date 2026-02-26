@@ -134,11 +134,6 @@ chr3    159599783
 chr4    155630120
 chr5    152537259</pre
                     >
-                    <p class="card-text">
-                        Trackster uses this information to populate the select box for chrom/contig, andto set the
-                        maximum basepair of the track browser. You may either upload a .len fileof this format (Len File
-                        option), or directly enter the information into the box (Len Entry option).
-                    </p>
                 </b-card>
             </b-col>
         </b-row>
@@ -148,13 +143,16 @@ chr5    152537259</pre
 <script>
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
-import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
-import BreadcrumbHeading from "components/Common/BreadcrumbHeading.vue";
+import { getGalaxyInstance } from "@/app";
+import { useHistoryStore } from "@/stores/historyStore";
+import { withPrefix } from "@/utils/redirect";
+
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
 Vue.use(BootstrapVue);
 
@@ -167,7 +165,7 @@ export default {
         const Galaxy = getGalaxyInstance();
         return {
             breadcrumbItems: [{ title: "User Preferences", to: "/user" }, { title: "Current Custom Builds" }],
-            customBuildsUrl: `${Galaxy.root}api/users/${Galaxy.user.id}/custom_builds`,
+            customBuildsUrl: withPrefix(`/api/users/${Galaxy.user.id}/custom_builds`),
             selectedInstalledBuilds: [],
             installedBuilds: [],
             maxFileSize: 100,
@@ -217,9 +215,9 @@ export default {
             return value;
         },
     },
-    created() {
-        const Galaxy = getGalaxyInstance();
-        const historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+    async created() {
+        const { loadCurrentHistoryId } = useHistoryStore();
+        const historyId = await loadCurrentHistoryId();
         this.loadCustomBuilds();
         if (historyId) {
             this.loadCustomBuildsMetadata(historyId);
@@ -239,9 +237,8 @@ export default {
                 });
         },
         loadCustomBuildsMetadata(historyId) {
-            const Galaxy = getGalaxyInstance();
             axios
-                .get(`${Galaxy.root}api/histories/${historyId}/custom_builds_metadata`)
+                .get(withPrefix(`/api/histories/${historyId}/custom_builds_metadata`))
                 .then((response) => {
                     const fastaHdas = response.data.fasta_hdas;
                     for (let i = 0; i < fastaHdas.length; i++) {

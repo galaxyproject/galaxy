@@ -42,11 +42,9 @@ def _get_parser():
 
 def run(engine, max_update_time):
     """Delete galaxy_session records which were updated prior to `max_update_time`."""
-    confirm = input(
-        f"""
+    confirm = input(f"""
 WARNING: Executing this script will permanently delete all text and numeric job metrics up to {max_update_time.strftime("%B %d, %Y")}.
-Are your sure you want to proceed? Type "yes" to confirm: """
-    )
+Are your sure you want to proceed? Type "yes" to confirm: """)
     if confirm.lower() == "yes":
         _delete_metrics(engine, max_update_time, "job_metric_text")
         _delete_metrics(engine, max_update_time, "job_metric_numeric")

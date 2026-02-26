@@ -9,6 +9,7 @@ from typing import (
 )
 
 from typing_extensions import (
+    Literal,
     NotRequired,
     TypedDict,
 )
@@ -19,15 +20,21 @@ from galaxy.tool_util.parser.interface import (
     ToolSourceTestOutputs,
 )
 
-# inputs that have been processed with parse.py and expanded out
+# legacy inputs for working with POST /api/tools
+# + inputs that have been processed with parse.py and expanded out
 ExpandedToolInputs = Dict[str, Any]
-# ExpandedToolInputs where any model objects have been json-ified with to_dict()
+# + ExpandedToolInputs where any model objects have been json-ified with to_dict()
 ExpandedToolInputsJsonified = Dict[str, Any]
+
+# modern inputs for working with POST /api/jobs*
+RawTestToolRequest = Dict[str, Any]
+
 ExtraFileInfoDictT = Dict[str, Any]
 RequiredFileTuple = Tuple[str, ExtraFileInfoDictT]
 RequiredFilesT = List[RequiredFileTuple]
 RequiredDataTablesT = List[str]
 RequiredLocFileT = List[str]
+ValueStateRepresentationT = Literal["test_case_xml", "test_case_json"]
 
 
 class ToolTestDescriptionDict(TypedDict):
@@ -36,6 +43,8 @@ class ToolTestDescriptionDict(TypedDict):
     name: str
     test_index: int
     inputs: ExpandedToolInputsJsonified
+    request: NotRequired[Optional[Dict[str, Any]]]
+    request_schema: NotRequired[Optional[Dict[str, Any]]]
     outputs: ToolSourceTestOutputs
     output_collections: List[TestSourceTestOutputColllection]
     stdout: Optional[AssertionList]
@@ -51,4 +60,6 @@ class ToolTestDescriptionDict(TypedDict):
     required_loc_files: List[str]
     error: bool
     exception: Optional[str]
+    request_unavailable_reason: NotRequired[Optional[str]]
     maxseconds: NotRequired[Optional[int]]
+    value_state_representation: NotRequired[ValueStateRepresentationT]

@@ -258,7 +258,29 @@ export const useWorkflowSearchStore = defineScopedStore("WorkflowSearchStore", (
         return filteredResults;
     }
 
+    /** get the bounds of an item using cached data to avoid querying the DOM multiple times */
+    function getBoundsForItemCached(
+        stepId: number,
+        itemType: "step" | "input" | "output" = "step",
+        itemName?: string,
+    ): Rectangle | null {
+        const domId =
+            itemType === "step"
+                ? `wf-node-step-${stepId}`
+                : itemType === "input"
+                  ? `node-${stepId}-input-${itemName}`
+                  : `node-${stepId}-output-${itemName}`;
+
+        // Getting the latest data to ensure positions are up to date
+        const data = collectSearchDataCached();
+
+        // We then use the cached data to get the bounds, instead of querying the DOM again
+        const item = data.find((d) => d.id === domId);
+        return item ? item.bounds : null;
+    }
+
     return {
+        getBoundsForItemCached,
         $reset,
         searchWorkflow,
         searchDataCacheId,

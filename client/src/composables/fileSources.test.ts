@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -28,7 +29,7 @@ const TestComponent = defineComponent({
 });
 
 function setupWrapper(): any {
-    const pinia = createTestingPinia({ stubActions: false });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     return shallowMount(TestComponent, { pinia });
 }
 

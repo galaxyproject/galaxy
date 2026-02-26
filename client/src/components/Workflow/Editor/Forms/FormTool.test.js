@@ -1,18 +1,17 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
-import FormTool from "./FormTool";
+import FormTool from "./FormTool.vue";
 
-jest.mock("@/api/schema");
+vi.mock("@/api/schema", () => ({}));
 
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
         config: { enable_tool_source_display: false },
         isConfigLoaded: true,
     })),
@@ -23,13 +22,13 @@ const localVue = getLocalVue();
 const { server, http } = useServerMock();
 
 describe("FormTool", () => {
-    const axiosMock = new MockAdapter(axios);
-    axiosMock.onGet(`/api/webhooks`).reply(200, []);
-
     beforeEach(() => {
         server.use(
             http.get("/api/configuration", ({ response }) => {
                 return response(200).json({});
+            }),
+            http.untyped.get("/api/webhooks", () => {
+                return HttpResponse.json([]);
             }),
         );
     });
@@ -61,7 +60,7 @@ describe("FormTool", () => {
             stubs: {
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
             provide: { workflowId: "mock-workflow" },
         });
     }

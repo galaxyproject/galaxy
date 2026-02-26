@@ -21,6 +21,7 @@ d) Mark that SNP and all the snps connected to it as "visited". This should be
 done for each population.
 e) Continue steps b-e until all SNPs, in all populations have been visited.
 """
+
 from __future__ import print_function
 
 import heapq

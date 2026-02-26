@@ -93,10 +93,14 @@ def js_helper(prefix, *args):
 
 def dist_js(*args):
     """
-    Take a prefix and list of javascript names and return appropriate
-    string of script tags.
+    Generate ES module script tags for bundled JavaScript files.
+    These are loaded as ES modules since Vite outputs ES module format.
     """
-    return js_helper("static/dist/", *args)
+    tags = []
+    for name in args:
+        url = url_for(f"/static/dist/{name}.js?v={server_starttime}")
+        tags.append(f'<script type="module" src="{url}"></script>')
+    return "\n".join(tags)
 
 
 def is_true(val):

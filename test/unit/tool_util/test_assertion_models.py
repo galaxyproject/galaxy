@@ -179,8 +179,7 @@ invalid_xml_assertions = [
 ]
 
 
-TOOL_TEMPLATE = Template(
-    """
+TOOL_TEMPLATE = Template("""
 <tool id="gx_test" name="gx_test" version="1.0.0">
     <command><![CDATA[
 echo '$parameter' >> '$output'
@@ -202,8 +201,7 @@ echo '$parameter' >> '$output'
         </test>
     </tests>
 </tool>
-"""
-)
+""")
 
 
 def test_valid_json_models_validate():

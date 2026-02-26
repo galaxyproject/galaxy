@@ -1,7 +1,5 @@
 import tempfile
-from typing import (
-    Callable,
-)
+from collections.abc import Callable
 from unittest import SkipTest
 from urllib.parse import (
     urljoin,

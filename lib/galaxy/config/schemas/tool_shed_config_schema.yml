@@ -46,6 +46,16 @@ mapping:
           Allow pushing directly to mercurial repositories directly
           and without authentication.
 
+      tool_shed_url:
+        type: str
+        required: false
+        desc: |
+          The base URL of the Tool Shed server used for generating clone URLs
+          and repository hostnames. If set, this value will be used instead of
+          deriving the URL from the incoming request.
+
+          Example: https://toolshed.g2.bx.psu.edu
+
       file_path:
         type: str
         default: database/community_files

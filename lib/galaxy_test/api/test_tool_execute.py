@@ -1,4 +1,4 @@
-"""Test tool execution pieces.
+"""Test tool execution piecesexecute
 
 Longer term ideally we would separate all the tool tests in test_tools.py that
 describe tool execution into this file and make sure we have parallel or matching
@@ -27,49 +27,58 @@ def test_multidata_param(
 ):
     hda1 = target_history.with_dataset("1\t2\t3").src_dict
     hda2 = target_history.with_dataset("4\t5\t6").src_dict
-    inputs = tool_input_format.when.flat(
-        {
-            "f1": {"batch": False, "values": [hda1, hda2]},
-            "f2": {"batch": False, "values": [hda2, hda1]},
-        }
-    ).when.nested(
-        {
-            "f1": {"batch": False, "values": [hda1, hda2]},
-            "f2": {"batch": False, "values": [hda2, hda1]},
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "f1": {"batch": False, "values": [hda1, hda2]},
+                "f2": {"batch": False, "values": [hda2, hda1]},
+            }
+        )
+        .when.nested(
+            {
+                "f1": {"batch": False, "values": [hda1, hda2]},
+                "f2": {"batch": False, "values": [hda2, hda1]},
+            }
+        )
+        .when.request(
+            {
+                "f1": [hda1, hda2],
+                "f2": [hda2, hda1],
+            }
+        )
     )
-    execution = required_tool.execute.with_inputs(inputs)
+    execution = required_tool.execute().with_inputs(inputs)
     execution.assert_has_job(0).with_output("out1").with_contents("1\t2\t3\n4\t5\t6\n")
     execution.assert_has_job(0).with_output("out2").with_contents("4\t5\t6\n1\t2\t3\n")
 
 
 @requires_tool_id("expression_forty_two")
 def test_galaxy_expression_tool_simplest(required_tool: RequiredTool):
-    required_tool.execute.assert_has_single_job.with_single_output.with_contents("42")
+    required_tool.execute().assert_has_single_job.with_single_output.with_contents("42")
 
 
 @requires_tool_id("expression_parse_int")
 def test_galaxy_expression_tool_simple(required_tool: RequiredTool):
-    execution = required_tool.execute.with_inputs({"input1": "7"})
+    execution = required_tool.execute().with_inputs({"input1": "7"})
     execution.assert_has_single_job.with_single_output.with_contents("7")
 
 
 @requires_tool_id("expression_log_line_count")
 def test_galaxy_expression_metadata(target_history: TargetHistory, required_tool: RequiredTool):
     hda1 = target_history.with_dataset("1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14").src_dict
-    execution = required_tool.execute.with_inputs({"input1": hda1})
+    execution = required_tool.execute().with_inputs({"input1": hda1})
     execution.assert_has_single_job.with_single_output.with_contents("3")
 
 
 @requires_tool_id("multi_select")
 def test_multi_select_as_list(required_tool: RequiredTool):
-    execution = required_tool.execute.with_inputs({"select_ex": ["--ex1", "ex2"]})
+    execution = required_tool.execute().with_inputs({"select_ex": ["--ex1", "ex2"]})
     execution.assert_has_single_job.with_output("output").with_contents("--ex1,ex2")
 
 
 @requires_tool_id("multi_select")
 def test_multi_select_optional(required_tool: RequiredTool):
-    execution = required_tool.execute.with_inputs(
+    execution = required_tool.execute().with_inputs(
         {
             "select_ex": ["--ex1"],
             "select_optional": None,
@@ -83,14 +92,14 @@ def test_multi_select_optional(required_tool: RequiredTool):
 @requires_tool_id("identifier_single")
 def test_identifier_outside_map(target_history: TargetHistory, required_tool: RequiredTool):
     hda = target_history.with_dataset("123", named="Plain HDA")
-    execute = required_tool.execute.with_inputs({"input1": hda.src_dict})
+    execute = required_tool.execute().with_inputs({"input1": hda.src_dict})
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("Plain HDA")
 
 
 @requires_tool_id("identifier_multiple")
 def test_identifier_in_multiple_reduce(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_pair()
-    execute = required_tool.execute.with_inputs({"input1": hdca.src_dict})
+    execute = required_tool.execute().with_inputs({"input1": hdca.src_dict})
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
 
 
@@ -111,7 +120,7 @@ def test_identifier_map_over_multiple_input_in_conditional(
             },
         }
     )
-    execute = required_tool.execute.with_inputs(inputs)
+    execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
 
 
@@ -129,7 +138,7 @@ def test_identifier_multiple_reduce_in_repeat(
             "the_repeat_0|the_data|input1": hdca.src_dict,
         }
     )
-    execute = required_tool.execute.with_inputs(inputs)
+    execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("forward\nreverse")
 
 
@@ -139,20 +148,31 @@ def test_map_over_with_output_format_actions(
 ):
     hdca = target_history.with_pair()
     for use_action in ["do", "dont"]:
-        inputs = tool_input_format.when.flat(
-            {
-                "input_cond|dispatch": use_action,
-                "input_cond|input": {"batch": True, "values": [hdca.src_dict]},
-            }
-        ).when.nested(
-            {
-                "input_cond": {
-                    "dispatch": use_action,
-                    "input": {"batch": True, "values": [hdca.src_dict]},
+        inputs = (
+            tool_input_format.when.flat(
+                {
+                    "input_cond|dispatch": use_action,
+                    "input_cond|input": {"batch": True, "values": [hdca.src_dict]},
                 }
-            }
+            )
+            .when.nested(
+                {
+                    "input_cond": {
+                        "dispatch": use_action,
+                        "input": {"batch": True, "values": [hdca.src_dict]},
+                    }
+                }
+            )
+            .when.request(
+                {
+                    "input_cond": {
+                        "dispatch": use_action,
+                        "input": {"__class__": "Batch", "values": [hdca.src_dict]},
+                    }
+                }
+            )
         )
-        execute = required_tool.execute.with_inputs(inputs)
+        execute = required_tool.execute().with_inputs(inputs)
         execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
         expected_extension = "txt" if (use_action == "do") else "data"
         execute.assert_has_job(0).with_single_output.with_file_ext(expected_extension)
@@ -162,7 +182,7 @@ def test_map_over_with_output_format_actions(
 @requires_tool_id("output_action_change_format_paired")
 def test_map_over_with_nested_paired_output_format_actions(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_example_list_of_pairs()
-    execute = required_tool.execute.with_inputs(
+    execute = required_tool.execute().with_inputs(
         {"input": {"batch": True, "values": [dict(map_over_type="paired", **hdca.src_dict)]}}
     )
     execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
@@ -174,7 +194,7 @@ def test_map_over_with_nested_paired_output_format_actions(target_history: Targe
 def test_identifier_with_data_collection(target_history: TargetHistory, required_tool: RequiredTool):
     contents = [("foo", "text for foo element"), ("bar", "more text for bar element")]
     hdca = target_history.with_list(contents)
-    execute = required_tool.execute.with_inputs({"input1": hdca.src_dict})
+    execute = required_tool.execute().with_inputs({"input1": hdca.src_dict})
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("foo\nbar")
 
 
@@ -183,7 +203,7 @@ def test_identifier_in_actions(target_history: TargetHistory, required_tool: Req
     contents = [("foo", "text for foo element"), ("bar", "more text for bar element")]
     hdca = target_history.with_list(contents)
 
-    execute = required_tool.execute.with_inputs({"input": {"batch": True, "values": [hdca.src_dict]}})
+    execute = required_tool.execute().with_inputs({"input": {"batch": True, "values": [hdca.src_dict]}})
 
     output = execute.assert_has_job(0).assert_has_single_output
     assert output.details["metadata_column_names"][1] == "foo", output.details
@@ -195,7 +215,7 @@ def test_identifier_in_actions(target_history: TargetHistory, required_tool: Req
 @requires_tool_id("identifier_single_in_repeat")
 def test_identifier_single_in_repeat(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_pair()
-    execute = required_tool.execute.with_inputs(
+    execute = required_tool.execute().with_inputs(
         {"the_repeat_0|the_data|input1": {"batch": True, "values": [hdca.src_dict]}}
     )
     execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
@@ -207,7 +227,7 @@ def test_identifier_single_in_repeat(target_history: TargetHistory, required_too
 @requires_tool_id("identifier_multiple_in_conditional")
 def test_identifier_multiple_in_conditional(target_history: TargetHistory, required_tool: RequiredTool):
     hda = target_history.with_dataset("123", named="Normal HDA1")
-    execute = required_tool.execute.with_inputs(
+    execute = required_tool.execute().with_inputs(
         {
             "outer_cond|inner_cond|input1": hda.src_dict,
         }
@@ -219,7 +239,7 @@ def test_identifier_multiple_in_conditional(target_history: TargetHistory, requi
 def test_identifier_with_multiple_normal_datasets(target_history: TargetHistory, required_tool: RequiredTool):
     hda1 = target_history.with_dataset("123", named="Normal HDA1")
     hda2 = target_history.with_dataset("456", named="Normal HDA2")
-    execute = required_tool.execute.with_inputs({"input1": [hda1.src_dict, hda2.src_dict]})
+    execute = required_tool.execute().with_inputs({"input1": [hda1.src_dict, hda2.src_dict]})
     execute.assert_has_single_job.assert_has_single_output.with_contents_stripped("Normal HDA1\nNormal HDA2")
 
 
@@ -229,7 +249,7 @@ def test_map_over_empty_collection(target_history: TargetHistory, required_tool:
     inputs = {
         "input1": {"batch": True, "values": [hdca.src_dict]},
     }
-    execute = required_tool.execute.with_inputs(inputs)
+    execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_n_jobs(0)
     name = execute.assert_creates_implicit_collection(0).details["name"]
     assert "Concatenate datasets" in name
@@ -256,22 +276,35 @@ def test_multi_run_in_repeat(
     multi_run_in_repeat_datasets: MultiRunInRepeatFixtures,
     tool_input_format: DescribeToolInputs,
 ):
-    inputs = tool_input_format.when.flat(
-        {
-            "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
-            "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
-        }
-    ).when.nested(
-        {
-            "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
-            "queries": [
-                {
-                    "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
-                }
-            ],
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
+                "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+            }
+        )
+        .when.nested(
+            {
+                "input1": {"batch": False, "values": [multi_run_in_repeat_datasets.common_dataset]},
+                "queries": [
+                    {
+                        "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+                    }
+                ],
+            }
+        )
+        .when.request(
+            {
+                "input1": multi_run_in_repeat_datasets.common_dataset,
+                "queries": [
+                    {
+                        "input2": {"__class__": "Batch", "values": multi_run_in_repeat_datasets.repeat_datasets},
+                    }
+                ],
+            }
+        )
     )
-    execute = required_tool.execute.with_inputs(inputs)
+    execute = required_tool.execute().with_inputs(inputs)
     _check_multi_run_in_repeat(execute)
 
 
@@ -282,22 +315,35 @@ def test_multi_run_in_repeat_mismatch(
     tool_input_format: DescribeToolInputs,
 ):
     """Same test as above but without the batch wrapper around the common dataset shared between multirun."""
-    inputs = tool_input_format.when.flat(
-        {
-            "input1": multi_run_in_repeat_datasets.common_dataset,
-            "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
-        }
-    ).when.nested(
-        {
-            "input1": multi_run_in_repeat_datasets.common_dataset,
-            "queries": [
-                {
-                    "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
-                }
-            ],
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "input1": multi_run_in_repeat_datasets.common_dataset,
+                "queries_0|input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+            }
+        )
+        .when.nested(
+            {
+                "input1": multi_run_in_repeat_datasets.common_dataset,
+                "queries": [
+                    {
+                        "input2": {"batch": True, "values": multi_run_in_repeat_datasets.repeat_datasets},
+                    }
+                ],
+            }
+        )
+        .when.request(
+            {
+                "input1": multi_run_in_repeat_datasets.common_dataset,
+                "queries": [
+                    {
+                        "input2": {"__class__": "Batch", "values": multi_run_in_repeat_datasets.repeat_datasets},
+                    }
+                ],
+            }
+        )
     )
-    execute = required_tool.execute.with_inputs(inputs)
+    execute = required_tool.execute().with_inputs(inputs)
     _check_multi_run_in_repeat(execute)
 
 
@@ -328,20 +374,33 @@ def test_multirun_on_multiple_inputs(
     two_multi_run_datasets: TwoMultiRunsFixture,
     tool_input_format: DescribeToolInputs,
 ):
-    inputs = tool_input_format.when.flat(
-        {
-            "input1": {"batch": True, "values": two_multi_run_datasets.first_two_datasets},
-            "queries_0|input2": {"batch": True, "values": two_multi_run_datasets.second_two_datasets},
-        }
-    ).when.nested(
-        {
-            "input1": {"batch": True, "values": two_multi_run_datasets.first_two_datasets},
-            "queries": [
-                {"input2": {"batch": True, "values": two_multi_run_datasets.second_two_datasets}},
-            ],
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "input1": {"batch": True, "values": two_multi_run_datasets.first_two_datasets},
+                "queries_0|input2": {"batch": True, "values": two_multi_run_datasets.second_two_datasets},
+            }
+        )
+        .when.nested(
+            {
+                "input1": {"batch": True, "values": two_multi_run_datasets.first_two_datasets},
+                "queries": [
+                    {"input2": {"batch": True, "values": two_multi_run_datasets.second_two_datasets}},
+                ],
+            }
+        )
+        .when.request(
+            {
+                "input1": {"__class__": "Batch", "values": two_multi_run_datasets.first_two_datasets},
+                "queries": [
+                    {
+                        "input2": {"__class__": "Batch", "values": two_multi_run_datasets.second_two_datasets},
+                    }
+                ],
+            }
+        )
     )
-    execute = required_tool.execute.with_inputs(inputs)
+    execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_n_jobs(2)
     execute.assert_has_job(0).with_single_output.with_contents_stripped("123\n789")
     execute.assert_has_job(1).with_single_output.with_contents_stripped("456\n0ab")
@@ -353,20 +412,41 @@ def test_multirun_on_multiple_inputs_unlinked(
     two_multi_run_datasets: TwoMultiRunsFixture,
     tool_input_format: DescribeToolInputs,
 ):
-    inputs = tool_input_format.when.flat(
-        {
-            "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
-            "queries_0|input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets},
-        }
-    ).when.nested(
-        {
-            "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
-            "queries": [
-                {"input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets}},
-            ],
-        }
+    inputs = (
+        tool_input_format.when.flat(
+            {
+                "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
+                "queries_0|input2": {
+                    "batch": True,
+                    "linked": False,
+                    "values": two_multi_run_datasets.second_two_datasets,
+                },
+            }
+        )
+        .when.nested(
+            {
+                "input1": {"batch": True, "linked": False, "values": two_multi_run_datasets.first_two_datasets},
+                "queries": [
+                    {"input2": {"batch": True, "linked": False, "values": two_multi_run_datasets.second_two_datasets}},
+                ],
+            }
+        )
+        .when.request(
+            {
+                "input1": {"__class__": "Batch", "values": two_multi_run_datasets.first_two_datasets, "linked": False},
+                "queries": [
+                    {
+                        "input2": {
+                            "__class__": "Batch",
+                            "values": two_multi_run_datasets.second_two_datasets,
+                            "linked": False,
+                        },
+                    }
+                ],
+            }
+        )
     )
-    execute = required_tool.execute.with_inputs(inputs)
+    execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_n_jobs(4)
     execute.assert_has_job(0).with_single_output.with_contents_stripped("123\n789")
     execute.assert_has_job(1).with_single_output.with_contents_stripped("123\n0ab")
@@ -379,8 +459,10 @@ def test_map_over_collection(
     target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
 ):
     hdca = target_history.with_pair(["123", "456"])
-    inputs = tool_input_format.when.any({"input1": {"batch": True, "values": [hdca.src_dict]}})
-    execute = required_tool.execute.with_inputs(inputs)
+    legacy = {"input1": {"batch": True, "values": [hdca.src_dict]}}
+    request = {"input1": {"__class__": "Batch", "values": [hdca.src_dict]}}
+    inputs = tool_input_format.when.flat(legacy).when.nested(legacy).when.request(request)
+    execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)
     output_collection.assert_has_dataset_element("forward").with_contents_stripped("123")
@@ -390,7 +472,7 @@ def test_map_over_collection(
 @requires_tool_id("cat|cat1")
 def test_map_over_data_with_paired_or_unpaired_unpaired(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_unpaired()
-    execute = required_tool.execute.with_inputs({"input1": {"batch": True, "values": [hdca.src_dict]}})
+    execute = required_tool.execute().with_inputs({"input1": {"batch": True, "values": [hdca.src_dict]}})
     execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)
     output_collection.assert_collection_type_is("paired_or_unpaired")
@@ -400,7 +482,7 @@ def test_map_over_data_with_paired_or_unpaired_unpaired(target_history: TargetHi
 @requires_tool_id("cat|cat1")
 def test_map_over_data_with_paired_or_unpaired_paired(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_paired_or_unpaired_pair()
-    execute = required_tool.execute.with_inputs({"input1": {"batch": True, "values": [hdca.src_dict]}})
+    execute = required_tool.execute().with_inputs({"input1": {"batch": True, "values": [hdca.src_dict]}})
     execute.assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)
     output_collection.assert_collection_type_is("paired_or_unpaired")
@@ -411,7 +493,7 @@ def test_map_over_data_with_paired_or_unpaired_paired(target_history: TargetHist
 @requires_tool_id("cat|cat1")
 def test_map_over_data_with_list_paired_or_unpaired(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_list_of_paired_and_unpaired()
-    execute = required_tool.execute.with_inputs({"input1": {"batch": True, "values": [hdca.src_dict]}})
+    execute = required_tool.execute().with_inputs({"input1": {"batch": True, "values": [hdca.src_dict]}})
     execute.assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)
     output_collection.assert_collection_type_is("list:paired_or_unpaired")
@@ -422,7 +504,7 @@ def test_map_over_data_with_list_paired_or_unpaired(target_history: TargetHistor
 @requires_tool_id("collection_paired_or_unpaired")
 def test_map_over_paired_or_unpaired_with_list_paired(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_example_list_of_pairs()
-    execute = required_tool.execute.with_inputs(
+    execute = required_tool.execute().with_inputs(
         {"f1": {"batch": True, "values": [{"map_over_type": "paired", **hdca.src_dict}]}}
     )
     execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
@@ -435,7 +517,19 @@ def test_map_over_paired_or_unpaired_with_list_paired(target_history: TargetHist
 def test_map_over_paired_or_unpaired_with_list(target_history: TargetHistory, required_tool: RequiredTool):
     contents = [("foo", "text for foo element")]
     hdca = target_history.with_list(contents)
-    execute = required_tool.execute.with_inputs(
+    execute = required_tool.execute().with_inputs(
+        {"f1": {"batch": True, "values": [{"map_over_type": "single_datasets", **hdca.src_dict}]}}
+    )
+    execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_has_dataset_element("foo").with_contents_stripped("text for foo element")
+
+
+@requires_tool_id("collection_paired_or_unpaired")
+def test_map_over_paired_or_unpaired_with_sample_sheet(target_history: TargetHistory, required_tool: RequiredTool):
+    contents = [("foo", "text for foo element")]
+    hdca = target_history.with_sample_sheet(contents)
+    execute = required_tool.execute().with_inputs(
         {"f1": {"batch": True, "values": [{"map_over_type": "single_datasets", **hdca.src_dict}]}}
     )
     execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
@@ -446,7 +540,7 @@ def test_map_over_paired_or_unpaired_with_list(target_history: TargetHistory, re
 @requires_tool_id("collection_paired_or_unpaired")
 def test_map_over_paired_or_unpaired_with_list_of_lists(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_example_list_of_lists()
-    execute = required_tool.execute.with_inputs(
+    execute = required_tool.execute().with_inputs(
         {"f1": {"batch": True, "values": [{"map_over_type": "single_datasets", **hdca.src_dict}]}}
     )
     execute.assert_has_n_jobs(3).assert_creates_n_implicit_collections(1)
@@ -460,7 +554,7 @@ def test_map_over_paired_or_unpaired_with_list_of_lists(target_history: TargetHi
 @requires_tool_id("collection_paired_or_unpaired")
 def test_adapting_dataset_to_paired_or_unpaired(target_history: TargetHistory, required_tool: RequiredTool):
     hda1 = target_history.with_dataset("1\t2\t3").src_dict
-    execution = required_tool.execute.with_inputs(
+    execution = required_tool.execute().with_inputs(
         {
             "f1": {
                 "src": "CollectionAdapter",
@@ -476,7 +570,7 @@ def test_adapting_dataset_to_paired_or_unpaired(target_history: TargetHistory, r
 @requires_tool_id("cat_collection")
 def test_adapting_dataset_to_list(target_history: TargetHistory, required_tool: RequiredTool):
     hda1 = target_history.with_dataset("1\t2\t3").src_dict
-    execution = required_tool.execute.with_inputs(
+    execution = required_tool.execute().with_inputs(
         {
             "input1": {
                 "src": "CollectionAdapter",
@@ -493,7 +587,7 @@ def test_adapting_dataset_to_list(target_history: TargetHistory, required_tool: 
 def test_adapting_two_datasets_to_paired_collection(target_history: TargetHistory, required_tool: RequiredTool):
     hda1 = target_history.with_dataset("1\t2\t3").src_dict
     hda2 = target_history.with_dataset("4\t5\t6").src_dict
-    execution = required_tool.execute.with_inputs(
+    execution = required_tool.execute().with_inputs(
         {
             "f1": {
                 "src": "CollectionAdapter",
@@ -512,7 +606,7 @@ def test_adapting_two_datasets_to_paired_collection(target_history: TargetHistor
 @requires_tool_id("gx_data")
 def test_map_over_data_param_with_list_of_lists(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_example_list_of_lists()
-    execute = required_tool.execute.with_inputs({"parameter": {"batch": True, "values": [hdca.src_dict]}})
+    execute = required_tool.execute().with_inputs({"parameter": {"batch": True, "values": [hdca.src_dict]}})
     execute.assert_has_n_jobs(3).assert_creates_n_implicit_collections(1)
     execute.assert_creates_implicit_collection(0)
 
@@ -522,7 +616,7 @@ def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, req
     # we have a tool test for this but I wanted to verify it wasn't just the
     # tool test framework filling in a default. Creating a raw request here
     # verifies that currently select parameters don't require a selection.
-    required_tool.execute.assert_has_single_job.with_single_output.containing("false").containing("length: 2")
+    required_tool.execute().assert_has_single_job.with_single_output.containing("false").containing("length: 2")
 
 
 @requires_tool_id("gx_select")
@@ -530,7 +624,7 @@ def test_optional_repeats_with_mins_filled_id(target_history: TargetHistory, req
 def test_select_first_by_default(required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs):
     empty = tool_input_format.when.any({})
     for required_tool in required_tools:
-        required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
+        required_tool.execute().with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
             "--ex1"
         )
 
@@ -544,7 +638,11 @@ def test_select_on_null_errors(required_tools: list[RequiredTool], tool_input_fo
     # is passed, an error (rightfully) occurs. This test verifies that.
     null_parameter = tool_input_format.when.any({"parameter": None})
     for required_tool in required_tools:
-        required_tool.execute.with_inputs(null_parameter).assert_fails.with_error_containing("an invalid option")
+        fails = required_tool.execute().with_inputs(null_parameter).assert_fails
+        if tool_input_format.is_request:
+            fails.with_error_containing("Input should be")
+        else:
+            fails.with_error_containing("an invalid option")
 
 
 @requires_tool_id("gx_select_dynamic_empty")
@@ -555,7 +653,11 @@ def test_select_empty_causes_error_regardless(
     # despite selects otherwise selecting defaults - nothing can be done if the select option list is empty
     empty = tool_input_format.when.any({})
     for required_tool in required_tools:
-        required_tool.execute.with_inputs(empty).assert_fails.with_error_containing("an invalid option")
+        failure = required_tool.execute().with_inputs(empty).assert_fails
+        if tool_input_format.is_request:
+            failure.with_error_containing("validation error")
+        else:
+            failure.with_error_containing("an invalid option")
 
 
 @requires_tool_id("gx_select_optional")
@@ -566,10 +668,10 @@ def test_select_optional_null_by_default(required_tools: list[RequiredTool], too
     empty = tool_input_format.when.any({})
     null_parameter = tool_input_format.when.any({"parameter": None})
     for required_tool in required_tools:
-        required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
+        required_tool.execute().with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
             "None"
         )
-        required_tool.execute.with_inputs(null_parameter).assert_has_single_job.with_output(
+        required_tool.execute().with_inputs(null_parameter).assert_has_single_job.with_output(
             "output"
         ).with_contents_stripped("None")
 
@@ -583,43 +685,61 @@ def test_select_multiple_does_not_select_first_by_default(
     empty = tool_input_format.when.any({})
     null_parameter = tool_input_format.when.any({"parameter": None})
     for required_tool in required_tools:
-        required_tool.execute.with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
+        required_tool.execute().with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
             "None"
         )
-        required_tool.execute.with_inputs(null_parameter).assert_has_single_job.with_output(
+        required_tool.execute().with_inputs(null_parameter).assert_has_single_job.with_output(
             "output"
         ).with_contents_stripped("None")
+
+
+@requires_tool_id("gx_select_multiple_one_default")
+def test_select_multiple_does_default_to_select_values_marked_as_selected(
+    required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs
+):
+    empty = tool_input_format.when.any({})
+    for required_tool in required_tools:
+        required_tool.execute().with_inputs(empty).assert_has_single_job.with_output("output").with_contents_stripped(
+            "--ex3"
+        )
+
+
+@requires_tool_id("gx_select_multiple_one_default_user")
+def test_select_multiple_does_default_to_select_values_marked_as_selected_user(required_tool: RequiredTool):
+    required_tool.execute().with_request({}).assert_has_single_job.with_output("output").with_contents_stripped(
+        '["--ex3"]'
+    )
 
 
 @requires_tool_id("gx_text")
 @requires_tool_id("gx_text_optional_false")
 def test_null_to_text_tools(required_tools: list[RequiredTool], tool_input_format: DescribeToolInputs):
     for required_tool in required_tools:
-        execute = required_tool.execute.with_inputs(tool_input_format.when.any({}))
+        execute = required_tool.execute().with_inputs(tool_input_format.when.any({}))
         execute.assert_has_single_job.with_output("output").with_contents_stripped("")
         execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
 
-        execute = required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": None}))
+        execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": None}))
         execute.assert_has_single_job.with_output("output").with_contents_stripped("")
         execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
 
 
 @requires_tool_id("gx_text_optional")
-def test_null_to_optinal_text_tool(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
-    execute = required_tool.execute.with_inputs(tool_input_format.when.any({}))
+def test_null_to_optional_text_tool(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({}))
     execute.assert_has_single_job.with_output("output").with_contents_stripped("")
     execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
 
-    execute = required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": None}))
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": None}))
     execute.assert_has_single_job.with_output("output").with_contents_stripped("")
     execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
 
 
 @requires_tool_id("gx_text_empty_validation")
 def test_null_to_text_tool_with_validation(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
-    required_tool.execute.with_inputs(tool_input_format.when.any({})).assert_fails()
-    required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": None})).assert_fails()
-    required_tool.execute.with_inputs(tool_input_format.when.any({"parameter": ""})).assert_fails()
+    required_tool.execute().with_inputs(tool_input_format.when.any({})).assert_fails()
+    required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": None})).assert_fails()
+    required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""})).assert_fails()
 
 
 @requires_tool_id("cat|cat1")
@@ -628,7 +748,7 @@ def test_deferred_basic(required_tool: RequiredTool, target_history: TargetHisto
     inputs = {
         "input1": has_src_dict.src_dict,
     }
-    output = required_tool.execute.with_inputs(inputs).assert_has_single_job.with_single_output
+    output = required_tool.execute().with_inputs(inputs).assert_has_single_job.with_single_output
     output.assert_contains("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
 
 
@@ -639,7 +759,7 @@ def test_deferred_with_metadata_options_filter(required_tool: RequiredTool, targ
         "input_bam": has_src_dict.src_dict,
         "ref_names": "chrM",
     }
-    required_tool.execute.with_inputs(inputs).assert_has_single_job.with_single_output.with_contents_stripped("chrM")
+    required_tool.execute().with_inputs(inputs).assert_has_single_job.with_single_output.with_contents_stripped("chrM")
 
 
 @requires_tool_id("cat_list")
@@ -649,6 +769,6 @@ def test_deferred_multi_input(required_tool: RequiredTool, target_history: Targe
     inputs = {
         "input1": [has_src_dict_bed.src_dict, has_src_dict_txt.src_dict],
     }
-    output = required_tool.execute.with_inputs(inputs).assert_has_single_job.with_single_output
+    output = required_tool.execute().with_inputs(inputs).assert_has_single_job.with_single_output
     output.assert_contains("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
     output.assert_contains("chr1    4225    19670")

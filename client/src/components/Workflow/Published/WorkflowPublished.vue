@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
 import { BAlert, BCard } from "bootstrap-vue";
@@ -20,8 +19,6 @@ import Heading from "@/components/Common/Heading.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 import WorkflowInformation from "@/components/Workflow/Published/WorkflowInformation.vue";
 import WorkflowPublishedButtons from "@/components/Workflow/Published/WorkflowPublishedButtons.vue";
-
-library.add(faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser);
 
 interface Props {
     id: string;
@@ -106,7 +103,7 @@ onMounted(async () => {
     await until(workflow).toBeTruthy();
     await nextTick();
 
-    // @ts-ignore: TS2339 webpack dev issue. hopefully we can remove this with vite
+    // @ts-ignore: TS2339 component method not exposed in template ref type
     workflowGraph.value?.fitWorkflow(0.25, 1.5, 20.0);
 });
 
@@ -171,7 +168,7 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-published {
     display: flex;

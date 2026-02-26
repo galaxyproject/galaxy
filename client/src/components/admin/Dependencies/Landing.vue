@@ -14,9 +14,9 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import ContainerIndex from "./ContainerIndex";
-import ResolutionIndex from "./ResolutionIndex";
-import UnusedIndex from "./UnusedIndex";
+import ContainerIndex from "./ContainerIndex.vue";
+import ResolutionIndex from "./ResolutionIndex.vue";
+import UnusedIndex from "./UnusedIndex.vue";
 
 Vue.use(BootstrapVue);
 

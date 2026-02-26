@@ -257,7 +257,7 @@ class Video(Binary):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if which("ffprobe"):
             metadata, streams = ffprobe(dataset.get_file_name())
-            (w, h, fps) = self._get_resolution(streams)
+            w, h, fps = self._get_resolution(streams)
             dataset.metadata.resolution_w = w
             dataset.metadata.resolution_h = h
             dataset.metadata.fps = fps

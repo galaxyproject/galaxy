@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventBus } from "@vueuse/core";
@@ -7,8 +6,6 @@ import { BAlert } from "bootstrap-vue";
 
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import localize from "@/utils/localization";
-
-library.add(faInfoCircle);
 
 const { emit } = useEventBus<string>("open-tool-section");
 

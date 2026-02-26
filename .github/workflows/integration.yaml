@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9']
+        python-version: ['3.10']
         chunk: ['0', '1', '2', '3']
     steps:
       - if: github.event_name == 'schedule'
@@ -51,21 +51,21 @@ jobs:
           kubernetes-version: '1.28.0'
       - name: Check pods
         run: kubectl get pods -A
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           path: 'galaxy root'
           persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-          cache-dependency-path: 'galaxy root/requirements.txt'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
       - name: Get full Python version
         id: full-python-version
         shell: bash
         run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
       - name: Cache galaxy venv
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-integration
@@ -80,7 +80,7 @@ jobs:
         with:
           flags: integration
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: Integration test results (${{ matrix.python-version }}, ${{ matrix.chunk }})

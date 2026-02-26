@@ -63,6 +63,7 @@ if TYPE_CHECKING:
 
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
+INPUT_CLASS_T = Literal["galaxy", "cwl"]
 
 
 class AssertionDict(TypedDict):
@@ -89,6 +90,8 @@ class ToolSourceTestOutputAttributes(TypedDict):
     metric: str
     pin_labels: Optional[Any]
     count: Optional[int]
+    min: Optional[int]
+    max: Optional[int]
     metadata: Dict[str, Any]
     md5: Optional[str]
     checksum: Optional[str]
@@ -132,6 +135,7 @@ class ToolSourceTest(TypedDict):
     expect_num_outputs: Optional[XmlInt]
     command: AssertionList
     command_version: AssertionList
+    value_state_representation: Literal["test_case_xml", "test_case_json"]
 
 
 class ToolSourceTests(TypedDict):
@@ -449,6 +453,9 @@ class ToolSource(metaclass=ABCMeta):
         """Return the tool source as a string"""
 
 
+InputsStyleT = Literal["cheetah", "cwl", "none"]
+
+
 class PagesSource:
     """Contains a list of Pages - each a list of InputSources -
     each item in the outer list representing a page of inputs.
@@ -456,12 +463,17 @@ class PagesSource:
     be exactly a singleton.
     """
 
-    def __init__(self, page_sources):
+    def __init__(self, page_sources, inputs_style: InputsStyleT = "cheetah"):
         self.page_sources = page_sources
+        self._inputs_style = inputs_style
 
     @property
-    def inputs_defined(self):
-        return True
+    def inputs_defined(self) -> bool:
+        return self._inputs_style != "none"
+
+    @property
+    def inputs_style(self) -> InputsStyleT:
+        return self._inputs_style
 
 
 class DynamicOptions(metaclass=ABCMeta):
@@ -494,6 +506,10 @@ class DrillDownDynamicOptions(metaclass=ABCMeta):
 
 class InputSource(metaclass=ABCMeta):
     default_optional = False
+
+    @property
+    def input_class(self) -> INPUT_CLASS_T:
+        return "galaxy"
 
     def elem(self):
         # For things in transition that still depend on XML - provide a way
@@ -722,6 +738,8 @@ class TestCollectionDef:
         test_format_dict = JsonTestCollectionDefDict(**self._test_format_to_dict())
         if self.name:
             test_format_dict["name"] = self.name
+        if self.fields is not None:
+            test_format_dict["fields"] = self.fields
         return test_format_dict
 
     def to_dict(self) -> XmlTestCollectionDefDict:
@@ -791,6 +809,7 @@ class TestCollectionDef:
                 name=json_as_dict.get("name") or "Unnamed Collection",
                 elements=elements,
                 collection_type=json_as_dict["collection_type"],
+                fields=json_as_dict.get("fields", None),
             )
 
     def collect_inputs(self):
@@ -862,6 +881,10 @@ class TestCollectionOutputDef:
         else:
             count = attrib.get("count")
         self.count = int(count) if count is not None else None
+        min = attrib.get("min")
+        self.min = int(min) if min is not None else None
+        max = attrib.get("max")
+        self.max = int(max) if max is not None else None
         self.attrib = attrib
         self.element_tests = element_tests
 

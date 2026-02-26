@@ -625,15 +625,13 @@ class GalaxyRBACAgent(RBACAgent):
         if dataset.library_associations:
             return False
         else:
-            query = text(
-                """
+            query = text("""
 SELECT COUNT(*)
 FROM history
 INNER JOIN
     history_dataset_association on history_dataset_association.history_id = history.id
 WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :dataset_id
-"""
-            ).bindparams(dataset_id=dataset.id, user_id=user.id if user else None)
+""").bindparams(dataset_id=dataset.id, user_id=user.id if user else None)
             return self.sa_session.scalars(query).first() == 0
 
     def get_item_actions(self, action, item):

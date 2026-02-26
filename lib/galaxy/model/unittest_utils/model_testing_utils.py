@@ -1,9 +1,11 @@
 import os
 import uuid
-from collections.abc import Iterator
+from collections.abc import (
+    Callable,
+    Iterator,
+)
 from contextlib import contextmanager
 from typing import (
-    Callable,
     Optional,
 )
 
@@ -145,7 +147,7 @@ def drop_database(db_url, database):
         _drop_database(db_url, database)
     else:
         url = make_url(db_url)
-        os.remove(url.database)  # type:ignore[arg-type]
+        os.remove(url.database)  # type: ignore[arg-type]
 
 
 def dbcleanup_wrapper(session, obj, where_clause=None):

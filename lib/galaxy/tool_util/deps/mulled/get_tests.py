@@ -5,6 +5,7 @@ searches for tests for packages in the bioconda-recipes repo and on Anaconda, lo
 
 A shallow search (default for singularity and conda generation scripts) just checks once on Anaconda for the specified version.
 """
+
 import json
 import logging
 from glob import glob

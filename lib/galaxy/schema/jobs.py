@@ -1,6 +1,7 @@
 import json
 from typing import (
     Any,
+    Literal,
     Optional,
     Union,
 )
@@ -11,7 +12,6 @@ from pydantic import (
     field_validator,
     UUID4,
 )
-from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -79,6 +79,19 @@ class JobOutputAssociation(JobAssociation):
     )
 
 
+class JobOutputCollectionAssociation(Model):
+    name: str = Field(
+        default=...,
+        title="name",
+        description="Name of the job parameter.",
+    )
+    dataset_collection_instance: EncodedDataItemSourceId = Field(
+        default=...,
+        title="dataset_collection_instance",
+        description="Reference to the associated item.",
+    )
+
+
 class ReportJobErrorPayload(Model):
     dataset_id: DecodedDatabaseIdField = Field(
         default=...,
@@ -112,6 +125,11 @@ class SearchJobsPayload(Model):
         default=None,
         title="State",
         description="Current state of the job.",
+    )
+    history_id: Union[DecodedDatabaseIdField, None] = Field(
+        default=None,
+        title="History ID",
+        description="The encoded ID of the history associated with this job.",
     )
     model_config = ConfigDict(extra="allow")  # This is used for items named file_ and __file_
 

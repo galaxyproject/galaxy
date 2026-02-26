@@ -8,6 +8,7 @@
       endpoint:
           label: Hugging Face Hub Endpoint
           type: string
+          optional: true
           help: |
               Custom endpoint of the Hugging Face Hub you are connecting to. This should be the full URL including the protocol (http or https) and the domain name.
               You can leave this blank to use the default Hugging Face Hub endpoint (https://huggingface.co).
@@ -15,6 +16,7 @@
   secrets:
       token:
           label: Hugging Face Access Token
+          optional: true
           help: |
               The personal access token to use to connect to the Hugging Face Hub. You can generate a new token in your Hugging Face account settings.
               This will allow Galaxy to access private models if you have the necessary permissions.

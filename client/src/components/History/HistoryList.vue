@@ -8,7 +8,7 @@
  *
  * - Filtering and searching histories with advanced filter options
  * - Pagination for large history collections
- * - Bulk operations (delete, restore, add tags)
+ * - Bulk operations (delete, restore, purge, add tags, open in multiview)
  * - Individual history selection and management
  * - View mode switching (grid/list)
  * - Sorting capabilities
@@ -19,7 +19,7 @@
  * <HistoryList activeList="shared" />
  */
 
-import { faBurn, faPlus, faTags, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import { faBurn, faColumns, faPlus, faTags, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
@@ -142,6 +142,7 @@ const noItems = computed(() => !loading.value && historiesLoaded.value.length ==
 const noResults = computed(() => !loading.value && historiesLoaded.value.length === 0 && Boolean(filterText.value));
 const deleteButtonTitle = computed(() => (showDeleted.value ? "Hide deleted histories" : "Show deleted histories"));
 const showBulkPurge = computed(() => selectedHistories.value.some((h) => !h.purged));
+const showBulkMultiview = computed(() => selectedHistories.value.length > 1);
 
 const historyListFilters = computed(() => getHistoryListFilters(props.activeList));
 const rawFilters = computed(() =>
@@ -457,6 +458,55 @@ async function onBulkTagsAdd(tags: string[]) {
     }
 }
 
+const MULTIVIEW_MAX_HISTORIES = 10;
+
+/**
+ * Opens selected histories in the MultiviewPanel
+ * Pins the selected histories and navigates to the multiview page
+ */
+async function onBulkOpenInMultiview() {
+    const selectedHistoriesCount = selectedHistories.value.length;
+
+    if (selectedHistoriesCount === 0) {
+        return;
+    }
+
+    if (selectedHistoriesCount > MULTIVIEW_MAX_HISTORIES) {
+        const confirmed = await confirm(
+            `You have selected ${selectedHistoriesCount} histories to open in multiview.
+        However, the maximum number of histories allowed in multiview is ${MULTIVIEW_MAX_HISTORIES}.
+        Do you want to proceed with opening the first ${MULTIVIEW_MAX_HISTORIES} histories?`,
+            {
+                id: "bulk-open-multiview-histories",
+                title: `You can only open ${MULTIVIEW_MAX_HISTORIES} histories in multiview`,
+                okTitle: "Proceed",
+                okVariant: "primary",
+                cancelVariant: "outline-primary",
+                centered: true,
+            },
+        );
+        if (!confirmed) {
+            return;
+        }
+        selectedHistories.value.splice(MULTIVIEW_MAX_HISTORIES);
+    }
+
+    historyStore.clearPinnedHistories();
+    for (const history of selectedHistories.value) {
+        historyStore.pinHistory(history.id);
+    }
+
+    router.push("/histories/view_multiple");
+
+    const totalSelectedHistories = selectedHistories.value.length;
+
+    resetSelection();
+
+    Toast.success(
+        `Opened ${totalSelectedHistories} ${totalSelectedHistories === 1 ? "history" : "histories"} in multiview.`,
+    );
+}
+
 /**
  * Watches for changes in filter text, sort options, and sort direction
  * to reload the history list with updated parameters
@@ -699,6 +749,18 @@ onMounted(async () => {
                         Add tags ({{ selectedHistories.length }})
                     </span>
                     <LoadingSpan v-else message="Adding tags" />
+                </BButton>
+
+                <BButton
+                    v-if="showBulkMultiview"
+                    id="history-list-footer-bulk-open-multiview-button"
+                    v-b-tooltip.hover
+                    title="Open selected histories in multiview"
+                    size="sm"
+                    variant="primary"
+                    @click="onBulkOpenInMultiview">
+                    <FontAwesomeIcon :icon="faColumns" fixed-width />
+                    Open in Multiview ({{ selectedHistories.length }})
                 </BButton>
             </div>
 

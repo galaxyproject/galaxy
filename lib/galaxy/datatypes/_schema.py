@@ -159,7 +159,7 @@ class DatatypeVisualizationMapping(BaseModel):
         ...,  # Mark this field as required
         title="Visualization",
         description="The visualization plugin to use",
-        examples=["igv", "trackster", "vitessce"],
+        examples=["igv", "vitessce"],
     )
 
 

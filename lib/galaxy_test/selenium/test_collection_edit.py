@@ -1,5 +1,6 @@
 from .framework import (
     managed_history,
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -8,6 +9,9 @@ from .framework import (
 class TestCollectionEdit(SeleniumTestCase):
     ensure_registered = True
 
+    @selenium_only(
+        "Not yet migrated to support Playwright backend - Timeout waiting on CSS selector [.collection-edit-change-datatype-nav] to become clickable."
+    )
     @selenium_test
     @managed_history
     def test_change_dbkey_simple_list(self):
@@ -25,6 +29,9 @@ class TestCollectionEdit(SeleniumTestCase):
         self.navigate_to_database_tab()
         self.check_current_data_value(dataNew)
 
+    @selenium_only(
+        "Not yet migrated to support Playwright backend - Timeout waiting on CSS selector [.collection-edit-change-datatype-nav] to become clickable."
+    )
     @selenium_test
     @managed_history
     def test_change_datatype_simple_list(self):
@@ -46,7 +53,7 @@ class TestCollectionEdit(SeleniumTestCase):
         self.history_panel_ensure_showing_item_details(1)
         item = self.history_panel_item_component(hid=1)
         item.datatype.wait_for_visible()
-        self._wait_on(lambda _: item.datatype.wait_for_text() == dataNew)
+        self._wait_on(lambda *_: item.datatype.wait_for_text() == dataNew)
 
     def _create_simple_list_collection(self, filename, ext):
         self.perform_upload(self.get_filename(filename), ext=ext)
@@ -73,13 +80,13 @@ class TestCollectionEdit(SeleniumTestCase):
     def change_dbkey_value_and_click_submit(self, dataValue, dataNew):
         self._edit_attributes.data_value(data_change=dataValue).wait_for_and_click()
         self._edit_attributes.genome_select_search.wait_for_and_send_keys(dataNew)
-        self._edit_attributes.genome_select_search.wait_for_and_send_keys(self.keys.ENTER)
+        self._edit_attributes.genome_select_search.wait_for_and_send_enter()
         self._edit_attributes.save_dbkey_btn.wait_for_and_click()
 
     def change_datatype_value_and_click_submit(self, dataValue, dataNew):
         self._edit_attributes.data_value(data_change=dataValue).wait_for_and_click()
         self._edit_attributes.datatype_select_search.wait_for_and_send_keys(dataNew)
-        self._edit_attributes.datatype_select_search.wait_for_and_send_keys(self.keys.ENTER)
+        self._edit_attributes.datatype_select_search.wait_for_and_send_enter()
         self._edit_attributes.save_datatype_btn.wait_for_and_click()
 
     @property

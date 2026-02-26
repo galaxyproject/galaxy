@@ -32,7 +32,7 @@ class Test_FilteredLineDataProvider(test_base_dataproviders.Test_FilteredDataPro
 
     def test_counters(self):
         """should count: lines read, lines that passed the filter, lines returned"""
-        (contents, provider, data) = self.contents_provider_and_data()
+        contents, provider, data = self.contents_provider_and_data()
         self.assertCounters(provider, 7, 3, 3)
 
     def test_filter_fn(self):
@@ -45,12 +45,12 @@ class Test_FilteredLineDataProvider(test_base_dataproviders.Test_FilteredDataPro
                 return None
             return string
 
-        (contents, provider, data) = self.contents_provider_and_data(filter_fn=filter_ts)
+        contents, provider, data = self.contents_provider_and_data(filter_fn=filter_ts)
         self.assertCounters(provider, 7, 1, 1)
 
     def test_limit_with_offset(self):
         def limit_offset_combo(limit, offset, data_should_be, read, valid, returned):
-            (contents, provider, data) = self.contents_provider_and_data(limit=limit, offset=offset)
+            contents, provider, data = self.contents_provider_and_data(limit=limit, offset=offset)
             assert data == data_should_be
             # self.assertCounters(provider, read, valid, returned)
 
@@ -73,19 +73,19 @@ class Test_FilteredLineDataProvider(test_base_dataproviders.Test_FilteredDataPro
 
     def test_provide_blank(self):
         """should return blank lines if ``provide_blank`` is true."""
-        (contents, provider, data) = self.contents_provider_and_data(provide_blank=True)
+        contents, provider, data = self.contents_provider_and_data(provide_blank=True)
         assert data == ["One", "", "Two", "Three"]
         self.assertCounters(provider, 7, 4, 4)
 
     def test_strip_lines(self):
         """should return unstripped lines if ``strip_lines`` is false."""
-        (contents, provider, data) = self.contents_provider_and_data(strip_lines=False)
+        contents, provider, data = self.contents_provider_and_data(strip_lines=False)
         assert data == ["One\n", "\n", "    Two\n", "Three\n"]
         self.assertCounters(provider, 7, 4, 4)
 
     def test_comment_char(self):
         """should return unstripped lines if ``strip_lines`` is false."""
-        (contents, provider, data) = self.contents_provider_and_data(comment_char="T")
+        contents, provider, data = self.contents_provider_and_data(comment_char="T")
         assert data == [
             "# this should be stripped out",
             "One",
@@ -109,36 +109,36 @@ class Test_RegexLineDataProvider(Test_FilteredLineDataProvider):
 
     def test_regex(self):
         """should return lines matching regex (AFTER strip, comments, blanks)."""
-        (contents, provider, data) = self.contents_provider_and_data(regex_list=[r"^O"])
+        contents, provider, data = self.contents_provider_and_data(regex_list=[r"^O"])
         assert data == ["One"]
         self.assertCounters(provider, 7, 1, 1)
 
     def test_regex_list(self):
         """should return regex matches using more than one regex by ORing them."""
-        (contents, provider, data) = self.contents_provider_and_data(regex_list=[r"^O", r"T"])
+        contents, provider, data = self.contents_provider_and_data(regex_list=[r"^O", r"T"])
         assert data == ["One", "Two", "Three"]
         self.assertCounters(provider, 7, 3, 3)
 
     def test_inverse(self):
         """should return inverse matches when ``invert`` is true."""
-        (contents, provider, data) = self.contents_provider_and_data(regex_list=[r"^O"], invert=True)
+        contents, provider, data = self.contents_provider_and_data(regex_list=[r"^O"], invert=True)
         assert data == ["Two", "Three"]
         self.assertCounters(provider, 7, 2, 2)
 
     def test_regex_no_match(self):
         """should return empty if no regex matches."""
-        (contents, provider, data) = self.contents_provider_and_data(regex_list=[r"^Z"])
+        contents, provider, data = self.contents_provider_and_data(regex_list=[r"^Z"])
         assert data == []
         self.assertCounters(provider, 7, 0, 0)
 
     def test_regex_w_limit_offset(self):
         """regex should play well with limit and offset"""
-        (contents, provider, data) = self.contents_provider_and_data(regex_list=[r"^T"], limit=1)
+        contents, provider, data = self.contents_provider_and_data(regex_list=[r"^T"], limit=1)
         assert data == ["Two"]
         # TODO: once again, valid data, returned data is off
         self.assertCounters(provider, 6, 1, 1)
 
-        (contents, provider, data) = self.contents_provider_and_data(regex_list=[r"^T"], limit=1, offset=1)
+        contents, provider, data = self.contents_provider_and_data(regex_list=[r"^T"], limit=1, offset=1)
         assert data == ["Three"]
         self.assertCounters(provider, 7, 2, 1)
 
@@ -169,7 +169,7 @@ class Test_BlockDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
 
     def test_file(self):
         """should work with files"""
-        (contents, provider, data) = self.contents_provider_and_data()
+        contents, provider, data = self.contents_provider_and_data()
         assert data == self.parses_default_content_as()
         assert isinstance(provider.source, line.FilteredLineDataProvider)
         assert hasattr(provider.source.source, "read")
@@ -178,7 +178,7 @@ class Test_BlockDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
 
     def test_counters(self):
         """should count: lines read, lines that passed the filter, lines returned"""
-        (contents, provider, data) = self.contents_provider_and_data()
+        contents, provider, data = self.contents_provider_and_data()
         self.assertCounters(provider, 6, 6, 6)
 
     def test_filter_fn(self):
@@ -191,7 +191,7 @@ class Test_BlockDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
                 return None
             return string
 
-        (contents, provider, data) = self.contents_provider_and_data(filter_fn=filter_ts)
+        contents, provider, data = self.contents_provider_and_data(filter_fn=filter_ts)
         # no block fns here, so will parse as lines
         assert data == [["One"], ["ABCD"], ["ABCD"], ["EFGH"]]
         self.assertCounters(provider, 4, 4, 4)
@@ -204,7 +204,7 @@ class Test_BlockDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
             return strip_diff == 0
 
         # in order to use indentation as a delimiter, we need to strip the newlines only
-        (contents, provider, data) = self.contents_provider_and_data(
+        contents, provider, data = self.contents_provider_and_data(
             strip_lines=False, strip_newlines=True, new_block_delim_fn=is_not_indented
         )
         assert data == [["One", "    ABCD"], ["Two", "    ABCD", "    EFGH"], ["Three"]]
@@ -227,7 +227,7 @@ class Test_BlockDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
                 return None
             return block
 
-        (contents, provider, data) = self.contents_provider_and_data(
+        contents, provider, data = self.contents_provider_and_data(
             strip_lines=False, strip_newlines=True, new_block_delim_fn=is_not_indented, block_filter_fn=no_tw
         )
         assert data == [["One", "    ABCD"], ["Three"]]
@@ -248,7 +248,7 @@ class Test_BlockDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
                 return None
             return {"header": block[0].strip(), "data": [b.strip() for b in block[1:] if b.strip()]}
 
-        (contents, provider, data) = self.contents_provider_and_data(
+        contents, provider, data = self.contents_provider_and_data(
             strip_lines=False, strip_newlines=True, new_block_delim_fn=is_not_indented, block_filter_fn=empty_block
         )
         assert data == [{"header": "One", "data": ["ABCD"]}, {"header": "Two", "data": ["ABCD", "EFGH"]}]
@@ -266,7 +266,7 @@ class Test_BlockDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
                 return None
             return block
 
-        (contents, provider, data) = self.contents_provider_and_data(
+        contents, provider, data = self.contents_provider_and_data(
             strip_lines=False,
             strip_newlines=True,
             new_block_delim_fn=is_not_indented,
@@ -275,7 +275,7 @@ class Test_BlockDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
         )
         assert data == [["One", "    ABCD"]]
         self.assertCounters(provider, 1, 1, 1)
-        (contents, provider, data) = self.contents_provider_and_data(
+        contents, provider, data = self.contents_provider_and_data(
             strip_lines=False,
             strip_newlines=True,
             new_block_delim_fn=is_not_indented,
@@ -304,7 +304,7 @@ class Test_BlockDataProvider(test_base_dataproviders.Test_FilteredDataProvider):
         def id_seq(block):
             return {"id": block[0][1:], "seq": ("".join(block[1:]))}
 
-        (contents, provider, data) = self.contents_provider_and_data(
+        contents, provider, data = self.contents_provider_and_data(
             contents=file_contents, new_block_delim_fn=fasta_header, block_filter_fn=id_seq
         )
         assert data == [{"id": "One", "seq": "ABCD"}, {"id": "Two", "seq": "ABCDEFGH"}]

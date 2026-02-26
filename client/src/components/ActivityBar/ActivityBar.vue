@@ -14,6 +14,7 @@ import type { Activity } from "@/stores/activityStoreTypes";
 import { useEventStore } from "@/stores/eventStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
 
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
@@ -27,6 +28,7 @@ import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import UploadPanel from "@/components/Panels/Upload/UploadPanel.vue";
 import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
 import VisualizationPanel from "@/components/Visualizations/VisualizationPanel.vue";
 
@@ -35,6 +37,7 @@ const props = withDefaults(
         defaultActivities?: Activity[];
         activityBarId?: string;
         specialActivities?: Activity[];
+        exitActivity?: Activity;
         showAdmin?: boolean;
         optionsTitle?: string;
         optionsTooltip?: string;
@@ -48,6 +51,7 @@ const props = withDefaults(
         defaultActivities: undefined,
         activityBarId: "default",
         specialActivities: () => [],
+        exitActivity: undefined,
         showAdmin: true,
         optionsTitle: "More",
         optionsHeading: "Additional Activities",
@@ -100,14 +104,26 @@ const { activities: storeActivities, isSideBarOpen, sidePanelWidth } = storeToRe
 
 const activities = computed({
     get() {
-        return storeActivities.value.filter(
-            (activity) => activity.id !== "user-defined-tools" || canUseUnprivilegedTools.value,
-        );
+        return storeActivities.value.filter((activity) => {
+            if (activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value) {
+                return false;
+            }
+            if (activity.id === "interactivetools" && !config.value?.interactivetools_enable) {
+                return false;
+            }
+            if (activity.id === "chatgxy" && !config.value?.llm_api_configured) {
+                return false;
+            }
+            return true;
+        });
     },
     set(newActivities: Activity[]) {
         // Find any filtered-out activities and add them back
         const filteredOut = storeActivities.value.filter(
-            (activity) => activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value,
+            (activity) =>
+                (activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value) ||
+                (activity.id === "interactivetools" && !config.value?.interactivetools_enable) ||
+                (activity.id === "chatgxy" && !config.value?.llm_api_configured),
         );
         storeActivities.value = [...newActivities, ...filteredOut];
     },
@@ -279,6 +295,8 @@ defineExpose({
                                 v-else
                                 :id="`${activity.id}`"
                                 :key="activity.id"
+                                :indicator="activity.indicator"
+                                :indicator-variant="activity.indicatorVariant"
                                 :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
                                 :is-active="isActiveRoute(activity.to)"
@@ -292,6 +310,36 @@ defineExpose({
                 </draggable>
             </b-nav>
             <b-nav v-if="!isAnonymous" vertical class="activity-footer flex-nowrap p-1">
+                <template v-for="activity in props.specialActivities">
+                    <ActivityItem
+                        v-if="activity.panel"
+                        :id="`${activity.id}`"
+                        :key="activity.id"
+                        :activity-bar-id="props.activityBarId"
+                        :icon="activity.icon"
+                        :indicator="activity.indicator"
+                        :indicator-variant="activity.indicatorVariant"
+                        :is-active="panelActivityIsActive(activity)"
+                        :title="activity.title"
+                        :tooltip="activity.tooltip"
+                        :to="activity.to || ''"
+                        :variant="activity.variant"
+                        @click="toggleSidebar(activity.id, activity.to)" />
+                    <ActivityItem
+                        v-else
+                        :id="`${activity.id}`"
+                        :key="activity.id"
+                        :activity-bar-id="props.activityBarId"
+                        :icon="activity.icon"
+                        :indicator="activity.indicator"
+                        :indicator-variant="activity.indicatorVariant"
+                        :is-active="isActiveRoute(activity.to)"
+                        :title="activity.title"
+                        :tooltip="activity.tooltip"
+                        :to="activity.to ?? undefined"
+                        :variant="activity.variant"
+                        @click="onActivityClicked(activity)" />
+                </template>
                 <NotificationItem
                     v-if="isConfigLoaded && config.enable_notification_system"
                     id="notifications"
@@ -318,32 +366,17 @@ defineExpose({
                     tooltip="Administer this Galaxy"
                     variant="danger"
                     @click="toggleSidebar('admin')" />
-                <template v-for="activity in props.specialActivities">
-                    <ActivityItem
-                        v-if="activity.panel"
-                        :id="`${activity.id}`"
-                        :key="activity.id"
-                        :activity-bar-id="props.activityBarId"
-                        :icon="activity.icon"
-                        :is-active="panelActivityIsActive(activity)"
-                        :title="activity.title"
-                        :tooltip="activity.tooltip"
-                        :to="activity.to || ''"
-                        :variant="activity.variant"
-                        @click="toggleSidebar(activity.id, activity.to)" />
-                    <ActivityItem
-                        v-else
-                        :id="`${activity.id}`"
-                        :key="activity.id"
-                        :activity-bar-id="props.activityBarId"
-                        :icon="activity.icon"
-                        :is-active="isActiveRoute(activity.to)"
-                        :title="activity.title"
-                        :tooltip="activity.tooltip"
-                        :to="activity.to ?? undefined"
-                        :variant="activity.variant"
-                        @click="onActivityClicked(activity)" />
-                </template>
+                <ActivityItem
+                    v-if="props.exitActivity"
+                    :id="`${props.exitActivity.id}`"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="props.exitActivity.icon"
+                    :indicator="props.exitActivity.indicator"
+                    :indicator-variant="props.exitActivity.indicatorVariant"
+                    :title="props.exitActivity.title"
+                    :tooltip="props.exitActivity.tooltip"
+                    :variant="props.exitActivity.variant"
+                    @click="onActivityClicked(props.exitActivity)" />
             </b-nav>
         </div>
         <FlexPanel
@@ -352,6 +385,7 @@ defineExpose({
             :collapsible="false"
             :reactive-width.sync="sidePanelWidth">
             <ToolPanel v-if="isActiveSideBar('tools')" />
+            <UploadPanel v-else-if="isActiveSideBar('beta-upload')" />
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
@@ -361,8 +395,8 @@ defineExpose({
             <SettingsPanel
                 v-else-if="isActiveSideBar('settings')"
                 :activity-bar-id="props.activityBarId"
-                :heading="props.optionsHeading"
-                :search-placeholder="props.optionsSearchPlaceholder"
+                :heading="localize(props.optionsHeading)"
+                :search-placeholder="localize(props.optionsSearchPlaceholder)"
                 @activityClicked="(id) => emit('activityClicked', id)" />
             <AdminPanel v-else-if="isActiveSideBar('admin')" />
             <slot name="side-panel" :is-active-side-bar="isActiveSideBar"></slot>
@@ -371,7 +405,7 @@ defineExpose({
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .activity-bar {
     background: $panel-bg-color;

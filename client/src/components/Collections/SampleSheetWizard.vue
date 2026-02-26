@@ -138,10 +138,11 @@ watch(targetCollectionId, async () => {
     if (targetCollectionId.value) {
         fetchingCollection.value = true;
         try {
-            // TODO: spinner while loading
-            const details = await fetchCollectionDetails({ hdca_id: targetCollectionId.value });
-            targetCollection.value = details;
-            // Nothing else to do on the page, just skip to the next step.
+            const result = await fetchCollectionDetails({ hdca_id: targetCollectionId.value });
+            if (result.error) {
+                throw result.error;
+            }
+            targetCollection.value = result.data;
             nextTick(() => {
                 wizard.goTo("fill-grid");
             });

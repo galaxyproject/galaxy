@@ -14,7 +14,7 @@ from typing import (
 from pyparsing import (
     alphanums,
     CaselessKeyword,
-    infixNotation,
+    infix_notation,
     Keyword,
     opAssoc,
     ParseException,
@@ -25,7 +25,7 @@ from pyparsing import (
 
 log = logging.getLogger(__name__)
 
-ParserElement.enablePackrat()
+ParserElement.enable_packrat()
 
 # Defines the allowed characters that form a valid token.
 # Tokens that don't match this format will raise an exception when found.
@@ -137,8 +137,8 @@ class BooleanExpressionEvaluator:
         action = BoolOperand
         action.evaluator = evaluator
         boolOperand = TRUE | FALSE | QUOTED_STRING | Word(token_format or DEFAULT_TOKEN_FORMAT)
-        boolOperand.setParseAction(action)
-        self.boolExpr: ParserElement = infixNotation(
+        boolOperand.set_parse_action(action)
+        self.boolExpr: ParserElement = infix_notation(
             boolOperand,
             [
                 (NOT_OP, 1, opAssoc.RIGHT, BoolNot),
@@ -150,7 +150,7 @@ class BooleanExpressionEvaluator:
     def evaluate_expression(self, expr: str) -> bool:
         """Given an expression it gets evaluated to True or False using boolean logic."""
         try:
-            res = self.boolExpr.parseString(expr, parseAll=True)[0]
+            res = self.boolExpr.parse_string(expr, parse_all=True)[0]
             return bool(res)
         except ParseException as e:
             log.error(f"BooleanExpressionEvaluator unable to evaluate expression => {expr}", exc_info=e)

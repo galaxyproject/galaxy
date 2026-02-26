@@ -1,10 +1,9 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { ROOT_COMPONENT } from "@/utils/navigation/schema";
 
 import { setupSelectableMock } from "../../ObjectStore/mockServices";
@@ -24,18 +23,27 @@ const TEST_HISTORY = {
     preferred_object_store_id: null,
 };
 
+interface PutRequest {
+    url: string;
+    data: Record<string, unknown>;
+}
+
+let putRequests: PutRequest[] = [];
+
 async function mountComponent(preferredObjectStoreId: string | null = null) {
     server.use(
         http.get("/api/configuration", ({ response }) => {
             return response(200).json({});
         }),
-    );
-
-    server.use(
         http.get("/api/users/{user_id}/usage/{label}", ({ response }) => {
             return response(200).json({
                 total_disk_usage: 0,
             });
+        }),
+        http.untyped.put(`/api/histories/${TEST_HISTORY_ID}`, async ({ request }) => {
+            const data = (await request.json()) as Record<string, unknown>;
+            putRequests.push({ url: request.url, data });
+            return HttpResponse.json({}, { status: 202 });
         }),
     );
 
@@ -68,14 +76,8 @@ async function mountComponent(preferredObjectStoreId: string | null = null) {
 const PREFERENCES = ROOT_COMPONENT.preferences;
 
 describe("SelectPreferredStore.vue", () => {
-    let axiosMock: MockAdapter;
-
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-    });
-
-    afterEach(async () => {
-        axiosMock.restore();
+        putRequests = [];
     });
 
     it("updates object store to default on selection null", async () => {
@@ -86,9 +88,6 @@ describe("SelectPreferredStore.vue", () => {
             PREFERENCES.object_store_selection.option_card_select({ object_store_id: "__null__" }).selector,
         );
         expect(galaxyDefaultOption.exists()).toBeTruthy();
-        axiosMock
-            .onPut(`/api/histories/${TEST_HISTORY_ID}`, expect.objectContaining({ preferred_object_store_id: null }))
-            .reply(202);
         await galaxyDefaultOption.trigger("click");
         await flushPromises();
         const errorEl = wrapper.find(".object-store-selection-error");
@@ -98,6 +97,9 @@ describe("SelectPreferredStore.vue", () => {
         await okButton.trigger("click");
 
         await flushPromises();
+
+        expect(putRequests.length).toBe(1);
+        expect(putRequests[0]?.data.preferred_object_store_id).toEqual(null);
 
         const emitted = wrapper.emitted();
         expect(emitted["updated"]?.[0]?.[0]).toEqual(null);
@@ -111,12 +113,6 @@ describe("SelectPreferredStore.vue", () => {
             PREFERENCES.object_store_selection.option_card_select({ object_store_id: "object_store_2" }).selector,
         );
         expect(galaxyDefaultOption.exists()).toBeTruthy();
-        axiosMock
-            .onPut(
-                `/api/histories/${TEST_HISTORY_ID}`,
-                expect.objectContaining({ preferred_object_store_id: "object_store_2" }),
-            )
-            .reply(202);
         await galaxyDefaultOption.trigger("click");
         await flushPromises();
         const errorEl = wrapper.find(".object-store-selection-error");
@@ -126,6 +122,9 @@ describe("SelectPreferredStore.vue", () => {
         await okButton.trigger("click");
 
         await flushPromises();
+
+        expect(putRequests.length).toBe(1);
+        expect(putRequests[0]?.data.preferred_object_store_id).toEqual("object_store_2");
 
         const emitted = wrapper.emitted();
         expect(emitted["updated"]?.[0]?.[0]).toEqual("object_store_2");

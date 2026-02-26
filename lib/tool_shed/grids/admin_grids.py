@@ -4,7 +4,7 @@ from markupsafe import escape
 from sqlalchemy import and_
 
 from galaxy.web.framework.helpers import time_ago
-from galaxy.web.legacy_framework import grids
+from tool_shed.grids import framework as grids
 from tool_shed.grids.repository_grids import (
     CategoryGrid,
     RepositoryGrid,

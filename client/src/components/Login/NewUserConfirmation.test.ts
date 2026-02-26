@@ -1,32 +1,62 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import MountTarget from "./NewUserConfirmation.vue";
 
 const localVue = getLocalVue(true);
+const router = injectTestRouter(localVue);
+const { server, http } = useServerMock();
 
-const originalLocation = window.location;
-jest.spyOn(window, "location", "get").mockImplementation(() => ({
-    ...originalLocation,
-    search: "?provider=test_provider&provider_token=sample_token",
-}));
+interface PostRequest {
+    url: string;
+}
+
+let postRequests: PostRequest[] = [];
+let originalSearch: string;
 
 describe("NewUserConfirmation", () => {
     let wrapper: Wrapper<Vue>;
-    let axiosMock: MockAdapter;
 
-    beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
+    beforeEach(async () => {
+        postRequests = [];
+
+        // Navigate to a different route to avoid NavigationDuplicated error
+        // when the component calls router.push("/") on successful submit
+        await router.push("/new-user-confirmation").catch(() => {});
+
+        // Mock window.location.search
+        originalSearch = window.location.search;
+        Object.defineProperty(window.location, "search", {
+            configurable: true,
+            writable: true,
+            value: "?provider=test_provider&provider_token=sample_token",
+        });
+
+        server.use(
+            http.untyped.post(/.*/, async ({ request }) => {
+                postRequests.push({ url: request.url });
+                return HttpResponse.json({});
+            }),
+        );
+
         wrapper = mount(MountTarget as object, {
             propsData: {},
             localVue,
+            router,
         });
     });
 
     afterEach(() => {
-        axiosMock.reset();
+        // Restore original search
+        Object.defineProperty(window.location, "search", {
+            configurable: true,
+            writable: true,
+            value: originalSearch,
+        });
     });
 
     it("basics", async () => {
@@ -41,15 +71,18 @@ describe("NewUserConfirmation", () => {
 
         const submitButton = wrapper.find("button[name='confirm']");
         await submitButton.trigger("click");
+        await flushPromises();
 
-        expect(axiosMock.history.post?.length).toBe(0);
+        expect(postRequests.length).toBe(0);
 
         await checkField.setChecked();
 
         await submitButton.trigger("click");
+        await flushPromises();
 
-        const postedData = axiosMock.history.post?.[0];
-        expect(postedData?.url).toBe("/authnz/test_provider/create_user?token=sample_token");
+        expect(postRequests.length).toBe(1);
+        expect(postRequests[0]?.url).toContain("/authnz/test_provider/create_user");
+        expect(postRequests[0]?.url).toContain("token=sample_token");
 
         await wrapper.setProps({ registrationWarningMessage: "registration warning message" });
 

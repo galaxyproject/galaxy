@@ -112,10 +112,10 @@
 import axios from "axios";
 import { BAlert, BButton, BModal } from "bootstrap-vue";
 import { mapActions, storeToRefs } from "pinia";
-import { withPrefix } from "utils/redirect";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
+import { withPrefix } from "@/utils/redirect";
 
 export default {
     components: { BButton, BModal, BAlert },

@@ -11,19 +11,26 @@
 
 <script>
 import BootstrapVue from "bootstrap-vue";
-import Markdown from "components/Markdown/Markdown";
-import { Toast } from "composables/toast";
-import { withPrefix } from "utils/redirect";
-import { urlData } from "utils/url";
 import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
+import { Toast } from "@/composables/toast";
+import { withPrefix } from "@/utils/redirect";
+import { urlData } from "@/utils/url";
+
+import Markdown from "@/components/Markdown/Markdown.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         Markdown,
+    },
+    // Provide invocationId to all descendant components for inline directive resolution
+    provide() {
+        return {
+            invocationId: this.invocationId,
+        };
     },
     props: {
         invocationId: {

@@ -9,7 +9,7 @@ withDefaults(defineProps<LoadingProps>(), {
 </script>
 
 <template>
-    <div class="q-pa-md">
+    <div class="q-pa-md" role="status" aria-live="polite" aria-busy="true">
         <div class="fit q-gutter-md row">
             <q-spinner color="info" size="4em" :thickness="10" />
             <span class="loading-message text-info" style="font-size: 2em"

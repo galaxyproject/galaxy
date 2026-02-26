@@ -1,6 +1,6 @@
 /** en/main localization hash - for use with requirejs' i18n plugin */
 
-define({
+export default {
     // ----------------------------------------------------------------------------- masthead
 
     "Analyze Data": "Analizar Datos",
@@ -817,4 +817,4 @@ define({
     // ---------------------------------------------------------------------------- workflow_editor_tests
     "tool tooltip": "Mensaje de información sobre herramientas",
     // ----------------------------------------------------------------------------
-});
+};

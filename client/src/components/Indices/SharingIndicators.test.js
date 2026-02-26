@@ -1,7 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import SharingIndicators from "./SharingIndicators";
+import SharingIndicators from "./SharingIndicators.vue";
 
 const localVue = getLocalVue();
 

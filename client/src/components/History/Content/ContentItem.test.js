@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, suppressLucideVue2Deprecation } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { getLocalVue, suppressLucideVue2Deprecation } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -10,7 +11,7 @@ import { setupSelectableMock } from "@/components/ObjectStore/mockServices";
 
 import ContentItem from "./ContentItem.vue";
 
-jest.mock("components/History/model/queries");
+vi.mock("@/components/History/model/queries");
 
 const { server, http } = useServerMock();
 
@@ -19,9 +20,9 @@ localVue.use(VueRouter);
 localVue.use(PiniaVuePlugin);
 const router = new VueRouter();
 
-jest.mock("vue-router/composables", () => ({
-    useRoute: jest.fn(() => ({})),
-    useRouter: jest.fn(() => ({})),
+vi.mock("vue-router/composables", () => ({
+    useRoute: vi.fn(() => ({})),
+    useRouter: vi.fn(() => ({})),
 }));
 
 setupSelectableMock();
@@ -70,11 +71,11 @@ describe("ContentItem", () => {
             },
             provide: {
                 store: {
-                    dispatch: jest.fn,
+                    dispatch: vi.fn,
                     getters: {},
                 },
             },
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
             router,
         });
     });

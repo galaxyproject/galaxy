@@ -1,11 +1,12 @@
 import abc
 from typing import (
     Any,
+    Literal,
     Optional,
     TYPE_CHECKING,
 )
 
-from typing_extensions import Literal
+from starlette.datastructures import URL
 
 from galaxy.managers.context import ProvidesHistoryContext
 
@@ -105,6 +106,11 @@ class GalaxyAbstractRequest:
     @abc.abstractmethod
     def get_cookie(self, name):
         """Return cookie."""
+
+    @property
+    @abc.abstractmethod
+    def url(self) -> URL:
+        """Full URL of the request."""
 
 
 class GalaxyAbstractResponse:

@@ -10,7 +10,7 @@
                     variant="secondary"
                     type="button"
                     :href="`${root}libraries/folders/${folder_id}/dataset/${dataset_id}`">
-                    <FontAwesomeIcon :icon="['far', 'file']" />
+                    <FontAwesomeIcon :icon="faFile" />
                     &nbsp;Dataset Details
                 </b-button>
                 <PermissionsHeader :name="dataset.name" />
@@ -66,7 +66,7 @@
                 class="toolbtn_save_permissions"
                 variant="secondary"
                 @click="postPermissions">
-                <FontAwesomeIcon :icon="['far', 'save']" />
+                <FontAwesomeIcon :icon="faSave" />
                 &nbsp;Save
             </b-button>
         </b-container>
@@ -76,23 +76,24 @@
 <script>
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
+import { faFile, faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
-import { initPermissionsIcons } from "components/Libraries/icons";
-import { extractRoles } from "components/Libraries/library-utils";
-import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
-import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
-import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
-import { Services } from "components/Libraries/LibraryPermissions/services";
-import { Toast } from "composables/toast";
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import VueObserveVisibility from "vue-observe-visibility";
 
+import { getGalaxyInstance } from "@/app";
+import { extractRoles } from "@/components/Libraries/library-utils";
+import { Services } from "@/components/Libraries/LibraryPermissions/services";
+import { Toast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
+
+import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
+import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
+import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
+
 Vue.use(VueObserveVisibility);
 Vue.use(BootstrapVue);
-initPermissionsIcons();
 
 export default {
     components: {
@@ -113,6 +114,8 @@ export default {
     },
     data() {
         return {
+            faFile,
+            faSave,
             permissions: undefined,
             dataset: undefined,
             is_admin: undefined,

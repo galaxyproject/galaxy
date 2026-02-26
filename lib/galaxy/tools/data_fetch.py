@@ -19,6 +19,10 @@ from galaxy.datatypes.upload_util import (
     handle_upload,
     UploadProblemException,
 )
+from galaxy.files.models import (
+    FilesSourceOptions,
+    PartialFilesSourceProperties,
+)
 from galaxy.files.uris import (
     ensure_file_sources,
     stream_to_file,
@@ -119,6 +123,14 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
     if expansion_error is None:
         items = target.get("elements", None)
         assert items is not None, f"No element definition found for destination [{destination}]"
+
+        # If rows are specified at the collection level, add them to individual elements
+        if "rows" in target:
+            rows_dict = target["rows"]
+            for item in items:
+                item_name = item.get("name")
+                if item_name and item_name in rows_dict:
+                    item["row"] = rows_dict[item_name]
     else:
         items = []
 
@@ -532,8 +544,19 @@ def _has_src_to_path(
                 is_link = True
                 return name, path, is_link
 
+        headers = item.get("headers")
+        file_source_options: Optional[FilesSourceOptions] = None
+        if headers:
+            extra_props = PartialFilesSourceProperties(**{"http_headers": headers})
+            file_source_options = FilesSourceOptions(extra_props=extra_props)
+
         try:
-            path = stream_url_to_file(url, file_sources=upload_config.file_sources, dir=upload_config.working_directory)
+            path = stream_url_to_file(
+                url,
+                file_sources=upload_config.file_sources,
+                dir=upload_config.working_directory,
+                file_source_opts=file_source_options,
+            )
         except Exception as e:
             raise Exception(f"Failed to fetch url {url}. {str(e)}")
 

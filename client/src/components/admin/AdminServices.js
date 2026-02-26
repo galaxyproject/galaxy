@@ -1,6 +1,7 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+
+import { getAppRoot } from "@/onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export function getErrorStack() {
     const url = `${getAppRoot()}api/tools/error_stack`;

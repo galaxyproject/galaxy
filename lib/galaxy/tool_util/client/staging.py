@@ -112,7 +112,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
                     decompress=upload_target.properties.get("decompress") or DEFAULT_DECOMPRESS,
                     hashes=upload_target.properties.get("hashes"),
                 )
-                name = _file_path_to_name(file_path)
+                name = upload_target.properties.get("name") or _file_path_to_name(file_path)
                 if file_path is not None:
                     src = _attach_file(fetch_payload, file_path)
                     fetch_payload["targets"][0]["elements"][0].update(src)
@@ -134,7 +134,9 @@ class StagingInterface(metaclass=abc.ABCMeta):
                     fetch_payload["targets"][0]["elements"][0]["tags"] = tags
                 fetch_payload["targets"][0]["elements"][0]["name"] = name
             elif isinstance(upload_target, FileLiteralTarget):
-                fetch_payload = _fetch_payload(history_id)
+                file_type = upload_target.properties.get("filetype", None) or DEFAULT_FILE_TYPE
+                dbkey = upload_target.properties.get("dbkey", None) or DEFAULT_DBKEY
+                fetch_payload = _fetch_payload(history_id, file_type=file_type, dbkey=dbkey)
                 # For file literals - take them as is - never convert line endings.
                 fetch_payload["targets"][0]["elements"][0].update(
                     {
@@ -146,6 +148,9 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 tags = upload_target.properties.get("tags")
                 if tags:
                     fetch_payload["targets"][0]["elements"][0]["tags"] = tags
+                name = upload_target.properties.get("name")
+                if name:
+                    fetch_payload["targets"][0]["elements"][0]["name"] = name
             elif isinstance(upload_target, DirectoryUploadTarget):
                 fetch_payload = _fetch_payload(history_id, file_type=upload_target.file_type)
                 element = fetch_payload["targets"][0]["elements"][0]
@@ -191,7 +196,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 file_type = upload_target.properties.get("filetype", None) or DEFAULT_FILE_TYPE
                 dbkey = upload_target.properties.get("dbkey", None) or DEFAULT_DBKEY
                 upload_payload = _upload_payload(history_id, file_type=file_type, to_posix_lines=dbkey)
-                name = _file_path_to_name(file_path)
+                name = upload_target.properties.get("name") or _file_path_to_name(file_path)
                 upload_payload["inputs"]["files_0|auto_decompress"] = False
                 upload_payload["inputs"]["auto_decompress"] = False
                 if file_path is not None:
@@ -216,7 +221,8 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 return self._tools_post(upload_payload)
             elif isinstance(upload_target, FileLiteralTarget):
                 # For file literals - take them as is - never convert line endings.
-                payload = _upload_payload(history_id, file_type="auto", auto_decompress=False, to_posix_lines=False)
+                file_type = upload_target.properties.get("filetype", None) or DEFAULT_FILE_TYPE
+                payload = _upload_payload(history_id, file_type=file_type, auto_decompress=False, to_posix_lines=False)
                 payload["inputs"]["files_0|url_paste"] = upload_target.contents
                 return self._tools_post(payload)
             elif isinstance(upload_target, DirectoryUploadTarget):
@@ -246,10 +252,13 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 raise ValueError(f"Unsupported type for upload_target: {type(upload_target)}")
 
         def create_collection_func(
-            element_identifiers: List[Dict[str, Any]], collection_type: str, rows: Optional[Dict[str, Any]] = None
+            element_identifiers: List[Dict[str, Any]],
+            collection_type: str,
+            rows: Optional[Dict[str, Any]] = None,
+            name: Optional[str] = None,
         ) -> Dict[str, Any]:
             payload = {
-                "name": "dataset collection",
+                "name": name or "dataset collection",
                 "instance_type": "history",
                 "history_id": history_id,
                 "element_identifiers": element_identifiers,

@@ -1,9 +1,11 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 import VueRouter from "vue-router";
 
 import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./carbonEmissionConstants.js";
-import CarbonEmissions from "./CarbonEmissions";
+
+import CarbonEmissions from "./CarbonEmissions.vue";
 
 const localVue = getLocalVue();
 localVue.use(VueRouter);

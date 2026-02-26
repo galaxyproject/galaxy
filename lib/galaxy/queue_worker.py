@@ -135,7 +135,7 @@ class ControlTask:
                     while self.response is self._response:
                         self.connection.drain_events(timeout=timeout)
                 return self.response
-        except socket.timeout:
+        except TimeoutError:
             log.exception("Error waiting for task: '%s' sent with routing key '%s'", payload, routing_key)
         except Exception:
             log.exception("Error queueing async task: '%s'. for %s", payload, routing_key)
@@ -204,7 +204,6 @@ def reload_data_managers(app, **kwargs):
     reload_timer = util.ExecutionTimer()
 
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
-    app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
     reload_count = app.data_managers._reload_count + 1
     app.data_managers = DataManagers(app, None, reload_count)

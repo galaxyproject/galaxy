@@ -29,6 +29,7 @@ from galaxy.exceptions import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.compute_environment import ComputeEnvironment
+from galaxy.managers.credentials import _build_user_credentials_query
 from galaxy.model import (
     Job,
     PostJobAction,
@@ -39,9 +40,15 @@ from galaxy.model import (
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
+from galaxy.model.dataset_collections.adapters import PromoteCollectionElementToCollectionAdapter
 from galaxy.model.dataset_collections.query import HistoryQuery
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
+from galaxy.schema.credentials import (
+    CredentialsContext,
+    SelectedGroup,
+    ServiceCredentialsContext,
+)
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -632,6 +639,20 @@ class WorkflowModule:
 
                 subcollection_type_description = history_query.can_map_over(data) or None
                 if subcollection_type_description:
+                    # Translate paired_or_unpaired to concrete mapping type for
+                    # flat collections. Mirrors logic in basic.py:2675-2679 that
+                    # the API tool execution path uses.
+                    _sub_ct = subcollection_type_description.collection_type
+                    _hdca_ct = data.collection.collection_type
+                    if _sub_ct == "paired_or_unpaired" and not _hdca_ct.endswith("paired_or_unpaired"):
+                        if _hdca_ct.endswith("paired"):
+                            subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
+                                "paired"
+                            )
+                        else:
+                            subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
+                                "single_datasets"
+                            )
                     subcollection_type_list = subcollection_type_description.collection_type.split(":")
                     for collection_type in reversed(subcollection_type_list):
                         if type_list:
@@ -1160,8 +1181,7 @@ class InputDataCollectionModule(InputModule):
                 fields=fields,
             )
             collection_type_description.validate()
-        column_definitions = state.get("column_definitions")
-        if column_definitions:
+        if column_definitions := state.get("column_definitions"):
             validate_column_definitions(column_definitions)
         return None
 
@@ -1507,10 +1527,15 @@ class InputParameterModule(WorkflowModule):
                     subworkflow_input_name = connection.input_name
                     for step in module.subworkflow.input_steps:
                         if step.input_type == "parameter" and step.label == subworkflow_input_name:
+                            # static_options are raw tuples, convert to ParameterOption namedtuples
+                            # to match ToolModule path and support intersection logic
                             static_options.append(
-                                step.module.get_runtime_inputs(step, connections=step.output_connections)[
-                                    "input"
-                                ].static_options
+                                [
+                                    ParameterOption(*o)
+                                    for o in step.module.get_runtime_inputs(step, connections=step.output_connections)[
+                                        "input"
+                                    ].static_options
+                                ]
                             )
 
             options: Optional[list[OptionDict]] = None
@@ -2404,9 +2429,25 @@ class ToolModule(WorkflowModule):
             def callback(input, prefixed_name: str, **kwargs):
                 input_dict = all_inputs_by_name[prefixed_name]
 
-                replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
+                replacement: Union[model.Dataset, NoReplacement, PromoteCollectionElementToCollectionAdapter] = (
+                    NO_REPLACEMENT
+                )
                 if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
                     replacement = iteration_elements[prefixed_name]  # noqa: B023
+                    # When mapping flat collections over paired_or_unpaired via
+                    # single_datasets, wrap each element in an adapter so the
+                    # tool sees a paired_or_unpaired collection.
+                    if (
+                        collection_info  # noqa: B023
+                        and isinstance(replacement, model.DatasetCollectionElement)
+                        and not replacement.child_collection
+                    ):
+                        mapping_type = collection_info.subcollection_mapping_type(prefixed_name)  # noqa: B023
+                        if (
+                            hasattr(mapping_type, "collection_type")
+                            and mapping_type.collection_type == "single_datasets"
+                        ):
+                            replacement = PromoteCollectionElementToCollectionAdapter(replacement)
                 else:
                     replacement = progress.replacement_for_input(trans, step, input_dict)
 
@@ -2498,6 +2539,7 @@ class ToolModule(WorkflowModule):
                 if pja.action_type == "ValidateOutputsAction":
                     validate_outputs = True
 
+            credentials_context = self._resolve_credentials_context(tool)
             execution_tracker = execute(
                 trans=self.trans,
                 tool=tool,
@@ -2513,6 +2555,7 @@ class ToolModule(WorkflowModule):
                 ),
                 completed_jobs=completed_jobs,
                 workflow_resource_parameters=resource_parameters,
+                credentials_context=credentials_context,
             )
             complete = True
         except PartialJobExecution as pje:
@@ -2575,6 +2618,38 @@ class ToolModule(WorkflowModule):
                 ActionBox.execute_on_mapped_over(
                     self.trans, self.trans.sa_session, pja, step_inputs, step_outputs, replacement_dict
                 )
+
+    def _resolve_credentials_context(self, tool: "Tool") -> Optional[CredentialsContext]:
+        """Auto-resolve the user's current credentials for a tool in workflow execution."""
+        if not tool.credentials:
+            return None
+        trans = self.trans
+        if not trans.user:
+            return None
+        stmt = _build_user_credentials_query(
+            user_id=trans.user.id,
+            source_type="tool",
+            source_id=tool.id,
+            current_group_only=True,
+        )
+        results = trans.sa_session.execute(stmt).tuples().all()
+        if not results:
+            return None
+        encode = trans.security.encode_id
+        seen = {}
+        for user_cred, group, _cred in results:
+            key = (user_cred.id, user_cred.name, user_cred.version)
+            if key not in seen:
+                seen[key] = ServiceCredentialsContext(
+                    user_credentials_id=encode(user_cred.id),
+                    name=user_cred.name,
+                    version=user_cred.version,
+                    selected_group=SelectedGroup(
+                        id=encode(group.id),
+                        name=group.name,
+                    ),
+                )
+        return CredentialsContext(root=list(seen.values()))
 
     def _handle_post_job_actions(self, step, job, replacement_dict):
         # Create new PJA associations with the created job, to be run on completion.

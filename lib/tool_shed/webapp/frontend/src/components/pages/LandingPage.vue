@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import RecentlyCreatedRepositories from "@/components/RecentlyCreatedRepositories.vue"
 import PageContainer from "@/components/PageContainer.vue"
-import LandingCarousel from "@/components/LandingCarousel.vue"
+import LandingSearchBox from "@/components/LandingSearchBox.vue"
+import LandingInfoSections from "@/components/LandingInfoSections.vue"
 import { notify } from "@/util"
 
 interface LandingPageProps {
@@ -16,22 +17,24 @@ if (props.message != null) {
 
 <template>
     <page-container>
-        <div class="row justify-center">
-            <div class="col-8">
-                <h2>Welcome to the Galaxy Tool Shed</h2>
-                <p class="text-body1">
-                    The Galaxy Tool Shed contains thousands of published Galaxy tools to enable cutting edge research.
-                    The tool shed being constantly updated by the Galaxy community with new tools, updates to tools as
-                    new versions of software are released, and bug fixes.
-                </p>
-            </div>
-        </div>
+        <landing-search-box />
 
-        <div class="row justify-center">
-            <div class="col-4">
-                <LandingCarousel />
+        <div class="landing-content">
+            <div class="row q-mt-lg q-col-gutter-lg justify-center">
+                <div class="col-12 col-md-4">
+                    <landing-info-sections />
+                </div>
+                <div class="col-12 col-md-5">
+                    <recently-created-repositories />
+                </div>
             </div>
-            <recently-created-repositories class="col-4" />
         </div>
     </page-container>
 </template>
+
+<style scoped>
+.landing-content {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+</style>

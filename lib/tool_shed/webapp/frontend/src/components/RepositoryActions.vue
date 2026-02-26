@@ -33,7 +33,14 @@ type Emits = {
 const emits = defineEmits<Emits>()
 </script>
 <template>
-    <q-fab class="q-px-sm" color="secondary" text-color="primary" icon="settings" direction="down">
+    <q-fab
+        class="q-px-sm"
+        color="secondary"
+        text-color="primary"
+        icon="settings"
+        direction="down"
+        aria-label="Repository settings"
+    >
         <q-fab-action color="primary" icon="history" @click="resetMetadata" label="Reset Metadata" />
         <q-fab-action
             color="primary"

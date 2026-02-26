@@ -285,7 +285,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         """
         params = util.Params(kwd, sanitize=False)
         activation_token = params.get("activation_token", None)
-        index_url = web.url_for(controller="root", action="index")
+        index_url = web.url_for("/")
         invalid_link_message = f"You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='{index_url}'>Go to login page.</a>"
 
         email = params.get("email", None)

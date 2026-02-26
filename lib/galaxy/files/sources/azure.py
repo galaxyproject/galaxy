@@ -1,4 +1,4 @@
-from typing_extensions import Literal
+from typing import Literal
 
 try:
     from fs.azblob.blob_fs import BlobFS

@@ -1,5 +1,5 @@
-import { appendScriptStyle } from "utils/utils";
-import { loadWebhooks } from "utils/webhooks";
+import { appendScriptStyle } from "@/utils/utils";
+import { loadWebhooks } from "@/utils/webhooks";
 
 export async function loadMastheadWebhooks(items) {
     const webhooks = await loadWebhooks("masthead");

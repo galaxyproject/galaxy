@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faCaretUp, faCopy, faEdit, faUserPlus, faUserSlash } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { BFormCheckbox } from "bootstrap-vue";
 import { computed, nextTick, reactive, ref, watch } from "vue";
@@ -19,8 +17,6 @@ import WorkflowEmbed from "./Embeds/WorkflowEmbed.vue";
 import ErrorMessages from "./ErrorMessages.vue";
 import UserSharing from "./UserSharing.vue";
 import Heading from "@/components/Common/Heading.vue";
-
-library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
 
 const props = defineProps<{
     id: string;

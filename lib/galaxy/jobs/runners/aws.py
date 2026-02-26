@@ -6,10 +6,10 @@ import json
 import logging
 import os
 import re
-import time
-from queue import Empty
 from typing import (
+    Any,
     TYPE_CHECKING,
+    Union,
 )
 
 from galaxy import model
@@ -42,8 +42,6 @@ except ImportError as e:
 
 __all__ = ("AWSBatchJobRunner",)
 log = logging.getLogger(__name__)
-
-STOP_SIGNAL = object()
 
 
 class AWSBatchRunnerException(Exception):
@@ -81,7 +79,7 @@ def _add_resource_requirements(destination_params):
     return rval
 
 
-class AWSBatchJobRunner(AsynchronousJobRunner):
+class AWSBatchJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     """
     This runner uses container only. It requires that an AWS EFS is mounted as a local drive
     and all Galaxy job-related paths, such as objects, job_directory, tool_directory and so
@@ -213,7 +211,11 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         )
         self._batch_client = session.client("batch")
 
-    def queue_job(self, job_wrapper):
+    @property
+    def monitor_sleep_time(self):
+        return max(self.app.config.job_runner_monitor_sleep, self.MIN_QUERY_INTERVAL)
+
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         log.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
         if not self.prepare_job(job_wrapper, include_metadata=False, modify_command_for_container=False):
             log.debug(f"Not ready {job_wrapper.get_id_tag()}")
@@ -225,11 +227,11 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         job_name, job_id = self._submit_job(job_def, job_wrapper, destination_params)
         job_wrapper.set_external_id(job_id)
         ajs = AsynchronousJobState(
-            files_dir=job_wrapper.working_directory,
             job_wrapper=job_wrapper,
+            job_destination=job_destination,
+            files_dir=job_wrapper.working_directory,
             job_name=job_name,
             job_id=job_id,
-            job_destination=job_destination,
         )
         self.monitor_queue.put(ajs)
 
@@ -395,16 +397,16 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         msg = "Job {name!r} is terminated"
         log.debug(msg.format(name=job_name))
 
-    def recover(self, job, job_wrapper):
+    def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
         msg = "(name!r/runner!r) is still in {state!s} state, adding to the runner monitor queue"
         job_id = job.get_job_runner_external_id()
         job_name = self.JOB_NAME_PREFIX + job_wrapper.get_id_tag()
         ajs = AsynchronousJobState(
-            files_dir=job_wrapper.working_directory,
             job_wrapper=job_wrapper,
+            job_destination=job_wrapper.job_destination,
+            files_dir=job_wrapper.working_directory,
             job_id=str(job_id),
             job_name=job_name,
-            job_destination=job_wrapper.job_destination,
         )
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(msg.format(name=job.id, runner=job.job_runner_name, state=job.state))
@@ -417,9 +419,9 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             ajs.running = False
             self.monitor_queue.put(ajs)
 
-    def fail_job(self, job_state: JobState, exception=False, message="Job failed", full_status=None):
+    def fail_job(self, job_state: JobState, exception: bool = False, message: str = "Job failed", full_status: Union[dict[str, Any], None] = None) -> None:
         job = job_state.job_wrapper.get_job()
-        if getattr(job_state, "stop_job", True) and job.state != model.Job.states.NEW:
+        if job_state.stop_job and job.state != model.Job.states.NEW:
             self.stop_job(job_state.job_wrapper)
         job_state.job_wrapper.reclaim_ownership()
         self._handle_runner_state("failure", job_state)
@@ -435,32 +437,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
-    def monitor(self):
-        """
-        Watches jobs currently in the monitor queue and deals with state
-        changes (queued to running) and job completion.
-        """
-        while True:
-            # Take any new watched jobs and put them on the monitor list
-            try:
-                while True:
-                    async_job_state = self.monitor_queue.get_nowait()
-                    if async_job_state is STOP_SIGNAL:
-                        # TODO: This is where any cleanup would occur
-                        self.handle_stop()
-                        return
-                    self.watched.append(async_job_state)
-            except Empty:
-                pass
-            # Iterate over the list of watched jobs and check state
-            try:
-                self.check_watched_items()
-            except Exception:
-                log.exception("Unhandled exception checking active jobs")
-            # Sleep a bit before the next state check
-            time.sleep(max(self.app.config.job_runner_monitor_sleep, self.MIN_QUERY_INTERVAL))
-
-    def check_watched_items(self):
+    def check_watched_items(self) -> None:
         done: set[str] = set()
         self.check_watched_items_by_batch(0, len(self.watched), done)
         self.watched = [ajs for ajs in self.watched if ajs.job_id not in done]

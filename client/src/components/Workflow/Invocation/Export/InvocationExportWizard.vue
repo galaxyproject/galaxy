@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BCard, BCardGroup, BCardImg, BCardTitle, BFormCheckbox, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BAlert, BCard, BCardGroup, BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, onUnmounted, reactive, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -21,11 +21,13 @@ import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonito
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import ExportFormatSelector from "@/components/Common/ExportFormatSelector.vue";
+import ExportIncludeOptions from "@/components/Common/ExportIncludeOptions.vue";
+import ExportRemoteSourceSelector from "@/components/Common/ExportRemoteSourceSelector.vue";
 import RDMCredentialsInfo from "@/components/Common/RDMCredentialsInfo.vue";
 import RDMDestinationSelector from "@/components/Common/RDMDestinationSelector.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
-import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
 import ExistingInvocationExportProgressCard from "@/components/Workflow/Invocation/Export/ExistingInvocationExportProgressCard.vue";
 
@@ -323,6 +325,14 @@ function initializeExportData(): InvocationExportData {
     };
 }
 
+function onFormatSelected(formatId: string) {
+    // Find the plugin that uses this format
+    const plugin = exportPlugins.value.find((p) => p.exportParams.modelStoreFormat === formatId);
+    if (plugin) {
+        exportData.exportPluginFormat = plugin.id;
+    }
+}
+
 function resetWizard() {
     const initialExportData = initializeExportData();
     Object.assign(exportData, initialExportData);
@@ -374,27 +384,10 @@ onUnmounted(() => {
             :is-busy="isWizardBusy"
             @submit="exportInvocation">
             <div v-if="wizard.isCurrent('select-format')">
-                <BCardGroup deck>
-                    <BCard
-                        v-for="plugin in exportPlugins"
-                        :key="plugin.id"
-                        :data-invocation-export-type="plugin.id"
-                        class="wizard-selection-card"
-                        :border-variant="borderVariant(exportData.exportPluginFormat == plugin.id)"
-                        @click="exportData.exportPluginFormat = plugin.id">
-                        <BCardTitle>
-                            <b>{{ plugin.title }}</b>
-                        </BCardTitle>
-                        <div v-if="plugin.img">
-                            <BCardImg :src="plugin.img" :alt="plugin.title" />
-                            <br />
-                            <ExternalLink v-if="plugin.url" :href="plugin.url">
-                                <b>Learn more</b>
-                            </ExternalLink>
-                        </div>
-                        <div v-else v-html="renderMarkdown(plugin.markdownDescription)" />
-                    </BCard>
-                </BCardGroup>
+                <ExportFormatSelector
+                    :plugins="exportPlugins"
+                    :model-value="selectedExportPlugin.exportParams.modelStoreFormat"
+                    @update:model-value="onFormatSelected" />
             </div>
 
             <div v-if="wizard.isCurrent('select-destination')">
@@ -415,18 +408,11 @@ onUnmounted(() => {
             </div>
 
             <div v-if="wizard.isCurrent('setup-remote')">
-                <BFormGroup
-                    id="fieldset-directory"
-                    label-for="directory"
-                    :description="`Select a 'repository' to export ${resource} to.`"
-                    class="mt-3">
-                    <FilesInput
-                        id="directory"
-                        v-model="exportData.remoteUri"
-                        mode="directory"
-                        :require-writable="true"
-                        :filter-options="{ exclude: ['rdm'] }" />
-                </BFormGroup>
+                <ExportRemoteSourceSelector
+                    :directory="exportData.remoteUri"
+                    :resource-name="resource"
+                    :filter-options="{ exclude: ['rdm'] }"
+                    @update:directory="exportData.remoteUri = $event" />
             </div>
 
             <div v-if="wizard.isCurrent('setup-rdm')">
@@ -495,15 +481,14 @@ onUnmounted(() => {
                         required />
                 </BFormGroup>
 
-                <BFormGroup v-if="canIncludeData" label="Dataset files included in the package:">
-                    <BFormCheckbox v-model="exportData.includeFiles" switch> Include Active Files </BFormCheckbox>
-
-                    <BFormCheckbox v-model="exportData.includeDeleted" switch>
-                        Include Deleted (not purged)
-                    </BFormCheckbox>
-
-                    <BFormCheckbox v-model="exportData.includeHidden" switch> Include Hidden </BFormCheckbox>
-                </BFormGroup>
+                <ExportIncludeOptions
+                    v-if="canIncludeData"
+                    :include-files="exportData.includeFiles"
+                    :include-deleted="exportData.includeDeleted"
+                    :include-hidden="exportData.includeHidden"
+                    @update:include-files="exportData.includeFiles = $event"
+                    @update:include-deleted="exportData.includeDeleted = $event"
+                    @update:include-hidden="exportData.includeHidden = $event" />
 
                 <br />
 
@@ -531,13 +516,3 @@ onUnmounted(() => {
         </BAlert>
     </div>
 </template>
-
-<style scoped lang="scss">
-.card-img {
-    height: auto;
-    width: auto;
-    max-height: 100px;
-    max-width: 100%;
-    max-inline-size: -webkit-fill-available;
-}
-</style>

@@ -56,7 +56,12 @@ async function makeHistoryPrivate() {
             re-shared or published. Are you sure you want to do this?
         </p>
 
-        <AsyncButton :icon="faLock" :disabled="!history" variant="primary" :action="makeHistoryPrivate">
+        <AsyncButton
+            data-description="history make private"
+            :icon="faLock"
+            :disabled="!history"
+            variant="primary"
+            :action="makeHistoryPrivate">
             {{ localize("Make History Private") }}
         </AsyncButton>
     </PortletSection>

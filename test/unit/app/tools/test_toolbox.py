@@ -387,6 +387,13 @@ class TestToolBox(BaseToolBoxTestCase):
             == "github.com/galaxyproject/example/test_tool/0.2"
         )
 
+    def test_builtin_converters_in_integrated_panel(self):
+        self._init_tool()
+        self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
+        toolbox = self.toolbox
+        assert "builtin_converters" in toolbox._tool_panel
+        assert "builtin_converters" in toolbox._integrated_tool_panel
+
     def test_default_lineage(self):
         self.__init_versioned_tools()
         self._add_config("""<toolbox><tool file="tool_v01.xml" /><tool file="tool_v02.xml" /></toolbox>""")

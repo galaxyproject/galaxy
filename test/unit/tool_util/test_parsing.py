@@ -209,12 +209,11 @@ help:
     This is HELP TEXT2!!!
 tests:
    - inputs:
-       foo: 5
+       input1: 7
      outputs:
        out1: moo.txt
    - inputs:
-       foo:
-         value: 5
+       input1: 8
      outputs:
        out1:
          lines_diff: 4
@@ -452,26 +451,22 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert xrefs == [{"value": "bwa", "type": "bio.tools"}]
 
     def test_exit_code(self):
-        tool_source = self._get_tool_source(
-            source_contents="""<tool id="bwa" name="bwa">
+        tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
             <command detect_errors="exit_code">
                 ls
             </command>
         </tool>
-        """
-        )
+        """)
         exit, regexes = tool_source.parse_stdio()
         assert len(exit) == 2, exit
         assert len(regexes) == 0, regexes
 
-        tool_source = self._get_tool_source(
-            source_contents="""<tool id="bwa" name="bwa">
+        tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
             <command detect_errors="aggressive">
                 ls
             </command>
         </tool>
-        """
-        )
+        """)
         exit, regexes = tool_source.parse_stdio()
         assert len(exit) == 2, exit
         # error:, exception: various memory exception...
@@ -636,8 +631,8 @@ class TestYamlLoader(BaseLoaderTestCase):
         inputs = test_dict["inputs"]
         assert len(inputs) == 1
         input1 = inputs[0]
-        assert input1["name"] == "foo"
-        assert input1["value"] == 5
+        assert input1["name"] == "input1"
+        assert input1["value"] == 7
 
         outputs = test_dict["outputs"]
         assert len(outputs) == 1

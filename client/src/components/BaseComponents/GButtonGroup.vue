@@ -24,36 +24,34 @@ const styleClasses = computed(() => {
     gap: 0;
 
     &:not(.g-vertical) {
-        &:deep(> .g-button) {
-            &:not(:nth-child(1 of .g-button)) {
-                border-top-left-radius: 0;
-                border-bottom-left-radius: 0;
-            }
+        &:deep(> .g-button:not(:first-child)),
+        &:deep(> :not(.g-button):not(:first-child) .g-button) {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
 
-            &:not(:nth-last-child(1 of .g-button)) {
-                border-top-right-radius: 0;
-                border-bottom-right-radius: 0;
-
-                border-right: 0;
-            }
+        &:deep(> .g-button:not(:last-child)),
+        &:deep(> :not(.g-button):not(:last-child) .g-button) {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            border-right: 0;
         }
     }
 
     &.g-vertical {
         flex-direction: column;
 
-        &:deep(> .g-button) {
-            &:not(:nth-child(1 of .g-button)) {
-                border-top-left-radius: 0;
-                border-top-right-radius: 0;
-            }
+        &:deep(> .g-button:not(:first-child)),
+        &:deep(> :not(.g-button):not(:first-child) .g-button) {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
 
-            &:not(:nth-last-child(1 of .g-button)) {
-                border-bottom-left-radius: 0;
-                border-bottom-right-radius: 0;
-
-                border-bottom: 0;
-            }
+        &:deep(> .g-button:not(:last-child)),
+        &:deep(> :not(.g-button):not(:last-child) .g-button) {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            border-bottom: 0;
         }
     }
 }

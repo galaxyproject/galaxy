@@ -121,8 +121,7 @@ class DatabaseQuotaAgent(QuotaAgent):
         """
         if not user:
             return self._default_unregistered_quota(quota_source_label)
-        query = text(
-            """
+        query = text("""
 SELECT (
         COALESCE(MAX(CASE WHEN union_quota.operation = '='
                           THEN union_quota.bytes
@@ -167,10 +166,7 @@ FROM (
         AND group_quota.quota_source_label {label_cond}
         AND guser.id = :user_id
 ) as union_quota
-""".format(
-                label_cond="IS NULL" if quota_source_label is None else " = :label"
-            )
-        )
+""".format(label_cond="IS NULL" if quota_source_label is None else " = :label"))
         engine = self.sa_session.get_bind()
         with engine.connect() as conn:
             res = conn.execute(query, {"is_true": True, "user_id": user.id, "label": quota_source_label}).fetchone()
@@ -275,16 +271,14 @@ ON CONFLICT
 
     def _default_quota(self, default_type, quota_source_label):
         label_condition = "IS NULL" if quota_source_label is None else "= :label"
-        query = text(
-            f"""
+        query = text(f"""
 SELECT bytes
 FROM quota as default_quota
 LEFT JOIN default_quota_association on default_quota.id = default_quota_association.quota_id
 WHERE default_quota_association.type = :default_type
     AND default_quota.deleted != :is_true
     AND default_quota.quota_source_label {label_condition}
-"""
-        )
+""")
         engine = self.sa_session.get_bind()
         with engine.connect() as conn:
             res = conn.execute(

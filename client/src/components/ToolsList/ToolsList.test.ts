@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useToolStore } from "@/stores/toolStore";
 
@@ -27,27 +28,28 @@ const FILTER_SETTINGS = {
 };
 const WHOOSH_QUERY = createWhooshQuery(FILTER_SETTINGS);
 
-const routerPushMock = jest.fn();
+const routerPushMock = vi.fn();
 
-jest.mock("vue-router/composables", () => ({
+vi.mock("vue-router/composables", () => ({
     useRouter: () => ({
         push: routerPushMock,
     }),
 }));
 
 const localVue = getLocalVue();
+const router = injectTestRouter(localVue);
 
 describe("ToolsList", () => {
-    let fetchToolsMock: jest.SpyInstance;
+    let fetchToolsMock: ReturnType<typeof vi.spyOn>;
     let pinia: ReturnType<typeof createTestingPinia>;
 
     beforeEach(() => {
-        pinia = createTestingPinia({ stubActions: false });
+        pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
         setActivePinia(pinia);
 
         const toolStore = useToolStore(pinia);
-        fetchToolsMock = jest.spyOn(toolStore, "fetchTools").mockResolvedValue();
-        jest.spyOn(toolStore, "fetchToolSections").mockResolvedValue();
+        fetchToolsMock = vi.spyOn(toolStore, "fetchTools").mockResolvedValue();
+        vi.spyOn(toolStore, "fetchToolSections").mockResolvedValue();
 
         // Clear the router mock between tests
         routerPushMock.mockClear();
@@ -57,6 +59,7 @@ describe("ToolsList", () => {
         const wrapper = mount(ToolsList as object, {
             localVue,
             pinia,
+            router,
         });
 
         // By default, no search text, fetch tools is still called but without a query
@@ -95,6 +98,7 @@ describe("ToolsList", () => {
         mount(ToolsList as object, {
             localVue,
             pinia,
+            router,
             propsData: FILTER_SETTINGS,
         });
 

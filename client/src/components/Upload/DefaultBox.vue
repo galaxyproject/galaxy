@@ -1,20 +1,22 @@
 <script setup lang="ts">
 import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
 import Vue, { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import type { HDASummary } from "@/api";
-import type { CollectionBuilderType } from "@/components/History/adapters/buildCollectionModal";
+import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { monitorUploadedHistoryItems } from "@/composables/monitorUploadedHistoryItems";
 import type { DbKey, ExtensionDetails } from "@/composables/uploadConfigurations";
 import { archiveExplorerEventBus, type ArchiveSource } from "@/composables/zipExplorer";
+import { useActivityStore } from "@/stores/activityStore";
 import { filesDialog } from "@/utils/dataModals";
 import { UploadQueue } from "@/utils/upload-queue.js";
 
 import type { ComponentSize } from "../BaseComponents/componentVariants";
-import type { UploadFile, UploadItem } from "./model";
+import type { UploadFile, UploadRowModel } from "./model";
 import { defaultModel, isLocalFile } from "./model";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
@@ -26,6 +28,7 @@ import UploadSelectExtension from "./UploadSelectExtension.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 
 const router = useRouter();
+const activityStore = useActivityStore("default");
 
 interface Props {
     chunkUploadSize: number;
@@ -70,7 +73,7 @@ const dbKey = ref(props.defaultDbKey);
 const queueStopping = ref(false);
 const uploadCompleted = ref(0);
 const uploadFile = ref<HTMLInputElement | null>(null);
-const uploadItems = ref<Record<string, UploadItem>>({});
+const uploadItems = ref<Record<string, UploadRowModel>>({});
 const uploadSize = ref(0);
 const queue = ref(createUploadQueue());
 const selectedItemsForModal = ref<HDASummary[]>([]);
@@ -97,7 +100,7 @@ const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
 const uploadValues = computed(() => Object.values(uploadItems.value));
 
 const { uploadedHistoryItemsOk, uploadedHistoryItemsReady, historyItemsStateInfo } = monitorUploadedHistoryItems(
-    uploadValues as Ref<UploadItem[]>,
+    uploadValues as Ref<UploadRowModel[]>,
     historyId,
     enableStart,
     creatingPairedType,
@@ -209,7 +212,7 @@ function eventError(index: string, message: string) {
 }
 
 /** Update model */
-function eventInput(index: string, newData: Partial<UploadItem>) {
+function eventInput(index: string, newData: Partial<UploadRowModel>) {
     const it = uploadItems.value[index];
     if (it) {
         Object.entries(newData).forEach(([key, value]) => {
@@ -373,6 +376,18 @@ function uploadPercentage(percentage: number, size: number) {
     return (uploadCompleted.value + percentage * size) / uploadSize.value;
 }
 
+function openBetaUpload() {
+    const betaUploadActivity = activityStore.findById("beta-upload");
+    if (betaUploadActivity) {
+        if (!betaUploadActivity.visible) {
+            activityStore.ensureVisible(betaUploadActivity.id);
+            activityStore.setPosition(betaUploadActivity.id, 0);
+        }
+        activityStore.ensureSideBarOpen(betaUploadActivity.id);
+        emit("dismiss");
+    }
+}
+
 defineExpose({
     addFiles,
     counterAnnounce,
@@ -443,7 +458,7 @@ defineExpose({
                 @change="addFileFromInput($event.target)" />
         </UploadBox>
         <div v-if="!disableFooter" class="upload-footer text-center">
-            <span v-if="isCollection" class="upload-footer-title">Collection:</span>
+            <span v-if="isCollection" v-localize class="upload-footer-title">Collection:</span>
             <UploadSelect
                 v-if="isCollection"
                 class="upload-footer-collection-type"
@@ -453,7 +468,7 @@ defineExpose({
                 :searchable="false"
                 placeholder="Select Type"
                 @input="updateCollectionType" />
-            <span class="upload-footer-title">Type (set all):</span>
+            <span v-localize class="upload-footer-title">Type (set all):</span>
             <UploadSelectExtension
                 class="upload-footer-extension"
                 :value="extension"
@@ -461,7 +476,7 @@ defineExpose({
                 :list-extensions="listExtensions"
                 @input="updateExtension">
             </UploadSelectExtension>
-            <span class="upload-footer-title">Reference (set all):</span>
+            <span v-localize class="upload-footer-title">Reference (set all):</span>
             <UploadSelect
                 class="upload-footer-genome"
                 :value="dbKey"
@@ -473,83 +488,99 @@ defineExpose({
         </div>
         <slot name="footer" />
         <div
-            class="d-flex justify-content-end flex-wrap"
+            class="d-flex justify-content-between flex-wrap"
             :class="{
                 'upload-buttons': !disableFooter,
                 'flex-gapx-1': disableFooter,
             }">
-            <GButton id="btn-local" :size="size" :disabled="!enableSources" @click="uploadFile?.click()">
-                <FontAwesomeIcon :icon="faLaptop" />
-                <span v-localize>Choose local file</span>
-            </GButton>
-            <GButton
-                v-if="hasRemoteFiles"
-                id="btn-remote-files"
-                :size="size"
-                :disabled="!enableSources"
-                @click="eventRemoteFiles">
-                <FontAwesomeIcon :icon="faFolderOpen" />
-                <span v-localize>Choose from repository</span>
-            </GButton>
-            <GButton id="btn-new" :size="size" title="Paste/Fetch data" :disabled="!enableSources" @click="eventCreate">
-                <FontAwesomeIcon :icon="faEdit" />
-                <span v-localize>Paste/Fetch data</span>
-            </GButton>
-            <GButton
-                id="btn-start"
-                :size="size"
-                :disabled="!enableStart"
-                title="Start"
-                :variant="enableStart ? 'primary' : null"
-                @click="eventStart">
-                <span v-localize>Start</span>
-            </GButton>
-            <GButton
-                v-if="isCollection"
-                id="btn-build"
-                :size="size"
-                :disabled="!enableBuild"
-                :tooltip="!enableBuild && Boolean(historyItemsStateInfo?.message)"
-                :disabled-title="historyItemsStateInfo?.message || 'Build is not available'"
-                title="Build"
-                :color="historyItemsStateInfo?.color ? historyItemsStateInfo.color : undefined"
-                @click="() => eventBuild(true)">
-                <FontAwesomeIcon
-                    v-if="historyItemsStateInfo?.icon"
-                    :icon="historyItemsStateInfo.icon"
-                    :spin="historyItemsStateInfo.spin" />
-                <span v-localize>Build</span>
-            </GButton>
-            <GButton
-                v-if="emitUploaded"
-                id="btn-emit"
-                :size="size"
-                :disabled="!enableBuild"
-                :tooltip="Boolean(historyItemsStateInfo?.message)"
-                :disabled-title="historyItemsStateInfo?.message || 'Upload Valid Files to Use'"
-                :title="historyItemsStateInfo?.message || 'Use Uploaded Files'"
-                :color="historyItemsStateInfo?.color ? historyItemsStateInfo.color : undefined"
-                @click="() => eventBuild(false)">
-                <FontAwesomeIcon
-                    v-if="historyItemsStateInfo?.icon"
-                    :icon="historyItemsStateInfo.icon"
-                    :spin="historyItemsStateInfo.spin" />
-                <span v-localize>Use Uploaded</span>
-                <span v-if="uploadedHistoryItemsOk.length < counterSuccess">
-                    ({{ uploadedHistoryItemsOk.length }}/{{ counterSuccess }})
-                </span>
-                <span v-else> ({{ counterSuccess }}) </span>
-            </GButton>
-            <GButton id="btn-stop" :size="size" title="Pause" :disabled="!isRunning" @click="eventStop">
-                <span v-localize>Pause</span>
-            </GButton>
-            <GButton id="btn-reset" :size="size" title="Reset" :disabled="!enableReset" @click="eventReset">
-                <span v-localize>Reset</span>
-            </GButton>
-            <GButton id="btn-close" :size="size" title="Close" @click="$emit('dismiss')">
-                <span v-if="hasCallback" v-localize>Cancel</span>
-                <span v-else v-localize>Close</span>
-            </GButton>
+            <div class="d-flex">
+                <GButton
+                    id="btn-beta-upload"
+                    size="small"
+                    title="Try our new upload experience"
+                    @click="openBetaUpload">
+                    <span v-localize>New upload<BBadge variant="warning" class="ml-1">Beta</BBadge></span>
+                </GButton>
+            </div>
+            <div class="d-flex justify-content-end flex-wrap">
+                <GButton id="btn-local" :size="size" :disabled="!enableSources" @click="uploadFile?.click()">
+                    <FontAwesomeIcon :icon="faLaptop" />
+                    <span v-localize>Choose local file</span>
+                </GButton>
+                <GButton
+                    v-if="hasRemoteFiles"
+                    id="btn-remote-files"
+                    :size="size"
+                    :disabled="!enableSources"
+                    @click="eventRemoteFiles">
+                    <FontAwesomeIcon :icon="faFolderOpen" />
+                    <span v-localize>Choose from repository</span>
+                </GButton>
+                <GButton
+                    id="btn-new"
+                    :size="size"
+                    title="Paste/Fetch data"
+                    :disabled="!enableSources"
+                    @click="eventCreate">
+                    <FontAwesomeIcon :icon="faEdit" />
+                    <span v-localize>Paste/Fetch data</span>
+                </GButton>
+                <GButton
+                    id="btn-start"
+                    :size="size"
+                    :disabled="!enableStart"
+                    title="Start"
+                    :variant="enableStart ? 'primary' : null"
+                    @click="eventStart">
+                    <span v-localize>Start</span>
+                </GButton>
+                <GButton
+                    v-if="isCollection"
+                    id="btn-build"
+                    :size="size"
+                    :disabled="!enableBuild"
+                    :tooltip="!enableBuild && Boolean(historyItemsStateInfo?.message)"
+                    :disabled-title="historyItemsStateInfo?.message || 'Build is not available'"
+                    title="Build"
+                    :color="historyItemsStateInfo?.color ? historyItemsStateInfo.color : undefined"
+                    @click="() => eventBuild(true)">
+                    <FontAwesomeIcon
+                        v-if="historyItemsStateInfo?.icon"
+                        :icon="historyItemsStateInfo.icon"
+                        :spin="historyItemsStateInfo.spin" />
+                    <span v-localize>Build</span>
+                </GButton>
+                <GButton
+                    v-if="emitUploaded"
+                    id="btn-emit"
+                    :size="size"
+                    :disabled="!enableBuild"
+                    :tooltip="Boolean(historyItemsStateInfo?.message)"
+                    :disabled-title="historyItemsStateInfo?.message || 'Upload Valid Files to Use'"
+                    :title="historyItemsStateInfo?.message || 'Use Uploaded Files'"
+                    :color="historyItemsStateInfo?.color ? historyItemsStateInfo.color : undefined"
+                    @click="() => eventBuild(false)">
+                    <FontAwesomeIcon
+                        v-if="historyItemsStateInfo?.icon"
+                        :icon="historyItemsStateInfo.icon"
+                        :spin="historyItemsStateInfo.spin" />
+                    <span v-localize>Use Uploaded</span>
+                    <span v-if="uploadedHistoryItemsOk.length < counterSuccess">
+                        ({{ uploadedHistoryItemsOk.length }}/{{ counterSuccess }})
+                    </span>
+                    <span v-else> ({{ counterSuccess }}) </span>
+                </GButton>
+                <GButton id="btn-stop" :size="size" title="Pause" :disabled="!isRunning" @click="eventStop">
+                    <span v-localize>Pause</span>
+                </GButton>
+                <GButton id="btn-reset" :size="size" title="Reset" :disabled="!enableReset" @click="eventReset">
+                    <span v-localize>Reset</span>
+                </GButton>
+                <GButton id="btn-close" :size="size" title="Close" @click="$emit('dismiss')">
+                    <span v-if="hasCallback" v-localize>Cancel</span>
+                    <span v-else v-localize>Close</span>
+                </GButton>
+            </div>
         </div>
         <CollectionCreatorIndex
             v-if="isCollection && historyId"

@@ -275,14 +275,12 @@ class SqliteProxyIpc:
                 c = conn.cursor()
                 try:
                     # Create table
-                    c.execute(
-                        """CREATE TABLE gxproxy2
+                    c.execute("""CREATE TABLE gxproxy2
                                  (key text PRIMARY KEY,
                                   host text,
                                   port integer,
                                   container_ids text,
-                                  container_interface text)"""
-                    )
+                                  container_interface text)""")
                 except Exception:
                     pass
                 delete = """DELETE FROM gxproxy2 WHERE key=?"""

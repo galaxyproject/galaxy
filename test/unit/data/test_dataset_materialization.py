@@ -1,4 +1,3 @@
-from pkg_resources import resource_string
 from sqlalchemy import select
 
 from galaxy.files.unittest_utils import TestPosixConfiguredFileSources
@@ -19,6 +18,7 @@ from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict_space_to_tab,
     one_ld_library_deferred_model_store_dict,
 )
+from galaxy.util.resources import resource_string
 from .model.test_model_store import (
     perform_import_from_store_dict,
     setup_fixture_context_with_history,
@@ -26,7 +26,7 @@ from .model.test_model_store import (
 )
 from .test_model_copy import _create_hda
 
-CONTENTS_2_BED = resource_string(__name__, "model/2.bed").decode("UTF-8")
+CONTENTS_2_BED = resource_string(__name__, "model/2.bed")
 
 
 def test_undeferred_hdas_untouched(tmpdir):

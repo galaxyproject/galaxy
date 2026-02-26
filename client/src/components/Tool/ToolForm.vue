@@ -42,7 +42,7 @@
             @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
             @onChangeVersion="onChangeVersion">
             <div class="mt-2 mb-4">
-                <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
+                <Heading v-localize h2 separator bold size="sm"> Tool Parameters </Heading>
                 <FormDisplay
                     :id="toolId"
                     :inputs="formConfig.inputs"
@@ -55,13 +55,13 @@
             </div>
 
             <div class="mt-2 mb-4">
-                <Heading h2 separator bold size="sm"> Additional Options </Heading>
+                <Heading v-localize h2 separator bold size="sm"> Additional Options </Heading>
                 <FormElement
                     v-if="emailAllowed(config, currentUser)"
                     id="send_email_notification"
                     v-model="useEmail"
-                    title="Email notification"
-                    help="Send an email notification when the job completes."
+                    :title="localize('Email notification')"
+                    :help="localize('Send an email notification when the job completes.')"
                     type="boolean" />
                 <FormElement
                     v-if="remapAllowed"
@@ -73,22 +73,22 @@
                 <FormElement
                     id="use_cached_job"
                     v-model="useCachedJobs"
-                    title="Attempt to re-use jobs with identical parameters?"
-                    help="This may skip executing jobs that you have already run."
+                    :title="localize('Attempt to re-use jobs with identical parameters?')"
+                    :help="localize('This may skip executing jobs that you have already run.')"
                     type="boolean" />
                 <FormSelect
                     v-if="formConfig.model_class === 'DataManagerTool'"
                     id="data_manager_mode"
                     v-model="dataManagerMode"
                     :options="bundleOptions"
-                    title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
+                    :title="localize('Create dataset bundle instead of adding data table to loc file ?')"></FormSelect>
                 <ToolFormTags :tags.sync="tags" />
             </div>
             <template v-slot:buttons>
                 <ButtonSpinner
                     id="execute"
                     class="text-nowrap"
-                    title="Run Tool"
+                    :title="localize('Run Tool')"
                     data-description="run tool button"
                     :disabled="runButtonDisabled"
                     size="small"
@@ -98,7 +98,7 @@
             </template>
             <template v-slot:footer>
                 <ButtonSpinner
-                    title="Run Tool"
+                    :title="localize('Run Tool')"
                     class="mt-3 mb-3"
                     :disabled="runButtonDisabled"
                     :wait="showExecuting"
@@ -110,31 +110,30 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
-import ButtonSpinner from "components/Common/ButtonSpinner";
-import Heading from "components/Common/Heading";
-import FormDisplay from "components/Form/FormDisplay";
-import FormElement from "components/Form/FormElement";
-import LoadingSpan from "components/LoadingSpan";
-import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import { mapActions, mapState, storeToRefs } from "pinia";
-import { useHistoryItemsStore } from "stores/historyItemsStore";
-import { useJobStore } from "stores/jobStore";
 
 import { canMutateHistory } from "@/api";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useConfigStore } from "@/stores/configurationStore";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useJobStore } from "@/stores/jobStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 
-import ToolRecommendation from "../ToolRecommendation";
 import { getToolFormData, submitJob, updateToolFormData } from "./services";
-import ToolCard from "./ToolCard";
 
+import ToolRecommendation from "../ToolRecommendation.vue";
+import ToolCard from "./ToolCard.vue";
 import ToolFormTags from "./ToolFormTags.vue";
+import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
+import Heading from "@/components/Common/Heading.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
 export default {
     components: {
@@ -276,10 +275,11 @@ export default {
         },
         hasCredentialsErrors() {
             if (this.formConfig.credentials?.length) {
-                const { hasUserProvidedAllRequiredServiceCredentials } = useUserToolCredentials(
-                    this.formConfig.id,
-                    this.formConfig.version,
-                );
+                const { hasUserProvidedAllRequiredServiceCredentials, toolHasRequiredServiceCredentials } =
+                    useUserToolCredentials(this.formConfig.id, this.formConfig.version);
+                if (!toolHasRequiredServiceCredentials.value) {
+                    return false;
+                }
                 return !hasUserProvidedAllRequiredServiceCredentials.value;
             }
             return false;
@@ -310,12 +310,12 @@ export default {
         ...mapActions(useJobStore, ["saveLatestResponse"]),
         ...mapActions(useTourStore, ["setTour"]),
         ...mapActions(useHistoryStore, ["startWatchingHistory"]),
+        ...mapActions(useUserStore, ["addRecentTool"]),
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;
         },
         onHistoryChange() {
-            const Galaxy = getGalaxyInstance();
-            if (this.initialized && Galaxy && Galaxy.currHistoryPanel) {
+            if (this.initialized) {
                 console.debug(`ToolForm::onHistoryChange - Loading history changes. [${this.id}]`);
                 this.onUpdate();
             }
@@ -390,6 +390,7 @@ export default {
                 return;
             }
             this.showExecuting = true;
+            this.addRecentTool(this.formConfig?.id);
             const jobDef = {
                 history_id: historyId,
                 tool_id: this.formConfig.id,

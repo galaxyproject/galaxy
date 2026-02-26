@@ -1,5 +1,5 @@
 /** ja localization */
-define({
+export default {
     // ----------------------------------------------------------------------------- masthead
     "Analyze Data": "データ解析",
     Workflow: "ワークフロー",
@@ -279,4 +279,4 @@ define({
     "Edit annotation": "アノテーションを編集",
     //false,
     "Your workflows": "あなたのワークフロー",
-});
+};

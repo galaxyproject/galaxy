@@ -12,7 +12,6 @@ There are currently 3 supported backends.
 | Backend     | Description                                                                                                                                                                                                                                                                                                                                   |
 |-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | hashicorp   | Hashicorp Vault is a secrets and encryption management system. https://www.vaultproject.io/                                                                                                                                                                                                                                                   |
-| custos      | Custos is an NSF-funded project, backed by open source software that provides science gateways such as Galaxy with single sign-on, group management, and management of secrets such as access keys and OAuth2 access tokens. Custos secrets management is backed by Hashicorp's vault, but provides a convenient, always-on ReST API service. |
 | database    | The database backend stores secrets in an encrypted table in the Galaxy database itself. It is a convenient way to get started with a vault, and while it supports basic key rotation, we recommend using one of the other options in production.                                                                                           |
 
 ## Configuring Galaxy
@@ -36,7 +35,7 @@ path_prefix: /galaxy  # optional
 ...
 ```
 
-The `type` must be a valid backend type: `hashicorp`, `custos`, or `database`. At present, only a single vault backend
+The `type` must be a valid backend type: `hashicorp`, or `database`. At present, only a single vault backend
 is supported. The `path_prefix` property indicates  the root path under which to store all vault keys. If multiple
 Galaxy instances are using the same vault, a prefix can  be used to uniquely identify the Galaxy instance.
 If no path_prefix is provided, the prefix defaults to `/galaxy`.
@@ -49,19 +48,6 @@ path_prefix: /my_galaxy_instance
 vault_address: http://localhost:8200
 vault_token: vault_application_token
 ```
-
-## Vault configuration for Custos
-
-```yaml
-type: custos
-custos_host: service.staging.usecustos.org
-custos_port: 30170
-custos_client_id: custos-jeREDACTEDye-10000001
-custos_client_sec: OGREDACTEDBSUDHn
-```
-
-Obtaining the Custos client id and client secret requires first registering your Galaxy instance with Custos.
-Visit [usecustos.org](http://usecustos.org/) for more information.
 
 ## Vault configuration for database
 
@@ -126,3 +112,48 @@ In a file source the password could be used as follows:
 ```
 
 This example assumes that the NextCloud username is identical to the Galaxy username. If this is not the case also the username could be a user preference that is stored in a vault.
+
+## Tool Credentials System
+
+Starting with Galaxy 25.1, tools can request credentials directly through a new tool credentials system. This system provides a secure, user-friendly way for tools to access external APIs and services using credentials stored in the vault.
+
+### Overview
+
+The tool credentials system allows tool developers to declaratively specify credential requirements in their tool XML, and Galaxy automatically:
+- Presents a user-friendly credential management interface in the tool form
+- Stores sensitive credentials (secrets) encrypted in the configured vault
+- Injects credentials as environment variables when tools execute
+- Provides centralized credential management in User Preferences
+
+### How it works
+
+1. **Tool Definition**: Tool developers add a `<credentials>` element to their tool XML defining required secrets (API keys, passwords) and optional variables (endpoints, usernames).
+2. **User Experience**: When users run a tool requiring credentials, they see a credential management section in the tool form where they can provide or select existing credentials.
+3. **Secure Storage**: All secrets are automatically stored encrypted in the vault (configured via `vault_config_file`).
+4. **Automatic Injection**: When the tool runs, Galaxy injects the credentials as environment variables into the tool's execution environment.
+
+### Vault Configuration Requirements
+
+The tool credentials system requires a properly configured vault. Any of the supported vault backends (hashicorp, custos, or database) can be used. Ensure you have:
+
+1. Set up your vault configuration as described in the sections above
+2. Configured the `vault_config_file` setting in `galaxy.yml`
+3. Tested that the vault is working properly
+
+The tool credentials system will automatically use the configured vault to store all tool secrets.
+
+### Admin Considerations
+
+- **No additional configuration needed**: Unlike the older user preferences approach, the tool credentials system requires no admin configuration in `user_preferences_extra_conf.yml`. Tools can define their own credential requirements.
+- **Vault is required**: The tool credentials system only works when a vault is configured. If no vault is configured, tools requesting credentials will not function properly.
+- **User isolation**: Each user's credentials are isolated in the vault. Credentials cannot be shared between users.
+- **Migration from user preferences**: If you previously configured tool credentials via `user_preferences_extra_conf.yml`, those can be gradually phased out as tools migrate to the new system. Both systems can coexist.
+
+### API Access
+
+The tool credentials system provides a REST API at `/api/users/{user_id}/credentials` for programmatic credential management. This can be useful for:
+- Automating credential setup for multiple users
+- Building custom credential management interfaces
+- Integrating with external identity management systems
+
+For more information on the tool credentials system from a developer perspective, see the [Tool XML Schema documentation](https://docs.galaxyproject.org/en/master/dev/schema.html#tool-requirements-credentials).

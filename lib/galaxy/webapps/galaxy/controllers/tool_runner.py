@@ -53,7 +53,7 @@ class ToolRunner(BaseUIController):
 
         # tool id not available, redirect to main page
         if tool_id is None:
-            return trans.response.send_redirect(url_for(controller="root", action="welcome"))
+            return trans.response.send_redirect(url_for("/"))
         tool = self.__get_tool(tool_id)
         # tool id is not matching, display an error
         if not tool:
@@ -74,7 +74,7 @@ class ToolRunner(BaseUIController):
             return __tool_404__()
         # FIXME: Tool class should define behavior
         if tool.tool_type in ["default", "interactivetool"]:
-            return trans.response.send_redirect(url_for(controller="root", tool_id=tool_id))
+            return trans.response.send_redirect(url_for(f"/?tool_id={tool_id}"))
 
         # execute tool without displaying form
         # (used for datasource tools, but note that data_source_async tools
@@ -113,7 +113,16 @@ class ToolRunner(BaseUIController):
             error(galaxy.util.unicodify(e))
         if len(params) > 0:
             trans.log_event(f"Tool params: {str(params)}", tool_id=tool_id)
-        return trans.fill_template("root/tool_runner.mako", **vars)
+        status_text = "You can check the status of queued jobs in the History panel."
+        if job_errors := vars.get("job_errors"):
+            errors = "\n".join(f"- {job_error}" for job_error in job_errors)
+            message = f"There were errors setting up {len(job_errors)} submitted job(s):\n{errors}"
+            return trans.show_error_message(message)
+        if (num_jobs := vars.get("num_jobs")) > 1:
+            message = f"{num_jobs} jobs have been successfully added to the queue. {status_text}"
+        else:
+            message = f"A job has been successfully added to the queue. {status_text}"
+        return trans.show_ok_message(message)
 
     @web.expose
     def rerun(self, trans, id=None, job_id=None, **kwd):
@@ -147,7 +156,7 @@ class ToolRunner(BaseUIController):
                 job_id = trans.security.encode_id(job.id)
             else:
                 raise Exception(f"Failed to get job information for dataset hid {data.hid}")
-        return trans.response.send_redirect(url_for(controller="root", job_id=job_id))
+        return trans.response.send_redirect(url_for(f"/?job_id={job_id}"))
 
     @web.expose
     def data_source_redirect(self, trans, tool_id=None):
@@ -160,7 +169,7 @@ class ToolRunner(BaseUIController):
         Subverting did not work on Chrome 31
         """
         if tool_id is None:
-            return trans.response.send_redirect(url_for(controller="root", action="welcome"))
+            return trans.response.send_redirect(url_for("/"))
         tool = self.__get_tool(tool_id)
         # No tool matching the tool id, display an error (shouldn't happen)
         if not tool:

@@ -119,13 +119,11 @@ class HistoryTablePruner:
     def _mark_histories_as_deleted_and_purged(self, low, high):
         """Mark target histories as deleted and purged to prevent their further usage."""
         log.info(" Marking histories as deleted and purged")
-        stmt = text(
-            """
+        stmt = text("""
             UPDATE history
             SET deleted = TRUE, purged = TRUE
             WHERE user_id IS NULL AND hid_counter = 1 AND create_time < :create_time AND id >= :low AND id < :high
-        """
-        )
+        """)
         params = self._get_stmt_params(low, high)
         with self.engine.begin() as conn:
             return conn.execute(stmt, params)

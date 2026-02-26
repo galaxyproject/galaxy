@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 
 # =============================================================================
-class RootController(controller.JSAppLauncher, UsesAnnotations):
+class RootController(controller.BaseUIController, UsesAnnotations):
     """
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
@@ -41,36 +41,14 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         raise HTTPNotFound("This link may not be followed from within Galaxy.")
 
     @web.expose
-    def index(
-        self, trans: GalaxyWebTransaction, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd
-    ):
+    def client(self, trans: GalaxyWebTransaction, app_name="analysis", **kwd):
         """
         Root and entry point for client-side web app.
 
-        :type       tool_id: str or None
-        :param      tool_id: load center panel with given tool if not None
-        :type   workflow_id: encoded id or None
-        :param  workflow_id: load center panel with given workflow if not None
-        :type    history_id: encoded id or None
-        :param   history_id: switch current history to given history if not None
-        :type           m_c: str or None
-        :param          m_c: controller name (e.g. 'user')
-        :type           m_a: str or None
-        :param          m_a: controller method/action (e.g. 'dbkeys')
-
-        If m_c and m_a are present, the center panel will be loaded using the
-        controller and action as a url: (e.g. 'user/dbkeys').
+        :type       app_name: str or None
+        :param      app_name: javascript application bundle name
         """
-
-        self._check_require_login(trans)
-
-        # if a history_id was sent, attempt to switch to that history
-        history = trans.history
-        if history_id:
-            unencoded_id = trans.security.decode_id(history_id)
-            history = self.history_manager.get_owned(unencoded_id, trans.user)
-            trans.set_history(history)
-        return self._bootstrapped_client(trans)
+        return trans.fill_template("/js-app.mako", js_app_name=app_name)
 
     @web.expose
     def login(self, trans: GalaxyWebTransaction, redirect=None, is_logout_redirect=False, **kwd):

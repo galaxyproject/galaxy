@@ -37,6 +37,7 @@ from galaxy.tool_util.deps.conda_util import (
     best_search_result,
     CondaContext,
     CondaTarget,
+    split_version_build,
 )
 from galaxy.util import (
     commands,
@@ -527,12 +528,8 @@ def add_single_image_arguments(parser):
 def target_str_to_targets(targets_raw: str) -> List[CondaTarget]:
     def parse_target(target_str: str) -> CondaTarget:
         if "=" in target_str:
-            package_name, version = target_str.split("=", 1)
-            build = None
-            if "=" in version:
-                version, build = version.split("=")
-            elif "--" in version:
-                version, build = version.split("--")
+            package_name, version_str = target_str.split("=", 1)
+            version, build = split_version_build(version_str)
             target = build_target(package_name, version, build)
         else:
             target = build_target(target_str)

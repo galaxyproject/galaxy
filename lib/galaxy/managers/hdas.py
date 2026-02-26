@@ -14,6 +14,7 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
+from urllib.parse import quote_plus
 
 from sqlalchemy import (
     and_,
@@ -354,21 +355,28 @@ class HDAManager(
                 raise exceptions.RequestParameterInvalidException(error)
 
 
-def dereference_input(
+def dereference_input_to_hda(
     trans: ProvidesHistoryContext,
-    data_request: Union[DataRequestUri, FileRequestUri, DataRequestCollectionUri],
+    data_request: Union[DataRequestUri, FileRequestUri],
     history: model.History,
-) -> Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]:
+) -> HistoryDatasetAssociation:
     permissions = trans.app.security_agent.history_get_default_permissions(history)
-    if isinstance(data_request, DataRequestCollectionUri):
-        hdca = derefence_collection_to_model(trans.sa_session, trans.user, history, data_request)
-        for hda in hdca.dataset_instances:
-            trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
-        return hdca
     hda = dereference_to_model(trans.sa_session, trans.user, history, data_request)
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
     trans.sa_session.commit()
     return hda
+
+
+def dereference_input_to_hdca(
+    trans: ProvidesHistoryContext,
+    data_request: DataRequestCollectionUri,
+    history: model.History,
+) -> HistoryDatasetCollectionAssociation:
+    permissions = trans.app.security_agent.history_get_default_permissions(history)
+    hdca = derefence_collection_to_model(trans.sa_session, trans.user, history, data_request)
+    for hda in hdca.dataset_instances:
+        trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
+    return hdca
 
 
 class HDAStorageCleanerManager(base.StorageCleanerManager):
@@ -659,6 +667,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                             "target": link_app.url.get("target_frame", "_blank"),
                             "href": link_app.get_display_url(hda, trans),
                             "text": gettext.gettext(link_app.name),
+                            "app_name": quote_plus(link_app.display_application.id),
+                            "link_name": quote_plus(link_app.id),
                         }
                     )
                 if app_links:

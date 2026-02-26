@@ -14,14 +14,15 @@ from pydantic import (
 from typing_extensions import Self
 
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.schema.schema import (
+from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
+from galaxy.tool_util_models.sample_sheet import (
     SampleSheetColumnDefinition,
     SampleSheetColumnDefinitions,
     SampleSheetColumnType,
     SampleSheetColumnValueT,
     SampleSheetRow,
 )
-from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
+from galaxy.util import strip_control_characters
 
 SampleSheetRows = dict[str, SampleSheetRow]
 OptionalSampleSheetRows = Optional[SampleSheetRows]
@@ -98,6 +99,10 @@ def validate_row(
 ):
     if column_definitions is None:
         return
+    if row is None:
+        raise RequestParameterInvalidException(
+            "Sample sheet row is missing. Ensure all element names in 'elements' have corresponding entries in 'rows'."
+        )
     if len(row) != len(column_definitions):
         raise RequestParameterInvalidException(
             "Sample sheet row validation failed, incorrect number of columns specified."
@@ -141,7 +146,7 @@ def validate_column_value(
     elif column_type == "string":
         if not isinstance(column_value, (str,)):
             raise RequestParameterInvalidException(f"{column_value} was not a string as expected")
-        validate_no_special_characters(column_value)
+        strip_control_characters(column_value)
     elif column_type == "boolean":
         if not isinstance(column_value, (bool,)):
             raise RequestParameterInvalidException(f"{column_value} was not a boolean as expected")

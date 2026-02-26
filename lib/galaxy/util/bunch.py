@@ -7,6 +7,8 @@ class Bunch(HasDynamicProperties):
 
     Often we want to just collect a bunch of stuff together, naming each item of
     the bunch; a dictionary's OK for that, but a small do-nothing class is even handier, and prettier to use.
+
+    For new code, use dataclasses from the standard library instead.
     """
 
     def __init__(self, **kwds):

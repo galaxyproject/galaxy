@@ -1,5 +1,6 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import type { TaskMonitor } from "@/composables/genericTaskMonitor";
@@ -9,12 +10,14 @@ import DownloadItemCard from "./DownloadItemCard.vue";
 
 const localVue = getLocalVue(true);
 
-jest.mock("@/components/TagsMultiselect/StatelessTags.vue", () => ({
-    name: "StatelessTags",
-    render: () => null,
+vi.mock("@/components/TagsMultiselect/StatelessTags.vue", () => ({
+    default: {
+        name: "StatelessTags",
+        render: () => null,
+    },
 }));
 
-jest.mock("@/composables/persistentProgressMonitor", () => ({
+vi.mock("@/composables/persistentProgressMonitor", () => ({
     usePersistentProgressTaskMonitor: (...args: unknown[]) => mockUsePersistentProgressTaskMonitor(...args),
 }));
 
@@ -37,8 +40,8 @@ const baseMonitoringData: MonitoringData = {
 };
 
 const defaultMonitor: TaskMonitor = {
-    waitForTask: jest.fn(),
-    stopWaitingForTask: jest.fn(),
+    waitForTask: vi.fn(),
+    stopWaitingForTask: vi.fn(),
     isRunning: ref(false),
     isCompleted: ref(false),
     hasFailed: ref(false),
@@ -46,9 +49,9 @@ const defaultMonitor: TaskMonitor = {
     requestHasFailed: ref(false),
     taskStatus: ref(""),
     expirationTime: expirationTime,
-    isFinalState: jest.fn(),
-    loadStatus: jest.fn(),
-    fetchTaskStatus: jest.fn(),
+    isFinalState: vi.fn(),
+    loadStatus: vi.fn(),
+    fetchTaskStatus: vi.fn(),
 };
 
 const defaultPersistentProgressTaskMonitor: PersistentProgressTaskMonitorResult = {
@@ -60,13 +63,13 @@ const defaultPersistentProgressTaskMonitor: PersistentProgressTaskMonitorResult 
     hasExpired: ref(false),
     storedTaskId: fakeTaskId,
     status: ref(""),
-    start: jest.fn(),
-    stop: jest.fn(),
-    reset: jest.fn(),
-    checkStatus: jest.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
+    reset: vi.fn(),
+    checkStatus: vi.fn(),
 };
 
-const mockUsePersistentProgressTaskMonitor = jest.fn().mockReturnValue(defaultPersistentProgressTaskMonitor);
+const mockUsePersistentProgressTaskMonitor = vi.fn().mockReturnValue(defaultPersistentProgressTaskMonitor);
 
 const badgeIds = {
     inProgress: "in-progress",
@@ -93,7 +96,7 @@ describe("DownloadItemCard.vue", () => {
     }
 
     afterEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it("always renders title and description and go to object action", async () => {
@@ -228,10 +231,12 @@ describe("DownloadItemCard.vue", () => {
     });
 
     it("copies the download link to the clipboard when Copy Download Link is clicked", async () => {
-        const writeText = jest.fn().mockResolvedValue(undefined);
+        const writeText = vi.fn().mockResolvedValue(undefined);
 
-        Object.assign(navigator, {
-            clipboard: {
+        Object.defineProperty(navigator, "clipboard", {
+            writable: true,
+            configurable: true,
+            value: {
                 writeText,
             },
         });

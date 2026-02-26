@@ -5,15 +5,13 @@ import string
 from galaxy_test.base import api_asserts
 from ._base import BaseObjectStoreIntegrationTestCase
 
-PRIVATE_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
-    """<?xml version="1.0"?>
+PRIVATE_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
 <object_store type="disk" id="primary" private="true">
     <files_dir path="${temp_directory}/files1"/>
     <extra_dir type="temp" path="${temp_directory}/tmp1"/>
     <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
 </object_store>
-"""
-)
+""")
 
 TEST_INPUT_FILES_CONTENT = "1 2 3"
 

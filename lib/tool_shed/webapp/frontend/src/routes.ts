@@ -12,6 +12,7 @@ import RepositoriesByCategory from "@/components/pages/RepositoriesByCategory.vu
 import ToolVersionPage from "@/components/pages/ToolVersionPage.vue"
 import ComponentsShowcase from "@/components/pages/ComponentsShowcase.vue"
 import RepositoryPage from "@/components/pages/RepositoryPage.vue"
+import MetadataInspectorPage from "@/components/pages/MetadataInspectorPage.vue"
 import ManageApiKey from "@/components/pages/ManageApiKey.vue"
 import ChangePassword from "@/components/pages/ChangePassword.vue"
 import CitableRepositoryPage from "@/components/pages/CitableRepositoryPage.vue"
@@ -91,6 +92,11 @@ const routes: Array<RouteRecordRaw> = [
     {
         path: "/repositories_by_category/:categoryId",
         component: RepositoriesByCategory,
+        props: true,
+    },
+    {
+        path: "/repositories/:repositoryId/metadata-inspector",
+        component: MetadataInspectorPage,
         props: true,
     },
     {

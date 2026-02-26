@@ -71,19 +71,6 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         Check for appropriate strings, most importantly BlastXml, BlastNucDb, and BlastProtDb,
         the datatypes that are defined in datatypes_conf.xml.
         """
-        repository = self._get_repository_by_name_and_owner(datatypes_repository_name, common.test_user_2_name)
-        strings_displayed = [
-            "BlastXml",
-            "BlastNucDb",
-            "BlastProtDb",
-            "application/xml",
-            "text/html",
-            "blastxml",
-            "blastdbn",
-            "blastdbp",
-        ]
-        if not self.is_v2:
-            self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0015_create_tool_repository(self):
         """Create and populate the blastxml_to_top_descr_0120 repository

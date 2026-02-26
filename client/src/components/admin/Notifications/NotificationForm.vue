@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faInbox, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faInbox, faInfoCircle, faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
@@ -273,7 +273,7 @@ async function sendNewNotification() {
             <BRow class="m-2" align-h="center">
                 <AsyncButton
                     id="notification-submit"
-                    icon="save"
+                    :icon="faSave"
                     :title="!requiredFieldsFilled ? 'Please fill all required fields' : ''"
                     color="blue"
                     size="medium"

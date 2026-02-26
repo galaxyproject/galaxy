@@ -12,13 +12,21 @@
                 :state="!nameCurrent ? false : null"
                 @keyup="$emit('update:nameCurrent', nameCurrent)" />
         </div>
-        <div v-if="versionOptions.length > 0" id="workflow-version-area" class="mt-2">
+        <div v-if="versions.length > 0" id="workflow-version-area" class="mt-2">
             <b>Version</b>
-            <b-form-select v-model="versionCurrent" @change="onVersion">
-                <b-form-select-option v-for="v in versionOptions" :key="v.version" :value="v.version">
-                    {{ v.label }}
-                </b-form-select-option>
-            </b-form-select>
+            <GLink
+                v-if="canSwitchToLatestVersion"
+                thin
+                title="You are not editing the latest version of this workflow. Click to switch to the latest version."
+                @click.prevent="onVersion(versions[versions.length - 1].version)">
+                <i>(switch to latest)</i>
+            </GLink>
+            <i v-else> (latest version)</i>
+            <WorkflowVersionSelector
+                v-if="version !== null && version !== undefined"
+                :version="version"
+                :versions="versions"
+                @onVersion="onVersion" />
         </div>
         <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
             <b>Parameters</b>
@@ -28,10 +36,7 @@
                 </b-list-group-item>
             </b-list-group>
         </div>
-        <div
-            id="workflow-annotation-area"
-            class="mt-2"
-            :class="{ 'bg-secondary': showAnnotationHightlight, 'highlight-attribute': showAnnotationHightlight }">
+        <div id="workflow-annotation-area" class="mt-2" :class="{ 'highlight-attribute': highlight === 'annotation' }">
             <b>Short Description</b>
             <meta itemprop="description" :content="annotationCurrent" />
             <b-textarea
@@ -47,16 +52,13 @@
                 target="workflow-annotation"
                 boundary="window"
                 placement="right"
-                :show.sync="showAnnotationHightlight"
+                :show="highlight === 'annotation'"
                 triggers="manual"
                 title="Best Practice"
                 :content="annotationBestPracticeMessage">
             </b-popover>
         </div>
-        <div
-            id="workflow-license-area"
-            class="mt-2"
-            :class="{ 'bg-secondary': showLicenseHightlight, 'highlight-attribute': showLicenseHightlight }">
+        <div id="workflow-license-area" class="mt-2" :class="{ 'highlight-attribute': highlight === 'license' }">
             <b>License</b>
             <LicenseSelector id="license-selector" :input-license="license" @onLicense="onLicense" />
             <b-popover
@@ -64,16 +66,13 @@
                 target="license-selector"
                 boundary="window"
                 placement="right"
-                :show.sync="showLicenseHightlight"
+                :show="highlight === 'license'"
                 triggers="manual"
                 title="Best Practice"
                 :content="bestPracticeWarningLicense">
             </b-popover>
         </div>
-        <div
-            id="workflow-creator-area"
-            class="mt-2"
-            :class="{ 'bg-secondary': showCreatorHightlight, 'highlight-attribute': showCreatorHightlight }">
+        <div id="workflow-creator-area" class="mt-2" :class="{ 'highlight-attribute': highlight === 'creator' }">
             <b>Creator</b>
             <CreatorEditor id="creator-editor" :creators="creatorAsList" @onCreators="onCreator" />
             <b-popover
@@ -81,7 +80,7 @@
                 target="creator-editor"
                 boundary="window"
                 placement="right"
-                :show.sync="showCreatorHightlight"
+                :show="highlight === 'creator'"
                 triggers="manual"
                 title="Best Practice"
                 :content="bestPracticeWarningCreator">
@@ -126,7 +125,7 @@
                 target="workflow-readme"
                 boundary="window"
                 placement="right"
-                :show.sync="showReadmeHightlight"
+                :show="highlight === 'readme'"
                 triggers="manual"
                 title="Best Practice"
                 :content="bestPracticeWarningReadme">
@@ -154,8 +153,6 @@
 </template>
 
 <script>
-import { format, parseISO } from "date-fns";
-
 import { Services } from "@/components/Workflow/services";
 
 import {
@@ -167,13 +164,15 @@ import {
 } from "./modules/linting";
 import { UntypedParameters } from "./modules/parameters";
 
+import WorkflowVersionSelector from "../WorkflowVersionSelector.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import ItemListEditor from "@/components/Common/ItemListEditor.vue";
 import LicenseSelector from "@/components/License/LicenseSelector.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import CreatorEditor from "@/components/SchemaOrg/CreatorEditor.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-const bestPracticeHighlightTime = 10000;
+const BEST_PRACTICE_HIGHLIGHT_TIME = 4000;
 
 export default {
     name: "WorkflowAttributes",
@@ -183,6 +182,8 @@ export default {
         CreatorEditor,
         ItemListEditor,
         ActivityPanel,
+        GLink,
+        WorkflowVersionSelector,
     },
     props: {
         id: {
@@ -249,15 +250,10 @@ export default {
             bestPracticeWarningReadme: bestPracticeWarningReadme,
             message: null,
             messageVariant: null,
-            versionCurrent: this.version,
             annotationCurrent: this.annotation,
             nameCurrent: this.name,
             logoUrlCurrent: this.logoUrl,
             helpCurrent: this.help,
-            showAnnotationHightlight: false,
-            showLicenseHightlight: false,
-            showCreatorHightlight: false,
-            showReadmeHightlight: false,
             doiDescription: `
 Acceptable format:
 <ul>
@@ -269,6 +265,14 @@ Acceptable format:
         };
     },
     computed: {
+        /** Determines if the current version is not the latest */
+        canSwitchToLatestVersion() {
+            return (
+                this.versions?.length > 1 &&
+                this.version !== null &&
+                this.version !== this.versions[this.versions.length - 1].version
+            );
+        },
         creatorAsList() {
             let creator = this.creator;
             if (!creator) {
@@ -281,27 +285,6 @@ Acceptable format:
         hasParameters() {
             return this.parameters && this.parameters.parameters.length > 0;
         },
-        versionOptions() {
-            const versions = [];
-            for (let i = 0; i < this.versions.length; i++) {
-                const current_wf = this.versions[i];
-                let update_time;
-                if (current_wf.update_time) {
-                    update_time = `${format(
-                        parseISO(current_wf.update_time, "yyyy-MM-dd", new Date()),
-                        "MMM do yyyy",
-                    )}`;
-                } else {
-                    update_time = "";
-                }
-                const label = `${current_wf.version + 1}: ${update_time}, ${current_wf.steps} steps`;
-                versions.push({
-                    version: i,
-                    label: label,
-                });
-            }
-            return versions;
-        },
         annotationBestPracticeMessage() {
             if (this.annotationCurrent) {
                 return bestPracticeWarningAnnotationLength;
@@ -311,11 +294,13 @@ Acceptable format:
         },
     },
     watch: {
-        version() {
-            this.versionCurrent = this.version;
-        },
         license() {
             this.licenseCurrent = this.license;
+
+            // Remove highlight if it exists for license
+            if (this.highlight === "license") {
+                this.$emit("update:highlight", null);
+            }
         },
         creator() {
             let creator = this.creator;
@@ -325,10 +310,19 @@ Acceptable format:
                 creator = [creator];
             }
             this.creatorCurrent = creator;
+
+            // Remove highlight if it exists for creator
+            if (this.highlight === "creator") {
+                this.$emit("update:highlight", null);
+            }
         },
         annotation() {
-            this.showAnnotationHightlight = false;
             this.annotationCurrent = this.annotation;
+
+            // Remove highlight if it exists for annotation
+            if (this.highlight === "annotation") {
+                this.$emit("update:highlight", null);
+            }
         },
         name() {
             this.nameCurrent = this.name;
@@ -342,41 +336,12 @@ Acceptable format:
         highlight: {
             immediate: true,
             handler(newHighlight, oldHighlight) {
-                if (newHighlight == oldHighlight) {
-                    return;
-                }
-                if (newHighlight == "annotation") {
-                    this.showAnnotationHightlight = true;
-                    this.showCreatorHightlight = false;
-                    this.showLicenseHightlight = false;
-                    this.showReadmeHightlight = false;
+                if (newHighlight === oldHighlight) {
+                    this.$emit("update:highlight", null);
+                } else {
                     setTimeout(() => {
-                        this.showAnnotationHightlight = false;
-                    }, bestPracticeHighlightTime);
-                } else if (newHighlight == "creator") {
-                    this.showAnnotationHightlight = false;
-                    this.showCreatorHightlight = true;
-                    this.showLicenseHightlight = false;
-                    this.showReadmeHightlight = false;
-                    setTimeout(() => {
-                        this.showCreatorHightlight = false;
-                    }, bestPracticeHighlightTime);
-                } else if (newHighlight == "license") {
-                    this.showAnnotationHightlight = false;
-                    this.showCreatorHightlight = false;
-                    this.showLicenseHightlight = true;
-                    this.showReadmeHightlight = false;
-                    setTimeout(() => {
-                        this.showLicenseHightlight = false;
-                    }, bestPracticeHighlightTime);
-                } else if (newHighlight == "readme") {
-                    this.showAnnotationHighlight = false;
-                    this.showCreatorHightlight = false;
-                    this.showLicenseHightlight = false;
-                    this.showReadmeHightlight = true;
-                    setTimeout(() => {
-                        this.showReadmeHightlight = false;
-                    }, bestPracticeHighlightTime);
+                        this.$emit("update:highlight", null);
+                    }, BEST_PRACTICE_HIGHLIGHT_TIME);
                 }
             },
         },
@@ -389,8 +354,8 @@ Acceptable format:
             this.onAttributes({ tags });
             this.$emit("tags", tags);
         },
-        onVersion() {
-            this.$emit("version", this.versionCurrent);
+        onVersion(version) {
+            this.$emit("version", version);
         },
         onLicense(license) {
             this.$emit("license", license);
@@ -416,12 +381,30 @@ Acceptable format:
 };
 </script>
 
-<style>
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
 .highlight-attribute {
-    border: 1px outset;
-    padding: 10px;
+    border-radius: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    border: 4px solid $brand-primary;
+    animation: blink-border 1s infinite;
 }
 
+@keyframes blink-border {
+    0%,
+    50% {
+        border-color: $brand-primary;
+    }
+    51%,
+    100% {
+        border-color: transparent;
+    }
+}
+</style>
+
+<style>
 .best-practice-popover {
     max-width: 250px !important;
 }

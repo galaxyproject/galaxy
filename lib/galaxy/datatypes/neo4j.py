@@ -29,10 +29,8 @@ class Neo4j(Html):
         cannot rename the datasets here - they come with the default unfortunately
         """
         # self.regenerate_primary_file(dataset)
-        rval = [
-            f"<html><head><title>Files for Composite Dataset ({self.file_ext})</title></head><p/>\
-            This composite dataset is composed of the following files:<p/><ul>"
-        ]
+        rval = [f"<html><head><title>Files for Composite Dataset ({self.file_ext})</title></head><p/>\
+            This composite dataset is composed of the following files:<p/><ul>"]
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             opt_text = ""
             if composite_file.optional:

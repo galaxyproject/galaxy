@@ -53,7 +53,15 @@ type Emits = {
 const emits = defineEmits<Emits>()
 </script>
 <template>
-    <q-fab padding="sm" class="q-px-md" color="secondary" text-color="primary" icon="settings" direction="up">
+    <q-fab
+        padding="sm"
+        class="q-px-md"
+        color="secondary"
+        text-color="primary"
+        icon="settings"
+        direction="up"
+        aria-label="Revision settings"
+    >
         <q-fab-action
             color="primary"
             icon="history"

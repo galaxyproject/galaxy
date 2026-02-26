@@ -1280,3 +1280,79 @@ WORKFLOW_WITH_DATA_TAG_FILTER = r"""{
     "uuid": "03a95ebe-af1e-4628-ac2f-e7553babfb2f",
     "version": 3
 }"""
+
+WORKFLOW_KEEP_SUCCESSFUL_DATASETS = """
+class: GalaxyWorkflow
+inputs:
+  input_c: collection
+
+steps:
+  mixed_collection:
+    tool_id: exit_code_from_file
+    in:
+       input: input_c
+
+  filtered_collection:
+    tool_id: "__KEEP_SUCCESS_DATASETS__"
+    in:
+      input: mixed_collection/out_file1
+
+  cat:
+    tool_id: cat
+    in:
+      input1: filtered_collection/output
+"""
+
+WORKFLOW_KEEP_SUCCESSFUL_DATASETS_TEST_DATA = """
+input_c:
+  collection_type: list
+  elements:
+    - identifier: i1
+      content: "0"
+    - identifier: i2
+      content: "1"
+"""
+
+WORKFLOW_WITH_IMAGES_IN_REPORT = """
+class: GalaxyWorkflow
+name: Workflow with Images in Report
+inputs:
+  image_input: data
+outputs:
+  output_image:
+    outputSource: image_cat/out_file1
+steps:
+  image_cat:
+    tool_id: cat
+    in:
+      input1: image_input
+report:
+  markdown: |
+    ## Images in Report
+
+    This report demonstrates embedding images within a markdown workflow report,
+    including inline images in tables.
+
+    ### Block-level Image
+
+    ```galaxy
+    history_dataset_as_image(output=output_image)
+    ```
+
+    ### Table with Inline Images
+
+    | Description | Image |
+    |-------------|-------|
+    | First Image | ${galaxy history_dataset_as_image(output=output_image)} |
+    | Second Image | ${galaxy history_dataset_as_image(output=output_image)} |
+
+    The above table should show two images rendered inline.
+"""
+
+WORKFLOW_WITH_IMAGES_IN_REPORT_TEST_DATA = """
+image_input_1:
+  value: 454Score.png
+  type: File
+  file_type: png
+  name: first test image
+"""

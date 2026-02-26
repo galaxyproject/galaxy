@@ -1,5 +1,5 @@
-import { getAppRoot } from "onload/loadConfig";
-import { copy } from "utils/clipboard";
+import { getAppRoot } from "@/onload/loadConfig";
+import { copy } from "@/utils/clipboard";
 
 export function copyLink(toolId, message) {
     const link = `${window.location.origin + getAppRoot()}root?tool_id=${toolId}`;

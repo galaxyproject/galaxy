@@ -9,8 +9,7 @@ from galaxy.tool_util.deps.mulled.mulled_build_files import (
     Target,
 )
 
-TESTCASES = yaml.safe_load(
-    r"""
+TESTCASES = yaml.safe_load(r"""
 - test_legacy_files_package_only:
     content: samtools
     equals:
@@ -53,8 +52,7 @@ TESTCASES = yaml.safe_load(
       image_build: '10'
       name_override: image_name
       targets: samtools
-"""
-)
+""")
 TEST_IDS = [next(iter(k.keys())) for k in TESTCASES]
 
 

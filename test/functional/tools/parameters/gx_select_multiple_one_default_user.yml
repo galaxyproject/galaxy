@@ -1,0 +1,42 @@
+class: GalaxyUserTool
+id: gx_select_multiple_one_default_user
+version: "1.0.0"
+name: gx_select_multiple_one_default_user
+description: ""
+container: busybox
+shell_command: echo '$(inputs.parameter)' >> output.txt
+inputs:
+  - name: parameter
+    type: select
+    multiple: true
+    options:
+      - label: Ex1
+        value: "--ex1"
+      - label: Ex2
+        value: ex2
+      - label: Ex3
+        value: "--ex3"
+        selected: true
+      - label: Ex4
+        value: "--ex4"
+      - label: Ex5
+        value: ex5
+outputs:
+  - name: output
+    type: data
+    format: txt
+    from_work_dir: output.txt
+tests:
+  - inputs:
+      parameter:
+        - ex2
+    outputs:
+      output:
+        asserts:
+          - has_line:
+              line: '["ex2"]'
+  - outputs:
+      output:
+        asserts:
+          - has_line:
+              line: '["--ex3"]'

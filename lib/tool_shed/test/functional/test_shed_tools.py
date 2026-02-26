@@ -3,10 +3,7 @@ from tool_shed_client.schema.trs import (
     ToolClass,
 )
 from tool_shed_client.trs_util import encode_identifier
-from ..base.api import (
-    ShedApiTestCase,
-    skip_if_api_v1,
-)
+from ..base.api import ShedApiTestCase
 
 
 class TestShedToolsApi(ShedApiTestCase):
@@ -41,12 +38,10 @@ class TestShedToolsApi(ShedApiTestCase):
             tool_search_hit = response.find_search_hit(repository)
             assert tool_search_hit
 
-    @skip_if_api_v1
     def test_trs_service_info(self):
         service_info = self.api_interactor.get("ga4gh/trs/v2/service-info")
         service_info.raise_for_status()
 
-    @skip_if_api_v1
     def test_trs_tool_classes(self):
         classes_response = self.api_interactor.get("ga4gh/trs/v2/toolClasses")
         classes_response.raise_for_status()
@@ -56,7 +51,6 @@ class TestShedToolsApi(ShedApiTestCase):
         class0 = classes[0]
         assert ToolClass(**class0)
 
-    @skip_if_api_v1
     def test_trs_tool_list(self):
         populator = self.populator
         repository = populator.setup_column_maker_repo(prefix="toolstrsindex")
@@ -67,7 +61,6 @@ class TestShedToolsApi(ShedApiTestCase):
         tool_response.raise_for_status()
         assert Tool(**tool_response.json())
 
-    @skip_if_api_v1
     def test_trs_tool_parameter_json_schema(self):
         populator = self.populator
         repository = populator.setup_column_maker_repo(prefix="toolsparameterschema")
@@ -76,3 +69,16 @@ class TestShedToolsApi(ShedApiTestCase):
         url = f"tools/{encoded_tool_id}/versions/1.1.0/parameter_request_schema"
         tool_response = self.api_interactor.get(url)
         tool_response.raise_for_status()
+
+    def test_tool_source(self):
+        populator = self.populator
+        repository = populator.setup_column_maker_repo(prefix="toolsource")
+        tool_id = populator.tool_guid(self, repository, "Add_a_column1")
+        tool_shed_base, encoded_tool_id = encode_identifier(tool_id)
+        url = f"tools/{encoded_tool_id}/versions/1.1.0/tool_source"
+        tool_response = self.api_interactor.get(url)
+        tool_response.raise_for_status()
+        assert tool_response.headers["language"] == "xml"
+        content = tool_response.text
+        assert "Add_a_column1" in content
+        assert "<tool " in content

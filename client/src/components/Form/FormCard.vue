@@ -3,19 +3,21 @@
         <div :tabindex="collapsible ? 0 : -1" :class="portletHeaderClasses" @keydown="onKeyDown" @click="onCollapse">
             <div class="portlet-operations">
                 <slot name="operations" />
-                <span
+                <GButton
                     v-if="collapsible"
-                    v-b-tooltip.hover.bottom
+                    tooltip
+                    tooltip-placement="bottom"
                     title="Collapse/Expand"
-                    variant="link"
-                    size="sm"
-                    class="float-right">
-                    <FontAwesomeIcon v-if="expanded" icon="chevron-up" class="fa-fw" />
-                    <FontAwesomeIcon v-else icon="chevron-down" class="fa-fw" />
-                </span>
+                    color="blue"
+                    transparent
+                    size="small"
+                    tabindex="-1">
+                    <FontAwesomeIcon :icon="expanded ? faChevronUp : faChevronDown" class="fa-fw" />
+                </GButton>
             </div>
             <span class="portlet-title">
-                <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
+                <span v-if="icon && typeof icon === 'string'" :class="['portlet-title-icon fa mr-1', icon]" />
+                <FontAwesomeIcon v-else-if="icon && typeof icon === 'object'" :icon="icon" fixed-width class="mr-1" />
                 <b class="portlet-title-text" itemprop="name">{{ title }}</b>
                 <slot name="title" />
                 <span class="portlet-title-description" itemprop="description">{{ description }}</span>
@@ -28,17 +30,15 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { IconDefinition } from "font-awesome-6";
 
-library.add(faChevronUp);
-library.add(faChevronDown);
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 export default {
     components: {
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         title: {
@@ -50,7 +50,7 @@ export default {
             default: null,
         },
         icon: {
-            type: IconDefinition,
+            type: [String, Object], // String for legacy CSS classes, Object for icon objects
             default: null,
         },
         collapsible: {
@@ -63,7 +63,10 @@ export default {
         },
     },
     data() {
-        return {};
+        return {
+            faChevronUp,
+            faChevronDown,
+        };
     },
     computed: {
         portletHeaderClasses() {

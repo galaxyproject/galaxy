@@ -1,10 +1,12 @@
 import _ from "underscore";
 
+import { isDefined, isValidNumber } from "@/utils/validation";
+
 /** Visits tool inputs.
  * @param{dict}   inputs    - Nested dictionary of input elements
  * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
  */
-export function visitInputs(inputs, callback, prefix, context) {
+export function visitInputs(inputs, callback, prefix = "", context = undefined) {
     context = Object.assign({}, context);
     _.each(inputs, (input) => {
         if (input && input.type && input.name) {
@@ -39,6 +41,40 @@ export function visitInputs(inputs, callback, prefix, context) {
                 break;
             default:
                 callback(node, name, context);
+        }
+    }
+}
+
+/** Visits ALL inputs including every conditional case (not just the active one).
+ * Used for syncing server attributes to all conditional branches.
+ * @param{Array}    inputs    - Nested array of input elements
+ * @param{Function} callback  - Called with each input node and its name
+ * @param{String}   prefix    - Key prefix for nested param name construction
+ */
+export function visitAllInputs(inputs, callback, prefix = "") {
+    for (var key in inputs) {
+        var node = inputs[key];
+        var nodeName = node.name || key;
+        var name = prefix ? `${prefix}|${nodeName}` : nodeName;
+        switch (node.type) {
+            case "repeat":
+                _.each(node.cache, (cache, j) => {
+                    visitAllInputs(cache, callback, `${name}_${j}`);
+                });
+                break;
+            case "conditional":
+                if (node.test_param) {
+                    callback(node.test_param, `${name}|${node.test_param.name}`);
+                    for (var i = 0; i < node.cases.length; i++) {
+                        visitAllInputs(node.cases[i].inputs, callback, name);
+                    }
+                }
+                break;
+            case "section":
+                visitAllInputs(node.inputs, callback, name);
+                break;
+            default:
+                callback(node, name);
         }
     }
 }
@@ -100,28 +136,132 @@ export function matchInputs(index, response) {
     return result;
 }
 
+/** Validate value against a regular expression pattern
+ * @param{object} validator - Validator definition
+ * @param{*}      value     - Value to validate
+ * @returns{object} Object with isValid boolean and message string
+ */
+function validateRegex(validator, value) {
+    try {
+        const regex = new RegExp(validator.expression);
+        const matches = regex.test(String(value));
+        const isValid = validator.negate ? !matches : matches;
+        return {
+            isValid: isValid,
+            message: isValid ? null : validator.message,
+        };
+    } catch (error) {
+        return {
+            isValid: false,
+            message: `Invalid validation pattern: ${error.message}`,
+        };
+    }
+}
+
+/** Validate value length is within specified bounds
+ * @param{object} validator - Validator definition
+ * @param{*}      value     - Value to validate
+ * @returns{object} Object with isValid boolean and message string
+ */
+function validateLength(validator, value) {
+    const valueLength = String(value).length;
+    let isValid = true;
+
+    if (isValidNumber(validator.min) && valueLength < validator.min) {
+        isValid = false;
+    }
+    if (isValidNumber(validator.max) && valueLength > validator.max) {
+        isValid = false;
+    }
+    if (validator.negate) {
+        isValid = !isValid;
+    }
+
+    return {
+        isValid: isValid,
+        message: isValid ? null : validator.message,
+    };
+}
+
+/** Validate numeric value is within specified range
+ * @param{object} validator - Validator definition
+ * @param{*}      value     - Value to validate
+ * @returns{object} Object with isValid boolean and message string
+ */
+function validateInRange(validator, value) {
+    const numericValue = Number(value);
+
+    if (isNaN(numericValue)) {
+        return {
+            isValid: false,
+            message: "Value must be numeric for range validation",
+        };
+    }
+
+    let isValid = true;
+
+    if (isValidNumber(validator.min) && numericValue < validator.min) {
+        isValid = false;
+    }
+    if (isValidNumber(validator.max) && numericValue > validator.max) {
+        isValid = false;
+    }
+    if (validator.negate) {
+        isValid = !isValid;
+    }
+
+    return {
+        isValid: isValid,
+        message: isValid ? null : validator.message,
+    };
+}
+
+// Map validator types to their validation functions
+const validatorFunctions = {
+    regex: validateRegex,
+    length: validateLength,
+    in_range: validateInRange,
+};
+
+/** Run a single validator
+ * @param{object} validator - Validator definition with type, expression, message, etc.
+ * @param{*}      value     - Value to validate
+ * @returns{object} Object with isValid boolean and message string
+ */
+function runValidator(validator, value) {
+    const validatorFunc = validatorFunctions[validator.type];
+    if (validatorFunc) {
+        return validatorFunc(validator, value);
+    }
+    // Unknown validator type - consider valid by default
+    return { isValid: true, message: null };
+}
+
 /** Validates input parameters to identify issues before submitting a server request, where comprehensive validation is performed.
  * @param{dict}   index     - Index of input elements
  * @param{dict}   values    - Dictionary of parameter values
  */
-export function validateInputs(index, values, allowEmptyValueOnRequiredInput = false) {
+export function validateInputs(index, values, rejectEmptyRequiredInputs = false) {
     let batchN = -1;
     let batchSrc = null;
-    for (const inputId in values) {
-        const inputValue = values[inputId];
+    for (const inputId in index) {
         const inputDef = index[inputId];
+        const inputValue = values[inputId];
+        const isEmpty = !isDefined(inputValue) || inputValue === "";
+        const hasValue = !isEmpty;
+        const isRequired = !inputDef.optional;
         if (!inputDef || inputDef.step_linked) {
             continue;
         }
-        if (!inputDef.optional && inputDef.type != "hidden") {
-            if (inputValue == null || (allowEmptyValueOnRequiredInput && inputValue === "")) {
+        if (isRequired && inputDef.type != "hidden") {
+            if (!isDefined(inputValue) || (rejectEmptyRequiredInputs && inputValue === "")) {
                 return [inputId, "Please provide a value for this option."];
             }
         }
         if (inputDef.wp_linked && inputDef.text_value == inputValue) {
             return [inputId, "Please provide a value for this workflow parameter."];
         }
-        if (inputValue && Array.isArray(inputValue.values) && inputValue.values.length == 0 && !inputDef.optional) {
+        if (inputValue && Array.isArray(inputValue.values) && inputValue.values.length == 0 && isRequired) {
             return [inputId, "Please provide data for this input."];
         }
         if (inputValue) {
@@ -156,6 +296,16 @@ export function validateInputs(index, values, allowEmptyValueOnRequiredInput = f
                     inputId,
                     `Please make sure that you select the same number of inputs for all batch mode fields. This field contains ${n} selection(s) while a previous field contains ${batchN}.`,
                 ];
+            }
+        }
+
+        // Run custom validators if field is required or has a value
+        if (inputDef.validators && (isRequired || hasValue)) {
+            for (const validator of inputDef.validators) {
+                const validationResult = runValidator(validator, inputValue);
+                if (!validationResult.isValid) {
+                    return [inputId, validationResult.message];
+                }
             }
         }
     }

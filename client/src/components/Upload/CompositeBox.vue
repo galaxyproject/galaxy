@@ -2,8 +2,7 @@
 import { BButton } from "bootstrap-vue";
 import Vue, { computed, ref } from "vue";
 
-import { uploadPayload } from "@/utils/upload-payload.js";
-import { uploadSubmit } from "@/utils/upload-submit.js";
+import { buildLegacyPayload, submitUpload } from "@/utils/upload";
 
 import { defaultModel } from "./model";
 
@@ -106,8 +105,8 @@ function eventStart() {
         model.extension = extension.value;
     });
     try {
-        uploadSubmit({
-            data: uploadPayload(uploadValues.value, props.historyId, true),
+        submitUpload({
+            data: buildLegacyPayload(uploadValues.value, props.historyId, true),
             error: eventError,
             progress: eventProgress,
             success: eventSuccess,
@@ -169,7 +168,7 @@ defineExpose({
     <div class="upload-wrapper">
         <div class="upload-header">&nbsp;</div>
         <div class="upload-box">
-            <div v-show="showHelper" class="upload-helper">Select a composite type</div>
+            <div v-show="showHelper" v-localize class="upload-helper">Select a composite type</div>
             <div v-show="!showHelper">
                 <CompositeRow
                     v-for="(uploadItem, uploadIndex) in uploadItems"
@@ -191,7 +190,7 @@ defineExpose({
             </div>
         </div>
         <div class="upload-footer">
-            <span class="upload-footer-title">Composite Type:</span>
+            <span v-localize class="upload-footer-title">Composite Type:</span>
             <UploadSelect
                 class="upload-footer-extension"
                 :value="null"
@@ -199,7 +198,7 @@ defineExpose({
                 :disabled="isRunning"
                 what="file type"
                 @input="inputExtension" />
-            <span class="upload-footer-title">Reference:</span>
+            <span v-localize class="upload-footer-title">Reference:</span>
             <UploadSelect
                 what="reference"
                 :value="dbKey"

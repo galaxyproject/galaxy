@@ -1,7 +1,8 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, defineStore, setActivePinia } from "pinia";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { useServerMock } from "@/api/client/__mocks__";
@@ -17,7 +18,7 @@ const TEST_HISTORY_ID = "test-history-id";
 const { server, http } = useServerMock();
 
 // Mock the 3 stores used in the component
-jest.mock("@/stores/historyStore", () => {
+vi.mock("@/stores/historyStore", () => {
     return {
         useHistoryStore: () =>
             defineStore("history", {
@@ -28,13 +29,13 @@ jest.mock("@/stores/historyStore", () => {
     };
 });
 let mockedHistoryItemsStore: ReturnType<ReturnType<typeof defineStore>>;
-jest.mock("@/stores/historyItemsStore", () => {
+vi.mock("@/stores/historyItemsStore", () => {
     return {
         useHistoryItemsStore: () => mockedHistoryItemsStore,
     };
 });
-const setTourMock = jest.fn();
-jest.mock("@/stores/tourStore", () => {
+const setTourMock = vi.fn();
+vi.mock("@/stores/tourStore", () => {
     return {
         useTourStore: () =>
             defineStore("tour", {
@@ -49,18 +50,18 @@ jest.mock("@/stores/tourStore", () => {
 });
 
 // Mock the toast composable to track the messages
-const toastMock = jest.fn((message, type: "success" | "info" | "error") => {
+const toastMock = vi.fn((message, type: "success" | "info" | "error") => {
     return { message, type };
 });
-jest.mock("@/composables/toast", () => ({
+vi.mock("@/composables/toast", () => ({
     Toast: {
-        success: jest.fn().mockImplementation((message) => {
+        success: vi.fn().mockImplementation((message) => {
             toastMock(message, "success");
         }),
-        info: jest.fn().mockImplementation((message) => {
+        info: vi.fn().mockImplementation((message) => {
             toastMock(message, "info");
         }),
-        error: jest.fn().mockImplementation((message) => {
+        error: vi.fn().mockImplementation((message) => {
             toastMock(message, "error");
         }),
     },
@@ -102,6 +103,8 @@ describe("Tool Generated Tour Dropdown Item", () => {
         wrapper.destroy();
         server.resetHandlers();
         currentItemState.value = null;
+        setTourMock.mockClear();
+        toastMock.mockClear();
     });
 
     it("generates a basic tour (that doesn't wait on datasets) on click", async () => {

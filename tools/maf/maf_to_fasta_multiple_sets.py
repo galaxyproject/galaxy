@@ -2,6 +2,7 @@
 """
 Read a maf and output a multiple block fasta file.
 """
+
 # Dan Blankenberg
 from __future__ import print_function
 

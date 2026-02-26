@@ -1,5 +1,6 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { mount } from "@vue/test-utils";
+import { describe, expect, it } from "vitest";
 
 import VisualizationHeader from "./VisualizationHeader.vue";
 

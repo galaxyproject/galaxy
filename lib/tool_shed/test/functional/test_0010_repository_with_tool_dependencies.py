@@ -1,7 +1,6 @@
 import os
 
 from ..base import common
-from ..base.api import skip_if_api_v2
 from ..base.twilltestcase import ShedTwillTestCase
 
 repository_name = "freebayes_0010"
@@ -53,9 +52,8 @@ class TestFreebayesRepository(ShedTwillTestCase):
         )
         strings_displayed = ["Metadata may have been defined", "This file requires an entry", "tool_data_table_conf"]
         self.add_file_to_repository(repository, "freebayes/freebayes.xml", strings_displayed=strings_displayed)
-        if self.is_v2:
-            # opps... not good right?
-            self.populator.reset_metadata(repository)
+        # opps... not good right?
+        self.populator.reset_metadata(repository)
         self.display_manage_repository_page(
             repository, strings_displayed=[self.invalid_tools_labels], strings_not_displayed=["Valid tools"]
         )
@@ -124,17 +122,3 @@ class TestFreebayesRepository(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         target = os.path.join("freebayes", "tool_dependencies.xml")
         self.add_file_to_repository(repository, target)
-
-    @skip_if_api_v2
-    def test_0040_verify_tool_dependencies(self):
-        """Verify that the uploaded tool_dependencies.xml specifies the correct package versions.
-
-        We are at step 7 - Check for the appropriate strings on the manage repository page.
-        Verify that the manage repository page now displays the valid tool dependencies, and that there are no invalid tools shown on the manage page.
-        """
-        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        strings_displayed = ["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18", "Valid tools", "package"]
-        strings_not_displayed = [self.invalid_tools_labels]
-        self.display_manage_repository_page(
-            repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )

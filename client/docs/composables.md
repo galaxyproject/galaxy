@@ -75,9 +75,10 @@ const store = new Vuex.Store({
 The second option is to mock the composable:
 
 ```js
+import { vi } from "vitest";
 import { useCurrentUser } from "@/composables/user";
 
-jest.mock("composables/user");
+vi.mock("composables/user");
 useCurrentUser.mockReturnValue({
     currentUser: {},
 });

@@ -117,8 +117,11 @@ def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwar
             user = sa_session.get(model.User, repo.user_id)
             repo_owner_username = user.username.lower()
 
-        last_updated = pretty_print_time_interval(repo.update_time)
-        full_last_updated = repo.update_time.strftime("%Y-%m-%d %I:%M %p")
+        laste_updated_time = repo.last_updated_time
+        # If committed must have last_updated_time
+        assert laste_updated_time is not None
+        last_updated = pretty_print_time_interval(laste_updated_time)
+        full_last_updated = laste_updated_time.strftime("%Y-%m-%d %I:%M %p")
 
         # Load all changesets of the repo for lineage.
         try:

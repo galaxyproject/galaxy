@@ -1,0 +1,166 @@
+{
+    "0:c35bbde3c5e0": {
+        "model_class": "RepositoryMetadata",
+        "id": "f3f73e481f432006",
+        "repository_id": "529fd61ab1c6cc36",
+        "numeric_revision": 0,
+        "changeset_revision": "c35bbde3c5e0",
+        "malicious": false,
+        "downloadable": true,
+        "missing_test_components": false,
+        "has_repository_dependencies": false,
+        "includes_datatypes": false,
+        "includes_tools": true,
+        "includes_tool_dependencies": true,
+        "includes_tools_for_display_in_tool_panel": true,
+        "includes_workflows": false,
+        "repository": {
+            "model_class": "Repository",
+            "id": "529fd61ab1c6cc36",
+            "name": "testbismarkif6fzmt0oq",
+            "type": "unrestricted",
+            "remote_repository_url": null,
+            "homepage_url": null,
+            "description": "testbismarketoqj9rljt",
+            "user_id": "adb5f5c93f827949",
+            "private": false,
+            "deleted": false,
+            "times_downloaded": 0,
+            "deprecated": false,
+            "create_time": "2026-01-31T21:06:49.870267",
+            "update_time": "2026-01-31T21:06:49.870275",
+            "owner": "user--bx--psu--edu"
+        },
+        "repository_dependencies": [],
+        "tools": [
+            {
+                "add_to_tool_panel": true,
+                "description": "methylation extractor",
+                "guid": "127.0.0.1:9622/repos/user--bx--psu--edu/testbismarkif6fzmt0oq/bismark_methylation_extractor/0.7.7.2",
+                "id": "bismark_methylation_extractor",
+                "name": "Bismark",
+                "profile": 16.01,
+                "requirements": [
+                    {
+                        "name": "SCRIPT_PATH",
+                        "type": "set_environment",
+                        "version": null
+                    },
+                    {
+                        "name": "bowtie",
+                        "type": "package",
+                        "version": "0.12.8"
+                    },
+                    {
+                        "name": "bowtie2",
+                        "type": "package",
+                        "version": "2.0.0-beta7"
+                    }
+                ],
+                "tests": [],
+                "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmps6x53uus/tmpbbvbl8yc/database/files/000/repo_2/bismark/bismark_methylation_extractor.xml",
+                "tool_type": "default",
+                "version": "0.7.7.2",
+                "version_string_cmd": null
+            },
+            {
+                "add_to_tool_panel": true,
+                "description": "bisulfite mapper (bowtie2)",
+                "guid": "127.0.0.1:9622/repos/user--bx--psu--edu/testbismarkif6fzmt0oq/bismark_bowtie2/0.7.7.2",
+                "id": "bismark_bowtie2",
+                "name": "Bismark",
+                "profile": 16.01,
+                "requirements": [
+                    {
+                        "name": "SCRIPT_PATH",
+                        "type": "set_environment",
+                        "version": null
+                    },
+                    {
+                        "name": "bowtie",
+                        "type": "package",
+                        "version": "0.12.8"
+                    },
+                    {
+                        "name": "bowtie2",
+                        "type": "package",
+                        "version": "2.0.0-beta7"
+                    }
+                ],
+                "tests": [],
+                "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmps6x53uus/tmpbbvbl8yc/database/files/000/repo_2/bismark/bismark_bowtie2_wrapper.xml",
+                "tool_type": "default",
+                "version": "0.7.7.2",
+                "version_string_cmd": null
+            }
+        ],
+        "invalid_tools": ["bismark_bowtie_wrapper.xml"]
+    },
+    "1:babbdbda7d7a": {
+        "model_class": "RepositoryMetadata",
+        "id": "2234cb1fd1df4331",
+        "repository_id": "529fd61ab1c6cc36",
+        "numeric_revision": 1,
+        "changeset_revision": "babbdbda7d7a",
+        "malicious": false,
+        "downloadable": true,
+        "missing_test_components": false,
+        "has_repository_dependencies": false,
+        "includes_datatypes": false,
+        "includes_tools": true,
+        "includes_tool_dependencies": true,
+        "includes_tools_for_display_in_tool_panel": true,
+        "includes_workflows": false,
+        "repository": {
+            "model_class": "Repository",
+            "id": "529fd61ab1c6cc36",
+            "name": "testbismarkif6fzmt0oq",
+            "type": "unrestricted",
+            "remote_repository_url": null,
+            "homepage_url": null,
+            "description": "testbismarketoqj9rljt",
+            "user_id": "adb5f5c93f827949",
+            "private": false,
+            "deleted": false,
+            "times_downloaded": 0,
+            "deprecated": false,
+            "create_time": "2026-01-31T21:06:49.870267",
+            "update_time": "2026-01-31T21:06:49.870275",
+            "owner": "user--bx--psu--edu"
+        },
+        "repository_dependencies": [],
+        "tools": [
+            {
+                "add_to_tool_panel": true,
+                "description": "methylation extractor",
+                "guid": "127.0.0.1:9622/repos/user--bx--psu--edu/testbismarkif6fzmt0oq/bismark_methylation_extractor/0.7.7.3",
+                "id": "bismark_methylation_extractor",
+                "name": "Bismark",
+                "profile": 16.01,
+                "requirements": [
+                    {
+                        "name": "SCRIPT_PATH",
+                        "type": "set_environment",
+                        "version": null
+                    },
+                    {
+                        "name": "bowtie",
+                        "type": "package",
+                        "version": "0.12.8"
+                    },
+                    {
+                        "name": "bowtie2",
+                        "type": "package",
+                        "version": "2.0.0-beta7"
+                    }
+                ],
+                "tests": [],
+                "tool_config": "/private/var/folders/1d/bs7mkcjx4t79x1rgbr2ns5br5ng4yk/T/tmps6x53uus/tmpbbvbl8yc/database/files/000/repo_2/bismark/bismark_methylation_extractor.xml",
+                "tool_type": "default",
+                "version": "0.7.7.3",
+                "version_string_cmd": null
+            }
+        ],
+        "invalid_tools": ["bismark_bowtie_wrapper.xml", "bismark_bowtie2_wrapper.xml"]
+    }
+}

@@ -239,6 +239,7 @@ def setup_galaxy_config(
         job_handler_monitor_sleep=0.2,
         job_runner_monitor_sleep=0.2,
         workflow_monitor_sleep=0.2,
+        workflow_completion_monitor_sleep=1.0,
     )
     if default_shed_tool_data_table_config:
         config["shed_tool_data_table_config"] = default_shed_tool_data_table_config
@@ -290,6 +291,7 @@ backends:
     # Used by shed's twill dependency stuff
     # TODO: read from Galaxy's config API.
     os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir or os.path.join(tmpdir, "dependencies")
+
     return config
 
 

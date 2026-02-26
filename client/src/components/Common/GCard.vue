@@ -681,8 +681,8 @@ function onKeyDown(event: KeyboardEvent) {
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
-@import "_breakpoints.scss";
+@import "@/style/scss/theme/blue.scss";
+@import "@/style/scss/_breakpoints.scss";
 
 .g-card {
     container: g-card / inline-size;

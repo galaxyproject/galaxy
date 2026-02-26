@@ -204,12 +204,10 @@ def test_determine_output_format():
     # Test change_format but no match
     __assert_output_format_is("fastq", change_format_output, param_context={"options_type": {"output_type": "sanger"}})
 
-    change_on_metadata_xml_template = string.Template(
-        """<data><change_format>
+    change_on_metadata_xml_template = string.Template("""<data><change_format>
         <when input_dataset="${input}" attribute="random_field" value="1" format="fastqsolexa" />
         <when input_dataset="${input}" attribute="random_field" value="2" format="fastqillumina" />
-    </change_format></data>"""
-    )
+    </change_format></data>""")
 
     change_on_metadata_illumina = change_on_metadata_xml_template.safe_substitute({"input": "i2"})
     change_on_metadata_output = quick_output("fastq", change_format_xml=change_on_metadata_illumina)

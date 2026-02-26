@@ -209,7 +209,7 @@ class LibraryActions:
     def _get_path_paste_uploaded_datasets(self, trans, params, library_bunch, response_code, message):
         preserve_dirs = util.string_as_bool(params.get("preserve_dirs", False))
         uploaded_datasets = []
-        (files_and_folders, _response_code, _message) = self._get_path_files_and_folders(params, preserve_dirs)
+        files_and_folders, _response_code, _message = self._get_path_files_and_folders(params, preserve_dirs)
         if _response_code:
             return (uploaded_datasets, _response_code, _message)
         for path, name, folder in files_and_folders:

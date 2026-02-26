@@ -10,14 +10,16 @@ import os
 import re
 import tarfile
 import tempfile
-from collections.abc import MutableMapping
+from collections.abc import (
+    MutableMapping,
+    Sequence,
+)
 from pathlib import Path
 from typing import (
     Any,
     cast,
     NamedTuple,
     Optional,
-    Sequence,
     TYPE_CHECKING,
     Union,
 )
@@ -37,6 +39,7 @@ from galaxy import (
     model,
 )
 from galaxy.exceptions import (
+    RequestParameterInvalidException,
     ToolInputsNotOKException,
     ToolInputsNotReadyException,
 )
@@ -52,11 +55,15 @@ from galaxy.model import (
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    InpDataDictT,
     Job,
     JobToOutputDatasetAssociation,
+    OutDataDictT,
     StoredWorkflow,
+    ToolRequest,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.model.dataset_collections.types.sample_sheet_workbook import _sample_sheet_to_list_collection_type
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
@@ -79,8 +86,10 @@ from galaxy.tool_util.ontologies.ontology_data import (
 )
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parameters import (
+    fill_static_defaults,
     input_models_for_pages,
-    ToolParameterBundle,
+    JobInternalToolState,
+    RequestInternalDereferencedToolState,
 )
 from galaxy.tool_util.parser import (
     get_tool_source,
@@ -117,6 +126,11 @@ from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
 )
+from galaxy.tool_util_models.parameters import (
+    MaybeToolParameterBundle,
+    ToolParameterBundleModel,
+    ToolParameterT,
+)
 from galaxy.tool_util_models.tool_source import (
     FileSourceConfigFile,
     HelpContent,
@@ -137,12 +151,14 @@ from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
 from galaxy.tools.parameters import (
     check_param,
+    fill_dynamic_defaults,
     params_from_strings,
     params_to_incoming,
     params_to_json,
     params_to_json_internal,
     params_to_strings,
     populate_state,
+    populate_state_async,
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
@@ -169,7 +185,10 @@ from galaxy.tools.parameters.grouping import (
     UploadDataset,
 )
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
-from galaxy.tools.parameters.meta import expand_meta_parameters
+from galaxy.tools.parameters.meta import (
+    expand_meta_parameters,
+    expand_meta_parameters_async,
+)
 from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.tools.parameters.wrapped_json import json_wrap
@@ -214,6 +233,7 @@ from ._types import (
     ToolRequestT,
     ToolStateDumpedToJsonInternalT,
     ToolStateDumpedToJsonT,
+    ToolStateJobInstanceExpansionT,
     ToolStateJobInstancePopulatedT,
     ToolStateJobInstanceT,
 )
@@ -224,7 +244,8 @@ from .execute import (
     DEFAULT_RERUN_REMAP_JOB_ID,
     DEFAULT_SET_OUTPUT_HID,
     DEFAULT_USE_CACHED_JOB,
-    execute as execute_job,
+    execute as execute_sync,
+    execute_async,
     ExecutionSlice,
     JobCallbackT,
     MappingParameters,
@@ -234,6 +255,8 @@ if TYPE_CHECKING:
     from sqlalchemy.orm.scoping import scoped_session
 
     from galaxy.app import UniverseApplication
+    from galaxy.jobs import JobToolConfiguration
+    from galaxy.jobs.job_destination import JobDestination
     from galaxy.managers.context import ProvidesUserContext
     from galaxy.managers.jobs import JobSearch
     from galaxy.model import (
@@ -366,6 +389,18 @@ class safe_update(NamedTuple):
     current_version: Union[LegacyVersion, Version]
 
 
+class RawToolSource(NamedTuple):
+    """Compact representation of a tool's raw source for transport/serialization.
+
+    Attributes:
+        raw_tool_source: String form of the tool source (typically XML or YAML).
+        tool_source_class: The class name of the ToolSource implementation (e.g., 'XmlToolSource').
+    """
+
+    raw_tool_source: str
+    tool_source_class: str
+
+
 # Tool updates that did not change parameters in a way that requires rebuilding workflows
 WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     "Filter1": safe_update(parse_version("1.1.0"), parse_version("1.1.1")),
@@ -409,16 +444,17 @@ class ToolNotFoundException(Exception):
 
 def create_tool_from_source(app, tool_source: ToolSource, config_file: Optional[StrPath] = None, **kwds):
     # Allow specifying a different tool subclass to instantiate
+    ToolClass: Optional[type[Tool]] = None
     if tool_source.parse_class() == "GalaxyUserTool":
-        return UserDefinedTool(config_file, tool_source, app, **kwds)
-    if (tool_module := tool_source.parse_tool_module()) is not None:
+        ToolClass = UserDefinedTool
+    elif (tool_module := tool_source.parse_tool_module()) is not None:
         module, cls = tool_module
         mod = __import__(module, globals(), locals(), [cls])
         ToolClass = getattr(mod, cls)
         assert issubclass(ToolClass, Tool)
     elif tool_type := tool_source.parse_tool_type():
         ToolClass = tool_types.get(tool_type)
-        if not ToolClass:
+        if ToolClass is None:
             if tool_type == "cwl":
                 raise ToolLoadError("Runtime support for CWL tools is not implemented currently")
             else:
@@ -546,12 +582,22 @@ class ToolBox(AbstractToolBox):
         section = ToolSection({"name": "Built-in Converters", "id": id})
         self._tool_panel[id] = section
 
+        # Create a separate section for the integrated tool panel as well
+        # (so panel views that include the section id "builtin_converters" will get this section from the integrated tool panel)
+        integrated_section = ToolSection({"name": "Built-in Converters", "id": id})
+        self._integrated_tool_panel[id] = integrated_section
+
         converters = {
             tool for target in self.app.datatypes_registry.datatype_converters.values() for tool in target.values()
         }
         for tool in converters:
             tool.hidden = False
             section.elems.append_tool(tool)
+            integrated_section.elems.append_tool(tool)
+
+        # Load panel views so built in converter sections are included in panel views that have the id "builtin_converters"
+        if self.app.name == "galaxy":
+            self._load_tool_panel_views()
 
     def can_load_config_file(self, config_filename):
         if config_filename == self.app.config.shed_tool_config_file and not self.app.config.is_set(
@@ -985,12 +1031,12 @@ class JobContext(BaseJobContext):
         return self.job.implicit_collection_jobs_association and self.job.implicit_collection_jobs_association.id
 
 
-class Tool(UsesDictVisibleKeys, ToolParameterBundle):
+class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
 
-    job_tool_configurations: list
+    job_tool_configurations: list["JobToolConfiguration"]
     tool_type = "default"
     requires_setting_metadata = True
     produces_entry_points = False
@@ -1079,6 +1125,10 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.credentials: Optional[list[CredentialsRequirement]] = None
         self._is_workflow_compatible = None
         self.__tests: Optional[str] = None
+        self.parameters: Optional[list[ToolParameterT]] = None
+        self.template_macro_params: dict = {}
+        self._macro_paths: list = []
+        self.ports: list = []
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
@@ -1213,7 +1263,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             )
             return legacy_tool
 
-    def __get_job_tool_configuration(self, job_params=None):
+    def __get_job_tool_configuration(self, job_params: Union[dict, None] = None) -> "JobToolConfiguration":
         """Generalized method for getting this tool's job configuration.
 
         :type job_params: dict or None
@@ -1246,22 +1296,19 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         ), f"Could not get a job tool configuration for Tool {self.id} with job_params {job_params}, this is a bug"
         return rval
 
-    def get_configured_job_handler(self, job_params=None):
-        """Get the configured job handler for this `Tool` given the provided `job_params`.
+    def get_configured_job_handler(self) -> Union[str, None]:
+        """Get the configured job handler for this `Tool`.
 
         Unlike the former ``get_job_handler()`` method, this does not perform "preassignment" (random selection of
         a configured handler ID from a tag).
 
-        :param job_params: Any params specific to this job (e.g. the job source)
-        :type job_params: dict or None
-
         :returns: str or None -- The configured handler for a job run of this `Tool`
         """
-        return self.__get_job_tool_configuration(job_params=job_params).handler
+        return self.__get_job_tool_configuration().handler
 
-    def get_job_destination(self, job_params=None):
+    def get_job_destination(self, job_params: Union[dict, None] = None) -> "JobDestination":
         """
-        :returns: galaxy.jobs.JobDestination -- The destination definition and runner parameters.
+        :returns: The destination definition and runner parameters.
         """
         return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
 
@@ -1402,7 +1449,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         # In the toolshed context, there is no job config.
         if hasattr(self.app, "job_config"):
             # Order of this list must match documentation in job_conf.sample_advanced.yml
-            tool_classes = []
+            tool_classes: list[str] = []
             if self.tool_type_local:
                 tool_classes.append("local")
             elif self.old_id in ["upload1", "__DATA_FETCH__"]:
@@ -1471,6 +1518,17 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.javascript_requirements = javasscript_requirements
         self.credentials = credentials
 
+        # Add credential inject_as_env names to docker_env_pass_through
+        # so they are passed into containerized environments (Docker -e, Singularity SINGULARITYENV_)
+        if self.credentials:
+            if not self.docker_env_pass_through:
+                self.docker_env_pass_through = []
+            for credential in self.credentials:
+                for secret in credential.secrets:
+                    self.docker_env_pass_through.append(secret.inject_as_env)
+                for variable in credential.variables:
+                    self.docker_env_pass_through.append(variable.inject_as_env)
+
         required_files = tool_source.parse_required_files()
         if required_files is None:
             old_id = self.old_id
@@ -1497,7 +1555,6 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             self.edam_operations = None
             self.edam_topics = None
 
-        self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths
         self.ports = tool_source.parse_interactivetool()
@@ -1558,18 +1615,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self.config_files.extend(tool_source.parse_template_configfiles())
         self.config_files.extend(tool_source.parse_file_sources())
 
-    def __parse_trackster_conf(self, tool_source):
-        self.trackster_conf = None
-        if not hasattr(tool_source, "root"):
-            return
-
-        # Trackster configuration.
-        if (trackster_conf := tool_source.root.find("trackster_conf")) is not None:
-            self.trackster_conf = TracksterConfig.parse(trackster_conf)
-
     def parse_tests(self):
         if self.tool_source:
-            test_descriptions = parse_tool_test_descriptions(self.tool_source, self.id)
+            test_descriptions = parse_tool_test_descriptions(self.tool_source, self.id, self.parameters)
             try:
                 self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
             except Exception:
@@ -1739,6 +1787,16 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         Parse <outputs> elements and fill in self.outputs (keyed by name)
         """
         self.outputs, self.output_collections = tool_source.parse_outputs(self.app)
+
+    def to_raw_tool_source(self) -> RawToolSource:
+        """Return a compact representation of this tool's source for external processing.
+
+        Provides both the raw tool source string and the concrete ToolSource class name.
+        """
+        return RawToolSource(
+            raw_tool_source=self.tool_source.to_string(),
+            tool_source_class=type(self.tool_source).__name__,
+        )
 
     # TODO: Include the tool's name in any parsing warnings.
     def parse_stdio(self, tool_source: ToolSource):
@@ -2072,6 +2130,67 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         if self.check_values:
             visit_input_values(self.inputs, values, callback)
 
+    def expand_incoming_async(
+        self,
+        request_context: WorkRequestContext,
+        tool_request_internal_state: RequestInternalDereferencedToolState,
+        rerun_remap_job_id: Optional[int],
+    ) -> tuple[
+        list[ToolStateJobInstancePopulatedT],
+        list[ParameterValidationErrorsT],
+        Optional[MatchingCollections],
+        list[JobInternalToolState],
+    ]:
+        """The tool request API+tasks version of expand_incoming.
+
+        This is responsible for breaking the map over job requests into individual jobs for execution.
+        """
+        if self.input_translator:
+            raise exceptions.RequestParameterInvalidException(
+                "Failure executing tool request with id '%s' (cannot validate inputs from this type of data source tool - please POST to /api/tools).",
+                self.id,
+            )
+
+        set_dataset_matcher_factory(request_context, self)
+
+        expanded_incomings: list[ToolStateJobInstanceExpansionT]
+        job_tool_states: list[ToolStateJobInstanceT]
+        collection_info: Optional[MatchingCollections]
+        expanded_incomings, job_tool_states, collection_info = expand_meta_parameters_async(
+            request_context.app, self, tool_request_internal_state
+        )
+
+        self._ensure_expansion_is_valid(job_tool_states, rerun_remap_job_id)
+
+        # Process incoming data
+        validation_timer = self.app.execution_timer_factory.get_timer(
+            "internals.galaxy.tools.validation",
+            "Validated and populated state for tool request",
+        )
+        all_errors = []
+        all_params: list[ToolStateJobInstancePopulatedT] = []
+        internal_states: list[JobInternalToolState] = []
+        if self.parameters is None:
+            raise RequestParameterInvalidException(f"Tool {self.id} has no parameters defined")
+        parameter_bundle = ToolParameterBundleModel(parameters=self.parameters)
+        for expanded_incoming, job_tool_state in zip(expanded_incomings, job_tool_states):
+            expanded_incoming = fill_static_defaults(expanded_incoming, parameter_bundle, self.profile)
+            job_tool_state = fill_static_defaults(job_tool_state, parameter_bundle, self.profile)
+            params, errors = self._populate_async(request_context, expanded_incoming)
+            # params have had dynamic defaults requiring like dataset contents expanded out
+            # so we can use that backfill job_tool_state
+            fill_dynamic_defaults(request_context, self.inputs, job_tool_state, params)
+            internal_tool_state = JobInternalToolState(job_tool_state)
+            internal_tool_state.validate(parameter_bundle, f"{self.id} (job internal model)")
+
+            internal_states.append(internal_tool_state)
+            all_errors.append(errors)
+            all_params.append(params)
+        unset_dataset_matcher_factory(request_context)
+
+        log.info(validation_timer)
+        return all_params, all_errors, collection_info, internal_states
+
     def expand_incoming(
         self, request_context: WorkRequestContext, incoming: ToolRequestT, input_format: InputFormatT = "legacy"
     ) -> tuple[
@@ -2084,7 +2203,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         set_dataset_matcher_factory(request_context, self)
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
-        expanded_incomings: list[ToolStateJobInstanceT]
+        expanded_incomings: list[ToolStateJobInstanceExpansionT]
         collection_info: Optional[MatchingCollections]
         expanded_incomings, collection_info = expand_meta_parameters(
             request_context, self, incoming, input_format=input_format
@@ -2110,7 +2229,9 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
     def _ensure_expansion_is_valid(
-        self, expanded_incomings: list[ToolStateJobInstanceT], rerun_remap_job_id: Optional[int]
+        self,
+        expanded_incomings: Union[list[JobInternalToolState], list[ToolStateJobInstanceT]],
+        rerun_remap_job_id: Optional[int],
     ) -> None:
         """If the request corresponds to multiple jobs but this doesn't work with request configuration - raise an error.
 
@@ -2159,6 +2280,33 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             self._handle_validate_input_hook(request_context, params, errors)
         return params, errors
 
+    def _populate_async(
+        self, request_context, expanded_incoming: ToolStateJobInstanceT
+    ) -> tuple[ToolStateJobInstancePopulatedT, ParameterValidationErrorsT]:
+        """Validate expanded parameters for a job to replace references with model objects.
+
+        So convert a ToolStateJobInstanceT to a ToolStateJobInstancePopulatedT.
+        """
+        params: ToolStateJobInstancePopulatedT = {}
+        errors: ParameterValidationErrorsT = {}
+        if self.input_translator:
+            self.input_translator.translate(expanded_incoming)
+        if not self.check_values:
+            # If `self.check_values` is false we don't do any checking or
+            # processing on input  This is used to pass raw values
+            # through to/from external sites.
+            params = expanded_incoming
+        else:
+            populate_state_async(
+                request_context,
+                self.inputs,
+                expanded_incoming,
+                params,
+                errors,
+            )
+            self._handle_validate_input_hook(request_context, params, errors)
+        return params, errors
+
     def _handle_validate_input_hook(
         self, request_context, params: ToolStateJobInstancePopulatedT, errors: ParameterValidationErrorsT
     ) -> None:
@@ -2195,6 +2343,41 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                 completed_jobs[i] = None
         return completed_jobs
 
+    def handle_input_async(
+        self,
+        request_context: WorkRequestContext,
+        tool_request: ToolRequest,
+        tool_state: RequestInternalDereferencedToolState,
+        history: Optional[model.History] = None,
+        use_cached_job: bool = DEFAULT_USE_CACHED_JOB,
+        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        rerun_remap_job_id: Optional[int] = None,
+        credentials_context: Optional[CredentialsContext] = None,
+        input_format: str = "legacy",
+    ):
+        """The tool request API+tasks version of handle_input."""
+        all_params, all_errors, collection_info, job_tool_states = self.expand_incoming_async(
+            request_context, tool_state, rerun_remap_job_id
+        )
+        self.handle_incoming_errors(all_errors)
+
+        mapping_params = MappingParameters(tool_request.request, all_params, tool_state, job_tool_states)
+        completed_jobs: dict[int, Optional[model.Job]] = self.completed_jobs(
+            request_context, use_cached_job, all_params
+        )
+        execute_async(
+            request_context,
+            self,
+            mapping_params,
+            request_context.history,
+            tool_request,
+            completed_jobs,
+            rerun_remap_job_id=rerun_remap_job_id,
+            preferred_object_store_id=preferred_object_store_id,
+            credentials_context=credentials_context,
+            collection_info=collection_info,
+        )
+
     def handle_input(
         self,
         trans,
@@ -2220,11 +2403,11 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         # If there were errors, we stay on the same page and display them
         self.handle_incoming_errors(all_errors)
 
-        mapping_params = MappingParameters(incoming, all_params)
+        mapping_params = MappingParameters(incoming, all_params, None, None)
         if use_cached_job:
             mapping_params.param_template["__use_cached_job__"] = use_cached_job
         completed_jobs: dict[int, Optional[Job]] = self.completed_jobs(trans, use_cached_job, all_params)
-        execution_tracker = execute_job(
+        execution_tracker = execute_sync(
             trans,
             self,
             mapping_params,
@@ -2310,6 +2493,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             rval = self._execute(
                 trans,
                 incoming=execution_slice.param_combination,
+                validated_parameters=execution_slice.validated_param_combination,
                 history=history,
                 rerun_remap_job_id=rerun_remap_job_id,
                 execution_cache=execution_cache,
@@ -2427,6 +2611,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         self,
         trans,
         incoming: Optional[ToolStateJobInstancePopulatedT] = None,
+        validated_parameters: Optional[JobInternalToolState] = None,
         history: Optional[History] = None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
         execution_cache: Optional[ToolExecutionCache] = None,
@@ -2641,7 +2826,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             e.args = (f"Error in '{self.name}' hook '{hook_name}', original message: {original_message}",)
             raise
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         pass
 
     def exec_after_process(self, app, inp_data, out_data, param_dict, job, final_job_state: Optional[str] = None):
@@ -3156,7 +3341,7 @@ class OutputParameterJSONTool(Tool):
                 rval[key] = str(value)
         return rval
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         if param_dict is None:
             param_dict = {}
         json_params = {}
@@ -3228,7 +3413,7 @@ class ExpressionTool(Tool):
                 message = "Expression tools may not declare output datasets at this time."
                 raise Exception(message)
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         super().exec_before_job(app, inp_data, out_data, param_dict=param_dict)
         local_working_directory = param_dict["__local_working_directory__"]
         expression_inputs_path = os.path.join(local_working_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
@@ -3350,7 +3535,7 @@ class DataSourceTool(OutputParameterJSONTool):
             self.inputs["GALAXY_URL"] = self._build_GALAXY_URL_parameter()
             self.inputs_by_page[0]["GALAXY_URL"] = self.inputs["GALAXY_URL"]
 
-    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+    def exec_before_job(self, app, inp_data: InpDataDictT, out_data: OutDataDictT, param_dict=None):
         if param_dict is None:
             param_dict = {}
         dbkey = param_dict.get("dbkey")
@@ -4671,6 +4856,66 @@ class DuplicateFileToCollectionTool(DatabaseOperationTool):
         )
 
 
+class ConvertSampleSheetTool(DatabaseOperationTool):
+    """Convert a sample sheet collection back to its corresponding non-sample-sheet type.
+
+    This tool strips the sample sheet metadata (column_definitions and row columns)
+    and converts the collection type from sample_sheet variants to list variants.
+    """
+
+    tool_type = "convert_sample_sheet"
+    require_terminal_states = False
+    require_dataset_ok = False
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        has_collection = incoming["input"]
+        if hasattr(has_collection, "element_type"):
+            # It is a DCE
+            collection = has_collection.element_object
+        else:
+            # It is an HDCA
+            collection = has_collection.collection
+
+        input_collection_type = collection.collection_type
+        output_collection_type = _sample_sheet_to_list_collection_type(input_collection_type)
+
+        new_elements: dict[str, Any] = {}
+        copied_datasets = []
+
+        def copy_elements(source_collection, target_dict):
+            for dce in source_collection.elements:
+                element_identifier = dce.element_identifier
+                dce_object = dce.element_object
+                if dce.is_collection:
+                    # Handle nested collections (e.g., paired within sample_sheet:paired)
+                    sub_collection: dict[str, Any] = {}
+                    sub_collection["src"] = "new_collection"
+                    sub_collection["collection_type"] = dce_object.collection_type
+                    sub_elements = {}
+                    for sub_dce in dce_object.elements:
+                        sub_element_identifier = sub_dce.element_identifier
+                        sub_dce_object = sub_dce.element_object
+                        copied_dataset = sub_dce_object.copy(copy_tags=sub_dce_object.tags, flush=False)
+                        sub_elements[sub_element_identifier] = copied_dataset
+                        copied_datasets.append(copied_dataset)
+                    sub_collection["elements"] = sub_elements
+                    target_dict[element_identifier] = sub_collection
+                else:
+                    copied_dataset = dce_object.copy(copy_tags=dce_object.tags, flush=False)
+                    target_dict[element_identifier] = copied_dataset
+                    copied_datasets.append(copied_dataset)
+
+        copy_elements(collection, new_elements)
+        self._add_datasets_to_history(history, copied_datasets)
+        output_collections.create_collection(
+            next(iter(self.outputs.values())),
+            "output",
+            collection_type=output_collection_type,
+            elements=new_elements,
+            propagate_hda_tags=False,
+        )
+
+
 # Populate tool_type to ToolClass mappings
 TOOL_CLASSES: list[type[Tool]] = [
     Tool,
@@ -4690,6 +4935,7 @@ TOOL_CLASSES: list[type[Tool]] = [
     BuildListCollectionTool,
     ExtractDatasetCollectionTool,
     DataDestinationTool,
+    ConvertSampleSheetTool,
 ]
 tool_types = {tool_class.tool_type: tool_class for tool_class in TOOL_CLASSES}
 
@@ -4707,20 +4953,6 @@ def _rerun_remap_job_id(trans, incoming, tool_id: Optional[str]) -> Optional[int
                 "Failure executing tool with id '%s' (attempting to rerun invalid job).", tool_id
             )
     return rerun_remap_job_id
-
-
-class TracksterConfig:
-    """Trackster configuration encapsulation."""
-
-    def __init__(self, actions):
-        self.actions = actions
-
-    @staticmethod
-    def parse(root):
-        actions = []
-        for action_elt in root.findall("action"):
-            actions.append(SetParamAction.parse(action_elt))
-        return TracksterConfig(actions)
 
 
 class SetParamAction:

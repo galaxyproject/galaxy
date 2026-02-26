@@ -213,7 +213,7 @@ def __main__():
         help="output a random best scoring alignment",
     )
 
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     # output version # of tool
     try:

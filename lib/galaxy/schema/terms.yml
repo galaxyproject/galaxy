@@ -274,6 +274,12 @@ galaxy:
       splitObjectStore:
         Enabling this option allows you to select and send outputs and intermediate datasets to different storage
         locations independently of each other.
+      sendNotification:
+        Enabling this option will send you a notification when the workflow invocation completes. This is useful
+        for long-running workflows so you can be alerted when results are ready.
+      exportOnComplete:
+        Enabling this option will automatically export the workflow results to a remote file source when the
+        invocation completes. You can configure the destination and format in the export wizard.
 
   tools:
     ontologies:

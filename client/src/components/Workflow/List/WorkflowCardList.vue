@@ -123,8 +123,8 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             @on-workflow-card-click="(...args) => emit('on-workflow-card-click', ...args)" />
 
         <WorkflowRename
+            v-if="showRename"
             :id="modalOptions.rename.id"
-            :show="showRename"
             :name="modalOptions.rename.name"
             @close="onRenameClose" />
 
@@ -165,8 +165,8 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 </style>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
-@import "_breakpoints.scss";
+@import "@/style/scss/theme/blue.scss";
+@import "@/style/scss/_breakpoints.scss";
 
 .workflow-card-list {
     container: cards-list / inline-size;

@@ -1,6 +1,7 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
+
+import { getAppRoot } from "@/onload/loadConfig";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import { toSimple } from "./model";
 
@@ -22,20 +23,6 @@ export async function getModule(request_data, stepId, setLoadingState) {
         return data;
     } catch (e) {
         setLoadingState(stepId, false, errorMessageAsString(e));
-        rethrowSimple(e);
-    }
-}
-
-export async function refactor(id, actions, dryRun = false) {
-    try {
-        const requestData = {
-            actions: actions,
-            style: "editor",
-            dry_run: dryRun,
-        };
-        const { data } = await axios.put(`${getAppRoot()}api/workflows/${id}/refactor`, requestData);
-        return data;
-    } catch (e) {
         rethrowSimple(e);
     }
 }

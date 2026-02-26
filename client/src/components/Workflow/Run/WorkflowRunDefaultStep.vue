@@ -19,9 +19,9 @@
                     :replace-params="replaceParams"
                     :validation-scroll-to="validationScrollTo"
                     collapsed-enable-text="Edit"
-                    collapsed-enable-icon="fa fa-edit"
+                    :collapsed-enable-icon="faEdit"
                     collapsed-disable-text="Undo"
-                    collapsed-disable-icon="fa fa-undo"
+                    :collapsed-disable-icon="faUndo"
                     @onChange="onChange"
                     @onValidation="onValidation" />
             </template>
@@ -30,23 +30,20 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faKey, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "app";
-import FormCard from "components/Form/FormCard";
-import FormDisplay from "components/Form/FormDisplay";
-import FormMessage from "components/Form/FormMessage";
-import { visitInputs } from "components/Form/utilities";
-import WorkflowIcons from "components/Workflow/icons";
 import { mapState } from "pinia";
-import { useHistoryItemsStore } from "stores/historyItemsStore";
+
+import { visitInputs } from "@/components/Form/utilities";
+import WorkflowIcons from "@/components/Workflow/icons";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 
 import { getTool } from "./services";
 
+import FormCard from "@/components/Form/FormCard.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import FormMessage from "@/components/Form/FormMessage.vue";
 import ToolCredentials from "@/components/Tool/ToolCredentials.vue";
-
-library.add(faEdit, faUndo);
 
 export default {
     components: {
@@ -76,7 +73,9 @@ export default {
     },
     data() {
         return {
+            faEdit,
             faKey,
+            faUndo,
             expanded: this.model.expanded,
             errorText: null,
             modelData: {},
@@ -122,10 +121,7 @@ export default {
             });
         },
         onHistoryChange() {
-            const Galaxy = getGalaxyInstance();
-            if (Galaxy && Galaxy.currHistoryPanel) {
-                this.onUpdate();
-            }
+            this.onUpdate();
         },
         onChange(data, refreshRequest) {
             this.modelData = data;

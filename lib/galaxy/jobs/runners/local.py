@@ -27,6 +27,7 @@ from .util.process_groups import (
 )
 
 if TYPE_CHECKING:
+    from galaxy.app import GalaxyManagerApplication
     from galaxy.jobs import MinimalJobWrapper
 
 log = logging.getLogger(__name__)
@@ -46,15 +47,15 @@ class LocalJobRunner(BaseJobRunner):
 
     runner_name = "LocalRunner"
 
-    def __init__(self, app, nworkers):
+    def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
         """Start the job runner"""
 
         self._proc_lock = threading.Lock()
-        self._procs = []
+        self._procs: list[subprocess.Popen] = []
 
         self._environ = new_clean_env()
 
-        super().__init__(app, nworkers)
+        super().__init__(app, nworkers, **kwargs)
 
     def _command_line(self, job_wrapper: "MinimalJobWrapper") -> tuple[str, str]:
         """ """
@@ -82,7 +83,7 @@ class LocalJobRunner(BaseJobRunner):
         self.write_executable_script(job_file, job_file_contents, job_io=job_wrapper.job_io)
         return job_file, exit_code_path
 
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         if not self._prepare_job_local(job_wrapper):
             return
 
@@ -109,7 +110,8 @@ class LocalJobRunner(BaseJobRunner):
                 preexec_fn=os.setpgrp,
             )
 
-            proc.terminated_by_shutdown = False
+            # Add custom attribute to track if the job was terminated by a shutdown
+            proc.terminated_by_shutdown = False  # type: ignore[attr-defined]
             with self._proc_lock:
                 self._procs.append(proc)
 
@@ -130,7 +132,7 @@ class LocalJobRunner(BaseJobRunner):
                 with self._proc_lock:
                     self._procs.remove(proc)
 
-            if proc.terminated_by_shutdown:
+            if proc.terminated_by_shutdown:  # type: ignore[attr-defined]
                 self._fail_job_local(job_wrapper, "job terminated by Galaxy shutdown")
                 return
 
@@ -175,17 +177,17 @@ class LocalJobRunner(BaseJobRunner):
         log.debug("stop_job(): %s: Terminating process group %d", job.id, pid)
         kill_pg(pid)
 
-    def recover(self, job, job_wrapper):
+    def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
         # local jobs can't be recovered
         job_wrapper.change_state(
             model.Job.states.ERROR, info="This job was killed when Galaxy was restarted.  Please retry the job."
         )
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         super().shutdown()
         with self._proc_lock:
             for proc in self._procs:
-                proc.terminated_by_shutdown = True
+                proc.terminated_by_shutdown = True  # type: ignore[attr-defined]
                 kill_pg(proc.pid)
                 proc.wait()  # reap
 

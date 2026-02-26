@@ -14,7 +14,7 @@ jobs:
     name: Build container image for GHCR
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
@@ -105,33 +105,46 @@ jobs:
         run: |
           version=$(python3 -c "import lib.galaxy.version; print(lib.galaxy.version.VERSION)")
           echo "version=$version" >> $GITHUB_OUTPUT
-      - name: Build container image
-        run: docker build . --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg IMAGE_TAG=${{ steps.branch.outputs.name }} -t galaxy/galaxy-min:${{ steps.branch.outputs.name }} -t quay.io/galaxyproject/galaxy-min:${{ steps.branch.outputs.name }} -f .k8s_ci.Dockerfile
-      - name: Create auto-expiring one for per-commit auto repository
-        run: echo "FROM galaxy/galaxy-min:${{ steps.branch.outputs.name }}" | docker build --label "quay.expires-after"="90d" -t "quay.io/galaxyproject/galaxy-k8s-auto:${{ steps.commit.outputs.sha_short }}" -
+      - name: Build args
+        id: buildargs
+        run: |
+          echo "gitcommit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "builddate=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Login to quay.io
-        uses: actions-hub/docker/login@master
-        env:
-          DOCKER_USERNAME: ${{ secrets.QUAY_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
-          DOCKER_REGISTRY_URL: quay.io
-      - name: Push to quay.io with branch name
-        uses: actions-hub/docker@master
+        uses: docker/login-action@v3
         with:
-          args: push quay.io/galaxyproject/galaxy-min:${{ steps.branch.outputs.name }}
-      - name: Push to quay.io with commit hash
-        uses: actions-hub/docker@master
-        with:
-          args: push quay.io/galaxyproject/galaxy-k8s-auto:${{ steps.commit.outputs.sha_short }}
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
       - name: Login to DockerHub
-        uses: actions-hub/docker/login@master
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Push to DockerHub with branch name
-        uses: actions-hub/docker@master
+        uses: docker/login-action@v3
         with:
-          args: push galaxy/galaxy-min:${{ steps.branch.outputs.name }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Build and push galaxy-min image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .k8s_ci.Dockerfile
+          push: true
+          build-args: |
+            GIT_COMMIT=${{ steps.buildargs.outputs.gitcommit }}
+            BUILD_DATE=${{ steps.buildargs.outputs.builddate }}
+            IMAGE_TAG=${{ steps.branch.outputs.name }}
+          tags: |
+            galaxy/galaxy-min:${{ steps.branch.outputs.name }}
+            quay.io/galaxyproject/galaxy-min:${{ steps.branch.outputs.name }}
+      - name: Create Dockerfile for auto-expiring image
+        run: echo "FROM galaxy/galaxy-min:${{ steps.branch.outputs.name }}" > /tmp/Dockerfile.auto
+      - name: Build and push auto-expiring per-commit image
+        uses: docker/build-push-action@v6
+        with:
+          file: /tmp/Dockerfile.auto
+          push: true
+          tags: quay.io/galaxyproject/galaxy-k8s-auto:${{ steps.commit.outputs.sha_short }}
+          labels: quay.expires-after=90d
 
   smoke-test:
     name: Try installing the new image
@@ -169,9 +182,6 @@ jobs:
           --set persistence.accessMode="ReadWriteOnce" \
           --set resources.requests.memory=0Mi,resources.requests.cpu=0m \
           --set image.tag=${{ needs.build.outputs.tag }} \
-          --set webHandlers.startupProbe.initialDelaySeconds=120 \
-          --set webHandlers.startupProbe.periodSeconds=15 \
-          --set webHandlers.startupProbe.failureThreshold=72 \
           --wait \
           --timeout=1200s
       - name: Debug deployment on failure
@@ -227,6 +237,19 @@ jobs:
           if [ "$appVersion" != "$apiVersion" ]; then
             exit 1
           fi
+      - name: Check client build is served
+        run: |
+          base_url=$(kubectl get svc -n galaxy galaxy-nginx -o jsonpath="http://{.spec.clusterIP}:{.spec.ports[0].port}")
+          css_url="${base_url}/galaxy/static/dist/base.css"
+          echo "Checking client build at $css_url"
+          status_code=$(curl -s -o /dev/null -w "%{http_code}" "$css_url")
+          echo "Status code: $status_code"
+          if [ "$status_code" != "200" ]; then
+            echo "ERROR: Failed to fetch base.css (status: $status_code)"
+            echo "This indicates the client build was not properly included in the image"
+            exit 1
+          fi
+          echo "Client build is properly served"
 
   pr:
     name: Create a PR to update the Galaxy Helm chart when a release is tagged
@@ -238,8 +261,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: galaxyproject/galaxy-helm
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true
+          persist-credentials: false
 
       - name: Update Chart.yaml appVersion
         run: |
@@ -250,7 +272,7 @@ jobs:
           sed -i "s/^  tag:.*/  tag: \"${{ needs.build.outputs.tag }}\"/" galaxy/values.yaml
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GALAXY_HELM_PULL_REQUEST_TOKEN }}
           commit-message: "Update Galaxy to version ${{ needs.build.outputs.version }}"
@@ -267,3 +289,72 @@ jobs:
           delete-branch: true
           labels: patch
 
+  notify-failure:
+    name: Notify Slack on failure
+    runs-on: ubuntu-latest
+    needs: [build, smoke-test]
+    if: ${{ always() && (needs.build.result == 'failure' || needs.smoke-test.result == 'failure') }}
+    steps:
+      - name: Determine which job failed
+        id: failure-info
+        run: |
+          if [[ "${{ needs.build.result }}" == "failure" ]]; then
+            echo "failed_job=Docker image build" >> $GITHUB_OUTPUT
+          elif [[ "${{ needs.smoke-test.result }}" == "failure" ]]; then
+            echo "failed_job=Smoke test" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":x: *Build Container Image Failed*",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ":x: Build Container Image Failed",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch/Tag:*\n${{ github.ref_name }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Failed Job:*\n${{ steps.failure-info.outputs.failed_job }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Triggered by:*\n${{ github.actor }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Workflow Run",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }

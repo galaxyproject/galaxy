@@ -376,6 +376,7 @@ class Genomes:
         dbkey_owner, dbkey = decode_dbkey(dbkey)
         if dbkey_owner:
             dbkey_user = get_user_by_username(trans.sa_session, dbkey_owner)
+            assert dbkey_user is not None
         else:
             dbkey_user = trans.user
 

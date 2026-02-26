@@ -8,6 +8,7 @@ usage: reset_metadata_on_installed_repositories.py key
 Here is a working example of how to use this script.
 python ./reset_metadata_on_installed_repositories.py -a 22be3b -u http://localhost:8763/
 """
+
 import argparse
 
 from common import submit

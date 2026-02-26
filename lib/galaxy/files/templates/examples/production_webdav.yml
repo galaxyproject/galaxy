@@ -24,6 +24,7 @@
     writable:
       label: Writable?
       type: boolean
+      optional: true
       default: false
       help: Allow Galaxy to write data to this WebDAV server.
   secrets:

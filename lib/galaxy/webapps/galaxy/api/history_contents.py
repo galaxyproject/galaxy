@@ -57,6 +57,10 @@ from galaxy.schema.schema import (
     UpdateHistoryContentsPayload,
     WriteStoreToPayload,
 )
+from galaxy.schema.tasks import (
+    CopyDatasetsPayload,
+    CopyDatasetsResponse,
+)
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -599,6 +603,23 @@ class FastAPIHistoryContents:
             payload=payload,
         )
 
+    @router.post(
+        "/api/histories/{history_id}/copy_contents",
+        summary="Copy datasets or dataset collections to other histories.",
+        operation_id="history_contents__copy_contents",
+    )
+    def copy_contents(
+        self,
+        history_id: HistoryIDPathParam,
+        trans=DependsOnTrans,
+        payload: CopyDatasetsPayload = Body(...),
+    ) -> CopyDatasetsResponse:
+        return self.service.copy_contents(
+            trans=trans,
+            history_id=history_id,
+            payload=payload,
+        )
+
     @router.get(
         "/api/histories/{history_id}/jobs_summary",
         summary="Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.",
@@ -1008,6 +1029,7 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents/archive/{filename}.{format}",
         summary="Build and return a compressed archive of the selected history contents.",
         operation_id="history_contents__archive_named",
+        unstable=True,
     )
     def archive_named(
         self,
@@ -1021,9 +1043,7 @@ class FastAPIHistoryContents:
         dry_run: Optional[bool] = DryRunQueryParam,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
     ):
-        """Build and return a compressed archive of the selected history contents.
-
-        **Note**: this is a volatile endpoint and settings and behavior may change."""
+        """Build and return a compressed archive of the selected history contents."""
         archive = self.service.archive(trans, history_id, filter_query_params, filename, dry_run)
         if isinstance(archive, HistoryContentsArchiveDryRunResult):
             return archive
@@ -1033,6 +1053,7 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents/archive",
         summary="Build and return a compressed archive of the selected history contents.",
         operation_id="history_contents__archive",
+        unstable=True,
     )
     def archive(
         self,
@@ -1042,9 +1063,7 @@ class FastAPIHistoryContents:
         dry_run: Optional[bool] = DryRunQueryParam,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
     ):
-        """Build and return a compressed archive of the selected history contents.
-
-        **Note**: this is a volatile endpoint and settings and behavior may change."""
+        """Build and return a compressed archive of the selected history contents."""
         archive = self.service.archive(trans, history_id, filter_query_params, filename, dry_run)
         if isinstance(archive, HistoryContentsArchiveDryRunResult):
             return archive

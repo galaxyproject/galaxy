@@ -1,9 +1,12 @@
-// Jest test for Citation component
+// Vitest test for Citation component
 
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
+import { describe, expect, it } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import { getCitations } from "./services";
+
+const { server, http } = useServerMock();
 
 const mockCitationResponseJson = [
     {
@@ -14,19 +17,13 @@ const mockCitationResponseJson = [
 ];
 
 describe("Citation", () => {
-    let axiosMock: MockAdapter;
-
-    beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
-    });
-
     describe("services", () => {
         it("Should fetch and create a citation object", async () => {
-            axiosMock.onGet(`/api/tools/random_lines1/citations`).reply(200, mockCitationResponseJson);
+            server.use(
+                http.untyped.get("/api/tools/random_lines1/citations", () => {
+                    return HttpResponse.json(mockCitationResponseJson);
+                }),
+            );
             const citations = await getCitations("tools", "random_lines1");
             const formattedCitation = citations?.[0]?.cite.format("bibliography", {
                 format: "html",

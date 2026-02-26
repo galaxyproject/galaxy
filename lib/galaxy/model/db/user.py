@@ -1,6 +1,11 @@
-from typing import Optional
+from collections.abc import (
+    Iterable,
+    Sequence,
+)
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    and_,
     false,
     func,
     or_,
@@ -12,10 +17,12 @@ from galaxy.model import (
     Role,
     User,
 )
-from galaxy.model.scoped_session import galaxy_scoped_session
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
 
 
-def get_users_by_ids(session: galaxy_scoped_session, user_ids):
+def get_users_by_ids(session: "scoped_session", user_ids: Iterable[int]) -> Sequence[User]:
     stmt = select(User).where(User.id.in_(user_ids))
     return session.scalars(stmt).all()
 
@@ -24,29 +31,33 @@ def get_users_by_ids(session: galaxy_scoped_session, user_ids):
 # the tool_shed app, which has its own User model, which is different from
 # galaxy.model.User. In that case, the tool_shed user model should be passed as
 # the model_class argument.
-def get_user_by_email(session, email: str, model_class=User, case_sensitive=True):
+def get_user_by_email(
+    session: "scoped_session", email: str, model_class=User, case_sensitive: bool = True, deleted: bool | None = None
+) -> User | None:
     filter_clause = model_class.email == email
     if not case_sensitive:
-        filter_clause = func.lower(model_class.email) == func.lower(email)
+        filter_clause = func.lower(model_class.email) == email.lower()
+    if deleted is not None:
+        filter_clause = and_(filter_clause, model_class.deleted == deleted)
     stmt = select(model_class).where(filter_clause).limit(1)
     return session.scalars(stmt).first()
 
 
-def get_user_by_username(session, username: str, model_class=User):
+def get_user_by_username(session: "scoped_session", username: str, model_class=User) -> User | None:
     stmt = select(model_class).filter(model_class.username == username).limit(1)
     return session.scalars(stmt).first()
 
 
 def get_users_for_index(
-    session,
+    session: "scoped_session",
     deleted: bool,
-    f_email: Optional[str] = None,
-    f_name: Optional[str] = None,
-    f_any: Optional[str] = None,
+    f_email: str | None = None,
+    f_name: str | None = None,
+    f_any: str | None = None,
     is_admin: bool = False,
     expose_user_email: bool = False,
     expose_user_name: bool = False,
-):
+) -> Sequence[User]:
     stmt = select(User)
     if f_email and (is_admin or expose_user_email):
         stmt = stmt.where(User.email.like(f"%{f_email}%"))
@@ -69,7 +80,7 @@ def get_users_for_index(
     return session.scalars(stmt).all()
 
 
-def _cleanup_nonprivate_user_roles(session, user, private_role_id):
+def _cleanup_nonprivate_user_roles(session: "scoped_session", user: User, private_role_id: int) -> None:
     """
     Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE;
     Delete sharing roles that are associated with this user only;

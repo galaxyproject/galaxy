@@ -1,7 +1,8 @@
 import re
+from collections.abc import Callable
 from typing import (
     Annotated,
-    Callable,
+    get_args,
     get_origin,
     TYPE_CHECKING,
     Union,
@@ -14,9 +15,6 @@ from pydantic import (
     WithJsonSchema,
 )
 from pydantic_core import PydanticCustomError
-from typing_extensions import (
-    get_args,
-)
 
 from galaxy.exceptions import MessageException
 

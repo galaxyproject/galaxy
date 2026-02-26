@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useUndoRedoStore } from "@/stores/undoRedoStore";
@@ -15,7 +16,8 @@ import {
     useWorkflowStepStore,
 } from "@/stores/workflowStepStore";
 
-import { advancedSteps, simpleSteps } from "../test_fixtures";
+import advancedStepsJson from "../test-data/parameter_steps.json";
+import simpleStepsJson from "../test-data/simple_steps.json";
 import {
     ANY_COLLECTION_TYPE_DESCRIPTION,
     CollectionTypeDescription,
@@ -33,6 +35,9 @@ import {
     producesAcceptableDatatype,
     terminalFactory,
 } from "./terminals";
+
+const advancedSteps = advancedStepsJson as Steps;
+const simpleSteps = simpleStepsJson as Steps;
 
 function useStores(id = "mock-workflow") {
     const connectionStore = useConnectionStore(id);
@@ -58,8 +63,8 @@ function useStores(id = "mock-workflow") {
 // Suppress debug messages about node configurations, we're testing esoteric things here -
 // we might want these messages at runtime to help debug complex things but we don't need it
 // during unit testing.
-jest.spyOn(console, "debug").mockImplementation(
-    jest.fn((msg) => {
+vi.spyOn(console, "debug").mockImplementation(
+    vi.fn((msg) => {
         if (msg != NO_COLLECTION_TYPE_INFORMATION_MESSAGE) {
             console.debug(msg);
         }
@@ -683,6 +688,80 @@ describe("canAccept", () => {
         expect(stepStore.stepMapOver[filterFailedOutput.stepId]?.isCollection).toBe(true);
         dataIn.disconnect(filterFailedOutput);
         expect(stepStore.stepMapOver[filterFailedOutput.stepId]?.isCollection).toBe(true);
+    });
+    it("accepts sample_sheet data -> data connection (maps like list)", () => {
+        const collectionOut = terminals["sample_sheet input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]!["input"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "sample_sheet", isCollection: true, rank: 1 });
+        dataIn.disconnect(collectionOut);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts sample_sheet -> list connection (canMatch)", () => {
+        const collectionOut = terminals["sample_sheet input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list collection input"]!["input1"] as InputCollectionTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts sample_sheet:paired -> paired connection (maps over like list:paired)", () => {
+        const collectionOut = terminals["sample_sheet:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "sample_sheet", isCollection: true, rank: 1 });
+    });
+    it("accepts sample_sheet:paired -> list:paired connection (canMatch)", () => {
+        const collectionOut = terminals["sample_sheet:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list:paired collection input"]!["input1"] as InputCollectionTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts sample_sheet -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["sample_sheet input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "sample_sheet", isCollection: true, rank: 1 });
+    });
+    it("accepts sample_sheet:paired -> paired_or_unpaired connection", () => {
+        const collectionOut = terminals["sample_sheet:paired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "sample_sheet", isCollection: true, rank: 1 });
+    });
+    it("accepts sample_sheet:paired_or_unpaired -> list:paired_or_unpaired connection (canMatch)", () => {
+        const collectionOut = terminals["sample_sheet:paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["list:paired_or_unpaired collection input"]!["f1"] as InputTerminal;
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
+        dataIn.connect(collectionOut);
+        expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("rejects list -> sample_sheet connection (asymmetry)", () => {
+        const listOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
+        const collectionIn = terminals["sample_sheet collection input"]!["input1"] as InputCollectionTerminal;
+        expect(collectionIn.canAccept(listOut).canAccept).toBe(false);
+    });
+    it("rejects list:paired -> sample_sheet:paired connection (asymmetry)", () => {
+        const listPairedOut = terminals["list:paired input"]!["output"] as OutputCollectionTerminal;
+        const collectionIn = terminals["sample_sheet:paired collection input"]!["input1"] as InputCollectionTerminal;
+        expect(collectionIn.canAccept(listPairedOut).canAccept).toBe(false);
+    });
+    it("accepts sample_sheet -> sample_sheet connection", () => {
+        const sampleSheetOut = terminals["sample_sheet input"]!["output"] as OutputCollectionTerminal;
+        const collectionIn = terminals["sample_sheet collection input"]!["input1"] as InputCollectionTerminal;
+        expect(collectionIn.canAccept(sampleSheetOut).canAccept).toBe(true);
     });
     it("rejects connecting paired -> list", () => {
         const pairedOut = terminals["paired input"]!["output"] as OutputCollectionTerminal;

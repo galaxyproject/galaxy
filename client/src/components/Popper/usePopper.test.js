@@ -1,13 +1,14 @@
 import { createPopper } from "@popperjs/core";
 import { mount } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { nextTick, ref } from "vue";
 
 import { usePopper } from "./usePopper";
 
-jest.mock("@popperjs/core", () => ({
-    createPopper: jest.fn(() => ({
-        destroy: jest.fn(),
-        update: jest.fn(),
+vi.mock("@popperjs/core", () => ({
+    createPopper: vi.fn(() => ({
+        destroy: vi.fn(),
+        update: vi.fn(),
     })),
 }));
 
@@ -25,7 +26,7 @@ describe("usePopper", () => {
 
     afterEach(() => {
         document.body.innerHTML = "";
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     const createTestComponent = (trigger = "none") => {

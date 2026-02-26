@@ -62,12 +62,10 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert created_hda_1.dbkey == "?"
 
     def test_collect_multiple_recurse(self):
-        self._replace_output_collectors(
-            """<output>
+        self._replace_output_collectors("""<output>
             <discover_datasets pattern="__name__" directory="subdir1" recurse="true" ext="txt" />
             <discover_datasets pattern="__name__" directory="subdir2" recurse="true" ext="txt" />
-        </output>"""
-        )
+        </output>""")
         path1 = self._setup_extra_file(filename="test1", subdir="subdir1")
         path2 = self._setup_extra_file(filename="test2", subdir="subdir2/nested1/")
         path3 = self._setup_extra_file(filename="test3", subdir="subdir2")
@@ -128,11 +126,9 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert_created_with_path(self.app.object_store, created_hda_3.dataset, path3)
 
     def test_collect_collection_default_format(self):
-        self._replace_output_collectors(
-            """<dataset_collection name="parent" format="abcdef">
+        self._replace_output_collectors("""<dataset_collection name="parent" format="abcdef">
             <discover_datasets pattern="__name__" directory="subdir_for_name_discovery" sort_by="reverse_filename" />
-        </dataset_collection>"""
-        )
+        </dataset_collection>""")
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="test1")
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="test2")
 
@@ -142,11 +138,9 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
             assert dataset.ext == "abcdef"
 
     def test_collect_sorted_reverse(self):
-        self._replace_output_collectors(
-            """<output>
+        self._replace_output_collectors("""<output>
             <discover_datasets pattern="__name__" directory="subdir_for_name_discovery" sort_by="reverse_filename" ext="txt" />
-        </output>"""
-        )
+        </output>""")
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="test1")
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="test2")
 
@@ -157,11 +151,9 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test2", "test1"]
 
     def test_collect_sorted_name(self):
-        self._replace_output_collectors(
-            """<output>
+        self._replace_output_collectors("""<output>
             <discover_datasets pattern="[abc](?P&lt;name&gt;.*)" directory="subdir_for_name_discovery" sort_by="name" ext="txt" />
-        </output>"""
-        )
+        </output>""")
         # Setup filenames in reverse order and ensure name is used as key.
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="ctest1")
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="btest2")
@@ -174,11 +166,9 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2", "test3"]
 
     def test_collect_sorted_numeric(self):
-        self._replace_output_collectors(
-            """<output>
+        self._replace_output_collectors("""<output>
             <discover_datasets pattern="[abc](?P&lt;name&gt;.*)" directory="subdir_for_name_discovery" sort_by="numeric_name" ext="txt" />
-        </output>"""
-        )
+        </output>""")
         # Setup filenames in reverse order and ensure name is used as key.
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="c1")
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="b10")
@@ -330,12 +320,10 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         in grouping patterns and named patterns such as __designation__,
         __name__, __designation_and_ext__, and __name_and_ext__.
         """
-        self._replace_output_collectors(
-            """<output>
+        self._replace_output_collectors("""<output>
             <discover_datasets pattern="__name_and_ext__" directory="subdir_for_name_discovery" />
             <discover_datasets pattern="__designation_and_ext__" directory="subdir_for_designation_discovery" />
-        </output>"""
-        )
+        </output>""")
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="example1.txt")
         self._setup_extra_file(subdir="subdir_for_designation_discovery", filename="example2.txt")
         primary_outputs = self._collect()[DEFAULT_TOOL_OUTPUT]
@@ -347,11 +335,9 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert designation_output.name == "{} ({})".format(self.hda.name, "example2")
 
     def test_cannot_read_files_outside_job_directory(self):
-        self._replace_output_collectors(
-            """<output>
+        self._replace_output_collectors("""<output>
             <discover_datasets pattern="__name_and_ext__" directory="../../secrets" />
-        </output>"""
-        )
+        </output>""")
         exception_thrown = False
         try:
             self._collect()

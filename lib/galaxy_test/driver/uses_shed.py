@@ -22,11 +22,9 @@ CONDA_AUTO_INSTALL_JOB_TIMEOUT = DEFAULT_TIMEOUT * 3
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 TOOL_SHEDS_CONF = os.path.join(SCRIPT_DIRECTORY, "tool_sheds_conf.xml")
 
-SHED_TOOL_CONF = string.Template(
-    """<?xml version="1.0"?>
+SHED_TOOL_CONF = string.Template("""<?xml version="1.0"?>
 <toolbox tool_path="$shed_tools_path">
-</toolbox>"""
-)
+</toolbox>""")
 
 SHED_DATA_MANAGER_CONF = """<?xml version="1.0"?>
 <data_managers>

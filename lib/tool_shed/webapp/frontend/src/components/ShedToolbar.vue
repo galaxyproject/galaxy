@@ -15,10 +15,10 @@ void authStore.setup()
 const admin = computed(() => authStore.user && authStore.user.is_admin)
 </script>
 <template>
-    <q-toolbar class="bg-primary glossy text-white">
+    <q-toolbar class="bg-primary glossy text-white" role="navigation" aria-label="Main navigation">
         <q-toolbar-title>
             <q-avatar rounded>
-                <router-link to="/">
+                <router-link to="/" aria-label="Tool Shed Home">
                     <img alt="Tool Shed Logo" src="/static/favicon.ico" />
                 </router-link>
             </q-avatar>
@@ -27,7 +27,7 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
                 {{ title }}
             </span>
         </q-toolbar-title>
-        <q-btn-dropdown stretch flat label="Explore">
+        <q-btn-dropdown stretch flat label="Explore" aria-haspopup="menu">
             <q-list>
                 <q-item-label header>Repositories</q-item-label>
                 <q-item clickable v-close-popup tabindex="0" to="/repositories_by_category">
@@ -55,7 +55,7 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
                 -->
             </q-list>
         </q-btn-dropdown>
-        <q-btn-dropdown stretch flat :label="authStore.user.username" v-if="authStore.user">
+        <q-btn-dropdown stretch flat :label="authStore.user.username" aria-haspopup="menu" v-if="authStore.user">
             <q-list>
                 <q-item clickable v-close-popup tabindex="0" to="/user/api_key">
                     <q-item-section>
@@ -71,7 +71,7 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
                 </q-item>
             </q-list>
         </q-btn-dropdown>
-        <q-btn-dropdown stretch flat label="Admin" v-if="admin">
+        <q-btn-dropdown stretch flat label="Admin" aria-haspopup="menu" v-if="admin">
             <q-list>
                 <q-item-label header>Admin Tools</q-item-label>
                 <q-item clickable v-close-popup tabindex="0" to="/admin">
@@ -101,9 +101,20 @@ const admin = computed(() => authStore.user && authStore.user.is_admin)
             icon="logout"
             @click="authStore.logout()"
             title="Logout"
+            aria-label="Logout"
             v-if="authStore.user"
         />
-        <q-btn class="q-mx-sm toolbar-login" flat round dense icon="login" to="/login" title="Login" v-else />
-        <q-btn class="q-mx-sm toolbar-help" flat round dense icon="help" to="/help" title="Help" />
+        <q-btn
+            class="q-mx-sm toolbar-login"
+            flat
+            round
+            dense
+            icon="login"
+            to="/login"
+            title="Login"
+            aria-label="Login"
+            v-else
+        />
+        <q-btn class="q-mx-sm toolbar-help" flat round dense icon="help" to="/help" title="Help" aria-label="Help" />
     </q-toolbar>
 </template>

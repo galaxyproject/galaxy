@@ -1,7 +1,7 @@
 import tempfile
 
 import twill.commands as tc
-from twill.browser import FormElement  # type:ignore[attr-defined, unused-ignore]
+from twill.browser import FormElement  # type: ignore[attr-defined, unused-ignore]
 
 from galaxy.util import smart_str
 from .browser import (

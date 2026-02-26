@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { describe, expect, it, vi } from "vitest";
 
 import type { HistorySummaryExtended } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -20,11 +21,11 @@ const selectors = {
 } as const;
 
 // Click action mocks
-const mockSetCurrentHistory = jest.fn();
-const mockApplyFilters = jest.fn();
-const mockWindowOpen = jest.fn(() => null);
+const mockSetCurrentHistory = vi.fn();
+const mockApplyFilters = vi.fn();
+const mockWindowOpen = vi.fn(() => null);
 
-jest.mock("vue-router/composables", () => ({
+vi.mock("vue-router/composables", () => ({
     useRouter: () => ({
         resolve: (route: string) => ({
             href: `resolved-${route}`,
@@ -33,15 +34,15 @@ jest.mock("vue-router/composables", () => ({
 }));
 
 // Mock the history store
-jest.mock("@/stores/historyStore", () => {
-    const originalModule = jest.requireActual("@/stores/historyStore");
+vi.mock("@/stores/historyStore", async () => {
+    const originalModule = await vi.importActual("@/stores/historyStore");
     return {
         ...originalModule,
         useHistoryStore: () => ({
-            ...originalModule.useHistoryStore(),
+            ...(originalModule as any).useHistoryStore(),
             currentHistoryId: "current-history-id",
             setCurrentHistory: mockSetCurrentHistory,
-            applyFilters: jest.fn().mockImplementation((historyId: string) => {
+            applyFilters: vi.fn().mockImplementation((historyId: string) => {
                 // We mock what the actual method does: set the current history if not current
                 if (historyId !== "current-history-id") {
                     mockSetCurrentHistory();
@@ -53,20 +54,20 @@ jest.mock("@/stores/historyStore", () => {
 });
 
 // Mock the event store to track ctrlKey presses
-jest.mock("@/stores/eventStore", () => {
+vi.mock("@/stores/eventStore", () => {
     return {
         useEventStore: () => ({
-            isCtrlKey: jest.fn((event: MouseEvent) => event.ctrlKey),
+            isCtrlKey: vi.fn((event: MouseEvent) => event.ctrlKey),
         }),
     };
 });
 
-/** Clear up and initialize all mocks for the jest. */
+/** Clear up and initialize all mocks for the test. */
 function initializeMocks() {
     mockSetCurrentHistory.mockClear();
     mockApplyFilters.mockClear();
     mockWindowOpen.mockClear();
-    const windowSpy = jest.spyOn(window, "open");
+    const windowSpy = vi.spyOn(window, "open");
     windowSpy.mockImplementation(() => mockWindowOpen());
 }
 
@@ -77,7 +78,7 @@ function initializeMocks() {
 function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended, hasFilters = false) {
     initializeMocks();
 
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ createSpy: vi.fn });
 
     server.use(
         http.get("/api/histories/{history_id}", ({ response }) => {
@@ -126,7 +127,11 @@ function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended, has
  * @param setsFilters Whether filters are applied to the current history on click
  */
 async function expectActionForHistory(
-    tooltip: "Switch to this history" | "This is your current history" | "View in new tab" | "Show in history",
+    tooltip:
+        | "Switch to this history"
+        | "This is your current history"
+        | "View in new tab"
+        | "Switch to history and view dataset",
     history: HistorySummaryExtended,
     opensInNewTab = false,
     hasFilters = false,
@@ -191,7 +196,7 @@ describe("SwitchToHistoryLink", () => {
         await expectActionForHistory("Switch to this history", history, false, false, true, false);
 
         // Since history was not current, we switch to it AND apply filters
-        await expectActionForHistory("Show in history", history, false, true, true, true);
+        await expectActionForHistory("Switch to history and view dataset", history, false, true, true, true);
     });
 
     it("only applies filters when the history is the Current history", async () => {
@@ -208,7 +213,7 @@ describe("SwitchToHistoryLink", () => {
         await expectActionForHistory("This is your current history", history);
 
         // Since history is already current, we only apply filters
-        await expectActionForHistory("Show in history", history, false, true, false, true);
+        await expectActionForHistory("Switch to history and view dataset", history, false, true, false, true);
     });
 
     it("opens purged history in new tab or applies filters", async () => {
@@ -225,7 +230,7 @@ describe("SwitchToHistoryLink", () => {
         await expectActionForHistory("View in new tab", history, true);
 
         // We switch to the purged history and apply filters
-        await expectActionForHistory("Show in history", history, false, true, true, true);
+        await expectActionForHistory("Switch to history and view dataset", history, false, true, true, true);
     });
 
     it("opens archived history in new tab or applies filters", async () => {
@@ -242,7 +247,7 @@ describe("SwitchToHistoryLink", () => {
         await expectActionForHistory("View in new tab", history, true);
 
         // We switch to the archived history and apply filters
-        await expectActionForHistory("Show in history", history, false, true, true, true);
+        await expectActionForHistory("Switch to history and view dataset", history, false, true, true, true);
     });
 
     it("only opens an accessible unowned history in new tab", async () => {

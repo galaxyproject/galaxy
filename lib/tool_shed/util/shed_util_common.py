@@ -223,7 +223,7 @@ def handle_email_alerts(
     sa_session = app.model.session
     repo = repository.hg_repo
     sharable_link = repository_util.generate_sharable_link_for_repository_in_tool_shed(
-        repository, changeset_revision=None
+        repository, changeset_revision=None, base_url=app.config.tool_shed_url
     )
     smtp_server = app.config.smtp_server
     if smtp_server and (new_repo_alert or repository.email_alerts):
@@ -283,7 +283,7 @@ def handle_email_alerts(
                     email_alerts.append(user.email)
         else:
             subject = f"Galaxy tool shed update alert for repository named {str(repository.name)}"
-            email_alerts = json.loads(repository.email_alerts)  # type:ignore[arg-type]
+            email_alerts = json.loads(repository.email_alerts)  # type: ignore[arg-type]
         for email in email_alerts:
             to = email.strip()
             # Send it

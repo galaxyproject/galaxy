@@ -1,9 +1,11 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { createPinia } from "pinia";
-import { useUserStore } from "stores/userStore";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
-import FavoritesButton from "./FavoritesButton";
+import { useUserStore } from "@/stores/userStore";
+
+import FavoritesButton from "./FavoritesButton.vue";
 
 const localVue = getLocalVue();
 

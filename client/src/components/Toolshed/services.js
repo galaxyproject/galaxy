@@ -1,7 +1,8 @@
-import { getGalaxyInstance } from "app";
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+
+import { getGalaxyInstance } from "@/app";
+import { getAppRoot } from "@/onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 
 /** Request repositories, categories etc from toolshed server **/
 export class Services {

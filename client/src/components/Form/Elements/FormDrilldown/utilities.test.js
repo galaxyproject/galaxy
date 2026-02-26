@@ -1,3 +1,5 @@
+import { describe, expect, it } from "vitest";
+
 import { getAllValues } from "./utilities";
 
 describe("drilldown component utilities", () => {

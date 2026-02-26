@@ -1,6 +1,7 @@
 import json
 import logging
 from collections.abc import Iterable
+from dataclasses import dataclass
 from datetime import (
     date,
     datetime,
@@ -11,6 +12,7 @@ from typing import (
     cast,
     Optional,
     TYPE_CHECKING,
+    TypeVar,
     Union,
 )
 
@@ -36,6 +38,7 @@ from typing_extensions import TypedDict
 from galaxy import model
 from galaxy.exceptions import (
     ConfigDoesNotAllowException,
+    InconsistentDatabase,
     ItemAccessibilityException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -48,18 +51,26 @@ from galaxy.job_metrics import (
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.datasets import DatasetManager
-from galaxy.managers.hdas import HDAManager
+from galaxy.managers.hdas import (
+    dereference_input_to_hda,
+    dereference_input_to_hdca,
+    HDAManager,
+)
+from galaxy.managers.histories import HistoryManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.managers.users import UserManager
 from galaxy.model import (
     ImplicitCollectionJobs,
     ImplicitCollectionJobsJobAssociation,
     Job,
     JobMetricNumeric,
     JobParameter,
+    ToolRequest,
     User,
     Workflow,
     WorkflowInvocation,
     WorkflowInvocationStep,
+    WorkflowInvocationToSubworkflowInvocationAssociation,
     WorkflowStep,
     YIELD_PER_ROWS,
 )
@@ -72,8 +83,26 @@ from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
 )
+from galaxy.schema.tasks import (
+    MaterializeDatasetInstanceTaskRequest,
+    QueueJobs,
+)
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import (
+    MinimalManagerApp,
+    StructuredApp,
+)
+from galaxy.tool_util.parameters import (
+    DataRequestCollectionUri,
+    DataRequestInternalHda,
+    DataRequestInternalHdca,
+    DataRequestUri,
+    dereference,
+    RequestInternalDereferencedToolState,
+    RequestInternalToolState,
+    ToolParameterBundleModel,
+)
+from galaxy.tools import Tool
 from galaxy.tools._types import (
     ToolStateDumpedToJsonInternalT,
     ToolStateJobInstancePopulatedT,
@@ -89,9 +118,14 @@ from galaxy.util.search import (
     parse_filters_structured,
     RawTextTerm,
 )
+from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.expression import Select
+    from sqlalchemy.sql.expression import (
+        ColumnElement,
+        Label,
+        Select,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -107,7 +141,7 @@ class JobLock(BaseModel):
     active: bool = Field(title="Job lock status", description="If active, jobs will not dispatch")
 
 
-def get_path_key(path_tuple):
+def get_path_key(path_tuple: tuple):
     path_key = ""
     tuple_elements = len(path_tuple)
     for i, p in enumerate(path_tuple):
@@ -127,12 +161,15 @@ def get_path_key(path_tuple):
 
 
 def safe_label_or_none(label: str) -> Optional[str]:
-    if label and len(label) > 63:
+    if len(label) > 63:
         return None
     return label
 
 
-def safe_aliased(model_class, name=None):
+T = TypeVar("T")
+
+
+def safe_aliased(model_class: type[T], name: str) -> type[T]:
     """Create an aliased model class with a unique name."""
     return aliased(model_class, name=safe_label_or_none(name))
 
@@ -155,6 +192,8 @@ class JobManager:
         workflow_id = payload.workflow_id
         invocation_id = payload.invocation_id
         implicit_collection_jobs_id = payload.implicit_collection_jobs_id
+        tool_request_id = payload.tool_request_id
+
         search = payload.search
         order_by = payload.order_by
 
@@ -171,6 +210,7 @@ class JobManager:
 
         def add_workflow_jobs():
             wfi_step = select(WorkflowInvocationStep)
+
             if workflow_id is not None:
                 wfi_step = (
                     wfi_step.join(WorkflowInvocation).join(Workflow).where(Workflow.stored_workflow_id == workflow_id)
@@ -185,6 +225,7 @@ class JobManager:
                 ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
                 == wfi_step_sq.c.implicit_collection_jobs_id,
             )
+
             # Ensure the result is models, not tuples
             sq = stmt1.union(stmt2).subquery()
             # SQLite won't recognize Job.foo as a valid column for the ORDER BY clause due to the UNION clause, so we'll use the subquery `columns` collection (`sq.c`).
@@ -261,6 +302,9 @@ class JobManager:
 
         if history_id is not None:
             stmt = stmt.where(Job.history_id == history_id)
+
+        if tool_request_id is not None:
+            stmt = stmt.filter(model.Job.tool_request_id == tool_request_id)
 
         order_by_columns = Job
         if workflow_id or invocation_id:
@@ -411,12 +455,13 @@ class JobSearch:
         param: ToolStateJobInstancePopulatedT,
         param_dump: ToolStateDumpedToJsonInternalT,
         job_state: Optional[JobStatesT] = (Job.states.OK,),
+        history_id: Union[int, None] = None,
         require_name_match: bool = True,
-    ):
+    ) -> Union[Job, None]:
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
-        input_data = defaultdict(list)
+        input_data: dict[Any, list[dict[str, Any]]] = defaultdict(list)
 
-        def populate_input_data_input_id(path, key, value):
+        def populate_input_data_input_id(path: tuple, key, value) -> tuple[Any, Any]:
             """Traverses expanded incoming using remap and collects input_ids and input_data."""
             if key == "id":
                 path_key = get_path_key(path[:-2])
@@ -455,6 +500,7 @@ class JobSearch:
             job_state=job_state,
             param_dump=param_dump,
             wildcard_param_dump=wildcard_param_dump,
+            history_id=history_id,
             require_name_match=require_name_match,
         )
 
@@ -463,12 +509,13 @@ class JobSearch:
         tool_id: str,
         tool_version: Optional[str],
         user: model.User,
-        input_data,
+        input_data: dict[Any, list[dict[str, Any]]],
         job_state: Optional[JobStatesT],
         param_dump: ToolStateDumpedToJsonInternalT,
         wildcard_param_dump=None,
+        history_id: Union[int, None] = None,
         require_name_match: bool = True,
-    ):
+    ) -> Union[Job, None]:
         search_timer = ExecutionTimer()
 
         def replace_dataset_ids(path, key, value):
@@ -488,7 +535,7 @@ class JobSearch:
 
         stmt = select(model.Job.id.label("job_id"))
 
-        data_conditions: list = []
+        data_conditions: list[ColumnElement[bool]] = []
 
         # We now build the stmt filters that relate to the input datasets
         # that this job uses. We keep track of the requested dataset id in `requested_ids`,
@@ -496,7 +543,7 @@ class JobSearch:
         # and the ids that have been used in the job that has already been run in `used_ids`.
         requested_ids = []
         data_types = []
-        used_ids: list = []
+        used_ids: list[Label[int]] = []
         for k, input_list in input_data.items():
             # k will be matched against the JobParameter.name column. This can be prefixed depending on whether
             # the input is in a repeat, or not (section and conditional)
@@ -532,7 +579,7 @@ class JobSearch:
                     return None
 
         stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids)
-        stmt = self._filter_jobs(stmt, tool_id, user.id, tool_version, job_state, wildcard_param_dump)
+        stmt = self._filter_jobs(stmt, tool_id, user.id, tool_version, job_state, wildcard_param_dump, history_id)
         stmt = self._exclude_jobs_with_deleted_outputs(stmt)
 
         for job in self.sa_session.execute(stmt):
@@ -600,8 +647,15 @@ class JobSearch:
         return None
 
     def _filter_jobs(
-        self, stmt, tool_id: str, user_id: int, tool_version: Optional[str], job_state, wildcard_param_dump
-    ):
+        self,
+        stmt: "Select[tuple[int]]",
+        tool_id: str,
+        user_id: int,
+        tool_version: Optional[str],
+        job_state: Union[JobStatesT, None],
+        wildcard_param_dump,
+        history_id: Union[int, None],
+    ) -> "Select[tuple[int]]":
         """Build subquery that selects a job with correct job parameters."""
         job_ids_materialized_cte = stmt.cte("job_ids_cte")
         outer_select_columns = [job_ids_materialized_cte.c[col.name] for col in stmt.selected_columns]
@@ -622,6 +676,9 @@ class JobSearch:
         )
         if tool_version:
             stmt = stmt.where(Job.tool_version == str(tool_version))
+
+        if history_id is not None:
+            stmt = stmt.where(Job.history_id == history_id)
 
         if job_state is None:
             job_states: set[str] = {
@@ -675,7 +732,7 @@ class JobSearch:
 
         return stmt
 
-    def _exclude_jobs_with_deleted_outputs(self, stmt):
+    def _exclude_jobs_with_deleted_outputs(self, stmt: "Select[tuple[int]]") -> "Select":
         subquery_alias = stmt.subquery("filtered_jobs_subquery")
         outer_select_columns = [subquery_alias.c[col.name] for col in stmt.selected_columns]
         outer_stmt = select(*outer_select_columns).select_from(subquery_alias)
@@ -720,14 +777,14 @@ class JobSearch:
     def _build_stmt_for_hda(
         self,
         stmt: "Select[tuple[int]]",
-        data_conditions: list,
-        used_ids: list,
+        data_conditions: list["ColumnElement[bool]"],
+        used_ids: list["Label[int]"],
         k,
         v,
         identifier,
         value_index: int,
         require_name_match: bool = True,
-    ):
+    ) -> "Select[tuple[int]]":
         a = aliased(model.JobToInputDatasetAssociation)
         b = aliased(model.HistoryDatasetAssociation)
         c = aliased(model.HistoryDatasetAssociation)
@@ -784,7 +841,15 @@ class JobSearch:
         )
         return stmt
 
-    def _build_stmt_for_ldda(self, stmt, data_conditions, used_ids, k, v, value_index):
+    def _build_stmt_for_ldda(
+        self,
+        stmt: "Select[tuple[int]]",
+        data_conditions: list["ColumnElement[bool]"],
+        used_ids: list["Label[int]"],
+        k,
+        v,
+        value_index: int,
+    ) -> "Select[tuple[int]]":
         a = aliased(model.JobToInputLibraryDatasetAssociation)
         label = safe_label_or_none(f"{k}_{value_index}")
         labeled_col = a.ldda_id.label(label)
@@ -801,8 +866,15 @@ class JobSearch:
             return func.array_agg(column, order_by=column)
 
     def _build_stmt_for_hdca(
-        self, stmt, data_conditions, used_ids, k, v, user_id, value_index, require_name_match=True
-    ):
+        self,
+        stmt: "Select[tuple[int]]",
+        data_conditions: list["ColumnElement[bool]"],
+        used_ids: list["Label[int]"],
+        k,
+        v,
+        user_id: int,
+        value_index: int,
+    ) -> "Select[tuple[int]]":
         # Strategy for efficiently finding equivalent HDCAs:
         # 1. Determine the structural depth of the target HDCA by its collection_type.
         # 2. For the target HDCA (identified by 'v'):
@@ -1041,7 +1113,16 @@ class JobSearch:
         data_conditions.append(a.name == k)
         return stmt
 
-    def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v, user_id, value_index):
+    def _build_stmt_for_dce(
+        self,
+        stmt: "Select[tuple[int]]",
+        data_conditions: list["ColumnElement[bool]"],
+        used_ids: list["Label[int]"],
+        k,
+        v,
+        user_id: int,
+        value_index: int,
+    ) -> "Select[tuple[int]]":
         dce_root_target = self.sa_session.get_one(model.DatasetCollectionElement, v)
 
         # Determine if the target DCE points to an HDA or a child collection
@@ -1433,25 +1514,29 @@ def view_show_job(trans, job: Job, full: bool) -> dict:
 
 
 def invocation_job_source_iter(sa_session, invocation_id):
-    # TODO: Handle subworkflows.
     join = model.WorkflowInvocationStep.table.join(model.WorkflowInvocation)
     statement = (
         select(
             model.WorkflowInvocationStep.job_id,
             model.WorkflowInvocationStep.implicit_collection_jobs_id,
             model.WorkflowInvocationStep.state,
+            model.WorkflowInvocationStep.subworkflow_invocation_id,
         )
         .select_from(join)
         .where(model.WorkflowInvocation.id == invocation_id)
     )
     for row in sa_session.execute(statement):
-        if row[0]:
+        if row[0]:  # job_id
             yield ("Job", row[0], row[2])
-        if row[1]:
+        if row[1]:  # implicit_collection_jobs_id
             yield ("ImplicitCollectionJobs", row[1], row[2])
+        if row[3]:  # subworkflow_invocation_id
+            # Recursively handle subworkflow
+            yield from invocation_job_source_iter(sa_session, row[3])
 
 
-def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation_id: int):
+def _get_direct_job_metrics(sa_session: galaxy_scoped_session, invocation_id: int):
+    """Get job metrics for direct jobs in this invocation (not subworkflows)."""
     single_job_stmnt = (
         select(WorkflowStep.order_index, Job.id, Job.tool_id, WorkflowStep.label, JobMetricNumeric)
         .join(Job, JobMetricNumeric.job_id == Job.id)
@@ -1482,10 +1567,98 @@ def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation
     )
     # should be sa_session.execute(single_job_stmnt.union(collection_job_stmnt)).all() but that returns
     # columns instead of the job metrics ORM instance.
-    return sorted(
-        (*sa_session.execute(single_job_stmnt).all(), *sa_session.execute(collection_job_stmnt).all()),
-        key=lambda row: row[0],
+    return [*sa_session.execute(single_job_stmnt).all(), *sa_session.execute(collection_job_stmnt).all()]
+
+
+def _get_job_metrics_recursive(
+    sa_session: galaxy_scoped_session,
+    invocation_id: int,
+    parent_step_prefix: Optional[str] = None,
+):
+    """
+    Recursively get job metrics including subworkflows.
+
+    Args:
+        sa_session: Database session
+        invocation_id: Invocation to get metrics for
+        parent_step_prefix: String prefix for hierarchical indexing (e.g., "1" or "1.2") or None
+
+    Returns:
+        List of tuples: (step_index, job_id, tool_id, step_label, JobMetricNumeric)
+        where step_index is int for top-level or str for subworkflow steps
+    """
+    # Get direct job metrics
+    direct_metrics = _get_direct_job_metrics(sa_session, invocation_id)
+
+    # If we're processing a subworkflow, apply hierarchical indexing
+    if parent_step_prefix is not None:
+        direct_metrics = [
+            (f"{parent_step_prefix}.{step_order_index}", job_id, tool_id, step_label, metric)
+            for (step_order_index, job_id, tool_id, step_label, metric) in direct_metrics
+        ]
+
+    all_metrics = list(direct_metrics)
+
+    # Find and process subworkflow invocations
+    subworkflow_query = (
+        select(
+            WorkflowStep.order_index,
+            WorkflowStep.label,
+            WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id,
+        )
+        .select_from(WorkflowInvocationToSubworkflowInvocationAssociation)
+        .join(
+            WorkflowInvocationStep,
+            and_(
+                WorkflowInvocationStep.workflow_invocation_id == invocation_id,
+                WorkflowInvocationStep.workflow_step_id
+                == WorkflowInvocationToSubworkflowInvocationAssociation.workflow_step_id,
+                WorkflowInvocationStep.workflow_invocation_id
+                == WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id,
+            ),
+        )
+        .join(
+            WorkflowStep,
+            WorkflowStep.id == WorkflowInvocationStep.workflow_step_id,
+        )
+        .where(WorkflowInvocationToSubworkflowInvocationAssociation.workflow_invocation_id == invocation_id)
     )
+
+    for row in sa_session.execute(subworkflow_query):
+        step_order_index, _, subworkflow_inv_id = row
+        # Build hierarchical prefix
+        if parent_step_prefix is not None:
+            # Nested subworkflow: e.g., "1.2" + ".0" = "1.2.0"
+            step_prefix = f"{parent_step_prefix}.{step_order_index}"
+        else:
+            # Top-level subworkflow: e.g., "1"
+            step_prefix = str(step_order_index)
+
+        # Recursive call
+        subworkflow_metrics = _get_job_metrics_recursive(
+            sa_session,
+            subworkflow_inv_id,
+            parent_step_prefix=step_prefix,
+        )
+        all_metrics.extend(subworkflow_metrics)
+
+    return all_metrics
+
+
+def get_job_metrics_for_invocation(sa_session: galaxy_scoped_session, invocation_id: int):
+    all_metrics = _get_job_metrics_recursive(sa_session, invocation_id)
+    # Sort by step_index with custom key to handle both int and str
+    # For strings like "1.0", split and convert to tuple of ints for proper sorting
+
+    def sort_key(row):
+        step_index = row[0]
+        if isinstance(step_index, int):
+            return (step_index,)  # Single-element tuple for top-level
+        else:
+            # Convert "1.0" -> (1, 0) for proper hierarchical sorting
+            return tuple(int(x) for x in step_index.split("."))
+
+    return sorted(all_metrics, key=sort_key)
 
 
 def fetch_job_states(sa_session, job_source_ids, job_source_types):
@@ -1572,7 +1745,7 @@ def summarize_invocation_jobs(
     invocation_id, job_summaries, implicit_collection_job_summaries, invocation_state, invocation_step_states
 ):
     states = {}
-    if invocation_state == "scheduled":
+    if invocation_state in ("scheduled", "completed"):
         all_scheduled = True
         for invocation_step_state in invocation_step_states:
             all_scheduled = all_scheduled and invocation_step_state == "scheduled"
@@ -1922,3 +2095,136 @@ def get_jobs_to_check_at_startup(session: galaxy_scoped_session, track_jobs_in_d
 def get_job(session: galaxy_scoped_session, *where_clauses):
     stmt = select(Job).where(*where_clauses).limit(1)
     return session.scalars(stmt).first()
+
+
+@dataclass
+class DereferencedDatasetPair:
+    hda: model.HistoryDatasetAssociation
+    request: DataRequestUri
+
+
+class JobSubmitter:
+    def __init__(
+        self,
+        history_manager: HistoryManager,
+        user_manager: UserManager,
+        hda_manager: HDAManager,
+        app: MinimalManagerApp,
+    ):
+        self.history_manager = history_manager
+        self.user_manager = user_manager
+        self.hda_manager = hda_manager
+        self.app = app
+
+    def materialize_request_for(
+        self, trans: WorkRequestContext, hda: model.HistoryDatasetAssociation
+    ) -> MaterializeDatasetInstanceTaskRequest:
+        return MaterializeDatasetInstanceTaskRequest(
+            user=trans.async_request_user,
+            history_id=trans.history.id,
+            source="hda",
+            content=hda.id,
+        )
+
+    def dereference(
+        self, trans: WorkRequestContext, tool: Tool, request: QueueJobs, tool_request: ToolRequest
+    ) -> tuple[RequestInternalDereferencedToolState, list[DereferencedDatasetPair]]:
+        new_hdas: list[DereferencedDatasetPair] = []
+
+        def dereference_collection_callback(data_request: DataRequestCollectionUri) -> DataRequestInternalHdca:
+            # a deferred dataset corresponding to request
+            history = tool_request.history
+            if not history:
+                raise InconsistentDatabase("Tool request has no history associated")
+
+            hdca = dereference_input_to_hdca(trans, data_request, history)
+
+            # we need the HDCA to have an ID - so we force a commit here - for
+            # consistency it would be great if this happened in dereference_input_to_hdca
+            # since the HDA is committed in dereference_input_to_hda.
+            history.add_pending_items()
+            trans.sa_session.commit()
+
+            def find_new_hdas(collection: model.DatasetCollection, request_elements) -> None:
+                for dce, dce_request in zip(collection.elements, request_elements):
+                    if dce.is_collection:
+                        child_collection = dce.child_collection
+                        assert child_collection
+                        find_new_hdas(child_collection, dce_request.elements)
+                    else:
+                        hda = dce.hda
+                        assert hda
+                        new_hdas.append(DereferencedDatasetPair(hda, dce_request))
+
+            find_new_hdas(hdca.collection, data_request.elements)
+            return DataRequestInternalHdca(id=hdca.id, src="hdca")
+
+        def dereference_callback(data_request: DataRequestUri) -> DataRequestInternalHda:
+            # a deferred dataset corresponding to request
+            history = tool_request.history
+            if not history:
+                raise InconsistentDatabase("Tool request has no history associated")
+
+            hda = dereference_input_to_hda(trans, data_request, history)
+            new_hdas.append(DereferencedDatasetPair(hda, data_request))
+            return DataRequestInternalHda(id=hda.id, src="hda")
+
+        tool_state = RequestInternalToolState(tool_request.request)
+        if tool.parameters is None:
+            raise RequestParameterInvalidException(f"Tool {tool.id} has no parameters defined")
+        parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
+        return (
+            dereference(tool_state, parameter_bundle, dereference_callback, dereference_collection_callback),
+            new_hdas,
+        )
+
+    def queue_jobs(self, tool: Tool, request: QueueJobs) -> None:
+        tool_request: ToolRequest = self._tool_request(request.tool_request_id)
+        sa_session = self.app.model.context
+        try:
+            request_context = self._context(tool_request, request)
+            target_history = request_context.history
+            use_cached_jobs = request.use_cached_jobs
+            rerun_remap_job_id = request.rerun_remap_job_id
+            tool_state, new_hdas = self.dereference(request_context, tool, request, tool_request)
+            to_materialize_list = [p for p in new_hdas if not p.request.deferred]
+            for to_materialize in to_materialize_list:
+                materialize_request = self.materialize_request_for(request_context, to_materialize.hda)
+                # API dataset materialization is immutable and produces new datasets
+                # here we just created the datasets - lets just materialize them in place
+                # and avoid extra and confusing input copies
+                self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
+            tool.handle_input_async(
+                request_context,
+                tool_request,
+                tool_state,
+                history=target_history,
+                use_cached_job=use_cached_jobs,
+                rerun_remap_job_id=rerun_remap_job_id,
+            )
+            tool_request.state = ToolRequest.states.SUBMITTED
+            sa_session.add(tool_request)
+            sa_session.commit()
+        except Exception as e:
+            log.exception("Problem validating tool state after request created")
+            tool_request.state = ToolRequest.states.FAILED
+            tool_request.state_message = str(e)
+            sa_session.add(tool_request)
+            sa_session.commit()
+
+    def _context(self, tool_request: ToolRequest, request: QueueJobs) -> WorkRequestContext:
+        user = self.user_manager.by_id(request.user.user_id)
+        target_history = tool_request.history
+        trans = WorkRequestContext(
+            self.app,
+            user,
+            history=target_history,
+        )
+        return trans
+
+    def _tool_request(self, tool_request_id: int) -> ToolRequest:
+        sa_session = self.app.model.context
+        tool_request = sa_session.get(ToolRequest, tool_request_id)
+        if tool_request is None:
+            raise Exception(f"Problem fetching request with ID {tool_request_id}")
+        return tool_request

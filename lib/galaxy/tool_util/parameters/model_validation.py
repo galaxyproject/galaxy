@@ -47,12 +47,15 @@ def validate_model_type_factory(state_representation: StateRepresentationT) -> V
     return validate_request
 
 
+validate_relaxed_request = validate_model_type_factory("relaxed_request")
 validate_request = validate_model_type_factory("request")
 validate_internal_request = validate_model_type_factory("request_internal")
 validate_internal_request_dereferenced = validate_model_type_factory("request_internal_dereferenced")
 validate_landing_request = validate_model_type_factory("landing_request")
 validate_internal_landing_request = validate_model_type_factory("landing_request_internal")
 validate_internal_job = validate_model_type_factory("job_internal")
+validate_job_runtime = validate_model_type_factory("job_runtime")
 validate_test_case = validate_model_type_factory("test_case_xml")
+validate_test_case_json = validate_model_type_factory("test_case_json")
 validate_workflow_step = validate_model_type_factory("workflow_step")
 validate_workflow_step_linked = validate_model_type_factory("workflow_step_linked")

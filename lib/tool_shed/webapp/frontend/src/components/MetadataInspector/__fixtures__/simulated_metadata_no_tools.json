@@ -1,0 +1,38 @@
+{
+    "0:f1e2d3c4b5a6": {
+        "model_class": "RepositoryMetadata",
+        "id": "sim00000000001",
+        "repository_id": "sim00000000001",
+        "numeric_revision": 0,
+        "changeset_revision": "f1e2d3c4b5a6",
+        "malicious": false,
+        "downloadable": false,
+        "missing_test_components": false,
+        "has_repository_dependencies": false,
+        "includes_datatypes": false,
+        "includes_tools": false,
+        "includes_tool_dependencies": false,
+        "includes_tools_for_display_in_tool_panel": false,
+        "includes_workflows": false,
+        "repository": {
+            "model_class": "Repository",
+            "id": "sim00000000001",
+            "name": "empty_repo_simulated",
+            "type": "unrestricted",
+            "remote_repository_url": null,
+            "homepage_url": null,
+            "description": "A simulated repository with no tools for testing edge cases",
+            "user_id": "sim00000000001",
+            "private": false,
+            "deleted": false,
+            "times_downloaded": 0,
+            "deprecated": false,
+            "create_time": "2025-01-01T00:00:00.000000",
+            "update_time": "2025-01-01T00:00:00.000000",
+            "owner": "simulated_user"
+        },
+        "repository_dependencies": [],
+        "tools": [],
+        "invalid_tools": []
+    }
+}

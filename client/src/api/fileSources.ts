@@ -16,6 +16,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faCloud,
         message: "This is a repository plugin based on the Azure service.",
     },
+    azureflat: {
+        icon: faCloud,
+        message: "This is a repository plugin based on the Azure flat namespace service.",
+    },
     dropbox: {
         icon: faDropbox,
         message: "This is a repository plugin that connects with the commercial Dropbox service.",
@@ -69,6 +73,10 @@ export const templateTypes: FileSourceTypesDetail = {
     huggingface: {
         icon: faHubspot,
         message: "This is a file repository plugin that connects with the Hugging Face Hub.",
+    },
+    omero: {
+        icon: faNetworkWired,
+        message: "This is a file repository plugin that connects with an OMERO server.",
     },
 };
 

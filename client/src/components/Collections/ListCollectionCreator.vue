@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import "ui/hoverhighlight";
-
 import { faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faMinus, faSortAlphaDown, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -704,8 +702,8 @@ function selectionAsHdaSummary(value: any): HDASummary {
 </template>
 
 <style scoped lang="scss">
-@import "base.scss";
-@import "theme/blue.scss";
+@import "@/style/scss/base.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .list-collection-creator {
     .footer {

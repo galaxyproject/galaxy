@@ -22,6 +22,7 @@ from fastapi import (
     Path,
     Query,
 )
+from fastapi.responses import PlainTextResponse
 from pydantic import Field
 
 from galaxy import exceptions
@@ -46,6 +47,7 @@ from galaxy.schema.jobs import (
     JobInputAssociation,
     JobInputSummary,
     JobOutputAssociation,
+    JobOutputCollectionAssociation,
     ReportJobErrorPayload,
     SearchJobsPayload,
 )
@@ -70,11 +72,14 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import query_parameter_as_list
 from galaxy.webapps.galaxy.services.jobs import (
+    JobCreateResponse,
     JobIndexPayload,
     JobIndexViewEnum,
+    JobRequest,
     JobsService,
 )
 from galaxy.work.context import proxy_work_context_for_history
+from .tools import validate_not_protected
 
 log = logging.getLogger(__name__)
 
@@ -156,6 +161,12 @@ ImplicitCollectionJobsIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     default=None,
     title="Implicit Collection Jobs ID",
     description="Limit listing of jobs to those that match the specified implicit collection job ID. If none, jobs from any implicit collection execution (or from no implicit collection execution) may be returned.",
+)
+
+ToolRequestIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+    default=None,
+    title="Tool Request ID",
+    description="Limit listing of jobs to those that were created from the supplied tool request ID. If none, jobs from any tool request (or from no workflows) may be returned.",
 )
 
 SortByQueryParam: JobIndexSortByEnum = Query(
@@ -261,6 +272,13 @@ class ShowFullJobResponse(EncodedJobDetails):
 class FastAPIJobs:
     service: JobsService = depends(JobsService)
 
+    @router.post("/api/jobs")
+    def create(
+        self, trans: ProvidesHistoryContext = DependsOnTrans, job_request: JobRequest = Body(...)
+    ) -> JobCreateResponse:
+        validate_not_protected(job_request.tool_id)
+        return self.service.create(trans, job_request)
+
     @router.get("/api/jobs")
     def index(
         self,
@@ -277,6 +295,7 @@ class FastAPIJobs:
         workflow_id: Optional[DecodedDatabaseIdField] = WorkflowIdQueryParam,
         invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
         implicit_collection_jobs_id: Optional[DecodedDatabaseIdField] = ImplicitCollectionJobsIdQueryParam,
+        tool_request_id: Optional[DecodedDatabaseIdField] = ToolRequestIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
         search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,
@@ -295,6 +314,7 @@ class FastAPIJobs:
             workflow_id=workflow_id,
             invocation_id=invocation_id,
             implicit_collection_jobs_id=implicit_collection_jobs_id,
+            tool_request_id=tool_request_id,
             order_by=order_by,
             search=search,
             limit=limit,
@@ -319,7 +339,7 @@ class FastAPIJobs:
         for job_input_assoc in job.input_datasets:
             input_dataset_instance = job_input_assoc.dataset
             if input_dataset_instance is None:
-                continue  # type:ignore[unreachable]  # TODO if job_input_assoc.dataset is indeed never None, remove the above check
+                continue  # type: ignore[unreachable]  # TODO if job_input_assoc.dataset is indeed never None, remove the above check
             if input_dataset_instance.get_total_size() == 0:
                 has_empty_inputs = True
             input_instance_id = input_dataset_instance.id
@@ -415,12 +435,14 @@ class FastAPIJobs:
         self,
         job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> list[JobOutputAssociation]:
+    ) -> list[Union[JobOutputAssociation, JobOutputCollectionAssociation]]:
         job = self.service.get_job(trans=trans, job_id=job_id)
         associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
-        output_associations = []
+        output_associations: list[Union[JobOutputAssociation, JobOutputCollectionAssociation]] = []
         for association in associations:
             output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
+
+        output_associations.extend(self.service.dictify_output_collection_associations(trans, job))
         return output_associations
 
     @router.get(
@@ -457,6 +479,7 @@ class FastAPIJobs:
         "/api/jobs/{job_id}/parameters_display",
         name="resolve_parameters_display",
         summary="Resolve parameters as a list for nested display.",
+        unstable=True,
     )
     def parameters_display_by_job(
         self,
@@ -464,11 +487,7 @@ class FastAPIJobs:
         hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
-        """
-        Resolve parameters as a list for nested display.
-        This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-        this endpoint will change frequently.
-        """
+        """Resolve parameters as a list for nested display."""
         hda_ldda_str = hda_ldda or "hda"
         job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
         return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
@@ -478,6 +497,7 @@ class FastAPIJobs:
         name="resolve_parameters_display",
         summary="Resolve parameters as a list for nested display.",
         deprecated=True,
+        unstable=True,
     )
     def parameters_display_by_dataset(
         self,
@@ -485,11 +505,7 @@ class FastAPIJobs:
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
-        """
-        Resolve parameters as a list for nested display.
-        This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-        this endpoint will change frequently.
-        """
+        """Resolve parameters as a list for nested display."""
         job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
         return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
 
@@ -577,6 +593,7 @@ class FastAPIJobs:
                 param=param,
                 param_dump=param_dump,
                 job_state=payload.state,
+                history_id=payload.history_id,
             )
             if job:
                 jobs.append(job)
@@ -597,6 +614,36 @@ class FastAPIJobs:
             return ShowFullJobResponse(**self.service.show(trans, job_id, bool(full)))
         else:
             return EncodedJobDetails(**self.service.show(trans, job_id, bool(full)))
+
+    @router.get(
+        "/api/jobs/{job_id}/stdout",
+        name="get_job_stdout",
+        summary="Return stdout from job execution",
+        response_class=PlainTextResponse,
+    )
+    def stdout(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> str:
+        """Return job stdout as plain text."""
+        job = self.service.get_job(trans=trans, job_id=job_id)
+        return job.stdout or ""
+
+    @router.get(
+        "/api/jobs/{job_id}/stderr",
+        name="get_job_stderr",
+        summary="Return stderr from job execution",
+        response_class=PlainTextResponse,
+    )
+    def stderr(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> str:
+        """Return job stderr as plain text."""
+        job = self.service.get_job(trans=trans, job_id=job_id)
+        return job.stderr or ""
 
     @router.delete(
         "/api/jobs/{job_id}",

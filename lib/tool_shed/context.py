@@ -148,6 +148,10 @@ class SessionRequestContextImpl(SessionRequestContext):
 
     @property
     def repositories_hostname(self) -> str:
+        # Use configured tool_shed_url if available
+        if tool_shed_url := self.app.config.tool_shed_url:
+            return tool_shed_url.rstrip("/")
+        # Fall back to request-based URL
         return str(self.request.base).rstrip("/")
 
     @property

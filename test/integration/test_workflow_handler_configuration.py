@@ -17,8 +17,7 @@ from galaxy_test.driver import integration_util
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 WORKFLOW_HANDLER_CONFIGURATION_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "workflow_handler_configuration_job_conf.xml")
 
-WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE = string.Template(
-    """
+WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE = string.Template("""
 <job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
@@ -42,11 +41,9 @@ WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE = string.Template(
         </destination>
     </destinations>
 </job_conf>
-"""
-)
+""")
 
-POOL_JOB_CONFIG_TEMPLATE = string.Template(
-    """<job_conf>
+POOL_JOB_CONFIG_TEMPLATE = string.Template("""<job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
     </plugins>
@@ -57,11 +54,9 @@ POOL_JOB_CONFIG_TEMPLATE = string.Template(
         </destination>
     </destinations>
 </job_conf>
-"""
-)
+""")
 
-WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template(
-    """
+WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template("""
 <workflow_schedulers default="core">
   <core id="core" />
   <handlers default="workflow_handlers" $assign_with>
@@ -69,8 +64,7 @@ WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template(
     <handler id="work2" tags="workflow_handlers" />
   </handlers>
 </workflow_schedulers>
-"""
-)
+""")
 JOB_HANDLER_PATTERN = re.compile(r"handler\d")
 WORKFLOW_SCHEDULER_HANDLER_PATTERN = re.compile(r"work\d")
 

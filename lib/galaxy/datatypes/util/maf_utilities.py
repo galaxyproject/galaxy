@@ -2,6 +2,7 @@
 """
 Provides wrappers and utilities for working with MAF files and alignments.
 """
+
 # Dan Blankenberg
 
 import functools

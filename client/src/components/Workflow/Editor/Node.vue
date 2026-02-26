@@ -82,7 +82,7 @@
             </b-button-group>
             <i :class="iconClass" />
             <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
-                <FontAwesomeIcon icon="fa-code-branch" />
+                <FontAwesomeIcon :icon="faCodeBranch" />
             </span>
             <span
                 v-b-tooltip.hover
@@ -158,7 +158,6 @@
 </template>
 
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCodeBranch, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
@@ -174,7 +173,12 @@ import type { GraphStep } from "@/composables/useInvocationGraph";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import { useWorkflowNodeInspectorStore } from "@/stores/workflowNodeInspectorStore";
-import type { InputTerminalSource, OutputTerminalSource, Step } from "@/stores/workflowStepStore";
+import {
+    getCombinedStepInputs,
+    type InputTerminalSource,
+    type OutputTerminalSource,
+    type Step,
+} from "@/stores/workflowStepStore";
 import { composedPartialPath, isClickable } from "@/utils/dom";
 
 import { isWorkflowInput } from "../constants";
@@ -189,8 +193,6 @@ import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 
 Vue.use(BootstrapVue);
-
-library.add(faCodeBranch);
 
 const props = defineProps({
     id: { type: Number, required: true },
@@ -293,8 +295,9 @@ const headerClass = computed(() => {
 
 const inputs = computed(() => {
     const connections = connectionStore.getConnectionsForStep(props.id);
-    const extraStepInputs = stepStore.getStepExtraInputs(props.id);
-    const stepInputs = [...extraStepInputs, ...(props.step.inputs || [])];
+    // Use getCombinedStepInputs for Step objects, fall back to direct access for GraphStep
+    const step = stepStore.getStep(props.id);
+    const stepInputs = step ? getCombinedStepInputs(step, stepStore) : [...(props.step.inputs || [])];
     const unknownInputs: string[] = [];
     connections.forEach((connection) => {
         if (connection.input.stepId == props.id && !stepInputs.find((input) => input.name === connection.input.name)) {
@@ -432,7 +435,7 @@ function toggleSelected() {
 </script>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-node {
     --dblclick: prevent;

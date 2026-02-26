@@ -45,9 +45,9 @@ from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
 )
-from galaxy.jobs import JobDestination
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
@@ -55,6 +55,8 @@ from galaxy.jobs.runners import (
 )
 from galaxy.model.base import check_database_connection
 from galaxy.tool_util.deps import dependencies
+from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
+from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.util import (
     galaxy_directory,
     specs,
@@ -65,7 +67,7 @@ from galaxy.util import (
 if TYPE_CHECKING:
     from pulsar.client.client import BaseJobClient
 
-    from galaxy.jobs.wrappers import MinimalJobWrapper
+    from galaxy.jobs import MinimalJobWrapper
 
 log = logging.getLogger(__name__)
 
@@ -81,6 +83,7 @@ MINIMUM_PULSAR_VERSIONS = {
     "_default_": Version("0.7.0.dev3"),
     "remote_metadata": Version("0.8.0"),
     "remote_container_handling": Version("0.9.1.dev0"),  # probably 0.10 ultimately?
+    "dataset_collector_descriptions": Version("0.15.13.dev0"),  # Support for directory-aware pattern matching
 }
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
@@ -197,6 +200,22 @@ PULSAR_PARAM_SPECS = dict(
         map=int,
         default=None,
     ),
+    relay_url=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    relay_username=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    relay_password=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    relay_topic_prefix=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
 )
 
 
@@ -204,7 +223,7 @@ PARAMETER_SPECIFICATION_REQUIRED = object()
 PARAMETER_SPECIFICATION_IGNORED = object()
 
 
-class PulsarJobRunner(AsynchronousJobRunner):
+class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     """Base class for pulsar job runners."""
 
     start_methods = ["_init_worker_threads", "_init_client_manager", "_monitor"]
@@ -260,7 +279,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             client_manager_kwargs[kwd] = self.runner_params[kwd]
 
         for kwd in self.runner_params.keys():
-            if kwd.startswith("amqp_") or kwd.startswith("transport_"):
+            if kwd.startswith("amqp_") or kwd.startswith("transport_") or kwd.startswith("relay_"):
                 client_manager_kwargs[kwd] = self.runner_params[kwd]
 
         return client_manager_kwargs
@@ -287,7 +306,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             conf["galaxy_home"] = galaxy_directory()
         self.pulsar_app = pulsar.core.PulsarApp(**conf)
 
-    def url_to_destination(self, url):
+    def url_to_destination(self, url: str) -> JobDestination:
         """Convert a legacy URL to a job destination."""
         return JobDestination(runner="pulsar", params=url_to_destination_params(url))
 
@@ -364,7 +383,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             job_state.job_wrapper.change_state(model.Job.states.RUNNING)
         return job_state
 
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         job_destination = job_wrapper.job_destination
         self._populate_parameter_defaults(job_destination)
 
@@ -445,12 +464,13 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 job_directory_path = tool_env.get("job_directory_path")
                 if job_directory_path:
                     config_files.append(job_directory_path)
+            assert job_wrapper.tool is not None
             tool_directory_required_files = job_wrapper.tool.required_files
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 input_files=input_files,
                 client_inputs=client_inputs,  # Only one of these input defs should be non-None
-                client_outputs=self.__client_outputs(client, job_wrapper),
+                client_outputs=self.__client_outputs(client, job_wrapper, remote_job_config),
                 working_directory=job_wrapper.tool_working_directory,
                 metadata_directory=metadata_directory,
                 tool=job_wrapper.tool if job_wrapper.tool and job_wrapper.tool.tool_dir else None,
@@ -478,9 +498,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
             return
 
         pulsar_job_state = AsynchronousJobState(
-            job_wrapper=job_wrapper, job_id=external_job_id, job_destination=job_destination
+            job_wrapper=job_wrapper, job_destination=job_destination, job_id=external_job_id
         )
-        pulsar_job_state.old_state = True
+        pulsar_job_state.old_state = model.Job.states.NEW
         pulsar_job_state.running = False
         self.monitor_job(pulsar_job_state)
 
@@ -490,7 +510,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             "remote_container_handling": PulsarJobRunner.__remote_container_handling(client),
         }
 
-    def __prepare_job(self, job_wrapper, job_destination):
+    def __prepare_job(self, job_wrapper: "MinimalJobWrapper", job_destination):
         """Build command-line and Pulsar client for this job."""
         command_line = None
         client = None
@@ -501,6 +521,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         fail_or_resubmit = False
         try:
             client = self.get_client_from_wrapper(job_wrapper)
+            assert job_wrapper.tool is not None
             tool = job_wrapper.tool
             remote_job_config = client.setup(tool.id, tool.version, tool.requires_galaxy_python_environment)
             remote_container_handling = PulsarJobRunner.__remote_container_handling(client)
@@ -634,10 +655,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
         input_paths = job_wrapper.job_io.get_input_paths(None)
         return [str(i) for i in input_paths]  # Force job_path from DatasetPath objects.
 
-    def get_client_from_wrapper(self, job_wrapper):
+    def get_client_from_wrapper(self, job_wrapper: "MinimalJobWrapper") -> "BaseJobClient":
         job_id = job_wrapper.job_id
-        if hasattr(job_wrapper, "task_id"):
-            job_id = f"{job_id}_{job_wrapper.task_id}"
         params = job_wrapper.job_destination.params.copy()
         if user := job_wrapper.get_job().user:
             for key, value in params.items():
@@ -675,7 +694,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_destination_params = dict(job_destination_params.items())
         return self.client_manager.get_client(job_destination_params, **get_client_kwds)
 
-    def finish_job(self, job_state: JobState):
+    def finish_job(self, job_state: JobState) -> None:
         assert isinstance(
             job_state, AsynchronousJobState
         ), f"job_state type is '{type(job_state)}', expected AsynchronousJobState"
@@ -711,7 +730,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 log.debug("Setting exit code for stopped job {job_wrapper.job_id} to 0 (was {exit_code})")
                 exit_code = 0
             cleanup_job = job_wrapper.cleanup_job
-            client_outputs = self.__client_outputs(client, job_wrapper)
+            # Pass run_results as remote_job_config for version detection
+            client_outputs = self.__client_outputs(client, job_wrapper, run_results)
             finish_args = dict(
                 client=client,
                 job_completed_normally=completed_normally,
@@ -812,15 +832,15 @@ class PulsarJobRunner(AsynchronousJobRunner):
             client = self.get_client(job.destination_params, job_id)
             client.kill()
 
-    def recover(self, job, job_wrapper):
+    def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
         """Recover jobs stuck in the queued/running state when Galaxy started."""
         job_state = self._job_state(job, job_wrapper)
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
         if state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:
             log.debug(f"(Pulsar/{job.id}) is still in {state} state, adding to the Pulsar queue")
-            job_state.old_state = True
-            job_state.running = state == model.Job.states.RUNNING
+            job_state.old_state = state if state != model.Job.states.STOPPED else model.Job.states.RUNNING
+            job_state.running = state != model.Job.states.QUEUED
             self.monitor_queue.put(job_state)
 
     def shutdown(self):
@@ -829,24 +849,38 @@ class PulsarJobRunner(AsynchronousJobRunner):
         if self.pulsar_app:
             self.pulsar_app.shutdown()
 
-    def _job_state(self, job, job_wrapper):
-        raw_job_id = job.get_job_runner_external_id() or job_wrapper.job_id
-        job_state = AsynchronousJobState(
-            job_wrapper=job_wrapper, job_id=raw_job_id, job_destination=job_wrapper.job_destination
-        )
+    def _job_state(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> AsynchronousJobState:
         # TODO: Determine why this is set when using normal message queue updates
         # but not CLI submitted MQ updates...
-        job_state.runner_url = job_wrapper.get_job_runner_url()
+        raw_job_id = job.get_job_runner_external_id() or str(job_wrapper.job_id)
+        job_state = AsynchronousJobState(
+            job_wrapper=job_wrapper, job_destination=job_wrapper.job_destination, job_id=raw_job_id
+        )
         return job_state
 
-    def __client_outputs(self, client, job_wrapper):
+    def __client_outputs(
+        self, client: "BaseJobClient", job_wrapper: "MinimalJobWrapper", remote_job_config
+    ) -> ClientOutputs:
         metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
         metadata_strategy = job_wrapper.get_destination_configuration("metadata_strategy", None)
+        assert job_wrapper.tool is not None
         tool = job_wrapper.tool
         tool_provided_metadata_file_path = tool.provided_metadata_file
         tool_provided_metadata_style = tool.provided_metadata_style
 
         dynamic_outputs = None  # use default
+        dataset_collector_descriptions = []
+
+        # Check if Pulsar version supports dataset collector descriptions (>= 0.15.13)
+        pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
+        supports_dataset_collectors = pulsar_version >= MINIMUM_PULSAR_VERSIONS["dataset_collector_descriptions"]
+        if supports_dataset_collectors:
+            log.debug(f"Pulsar version {pulsar_version} supports dataset collector descriptions")
+        else:
+            log.debug(
+                f"Pulsar version {pulsar_version} does not support dataset collector descriptions, using legacy pattern matching"
+            )
+
         if metadata_strategy == "extended" and PulsarJobRunner.__remote_metadata(client):
             # if Pulsar is doing remote metadata and the remote metadata is extended,
             # we only need to recover the final model store.
@@ -856,8 +890,38 @@ class PulsarJobRunner(AsynchronousJobRunner):
         else:
             # otherwise collect everything we might need
             dynamic_outputs = DEFAULT_DYNAMIC_COLLECTION_PATTERN[:]
-            # grab discovered outputs...
-            dynamic_outputs.extend(job_wrapper.tool.output_discover_patterns)
+
+            # Collect dataset collector descriptions for proper pattern matching in Pulsar
+            # These will be used for pattern matching with full support for directory, recurse, match_relative_path
+            # Only if Pulsar version supports it (>= 0.15.13)
+            # Only include FilePatternDatasetCollectionDescription - ToolProvidedMetadataDatasetCollection
+            # uses the dynamic_file_sources mechanism (galaxy.json) and has no patterns for file matching
+            if supports_dataset_collectors:
+                for output in job_wrapper.tool.outputs.values():
+                    if isinstance(output, ToolOutput):
+                        dataset_collector_descriptions.extend(
+                            [
+                                desc.to_dict()
+                                for desc in output.dataset_collector_descriptions
+                                if isinstance(desc, FilePatternDatasetCollectionDescription)
+                            ]
+                        )
+                for output_collection in job_wrapper.tool.output_collections.values():
+                    collector_descs = output_collection.structure.dataset_collector_descriptions
+                    if collector_descs:
+                        dataset_collector_descriptions.extend(
+                            [
+                                desc.to_dict()
+                                for desc in collector_descs
+                                if isinstance(desc, FilePatternDatasetCollectionDescription)
+                            ]
+                        )
+
+            # Only add raw patterns to dynamic_outputs if we don't have dataset collector descriptions
+            # (dataset collectors provide more precise matching with directory restrictions)
+            else:
+                # grab discovered outputs...
+                dynamic_outputs.extend(job_wrapper.tool.output_discover_patterns)
             # grab tool provided metadata (galaxy.json) also...
             dynamic_outputs.append(re.escape(tool_provided_metadata_file_path))
             output_files = self.get_output_files(job_wrapper)
@@ -876,6 +940,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             version_file=job_wrapper.get_version_string_path(),
             dynamic_outputs=dynamic_outputs,
             dynamic_file_sources=dynamic_file_sources,
+            dataset_collector_descriptions=dataset_collector_descriptions,
         )
         return client_outputs
 

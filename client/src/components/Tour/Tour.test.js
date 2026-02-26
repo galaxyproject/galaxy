@@ -1,6 +1,7 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
@@ -10,7 +11,7 @@ const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
 
-jest.mock("app");
+vi.mock("app");
 
 const mockTours = [
     {

@@ -2,11 +2,11 @@
 import { useEventListener } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
 
-import { Transform } from "@/components/Workflow/Editor/modules/geometry";
+import { Transform, type WorkflowTransform } from "@/components/Workflow/Editor/modules/geometry";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
 const props = defineProps<{
-    transform: { x: number; y: number; k: number };
+    transform: WorkflowTransform;
 }>();
 
 const { toolbarStore } = useWorkflowStores();

@@ -7,7 +7,7 @@ from __future__ import print_function
 
 import sys
 
-MIN_VERSION_TUPLE = (3, 9)
+MIN_VERSION_TUPLE = (3, 10)
 
 
 def check_python():

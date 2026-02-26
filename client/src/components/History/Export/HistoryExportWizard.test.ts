@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
@@ -10,6 +11,7 @@ import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 import HistoryExportWizard from "./HistoryExportWizard.vue";
 
 const localVue = getLocalVue(true);
+const router = injectTestRouter(localVue);
 
 const FAKE_HISTORY_ID = "fake-history-id";
 const FAKE_HISTORY_NAME = "Test History";
@@ -68,9 +70,9 @@ const USER_ZENODO_PLUGIN: BrowsableFilesSourcePlugin = {
 
 const selectors = {
     wizard: ".history-export-wizard",
-    formatCard: "[data-history-export-format]",
+    formatCard: "[data-export-format]",
     destinationCard: "[data-history-export-destination]",
-    directoryInput: "#directory",
+    directoryInput: '[data-test-id="export-destination-input"]',
     fileNameInput: "#exported-file-name",
     includeFilesCheckbox: 'input[type="checkbox"]',
     submitButton: ".go-next-btn",
@@ -88,7 +90,7 @@ interface MountOptions {
 async function mountHistoryExportWizard(options: MountOptions = {}) {
     const { historyId = FAKE_HISTORY_ID, historyName = FAKE_HISTORY_NAME, isBusy = false } = options;
 
-    const pinia = createTestingPinia({ stubActions: false });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     const wrapper = mount(HistoryExportWizard as object, {
@@ -99,6 +101,7 @@ async function mountHistoryExportWizard(options: MountOptions = {}) {
         },
         localVue,
         pinia,
+        router,
     });
 
     await flushPromises();
@@ -142,7 +145,7 @@ describe("HistoryExportWizard.vue", () => {
             const formatCards = wrapper.findAll(selectors.formatCard);
             expect(formatCards.length).toBe(formats.length);
             for (const format of formats) {
-                const card = wrapper.find(`[data-history-export-format="${format.id}"]`);
+                const card = wrapper.find(`[data-export-format="${format.id}"]`);
                 expect(card.exists()).toBe(true);
                 expect(card.text()).toContain(format.label);
             }
@@ -250,6 +253,7 @@ describe("HistoryExportWizard.vue", () => {
             nextButton = wrapper.find(selectors.nextButton);
             if (nextButton.exists()) {
                 await nextButton.trigger("click");
+                await flushPromises();
             }
 
             // Check that the setup step is rendered with directory selection
@@ -285,18 +289,23 @@ describe("HistoryExportWizard.vue", () => {
             nextButton = wrapper.find(selectors.nextButton);
             if (nextButton.exists()) {
                 await nextButton.trigger("click");
+                await flushPromises();
             }
 
-            // Simulate selecting a directory by triggering the input
-            const directoryInput = wrapper.find('input[placeholder="Click to select directory"]');
-            if (directoryInput.exists()) {
-                await directoryInput.setValue("gxfiles://test-remote-source/test-directory");
+            // Find the files input using the data-test-id and simulate setting a value
+            const filesInputElement = wrapper.find('[data-test-id="export-destination-input"]');
+            if (filesInputElement.exists()) {
+                // Trigger the input event to update the parent component's state
+                await filesInputElement.setValue("gxfiles://test-posix-source/test-directory");
+                await filesInputElement.trigger("input");
+                await flushPromises();
             }
 
             // Step 4: Navigate to final step
             nextButton = wrapper.find(selectors.nextButton);
             if (nextButton.exists()) {
                 await nextButton.trigger("click");
+                await flushPromises();
             }
 
             // Check if the file name input has the expected placeholder text
@@ -362,6 +371,7 @@ describe("HistoryExportWizard.vue", () => {
             nextButton = wrapper.find(selectors.nextButton);
             if (nextButton.exists()) {
                 await nextButton.trigger("click");
+                await flushPromises();
             }
 
             // Check for directory input presence
@@ -396,6 +406,7 @@ describe("HistoryExportWizard.vue", () => {
             nextButton = wrapper.find(selectors.nextButton);
             if (nextButton.exists()) {
                 await nextButton.trigger("click");
+                await flushPromises();
             }
 
             // Should show setup for remote source

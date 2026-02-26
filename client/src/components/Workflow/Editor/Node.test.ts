@@ -1,8 +1,9 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 
@@ -10,7 +11,11 @@ import { mockOffset } from "./test_fixtures";
 
 import Node from "./Node.vue";
 
-jest.mock("app");
+vi.mock("@/app", () => ({
+    getGalaxyInstance: vi.fn(() => ({
+        config: { enable_tool_recommendations: false },
+    })),
+}));
 
 const localVue = getLocalVue();
 
@@ -22,7 +27,7 @@ const MOCK_SCROLL = {
 
 describe("Node", () => {
     it("test attributes", async () => {
-        const testingPinia = createTestingPinia();
+        const testingPinia = createTestingPinia({ createSpy: vi.fn });
         setActivePinia(testingPinia);
         const wrapper = shallowMount(Node as any, {
             propsData: {

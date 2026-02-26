@@ -9,10 +9,12 @@ corresponding to files in other contexts.
 import abc
 import logging
 import os
-from collections.abc import Iterable
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from typing import (
     Any,
-    Callable,
     NamedTuple,
     Optional,
     TYPE_CHECKING,

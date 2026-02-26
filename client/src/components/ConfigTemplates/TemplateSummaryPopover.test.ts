@@ -1,5 +1,6 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it } from "vitest";
 
 import { STANDARD_FILE_SOURCE_TEMPLATE } from "./test_fixtures";
 

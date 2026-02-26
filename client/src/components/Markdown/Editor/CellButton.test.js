@@ -1,5 +1,6 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { describe, expect, it, vi } from "vitest";
 
 import Target from "./CellButton.vue";
 
@@ -31,7 +32,7 @@ describe("CellButton.vue", () => {
         await wrapper.trigger("click");
         expect(wrapper.emitted("click")).toBeTruthy();
         expect(wrapper.emitted("click")?.length).toBe(1);
-        wrapper.element.blur = jest.fn();
+        wrapper.element.blur = vi.fn();
         await wrapper.trigger("mouseleave");
         expect(wrapper.element.blur).toHaveBeenCalled();
     });

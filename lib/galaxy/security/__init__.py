@@ -4,10 +4,9 @@ Galaxy Security
 """
 
 from typing import (
+    Literal,
     Optional,
 )
-
-from typing_extensions import Literal
 
 from galaxy.util.bunch import Bunch
 

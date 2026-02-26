@@ -2,7 +2,10 @@ import json
 import logging
 import time
 from datetime import datetime
-from typing import Union
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 from galaxy import model
 from galaxy.jobs.runners import (
@@ -14,6 +17,9 @@ from galaxy.util import (
     requests,
     unicodify,
 )
+
+if TYPE_CHECKING:
+    from galaxy.jobs import MinimalJobWrapper
 
 log = logging.getLogger(__name__)
 
@@ -116,7 +122,7 @@ class Godocker:
         return False
 
 
-class GodockerJobRunner(AsynchronousJobRunner):
+class GodockerJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
@@ -144,7 +150,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
             self.runner_params["key"], self.runner_params["user"], self.runner_params["godocker_master"]
         )
 
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         """Create job script and submit it to godocker"""
         if not self.prepare_job(
             job_wrapper, include_metadata=False, include_work_dir_outputs=True, modify_command_for_container=False
@@ -159,12 +165,14 @@ class GodockerJobRunner(AsynchronousJobRunner):
             job_wrapper.fail("Not submitted")
         else:
             log.debug(f"Starting queue_job for job {job_id}")
+            # store runner information for tracking if Galaxy restarts
+            job_wrapper.set_external_id(job_id)
             # Create an object of AsynchronousJobState and add it to the monitor queue.
             ajs = AsynchronousJobState(
-                files_dir=job_wrapper.working_directory,
                 job_wrapper=job_wrapper,
-                job_id=job_id,
                 job_destination=job_destination,
+                files_dir=job_wrapper.working_directory,
+                job_id=job_id,
             )
             self.monitor_queue.put(ajs)
 
@@ -246,12 +254,12 @@ class GodockerJobRunner(AsynchronousJobRunner):
             self.delete_task(job_id)
         return None
 
-    def recover(self, job, job_wrapper):
+    def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         # This method is called by Galaxy at startup time.
         # Jobs in Running & Queued state in galaxy are put in the monitor_queue
         # by creating an AsynchronousJobState object
-        job_id = job_wrapper.job_id
+        job_id = job.get_job_runner_external_id()
         ajs = AsynchronousJobState(
             files_dir=job_wrapper.working_directory,
             job_wrapper=job_wrapper,
@@ -263,7 +271,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
             log.debug(
                 f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the god queue"
             )
-            ajs.old_state = "R"
+            ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
 
@@ -271,7 +279,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
             log.debug(
                 f"({job.id}/{job.get_job_runner_external_id()}) is still in god queued state, adding to the god queue"
             )
-            ajs.old_state = "Q"
+            ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)
 

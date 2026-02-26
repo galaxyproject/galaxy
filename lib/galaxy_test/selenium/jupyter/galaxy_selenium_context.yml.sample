@@ -6,3 +6,7 @@ login_password: mycoolpassw0rd
 #selenium_galaxy_url:
 # Setup an admin API key if needed for testing populators & fixture creation.
 #admin_api_key:
+
+# Some selenium tests depend on an admin username and password
+#admin_email: admin@example.com
+#admin_password: mycoolpassw0rdbutlongerbecuaseiamanadmin

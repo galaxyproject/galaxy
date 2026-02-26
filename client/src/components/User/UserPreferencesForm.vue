@@ -2,7 +2,6 @@
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watchEffect } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { isRegisteredUser } from "@/api";
 import {
@@ -18,6 +17,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     formId: UserPreferencesKey;
+    id?: string;
 }
 
 const props = defineProps<Props>();
@@ -29,13 +29,11 @@ const breadcrumbItems = computed(() => [{ title: "User Preferences", to: "/user"
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
 
-const router = useRouter();
-
 const loading = ref(true);
 
 const model = computed<UserPreferencesModel | undefined>(() => {
-    if (router.currentRoute.params.id) {
-        return getUserPreferencesModel(router.currentRoute.params.id);
+    if (props.id) {
+        return getUserPreferencesModel(props.id);
     } else if (isRegisteredUser(currentUser.value)) {
         return getUserPreferencesModel(currentUser.value.id);
     } else {

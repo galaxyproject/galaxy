@@ -1,6 +1,7 @@
 import { computed, del, ref, set } from "vue";
 
 import type { FieldDict, SampleSheetColumnDefinitions } from "@/api";
+import { isWorkflowInput } from "@/components/Workflow/constants";
 import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
@@ -150,6 +151,15 @@ interface StepInputMapOver {
 
 export type WorkflowStepStore = ReturnType<typeof useWorkflowStepStore>;
 
+/**
+ * Returns combined step inputs: extra inputs (e.g., "when" conditionals) followed by regular inputs.
+ * This is the single source of truth for all step inputs.
+ */
+export function getCombinedStepInputs(step: Step, stepStore: WorkflowStepStore): InputTerminalSource[] {
+    const extraInputs = stepStore.getStepExtraInputs(step.id);
+    return [...extraInputs, ...step.inputs];
+}
+
 export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (workflowId) => {
     const steps = ref<Steps>({});
     const stepMapOver = ref<{ [index: number]: CollectionTypeDescriptor }>({});
@@ -175,6 +185,10 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
 
     const hasActiveOutputs = computed(() =>
         Boolean(Object.values(steps.value).find((step) => step.workflow_outputs?.length)),
+    );
+
+    const hasInputSteps = computed(() =>
+        Boolean(Object.values(steps.value).find((step) => isWorkflowInput(step.type))),
     );
 
     const workflowOutputs = computed(() => {
@@ -394,6 +408,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         getStepExtraInputs,
         getStepIndex,
         hasActiveOutputs,
+        hasInputSteps,
         workflowOutputs,
         duplicateLabels,
         addStep,

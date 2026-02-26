@@ -104,7 +104,7 @@ const stepIsTerminal = computed<boolean | null>(() => {
         return null;
     }
     const isTerminal =
-        ["scheduled", "cancelled", "failed"].includes(stepDetails.value.state) &&
+        ["scheduled", "cancelled", "failed", "completed"].includes(stepDetails.value.state) &&
         stepDetails.value.jobs.every((job) => TERMINAL_JOB_STATES.includes(job.state));
     return isTerminal;
 });

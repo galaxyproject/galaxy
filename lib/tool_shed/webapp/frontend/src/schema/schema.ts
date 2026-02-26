@@ -552,6 +552,23 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/api/tools/{tool_id}/versions/{tool_version}/parameter_landing_request_schema": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Return a JSON schema description of the tool's inputs for the tool landing request API. */
+        get: operations["tools__parameter_landing_request_schema"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/api/tools/{tool_id}/versions/{tool_version}/parameter_request_schema": {
         parameters: {
             query?: never
@@ -563,7 +580,41 @@ export interface paths {
          * Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point
          * @description The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.
          */
-        get: operations["tools__parameter_request_model"]
+        get: operations["tools__parameter_request_schema"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/api/tools/{tool_id}/versions/{tool_version}/parameter_test_case_xml_schema": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Return a JSON schema description of the tool's inputs for test case construction. */
+        get: operations["tools__parameter_test_case_xml_schema"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/api/tools/{tool_id}/versions/{tool_version}/tool_source": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Return the expanded tool document as a string. */
+        get: operations["tools__tool_source"]
         put?: never
         post?: never
         delete?: never
@@ -916,6 +967,37 @@ export interface components {
             name: string
             /** Repositories */
             repositories: number
+        }
+        /**
+         * ChangesetMetadataStatus
+         * @description Per-changeset detail during reset metadata operation.
+         */
+        ChangesetMetadataStatus: {
+            /** Changeset Revision */
+            changeset_revision: string
+            /** Comparison Result */
+            comparison_result?: string | null
+            /** Error */
+            error?: string | null
+            /**
+             * Has Repository Dependencies
+             * @default false
+             */
+            has_repository_dependencies: boolean
+            /**
+             * Has Tool Dependencies
+             * @default false
+             */
+            has_tool_dependencies: boolean
+            /**
+             * Has Tools
+             * @default false
+             */
+            has_tools: boolean
+            /** Numeric Revision */
+            numeric_revision: number
+            /** Record Operation */
+            record_operation?: ("created" | "updated") | null
         }
         /** Checksum */
         Checksum: {
@@ -1437,6 +1519,9 @@ export interface components {
              * @default [
              *       "data"
              *     ]
+             * @example txt
+             * @example tabular
+             * @example tiff
              */
             extensions: string[]
             /**
@@ -1998,17 +2083,24 @@ export interface components {
             /**
              * Checksum
              * @description A production (immutable) tool version is required to have a hashcode. Not required otherwise, but might be useful to detect changes.  This exposes the hashcode for specific image versions to verify that the container version pulled is actually the version that was indexed by the registry.
+             * @example {
+             *       "checksum": "77af4d6b9913e693e8d0b4b294fa62ade6054e6b2f1ffb617ac955dd63fb0182",
+             *       "type": "sha256"
+             *     }
              */
             checksum?: components["schemas"]["Checksum"][] | null
             /**
              * Image Name
              * @description Used in conjunction with a registry_url if provided to locate images.
+             * @example quay.io/seqware/seqware_full/1.1
+             * @example ubuntu:latest
              */
             image_name?: string | null
             image_type?: components["schemas"]["ImageType"] | null
             /**
              * Registry Host
              * @description A docker registry or a URL to a Singularity registry. Used along with image_name to locate a specific image.
+             * @example registry.hub.docker.com
              */
             registry_host?: string | null
             /**
@@ -2194,12 +2286,14 @@ export interface components {
             /**
              * Name
              * @description Name of the organization responsible for the service
+             * @example My organization
              */
             name: string
             /**
              * Url
              * Format: uri
              * @description URL of the website of the organization (RFC 3986 format)
+             * @example https://example.com
              */
             url: string
         }
@@ -2456,6 +2550,13 @@ export interface components {
             /** Valid Tools */
             valid_tools: components["schemas"]["ValidTool"][]
         }
+        /**
+         * RepositoryMetadataPreview
+         * @description Like RepositoryMetadata but uses RepositoryRevisionMetadataPreview for dry-run scenarios.
+         */
+        RepositoryMetadataPreview: {
+            [key: string]: components["schemas"]["RepositoryRevisionMetadataPreview"]
+        }
         /** RepositoryPermissions */
         RepositoryPermissions: {
             /** Allow Push */
@@ -2498,6 +2599,52 @@ export interface components {
             repository_dependencies: components["schemas"]["RepositoryDependency"][]
             /** Repository Id */
             repository_id: string
+            /** Tools */
+            tools?: components["schemas"]["RepositoryTool"][] | null
+        }
+        /**
+         * RepositoryRevisionMetadataPreview
+         * @description Like RepositoryRevisionMetadata but with Optional fields for dry-run/preview scenarios.
+         *
+         *     During reset_metadata dry-run, metadata objects are created in-memory but not persisted,
+         *     so they lack database IDs. The numeric_revision may also be unavailable for newly-pushed
+         *     changesets that haven't been indexed yet.
+         */
+        RepositoryRevisionMetadataPreview: {
+            /** Changeset Revision */
+            changeset_revision: string
+            /** Downloadable */
+            downloadable: boolean
+            /** Has Repository Dependencies */
+            has_repository_dependencies: boolean
+            /** Id */
+            id?: string | null
+            /** Includes Datatypes */
+            includes_datatypes?: boolean | null
+            /** Includes Tool Dependencies */
+            includes_tool_dependencies?: boolean | null
+            /** Includes Tools */
+            includes_tools: boolean
+            /** Includes Tools For Display In Tool Panel */
+            includes_tools_for_display_in_tool_panel: boolean
+            /** Includes Workflows */
+            includes_workflows?: boolean | null
+            /**
+             * Invalid Tools
+             * @default []
+             */
+            invalid_tools: string[]
+            /** Malicious */
+            malicious: boolean
+            /** Missing Test Components */
+            missing_test_components: boolean
+            /** Numeric Revision */
+            numeric_revision?: number | null
+            repository: components["schemas"]["Repository"]
+            /** Repository Dependencies */
+            repository_dependencies: components["schemas"]["RepositoryDependency"][]
+            /** Repository Id */
+            repository_id?: string | null
             /** Tools */
             tools?: components["schemas"]["RepositoryTool"][] | null
         }
@@ -2587,6 +2734,15 @@ export interface components {
         }
         /** ResetMetadataOnRepositoryResponse */
         ResetMetadataOnRepositoryResponse: {
+            /** Changeset Details */
+            changeset_details?: components["schemas"]["ChangesetMetadataStatus"][] | null
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean
+            repository_metadata_after?: components["schemas"]["RepositoryMetadataPreview"] | null
+            repository_metadata_before?: components["schemas"]["RepositoryMetadataPreview"] | null
             /** Repository Status */
             repository_status: string[]
             /** Start Time */
@@ -2793,36 +2949,43 @@ export interface components {
             /**
              * Contacturl
              * @description URL of the contact for the provider of this service, e.g. a link to a contact form (RFC 3986 format), or an email (RFC 2368 format).
+             * @example mailto:support@example.com
              */
             contactUrl?: string | null
             /**
              * Createdat
              * @description Timestamp describing when the service was first deployed and available (RFC 3339 format)
+             * @example 2019-06-04T12:58:19Z
              */
             createdAt?: string | null
             /**
              * Description
              * @description Description of the service. Should be human readable and provide information about the service.
+             * @example This service provides...
              */
             description?: string | null
             /**
              * Documentationurl
              * @description URL of the documentation of this service (RFC 3986 format). This should help someone learn how to use your service, including any specifics required to access data, e.g. authentication.
+             * @example https://docs.myservice.example.com
              */
             documentationUrl?: string | null
             /**
              * Environment
              * @description Environment the service is running in. Use this to distinguish between production, development and testing/staging deployments. Suggested values are prod, test, dev, staging. However this is advised and not enforced.
+             * @example test
              */
             environment?: string | null
             /**
              * Id
              * @description Unique ID of this service. Reverse domain name notation is recommended, though not required. The identifier should attempt to be globally unique so it can be used in downstream aggregator services e.g. Service Registry.
+             * @example org.ga4gh.myservice
              */
             id: string
             /**
              * Name
              * @description Name of this service. Should be human readable.
+             * @example My project
              */
             name: string
             /** @description Organization providing the service */
@@ -2831,11 +2994,13 @@ export interface components {
             /**
              * Updatedat
              * @description Timestamp describing when the service was last updated (RFC 3339 format)
+             * @example 2019-06-04T12:58:19Z
              */
             updatedAt?: string | null
             /**
              * Version
              * @description Version of the service being described. Semantic versioning is recommended, but other identifiers, such as dates or commit hashes, are also allowed. The version should be changed whenever the service is updated.
+             * @example 1.0.0
              */
             version: string
         }
@@ -2844,16 +3009,19 @@ export interface components {
             /**
              * Artifact
              * @description Name of the API or GA4GH specification implemented. Official GA4GH types should be assigned as part of standards approval process. Custom artifacts are supported.
+             * @example beacon
              */
             artifact: string
             /**
              * Group
              * @description Namespace in reverse domain name format. Use `org.ga4gh` for implementations compliant with official GA4GH specifications. For services with custom APIs not standardized by GA4GH, or implementations diverging from official GA4GH specifications, use a different namespace (e.g. your organization's reverse domain name).
+             * @example org.ga4gh
              */
             group: string
             /**
              * Version
              * @description Version of the API or specification. GA4GH specifications use semantic versioning.
+             * @example 1.0.0
              */
             version: string
         }
@@ -3023,6 +3191,7 @@ export interface components {
             /**
              * Id
              * @description A unique identifier of the tool, scoped to this registry.
+             * @example 123456
              */
             id: string
             /**
@@ -3044,6 +3213,7 @@ export interface components {
             /**
              * Url
              * @description The URL for this tool in this registry.
+             * @example http://agora.broadinstitute.org/tools/123456
              */
             url: string
             /**
@@ -3300,6 +3470,11 @@ export interface components {
             /**
              * Descriptor Type Version
              * @description A map providing information about the language versions used in this tool. The keys should be the same values used in the `descriptor_type` field, and the value should be an array of all the language versions used for the given `descriptor_type`. Depending on the `descriptor_type` (e.g. CWL) multiple version values may be used in a single tool.
+             * @example {
+             *       "WDL": ["1.0", "1.0"],
+             *       "CWL": ["v1.0.2"],
+             *       "NFL": ["DSL2"]
+             *     }
              */
             descriptor_type_version?: {
                 [key: string]: components["schemas"]["DescriptorTypeVersion"][]
@@ -3307,6 +3482,7 @@ export interface components {
             /**
              * Id
              * @description An identifier of the version of this tool for this particular tool registry.
+             * @example v1
              */
             id: string
             /**
@@ -3317,6 +3493,8 @@ export interface components {
             /**
              * Included Apps
              * @description An array of IDs for the applications that are stored inside this tool.
+             * @example https://bio.tools/tool/mytum.de/SNAP2/1
+             * @example https://bio.tools/bioexcel_seqqc
              */
             included_apps?: string[] | null
             /**
@@ -3342,6 +3520,7 @@ export interface components {
             /**
              * Url
              * @description The URL for this tool version in this registry.
+             * @example http://agora.broadinstitute.org/tools/123456/versions/1
              */
             url: string
             /**
@@ -4675,7 +4854,12 @@ export interface operations {
     }
     repositories__reset: {
         parameters: {
-            query?: never
+            query?: {
+                /** @description Preview changes without persisting to database */
+                dry_run?: boolean
+                /** @description Return detailed per-changeset information */
+                verbose?: boolean
+            }
             header?: never
             path: {
                 /** @description The encoded database identifier of the repository. */
@@ -4962,7 +5146,136 @@ export interface operations {
             }
         }
     }
-    tools__parameter_request_model: {
+    tools__parameter_landing_request_schema: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+                tool_id: string
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    tools__parameter_request_schema: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+                tool_id: string
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    tools__parameter_test_case_xml_schema: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+                tool_id: string
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    tools__tool_source: {
         parameters: {
             query?: never
             header?: never

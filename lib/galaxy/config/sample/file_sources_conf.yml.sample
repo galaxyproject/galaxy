@@ -64,6 +64,55 @@
   timeout: 10
   port: 21
 
+# Aspera ascp - High-speed file transfers using Aspera FASP protocol
+# Requires: ascp binary installed and accessible in PATH
+# Download ascp from: https://www.ibm.com/aspera/connect/
+- type: ascp
+  id: ebi_aspera
+  label: "EBI Aspera Downloads"
+  doc: "High-speed downloads from EBI SRA using Aspera FASP protocol"
+  ascp_path: "ascp"  # Path to ascp binary, or just "ascp" if in PATH
+  user: "era-fasp"
+  host: "fasp.sra.ebi.ac.uk"
+  port: 33001
+  rate_limit: "300m"  # Transfer rate limit (e.g., "300m" for 300 Mbps, "1g" for 1 Gbps)
+  disable_encryption: true  # Disable encryption for maximum speed (set to false for sensitive data)
+  # Retry and resume configuration (optional, defaults shown)
+  max_retries: 3  # Maximum retry attempts for failed transfers
+  retry_base_delay: 2.0  # Base delay in seconds for exponential backoff
+  retry_max_delay: 60.0  # Maximum delay between retries
+  enable_resume: true  # Enable resume for interrupted transfers
+  # SSH private key for authentication (download ENA key from: https://www.ebi.ac.uk/ena/browser/about/ascp)
+  # Embed the key content directly in the configuration (required - not file paths)
+  # Note: SSH key content is required because Galaxy jobs often run on clusters that don't 
+  # mount Galaxy's root or configuration directories. The configuration block is copied 
+  # to the job's directory, but referenced key paths wouldn't be accessible.
+  ssh_key_content: |
+    -----BEGIN RSA PRIVATE KEY-----
+    <YOUR ACTUAL SSH PRIVATE KEY CONTENT>
+    -----END RSA PRIVATE KEY-----
+  # SSH key passphrase. https://embl.service-now.com/kb?id=kb_article_view&sys_kb_id=4cc60cf8c398a610bf313dfc0501314c#mcetoc_1idpn4k0to
+  ssh_key_passphrase: sample_passphrase
+  # Note: This plugin is download-only (writable: false, browsable: false)
+
+# Example: Custom Aspera endpoint with encryption enabled
+#- type: ascp
+#  id: custom_aspera
+#  label: "Custom Aspera Server"
+#  doc: "Downloads from custom institutional Aspera endpoint"
+#  ascp_path: "ascp"
+#  user: "myuser"
+#  host: "aspera.example.com"
+#  port: 33001
+#  rate_limit: "500m"
+#  disable_encryption: false  # Enable encryption for security
+#  ssh_key_content: |
+#    -----BEGIN RSA PRIVATE KEY-----
+#    <REPLACE WITH YOUR ACTUAL SSH PRIVATE KEY CONTENT>
+#    -----END RSA PRIVATE KEY-----
+#  writable: false
+#  browsable: false
+
 - type: ssh
   id: writeable-ssh-dir
   requires_roles: writeable-galaxy-role

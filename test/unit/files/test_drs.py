@@ -28,20 +28,31 @@ def test_file_source_drs_http():
             "access_methods": [
                 {
                     "type": "https",
-                    "access_url": {
-                        "url": "https://my.respository.org/myfile.txt",
-                        "headers": ["Authorization: Basic Z2E0Z2g6ZHJz"],
-                    },
                     "access_id": "1234",
                 }
             ],
         }
         return (200, {}, json.dumps(data))
 
+    def access_handler(request):
+        assert request.headers["Authorization"] == "Bearer IBearTokens"
+        access_data = {
+            "url": "https://my.respository.org/myfile.txt",
+            "headers": ["Authorization: Basic Z2E0Z2g6ZHJz"],
+        }
+        return (200, {}, json.dumps(access_data))
+
     responses.add_callback(
         responses.GET,
         "https://drs.example.org/ga4gh/drs/v1/objects/314159",
         callback=drs_repo_handler,
+        content_type="application/json",
+    )
+
+    responses.add_callback(
+        responses.GET,
+        "https://drs.example.org/ga4gh/drs/v1/objects/314159/access/1234",
+        callback=access_handler,
         content_type="application/json",
     )
 
@@ -76,9 +87,6 @@ def test_file_source_drs_s3():
             "access_methods": [
                 {
                     "type": "s3",
-                    "access_url": {
-                        "url": "s3://ga4gh-demo-data/phenopackets/Cao-2018-TGFBR2-Patient_4.json",
-                    },
                     "access_id": "1234",
                     "region": "us-east-1",
                 }
@@ -86,10 +94,24 @@ def test_file_source_drs_s3():
         }
         return (200, {}, json.dumps(data))
 
+    def access_handler(request):
+        assert request.headers["Authorization"] == "Bearer IBearTokens"
+        access_data = {
+            "url": "s3://ga4gh-demo-data/phenopackets/Cao-2018-TGFBR2-Patient_4.json",
+        }
+        return (200, {}, json.dumps(access_data))
+
     responses.add_callback(
         responses.GET,
         "https://drs.example.org/ga4gh/drs/v1/objects/314160",
         callback=drs_repo_handler,
+        content_type="application/json",
+    )
+
+    responses.add_callback(
+        responses.GET,
+        "https://drs.example.org/ga4gh/drs/v1/objects/314160/access/1234",
+        callback=access_handler,
         content_type="application/json",
     )
 

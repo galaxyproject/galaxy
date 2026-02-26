@@ -1,5 +1,124 @@
+<script setup lang="ts">
+import { computed, ref, watch } from "vue";
+
+import {
+    refactor,
+    type RefactorRequestAction,
+    type RefactorResponse,
+    type RefactorResponseActionExecution,
+    type WorkflowVersion,
+} from "@/api/workflows";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+
+import GModal from "@/components/BaseComponents/GModal.vue";
+
+interface Props {
+    refactorActions: RefactorRequestAction[];
+    versions: WorkflowVersion[];
+    workflowId: string;
+    title?: string;
+    message?: string;
+    version?: number;
+}
+const props = withDefaults(defineProps<Props>(), {
+    title: "Issues reworking this workflow",
+    message: "Please review the following potential issues...",
+    version: undefined,
+});
+
+const emit = defineEmits<{
+    (e: "onShow"): void;
+    (e: "onWorkflowMessage", message: string, type: string): void;
+    (e: "onWorkflowError", message: string, response: any): void;
+    (e: "onRefactor", data: RefactorResponse): void;
+}>();
+
+const show = ref(props.refactorActions.length > 0);
+const confirmActionExecutions = ref<RefactorResponseActionExecution[]>([]);
+
+const { confirm } = useConfirmDialog();
+
+/** Determines if the current version is not the latest */
+const isNotLatestVersion = computed(
+    () =>
+        (props.version === 0 || props.version) &&
+        props.versions.length > 1 &&
+        props.version !== props.versions[props.versions.length - 1]?.version,
+);
+
+watch(
+    () => props.refactorActions,
+    (newActions) => {
+        if (newActions.length > 0) {
+            dryRun();
+        }
+    },
+);
+
+watch(show, (newShow) => {
+    if (newShow) {
+        // emit that this is showing, so the workflow editor
+        // can hide modal.
+        emit("onShow");
+    }
+});
+
+async function dryRun() {
+    if (isNotLatestVersion.value) {
+        const contDryRun = await confirm(
+            `This workflow is not the latest version. A refactor will be attempted on the specified "Version ${props.version! + 1}". Do you wish to continue?`,
+            {
+                title: "Confirm Refactor on Older Version",
+                okTitle: `Yes, refactor "Version ${props.version! + 1}"`,
+                cancelTitle: "No, cancel refactor",
+            },
+        );
+        if (!contDryRun) {
+            return;
+        }
+    }
+
+    emit("onWorkflowMessage", "Pre-checking requested workflow changes (dry run)...", "progress");
+    try {
+        const data = await refactor(props.workflowId, props.refactorActions, "editor", true, props.version);
+        onDryRunResponse(data);
+    } catch (response) {
+        onError(response as string);
+    }
+}
+
+function onError(response: string) {
+    emit("onWorkflowError", "Reworking workflow failed...", response);
+}
+
+function onDryRunResponse(data: RefactorResponse) {
+    // TODO: type from schema
+    const actionExecutions = data.action_executions;
+    const anyRequireConfirmation = actionExecutions.some(
+        (execution: RefactorResponseActionExecution) => execution.messages.length > 0,
+    );
+    if (anyRequireConfirmation) {
+        confirmActionExecutions.value = actionExecutions;
+        show.value = true;
+    } else {
+        executeRefactoring();
+    }
+}
+
+async function executeRefactoring() {
+    show.value = false;
+    emit("onWorkflowMessage", "Applying requested workflow changes...", "progress");
+    try {
+        const data = await refactor(props.workflowId, props.refactorActions, "editor", false, props.version);
+        emit("onRefactor", data);
+    } catch (response) {
+        onError(response as string);
+    }
+}
+</script>
+
 <template>
-    <BModal v-model="show" :title="title" scrollable ok-title="Save" @ok="executeRefactoring">
+    <GModal :show.sync="show" :title="title" fixed-height ok-text="Save" @ok="executeRefactoring">
         <div class="workflow-refactor-modal">
             {{ message }}
             <ul>
@@ -12,87 +131,5 @@
                 </li>
             </ul>
         </div>
-    </BModal>
+    </GModal>
 </template>
-
-<script>
-import { BModal } from "bootstrap-vue";
-
-import { refactor } from "./modules/services";
-
-export default {
-    components: { BModal },
-    props: {
-        refactorActions: {
-            type: Array,
-            required: true,
-        },
-        workflowId: {
-            type: String,
-            required: true,
-        },
-        title: {
-            type: String,
-            default: "Issues reworking this workflow",
-        },
-        message: {
-            type: String,
-            default: "Please review the following potential issues...",
-        },
-    },
-    data() {
-        return {
-            show: this.refactorActions.length > 0,
-            confirmActionExecutions: [],
-        };
-    },
-    watch: {
-        refactorActions() {
-            if (this.refactorActions.length > 0) {
-                this.dryRun();
-            }
-        },
-        show() {
-            if (this.show) {
-                // emit that this is showing, so the workflow editor
-                // can hide modal.
-                this.$emit("onShow");
-            }
-        },
-    },
-    methods: {
-        dryRun() {
-            this.$emit("onWorkflowMessage", "Pre-checking requested workflow changes (dry run)...", "progress");
-            refactor(this.workflowId, this.refactorActions, true) // dry run
-                .then(this.onDryRunResponse)
-                .catch(this.onError);
-        },
-        onError(response) {
-            this.$emit("onWorkflowError", "Reworking workflow failed...", response);
-        },
-        onDryRunResponse(data) {
-            let anyRequireConfirmation = false;
-            for (const actionExecution of data.action_executions) {
-                if (actionExecution.messages.length > 0) {
-                    anyRequireConfirmation = true;
-                }
-            }
-            if (anyRequireConfirmation) {
-                this.show = true;
-                this.confirmActionExecutions = data.action_executions;
-            } else {
-                this.executeRefactoring();
-            }
-        },
-        executeRefactoring() {
-            this.show = false;
-            this.$emit("onWorkflowMessage", "Applying requested workflow changes...", "progress");
-            refactor(this.workflowId, this.refactorActions)
-                .then((data) => {
-                    this.$emit("onRefactor", data);
-                })
-                .catch(this.onError);
-        },
-    },
-};
-</script>

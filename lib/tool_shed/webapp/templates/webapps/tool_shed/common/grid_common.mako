@@ -1,5 +1,5 @@
 <%!
-    from galaxy.web.legacy_framework.grids import TextColumn, StateColumn, GridColumnFilter
+    from tool_shed.grids.framework import TextColumn, StateColumn, GridColumnFilter
     from galaxy.web.framework.helpers import iff
 %>
 

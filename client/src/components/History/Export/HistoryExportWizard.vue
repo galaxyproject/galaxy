@@ -1,21 +1,23 @@
 <script setup lang="ts">
-import { BAlert, BCard, BCardGroup, BCardTitle, BFormCheckbox, BFormGroup, BFormInput } from "bootstrap-vue";
+import { BAlert, BCard, BCardGroup, BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, reactive, ref, watch } from "vue";
 
-import { AVAILABLE_EXPORT_FORMATS } from "@/api/histories.export";
+import type { ModelStoreFormat } from "@/api";
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import { borderVariant } from "@/components/Common/Wizard/utils";
+import type { ExportPlugin } from "@/components/Workflow/Invocation/Export/Plugins";
 import { useFileSources } from "@/composables/fileSources";
 import { useMarkdown } from "@/composables/markdown";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
 
 import type { HistoryExportData, HistoryExportDestination } from "./types";
 
+import ExportFormatSelector from "@/components/Common/ExportFormatSelector.vue";
+import ExportIncludeOptions from "@/components/Common/ExportIncludeOptions.vue";
+import ExportRemoteSourceSelector from "@/components/Common/ExportRemoteSourceSelector.vue";
 import RDMCredentialsInfo from "@/components/Common/RDMCredentialsInfo.vue";
 import RDMDestinationSelector from "@/components/Common/RDMDestinationSelector.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
-import ExternalLink from "@/components/ExternalLink.vue";
-import FilesInput from "@/components/FilesDialog/FilesInput.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
@@ -29,6 +31,34 @@ const {
 } = useFileSources({ include: ["rdm"] });
 
 const resource = "history";
+
+// History-specific export plugins
+const historyExportPlugins: ExportPlugin[] = [
+    {
+        id: "ro-crate",
+        title: "RO-Crate",
+        img: "https://www.researchobject.org/ro-crate/assets/img/ro-crate-wide.svg",
+        url: "https://www.researchobject.org/ro-crate/",
+        markdownDescription: `RO-Crate is a community effort to establish a lightweight approach to packaging research data with their metadata. It makes use of schema.org annotations in JSON-LD format.`,
+        exportParams: {
+            modelStoreFormat: "rocrate.zip",
+            includeFiles: true,
+            includeDeleted: false,
+            includeHidden: false,
+        },
+    },
+    {
+        id: "tar-gz",
+        title: "Compressed TGZ",
+        markdownDescription: `A compressed tar.gz archive containing the history and its metadata.`,
+        exportParams: {
+            modelStoreFormat: "tar.gz" as ModelStoreFormat,
+            includeFiles: true,
+            includeDeleted: false,
+            includeHidden: false,
+        },
+    },
+];
 
 interface ExportDestinationInfo {
     destination: HistoryExportDestination;
@@ -84,12 +114,13 @@ const exportDestinationSummary = computed(() => {
 
 const exportDestinationTargets = computed(initializeExportDestinations);
 
-const exportFormats = computed(() => AVAILABLE_EXPORT_FORMATS);
+const selectedPlugin = computed(
+    () =>
+        historyExportPlugins.find((p) => p.exportParams.modelStoreFormat === exportData.modelStoreFormat) ||
+        historyExportPlugins[0],
+);
 
-const exportFormatName = computed(() => {
-    const format = exportFormats.value.find((f) => f.id === exportData.modelStoreFormat);
-    return format ? format.name : "";
-});
+const exportFormatName = computed(() => selectedPlugin.value?.title ?? "");
 
 const zenodoSource = computed(() => getZenodoSource());
 
@@ -153,6 +184,13 @@ function getZenodoSource() {
 
 function onRecordSelected(recordUri: string) {
     exportData.remoteUri = recordUri;
+}
+
+function onFormatSelected(formatId: string) {
+    const plugin = historyExportPlugins.find((p) => p.exportParams.modelStoreFormat === formatId);
+    if (plugin) {
+        exportData.modelStoreFormat = plugin.exportParams.modelStoreFormat;
+    }
 }
 
 async function exportHistory() {
@@ -232,36 +270,10 @@ function resetWizard() {
             :is-busy="isBusy"
             @submit="exportHistory">
             <div v-if="wizard.isCurrent('select-format')">
-                <BCardGroup deck>
-                    <BCard
-                        v-for="format in exportFormats"
-                        :key="format.id"
-                        :data-history-export-format="format.id"
-                        class="wizard-selection-card"
-                        :border-variant="borderVariant(exportData.modelStoreFormat == format.id)"
-                        @click="exportData.modelStoreFormat = format.id">
-                        <BCardTitle>
-                            <b>{{ format.name }}</b>
-                        </BCardTitle>
-                        <div v-if="format.id === 'rocrate.zip'">
-                            <p>
-                                RO-Crate is a community effort to establish a lightweight approach to packaging research
-                                data with their metadata. It makes use of schema.org annotations in JSON-LD format.
-                            </p>
-                            <img
-                                class="card-img"
-                                src="https://www.researchobject.org/ro-crate/assets/img/ro-crate-wide.svg"
-                                alt="RO-Crate Logo" />
-                            <br />
-                            <ExternalLink href="https://www.researchobject.org/ro-crate/">
-                                <b>Learn more</b>
-                            </ExternalLink>
-                        </div>
-                        <div v-else>
-                            <p>A compressed tar.gz archive containing the history and its metadata.</p>
-                        </div>
-                    </BCard>
-                </BCardGroup>
+                <ExportFormatSelector
+                    :model-value="exportData.modelStoreFormat"
+                    :plugins="historyExportPlugins"
+                    @update:model-value="onFormatSelected" />
             </div>
 
             <div v-if="wizard.isCurrent('select-destination')">
@@ -283,18 +295,10 @@ function resetWizard() {
             </div>
 
             <div v-if="wizard.isCurrent('setup-remote')">
-                <BFormGroup
-                    id="fieldset-directory"
-                    label-for="directory"
-                    :description="`Select a 'repository' to export ${resource} to.`"
-                    class="mt-3">
-                    <FilesInput
-                        id="directory"
-                        v-model="exportData.remoteUri"
-                        mode="directory"
-                        :require-writable="true"
-                        :filter-options="{ exclude: ['rdm'] }" />
-                </BFormGroup>
+                <ExportRemoteSourceSelector
+                    :directory="exportData.remoteUri"
+                    :resource-name="resource"
+                    @update:directory="exportData.remoteUri = $event" />
             </div>
 
             <div v-if="wizard.isCurrent('setup-rdm')">
@@ -337,15 +341,13 @@ function resetWizard() {
                         required />
                 </BFormGroup>
 
-                <BFormGroup label="Dataset files included in the package:">
-                    <BFormCheckbox v-model="exportData.includeFiles" switch> Include Active Files </BFormCheckbox>
-
-                    <BFormCheckbox v-model="exportData.includeDeleted" switch>
-                        Include Deleted (not purged)
-                    </BFormCheckbox>
-
-                    <BFormCheckbox v-model="exportData.includeHidden" switch> Include Hidden </BFormCheckbox>
-                </BFormGroup>
+                <ExportIncludeOptions
+                    :include-files="exportData.includeFiles"
+                    :include-deleted="exportData.includeDeleted"
+                    :include-hidden="exportData.includeHidden"
+                    @update:include-files="exportData.includeFiles = $event"
+                    @update:include-deleted="exportData.includeDeleted = $event"
+                    @update:include-hidden="exportData.includeHidden = $event" />
 
                 <br />
 

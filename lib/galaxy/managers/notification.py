@@ -22,6 +22,7 @@ from sqlalchemy import (
     union,
     update,
 )
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import Select
 from typing_extensions import Protocol
@@ -212,7 +213,7 @@ class NotificationManager:
         for user in users:
             try:
                 if self._is_user_subscribed_to_notification(user, notification):
-                    settings = self._get_user_category_settings(user, notification.category)  # type:ignore[arg-type]
+                    settings = self._get_user_category_settings(user, notification.category)  # type: ignore[arg-type]
                     self._send_via_channels(notification, user, settings.channels)
             except Exception as e:
                 log.error(f"Error sending notification to user {user.id}. Reason: {util.unicodify(e)}")
@@ -235,7 +236,7 @@ class NotificationManager:
         if self._is_urgent(notification):
             # Urgent notifications are always sent
             return True
-        category_settings = self._get_user_category_settings(user, notification.category)  # type:ignore[arg-type]
+        category_settings = self._get_user_category_settings(user, notification.category)  # type: ignore[arg-type]
         return self._is_subscribed_to_category(category_settings)
 
     def _send_via_channels(self, notification: Notification, user: User, channel_settings: NotificationChannelSettings):
@@ -371,7 +372,7 @@ class NotificationManager:
             stmt = stmt.values(seen_time=seen_time)
         if request.deleted is not None:
             stmt = stmt.values(deleted=request.deleted)
-        result = self.sa_session.execute(stmt)
+        result = cast(CursorResult, self.sa_session.execute(stmt))
         updated_row_count = result.rowcount
         self.sa_session.commit()
         return updated_row_count
@@ -395,7 +396,7 @@ class NotificationManager:
             stmt = stmt.values(expiration_time=request.expiration_time)
         if request.content is not None:
             stmt = stmt.values(content=request.content.json())
-        result = self.sa_session.execute(stmt)
+        result = cast(CursorResult, self.sa_session.execute(stmt))
         updated_row_count = result.rowcount
         self.sa_session.commit()
         return updated_row_count
@@ -449,11 +450,13 @@ class NotificationManager:
         delete_stmt = delete(UserNotificationAssociation).where(
             UserNotificationAssociation.notification_id.in_(expired_notifications_stmt)
         )
-        result = self.sa_session.execute(delete_stmt, execution_options={"synchronize_session": False})
+        result = cast(
+            CursorResult, self.sa_session.execute(delete_stmt, execution_options={"synchronize_session": False})
+        )
         deleted_associations_count = result.rowcount
 
         delete_stmt = delete(Notification).where(notification_has_expired)
-        result = self.sa_session.execute(delete_stmt)
+        result = cast(CursorResult, self.sa_session.execute(delete_stmt))
         deleted_notifications_count = result.rowcount
 
         self.sa_session.commit()
@@ -557,7 +560,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
         unique_user_ids.update(user_ids_from_groups_and_roles)
 
         stmt = select(User).where(User.id.in_(unique_user_ids))
-        return self.sa_session.scalars(stmt).all()  # type:ignore[return-value]
+        return self.sa_session.scalars(stmt).all()  # type: ignore[return-value]
 
     def _get_all_user_ids_from_roles_query(self, role_ids: set[int]) -> Select:
         stmt = (
@@ -721,7 +724,7 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
     }
 
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
-        content = MessageNotificationContent.model_construct(**self.notification.content)  # type:ignore[arg-type]
+        content = MessageNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
         content.message = self.markdown_to[template_format](content.message)
         return content
 
@@ -733,7 +736,7 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
 class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
 
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
-        content = NewSharedItemNotificationContent.model_construct(**self.notification.content)  # type:ignore[arg-type]
+        content = NewSharedItemNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
         return content
 
     def get_subject(self) -> str:

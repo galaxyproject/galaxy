@@ -6,7 +6,6 @@ This is capturing code shared by file source templates and object store template
 import logging
 import os
 from collections.abc import Iterable
-from copy import deepcopy
 from typing import (
     Any,
     Callable,
@@ -14,6 +13,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -33,6 +33,7 @@ from pydantic import (
 )
 from pydantic.fields import FieldInfo
 from typing_extensions import (
+    Annotated,
     Literal,
     NotRequired,
     Protocol,
@@ -46,15 +47,16 @@ try:
     )
     from jinja2.nativetypes import NativeEnvironment
 except ImportError:
-    NativeEnvironment = None  # type:ignore[assignment, misc, unused-ignore]
-    StrictUndefined = None  # type:ignore[assignment, misc, unused-ignore]
-    UndefinedError = None  # type:ignore[assignment, misc, unused-ignore]
+    NativeEnvironment = None  # type: ignore[assignment, misc, unused-ignore]
+    StrictUndefined = None  # type: ignore[assignment, misc, unused-ignore]
+    UndefinedError = None  # type: ignore[assignment, misc, unused-ignore]
 
 from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
+from galaxy.tool_util_models.parameter_validators import AnySafeValidatorModel
 from galaxy.util import asbool
 
 log = logging.getLogger(__name__)
@@ -77,18 +79,19 @@ class StrictModel(BaseModel):
 class BaseTemplateVariable(StrictModel):
     name: str
     label: Optional[str] = None
-    help: Optional[MarkdownContent]
+    help: Optional[MarkdownContent] = None
+    optional: Optional[bool] = None
+    validators: Optional[Sequence[AnySafeValidatorModel]] = None
 
 
 class TemplateVariableString(BaseTemplateVariable):
     type: Literal["string"]
-    default: str = ""
-    # add non-empty validation?
+    default: Optional[str] = None
 
 
 class TemplateVariableInteger(BaseTemplateVariable):
     type: Literal["integer"]
-    default: int = 0
+    default: Optional[int] = None
     # add min/max
 
 
@@ -99,7 +102,7 @@ class TemplateVariablePathComponent(BaseTemplateVariable):
 
 class TemplateVariableBoolean(BaseTemplateVariable):
     type: Literal["boolean"]
-    default: bool = False
+    default: Optional[bool] = None
 
 
 TemplateVariable = Union[
@@ -110,7 +113,8 @@ TemplateVariable = Union[
 class TemplateSecret(StrictModel):
     name: str
     label: Optional[str] = None
-    help: Optional[MarkdownContent]
+    help: Optional[MarkdownContent] = None
+    optional: Optional[bool] = None
 
 
 class TemplateEnvironmentSecret(StrictModel):
@@ -174,7 +178,8 @@ def populate_default_variables(variables: Optional[List[TemplateVariable]], vari
     if variables:
         for variable in variables:
             name = variable.name
-            if name not in variable_values and variable.default is not None:
+            # Apply defaults only for explicitly optional variables
+            if variable.optional and name not in variable_values and variable.default is not None:
                 variable_values[name] = variable.default
 
 
@@ -341,6 +346,17 @@ def find_template_by(templates: List[T], template_id: str, template_version: int
     raise ObjectNotFound(f"Could not find a {what} template with id {template_id} and version {template_version}")
 
 
+def _run_variable_validator(validator: AnySafeValidatorModel, value: Any, variable_name: str) -> None:
+    """Run a single validator on a variable value.
+
+    Raises RequestParameterInvalidException if validation fails.
+    """
+    try:
+        validator.statically_validate(value)
+    except ValueError as e:
+        raise RequestParameterInvalidException(f"Variable '{variable_name}' failed validation: {str(e)}")
+
+
 def validate_variable_types(instance: InstanceDefinition, template: Template) -> None:
     pass
 
@@ -349,7 +365,8 @@ def validate_defines_all_required_secrets(instance: InstanceDefinition, template
     secrets = instance.secrets
     for template_secret in template.secrets or []:
         name = template_secret.name
-        if name not in secrets:
+        is_optional = bool(template_secret.optional)
+        if name not in secrets and not is_optional:
             raise RequestParameterMissingException(f"Must define secret '{name}'")
 
 
@@ -357,8 +374,8 @@ def validate_defines_all_required_variables(instance: InstanceDefinition, templa
     variables = instance.variables
     for template_variable in template.variables or []:
         name = template_variable.name
-        has_default = template_variable.default is not None
-        if name not in variables and not has_default:
+        is_optional = bool(template_variable.optional)
+        if name not in variables and not is_optional:
             raise RequestParameterMissingException(f"Must define variable '{name}'")
 
 
@@ -374,7 +391,18 @@ def validate_specified_datatypes(instance: InstanceDefinition, template: Templat
 def validate_specified_datatypes_variables(variables: Dict[str, Any], template: Template):
     for template_variable in template.variables or []:
         name = template_variable.name
-        variable_value = variables.get(name, template_variable.default)
+        # Only fall back to default for optional variables
+        if name in variables:
+            variable_value = variables[name]
+        elif template_variable.optional:
+            variable_value = template_variable.default
+        else:
+            variable_value = None
+
+        # Skip validation only if variable is optional, not provided, and has no default applied
+        if name not in variables and template_variable.optional and template_variable.default is None:
+            continue
+
         template_type = template_variable.type
         if template_type in ["string", "path_component"]:
             if not isinstance(variable_value, str):
@@ -394,6 +422,11 @@ def validate_specified_datatypes_variables(variables: Dict[str, Any], template: 
         if template_type == "boolean":
             if not _is_of_exact_type(variable_value, bool):
                 raise RequestParameterInvalidException(f"Variable value for variable '{name}' must be of type bool")
+
+        # Run custom validators if present.
+        if template_variable.validators:
+            for validator in template_variable.validators:
+                _run_variable_validator(validator, variable_value, name)
 
 
 def validate_no_extra_secrets_defined(secrets: Dict[str, str], template: Template) -> None:
@@ -618,6 +651,29 @@ class ImplicitConfigurationParameters(TypedDict):
 M = TypeVar("M", bound="BaseModel")
 
 
+# Implementation copied from https://github.com/pydantic/pydantic/issues/12329#issuecomment-3382159312
+def _make_field_optional(field_info: FieldInfo):
+    """Returns the field's definition to be used in a `create_model()` call to make the field optional."""
+    annotation = field_info.annotation
+    assert annotation is not None
+    if field_info.is_required():
+        return Annotated[Union[annotation, None], field_info], None
+    else:
+        return Annotated[annotation, field_info]
+
+
+def make_model_with_all_fields_optional(model: Type[M], fields=None) -> Type[M]:
+    """Returns a new Pydantic model based on `model`, but with all fields optional."""
+    if fields is None:
+        fields = model.model_fields.items()
+    return create_model(
+        model.__name__,
+        __doc__=model.__doc__,
+        __base__=model,
+        **{field_name: _make_field_optional(field_info) for field_name, field_info in fields},
+    )
+
+
 # TODO: This is a workaround to make all fields optional.
 #       It should be removed when Python/pydantic supports this feature natively.
 # https://github.com/pydantic/pydantic/issues/1673
@@ -630,26 +686,14 @@ def partial_model(
         exclude = []
 
     def decorator(model: Type[M]) -> Type[M]:
-        def make_optional(field: FieldInfo, default: Any = None) -> tuple[Any, FieldInfo]:
-            new = deepcopy(field)
-            new.default = default
-            new.annotation = Optional[field.annotation or Any]  # type:ignore[assignment]
-            return new.annotation, new
-
         if include is None:
             fields: Iterable[tuple[str, FieldInfo]] = model.model_fields.items()
         else:
             fields = ((k, v) for k, v in model.model_fields.items() if k in include)
 
-        return create_model(
-            model.__name__,
-            __base__=model,
-            __module__=model.__module__,
-            **{
-                field_name: make_optional(field_info)
-                for field_name, field_info in fields
-                if exclude is None or field_name not in exclude
-            },
-        )  # type:ignore[call-overload]
+        if exclude is not None:
+            fields = ((k, v) for k, v in fields if k not in exclude)
+
+        return make_model_with_all_fields_optional(model, fields)
 
     return decorator

@@ -1,6 +1,7 @@
-import { getLocalVue } from "@tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { BrowsableFilesSourcePlugin, CreatedEntry } from "@/api/remoteFiles";

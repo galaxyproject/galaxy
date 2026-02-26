@@ -1,7 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia, defineStore, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { fetchPlugin, fetchPluginHistoryItems } from "@/api/plugins";
@@ -18,30 +19,31 @@ const PLUGIN = {
     tags: ["tag1", "tag2"],
 };
 
-jest.mock("vue-router/composables", () => ({
+vi.mock("vue-router/composables", () => ({
     useRouter: () => ({
-        push: jest.fn(),
+        push: vi.fn(),
     }),
 }));
 
-jest.mock("@/api/plugins", () => ({
-    fetchPlugin: jest.fn(() =>
+vi.mock("@/api/plugins", () => ({
+    fetchPlugin: vi.fn(() =>
         Promise.resolve({
             params: { dataset_id: { required: true } },
             ...PLUGIN,
         }),
     ),
-    fetchPluginHistoryItems: jest.fn(() => Promise.resolve({ hdas: [] })),
+    fetchPluginHistoryItems: vi.fn(() => Promise.resolve({ hdas: [] })),
 }));
 
 let mockedStore;
-jest.mock("@/stores/historyStore", () => ({
+vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: () => mockedStore,
 }));
 
 const localVue = getLocalVue();
 
 beforeEach(() => {
+    vi.clearAllMocks();
     setActivePinia(createPinia());
     const useFakeHistoryStore = defineStore("history", {
         state: () => ({
@@ -54,6 +56,13 @@ beforeEach(() => {
     const el = document.createElement("div");
     el.id = "vis-create-ext";
     document.body.appendChild(el);
+
+    // Reset default mock implementations
+    vi.mocked(fetchPlugin).mockResolvedValue({
+        params: { dataset_id: { required: true } },
+        ...PLUGIN,
+    });
+    vi.mocked(fetchPluginHistoryItems).mockResolvedValue({ hdas: [] });
 });
 
 it("renders plugin info after load", async () => {
@@ -76,7 +85,7 @@ it("renders plugin info after load", async () => {
 });
 
 it("adds hid to dataset names when fetching history items", async () => {
-    fetchPluginHistoryItems.mockResolvedValueOnce({
+    vi.mocked(fetchPluginHistoryItems).mockResolvedValueOnce({
         hdas: [
             { id: "dataset1", hid: 101, name: "First Dataset" },
             { id: "dataset2", hid: 102, name: "Second Dataset" },
@@ -88,7 +97,7 @@ it("adds hid to dataset names when fetching history items", async () => {
             visualization: "scatterplot",
         },
     });
-    await wrapper.vm.$nextTick();
+    await flushPromises();
     const results = await wrapper.vm.doQuery();
     expect(results).toEqual([
         { id: "dataset1", name: "101: First Dataset" },
@@ -97,14 +106,14 @@ it("adds hid to dataset names when fetching history items", async () => {
 });
 
 it("displays create new visualization option if dataset is not required", async () => {
-    fetchPlugin.mockResolvedValueOnce(PLUGIN);
+    vi.mocked(fetchPlugin).mockResolvedValueOnce(PLUGIN);
     const wrapper = mount(VisualizationCreate, {
         localVue,
         propsData: {
             visualization: "scatterplot",
         },
     });
-    await wrapper.vm.$nextTick();
+    await flushPromises();
     const results = await wrapper.vm.doQuery();
     expect(results).toEqual([{ id: "", name: "Open visualization..." }]);
 });

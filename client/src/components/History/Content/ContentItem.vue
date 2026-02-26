@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import {
     faArrowCircleDown,
     faArrowCircleUp,
+    faBurn,
     faCheckCircle,
     faExchangeAlt,
-    faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BCollapse } from "bootstrap-vue";
@@ -17,6 +16,7 @@ import { getGalaxyInstance } from "@/app";
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useEntryPointStore } from "@/stores/entryPointStore";
+import DATASET_STATES from "@/utils/datasetStates";
 import { clearDrag } from "@/utils/setDrag";
 
 import { getContentItemState, type State, STATES } from "./model/states";
@@ -27,8 +27,6 @@ import ContentExpirationIndicator from "./ContentExpirationIndicator.vue";
 import ContentOptions from "./ContentOptions.vue";
 import DatasetDetails from "./Dataset/DatasetDetails.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-
-library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle, faExchangeAlt, faSpinner);
 
 const router = useRouter();
 const route = useRoute();
@@ -177,6 +175,8 @@ const itemUrls = computed<ItemUrls>(() => {
     let display = `/datasets/${id}`;
     if (props.item.extension == "tool_markdown") {
         display = `/datasets/${id}/report`;
+    } else if (!DATASET_STATES.OK_STATES.includes(state.value)) {
+        display = `/datasets/${id}/details`;
     }
     return {
         display: display,
@@ -236,18 +236,19 @@ function onDisplay() {
         // vue-router 4 supports a native force push with clean URLs,
         // but we're using a __vkey__ bit as a workaround
         // Only conditionally force to keep urls clean most of the time.
+        const hidInfo = props.item.hid ? `${props.item.hid}: ` : "";
         if (route.path === itemUrls.value.display) {
             const options: RouterPushOptions = {
                 force: true,
                 preventWindowManager: !isWindowManagerActive,
-                title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
+                title: isWindowManagerActive ? `${hidInfo} ${props.name}` : undefined,
             };
             // @ts-ignore - monkeypatched router, drop with migration.
             router.push(displayUrl, options);
         } else if (displayUrl) {
             const options: RouterPushOptions = {
                 preventWindowManager: !isWindowManagerActive,
-                title: isWindowManagerActive ? `${props.item.hid}: ${props.name}` : undefined,
+                title: isWindowManagerActive ? `${hidInfo} ${props.name}` : undefined,
             };
             // @ts-ignore - monkeypatched router, drop with migration.
             router.push(displayUrl, options);
@@ -370,18 +371,18 @@ function unexpandedClick(event: Event) {
                         <FontAwesomeIcon class="text-info" :icon="faArrowCircleDown" />
                     </BButton>
                     <span v-if="hasStateIcon" class="state-icon">
-                        <icon
+                        <FontAwesomeIcon
                             fixed-width
                             :icon="contentState.icon"
                             :spin="contentState.spin"
                             :title="item.populated_state_message || contentState.text" />
                     </span>
-                    <span class="id hid">{{ id }}:</span>
+                    <span class="id hid">{{ id }}: </span>
                     <span class="content-title name font-weight-bold">{{ name }}</span>
                 </span>
                 <span v-if="item.purged" class="ml-auto align-self-start btn-group p-1">
                     <BBadge variant="secondary" title="This dataset has been permanently deleted">
-                        <icon icon="burn" /> Purged
+                        <FontAwesomeIcon :icon="faBurn" /> Purged
                     </BBadge>
                 </span>
                 <span class="align-self-start btn-group">
@@ -452,8 +453,8 @@ function unexpandedClick(event: Event) {
 </template>
 
 <style lang="scss" scoped>
-@import "~bootstrap/scss/_functions.scss";
-@import "theme/blue.scss";
+@import "bootstrap/scss/_functions.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .content-item {
     cursor: default;

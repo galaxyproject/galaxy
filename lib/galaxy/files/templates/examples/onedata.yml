@@ -18,6 +18,7 @@
       help: |
         Allows connection to Onedata servers that do not present trusted SSL certificates.
         SHOULD NOT be used unless you really know what you are doing.
+      optional: true
       default: False
     writable:
       label: Writable?
@@ -25,6 +26,7 @@
       help: |
         Allow Galaxy to write data to this Onedata repository.
         Requires an access token with write data access.
+      optional: true
       default: False
   secrets:
     access_token:

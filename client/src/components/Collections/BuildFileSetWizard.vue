@@ -3,7 +3,7 @@ import { BAlert, BCardGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { getGalaxyInstance } from "@/app";
+import { buildCollectionFromRules } from "@/components/Collections/common/buildCollectionModal";
 import { attemptCreate, type CollectionCreatorComponent } from "@/components/Collections/common/useCollectionCreator";
 import { useWorkbookDropHandling } from "@/components/Collections/common/useWorkbooks";
 import { rawToTable } from "@/components/Collections/tables";
@@ -173,9 +173,8 @@ const ruleBuilderElements = computed(() => {
 });
 
 function launchRuleBuilder() {
-    const Galaxy = getGalaxyInstance();
     const entry = ruleBuilderModalEntryProps.value;
-    Galaxy.currHistoryPanel.buildCollectionFromRules(entry, null, true);
+    buildCollectionFromRules(entry, null, true);
 }
 
 function submit() {
@@ -341,7 +340,7 @@ const {
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 @import "@/components/Collections/wizard/workbook-dropzones.scss";
 
 // modeled a bit after upload-helper in the upload component...

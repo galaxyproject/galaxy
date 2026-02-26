@@ -1,7 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, suppressDebugConsole } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue, suppressDebugConsole } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
@@ -46,10 +47,10 @@ import {
 import FilesDialog from "./FilesDialog.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-jest.mock("app");
+vi.mock("app");
 
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
         config: { ftp_upload_site: "Test ftp upload site" },
         isConfigLoaded: true,
     })),
@@ -116,7 +117,7 @@ const initComponent = async (props: { multiple: boolean; mode?: string }, hasTem
         }),
     );
 
-    const testingPinia = createTestingPinia({ stubActions: false });
+    const testingPinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     const wrapper = mount(FilesDialog as object, {
         localVue,
         propsData: { ...props, modalStatic: true },

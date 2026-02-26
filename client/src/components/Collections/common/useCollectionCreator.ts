@@ -2,7 +2,7 @@ import { computed, type Ref, ref, unref, watch } from "vue";
 
 import type { CollectionElementIdentifiers, CreateNewCollectionPayload, HistoryItemSummary } from "@/api";
 import type RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
-import STATES from "@/mvc/dataset/states";
+import STATES from "@/utils/datasetStates";
 import localize from "@/utils/localization";
 
 import type ListCollectionCreator from "./ListCollectionCreator.vue";

@@ -2,6 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import type { InvocationMessage, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
@@ -26,6 +27,7 @@ const props = defineProps<Props>();
 const { workflow, loading, error } = useWorkflowInstance(props.invocation.workflow_id);
 
 const invocationGraph = ref<InstanceType<typeof InvocationGraph> | null>(null);
+const router = useRouter();
 
 // TODO: Refactor so that `storeId` is only defined here, and then used in all children components/composables.
 const storeId = computed(() => `invocation-${props.invocation.id}`);
@@ -40,6 +42,13 @@ async function showStep(stepId: number) {
         graphSelector?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 }
+
+function showSubworkflowInvocation(invocationId: string, stepId: number) {
+    // Navigate to the subworkflow invocation page
+    // The stepId parameter could be used to highlight a specific step, but for now
+    // we'll just navigate to the subworkflow invocation
+    router.push(`/workflows/invocations/${invocationId}`);
+}
 </script>
 
 <template>
@@ -51,9 +60,10 @@ async function showStep(stepId: number) {
                 :key="message.reason"
                 class="steps-progress my-1 w-100"
                 :invocation-message="message"
-                :invocation="invocation"
+                :invocation="props.invocation"
                 :store-id="storeId"
-                @view-step="showStep" />
+                @view-step="showStep"
+                @view-subworkflow-invocation="showSubworkflowInvocation" />
         </div>
         <!-- Once the workflow for the invocation and step job summaries are loaded, display the graph -->
         <BAlert v-if="loading || !props.stepsJobsSummary" variant="info" show>

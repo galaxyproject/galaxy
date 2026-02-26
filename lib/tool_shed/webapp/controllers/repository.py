@@ -4,10 +4,9 @@ import os
 import string
 import tempfile
 from datetime import date
+from typing import Any
 
 from mercurial import (
-    cmdutil,
-    commands,
     mdiff,
     patch,
 )
@@ -32,9 +31,9 @@ from galaxy.web.form_builder import (
     CheckboxField,
     SelectField,
 )
-from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController
 from tool_shed.dependencies.repository import relation_builder
+from tool_shed.grids import framework as grids
 from tool_shed.managers.repositories import readmes
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.tools import (
@@ -74,15 +73,15 @@ malicious_error = "  This changeset cannot be downloaded because it potentially 
 malicious_error_can_push = "  Correct this changeset as soon as possible, it potentially produces malicious behavior or contains inappropriate content."
 
 
-def get_mercurial_default_options_dict(command):
-    """Borrowed from repoman - get default parameters for a mercurial command."""
-    possible = cmdutil.findpossible(command, commands.table)
-    # Mercurial >= 3.4 returns a tuple whose first element is the old return dict
-    if type(possible) is tuple:
-        possible = possible[0]
-    if len(possible) != 1:
-        raise Exception(f'unable to find mercurial command "{command}"')
-    return {r[1].replace(b"-", b"_"): r[2] for r in next(iter(possible.values()))[1][1]}
+def get_mercurial_default_options_dict(command: str) -> dict[str, Any]:
+    """Get default parameters for a mercurial command."""
+    # Use mdiff.diffopts defaults directly instead of introspecting command table
+    # (the old cmdutil.findpossible API was removed in Mercurial 7.2)
+    if command == "diff":
+        # Convert byte keys to strings but preserve value types (int, bool)
+        # as mdiff.diffopts expects properly typed values
+        return {(k.decode("utf-8") if isinstance(k, bytes) else k): v for k, v in mdiff.diffopts.defaults.items()}
+    raise Exception(f'unable to find mercurial command "{command}"')
 
 
 class RepositoryController(BaseUIController, ratings_util.ItemRatings):
@@ -1624,7 +1623,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repo_name = kwd.get("repo_name", repository.name)
         changeset_revision = kwd.get("changeset_revision", repository.tip())
         repository.share_url = repository_util.generate_sharable_link_for_repository_in_tool_shed(
-            repository, changeset_revision=changeset_revision
+            repository, changeset_revision=changeset_revision, base_url=trans.app.config.tool_shed_url
         )
         repository.clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(trans.user, repository)
         remote_repository_url = kwd.get("remote_repository_url", repository.remote_repository_url)
@@ -2366,10 +2365,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             ctx_child = None
         diffs = []
-        options_dict = get_mercurial_default_options_dict(b"diff")
-        # Not quite sure if the following settings make any difference, but with a combination of them and the size check on each
-        # diff, we don't run out of memory when viewing the changelog of the cisortho2 repository on the test tool shed.
-        options_dict = {util.unicodify(k): util.unicodify(v) for k, v in options_dict.items()}
+        # Get default diff options with string keys and properly typed values
+        options_dict = get_mercurial_default_options_dict("diff")
         options_dict["maxfile"] = basic_util.MAXDIFFSIZE
         options_dict["maxtotal"] = basic_util.MAXDIFFSIZE
         diffopts = mdiff.diffopts(**options_dict)
@@ -2452,7 +2449,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         changeset_revision = kwd.get("changeset_revision", repository.tip())
         self.validate_changeset_revision(trans, changeset_revision, id)
         repository.share_url = repository_util.generate_sharable_link_for_repository_in_tool_shed(
-            repository, changeset_revision=changeset_revision
+            repository, changeset_revision=changeset_revision, base_url=trans.app.config.tool_shed_url
         )
         repository.clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(trans.user, repository)
         alerts = kwd.get("alerts", "")

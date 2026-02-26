@@ -56,6 +56,8 @@ class InstallationTarget(HasToolBox, Protocol[ToolBoxType]):
     config: Any
     installed_repository_manager: "InstalledRepositoryManager"
     _toolbox_lock: threading.RLock
-    tool_data_tables: ToolDataTableManager
+
+    @property
+    def tool_data_tables(self) -> ToolDataTableManager: ...
 
     def wait_for_toolbox_reload(self, old_toolbox: ToolBoxType) -> None: ...

@@ -55,8 +55,10 @@ const login = ref("");
 const password = ref(null);
 const passwordState = ref<boolean | null>(null);
 const loading = ref(false);
-const messageText = ref("");
-const messageVariant = ref<"info" | "danger">("info");
+const networkMessage = urlParams.get("message") || "";
+const messageText = ref(networkMessage);
+const statusParam = urlParams.get("status");
+const messageVariant = ref<"info" | "danger">(statusParam === "info" ? "info" : "danger");
 const connectExternalEmail = ref(urlParams.get("connect_external_email"));
 const connectExternalLabel = ref(urlParams.get("connect_external_label"));
 const connectExternalProvider = ref(urlParams.get("connect_external_provider"));
@@ -243,7 +245,7 @@ function returnToLogin() {
                                 <span v-if="!connectExternalProvider">
                                     Don't have an account?
                                     <GLink
-                                        v-if="allowUserCreation || disableLocalAccounts"
+                                        v-if="allowUserCreation && !disableLocalAccounts"
                                         id="register-toggle"
                                         to="/register/start">
                                         Register here.

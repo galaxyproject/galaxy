@@ -4,15 +4,20 @@
     with data-galaxy-file-drop-target - see fileDrop composable for more information.
 -->
 <script setup>
-import { setIframeEvents } from "components/Upload/utils";
-import { useFileDrop } from "composables/fileDrop";
-import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { computed, ref, watch } from "vue";
 
+import { setIframeEvents } from "@/components/Upload/utils";
+import { useFileDrop } from "@/composables/fileDrop";
+import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToast } from "@/composables/toast";
 
 const modalContentElement = ref(null);
-const { isFileOverDocument, isFileOverDropZone } = useFileDrop(modalContentElement, onDrop, onDropCancel, true);
+const { isFileOverDocument, isFileOverDropZone } = useFileDrop({
+    dropZone: modalContentElement,
+    onDrop,
+    onDropCancel,
+    solo: true,
+});
 
 const modalClass = computed(() => {
     if (isFileOverDropZone.value) {
@@ -61,7 +66,7 @@ watch(isFileOverDocument, (newValue, oldValue) => {
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .ui-drag-and-drop-modal {
     .modal-dialog {

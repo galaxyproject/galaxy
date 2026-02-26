@@ -1,4 +1,5 @@
 import flushPromises from "flush-promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { RegisteredUser } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
@@ -270,7 +271,7 @@ describe("useUserToolCredentials", () => {
             await flushPromises();
 
             // Mock the store to track if fetch was called again
-            const fetchSpy = jest.spyOn(userToolsServiceCredentialsStore, "fetchAllUserToolServices");
+            const fetchSpy = vi.spyOn(userToolsServiceCredentialsStore, "fetchAllUserToolServices");
 
             // Second call
             await checkUserCredentials();
@@ -385,7 +386,7 @@ describe("useUserToolCredentials", () => {
     describe("status variant computation", () => {
         it("should return info when busy", () => {
             // Mock the isBusy property to return true
-            jest.spyOn(userToolsServiceCredentialsStore, "isBusy", "get").mockReturnValue(true);
+            vi.spyOn(userToolsServiceCredentialsStore, "isBusy", "get").mockReturnValue(true);
 
             const { statusVariant } = useUserToolCredentials(TEST_TOOL_ID, TEST_TOOL_VERSION);
 

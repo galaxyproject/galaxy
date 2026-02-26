@@ -1,8 +1,10 @@
 import logging
 import os
 import traceback
+from dataclasses import dataclass
 from typing import (
     Any,
+    Dict,
     Iterable,
     List,
     Optional,
@@ -11,10 +13,14 @@ from typing import (
 )
 
 from packaging.version import Version
+from typing_extensions import Literal
 
 from galaxy.tool_util.parameters import (
     input_models_for_tool_source,
     test_case_state as case_state,
+    TestCaseToolState,
+    ToolParameterBundleModel,
+    ToolParameterT,
 )
 from galaxy.tool_util.parser.interface import (
     InputSource,
@@ -55,24 +61,35 @@ AnyParamContext = Union["ParamContext", "RootParamContext"]
 
 
 def parse_tool_test_descriptions(
-    tool_source: ToolSource, tool_guid: Optional[str] = None
+    tool_source: ToolSource, tool_guid: Optional[str] = None, parameters: Optional[List[ToolParameterT]] = None
 ) -> Iterable[ToolTestDescription]:
     """
     Build ToolTestDescription objects for each test description.
     """
-    validate_on_load = Version(tool_source.parse_profile()) >= Version("24.2")
+    profile = tool_source.parse_profile()
+    validate_on_load = Version(profile) >= Version("24.2")
+    validation_skipped_reason: Optional[str] = None
+    if not validate_on_load:
+        validation_skipped_reason = f"tool profile {profile} < 24.2, validation skipped"
+
     raw_tests_dict: ToolSourceTests = tool_source.parse_tests_to_dict()
     tests: List[ToolTestDescription] = []
 
-    profile = tool_source.parse_profile()
     for i, raw_test_dict in enumerate(raw_tests_dict.get("tests", [])):
         validation_exception: Optional[Exception] = None
+        request_and_schema: Optional[TestRequestAndSchema] = None
+        tool_parameter_bundle: Optional[ToolParameterBundleModel] = None
         if validate_on_load:
-            tool_parameter_bundle = input_models_for_tool_source(tool_source)
             try:
-                case_state(raw_test_dict, tool_parameter_bundle.parameters, profile, validate=True)
+                if parameters is None:
+                    tool_parameter_bundle = input_models_for_tool_source(tool_source)
+                    parameters = tool_parameter_bundle.parameters
+                validated_test_case = case_state(raw_test_dict, parameters, profile, validate=True)
+                request_and_schema = TestRequestAndSchema(
+                    validated_test_case.tool_state,
+                    tool_parameter_bundle or ToolParameterBundleModel(parameters=parameters),
+                )
             except Exception as e:
-                # TOOD: restrict types of validation exceptions a bit probably?
                 validation_exception = e
 
         if validation_exception:
@@ -86,18 +103,32 @@ def parse_tool_test_descriptions(
                         "inputs": {},
                         "error": True,
                         "exception": unicodify(validation_exception),
+                        "request_unavailable_reason": "validation exception during tool loading",
                         "maxseconds": None,
                     }
                 )
             )
         else:
-            test = _description_from_tool_source(tool_source, raw_test_dict, i, tool_guid)
+            test = _description_from_tool_source(
+                tool_source, raw_test_dict, i, tool_guid, request_and_schema, validation_skipped_reason
+            )
         tests.append(test)
     return tests
 
 
+@dataclass
+class TestRequestAndSchema:
+    request: TestCaseToolState
+    request_schema: ToolParameterBundleModel
+
+
 def _description_from_tool_source(
-    tool_source: ToolSource, raw_test_dict: ToolSourceTest, test_index: int, tool_guid: Optional[str]
+    tool_source: ToolSource,
+    raw_test_dict: ToolSourceTest,
+    test_index: int,
+    tool_guid: Optional[str],
+    request_and_schema: Optional[TestRequestAndSchema],
+    request_unavailable_reason: Optional[str],
 ) -> ToolTestDescription:
     required_files: RequiredFilesT = []
     required_data_tables: RequiredDataTablesT = []
@@ -110,6 +141,13 @@ def _description_from_tool_source(
     if maxseconds is not None:
         maxseconds = int(maxseconds)
 
+    request: Optional[Dict[str, Any]] = None
+    request_schema: Optional[Dict[str, Any]] = None
+    if request_and_schema:
+        request = request_and_schema.request.input_state
+        request_schema = request_and_schema.request_schema.dict()
+
+    value_state_representation = raw_test_dict.get("value_state_representation", "test_case_xml")
     tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
     processed_test_dict: Union[ValidToolTestDict, InvalidToolTestDict]
     try:
@@ -117,6 +155,7 @@ def _description_from_tool_source(
             tool_source,
             input_sources(tool_source),
             raw_test_dict["inputs"],
+            value_state_representation,
             required_files,
             required_data_tables,
             required_loc_files,
@@ -124,6 +163,9 @@ def _description_from_tool_source(
         processed_test_dict = ValidToolTestDict(
             {
                 "inputs": processed_inputs,
+                "request": request,
+                "request_schema": request_schema,
+                "request_unavailable_reason": request_unavailable_reason,
                 "outputs": raw_test_dict["outputs"],
                 "output_collections": raw_test_dict["output_collections"],
                 "num_outputs": num_outputs,
@@ -142,6 +184,7 @@ def _description_from_tool_source(
                 "test_index": test_index,
                 "maxseconds": maxseconds,
                 "error": False,
+                "value_state_representation": value_state_representation,
             }
         )
     except Exception:
@@ -153,7 +196,9 @@ def _description_from_tool_source(
                 "inputs": {},
                 "error": True,
                 "exception": unicodify(traceback.format_exc()),
+                "request_unavailable_reason": "exception during input processing",
                 "maxseconds": maxseconds,
+                "value_state_representation": value_state_representation,
             }
         )
 
@@ -171,6 +216,7 @@ def _process_raw_inputs(
     tool_source: ToolSource,
     input_sources: List[InputSource],
     raw_inputs: ToolSourceTestInputs,
+    value_state_representation: Literal["test_case_xml", "test_case_json"],
     required_files: RequiredFilesT,
     required_data_tables: RequiredDataTablesT,
     required_loc_files: RequiredLocFileT,
@@ -204,6 +250,7 @@ def _process_raw_inputs(
                         tool_source,
                         [case_input_source],
                         raw_inputs,
+                        value_state_representation,
                         required_files,
                         required_data_tables,
                         required_loc_files,
@@ -235,6 +282,7 @@ def _process_raw_inputs(
                     tool_source,
                     [section_input_source],
                     raw_inputs,
+                    value_state_representation,
                     required_files,
                     required_data_tables,
                     required_loc_files,
@@ -253,6 +301,7 @@ def _process_raw_inputs(
                         tool_source,
                         [r_value],
                         raw_inputs,
+                        value_state_representation,
                         required_files,
                         required_data_tables,
                         required_loc_files,
@@ -290,6 +339,8 @@ def _process_raw_inputs(
                     else:
                         if not isinstance(param_value, list):
                             param_value = [param_value]
+                        if value_state_representation == "test_case_json":
+                            param_value = [v["path"] for v in param_value]
                         for v in param_value:
                             _add_uploaded_dataset(context.for_state(), v, param_extra, input_source, required_files)
                     processed_value = param_value

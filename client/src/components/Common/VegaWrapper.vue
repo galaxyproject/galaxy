@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div ref="outerContainer" :style="fillWidth ? 'overflow: hidden' : undefined">
         <b-alert v-if="errorMessage" class="p-2" variant="danger" show>
             {{ errorMessage }}
         </b-alert>
@@ -9,8 +9,9 @@
 
 <script setup lang="ts">
 import { useResizeObserver } from "@vueuse/core";
+import type { View } from "vega";
 import embed, { type VisualizationSpec } from "vega-embed";
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from "vue";
 
 export interface VisSpec {
     spec: VisualizationSpec;
@@ -21,10 +22,15 @@ const props = withDefaults(defineProps<VisSpec>(), {
     fillWidth: true,
 });
 
+const emit = defineEmits<{
+    (e: "new-view", view: View): void;
+}>();
+
+const outerContainer = ref<HTMLDivElement | null>(null);
 const chartContainer = ref<HTMLDivElement | null>(null);
 const errorMessage = ref<string>("");
 
-let vegaView: any;
+let vegaView: View | null = null;
 
 async function embedChart() {
     try {
@@ -33,8 +39,9 @@ async function embedChart() {
             vegaView.finalize();
         }
         if (chartContainer.value !== null) {
-            const result = await embed(chartContainer.value, props.spec, { renderer: "svg" });
+            const result = await embed(chartContainer.value, toRaw(props.spec), { renderer: "svg" });
             vegaView = result.view;
+            emit("new-view", vegaView);
         }
         errorMessage.value = "";
     } catch (e: any) {
@@ -44,9 +51,9 @@ async function embedChart() {
 
 watch(props, embedChart, { deep: true });
 
-useResizeObserver(chartContainer, () => {
-    if (vegaView) {
-        vegaView.resize();
+useResizeObserver(outerContainer, () => {
+    if (props.fillWidth && vegaView && outerContainer.value) {
+        vegaView.width(outerContainer.value.clientWidth).runAsync();
     }
 });
 

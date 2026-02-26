@@ -1,6 +1,7 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { createPinia, defineStore, setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import ConfigureSelector from "./ConfigureSelector.vue";
@@ -10,7 +11,7 @@ const localVue = getLocalVue();
 
 let mockedStore;
 
-jest.mock("@/stores/historyStore", () => {
+vi.mock("@/stores/historyStore", () => {
     return {
         useHistoryStore: () => mockedStore,
     };

@@ -55,15 +55,13 @@ steps:
     def test_tool_shed_unmatched_version_upgrade(self):
         self.install_repository("iuc", "compose_text_param", "e188c9826e0f")  # 0.1.1
         self.login()
-        workflow_id = self.workflow_populator.upload_yaml_workflow(
-            """class: GalaxyWorkflow
+        workflow_id = self.workflow_populator.upload_yaml_workflow("""class: GalaxyWorkflow
 inputs: []
 steps:
   - tool_id: toolshed.g2.bx.psu.edu/repos/iuc/compose_text_param/compose_text_param/0.0.0
     tool_version: 0.0.0
     label: compose_text_param
-        """
-        )
+        """)
         self.workflow_index_open()
         self.components.workflows.edit_button.wait_for_and_click()
         self.assert_modal_has_text("Using version '0.1.1' instead of version '0.0.0'")

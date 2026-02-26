@@ -1,11 +1,11 @@
 from datetime import datetime
 from enum import Enum
 from typing import (
+    Literal,
     Union,
 )
 
 from pydantic import Field
-from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,

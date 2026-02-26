@@ -20,8 +20,7 @@ from ._base import BaseObjectStoreIntegrationTestCase
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
-DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
-    """<?xml version="1.0"?>
+DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
 <object_store type="distributed" id="primary" order="0">
     <backends>
         <backend id="default" allow_selection="true" type="disk" weight="1" name="Default Store">
@@ -49,8 +48,7 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
         </backend>
     </backends>
 </object_store>
-"""
-)
+""")
 
 
 TEST_WORKFLOW = """

@@ -15,8 +15,7 @@ from galaxy_test.driver import integration_util
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_job_conf.yml")
 EMBEDDED_PULSAR_TPV_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_tpv_job_conf.yml")
-TOOL_WITH_RESOURCE_SPECIFICATION = yaml.safe_load(
-    """class: GalaxyUserTool
+TOOL_WITH_RESOURCE_SPECIFICATION = yaml.safe_load("""class: GalaxyUserTool
 id: resource_requirement
 version: "0.1"
 name: resource_requirement
@@ -32,8 +31,7 @@ outputs:
     type: data
     format: txt
     from_work_dir: galaxy_cores.txt
-"""
-)
+""")
 
 
 class TestUserDefinedToolRecommendedJobSetup(integration_util.IntegrationTestCase, TestsTools):

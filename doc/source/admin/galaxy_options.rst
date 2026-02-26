@@ -1051,8 +1051,7 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Directory where chrom len files are kept, currently mainly used by
-    trackster.
+    Directory where chrom len files are kept.
     The value of this option will be resolved with respect to
     <tool_data_path>.
 :Default: ``shared/ucsc/chrom``
@@ -1126,9 +1125,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_tool_generated_tours``
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Allow tools to show the option of and create interactive tours
@@ -2466,7 +2465,7 @@
 :Description:
     The BibTeX citation for Galaxy, to be displayed in the History
     Tool Reference List
-:Default: ``@article{Galaxy2024, title={The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update}, author={{The Galaxy Community}}, journal={Nucleic Acids Research}, year={2024}, doi={10.1093/nar/gkae410}, url={https://doi.org/10.1093/nar/gkae410}}``
+:Default: ``@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}``
 :Type: str
 
 
@@ -3817,12 +3816,12 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~
-``prefer_custos_login``
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+``prefer_oidc_login``
+~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Controls the order of the login page to prefer Custos-based login
+    Controls the order of the login page to prefer OIDC-based login
     and registration.
 :Default: ``false``
 :Type: bool
@@ -3835,7 +3834,7 @@
 :Description:
     Allow unregistered users to create new local (non-OIDC) accounts
     (otherwise, they will have to be created by an admin). This option
-    will be overridden to false in case disable_local_accounts  is set
+    will be overridden to false in case disable_local_accounts is set
     to true.
 :Default: ``true``
 :Type: bool
@@ -3847,7 +3846,7 @@
 
 :Description:
     Disable local accounts. If this option is set to true, at least
-    one OIDC provider needs  to be configured and will serve as the
+    one OIDC provider needs to be configured and will serve as the
     account provider. If this option is set to true,
     allow_local_account creation will be overridden with false.
 :Default: ``false``
@@ -5507,9 +5506,23 @@
 ~~~~~~~~~~~~
 
 :Description:
-    AI model to enable the wizard.
+    AI model to enable the wizard. Global fallback for all AI agents.
 :Default: ``gpt-4o``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``inference_services``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configuration for AI inference services used by agents. Supports
+    per-agent model, temperature, and token settings. Agents inherit
+    from 'default' configuration, which itself falls back to global
+    ai_model/ai_api_key settings. Example: inference_services: {
+    default: { model: gpt-4o-mini, temperature: 0.7 } }
+:Default: ``None``
+:Type: any
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5622,6 +5635,26 @@
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``vault_conf.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``url_headers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configuration file for URL request headers allow-list with URL
+    pattern matching. This file defines which HTTP headers are allowed
+    in URL fetch requests based on URL patterns, and whether they
+    should be treated as sensitive (encrypted in the vault) or not. If
+    no allow-list is specified, no headers will be allowed in URL
+    requests. This provides fine-grained security control over what
+    headers can be sent when Galaxy fetches external URLs on behalf of
+    users, allowing different headers for different target domains or
+    services.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``url_headers_conf.yml``
 :Type: str
 
 
@@ -5892,6 +5925,17 @@
     is ``true``. Runs in a Celery task.
 :Default: ``86400``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_tool_formats``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
+    for user defined tools.
+:Default: ``false``
+:Type: bool
 
 
 

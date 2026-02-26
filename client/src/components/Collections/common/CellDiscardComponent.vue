@@ -1,13 +1,10 @@
 <script lang="ts">
 /* cannot use a setup block and get params injection in Vue 2.7 I think */
 
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ICellRendererParams } from "ag-grid-community";
 import { defineComponent } from "vue";
-
-library.add(faTimes);
 
 export default defineComponent({
     components: {
@@ -16,6 +13,7 @@ export default defineComponent({
     data() {
         return {
             params: {} as ICellRendererParams,
+            faTimes,
         };
     },
     computed: {},
@@ -28,7 +26,7 @@ export default defineComponent({
 </script>
 <template>
     <div>
-        <FontAwesomeIcon size="2x" icon="fa-times" @click="onRemove" />
+        <FontAwesomeIcon size="2x" :icon="faTimes" @click="onRemove" />
     </div>
 </template>
 
