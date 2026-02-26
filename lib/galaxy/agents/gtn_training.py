@@ -1,10 +1,4 @@
-"""
-GTN Training Agent for Galaxy.
-
-This agent provides access to Galaxy Training Network tutorials and learning resources,
-helping users find relevant training materials, understand tool usage, and learn
-Galaxy workflows through hands-on tutorials.
-"""
+"""GTN Training Agent - searches Galaxy Training Network tutorials and FAQs."""
 
 import json
 import logging
@@ -60,33 +54,22 @@ class GTNSearchResponse(BaseModel):
 
 
 class GTNTrainingAgent(BaseGalaxyAgent):
-    """
-    Agent specialized in finding and recommending Galaxy training materials.
-
-    This agent searches the GTN database to help users find relevant tutorials,
-    create learning paths, and understand Galaxy tools through hands-on training.
-    """
+    """Searches GTN tutorials to help users find training materials and learning paths."""
 
     agent_type = AgentType.GTN_TRAINING
 
     def __init__(self, deps: GalaxyAgentDependencies):
-        """Initialize the GTN training agent."""
         super().__init__(deps)
 
-        # Initialize GTN database (lazy - only when DB file exists)
         self.gtn_db: GTNSearchDB | None = None
         try:
             self.gtn_db = GTNSearchDB()
             log.info("GTN database initialized successfully")
-        except FileNotFoundError as e:
-            log.warning(f"GTN database file not found: {e}")
-            self.gtn_db = None
         except OSError as e:
-            log.error(f"Failed to initialize GTN database: {e}")
+            log.warning(f"GTN database not available: {e}")
             self.gtn_db = None
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
-        """Create the pydantic-ai agent with GTN search capabilities."""
         if self._supports_structured_output():
             agent = Agent(
                 self._get_model(),
@@ -95,14 +78,12 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 system_prompt=self.get_system_prompt(),
             )
         else:
-            # DeepSeek and other models without structured output
             agent = Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
                 system_prompt=self._get_simple_system_prompt(),
             )
 
-        # Add GTN search tools only for models that support them
         if self._supports_structured_output():
 
             @agent.tool
@@ -114,19 +95,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 hands_on_only: bool = False,
                 limit: int = 10,
             ) -> str:
-                """
-                IMPORTANT: Always call this tool for tutorial searches! Search GTN tutorials for relevant content.
-
-                Args:
-                    query: Natural language search query (REQUIRED)
-                    topic: Optional topic filter
-                    difficulty: Optional difficulty filter (introductory/intermediate/advanced)
-                    hands_on_only: Only return hands-on tutorials
-                    limit: Maximum number of results
-
-                Returns:
-                    JSON string with search results
-                """
+                """Search GTN tutorials using full-text search over titles, descriptions, and content."""
                 if not self.gtn_db:
                     return json.dumps({"error": "GTN database not available"})
 
@@ -156,17 +125,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 tutorial: str,
                 max_length: int = 2000,
             ) -> str:
-                """
-                Get content of a specific tutorial.
-
-                Args:
-                    topic: Tutorial topic
-                    tutorial: Tutorial name
-                    max_length: Maximum content length to return
-
-                Returns:
-                    Tutorial content or error message
-                """
+                """Get the full content of a specific tutorial by topic and name."""
                 if not self.gtn_db:
                     return "GTN database not available"
 
@@ -179,12 +138,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
             @agent.tool
             async def list_gtn_topics(ctx: RunContext[GalaxyAgentDependencies]) -> str:
-                """
-                List all available GTN topics.
-
-                Returns:
-                    JSON string with list of topics
-                """
+                """List all available GTN tutorial topics."""
                 if not self.gtn_db:
                     return json.dumps({"error": "GTN database not available"})
 
@@ -201,16 +155,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 tool_names: list[str],
                 limit: int = 5,
             ) -> str:
-                """
-                Find tutorials that use specific Galaxy tools.
-
-                Args:
-                    tool_names: List of tool names to search for
-                    limit: Maximum number of results
-
-                Returns:
-                    JSON string with matching tutorials
-                """
+                """Find tutorials that use specific Galaxy tools."""
                 if not self.gtn_db:
                     return json.dumps({"error": "GTN database not available"})
 
@@ -230,22 +175,14 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         return agent
 
     def _prepare_prompt(self, query: str, context: dict[str, Any]) -> str:
-        """
-        Prepare the prompt for GTN agent.
-
-        We skip including conversation_history in the prompt as it can interfere
-        with the model's ability to generate comprehensive tutorial responses.
-        """
+        """Prepare prompt, excluding conversation_history which causes response truncation."""
         if not context:
             return query
 
-        # Filter out conversation_history which can cause response truncation
         filtered_context = {k: v for k, v in context.items() if k != "conversation_history" and v}
-
         if not filtered_context:
             return query
 
-        # Add only relevant context
         context_str = "\n".join([f"{k}: {v}" for k, v in filtered_context.items()])
         return f"Context:\n{context_str}\n\n{query}"
 
@@ -255,18 +192,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         return prompt_path.read_text()
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
-        """
-        Process a training-related query.
-
-        Args:
-            query: The user's training question or request
-            context: Optional context about the user's situation
-
-        Returns:
-            AgentResponse with tutorial recommendations
-        """
+        """Process a training-related query and return tutorial recommendations."""
         try:
-            # Check if GTN database is available
             if not self.gtn_db:
                 return self._build_response(
                     content="GTN database is not available. Please ensure it's properly initialized.",
@@ -276,12 +203,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     error="gtn_database_unavailable",
                 )
 
-            # Run the agent to process the query with retry logic
             result = await self._run_with_retry(query)
 
-            # Handle different response formats based on model capabilities
             if self._supports_structured_output():
-                # Handle structured output
                 if hasattr(result, "output"):
                     response_data = result.output
                 elif hasattr(result, "data"):
@@ -289,14 +213,10 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 else:
                     response_data = result
 
-                # Fallback: If no tutorials found, try direct database search
                 used_fallback = False
-                if not response_data.tutorials or len(response_data.tutorials) == 0:
+                if not response_data.tutorials:
                     log.info("No tutorials in response, falling back to direct search")
-                    if self.gtn_db:  # Additional safety check
-                        fallback_results = self.gtn_db.search(query, limit=5)
-                    else:
-                        fallback_results = []
+                    fallback_results = self.gtn_db.search(query, limit=5)
                     if fallback_results:
                         used_fallback = True
                         # Create a new response with the fallback results
@@ -308,7 +228,6 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                             total_time=None,
                         )
 
-                # Format the response
                 content = self._format_gtn_response(response_data)
                 suggestions = self._create_suggestions(response_data)
                 confidence = ConfidenceLevel.HIGH if response_data.tutorials else ConfidenceLevel.MEDIUM
