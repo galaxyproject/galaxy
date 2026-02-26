@@ -318,13 +318,16 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <!-- Actions column -->
                     <template v-slot:cell(actions)="{ item }">
-                        <button
+                        <GButton
                             v-b-tooltip.hover.noninteractive
-                            class="btn btn-link text-danger remove-btn"
+                            class="remove-btn"
+                            color="red"
+                            outline
+                            transparent
                             title="Remove file from list"
                             @click="removeItem(item.id)">
                             <FontAwesomeIcon :icon="faTimes" />
-                        </button>
+                        </GButton>
                     </template>
                 </GTable>
             </div>
