@@ -126,7 +126,7 @@
             </b-button>
         </div>
         <!-- Peek View -->
-        <div v-if="dataset.peek" data-test-id="peek-view" v-html="dataset.peek" />
+        <div v-if="dataset.peek" data-test-id="peek-view" class="break-word" v-html="dataset.peek" />
     </div>
 </template>
 
