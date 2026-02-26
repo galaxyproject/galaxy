@@ -361,9 +361,7 @@ export function mergeObjectListsById<T extends { id: string; [key: string]: any 
     return mergedList;
 }
 
-export function parseBool(value: string): boolean {
-    return value.toLowerCase() === "true";
-}
+export { parseBool } from "./parseBool";
 
 type MatchObject<T extends string | number | symbol, R> = {
     [_Case in T]: () => R;
