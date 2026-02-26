@@ -570,9 +570,13 @@ export function getRouter(Galaxy) {
                         component: TourList,
                     },
                     {
-                        path: "chatgxy",
+                        path: "chatgxy/:exchangeId?",
                         component: ChatGXY,
                         redirect: redirectAnon(),
+                        props: (route) => ({
+                            exchangeId: route.params.exchangeId ? parseInt(route.params.exchangeId) : undefined,
+                            compact: route.query.compact === "true",
+                        }),
                     },
                     {
                         path: "wizard",

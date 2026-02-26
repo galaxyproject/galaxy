@@ -29,6 +29,17 @@ interface ChatHistoryItem {
     feedback?: number | null;
 }
 
+const props = withDefaults(
+    defineProps<{
+        exchangeId?: number;
+        compact?: boolean;
+    }>(),
+    {
+        exchangeId: undefined,
+        compact: false,
+    },
+);
+
 const query = ref("");
 const messages = ref<ChatMessage[]>([]);
 const errorMessage = ref("");
@@ -45,7 +56,11 @@ const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewline
 const { processingAction, handleAction } = useAgentActions();
 
 onMounted(async () => {
-    await loadLatestChat();
+    if (props.exchangeId) {
+        await loadChatById(props.exchangeId);
+    } else {
+        await loadLatestChat();
+    }
 
     if (!hasLoadedInitialChat.value) {
         messages.value.push({
@@ -242,48 +257,52 @@ async function clearHistory() {
     }
 }
 
-async function loadPreviousChat(item: ChatHistoryItem) {
-    try {
-        const { data: fullConversation } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
-            params: {
-                path: {
-                    exchange_id: item.id,
-                },
-            },
-        });
+async function fetchConversation(exchangeId: number): Promise<boolean> {
+    const { data: fullConversation } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
+        params: {
+            path: { exchange_id: exchangeId },
+        },
+    });
 
-        if (fullConversation && fullConversation.length > 0) {
-            messages.value = [];
+    if (!fullConversation || fullConversation.length === 0) {
+        return false;
+    }
 
-            fullConversation.forEach((msg: any, index: number) => {
-                const message: ChatMessage = {
-                    id: `hist-${msg.role}-${item.id}-${index}`,
-                    role: msg.role as "user" | "assistant",
-                    content: msg.content,
-                    timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-                    feedback: null,
-                };
+    messages.value = fullConversation.map((msg: any, index: number) => {
+        const message: ChatMessage = {
+            id: `hist-${msg.role}-${exchangeId}-${index}`,
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            feedback: null,
+        };
 
-                if (msg.role === "assistant") {
-                    message.agentType = msg.agent_type;
-                    message.confidence = msg.agent_response?.confidence || "medium";
-                    message.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
+        if (msg.role === "assistant") {
+            message.agentType = msg.agent_type;
+            message.confidence = msg.agent_response?.confidence || "medium";
+            message.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
 
-                    if (msg.agent_response) {
-                        message.agentResponse = msg.agent_response;
-                        message.suggestions = msg.agent_response.suggestions || [];
-                    }
-                }
-
-                messages.value.push(message);
-            });
-        } else {
-            loadSingleMessageFallback(item);
+            if (msg.agent_response) {
+                message.agentResponse = msg.agent_response;
+                message.suggestions = msg.agent_response.suggestions || [];
+            }
         }
 
-        currentChatId.value = item.id;
+        return message;
+    });
+
+    currentChatId.value = exchangeId;
+    nextTick(() => scrollToBottom(chatContainer.value));
+    return true;
+}
+
+async function loadPreviousChat(item: ChatHistoryItem) {
+    try {
+        const loaded = await fetchConversation(item.id);
+        if (!loaded) {
+            loadSingleMessageFallback(item);
+        }
         showHistory.value = false;
-        nextTick(() => scrollToBottom(chatContainer.value));
     } catch (error) {
         console.error("Error loading full conversation:", error);
         loadSingleMessageFallback(item);
@@ -318,6 +337,17 @@ function loadSingleMessageFallback(item: ChatHistoryItem) {
     currentChatId.value = item.id;
     showHistory.value = false;
     nextTick(() => scrollToBottom(chatContainer.value));
+}
+
+async function loadChatById(exchangeId: number) {
+    try {
+        const loaded = await fetchConversation(exchangeId);
+        if (loaded) {
+            hasLoadedInitialChat.value = true;
+        }
+    } catch (e) {
+        console.error("Failed to load chat by ID:", e);
+    }
 }
 
 async function loadLatestChat() {
@@ -365,8 +395,8 @@ function toggleHistory() {
 </script>
 
 <template>
-    <div class="chatgxy-container">
-        <div class="chatgxy-header">
+    <div class="chatgxy-container" :class="{ 'chatgxy-compact': compact }">
+        <div v-if="!compact" class="chatgxy-header">
             <Heading h2 :icon="faMagic" size="lg">
                 <span>ChatGXY</span>
             </Heading>
@@ -387,7 +417,7 @@ function toggleHistory() {
 
         <div class="chatgxy-body">
             <!-- History Sidebar -->
-            <div v-if="showHistory" class="history-sidebar">
+            <div v-if="showHistory && !compact" class="history-sidebar">
                 <div class="history-header">
                     <h5>Chat History</h5>
                     <button class="btn btn-sm btn-link text-danger p-0" title="Clear History" @click="clearHistory">
@@ -463,6 +493,18 @@ function toggleHistory() {
     background: $white;
     border-radius: $border-radius-large;
     overflow: hidden;
+}
+
+.chatgxy-compact {
+    height: 100vh;
+
+    .chat-messages {
+        padding: 0.75rem 1rem;
+    }
+
+    .chatgxy-footer {
+        padding: 0.5rem 0.75rem;
+    }
 }
 
 .chatgxy-header {

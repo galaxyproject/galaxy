@@ -6,6 +6,7 @@ import type { Placement } from "@popperjs/core";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { getGalaxyInstance } from "@/app";
 import { useActivityStore } from "@/stores/activityStore";
 import type { ActivityVariant } from "@/stores/activityStoreTypes";
 import localize from "@/utils/localization";
@@ -36,6 +37,7 @@ export interface Props {
     options?: Option[];
     to?: string;
     variant?: ActivityVariant;
+    windowTitle?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -51,6 +53,7 @@ const props = withDefaults(defineProps<Props>(), {
     tooltip: undefined,
     tooltipPlacement: "right",
     variant: "primary",
+    windowTitle: undefined,
 });
 
 const emit = defineEmits<{
@@ -60,7 +63,14 @@ const emit = defineEmits<{
 function onClick(evt: MouseEvent): void {
     emit("click");
     if (props.to) {
-        router.push(props.to);
+        const Galaxy = getGalaxyInstance();
+        if (props.windowTitle && Galaxy?.frame?.active) {
+            const compactUrl = props.to + (props.to.includes("?") ? "&" : "?") + "compact=true";
+            // @ts-ignore - monkeypatched router, second arg is RouterPushOptions
+            router.push(compactUrl, { title: props.windowTitle });
+        } else {
+            router.push(props.to);
+        }
     }
 }
 

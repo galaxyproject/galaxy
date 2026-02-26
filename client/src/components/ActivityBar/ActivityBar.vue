@@ -304,6 +304,7 @@ defineExpose({
                                 :tooltip="activity.tooltip"
                                 :to="activity.to ?? undefined"
                                 :variant="activity.variant"
+                                :window-title="activity.windowTitle"
                                 @click="onActivityClicked(activity)" />
                         </div>
                     </div>
