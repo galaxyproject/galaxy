@@ -435,59 +435,6 @@ def get_mcp_app(gx_app):
             logger.error(f"Failed to search tools by keywords: {str(e)}")
             raise ValueError(f"Failed to search tools by keywords: {str(e)}") from e
 
-    # ==================== IWC (Intergalactic Workflow Commission) Tools ====================
-
-    @mcp.tool()
-    def get_iwc_workflows(api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """Get all workflows from the IWC (Intergalactic Workflow Commission) catalog.
-
-        The IWC maintains curated best-practice Galaxy workflows at iwc.galaxyproject.org.
-        """
-        try:
-            ops_manager = get_operations_manager(api_key, ctx)
-            return ops_manager.get_iwc_workflows()
-        except Exception as e:
-            logger.error(f"Failed to get IWC workflows: {str(e)}")
-            raise ValueError(f"Failed to get IWC workflows: {str(e)}") from e
-
-    @mcp.tool()
-    def search_iwc_workflows(query: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """Search IWC workflows by name, description, or tags."""
-        try:
-            ops_manager = get_operations_manager(api_key, ctx)
-            return ops_manager.search_iwc_workflows(query)
-        except Exception as e:
-            logger.error(f"Failed to search IWC workflows: {str(e)}")
-            raise ValueError(f"Failed to search IWC workflows: {str(e)}") from e
-
-    @mcp.tool()
-    def get_iwc_workflow_details(trs_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """Get detailed information about an IWC workflow before importing it.
-
-        Returns full readme, inputs, outputs, tools used, authors, license, and more.
-        Use search_iwc_workflows() first to find the TRS ID.
-        """
-        try:
-            ops_manager = get_operations_manager(api_key, ctx)
-            return ops_manager.get_iwc_workflow_details(trs_id)
-        except Exception as e:
-            logger.error(f"Failed to get IWC workflow details for {trs_id}: {str(e)}")
-            raise ValueError(f"Failed to get IWC workflow details (TRS ID: '{trs_id}'): {str(e)}") from e
-
-    @mcp.tool()
-    def import_workflow_from_iwc(trs_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
-        """Import a workflow from the IWC catalog into your Galaxy account.
-
-        Use get_iwc_workflows() or search_iwc_workflows() first to find
-        the TRS ID of the workflow you want to import.
-        """
-        try:
-            ops_manager = get_operations_manager(api_key, ctx)
-            return ops_manager.import_workflow_from_iwc(trs_id)
-        except Exception as e:
-            logger.error(f"Failed to import workflow from IWC: {str(e)}")
-            raise ValueError(f"Failed to import workflow from IWC (TRS ID: '{trs_id}'): {str(e)}") from e
-
     # ==================== Supplementary Tools ====================
 
     @mcp.tool()
@@ -551,5 +498,5 @@ def get_mcp_app(gx_app):
 
     mcp_app = mcp.http_app()
 
-    logger.info("MCP server initialized with 31 tools (Streamable HTTP)")
+    logger.info("MCP server initialized with 27 tools (Streamable HTTP)")
     return mcp_app
