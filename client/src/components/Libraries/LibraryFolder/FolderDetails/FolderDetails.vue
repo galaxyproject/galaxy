@@ -1,14 +1,15 @@
 <template>
     <div>
-        <b-button
+        <BButton
             v-b-modal.details-modal
             class="details-btn"
             title="Show location details"
             data-testid="loc-details-btn">
-            <FontAwesomeIcon :icon="faInfoCircle" /> {{ detailsCaption }}
-        </b-button>
+            <FontAwesomeIcon :icon="faInfoCircle" />
+            {{ detailsCaption }}
+        </BButton>
 
-        <b-modal
+        <BModal
             id="details-modal"
             :static="isStatic"
             :title="titleLocationDetails"
@@ -16,7 +17,10 @@
             ok-only
             @show="getDetails">
             <div>
-                <b-alert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </b-alert>
+                <BAlert :show="hasError" variant="danger" data-testid="error-alert">
+                    {{ error }}
+                </BAlert>
+
                 <div v-if="libraryDetails">
                     <GTable
                         caption-top
@@ -48,6 +52,7 @@
                                 <b>{{ folderHeader }}</b>
                             </h2>
                         </template>
+
                         <template v-slot:cell(value)="row">
                             <div v-if="row.item.name === libraryFieldTitles.create_time_pretty">
                                 <UtcDate :date="row.item.value" mode="elapsed" />
@@ -57,7 +62,7 @@
                     </GTable>
                 </div>
             </div>
-        </b-modal>
+        </BModal>
     </div>
 </template>
 
@@ -65,6 +70,7 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
+import { BAlert, BButton, BModal } from "bootstrap-vue";
 
 import { buildFields } from "@/components/Libraries/library-utils";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -75,6 +81,9 @@ import UtcDate from "@/components/UtcDate.vue";
 
 export default {
     components: {
+        BAlert,
+        BButton,
+        BModal,
         FontAwesomeIcon,
         GTable,
         UtcDate,
