@@ -86,7 +86,7 @@ export async function waitForToolRequest(toolRequestId, { pollInterval = 1000, t
             }
             return data;
         },
-        condition: (state) => state === "submitted" || state === "failed",
+        condition: (state) => state !== "new",
         interval: pollInterval,
         timeout,
     });
