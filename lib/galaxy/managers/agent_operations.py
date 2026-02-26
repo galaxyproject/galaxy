@@ -947,6 +947,41 @@ class AgentOperationsManager:
             "truncated": len(stderr) > max_output_length or len(stdout) > max_output_length,
         }
 
+    def peek_dataset_content(self, dataset_id: str) -> dict[str, Any]:
+        """Preview the content of a dataset (text-based datasets only)."""
+        decoded_dataset_id = self.trans.security.decode_id(dataset_id)
+        hda = self.hda_manager.get_accessible(decoded_dataset_id, self.trans.user)
+
+        if not hda:
+            raise ValueError(f"Dataset '{dataset_id}' not found or not accessible")
+
+        if hda.state != "ok":
+            return {
+                "dataset_id": dataset_id,
+                "state": hda.state,
+                "error": f"Dataset is not ready (state: {hda.state})",
+            }
+
+        result: dict[str, Any] = {
+            "dataset_id": dataset_id,
+            "name": hda.name,
+            "extension": hda.extension,
+            "file_size": hda.get_size(),
+            "peek": hda.peek or "",
+        }
+
+        try:
+            truncated, text_data = self.hda_manager.text_data(hda, preview=True)
+            result["content_preview"] = text_data or ""
+            result["truncated"] = truncated
+        except Exception:
+            log.debug(f"Content preview unavailable for dataset {dataset_id}", exc_info=True)
+            result["content_preview"] = ""
+            result["truncated"] = False
+            result["note"] = "Content preview not available (non-text dataset or encoding issue)"
+
+        return result
+
     def download_dataset(self, dataset_id: str) -> dict[str, Any]:
         """Get download URL and metadata for a dataset."""
         decoded_dataset_id = self.trans.security.decode_id(dataset_id)

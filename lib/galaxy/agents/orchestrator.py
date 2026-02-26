@@ -81,9 +81,9 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
             )
 
             # Finding failed jobs must happen before analyzing them
-            if "history_analyzer" in plan.agents and "error_analysis" in plan.agents:
+            if "history" in plan.agents and "error_analysis" in plan.agents:
                 if not plan.sequential:
-                    log.info("Orchestrator: Forcing sequential=true for history_analyzer + error_analysis combination")
+                    log.info("Orchestrator: Forcing sequential=true for history + error_analysis combination")
                     plan.sequential = True
 
             if plan.sequential:
@@ -238,7 +238,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
     def _get_transition_phrase(self, agent_name: str) -> str:
         transitions = {
             "error_analysis": "Looking at this error more closely:",
-            "history_analyzer": "Based on your history:",
+            "history": "Based on your history:",
             "gtn_training": "For learning more:",
             "custom_tool": "Regarding the tool:",
         }
@@ -251,7 +251,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         Available agents:
         - error_analysis: Debug job failures and errors (use when user PROVIDES error details)
         - custom_tool: Create new Galaxy tools
-        - history_analyzer: Summarize histories, describe analyses, FIND failed jobs
+        - history: Summarize histories, describe analyses, FIND failed jobs
         - gtn_training: Find relevant tutorials (may not be available)
 
         Respond in this format:
@@ -260,9 +260,9 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         REASONING: explanation
 
         Examples:
-        - "What failed in my history?" → AGENTS: [history_analyzer, error_analysis], SEQUENTIAL: true (find failed job, then analyze)
-        - "Why did the job in my BRC history fail?" → AGENTS: [history_analyzer, error_analysis], SEQUENTIAL: true
-        - "What should I do next?" → AGENTS: [history_analyzer, gtn_training], SEQUENTIAL: true
+        - "What failed in my history?" → AGENTS: [history, error_analysis], SEQUENTIAL: true (find failed job, then analyze)
+        - "Why did the job in my BRC history fail?" → AGENTS: [history, error_analysis], SEQUENTIAL: true
+        - "What should I do next?" → AGENTS: [history, gtn_training], SEQUENTIAL: true
         - "Here's my error: [pasted text]" → AGENTS: [error_analysis], SEQUENTIAL: false (user provided details)
-        - "Summarize my history" → AGENTS: [history_analyzer], SEQUENTIAL: false
+        - "Summarize my history" → AGENTS: [history], SEQUENTIAL: false
         """
