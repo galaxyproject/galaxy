@@ -312,10 +312,10 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         try:
-            has_history = context and "conversation_history" in context and context["conversation_history"]
-            log.info(f"Router: Processing query with conversation_history={has_history}")
-            if has_history:
+            if context and context.get("conversation_history"):
                 log.info(f"Router: Conversation has {len(context['conversation_history'])} messages")
+            else:
+                log.info("Router: Processing query with no conversation history")
 
             full_query = self._build_query_with_context(query, context)
             log.info(f"Router: Full query length={len(full_query)} (original={len(query)})")

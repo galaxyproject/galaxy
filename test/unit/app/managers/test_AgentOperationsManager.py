@@ -60,9 +60,11 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         mock_service = mock.MagicMock()
         mock_service.create.return_value = mock_history
-        self.agent_ops._histories_service = mock_service
 
-        result = self.agent_ops.create_history("Test History")
+        with mock.patch.object(
+            type(self.agent_ops), "histories_service", new_callable=lambda: property(lambda self: mock_service)
+        ):
+            result = self.agent_ops.create_history("Test History")
 
         mock_service.create.assert_called_once()
         assert result.name == "Test History"
@@ -75,9 +77,11 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         mock_service = mock.MagicMock()
         mock_service.index.return_value = mock_histories
-        self.agent_ops._histories_service = mock_service
 
-        result = self.agent_ops.list_histories(limit=10, offset=0)
+        with mock.patch.object(
+            type(self.agent_ops), "histories_service", new_callable=lambda: property(lambda self: mock_service)
+        ):
+            result = self.agent_ops.list_histories(limit=10, offset=0)
 
         assert "histories" in result
         assert result["count"] == 2
@@ -89,9 +93,11 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         mock_service = mock.MagicMock()
         mock_service.index.return_value = mock_histories
-        self.agent_ops._histories_service = mock_service
 
-        result = self.agent_ops.list_histories(name="RNA")
+        with mock.patch.object(
+            type(self.agent_ops), "histories_service", new_callable=lambda: property(lambda self: mock_service)
+        ):
+            result = self.agent_ops.list_histories(name="RNA")
 
         assert result["count"] == 1
         call_kwargs = mock_service.index.call_args
@@ -109,10 +115,16 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         mock_service = mock.MagicMock()
         mock_service.show.return_value = mock_collection
-        self.agent_ops._dataset_collections_service = mock_service
-        self.trans.security.decode_id = mock.MagicMock(return_value=123)
 
-        result = self.agent_ops.get_collection_details("encoded_col_id")
+        with (
+            mock.patch.object(
+                type(self.agent_ops),
+                "dataset_collections_service",
+                new_callable=lambda: property(lambda self: mock_service),
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=123),
+        ):
+            result = self.agent_ops.get_collection_details("encoded_col_id")
 
         assert "collection" in result
         assert result["collection_id"] == "encoded_col_id"
@@ -130,10 +142,16 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         mock_service = mock.MagicMock()
         mock_service.show.return_value = mock_collection
-        self.agent_ops._dataset_collections_service = mock_service
-        self.trans.security.decode_id = mock.MagicMock(return_value=123)
 
-        result = self.agent_ops.get_collection_details("encoded_col_id", max_elements=3)
+        with (
+            mock.patch.object(
+                type(self.agent_ops),
+                "dataset_collections_service",
+                new_callable=lambda: property(lambda self: mock_service),
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=123),
+        ):
+            result = self.agent_ops.get_collection_details("encoded_col_id", max_elements=3)
 
         assert len(result["collection"]["elements"]) == 3
         assert result["collection"]["elements_truncated"] is True
@@ -144,10 +162,14 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         mock_service = mock.MagicMock()
         mock_service.show_workflow.return_value = mock_workflow
-        self.agent_ops._workflows_service = mock_service
-        self.trans.security.decode_id = mock.MagicMock(return_value=42)
 
-        self.agent_ops.get_workflow_details("encoded_wf_id", version=3)
+        with (
+            mock.patch.object(
+                type(self.agent_ops), "workflows_service", new_callable=lambda: property(lambda self: mock_service)
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=42),
+        ):
+            self.agent_ops.get_workflow_details("encoded_wf_id", version=3)
 
         mock_service.show_workflow.assert_called_once_with(
             trans=self.trans, workflow_id=42, instance=False, legacy=False, version=3
@@ -156,10 +178,16 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
     def test_invoke_workflow_with_history_name(self):
         mock_workflows_service = mock.MagicMock()
         mock_workflows_service.invoke_workflow.return_value = {"id": "inv123"}
-        self.agent_ops._workflows_service = mock_workflows_service
-        self.trans.security.decode_id = mock.MagicMock(return_value=42)
 
-        self.agent_ops.invoke_workflow("encoded_wf_id", history_name="My Analysis")
+        with (
+            mock.patch.object(
+                type(self.agent_ops),
+                "workflows_service",
+                new_callable=lambda: property(lambda self: mock_workflows_service),
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=42),
+        ):
+            self.agent_ops.invoke_workflow("encoded_wf_id", history_name="My Analysis")
 
         call_kwargs = mock_workflows_service.invoke_workflow.call_args
         payload = call_kwargs.kwargs.get("payload") or call_kwargs[1].get("payload")
@@ -173,10 +201,14 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
     def test_get_history_contents_with_filters(self):
         mock_service = mock.MagicMock()
         mock_service.index.return_value = ([], 0)
-        self.agent_ops._datasets_service = mock_service
-        self.trans.security.decode_id = mock.MagicMock(return_value=1)
 
-        self.agent_ops.get_history_contents("hist_id", deleted=True, visible=False)
+        with (
+            mock.patch.object(
+                type(self.agent_ops), "datasets_service", new_callable=lambda: property(lambda self: mock_service)
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=1),
+        ):
+            self.agent_ops.get_history_contents("hist_id", deleted=True, visible=False)
 
         call_kwargs = mock_service.index.call_args
         filter_params = call_kwargs.kwargs.get("filter_query_params") or call_kwargs[1].get("filter_query_params")
@@ -254,9 +286,11 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         mock_service = mock.MagicMock()
         mock_service._create.return_value = mock_result
-        self.agent_ops._tools_service = mock_service
 
-        result = self.agent_ops.run_tool("hist123", "cat1", {"input1": "data1"})
+        with mock.patch.object(
+            type(self.agent_ops), "tools_service", new_callable=lambda: property(lambda self: mock_service)
+        ):
+            result = self.agent_ops.run_tool("hist123", "cat1", {"input1": "data1"})
 
         assert "jobs" in result
         mock_service._create.assert_called_once()
@@ -268,12 +302,14 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         mock_service = mock.MagicMock()
         mock_service.show.return_value = mock_job
-        self.agent_ops._jobs_service = mock_service
 
-        # Need to mock the decode_id as well
-        self.trans.security.decode_id = mock.MagicMock(return_value=123)
-
-        result = self.agent_ops.get_job_status("encoded_job_id")
+        with (
+            mock.patch.object(
+                type(self.agent_ops), "jobs_service", new_callable=lambda: property(lambda self: mock_service)
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=123),
+        ):
+            result = self.agent_ops.get_job_status("encoded_job_id")
 
         assert "job" in result
         assert result["job_id"] == "encoded_job_id"
@@ -473,7 +509,7 @@ class TestAgentOperationsManagerIWC(BaseTestCase):
                 self.agent_ops.get_iwc_workflow_details("#workflow/nonexistent/main")
 
     def test_import_workflow_from_iwc_not_found(self):
-        mock_manifest = []
+        mock_manifest: list[dict] = []
 
         with mock.patch.object(self.agent_ops, "_get_iwc_manifest", return_value=mock_manifest):
             with pytest.raises(ValueError, match="not found in IWC manifest"):
@@ -503,10 +539,9 @@ class TestAgentOperationsManagerIWC(BaseTestCase):
         with mock.patch.object(self.agent_ops, "_get_iwc_manifest", return_value=mock_manifest):
             with mock.patch("galaxy.managers.agent_operations.WorkflowsManager") as mock_wf_manager:
                 mock_wf_manager.return_value.import_workflow_dict.return_value = mock_imported
-                self.trans.security.encode_id = mock.MagicMock(return_value="encoded123")
+                with mock.patch.object(self.trans.security, "encode_id", return_value="encoded123"):
+                    result = self.agent_ops.import_workflow_from_iwc("#workflow/test/main")
 
-                result = self.agent_ops.import_workflow_from_iwc("#workflow/test/main")
-
-                assert result["trs_id"] == "#workflow/test/main"
-                assert "imported_workflow" in result
-                assert result["imported_workflow"]["name"] == "Test Workflow"
+                    assert result["trs_id"] == "#workflow/test/main"
+                    assert "imported_workflow" in result
+                    assert result["imported_workflow"]["name"] == "Test Workflow"
