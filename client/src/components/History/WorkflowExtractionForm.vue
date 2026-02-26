@@ -8,10 +8,11 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { TableField } from "../Common/GTable.types";
 
+import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import BreadcrumbHeading from "../Common/BreadcrumbHeading.vue";
 import GTable from "../Common/GTable.vue";
 import LoadingSpan from "../LoadingSpan.vue";
-import WorkflowExtractionNode from "./WorkflowExtractionNode.vue";
+import WorkflowExtractionNode from "./WorkflowExtraction/WorkflowExtractionNode.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 const props = defineProps<{
@@ -45,6 +46,10 @@ const tableFields: TableField[] = [
         label: "Workflow Step",
     },
     {
+        key: "tool_id",
+        label: "Rename Step",
+    },
+    {
         key: "outputs",
         label: "Outputs",
         width: "25vw",
@@ -76,11 +81,19 @@ async function extractWorkflow() {
         <div v-else-if="summary">
             <GTable :hover="false" :striped="false" :fields="tableFields" :items="summary.jobs">
                 <template v-slot:cell(checked)="{ item }">
-                    <BFormCheckbox v-model="item.checked" :disabled="Boolean(item.disabled_why)" @click.stop />
+                    <BFormCheckbox v-model="item.checked" @click.stop />
                 </template>
 
                 <template v-slot:cell(tool_name)="{ item }">
                     <WorkflowExtractionNode :job="item" />
+                </template>
+
+                <template v-slot:cell(tool_id)="{ item }">
+                    <GFormInput
+                        v-model="item.tool_name"
+                        :class="{ 'disabled-rename': !item.checked }"
+                        :disabled="!item.checked"
+                        placeholder="Rename step (optional)" />
                 </template>
 
                 <template v-slot:cell(outputs)="{ item }">
@@ -96,3 +109,9 @@ async function extractWorkflow() {
         <BAlert v-else variant="info" show> No workflow could be extracted from this history. </BAlert>
     </div>
 </template>
+
+<style lang="scss" scoped>
+.disabled-rename {
+    opacity: 0.5;
+}
+</style>

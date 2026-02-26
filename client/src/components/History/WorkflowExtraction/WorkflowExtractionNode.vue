@@ -1,23 +1,39 @@
 <script setup lang="ts">
-import { faFile } from "@fortawesome/free-regular-svg-icons";
+import { faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faChevronCircleRight, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
 
 import type { WorkflowExtractionJob } from "@/api/histories";
+
+import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 
 const props = defineProps<{
     job: WorkflowExtractionJob;
 }>();
+
+const nodeIcon = computed(() => {
+    if (Boolean(props.job.disabled_why) && props.job.outputs?.length === 1) {
+        const output = props.job.outputs[0];
+        return output?.history_content_type === "dataset" ? faFile : faFolder;
+    }
+    return faWrench;
+});
 </script>
 
 <template>
     <div class="workflow-node card">
         <div
             class="unselectable clearfix card-header py-1 px-2"
-            :class="!props.job.checked ? 'node-header-disabled' : 'node-header'"
-            :title="props.job.disabled_why ?? undefined">
-            <FontAwesomeIcon :icon="props.job.is_fake ? faFile : faWrench" fixed-width />
+            :class="!props.job.checked ? 'node-header-disabled' : 'node-header'">
+            <FontAwesomeIcon :id="`step-icon-${props.job.id}-${props.job.tool_id}`" :icon="nodeIcon" fixed-width />
             <span class="node-title">{{ props.job.tool_name ?? "Unknown" }}</span>
+
+            <ToolLinkPopover
+                v-if="props.job.tool_id && props.job.tool_version"
+                :target="`step-icon-${props.job.id}-${props.job.tool_id}`"
+                :tool-id="props.job.tool_id"
+                :tool-version="props.job.tool_version" />
         </div>
         <div class="node-body position-relative card-body p-0 mx-2">
             <div v-for="output in props.job.outputs" :key="output.id" class="node-output">
