@@ -1,4 +1,5 @@
-import type { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
+import type { BrowsableFilesSourcePlugin, RemoteEntry } from "@/api/remoteFiles";
+import { USER_FILE_PREFIX } from "@/utils/url";
 
 import type { SelectionItem } from "../SelectionDialog/selectionTypes";
 
@@ -24,4 +25,35 @@ export function fileSourcePluginToItem(plugin: BrowsableFilesSourcePlugin): Sele
         entry: plugin,
     };
     return result;
+}
+
+/**
+ * Maps a RemoteEntry (file or directory) to a SelectionItem for use in the file browser.
+ */
+export function entryToSelectionItem(entry: RemoteEntry): SelectionItem {
+    return {
+        id: entry.uri,
+        label: entry.name,
+        url: entry.uri,
+        isLeaf: entry.class === "File",
+        details: "",
+        entry: entry as unknown as Record<string, unknown>,
+    };
+}
+
+/**
+ * Comparator for sorting file sources.
+ * User-created sources come first, then alphabetical by label.
+ */
+export function sortFileSources(a: SelectionItem, b: SelectionItem): number {
+    const aIsUser = a.url.startsWith(USER_FILE_PREFIX);
+    const bIsUser = b.url.startsWith(USER_FILE_PREFIX);
+
+    if (aIsUser && !bIsUser) {
+        return -1;
+    }
+    if (!aIsUser && bIsUser) {
+        return 1;
+    }
+    return a.label.localeCompare(b.label);
 }
