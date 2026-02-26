@@ -69,6 +69,9 @@ const hasAllRequiredSlots = computed((): boolean => {
         if (slot.mode === "url") {
             return !!slot.url.trim();
         }
+        if (slot.mode === "remote") {
+            return !!slot.remoteUri;
+        }
         return !!slot.content.trim();
     });
 });
