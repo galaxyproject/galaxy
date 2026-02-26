@@ -8,6 +8,8 @@ from typing import (
     Union,
 )
 
+from fsspec.implementations.sftp import SFTPFileSystem
+
 from galaxy.files.models import FilesSourceRuntimeContext
 from galaxy.files.sources._fsspec import (
     CacheOptionsDictType,
@@ -16,8 +18,6 @@ from galaxy.files.sources._fsspec import (
     FsspecFilesSource,
 )
 from galaxy.util.config_templates import TemplateExpansion
-
-from fsspec.implementations.sftp import SFTPFileSystem
 
 
 class SshFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):

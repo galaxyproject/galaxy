@@ -1,6 +1,10 @@
 import os
 
-from ._util import assert_simple_file_realize, write_from, configured_file_sources
+from ._util import (
+    assert_simple_file_realize,
+    write_from,
+    configured_file_sources,
+)
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "ssh_file_sources_conf.yml")
