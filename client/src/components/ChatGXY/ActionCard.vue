@@ -1,6 +1,6 @@
 <template>
     <div v-if="suggestions.length > 0" class="action-card">
-        <div class="action-header">Suggested Actions</div>
+        <div class="action-header">Quick Actions</div>
         <div class="action-list">
             <GButton
                 v-for="action in sortedSuggestions"
