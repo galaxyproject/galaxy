@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import type { HistoryPageSummary } from "@/api/pages";
 
-import HistoryNotebookList from "./HistoryNotebookList.vue";
+import HistoryPageList from "./HistoryPageList.vue";
 
 const localVue = getLocalVue();
 
@@ -43,11 +43,11 @@ const SELECTORS = {
     NOTEBOOK_ITEM: ".notebook-item",
     NOTEBOOK_TITLE: ".notebook-title",
     NOTEBOOK_META: ".notebook-meta",
-    VIEW_BUTTON: "[data-description='notebook view button']",
+    VIEW_BUTTON: "[data-description='page view button']",
 };
 
 async function mountComponent(propsData: { notebooks: HistoryPageSummary[] }) {
-    const wrapper = shallowMount(HistoryNotebookList as object, {
+    const wrapper = shallowMount(HistoryPageList as object, {
         localVue,
         propsData,
     });
@@ -55,7 +55,7 @@ async function mountComponent(propsData: { notebooks: HistoryPageSummary[] }) {
     return wrapper;
 }
 
-describe("HistoryNotebookList", () => {
+describe("HistoryPageList", () => {
     describe("Header", () => {
         let wrapper: Wrapper<Vue>;
 

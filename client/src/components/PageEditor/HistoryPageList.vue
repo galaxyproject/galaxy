@@ -51,11 +51,11 @@ function formatDate(dateStr: string): string {
                 v-for="notebook in notebooks"
                 :key="notebook.id"
                 class="notebook-item p-3 border-bottom cursor-pointer"
-                data-description="notebook item"
+                data-description="page item"
                 @click="$emit('select', notebook.id)">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="notebook-title fw-bold" data-description="notebook title">
+                        <div class="notebook-title fw-bold" data-description="page title">
                             {{ getNotebookTitle(notebook) }}
                         </div>
                         <div class="notebook-meta text-muted small">Updated {{ formatDate(notebook.update_time) }}</div>
@@ -66,7 +66,7 @@ function formatDate(dateStr: string): string {
                             size="sm"
                             class="p-1"
                             title="View notebook"
-                            data-description="notebook view button"
+                            data-description="page view button"
                             @click.stop="$emit('view', notebook.id)">
                             <FontAwesomeIcon :icon="faEye" />
                         </BButton>

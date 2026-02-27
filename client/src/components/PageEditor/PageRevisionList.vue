@@ -37,7 +37,7 @@ function formatDate(dateStr: string): string {
 </script>
 
 <template>
-    <div class="notebook-revision-list" data-description="notebook revision list">
+    <div class="notebook-revision-list" data-description="page revision list">
         <div v-if="isLoading" class="text-center p-3" data-description="revision list loading">
             <FontAwesomeIcon :icon="faSpinner" spin />
             Loading revisions...

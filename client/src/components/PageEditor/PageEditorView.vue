@@ -20,12 +20,12 @@ import { useConfig } from "@/composables/config";
 import { useHistoryStore } from "@/stores/historyStore";
 import { type PageEditorMode, usePageEditorStore } from "@/stores/pageEditorStore";
 
+import EditorSplitView from "./EditorSplitView.vue";
 import ObjectPermissionsModal from "./ObjectPermissionsModal.vue";
+import PageChatPanel from "./PageChatPanel.vue";
+import PageRevisionList from "./PageRevisionList.vue";
+import PageRevisionView from "./PageRevisionView.vue";
 import ClickToEdit from "@/components/ClickToEdit.vue";
-import HistoryNotebookSplit from "@/components/HistoryNotebook/HistoryNotebookSplit.vue";
-import NotebookChatPanel from "@/components/HistoryNotebook/NotebookChatPanel.vue";
-import NotebookRevisionList from "@/components/HistoryNotebook/NotebookRevisionList.vue";
-import NotebookRevisionView from "@/components/HistoryNotebook/NotebookRevisionView.vue";
 import Markdown from "@/components/Markdown/Markdown.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 
@@ -214,7 +214,7 @@ function handleRevisionRestore(revisionId: string) {
 
         <!-- Viewing a specific revision -->
         <template v-else-if="store.hasCurrentNotebook && store.selectedRevision">
-            <NotebookRevisionView
+            <PageRevisionView
                 :revision="store.selectedRevision"
                 :is-reverting="store.isReverting"
                 @back="store.clearSelectedRevision"
@@ -309,7 +309,7 @@ function handleRevisionRestore(revisionId: string) {
             </div>
 
             <div class="notebook-body d-flex flex-grow-1 overflow-hidden">
-                <HistoryNotebookSplit v-if="store.showChatPanel">
+                <EditorSplitView v-if="store.showChatPanel">
                     <template v-slot:editor>
                         <MarkdownEditor
                             :markdown-text="store.currentContent"
@@ -318,12 +318,12 @@ function handleRevisionRestore(revisionId: string) {
                             @update="handleContentUpdate" />
                     </template>
                     <template v-slot:chat>
-                        <NotebookChatPanel
+                        <PageChatPanel
                             :history-id="historyId"
                             :page-id="pageId"
                             :notebook-content="store.currentContent" />
                     </template>
-                </HistoryNotebookSplit>
+                </EditorSplitView>
                 <template v-else>
                     <div class="notebook-content flex-grow-1 overflow-auto">
                         <MarkdownEditor
@@ -333,7 +333,7 @@ function handleRevisionRestore(revisionId: string) {
                             @update="handleContentUpdate" />
                     </div>
                     <div v-if="store.showRevisions" class="notebook-revision-panel border-left">
-                        <NotebookRevisionList
+                        <PageRevisionList
                             :revisions="store.revisions"
                             :is-loading="store.isLoadingRevisions"
                             :is-reverting="store.isReverting"

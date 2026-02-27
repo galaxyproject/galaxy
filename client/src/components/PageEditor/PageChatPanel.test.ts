@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
-import NotebookChatPanel from "./NotebookChatPanel.vue";
+import PageChatPanel from "./PageChatPanel.vue";
 import ChatInput from "@/components/ChatGXY/ChatInput.vue";
 import ChatMessageCell from "@/components/ChatGXY/ChatMessageCell.vue";
 
@@ -38,7 +38,7 @@ const NOTEBOOK_CONTENT = "# Intro\nSome intro text\n# Methods\nSome methods text
 let pinia: Pinia;
 
 function mountComponent(propsData = { historyId: HISTORY_ID, pageId: PAGE_ID, notebookContent: NOTEBOOK_CONTENT }) {
-    return mount(NotebookChatPanel as any, {
+    return mount(PageChatPanel as any, {
         localVue,
         propsData,
         pinia,
@@ -53,7 +53,7 @@ function mountComponent(propsData = { historyId: HISTORY_ID, pageId: PAGE_ID, no
     });
 }
 
-describe("NotebookChatPanel", () => {
+describe("PageChatPanel", () => {
     beforeEach(() => {
         pinia = createTestingPinia({ createSpy: vi.fn });
         vi.clearAllMocks();
@@ -69,7 +69,7 @@ describe("NotebookChatPanel", () => {
         it("renders chat panel container", async () => {
             const wrapper = mountComponent();
             await flushPromises();
-            expect(wrapper.find('[data-description="notebook chat panel"]').exists()).toBe(true);
+            expect(wrapper.find('[data-description="page chat panel"]').exists()).toBe(true);
         });
 
         it("renders header with Notebook Assistant title", async () => {

@@ -9,9 +9,9 @@ import { getGalaxyInstance } from "@/app";
 import type { RouterPushOptions } from "@/components/History/Content/router-push-options";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
-import HistoryNotebookList from "./HistoryNotebookList.vue";
+import HistoryPageList from "./HistoryPageList.vue";
+import PageEditorView from "./PageEditorView.vue";
 import Markdown from "@/components/Markdown/Markdown.vue";
-import PageEditorView from "@/components/PageEditor/PageEditorView.vue";
 
 const props = defineProps<{
     historyId: string;
@@ -124,7 +124,7 @@ function handleBack() {
         </BAlert>
 
         <template v-else-if="!pageId">
-            <HistoryNotebookList
+            <HistoryPageList
                 :notebooks="store.notebooks"
                 @select="handleSelect"
                 @view="handleView"
@@ -135,24 +135,20 @@ function handleBack() {
         <template v-else-if="store.hasCurrentNotebook && displayOnly">
             <div
                 class="notebook-display-toolbar d-flex align-items-center p-2 border-bottom"
-                data-description="notebook display toolbar">
-                <BButton variant="link" size="sm" data-description="notebook manage button" @click="handleBack">
+                data-description="page display toolbar">
+                <BButton variant="link" size="sm" data-description="page manage button" @click="handleBack">
                     <FontAwesomeIcon :icon="faArrowLeft" />
                     Manage History Pages
                 </BButton>
                 <span class="flex-grow-1 text-center font-weight-bold">
                     {{ store.currentTitle || "Untitled Page" }}
                 </span>
-                <BButton
-                    variant="outline-primary"
-                    size="sm"
-                    data-description="notebook edit button"
-                    @click="handleEdit">
+                <BButton variant="outline-primary" size="sm" data-description="page edit button" @click="handleEdit">
                     <FontAwesomeIcon :icon="faEdit" />
                     Edit
                 </BButton>
             </div>
-            <div class="notebook-display-content overflow-auto flex-grow-1" data-description="notebook rendered view">
+            <div class="notebook-display-content overflow-auto flex-grow-1" data-description="page rendered view">
                 <Markdown
                     v-if="markdownConfig"
                     :markdown-config="markdownConfig"

@@ -2,12 +2,12 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
-import HistoryNotebookSplit from "./HistoryNotebookSplit.vue";
+import EditorSplitView from "./EditorSplitView.vue";
 
 const localVue = getLocalVue();
 
 function mountComponent(propsData = {}) {
-    return shallowMount(HistoryNotebookSplit as object, {
+    return shallowMount(EditorSplitView as object, {
         localVue,
         propsData,
         slots: {
@@ -17,10 +17,10 @@ function mountComponent(propsData = {}) {
     });
 }
 
-describe("HistoryNotebookSplit", () => {
+describe("EditorSplitView", () => {
     it("renders split view container", () => {
         const wrapper = mountComponent();
-        expect(wrapper.find('[data-description="notebook split view"]').exists()).toBe(true);
+        expect(wrapper.find('[data-description="editor split view"]').exists()).toBe(true);
     });
 
     it("renders editor slot", () => {

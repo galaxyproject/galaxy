@@ -7,10 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
-import HistoryNotebookList from "./HistoryNotebookList.vue";
-import HistoryNotebookView from "./HistoryNotebookView.vue";
+import HistoryPageList from "./HistoryPageList.vue";
+import HistoryPageView from "./HistoryPageView.vue";
+import PageEditorView from "./PageEditorView.vue";
 import Markdown from "@/components/Markdown/Markdown.vue";
-import PageEditorView from "@/components/PageEditor/PageEditorView.vue";
 
 vi.mock("@/composables/config", () => ({
     useConfig: vi.fn(() => ({
@@ -53,15 +53,15 @@ const PAGE_ID = "page-1";
 const SELECTORS = {
     INFO_ALERT: "balert-stub[variant='info']",
     ERROR_ALERT: "balert-stub[variant='danger']",
-    DISPLAY_TOOLBAR: "[data-description='notebook display toolbar']",
-    EDIT_BUTTON: "[data-description='notebook edit button']",
-    MANAGE_BUTTON: "[data-description='notebook manage button']",
+    DISPLAY_TOOLBAR: "[data-description='page display toolbar']",
+    EDIT_BUTTON: "[data-description='page edit button']",
+    MANAGE_BUTTON: "[data-description='page manage button']",
 };
 
 let pinia: Pinia;
 
 function mountComponent(propsData: { historyId: string; pageId?: string; displayOnly?: boolean }) {
-    return shallowMount(HistoryNotebookView as object, {
+    return shallowMount(HistoryPageView as object, {
         localVue,
         propsData,
         pinia,
@@ -76,7 +76,7 @@ function setupListViewStore(notebooks: any[] = []) {
     return store;
 }
 
-describe("HistoryNotebookView", () => {
+describe("HistoryPageView", () => {
     beforeEach(() => {
         pinia = createTestingPinia({ createSpy: vi.fn });
         vi.clearAllMocks();
@@ -114,15 +114,15 @@ describe("HistoryNotebookView", () => {
     });
 
     describe("List view (no pageId)", () => {
-        it("shows HistoryNotebookList when no pageId and not loading/error", async () => {
+        it("shows HistoryPageList when no pageId and not loading/error", async () => {
             setupListViewStore();
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
-            expect(wrapper.findComponent(HistoryNotebookList).exists()).toBe(true);
+            expect(wrapper.findComponent(HistoryPageList).exists()).toBe(true);
         });
 
-        it("passes store.notebooks to HistoryNotebookList", async () => {
+        it("passes store.notebooks to HistoryPageList", async () => {
             const fakeNotebooks = [
                 { id: "nb-1", history_id: HISTORY_ID, title: "NB1", deleted: false, create_time: "", update_time: "" },
             ];
@@ -130,7 +130,7 @@ describe("HistoryNotebookView", () => {
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
-            const list = wrapper.findComponent(HistoryNotebookList);
+            const list = wrapper.findComponent(HistoryPageList);
             expect(list.props("notebooks")).toEqual(fakeNotebooks);
         });
     });
@@ -240,7 +240,7 @@ describe("HistoryNotebookView", () => {
             const wrapper = mountComponent({ historyId: HISTORY_ID, displayOnly: true });
             await flushPromises();
 
-            expect(wrapper.findComponent(HistoryNotebookList).exists()).toBe(true);
+            expect(wrapper.findComponent(HistoryPageList).exists()).toBe(true);
         });
 
         it("does not call store.$reset on unmount in displayOnly mode", async () => {
@@ -260,7 +260,7 @@ describe("HistoryNotebookView", () => {
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
-            const list = wrapper.findComponent(HistoryNotebookList);
+            const list = wrapper.findComponent(HistoryPageList);
             list.vm.$emit("select", "nb-1");
             await wrapper.vm.$nextTick();
 
@@ -278,7 +278,7 @@ describe("HistoryNotebookView", () => {
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
-            const list = wrapper.findComponent(HistoryNotebookList);
+            const list = wrapper.findComponent(HistoryPageList);
             list.vm.$emit("create");
             await flushPromises();
 
@@ -291,7 +291,7 @@ describe("HistoryNotebookView", () => {
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
-            const list = wrapper.findComponent(HistoryNotebookList);
+            const list = wrapper.findComponent(HistoryPageList);
             list.vm.$emit("view", "nb-1");
             await wrapper.vm.$nextTick();
 
@@ -310,7 +310,7 @@ describe("HistoryNotebookView", () => {
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
-            const list = wrapper.findComponent(HistoryNotebookList);
+            const list = wrapper.findComponent(HistoryPageList);
             list.vm.$emit("select", "nb-1");
             await wrapper.vm.$nextTick();
 

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import type { PageRevisionSummary } from "@/api/pages";
 
-import NotebookRevisionList from "./NotebookRevisionList.vue";
+import PageRevisionList from "./PageRevisionList.vue";
 
 const localVue = getLocalVue();
 
@@ -36,14 +36,14 @@ interface MountOptions {
 
 function mountComponent(options: MountOptions = {}) {
     const { revisions = [], isLoading = false, isReverting = false } = options;
-    return shallowMount(NotebookRevisionList as object, {
+    return shallowMount(PageRevisionList as object, {
         localVue,
         propsData: { revisions, isLoading, isReverting },
         stubs: { FontAwesomeIcon: true },
     });
 }
 
-describe("NotebookRevisionList", () => {
+describe("PageRevisionList", () => {
     describe("Loading state", () => {
         it("shows loading spinner and text when isLoading is true", () => {
             const wrapper = mountComponent({ isLoading: true });

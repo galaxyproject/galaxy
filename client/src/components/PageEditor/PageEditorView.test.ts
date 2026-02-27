@@ -9,12 +9,12 @@ import { ref } from "vue";
 
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
+import EditorSplitView from "./EditorSplitView.vue";
+import PageChatPanel from "./PageChatPanel.vue";
 import PageEditorView from "./PageEditorView.vue";
+import PageRevisionList from "./PageRevisionList.vue";
+import PageRevisionView from "./PageRevisionView.vue";
 import ClickToEdit from "@/components/ClickToEdit.vue";
-import HistoryNotebookSplit from "@/components/HistoryNotebook/HistoryNotebookSplit.vue";
-import NotebookChatPanel from "@/components/HistoryNotebook/NotebookChatPanel.vue";
-import NotebookRevisionList from "@/components/HistoryNotebook/NotebookRevisionList.vue";
-import NotebookRevisionView from "@/components/HistoryNotebook/NotebookRevisionView.vue";
 import Markdown from "@/components/Markdown/Markdown.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 
@@ -372,7 +372,7 @@ describe("PageEditorView", () => {
             await flushPromises();
 
             expect(wrapper.find(SELECTORS.REVISION_PANEL).exists()).toBe(true);
-            expect(wrapper.findComponent(NotebookRevisionList).exists()).toBe(true);
+            expect(wrapper.findComponent(PageRevisionList).exists()).toBe(true);
         });
 
         it("hides revision panel when store.showRevisions is false", async () => {
@@ -383,7 +383,7 @@ describe("PageEditorView", () => {
             expect(wrapper.find(SELECTORS.REVISION_PANEL).exists()).toBe(false);
         });
 
-        it("shows NotebookRevisionView when selectedRevision is set", async () => {
+        it("shows PageRevisionView when selectedRevision is set", async () => {
             const store = setupLoadedPage(HISTORY_ID);
             store.selectedRevision = {
                 id: "rev-1",
@@ -397,7 +397,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            expect(wrapper.findComponent(NotebookRevisionView).exists()).toBe(true);
+            expect(wrapper.findComponent(PageRevisionView).exists()).toBe(true);
             expect(wrapper.find(SELECTORS.TOOLBAR).exists()).toBe(false);
         });
 
@@ -415,7 +415,7 @@ describe("PageEditorView", () => {
             expect(badge.text()).toBe("2");
         });
 
-        it("NotebookRevisionView back emits clearSelectedRevision", async () => {
+        it("PageRevisionView back emits clearSelectedRevision", async () => {
             const store = setupLoadedPage(HISTORY_ID);
             store.selectedRevision = {
                 id: "rev-1",
@@ -429,14 +429,14 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            const revView = wrapper.findComponent(NotebookRevisionView);
+            const revView = wrapper.findComponent(PageRevisionView);
             revView.vm.$emit("back");
             await wrapper.vm.$nextTick();
 
             expect(store.clearSelectedRevision).toHaveBeenCalled();
         });
 
-        it("NotebookRevisionView restore calls store.restoreRevision", async () => {
+        it("PageRevisionView restore calls store.restoreRevision", async () => {
             const store = setupLoadedPage(HISTORY_ID);
             store.selectedRevision = {
                 id: "rev-1",
@@ -450,7 +450,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            const revView = wrapper.findComponent(NotebookRevisionView);
+            const revView = wrapper.findComponent(PageRevisionView);
             revView.vm.$emit("restore", "rev-1");
             await wrapper.vm.$nextTick();
 
@@ -466,7 +466,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            const revList = wrapper.findComponent(NotebookRevisionList);
+            const revList = wrapper.findComponent(PageRevisionList);
             revList.vm.$emit("select", "rev-1");
             await wrapper.vm.$nextTick();
 
@@ -506,7 +506,7 @@ describe("PageEditorView", () => {
             await flushPromises();
 
             expect(wrapper.find(SELECTORS.REVISION_PANEL).exists()).toBe(true);
-            expect(wrapper.findComponent(NotebookRevisionList).exists()).toBe(true);
+            expect(wrapper.findComponent(PageRevisionList).exists()).toBe(true);
         });
 
         it("revision panel restore calls store.restoreRevision in standalone mode", async () => {
@@ -518,7 +518,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID });
             await flushPromises();
 
-            const revList = wrapper.findComponent(NotebookRevisionList);
+            const revList = wrapper.findComponent(PageRevisionList);
             revList.vm.$emit("restore", "rev-1");
             await wrapper.vm.$nextTick();
 
@@ -555,8 +555,8 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            expect(wrapper.findComponent(HistoryNotebookSplit).exists()).toBe(true);
-            expect(wrapper.findComponent(NotebookChatPanel).exists()).toBe(true);
+            expect(wrapper.findComponent(EditorSplitView).exists()).toBe(true);
+            expect(wrapper.findComponent(PageChatPanel).exists()).toBe(true);
         });
 
         it("hides split view when store.showChatPanel is false", async () => {
@@ -565,7 +565,7 @@ describe("PageEditorView", () => {
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            expect(wrapper.findComponent(HistoryNotebookSplit).exists()).toBe(false);
+            expect(wrapper.findComponent(EditorSplitView).exists()).toBe(false);
         });
 
         it("hides Chat button when llm_api_configured is false", async () => {
@@ -595,13 +595,13 @@ describe("PageEditorView", () => {
             expect(wrapper.find(SELECTORS.CHAT_BUTTON).exists()).toBe(false);
         });
 
-        it("passes props to NotebookChatPanel", async () => {
+        it("passes props to PageChatPanel", async () => {
             const store = setupLoadedPage(HISTORY_ID);
             store.showChatPanel = true;
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
-            const panel = wrapper.findComponent(NotebookChatPanel);
+            const panel = wrapper.findComponent(PageChatPanel);
             expect(panel.props("historyId")).toBe(HISTORY_ID);
             expect(panel.props("pageId")).toBe(PAGE_ID);
             expect(panel.props("notebookContent")).toBe("# Hello");

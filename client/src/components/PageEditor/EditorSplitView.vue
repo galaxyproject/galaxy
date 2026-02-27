@@ -50,7 +50,7 @@ onBeforeUnmount(() => {
         ref="containerRef"
         class="notebook-split-view"
         :class="{ 'is-dragging': dragging }"
-        data-description="notebook split view">
+        data-description="editor split view">
         <div class="split-pane editor-pane" :style="{ flexBasis: splitPercent + '%' }">
             <slot name="editor" />
         </div>

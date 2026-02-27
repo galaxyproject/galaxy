@@ -50,7 +50,6 @@ import HistoryPublished from "@/components/History/HistoryPublished.vue";
 import HistoryView from "@/components/History/HistoryView.vue";
 import HistoryMultipleView from "@/components/History/Multiple/MultipleView.vue";
 import HistoryImport from "@/components/HistoryImport.vue";
-import HistoryNotebookView from "@/components/HistoryNotebook/HistoryNotebookView.vue";
 import ZipImportResults from "@/components/ImportData/zip/ZipImportResults.vue";
 import ZipImportWizard from "@/components/ImportData/zip/ZipImportWizard.vue";
 import InteractiveToolFrame from "@/components/InteractiveTools/InteractiveToolFrame.vue";
@@ -67,6 +66,7 @@ import UpgradeObjectStoreInstance from "@/components/ObjectStore/Instances/Upgra
 import CreateUserObjectStore from "@/components/ObjectStore/Templates/CreateUserObjectStore.vue";
 import PageView from "@/components/Page/PageView.vue";
 import PageForm from "@/components/PageDisplay/PageForm.vue";
+import HistoryPageView from "@/components/PageEditor/HistoryPageView.vue";
 import PageEditor from "@/components/PageEditor/PageEditor.vue";
 import UploadMethodView from "@/components/Panels/Upload/UploadMethodView.vue";
 import UploadPage from "@/components/Panels/Upload/UploadPage.vue";
@@ -424,14 +424,14 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/:historyId/pages",
-                        component: HistoryNotebookView,
+                        component: HistoryPageView,
                         props: (route) => ({
                             historyId: route.params.historyId,
                         }),
                     },
                     {
                         path: "histories/:historyId/pages/:pageId",
-                        component: HistoryNotebookView,
+                        component: HistoryPageView,
                         props: (route) => ({
                             historyId: route.params.historyId,
                             pageId: route.params.pageId,

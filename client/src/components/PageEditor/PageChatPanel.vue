@@ -357,7 +357,7 @@ function startNewConversation() {
 </script>
 
 <template>
-    <div class="notebook-chat-panel d-flex flex-column h-100" data-description="notebook chat panel">
+    <div class="notebook-chat-panel d-flex flex-column h-100" data-description="page chat panel">
         <div class="chat-panel-header d-flex align-items-center justify-content-between p-2 border-bottom">
             <span class="d-flex align-items-center gap-2">
                 <FontAwesomeIcon :icon="faBook" fixed-width />
