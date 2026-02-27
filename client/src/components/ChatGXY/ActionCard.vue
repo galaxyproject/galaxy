@@ -111,7 +111,7 @@ function getButtonClass(priority: number): string {
     transition: all 0.15s ease;
 
     &:hover:not(:disabled) {
-        transform: translateY(-1px);
+        background: rgba($brand-primary, 0.08);
     }
 
     &:disabled {
@@ -122,5 +122,11 @@ function getButtonClass(priority: number): string {
 
 .action-text {
     white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .action-button {
+        transition: none;
+    }
 }
 </style>

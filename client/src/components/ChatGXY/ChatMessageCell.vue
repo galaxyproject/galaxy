@@ -116,7 +116,7 @@ const emit = defineEmits<{
 
         .cell-content {
             border-left: 3px solid $brand-primary;
-            background: rgba($brand-primary, 0.04);
+            background: rgba($brand-primary, 0.07);
             padding: 0.75rem 1rem;
             font-size: 0.95rem;
             color: $text-color;
@@ -273,6 +273,12 @@ const emit = defineEmits<{
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .notebook-cell {
+        animation: none;
     }
 }
 </style>

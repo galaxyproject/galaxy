@@ -67,12 +67,8 @@ onMounted(async () => {
             id: generateId(),
             role: "assistant",
             content:
-                "👋 Welcome to ChatGXY! I can help you with:\n\n" +
-                "• **Finding the right tools** for your analysis\n" +
-                "• **Debugging errors** in your workflows\n" +
-                "• **Optimizing performance** of your pipelines\n" +
-                "• **Checking data quality** issues\n\n" +
-                "Just ask me anything about Galaxy and I'll route your question to the right specialist!",
+                "Welcome to ChatGXY. Ask about tools, workflows, errors, or data quality " +
+                "and your question will be routed to the appropriate specialist agent.",
             timestamp: new Date(),
             agentType: "router",
             confidence: "high",
@@ -373,7 +369,7 @@ function startNewChat() {
         {
             id: generateId(),
             role: "assistant",
-            content: "👋 Starting a new conversation! How can I help you today?",
+            content: "New conversation started. How can I help?",
             timestamp: new Date(),
             agentType: "router",
             confidence: "high",
@@ -491,7 +487,7 @@ function toggleHistory() {
     display: flex;
     flex-direction: column;
     background: $white;
-    border-radius: $border-radius-large;
+    border-radius: 0.5rem;
     overflow: hidden;
 }
 
@@ -531,6 +527,7 @@ function toggleHistory() {
     padding: 0.75rem 1rem;
     background: $panel-bg-color;
     border-top: $border-default;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .chat-messages {
@@ -657,6 +654,12 @@ function toggleHistory() {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .notebook-cell {
+        animation: none;
     }
 }
 </style>
