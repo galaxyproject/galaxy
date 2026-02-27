@@ -19,6 +19,7 @@ from tool_shed_client.schema import (
     UpdateRepositoryRequest,
 )
 from ..base.api import ShedApiTestCase
+from ..base.populators import ToolShedPopulator
 
 COLUMN_MAKER_PATH = resource_path(__name__, "../test_data/column_maker/column_maker.tar")
 
@@ -665,3 +666,129 @@ Now with improved help text!
             filepath = os.path.join(output_dir, filename)
             size = os.path.getsize(filepath)
             print(f"  - {filename} ({size} bytes)")
+
+
+class TestRepositoryAdminRole(ShedApiTestCase):
+    """Tests for repository admin role management API endpoints."""
+
+    _SECOND_USER_NAME = "admintest_user2"
+
+    def _second_user_populator(self) -> ToolShedPopulator:
+        email = "admintest_user2@galaxyproject.org"
+        password = "testPassword1"
+        create_user(
+            self.admin_api_interactor,
+            {"email": email, "username": self._SECOND_USER_NAME, "password": password},
+            assert_ok=False,
+        )
+        interactor = self._api_interactor_by_credentials(email, password)
+        return self._get_populator(interactor)
+
+    def test_admin_list_contains_owner(self):
+        populator = self.populator
+        repo = populator.setup_column_maker_repo(prefix="adminlist")
+        admins = populator.get_admin_users(repo)
+        # The owner should always be in the admin list
+        assert len(admins) >= 1
+
+    def test_grant_admin_to_user(self):
+        populator = self.populator
+        create_user(
+            self.admin_api_interactor,
+            {"email": "admingrant@galaxyproject.org", "username": "admingrant", "password": "testPassword1"},
+        )
+        repo = populator.setup_column_maker_repo(prefix="admingrant")
+        assert "admingrant" not in populator.get_admin_users(repo)
+
+        populator.add_admin_user(repo, "admingrant")
+        assert "admingrant" in populator.get_admin_users(repo)
+
+    def test_revoke_admin_from_user(self):
+        populator = self.populator
+        create_user(
+            self.admin_api_interactor,
+            {"email": "adminrevoke@galaxyproject.org", "username": "adminrevoke", "password": "testPassword1"},
+        )
+        repo = populator.setup_column_maker_repo(prefix="adminrevoke")
+
+        populator.add_admin_user(repo, "adminrevoke")
+        assert "adminrevoke" in populator.get_admin_users(repo)
+
+        populator.remove_admin_user(repo, "adminrevoke")
+        assert "adminrevoke" not in populator.get_admin_users(repo)
+
+    def test_cannot_remove_owner(self):
+        populator = self.populator
+        repo = populator.setup_column_maker_repo(prefix="adminowner")
+        admins = populator.get_admin_users(repo)
+        assert len(admins) >= 1
+        owner_username = admins[0]  # owner is always present
+
+        response = populator.remove_admin_user_raw(repo, owner_username)
+        api_asserts.assert_status_code_is(response, 400)
+
+    def test_non_manager_gets_403(self):
+        populator = self.populator
+        repo = populator.setup_column_maker_repo(prefix="admin403")
+        user2_populator = self._second_user_populator()
+
+        # user2 cannot list admins
+        response = user2_populator.get_admin_users_raw(repo)
+        api_asserts.assert_status_code_is(response, 403)
+
+        # user2 cannot grant admin
+        response = user2_populator.add_admin_user_raw(repo, self._SECOND_USER_NAME)
+        api_asserts.assert_status_code_is(response, 403)
+
+        # user2 cannot revoke admin
+        response = user2_populator.remove_admin_user_raw(repo, self._SECOND_USER_NAME)
+        api_asserts.assert_status_code_is(response, 403)
+
+    def test_grant_nonexistent_user_404(self):
+        populator = self.populator
+        repo = populator.setup_column_maker_repo(prefix="admin404")
+        response = populator.add_admin_user_raw(repo, "nosuchuser_xyzzy")
+        api_asserts.assert_status_code_is(response, 404)
+
+    def test_idempotent_grant(self):
+        populator = self.populator
+        create_user(
+            self.admin_api_interactor,
+            {"email": "adminidem@galaxyproject.org", "username": "adminidem", "password": "testPassword1"},
+        )
+        repo = populator.setup_column_maker_repo(prefix="adminidem")
+
+        populator.add_admin_user(repo, "adminidem")
+        admins_after_first = populator.get_admin_users(repo)
+
+        # Second grant should be a no-op
+        populator.add_admin_user(repo, "adminidem")
+        admins_after_second = populator.get_admin_users(repo)
+        assert sorted(admins_after_first) == sorted(admins_after_second)
+
+    def test_revoke_non_admin_user_404(self):
+        populator = self.populator
+        create_user(
+            self.admin_api_interactor,
+            {"email": "adminnotadmin@galaxyproject.org", "username": "adminnotadmin", "password": "testPassword1"},
+        )
+        repo = populator.setup_column_maker_repo(prefix="adminnotadmin")
+        # User exists but is not an admin — should get 404
+        response = populator.remove_admin_user_raw(repo, "adminnotadmin")
+        api_asserts.assert_status_code_is(response, 404)
+
+    def test_admin_can_manage(self):
+        populator = self.populator
+        user2_populator = self._second_user_populator()
+        repo = populator.setup_column_maker_repo(prefix="adminmanage")
+
+        # user2 cannot update repo before being granted admin
+        response = user2_populator.update_raw(repo, UpdateRepositoryRequest(description="should fail"))
+        api_asserts.assert_status_code_is(response, 403)
+
+        # Grant admin to user2
+        populator.add_admin_user(repo, self._SECOND_USER_NAME)
+
+        # Now user2 can update the repo description
+        updated = user2_populator.update(repo, UpdateRepositoryRequest(description="updated by admin"))
+        assert updated.description == "updated by admin"

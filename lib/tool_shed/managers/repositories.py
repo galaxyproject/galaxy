@@ -844,3 +844,39 @@ def _get_repositories_by_name_and_owner_and_deleted(security: IdEncodingHelper, 
         sort_by = sort_by.desc()
     stmt = stmt.order_by(sort_by)
     return stmt
+
+
+def usernames_with_admin_role(app: ToolShedApp, repository: Repository) -> list[str]:
+    """Return usernames associated with the repository's admin role."""
+    admin_role = repository.admin_role
+    return [ura.user.username for ura in admin_role.users]
+
+
+def add_admin_user(app: ToolShedApp, repository: Repository, username: str) -> list[str]:
+    """Grant admin role to a user by username. Returns updated admin list."""
+    sa_session = app.model.session
+    user = sa_session.scalars(select(User).where(User.username == username)).first()
+    if user is None:
+        raise ObjectNotFound(f"No user found with username '{username}'")
+    admin_role = repository.admin_role
+    for ura in admin_role.users:
+        if ura.user.id == user.id:
+            return usernames_with_admin_role(app, repository)
+    app.security_agent.associate_user_role(user, admin_role)
+    sa_session.refresh(admin_role)
+    return usernames_with_admin_role(app, repository)
+
+
+def remove_admin_user(app: ToolShedApp, repository: Repository, username: str) -> list[str]:
+    """Revoke admin role from a user. Owner cannot be removed."""
+    sa_session = app.model.session
+    if username == repository.user.username:
+        raise RequestParameterInvalidException("The repository owner cannot be removed from the admin role.")
+    admin_role = repository.admin_role
+    for ura in admin_role.users:
+        if ura.user.username == username:
+            sa_session.delete(ura)
+            sa_session.commit()
+            sa_session.refresh(admin_role)
+            return usernames_with_admin_role(app, repository)
+    raise ObjectNotFound(f"User '{username}' is not an admin of this repository.")

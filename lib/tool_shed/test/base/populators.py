@@ -352,6 +352,36 @@ class ToolShedPopulator:
         delete_response = self._api_interactor.delete(f"repositories/{repository_id}/allow_push/{username}")
         delete_response.raise_for_status()
 
+    def get_admin_users(self, repository: HasRepositoryId) -> list[str]:
+        repository_id = self._repository_id(repository)
+        response = self._api_interactor.get(f"repositories/{repository_id}/admins")
+        response.raise_for_status()
+        as_list = response.json()
+        assert isinstance(as_list, list)
+        return as_list
+
+    def add_admin_user(self, repository: HasRepositoryId, username: str) -> None:
+        repository_id = self._repository_id(repository)
+        response = self._api_interactor.post(f"repositories/{repository_id}/admins/{username}")
+        response.raise_for_status()
+
+    def remove_admin_user(self, repository: HasRepositoryId, username: str) -> None:
+        repository_id = self._repository_id(repository)
+        response = self._api_interactor.delete(f"repositories/{repository_id}/admins/{username}")
+        response.raise_for_status()
+
+    def add_admin_user_raw(self, repository: HasRepositoryId, username: str) -> requests.Response:
+        repository_id = self._repository_id(repository)
+        return self._api_interactor.post(f"repositories/{repository_id}/admins/{username}")
+
+    def remove_admin_user_raw(self, repository: HasRepositoryId, username: str) -> requests.Response:
+        repository_id = self._repository_id(repository)
+        return self._api_interactor.delete(f"repositories/{repository_id}/admins/{username}")
+
+    def get_admin_users_raw(self, repository: HasRepositoryId) -> requests.Response:
+        repository_id = self._repository_id(repository)
+        return self._api_interactor.get(f"repositories/{repository_id}/admins")
+
     def set_malicious(self, repository: HasRepositoryId, changeset_revision: str):
         repository_id = self._repository_id(repository)
         put_response = self._api_interactor.put(

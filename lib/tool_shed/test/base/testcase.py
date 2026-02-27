@@ -839,16 +839,9 @@ class ShedTestCase(ShedApiTestCase):
             fh.write(smart_str(content))
         return fh.name
 
-    def assign_admin_role(self, repository: Repository, user):
-        # As elsewhere, twill limits the possibility of submitting the form, this time due to not executing the javascript
-        # attached to the role selection form. Visit the action url directly with the necessary parameters.
-        params = {
-            "id": repository.id,
-            "in_users": user.id,
-            "manage_role_associations_button": "Save",
-        }
-        self.visit_url("/repository/manage_repository_admins", params=params)
-        self.check_for_strings(strings_displayed=["Role", "has been associated"])
+    def assign_admin_role(self, repository: Repository, user, as_email=None, as_password="testuser"):
+        populator = self.user_populator(email=as_email, password=as_password) if as_email else self.populator
+        populator.add_admin_user(repository, user.username)
 
     def browse_category(self, category: Category, strings_displayed=None, strings_not_displayed=None):
         self.visit_url(f"/repositories_by_category/{category.id}")
