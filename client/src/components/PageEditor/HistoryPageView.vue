@@ -23,23 +23,23 @@ const router = useRouter();
 const store = usePageEditorStore();
 
 const markdownConfig = computed(() => {
-    if (!store.currentNotebook) {
+    if (!store.currentPage) {
         return null;
     }
-    const content = props.displayOnly ? (store.currentNotebook.content ?? store.currentContent) : store.currentContent;
+    const content = props.displayOnly ? (store.currentPage.content ?? store.currentContent) : store.currentContent;
     return {
-        id: store.currentNotebook.id,
+        id: store.currentPage.id,
         title: store.currentTitle || "Untitled Page",
         content,
         model_class: "Page",
-        update_time: store.currentNotebook.update_time,
+        update_time: store.currentPage.update_time,
     };
 });
 
 onMounted(async () => {
-    await store.loadNotebooks(props.historyId);
+    await store.loadPages(props.historyId);
     if (props.pageId && props.displayOnly) {
-        await store.loadNotebook(props.pageId);
+        await store.loadPageById(props.pageId);
     }
 });
 
@@ -52,9 +52,9 @@ onUnmounted(() => {
 watch(
     () => props.historyId,
     async (newId) => {
-        await store.loadNotebooks(newId);
+        await store.loadPages(newId);
         if (props.pageId && props.displayOnly) {
-            await store.loadNotebook(props.pageId);
+            await store.loadPageById(props.pageId);
         }
     },
 );
@@ -63,9 +63,9 @@ watch(
     () => props.pageId,
     async (newId) => {
         if (newId && props.displayOnly) {
-            await store.loadNotebook(newId);
+            await store.loadPageById(newId);
         } else if (!newId) {
-            store.clearCurrentNotebook();
+            store.clearCurrentPage();
         }
     },
 );
@@ -75,7 +75,7 @@ function handleSelect(pageId: string) {
     const isWmActive = Galaxy?.frame?.active;
 
     if (isWmActive) {
-        const page = store.notebooks.find((n) => n.id === pageId);
+        const page = store.pages.find((n) => n.id === pageId);
         const title = page?.title || "Page";
         const url = `/histories/${props.historyId}/pages/${pageId}?displayOnly=true`;
         const options: RouterPushOptions = {
@@ -90,7 +90,7 @@ function handleSelect(pageId: string) {
 }
 
 async function handleCreate() {
-    const page = await store.createNotebook({ title: "Untitled Page" });
+    const page = await store.createPage({ title: "Untitled Page" });
     if (page) {
         router.push(`/histories/${props.historyId}/pages/${page.id}`);
     }
@@ -107,13 +107,13 @@ function handleEdit() {
 }
 
 function handleBack() {
-    store.clearCurrentNotebook();
+    store.clearCurrentPage();
     router.push(`/histories/${props.historyId}/pages`);
 }
 </script>
 
 <template>
-    <div class="history-notebook-view d-flex flex-column h-100" data-description="history notebook view">
+    <div class="history-page-view d-flex flex-column h-100" data-description="history page view">
         <BAlert v-if="store.isLoadingList" variant="info" show>
             <FontAwesomeIcon :icon="faSpinner" spin />
             Loading pages...
@@ -124,17 +124,13 @@ function handleBack() {
         </BAlert>
 
         <template v-else-if="!pageId">
-            <HistoryPageList
-                :notebooks="store.notebooks"
-                @select="handleSelect"
-                @view="handleView"
-                @create="handleCreate" />
+            <HistoryPageList :pages="store.pages" @select="handleSelect" @view="handleView" @create="handleCreate" />
         </template>
 
         <!-- Display-only mode: rendered view -->
-        <template v-else-if="store.hasCurrentNotebook && displayOnly">
+        <template v-else-if="store.hasCurrentPage && displayOnly">
             <div
-                class="notebook-display-toolbar d-flex align-items-center p-2 border-bottom"
+                class="page-display-toolbar d-flex align-items-center p-2 border-bottom"
                 data-description="page display toolbar">
                 <BButton variant="link" size="sm" data-description="page manage button" @click="handleBack">
                     <FontAwesomeIcon :icon="faArrowLeft" />
@@ -148,7 +144,7 @@ function handleBack() {
                     Edit
                 </BButton>
             </div>
-            <div class="notebook-display-content overflow-auto flex-grow-1" data-description="page rendered view">
+            <div class="page-display-content overflow-auto flex-grow-1" data-description="page rendered view">
                 <Markdown
                     v-if="markdownConfig"
                     :markdown-config="markdownConfig"
@@ -162,7 +158,7 @@ function handleBack() {
             <PageEditorView :page-id="pageId" :history-id="historyId" />
         </template>
 
-        <BAlert v-else-if="store.isLoadingNotebook" variant="info" show>
+        <BAlert v-else-if="store.isLoadingPage" variant="info" show>
             <FontAwesomeIcon :icon="faSpinner" spin />
             Loading page...
         </BAlert>
@@ -170,10 +166,10 @@ function handleBack() {
 </template>
 
 <style scoped>
-.history-notebook-view {
+.history-page-view {
     background: var(--body-bg);
 }
-.notebook-display-toolbar {
+.page-display-toolbar {
     background: var(--panel-header-bg);
 }
 </style>

@@ -56,16 +56,16 @@ const editorTitle = computed(() => {
 const markdownEditorMode = computed(() => (props.historyId ? "history_notebook" : "page"));
 
 const markdownConfig = computed(() => {
-    if (!store.currentNotebook) {
+    if (!store.currentPage) {
         return null;
     }
-    const content = props.displayOnly ? (store.currentNotebook.content ?? store.currentContent) : store.currentContent;
+    const content = props.displayOnly ? (store.currentPage.content ?? store.currentContent) : store.currentContent;
     return {
-        id: store.currentNotebook.id,
+        id: store.currentPage.id,
         title: store.currentTitle || "Untitled Page",
         content,
         model_class: "Page",
-        update_time: store.currentNotebook.update_time,
+        update_time: store.currentPage.update_time,
     };
 });
 
@@ -95,7 +95,7 @@ watch(
 );
 
 function handleBack() {
-    store.clearCurrentNotebook();
+    store.clearCurrentPage();
     if (props.historyId) {
         router.push(`/histories/${props.historyId}/pages`);
     } else {
@@ -133,12 +133,12 @@ function handleEdit() {
 }
 
 async function handleSave() {
-    await store.saveNotebook();
+    await store.savePage();
 }
 
 async function handleSaveAndView() {
-    await store.saveNotebook();
-    if (store.currentNotebook) {
+    await store.savePage();
+    if (store.currentPage) {
         const Galaxy = getGalaxyInstance();
         const isWmActive = Galaxy?.frame?.active;
         if (isWmActive) {
@@ -150,7 +150,7 @@ async function handleSaveAndView() {
             // @ts-ignore - monkeypatched router
             router.push(url, options);
         } else {
-            const data = store.currentNotebook as any;
+            const data = store.currentPage as any;
             if (data.username && data.slug) {
                 window.location.href = `/u/${data.username}/p/${data.slug}`;
             }
@@ -177,7 +177,7 @@ function handleRevisionRestore(revisionId: string) {
 
 <template>
     <div class="page-editor-view d-flex flex-column h-100" data-description="page editor view">
-        <BAlert v-if="store.isLoadingNotebook && !store.hasCurrentNotebook" variant="info" show>
+        <BAlert v-if="store.isLoadingPage && !store.hasCurrentPage" variant="info" show>
             <FontAwesomeIcon :icon="faSpinner" spin />
             Loading page...
         </BAlert>
@@ -187,9 +187,9 @@ function handleRevisionRestore(revisionId: string) {
         </BAlert>
 
         <!-- Display-only mode: rendered view -->
-        <template v-else-if="store.hasCurrentNotebook && displayOnly">
+        <template v-else-if="store.hasCurrentPage && displayOnly">
             <div
-                class="notebook-display-toolbar d-flex align-items-center p-2 border-bottom"
+                class="page-display-toolbar d-flex align-items-center p-2 border-bottom"
                 data-description="page display toolbar">
                 <BButton variant="link" size="sm" data-description="page back button" @click="handleBack">
                     <FontAwesomeIcon :icon="faArrowLeft" />
@@ -203,7 +203,7 @@ function handleRevisionRestore(revisionId: string) {
                     Edit
                 </BButton>
             </div>
-            <div class="notebook-display-content overflow-auto flex-grow-1" data-description="page rendered view">
+            <div class="page-display-content overflow-auto flex-grow-1" data-description="page rendered view">
                 <Markdown
                     v-if="markdownConfig"
                     :markdown-config="markdownConfig"
@@ -213,7 +213,7 @@ function handleRevisionRestore(revisionId: string) {
         </template>
 
         <!-- Viewing a specific revision -->
-        <template v-else-if="store.hasCurrentNotebook && store.selectedRevision">
+        <template v-else-if="store.hasCurrentPage && store.selectedRevision">
             <PageRevisionView
                 :revision="store.selectedRevision"
                 :is-reverting="store.isReverting"
@@ -222,9 +222,9 @@ function handleRevisionRestore(revisionId: string) {
         </template>
 
         <!-- Edit mode: toolbar + editor + optional chat/revision panels -->
-        <template v-else-if="store.hasCurrentNotebook">
+        <template v-else-if="store.hasCurrentPage">
             <div
-                class="notebook-toolbar d-flex align-items-center p-2 border-bottom"
+                class="page-toolbar d-flex align-items-center p-2 border-bottom"
                 data-description="page editor toolbar">
                 <BButton variant="link" size="sm" data-description="page back button" @click="handleBack">
                     <FontAwesomeIcon :icon="faArrowLeft" />
@@ -308,7 +308,7 @@ function handleRevisionRestore(revisionId: string) {
                 </span>
             </div>
 
-            <div class="notebook-body d-flex flex-grow-1 overflow-hidden">
+            <div class="page-body d-flex flex-grow-1 overflow-hidden">
                 <EditorSplitView v-if="store.showChatPanel">
                     <template v-slot:editor>
                         <MarkdownEditor
@@ -318,21 +318,18 @@ function handleRevisionRestore(revisionId: string) {
                             @update="handleContentUpdate" />
                     </template>
                     <template v-slot:chat>
-                        <PageChatPanel
-                            :history-id="historyId"
-                            :page-id="pageId"
-                            :notebook-content="store.currentContent" />
+                        <PageChatPanel :history-id="historyId" :page-id="pageId" :page-content="store.currentContent" />
                     </template>
                 </EditorSplitView>
                 <template v-else>
-                    <div class="notebook-content flex-grow-1 overflow-auto">
+                    <div class="page-content flex-grow-1 overflow-auto">
                         <MarkdownEditor
                             :markdown-text="store.currentContent"
                             :mode="markdownEditorMode"
                             :title="editorTitle"
                             @update="handleContentUpdate" />
                     </div>
-                    <div v-if="store.showRevisions" class="notebook-revision-panel border-left">
+                    <div v-if="store.showRevisions" class="page-revision-panel border-left">
                         <PageRevisionList
                             :revisions="store.revisions"
                             :is-loading="store.isLoadingRevisions"
@@ -350,14 +347,14 @@ function handleRevisionRestore(revisionId: string) {
 .page-editor-view {
     background: var(--body-bg);
 }
-.notebook-toolbar,
-.notebook-display-toolbar {
+.page-toolbar,
+.page-display-toolbar {
     background: var(--panel-header-bg);
 }
-.notebook-content {
+.page-content {
     padding: 1rem;
 }
-.notebook-revision-panel {
+.page-revision-panel {
     width: 300px;
     min-width: 300px;
     overflow-y: auto;

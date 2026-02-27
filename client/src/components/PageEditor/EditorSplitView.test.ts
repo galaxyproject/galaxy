@@ -54,6 +54,6 @@ describe("EditorSplitView", () => {
         const wrapper = mountComponent();
         const handle = wrapper.find('[data-description="split resize handle"]');
         await handle.trigger("mousedown");
-        expect(wrapper.find(".notebook-split-view").classes()).toContain("is-dragging");
+        expect(wrapper.find(".page-split-view").classes()).toContain("is-dragging");
     });
 });

@@ -65,7 +65,7 @@ const SELECTORS = {
     BACK_BUTTON: "[data-description='page back button']",
     UNSAVED_INDICATOR: "[data-description='page unsaved indicator']",
     REVISIONS_BUTTON: "[data-description='page revisions button']",
-    REVISION_PANEL: ".notebook-revision-panel",
+    REVISION_PANEL: ".page-revision-panel",
     CHAT_BUTTON: "[data-description='page chat button']",
     PREVIEW_BUTTON: "[data-description='page preview button']",
     PERMISSIONS_BUTTON: "[data-description='page permissions button']",
@@ -87,9 +87,9 @@ function mountComponent(propsData: { pageId: string; historyId?: string; display
 function setupLoadedPage(historyId?: string) {
     const store = usePageEditorStore();
     store.isLoadingList = false;
-    store.isLoadingNotebook = false;
+    store.isLoadingPage = false;
     store.error = null;
-    store.currentNotebook = {
+    store.currentPage = {
         id: PAGE_ID,
         history_id: historyId || null,
         title: "My Page",
@@ -195,16 +195,16 @@ describe("PageEditorView", () => {
             const backBtn = wrapper.find(SELECTORS.BACK_BUTTON);
             await backBtn.trigger("click");
 
-            expect(store.clearCurrentNotebook).toHaveBeenCalled();
+            expect(store.clearCurrentPage).toHaveBeenCalled();
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages`);
         });
 
-        it("save button calls store.saveNotebook", async () => {
+        it("save button calls store.savePage", async () => {
             const saveBtn = wrapper.find(SELECTORS.SAVE_BUTTON);
             await saveBtn.trigger("click");
             await flushPromises();
 
-            expect(store.saveNotebook).toHaveBeenCalled();
+            expect(store.savePage).toHaveBeenCalled();
         });
 
         it("hides permissions button in history mode", () => {
@@ -257,7 +257,7 @@ describe("PageEditorView", () => {
 
         it("Save & View navigates to published page when WM inactive", async () => {
             const store = usePageEditorStore();
-            store.currentNotebook = {
+            store.currentPage = {
                 id: PAGE_ID,
                 history_id: null,
                 title: "My Page",
@@ -278,14 +278,14 @@ describe("PageEditorView", () => {
             await saveViewBtn.trigger("click");
             await flushPromises();
 
-            expect(store.saveNotebook).toHaveBeenCalled();
+            expect(store.savePage).toHaveBeenCalled();
             hrefSpy.mockRestore();
         });
 
         it("Save & View uses router.push when WM is active", async () => {
             mockGalaxyInstance.frame.active = true;
             const store = usePageEditorStore();
-            store.currentNotebook = {
+            store.currentPage = {
                 id: PAGE_ID,
                 history_id: null,
                 title: "My Page",
@@ -299,7 +299,7 @@ describe("PageEditorView", () => {
             await saveViewBtn.trigger("click");
             await flushPromises();
 
-            expect(store.saveNotebook).toHaveBeenCalled();
+            expect(store.savePage).toHaveBeenCalled();
             expect(mockPush).toHaveBeenCalledWith(
                 `/published/page?id=${PAGE_ID}&embed=true`,
                 expect.objectContaining({
@@ -604,7 +604,7 @@ describe("PageEditorView", () => {
             const panel = wrapper.findComponent(PageChatPanel);
             expect(panel.props("historyId")).toBe(HISTORY_ID);
             expect(panel.props("pageId")).toBe(PAGE_ID);
-            expect(panel.props("notebookContent")).toBe("# Hello");
+            expect(panel.props("pageContent")).toBe("# Hello");
         });
     });
 

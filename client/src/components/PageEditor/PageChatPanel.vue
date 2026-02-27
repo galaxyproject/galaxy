@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * Notebook-specific chat panel.
+ * Page-specific chat panel.
  * Talks to the notebook_assistant agent, shows diff views for edit proposals,
- * and applies accepted edits to the notebook via the store.
+ * and applies accepted edits to the page via the store.
  */
 import { faBook } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -29,7 +29,7 @@ const props = withDefaults(
     defineProps<{
         historyId?: string;
         pageId: string;
-        notebookContent: string;
+        pageContent: string;
     }>(),
     { historyId: "" },
 );
@@ -51,14 +51,14 @@ const currentChatId = ref<number | null>(null);
 const dismissedProposals = ref(new Set<string>());
 
 onMounted(async () => {
-    await loadNotebookChat();
+    await loadPageChat();
 
     if (messages.value.length === 0) {
         messages.value.push({
             id: generateId(),
             role: "assistant",
             content: isHistoryAttached.value
-                ? "I'm the Notebook Assistant. I can help you edit this notebook — " +
+                ? "I'm the Notebook Assistant. I can help you edit this page — " +
                   "ask me to rewrite sections, add content, fix formatting, or analyze your history datasets."
                 : "I'm the Page Assistant. I can help you edit this page — " +
                   "ask me to rewrite sections, add content, or fix formatting.",
@@ -71,7 +71,7 @@ onMounted(async () => {
     }
 });
 
-async function loadNotebookChat() {
+async function loadPageChat() {
     // Try store-cached exchange ID first (avoids API round-trip on panel reopen)
     const storedExchangeId = store.getCurrentChatExchangeId(props.pageId);
     if (storedExchangeId !== null) {
@@ -96,7 +96,7 @@ async function loadNotebookChat() {
             await loadConversation(latest.id);
         }
     } catch {
-        // silent — no notebook chat history yet
+        // silent — no page chat history yet
     }
 }
 
@@ -258,7 +258,7 @@ function isProposalStale(msg: ChatMessage): boolean {
     if (!originalHash) {
         return false;
     }
-    return originalHash !== djb2Hash(props.notebookContent);
+    return originalHash !== djb2Hash(props.pageContent);
 }
 
 function getEditProposal(msg: ChatMessage): EditProposal | null {
@@ -284,7 +284,7 @@ function isProposalVisible(msg: ChatMessage): boolean {
         return false;
     }
     // Content-based: if full_replacement content matches current doc, already applied
-    if (proposal.mode === "full_replacement" && proposal.content === props.notebookContent) {
+    if (proposal.mode === "full_replacement" && proposal.content === props.pageContent) {
         return false;
     }
     return true;
@@ -297,14 +297,14 @@ function getProposalMode(msg: ChatMessage): string {
 function buildProposedContent(msg: ChatMessage): string {
     const proposal = getEditProposal(msg);
     if (!proposal) {
-        return props.notebookContent;
+        return props.pageContent;
     }
     if (proposal.mode === "full_replacement") {
         return proposal.content;
     }
     // section_patch: reconstruct full doc by replacing the target section
     return applySectionEdit(
-        props.notebookContent,
+        props.pageContent,
         proposal.target_section_heading || "",
         proposal.new_section_content || proposal.content,
     );
@@ -316,14 +316,14 @@ async function applyFullReplacement(msg: ChatMessage) {
         return;
     }
     store.updateContent(proposal.content);
-    await store.saveNotebook("agent");
+    await store.savePage("agent");
     dismissedProposals.value.add(msg.id);
     store.addDismissedProposal(props.pageId, msg.id);
 }
 
 async function applySectionPatched(patchedContent: string, msg: ChatMessage) {
     store.updateContent(patchedContent);
-    await store.saveNotebook("agent");
+    await store.savePage("agent");
     dismissedProposals.value.add(msg.id);
     store.addDismissedProposal(props.pageId, msg.id);
 }
@@ -339,7 +339,7 @@ function startNewConversation() {
             id: generateId(),
             role: "assistant",
             content: isHistoryAttached.value
-                ? "Starting a new conversation. How can I help with this notebook?"
+                ? "Starting a new conversation. How can I help with this page?"
                 : "Starting a new conversation. How can I help with this page?",
             timestamp: new Date(),
             agentType: AGENT_TYPE,
@@ -357,7 +357,7 @@ function startNewConversation() {
 </script>
 
 <template>
-    <div class="notebook-chat-panel d-flex flex-column h-100" data-description="page chat panel">
+    <div class="page-chat-panel d-flex flex-column h-100" data-description="page chat panel">
         <div class="chat-panel-header d-flex align-items-center justify-content-between p-2 border-bottom">
             <span class="d-flex align-items-center gap-2">
                 <FontAwesomeIcon :icon="faBook" fixed-width />
@@ -384,14 +384,14 @@ function startNewConversation() {
                 <template v-if="isProposalVisible(msg)" v-slot:after-content>
                     <ProposalDiffView
                         v-if="getProposalMode(msg) === 'full_replacement'"
-                        :original="notebookContent"
+                        :original="pageContent"
                         :proposed="buildProposedContent(msg)"
                         :stale="isProposalStale(msg)"
                         @accept="applyFullReplacement(msg)"
                         @reject="dismissProposal(msg)" />
                     <SectionPatchView
                         v-else-if="getProposalMode(msg) === 'section_patch'"
-                        :original="notebookContent"
+                        :original="pageContent"
                         :proposed="buildProposedContent(msg)"
                         :stale="isProposalStale(msg)"
                         @accept="applySectionPatched($event, msg)"
@@ -420,14 +420,14 @@ function startNewConversation() {
             <ChatInput
                 v-model="query"
                 :busy="busy"
-                placeholder="Ask about your history or request notebook edits..."
+                placeholder="Ask about your history or request page edits..."
                 @submit="submitQuery" />
         </div>
     </div>
 </template>
 
 <style scoped>
-.notebook-chat-panel {
+.page-chat-panel {
     background: var(--body-bg, #fff);
     min-width: 0;
 }

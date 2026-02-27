@@ -39,14 +39,14 @@ const SELECTORS = {
     HEADER_TITLE: "h4",
     NEW_BUTTON: "bbutton-stub",
     EMPTY_STATE: ".empty-state",
-    NOTEBOOK_ITEMS: ".notebook-items",
-    NOTEBOOK_ITEM: ".notebook-item",
-    NOTEBOOK_TITLE: ".notebook-title",
-    NOTEBOOK_META: ".notebook-meta",
+    PAGE_ITEMS: ".page-items",
+    PAGE_ITEM: ".page-item",
+    PAGE_TITLE: ".page-title",
+    PAGE_META: ".page-meta",
     VIEW_BUTTON: "[data-description='page view button']",
 };
 
-async function mountComponent(propsData: { notebooks: HistoryPageSummary[] }) {
+async function mountComponent(propsData: { pages: HistoryPageSummary[] }) {
     const wrapper = shallowMount(HistoryPageList as object, {
         localVue,
         propsData,
@@ -60,7 +60,7 @@ describe("HistoryPageList", () => {
         let wrapper: Wrapper<Vue>;
 
         beforeEach(async () => {
-            wrapper = await mountComponent({ notebooks: [] });
+            wrapper = await mountComponent({ pages: [] });
         });
 
         it("always shows 'Pages' heading", () => {
@@ -80,10 +80,10 @@ describe("HistoryPageList", () => {
         let wrapper: Wrapper<Vue>;
 
         beforeEach(async () => {
-            wrapper = await mountComponent({ notebooks: [] });
+            wrapper = await mountComponent({ pages: [] });
         });
 
-        it("shows 'No pages yet' when notebooks prop is empty array", () => {
+        it("shows 'No pages yet' when pages prop is empty array", () => {
             const emptyState = wrapper.find(SELECTORS.EMPTY_STATE);
             expect(emptyState.exists()).toBe(true);
             expect(emptyState.text()).toContain("No pages yet");
@@ -94,8 +94,8 @@ describe("HistoryPageList", () => {
             expect(emptyState.text()).toContain("Create a page to document your analysis");
         });
 
-        it("does NOT show notebook items when empty", () => {
-            expect(wrapper.find(SELECTORS.NOTEBOOK_ITEMS).exists()).toBe(false);
+        it("does NOT show page items when empty", () => {
+            expect(wrapper.find(SELECTORS.PAGE_ITEMS).exists()).toBe(false);
         });
     });
 
@@ -104,27 +104,27 @@ describe("HistoryPageList", () => {
 
         beforeEach(async () => {
             wrapper = await mountComponent({
-                notebooks: [FAKE_PAGE_SUMMARY, FAKE_PAGE_UNTITLED],
+                pages: [FAKE_PAGE_SUMMARY, FAKE_PAGE_UNTITLED],
             });
         });
 
         it("renders each page as a clickable item", () => {
-            const items = wrapper.findAll(SELECTORS.NOTEBOOK_ITEM);
+            const items = wrapper.findAll(SELECTORS.PAGE_ITEM);
             expect(items.length).toBe(2);
         });
 
         it("displays page title for each item", () => {
-            const titles = wrapper.findAll(SELECTORS.NOTEBOOK_TITLE);
+            const titles = wrapper.findAll(SELECTORS.PAGE_TITLE);
             expect(titles.at(0).text()).toBe("My Analysis");
         });
 
         it("shows 'Untitled Page' when title is empty", () => {
-            const titles = wrapper.findAll(SELECTORS.NOTEBOOK_TITLE);
+            const titles = wrapper.findAll(SELECTORS.PAGE_TITLE);
             expect(titles.at(1).text()).toBe("Untitled Page");
         });
 
         it("displays formatted update_time for each page", () => {
-            const meta = wrapper.findAll(SELECTORS.NOTEBOOK_META);
+            const meta = wrapper.findAll(SELECTORS.PAGE_META);
             const metaText = meta.at(0).text();
             expect(metaText).toContain("Updated");
             expect(metaText.replace("Updated", "").trim().length).toBeGreaterThan(0);
@@ -137,7 +137,7 @@ describe("HistoryPageList", () => {
 
     describe("Events", () => {
         it("emits 'create' when New Page button is clicked", async () => {
-            const wrapper = await mountComponent({ notebooks: [] });
+            const wrapper = await mountComponent({ pages: [] });
             const button = wrapper.find(SELECTORS.NEW_BUTTON);
             await button.trigger("click");
             expect(wrapper.emitted().create).toBeTruthy();
@@ -145,9 +145,9 @@ describe("HistoryPageList", () => {
 
         it("emits 'select' with page.id when a page item is clicked", async () => {
             const wrapper = await mountComponent({
-                notebooks: [FAKE_PAGE_SUMMARY],
+                pages: [FAKE_PAGE_SUMMARY],
             });
-            const item = wrapper.find(SELECTORS.NOTEBOOK_ITEM);
+            const item = wrapper.find(SELECTORS.PAGE_ITEM);
             await item.trigger("click");
             expect(wrapper.emitted().select).toBeTruthy();
             expect(wrapper.emitted().select![0]![0]).toBe("page-1");
@@ -157,7 +157,7 @@ describe("HistoryPageList", () => {
     describe("View button", () => {
         it("shows view button on each page item", async () => {
             const wrapper = await mountComponent({
-                notebooks: [FAKE_PAGE_SUMMARY],
+                pages: [FAKE_PAGE_SUMMARY],
             });
             const viewButton = wrapper.find(SELECTORS.VIEW_BUTTON);
             expect(viewButton.exists()).toBe(true);
@@ -165,7 +165,7 @@ describe("HistoryPageList", () => {
 
         it("emits 'view' with page.id when view button clicked", async () => {
             const wrapper = await mountComponent({
-                notebooks: [FAKE_PAGE_SUMMARY],
+                pages: [FAKE_PAGE_SUMMARY],
             });
             const viewButton = wrapper.find(SELECTORS.VIEW_BUTTON);
             await viewButton.trigger("click");
@@ -175,7 +175,7 @@ describe("HistoryPageList", () => {
 
         it("does not emit 'select' when view button clicked", async () => {
             const wrapper = await mountComponent({
-                notebooks: [FAKE_PAGE_SUMMARY],
+                pages: [FAKE_PAGE_SUMMARY],
             });
             const viewButton = wrapper.find(SELECTORS.VIEW_BUTTON);
             await viewButton.trigger("click");

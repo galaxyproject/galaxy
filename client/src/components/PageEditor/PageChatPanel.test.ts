@@ -33,11 +33,11 @@ const localVue = getLocalVue();
 
 const HISTORY_ID = "history-1";
 const PAGE_ID = "page-1";
-const NOTEBOOK_CONTENT = "# Intro\nSome intro text\n# Methods\nSome methods text";
+const PAGE_CONTENT = "# Intro\nSome intro text\n# Methods\nSome methods text";
 
 let pinia: Pinia;
 
-function mountComponent(propsData = { historyId: HISTORY_ID, pageId: PAGE_ID, notebookContent: NOTEBOOK_CONTENT }) {
+function mountComponent(propsData = { historyId: HISTORY_ID, pageId: PAGE_ID, pageContent: PAGE_CONTENT }) {
     return mount(PageChatPanel as any, {
         localVue,
         propsData,
@@ -57,7 +57,7 @@ describe("PageChatPanel", () => {
     beforeEach(() => {
         pinia = createTestingPinia({ createSpy: vi.fn });
         vi.clearAllMocks();
-        // Default: no notebook chat history
+        // Default: no page chat history
         mockGET.mockResolvedValue({ data: [], error: null });
     });
 
@@ -255,7 +255,7 @@ describe("PageChatPanel", () => {
             await flushPromises();
 
             expect(store.updateContent).not.toHaveBeenCalled();
-            expect(store.saveNotebook).not.toHaveBeenCalled();
+            expect(store.savePage).not.toHaveBeenCalled();
         });
     });
 
@@ -312,7 +312,7 @@ describe("PageChatPanel", () => {
         it("falls back to API when stored exchange ID returns empty messages", async () => {
             const store = usePageEditorStore();
             vi.mocked(store.getCurrentChatExchangeId).mockReturnValue(999);
-            // All GET calls return empty — stored exchange has no messages, no notebook history
+            // All GET calls return empty — stored exchange has no messages, no page history
             mockGET.mockResolvedValue({ data: [], error: null });
 
             const wrapper = mountComponent();
@@ -326,7 +326,7 @@ describe("PageChatPanel", () => {
 
     describe("Standalone page mode (no historyId)", () => {
         function mountStandalone() {
-            return mountComponent({ pageId: PAGE_ID, notebookContent: NOTEBOOK_CONTENT });
+            return mountComponent({ pageId: PAGE_ID, pageContent: PAGE_CONTENT });
         }
 
         it("renders header with Page Assistant title", async () => {

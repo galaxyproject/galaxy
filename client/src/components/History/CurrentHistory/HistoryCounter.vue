@@ -116,19 +116,19 @@ async function reloadContents() {
     }, 1000);
 }
 
-const isResolvingNotebook = ref(false);
+const isResolvingPage = ref(false);
 
-async function navigateToCurrentNotebook() {
-    const notebookStore = usePageEditorStore();
+async function navigateToCurrentPage() {
+    const pageStore = usePageEditorStore();
     const toast = useToast();
-    isResolvingNotebook.value = true;
+    isResolvingPage.value = true;
     try {
-        const pageId = await notebookStore.resolveCurrentNotebook(props.history.id);
+        const pageId = await pageStore.resolveCurrentPage(props.history.id);
         const Galaxy = getGalaxyInstance();
         const isWmActive = Galaxy?.frame?.active;
 
         if (isWmActive) {
-            const page = notebookStore.notebooks.find((n) => n.id === pageId);
+            const page = pageStore.pages.find((n) => n.id === pageId);
             const title = page?.title || "Page";
             const url = `/histories/${props.history.id}/pages/${pageId}?displayOnly=true`;
             const options: RouterPushOptions = {
@@ -143,7 +143,7 @@ async function navigateToCurrentNotebook() {
     } catch (e: any) {
         toast.error(e.message || "Failed to open page");
     } finally {
-        isResolvingNotebook.value = false;
+        isResolvingPage.value = false;
     }
 }
 
@@ -173,15 +173,15 @@ onMounted(() => {
 
             <GButton
                 tooltip
-                :title="localize('History Notebook')"
+                :title="localize('History Pages')"
                 transparent
                 size="small"
                 color="blue"
                 class="rounded-0"
-                :disabled="isAnonymous || isResolvingNotebook"
-                data-description="history notebook button"
-                @click="navigateToCurrentNotebook">
-                <FontAwesomeIcon :icon="isResolvingNotebook ? faSpinner : faBook" :spin="isResolvingNotebook" />
+                :disabled="isAnonymous || isResolvingPage"
+                data-description="history page button"
+                @click="navigateToCurrentPage">
+                <FontAwesomeIcon :icon="isResolvingPage ? faSpinner : faBook" :spin="isResolvingPage" />
             </GButton>
         </div>
 

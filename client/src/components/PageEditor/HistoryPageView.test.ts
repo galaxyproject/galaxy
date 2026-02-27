@@ -68,11 +68,11 @@ function mountComponent(propsData: { historyId: string; pageId?: string; display
     });
 }
 
-function setupListViewStore(notebooks: any[] = []) {
+function setupListViewStore(pages: any[] = []) {
     const store = usePageEditorStore();
     store.isLoadingList = false;
     store.error = null;
-    store.notebooks = notebooks as any;
+    store.pages = pages as any;
     return store;
 }
 
@@ -122,16 +122,16 @@ describe("HistoryPageView", () => {
             expect(wrapper.findComponent(HistoryPageList).exists()).toBe(true);
         });
 
-        it("passes store.notebooks to HistoryPageList", async () => {
-            const fakeNotebooks = [
+        it("passes store.pages to HistoryPageList", async () => {
+            const fakePages = [
                 { id: "nb-1", history_id: HISTORY_ID, title: "NB1", deleted: false, create_time: "", update_time: "" },
             ];
-            setupListViewStore(fakeNotebooks);
+            setupListViewStore(fakePages);
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
             const list = wrapper.findComponent(HistoryPageList);
-            expect(list.props("notebooks")).toEqual(fakeNotebooks);
+            expect(list.props("pages")).toEqual(fakePages);
         });
     });
 
@@ -158,7 +158,7 @@ describe("HistoryPageView", () => {
             const store = usePageEditorStore();
             store.isLoadingList = false;
             store.error = null;
-            store.currentNotebook = {
+            store.currentPage = {
                 id: PAGE_ID,
                 history_id: HISTORY_ID,
                 title: "NB",
@@ -176,25 +176,25 @@ describe("HistoryPageView", () => {
     });
 
     describe("DisplayOnly mode", () => {
-        function setupLoadedNotebook() {
+        function setupLoadedPage() {
             const store = usePageEditorStore();
             store.isLoadingList = false;
-            store.isLoadingNotebook = false;
+            store.isLoadingPage = false;
             store.error = null;
-            store.currentNotebook = {
+            store.currentPage = {
                 id: PAGE_ID,
                 history_id: HISTORY_ID,
-                title: "My Notebook",
+                title: "My Page",
                 content: "# Hello",
                 update_time: "2024-01-01T00:00:00",
             } as any;
             store.currentContent = "# Hello";
-            store.currentTitle = "My Notebook";
+            store.currentTitle = "My Page";
             return store;
         }
 
         it("renders Markdown when displayOnly is true", async () => {
-            setupLoadedNotebook();
+            setupLoadedPage();
             const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
@@ -202,19 +202,19 @@ describe("HistoryPageView", () => {
         });
 
         it("passes correct markdownConfig to Markdown", async () => {
-            setupLoadedNotebook();
+            setupLoadedPage();
             const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
             const md = wrapper.findComponent(Markdown);
             const config = md.props("markdownConfig");
             expect(config.id).toBe(PAGE_ID);
-            expect(config.title).toBe("My Notebook");
+            expect(config.title).toBe("My Page");
             expect(config.content).toBe("# Hello");
         });
 
         it("shows display toolbar with Edit button", async () => {
-            setupLoadedNotebook();
+            setupLoadedPage();
             const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
@@ -225,7 +225,7 @@ describe("HistoryPageView", () => {
         });
 
         it("Edit button navigates to edit mode (no displayOnly)", async () => {
-            setupLoadedNotebook();
+            setupLoadedPage();
             const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
@@ -244,7 +244,7 @@ describe("HistoryPageView", () => {
         });
 
         it("does not call store.$reset on unmount in displayOnly mode", async () => {
-            setupLoadedNotebook();
+            setupLoadedPage();
             const store = usePageEditorStore();
             const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
@@ -255,7 +255,7 @@ describe("HistoryPageView", () => {
     });
 
     describe("Navigation/Events", () => {
-        it("handleSelect navigates to notebook URL via router.push", async () => {
+        it("handleSelect navigates to page URL via router.push", async () => {
             setupListViewStore([{ id: "nb-1", history_id: HISTORY_ID, title: "NB1" }]);
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
@@ -267,10 +267,10 @@ describe("HistoryPageView", () => {
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/nb-1`);
         });
 
-        it("handleCreate calls store.createNotebook and navigates on success", async () => {
+        it("handleCreate calls store.createPage and navigates on success", async () => {
             const store = setupListViewStore();
-            vi.mocked(store.createNotebook).mockResolvedValue({
-                id: "new-notebook",
+            vi.mocked(store.createPage).mockResolvedValue({
+                id: "new-page",
                 history_id: HISTORY_ID,
                 title: "Untitled Page",
                 content: "",
@@ -282,8 +282,8 @@ describe("HistoryPageView", () => {
             list.vm.$emit("create");
             await flushPromises();
 
-            expect(store.createNotebook).toHaveBeenCalledWith({ title: "Untitled Page" });
-            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/new-notebook`);
+            expect(store.createPage).toHaveBeenCalledWith({ title: "Untitled Page" });
+            expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/new-page`);
         });
 
         it("view emit from list navigates to displayOnly URL", async () => {
@@ -322,37 +322,37 @@ describe("HistoryPageView", () => {
     });
 
     describe("Lifecycle", () => {
-        it("calls store.loadNotebooks on mount", async () => {
+        it("calls store.loadPages on mount", async () => {
             const store = usePageEditorStore();
             mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
-            expect(store.loadNotebooks).toHaveBeenCalledWith(HISTORY_ID);
+            expect(store.loadPages).toHaveBeenCalledWith(HISTORY_ID);
         });
 
-        it("does not call store.loadNotebook on mount when no pageId", async () => {
+        it("does not call store.loadPageById on mount when no pageId", async () => {
             const store = usePageEditorStore();
             mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
-            expect(store.loadNotebook).not.toHaveBeenCalled();
+            expect(store.loadPageById).not.toHaveBeenCalled();
         });
 
-        it("calls store.loadNotebook on mount when pageId and displayOnly", async () => {
+        it("calls store.loadPageById on mount when pageId and displayOnly", async () => {
             const store = usePageEditorStore();
             mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
-            expect(store.loadNotebook).toHaveBeenCalledWith(PAGE_ID);
+            expect(store.loadPageById).toHaveBeenCalledWith(PAGE_ID);
         });
 
-        it("does not call store.loadNotebook on mount when pageId but not displayOnly", async () => {
+        it("does not call store.loadPageById on mount when pageId but not displayOnly", async () => {
             const store = usePageEditorStore();
             mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
             // Edit mode delegates loading to PageEditorView
-            expect(store.loadNotebook).not.toHaveBeenCalled();
+            expect(store.loadPageById).not.toHaveBeenCalled();
         });
 
         it("calls store.$reset on unmount", async () => {

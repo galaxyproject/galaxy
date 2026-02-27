@@ -6,7 +6,7 @@ import { BButton } from "bootstrap-vue";
 import type { HistoryPageSummary } from "@/api/pages";
 
 defineProps<{
-    notebooks: HistoryPageSummary[];
+    pages: HistoryPageSummary[];
 }>();
 
 defineEmits<{
@@ -15,8 +15,8 @@ defineEmits<{
     (e: "create"): void;
 }>();
 
-function getNotebookTitle(notebook: HistoryPageSummary): string {
-    return notebook.title || "Untitled Page";
+function getPageTitle(page: HistoryPageSummary): string {
+    return page.title || "Untitled Page";
 }
 
 function formatDate(dateStr: string): string {
@@ -30,7 +30,7 @@ function formatDate(dateStr: string): string {
 </script>
 
 <template>
-    <div class="history-notebook-list" data-description="history notebook list">
+    <div class="history-page-list" data-description="history page list">
         <div class="list-header d-flex justify-content-between align-items-center p-3 border-bottom">
             <h4 class="mb-0">Pages</h4>
             <BButton variant="primary" size="sm" data-description="create page button" @click="$emit('create')">
@@ -39,35 +39,35 @@ function formatDate(dateStr: string): string {
             </BButton>
         </div>
 
-        <div v-if="notebooks.length === 0" class="empty-state text-center p-4" data-description="page empty state">
+        <div v-if="pages.length === 0" class="empty-state text-center p-4" data-description="page empty state">
             <p class="text-muted">No pages yet</p>
             <p class="text-muted small">
                 Create a page to document your analysis with rich markdown, embedded datasets, and visualizations.
             </p>
         </div>
 
-        <div v-else class="notebook-items">
+        <div v-else class="page-items">
             <div
-                v-for="notebook in notebooks"
-                :key="notebook.id"
-                class="notebook-item p-3 border-bottom cursor-pointer"
+                v-for="page in pages"
+                :key="page.id"
+                class="page-item p-3 border-bottom cursor-pointer"
                 data-description="page item"
-                @click="$emit('select', notebook.id)">
+                @click="$emit('select', page.id)">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="notebook-title fw-bold" data-description="page title">
-                            {{ getNotebookTitle(notebook) }}
+                        <div class="page-title fw-bold" data-description="page title">
+                            {{ getPageTitle(page) }}
                         </div>
-                        <div class="notebook-meta text-muted small">Updated {{ formatDate(notebook.update_time) }}</div>
+                        <div class="page-meta text-muted small">Updated {{ formatDate(page.update_time) }}</div>
                     </div>
-                    <span class="notebook-actions d-flex align-items-center">
+                    <span class="page-actions d-flex align-items-center">
                         <BButton
                             variant="link"
                             size="sm"
                             class="p-1"
-                            title="View notebook"
+                            title="View page"
                             data-description="page view button"
-                            @click.stop="$emit('view', notebook.id)">
+                            @click.stop="$emit('view', page.id)">
                             <FontAwesomeIcon :icon="faEye" />
                         </BButton>
                         <FontAwesomeIcon :icon="faChevronRight" class="text-muted" />
@@ -79,7 +79,7 @@ function formatDate(dateStr: string): string {
 </template>
 
 <style scoped>
-.notebook-item:hover {
+.page-item:hover {
     background: var(--panel-header-bg);
 }
 .cursor-pointer {
