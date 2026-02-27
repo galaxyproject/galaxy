@@ -48,7 +48,7 @@ const isStandalone = computed(() => editorMode.value === "standalone");
 const editorTitle = computed(() => {
     if (props.historyId) {
         const history = historyStore.getHistoryById(props.historyId);
-        return history?.name || "History Notebook";
+        return history?.name || "History Page";
     }
     return store.currentTitle || "Untitled Page";
 });
