@@ -70,7 +70,7 @@ function handleItemClick(item: ChatHistoryItem, event: MouseEvent) {
         }
         lastClickedIndex.value = currentIndex;
     } else {
-        router.push(`/chatgxy/${item.id}`);
+        router.push(`/chatgxy/${item.id}`, { title: "ChatGXY" });
     }
 }
 
@@ -100,7 +100,7 @@ function toggleSelectAll() {
 }
 
 function startNewChat() {
-    router.push("/chatgxy");
+    router.push("/chatgxy", { title: "ChatGXY" });
 }
 
 async function deleteSelected() {
