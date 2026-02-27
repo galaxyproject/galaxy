@@ -29,7 +29,7 @@ export default {
         };
     },
     watch: {
-        "$route.params": {
+        "$route.query": {
             handler() {
                 this.getEditorConfig();
             },
@@ -50,8 +50,12 @@ export default {
             const workflowId = this.workflowId || this.storedWorkflowId;
             if (!workflowId) {
                 this.newWorkflow = true;
+                if (reloadEditor) {
+                    this.editorReloadKey += 1;
+                }
                 return;
             }
+            this.newWorkflow = false;
             if (this.workflowId) {
                 const { id: storedWorkflowId } = await getWorkflowInfo(workflowId, this.version, true);
                 this.storedWorkflowId = storedWorkflowId;
