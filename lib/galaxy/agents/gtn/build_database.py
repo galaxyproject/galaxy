@@ -281,7 +281,7 @@ class GTNDatabaseBuilder:
                 description=frontmatter.get("description", ""),
                 url=url,
                 difficulty=str(frontmatter.get("level", "intermediate")).lower(),
-                hands_on=frontmatter.get("hands_on", True),
+                hands_on=frontmatter.get("hands_on", True) not in (False, "false", "False"),
                 time_estimation=frontmatter.get("time_estimation", ""),
                 content=content[:50000],  # Limit content size
                 questions=questions,
@@ -292,7 +292,7 @@ class GTNDatabaseBuilder:
                 tags=self.extract_list(frontmatter.get("tags", [])),
                 content_hash=content_hash,
                 last_modified=last_modified,
-                zenodo_link=frontmatter.get("zenodo_link", ""),
+                zenodo_link=str(frontmatter.get("zenodo_link", "") or ""),
             )
 
             return tutorial
@@ -328,10 +328,13 @@ class GTNDatabaseBuilder:
                 str_value = parts[1].strip() if len(parts) > 1 else ""
 
                 # Remove quotes if present
+                was_quoted = False
                 if str_value.startswith('"') and str_value.endswith('"'):
                     str_value = str_value[1:-1]
+                    was_quoted = True
                 elif str_value.startswith("'") and str_value.endswith("'"):
                     str_value = str_value[1:-1]
+                    was_quoted = True
 
                 # Check for boolean values
                 parsed_value: Union[str, bool, list[str]]
@@ -339,8 +342,8 @@ class GTNDatabaseBuilder:
                     parsed_value = True
                 elif str_value.lower() == "false":
                     parsed_value = False
-                elif str_value == "":
-                    # This might be a list
+                elif str_value == "" and not was_quoted:
+                    # Unquoted empty value — this might be a list header
                     current_list = []
                     result[key] = current_list
                     continue
@@ -525,7 +528,7 @@ class GTNDatabaseBuilder:
                             json.dumps(tutorial.workflows),
                         ),
                     )
-                except sqlite3.Error as e:
+                except (sqlite3.Error, ValueError, TypeError) as e:
                     log.warning(f"Failed to insert tutorial {tutorial.topic}/{tutorial.tutorial}: {e}")
 
             # Rebuild FTS index from content table
@@ -558,7 +561,7 @@ class GTNDatabaseBuilder:
                             json.dumps(faq.contributors),
                         ),
                     )
-                except sqlite3.Error as e:
+                except (sqlite3.Error, ValueError, TypeError) as e:
                     log.warning(f"Failed to insert FAQ {faq.category}/{faq.filename}: {e}")
 
             # Rebuild FTS index from content table
