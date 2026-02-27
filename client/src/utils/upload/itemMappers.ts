@@ -153,9 +153,11 @@ export function mapToCompositeFileUpload(item: CompositeFileItem, targetHistoryI
         }
     });
 
+    const displayName = item.name.trim() || `Unnamed ${item.extension} composite`;
+
     return {
         uploadMode: "composite-file" as const,
-        name: item.name,
+        name: displayName,
         size: 0,
         targetHistoryId,
         dbkey: item.dbkey,

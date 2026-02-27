@@ -563,6 +563,7 @@ export function useUploadQueue() {
 
         await uploadDatasets(slotApiItems, {
             composite: true,
+            compositeName: item.name,
             progress: (percentage) => uploadState.updateProgress(id, percentage),
             success: () => {
                 uploadState.updateProgress(id, 100);
