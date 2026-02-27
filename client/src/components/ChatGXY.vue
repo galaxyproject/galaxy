@@ -11,22 +11,12 @@ import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getAgentIcon } from "./ChatGXY/agentTypes";
-import type { ChatMessage } from "./ChatGXY/chatTypes";
+import type { ChatHistoryItem, ChatMessage } from "./ChatGXY/chatTypes";
 import { generateId, scrollToBottom } from "./ChatGXY/chatUtils";
 
 import ChatInput from "./ChatGXY/ChatInput.vue";
 import ChatMessageCell from "./ChatGXY/ChatMessageCell.vue";
 import Heading from "@/components/Common/Heading.vue";
-
-interface ChatHistoryItem {
-    id: string;
-    query: string;
-    response: string;
-    agent_type: string;
-    agent_response?: AgentResponse;
-    timestamp: string;
-    feedback?: number | null;
-}
 
 const props = withDefaults(
     defineProps<{
@@ -41,7 +31,6 @@ const props = withDefaults(
 
 const query = ref("");
 const messages = ref<ChatMessage[]>([]);
-const errorMessage = ref("");
 const busy = ref(false);
 const chatContainer = ref<HTMLElement>();
 const selectedAgentType = ref("auto");
@@ -113,7 +102,6 @@ async function submitQuery() {
     scrollToBottom(chatContainer.value);
 
     busy.value = true;
-    errorMessage.value = "";
 
     try {
         const { data, error } = await GalaxyApi().POST("/api/chat", {
@@ -130,11 +118,11 @@ async function submitQuery() {
         });
 
         if (error) {
-            errorMessage.value = errorMessageAsString(error, "Failed to get response from ChatGXY.");
+            const errorText = errorMessageAsString(error, "Failed to get response from ChatGXY.");
             const errorMsg: ChatMessage = {
                 id: generateId(),
                 role: "assistant",
-                content: `Error: ${errorMessage.value}`,
+                content: `Error: ${errorText}`,
                 timestamp: new Date(),
                 agentType: selectedAgentType.value,
                 confidence: "low",
@@ -171,7 +159,7 @@ async function submitQuery() {
             scrollToBottom(chatContainer.value);
         }
     } catch (e) {
-        errorMessage.value = `Unexpected error: ${e}`;
+        console.error("Unexpected chat error:", e);
         const errorMsg: ChatMessage = {
             id: generateId(),
             role: "assistant",
@@ -314,7 +302,6 @@ function startNewChat() {
     ];
     currentChatId.value = null;
     query.value = "";
-    errorMessage.value = "";
 }
 
 async function deleteCurrentChat() {

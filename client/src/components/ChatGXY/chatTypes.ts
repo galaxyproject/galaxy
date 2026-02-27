@@ -12,3 +12,13 @@ export interface ChatMessage {
     suggestions?: ActionSuggestion[];
     isSystemMessage?: boolean;
 }
+
+export interface ChatHistoryItem {
+    id: string;
+    query: string;
+    response: string;
+    agent_type: string;
+    agent_response?: AgentResponse;
+    timestamp: string;
+    feedback?: number | null;
+}

@@ -6,19 +6,14 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
+import { getGalaxyInstance } from "@/app";
 
 import { getAgentIcon } from "./agentTypes";
+import type { ChatHistoryItem } from "./chatTypes";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import UtcDate from "@/components/UtcDate.vue";
-
-interface ChatHistoryItem {
-    id: string;
-    query: string;
-    agent_type: string;
-    timestamp: string;
-}
 
 const router = useRouter();
 
@@ -70,7 +65,13 @@ function handleItemClick(item: ChatHistoryItem, event: MouseEvent) {
         }
         lastClickedIndex.value = currentIndex;
     } else {
-        router.push(`/chatgxy/${item.id}`, { title: "ChatGXY" });
+        const Galaxy = getGalaxyInstance();
+        if (Galaxy?.frame?.active) {
+            // @ts-ignore - monkeypatched router, second arg is RouterPushOptions
+            router.push(`/chatgxy/${item.id}?compact=true`, { title: "ChatGXY" });
+        } else {
+            router.push(`/chatgxy/${item.id}`);
+        }
     }
 }
 
@@ -100,7 +101,13 @@ function toggleSelectAll() {
 }
 
 function startNewChat() {
-    router.push("/chatgxy", { title: "ChatGXY" });
+    const Galaxy = getGalaxyInstance();
+    if (Galaxy?.frame?.active) {
+        // @ts-ignore - monkeypatched router, second arg is RouterPushOptions
+        router.push("/chatgxy?compact=true", { title: "ChatGXY" });
+    } else {
+        router.push("/chatgxy");
+    }
 }
 
 async function deleteSelected() {
