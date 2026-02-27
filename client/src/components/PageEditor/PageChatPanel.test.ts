@@ -72,10 +72,10 @@ describe("PageChatPanel", () => {
             expect(wrapper.find('[data-description="page chat panel"]').exists()).toBe(true);
         });
 
-        it("renders header with Notebook Assistant title", async () => {
+        it("renders header with Page Assistant title", async () => {
             const wrapper = mountComponent();
             await flushPromises();
-            expect(wrapper.find(".chat-panel-header").text()).toContain("Notebook Assistant");
+            expect(wrapper.find(".chat-panel-header").text()).toContain("Page Assistant");
         });
 
         it("renders ChatInput component", async () => {
@@ -105,7 +105,7 @@ describe("PageChatPanel", () => {
                     response: "I can help with that.",
                     exchange_id: 42,
                     agent_response: {
-                        agent_type: "notebook_assistant",
+                        agent_type: "page_assistant",
                         confidence: "high",
                         suggestions: [],
                         metadata: {},
@@ -126,7 +126,7 @@ describe("PageChatPanel", () => {
             expect(mockPOST).toHaveBeenCalledWith(
                 "/api/chat",
                 expect.objectContaining({
-                    params: { query: { agent_type: "notebook_assistant" } },
+                    params: { query: { agent_type: "page_assistant" } },
                 }),
             );
         });
@@ -137,7 +137,7 @@ describe("PageChatPanel", () => {
                     response: "Here is a rewrite.",
                     exchange_id: 42,
                     agent_response: {
-                        agent_type: "notebook_assistant",
+                        agent_type: "page_assistant",
                         confidence: "high",
                         suggestions: [],
                         metadata: {},
@@ -295,7 +295,7 @@ describe("PageChatPanel", () => {
             mockGET.mockResolvedValue({
                 data: [
                     { role: "user", content: "hello", timestamp: null },
-                    { role: "assistant", content: "hi", agent_type: "notebook_assistant", timestamp: null },
+                    { role: "assistant", content: "hi", agent_type: "page_assistant", timestamp: null },
                 ],
                 error: null,
             });
@@ -365,15 +365,15 @@ describe("PageChatPanel", () => {
             expect(mockPOST).toHaveBeenCalledWith(
                 "/api/chat",
                 expect.objectContaining({
-                    params: { query: { agent_type: "notebook_assistant" } },
+                    params: { query: { agent_type: "page_assistant" } },
                 }),
             );
         });
 
-        it("renders Notebook Assistant header when historyId is provided", async () => {
+        it("renders Page Assistant header when historyId is provided", async () => {
             const wrapper = mountComponent();
             await flushPromises();
-            expect(wrapper.find(".chat-panel-header").text()).toContain("Notebook Assistant");
+            expect(wrapper.find(".chat-panel-header").text()).toContain("Page Assistant");
         });
     });
 });

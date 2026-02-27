@@ -1,6 +1,6 @@
 /**
  * Markdown heading-based section splitting + jsdiff utilities for
- * notebook agent edit proposals (Mode 1: full replacement, Mode 2: section patch).
+ * page agent edit proposals (Mode 1: full replacement, Mode 2: section patch).
  */
 import { type Change, diffLines } from "diff";
 

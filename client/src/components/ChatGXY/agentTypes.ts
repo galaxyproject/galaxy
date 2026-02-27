@@ -27,10 +27,10 @@ export const agentTypes: AgentType[] = [
     { value: "dataset_analyzer", label: "Dataset Analyzer", icon: faChartBar, description: "Analyze datasets" },
     { value: "gtn_training", label: "GTN Training", icon: faGraduationCap, description: "Find tutorials" },
     {
-        value: "notebook_assistant",
-        label: "Notebook Assistant",
+        value: "page_assistant",
+        label: "Page Assistant",
         icon: faBook,
-        description: "Notebook editing assistant",
+        description: "Page editing assistant",
     },
 ];
 

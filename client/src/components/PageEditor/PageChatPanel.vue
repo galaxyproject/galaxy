@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Page-specific chat panel.
- * Talks to the notebook_assistant agent, shows diff views for edit proposals,
+ * Talks to the page_assistant agent, shows diff views for edit proposals,
  * and applies accepted edits to the page via the store.
  */
 import { faBook } from "@fortawesome/free-solid-svg-icons";
@@ -35,9 +35,9 @@ const props = withDefaults(
 );
 
 const isHistoryAttached = computed(() => !!props.historyId);
-const assistantName = computed(() => (isHistoryAttached.value ? "Notebook Assistant" : "Page Assistant"));
+const assistantName = computed(() => "Page Assistant");
 
-const AGENT_TYPE = "notebook_assistant";
+const AGENT_TYPE = "page_assistant";
 
 const store = usePageEditorStore();
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
@@ -58,7 +58,7 @@ onMounted(async () => {
             id: generateId(),
             role: "assistant",
             content: isHistoryAttached.value
-                ? "I'm the Notebook Assistant. I can help you edit this page — " +
+                ? "I'm the Page Assistant. I can help you edit this page — " +
                   "ask me to rewrite sections, add content, fix formatting, or analyze your history datasets."
                 : "I'm the Page Assistant. I can help you edit this page — " +
                   "ask me to rewrite sections, add content, or fix formatting.",

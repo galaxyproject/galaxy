@@ -20,8 +20,8 @@ export enum ActionType {
     VIEW_EXTERNAL = "view_external",
     SAVE_TOOL = "save_tool",
     REFINE_QUERY = "refine_query",
-    APPLY_NOTEBOOK_EDIT = "apply_notebook_edit",
-    INSERT_NOTEBOOK_SECTION = "insert_notebook_section",
+    APPLY_PAGE_EDIT = "apply_page_edit",
+    INSERT_PAGE_SECTION = "insert_page_section",
 }
 /* eslint-enable no-unused-vars */
 
@@ -221,8 +221,8 @@ export function useAgentActions() {
             [ActionType.CONTACT_SUPPORT]: "🆘",
             [ActionType.REFINE_QUERY]: "✏️",
             [ActionType.VIEW_EXTERNAL]: "🔗",
-            [ActionType.APPLY_NOTEBOOK_EDIT]: "📝",
-            [ActionType.INSERT_NOTEBOOK_SECTION]: "➕",
+            [ActionType.APPLY_PAGE_EDIT]: "📝",
+            [ActionType.INSERT_PAGE_SECTION]: "➕",
         };
         return icons[actionType] || "❓";
     }
