@@ -163,7 +163,6 @@ class FilesSourceProperties(StrictModel):
     doc: Annotated[
         Optional[str],
         Field(
-            None,
             title="Documentation",
             description="Documentation or extended description for this plugin.",
         ),
@@ -187,7 +186,6 @@ class FilesSourceProperties(StrictModel):
     requires_roles: Annotated[
         Optional[str],
         Field(
-            None,
             title="Requires roles",
             description=(
                 "Only users with the roles specified here can access this source."
@@ -200,7 +198,6 @@ class FilesSourceProperties(StrictModel):
     requires_groups: Annotated[
         Optional[str],
         Field(
-            None,
             title="Requires groups",
             description=(
                 "Only users belonging to the groups specified here can access this source."
@@ -232,7 +229,6 @@ class FilesSourceProperties(StrictModel):
     uri_root: Annotated[
         Optional[str],
         Field(
-            None,
             title="URI root",
             description=(
                 "The URI root used by this type of plugin. This is used to identify the file source and "
@@ -243,7 +239,6 @@ class FilesSourceProperties(StrictModel):
     url: Annotated[
         Optional[str],
         Field(
-            None,
             title="URL",
             description="Optional URL that might be provided by some plugins to link to the remote source.",
         ),
@@ -334,13 +329,10 @@ class RemoteFileHash(StrictModel):
 class RemoteFile(RemoteEntry):
     class_: Annotated[Literal["File"], Field(..., serialization_alias="class")] = "File"
     size: Annotated[int, Field(..., title="Size", description="The size of the file in bytes.")] = 0
-    ctime: Annotated[
-        Optional[str], Field(default=None, title="Creation time", description="The creation time of the file.")
-    ]
+    ctime: Annotated[Optional[str], Field(title="Creation time", description="The creation time of the file.")] = None
     hashes: Annotated[
         Optional[list[RemoteFileHash]],
         Field(
-            default=None,
             title="Hashes",
             description="List of precomputed hashes for the file, if available.",
         ),

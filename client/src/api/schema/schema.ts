@@ -10529,7 +10529,7 @@ export interface components {
              * Populated
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
-            populated?: boolean;
+            populated?: boolean | null;
         };
         /** DataCollectionParameterModel */
         DataCollectionParameterModel: {
@@ -14346,7 +14346,7 @@ export interface components {
              * Populated
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
-            populated?: boolean;
+            populated?: boolean | null;
             /**
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
@@ -14515,7 +14515,7 @@ export interface components {
              * Populated
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
-            populated?: boolean;
+            populated?: boolean | null;
             /**
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
@@ -15007,7 +15007,7 @@ export interface components {
              * Posts
              * @description The list of posts returned by the search.
              */
-            posts?: components["schemas"]["HelpForumPost"][];
+            posts?: components["schemas"]["HelpForumPost"][] | null;
             /**
              * Tags
              * @description The list of tags returned by the search.
@@ -15017,7 +15017,7 @@ export interface components {
              * Topics
              * @description The list of topics returned by the search.
              */
-            topics?: components["schemas"]["HelpForumTopic"][];
+            topics?: components["schemas"]["HelpForumTopic"][] | null;
             /**
              * Users
              * @description The list of users returned by the search.
