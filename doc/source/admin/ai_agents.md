@@ -199,7 +199,7 @@ Galaxy registers the following agent types:
 | `custom_tool`         | Enabled       | Generates custom Galaxy tools from natural language descriptions |
 | `orchestrator`        | Enabled       | Coordinates multi-step workflow tasks                            |
 | `tool_recommendation` | Enabled       | Recommends tools from the toolbox for a given task               |
-| `notebook_assistant`  | Enabled       | Assists with Galaxy notebook interactions                        |
+| `page_assistant`      | Enabled       | Assists with Galaxy page editing                                 |
 | `dataset_analyzer`    | Disabled      | Analyzes dataset contents (beta)                                 |
 
 Individual agents can be enabled or disabled through the `agents` dictionary in `galaxy.yml`:

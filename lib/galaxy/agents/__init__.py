@@ -12,7 +12,7 @@ from .base import (
 )
 from .custom_tool import CustomToolAgent
 from .error_analysis import ErrorAnalysisAgent
-from .notebook_assistant import NotebookAssistantAgent
+from .page_assistant import PageAssistantAgent
 from .orchestrator import WorkflowOrchestratorAgent
 from .registry import AgentRegistry
 from .router import QueryRouterAgent
@@ -26,7 +26,7 @@ __all__ = [
     "QueryRouterAgent",
     "ErrorAnalysisAgent",
     "CustomToolAgent",
-    "NotebookAssistantAgent",
+    "PageAssistantAgent",
     "WorkflowOrchestratorAgent",
     "ToolRecommendationAgent",
 ]
@@ -40,4 +40,4 @@ agent_registry.register(AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent)
 agent_registry.register(AgentType.CUSTOM_TOOL, CustomToolAgent)
 agent_registry.register(AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
 agent_registry.register(AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)
-agent_registry.register(AgentType.NOTEBOOK_ASSISTANT, NotebookAssistantAgent)
+agent_registry.register(AgentType.PAGE_ASSISTANT, PageAssistantAgent)

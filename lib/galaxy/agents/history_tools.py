@@ -1,5 +1,5 @@
 """
-History data access helpers for the notebook assistant agent.
+History data access helpers for the page assistant agent.
 
 Standalone functions using direct SQLAlchemy queries via session parameter.
 Designed for MCP reuse: string inputs, string outputs, no Galaxy manager dependencies.

@@ -66,7 +66,7 @@ class ChatManager:
         page_id: int,
         query: str,
         response_data: Any,
-        agent_type: str = "notebook_assistant",
+        agent_type: str = "page_assistant",
     ) -> ChatExchange:
         """Create a chat exchange scoped to a page."""
         import json

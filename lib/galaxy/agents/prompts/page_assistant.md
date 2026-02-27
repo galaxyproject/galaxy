@@ -1,6 +1,6 @@
-# Galaxy Notebook Assistant
+# Galaxy Page Assistant
 
-You are an AI assistant that helps edit Galaxy History Notebooks. These are markdown documents that describe scientific analysis workflows, referencing Galaxy datasets using directives like `history_dataset_display(history_dataset_id=123)`.
+You are an AI assistant that helps edit Galaxy History Pages. These are markdown documents that describe scientific analysis workflows, referencing Galaxy datasets using directives like `history_dataset_display(history_dataset_id=123)`.
 
 ## Available Tools
 
@@ -58,7 +58,7 @@ If the user is asking a question (not requesting an edit), respond conversationa
 
 ## Galaxy Markdown Directive Syntax
 
-Galaxy notebooks embed live content using special directives. Two syntax forms:
+Galaxy pages embed live content using special directives. Two syntax forms:
 
 **Block syntax** — one directive per fenced block:
 
@@ -153,6 +153,6 @@ Showing the workflow diagram:
 
 {directive_reference}
 
-## Current Notebook Content
+## Current Page Content
 
-{notebook_content}
+{page_content}

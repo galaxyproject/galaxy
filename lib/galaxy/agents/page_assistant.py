@@ -1,5 +1,5 @@
 """
-Notebook assistant agent for Galaxy History Notebooks.
+Page assistant agent for Galaxy History Pages.
 
 Reads history contents via tools, proposes markdown edits with structured output
 (FullReplacementEdit or SectionPatchEdit), and supports conversational responses.
@@ -139,7 +139,7 @@ def _build_directive_reference() -> str:
 
 
 class FullReplacementEdit(BaseModel):
-    """Complete rewrite of the notebook document."""
+    """Complete rewrite of the page document."""
 
     mode: Literal["full_replacement"] = "full_replacement"
     reasoning: str = Field(description="Why full replacement was chosen over section patch.")
@@ -147,7 +147,7 @@ class FullReplacementEdit(BaseModel):
 
 
 class SectionPatchEdit(BaseModel):
-    """Targeted edit to a specific section of the notebook."""
+    """Targeted edit to a specific section of the page."""
 
     mode: Literal["section_patch"] = "section_patch"
     reasoning: str = Field(description="Why this section was targeted.")
@@ -157,15 +157,15 @@ class SectionPatchEdit(BaseModel):
     new_section_content: str = Field(description="The new content for this section, including the heading line.")
 
 
-class NotebookAssistantAgent(BaseGalaxyAgent):
-    """Agent for editing Galaxy History Notebooks via chat.
+class PageAssistantAgent(BaseGalaxyAgent):
+    """Agent for editing Galaxy History Pages via chat.
 
     Discovers history data via tools, proposes markdown edits using structured
     output (full replacement or section patch), and supports conversational
     responses for questions about the history.
     """
 
-    agent_type = AgentType.NOTEBOOK_ASSISTANT
+    agent_type = AgentType.PAGE_ASSISTANT
 
     def __init__(self, deps: GalaxyAgentDependencies, history_id: Optional[int] = None, page_content: str = ""):
         self.history_id: Optional[int] = history_id
@@ -183,7 +183,7 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
                     ToolOutput(
                         FullReplacementEdit,
                         name="replace_entire_document",
-                        description="Rewrite the entire notebook. Use for major rewrites, restructuring, or when >50% of content changes.",
+                        description="Rewrite the entire page. Use for major rewrites, restructuring, or when >50% of content changes.",
                     ),
                     ToolOutput(
                         SectionPatchEdit,
@@ -306,8 +306,8 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
         return agent
 
     def get_system_prompt(self) -> str:
-        """Load system prompt and inject notebook content and directive reference."""
-        prompt_path = Path(__file__).parent / "prompts" / "notebook_assistant.md"
+        """Load system prompt and inject page content and directive reference."""
+        prompt_path = Path(__file__).parent / "prompts" / "page_assistant.md"
         template = prompt_path.read_text()
         content = self.page_content or "(empty document)"
         directive_ref = _build_directive_reference()
@@ -321,7 +321,7 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
         return prompt
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
-        """Process a notebook editing or history question."""
+        """Process a page editing or history question."""
         ctx = context or {}
         self.history_id = ctx.get("history_id") or None
         self.page_content = ctx.get("page_content", "")
@@ -378,10 +378,10 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
                 )
 
         except OSError as e:
-            log.warning(f"Notebook assistant network error: {e}")
+            log.warning(f"Page assistant network error: {e}")
             return self._get_fallback_response(query, str(e))
         except ValueError as e:
-            log.warning(f"Notebook assistant value error: {e}")
+            log.warning(f"Page assistant value error: {e}")
             return self._get_fallback_response(query, str(e))
 
     def _get_simple_system_prompt(self) -> str:
@@ -390,8 +390,8 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
         directive_ref = _build_directive_reference()
         if self.history_id:
             intro = (
-                "You are a Galaxy History Notebook editing assistant. Help users edit their\n"
-                "markdown notebooks that document scientific analysis workflows."
+                "You are a Galaxy History Page editing assistant. Help users edit their\n"
+                "markdown pages that document scientific analysis workflows."
             )
             history_tools_note = (
                 "For questions about the history data, use the available tools to look up datasets.\n"
@@ -427,5 +427,5 @@ history_dataset_collection_id=ENCODED_ID, job directives use job_id=ENCODED_ID.
 
 {directive_ref}
 
-Current notebook content:
+Current page content:
 {content}"""
