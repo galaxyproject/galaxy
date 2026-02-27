@@ -886,5 +886,66 @@ describe("usePageEditorStore", () => {
 
             expect(capturedBody.edit_source).toBe("user");
         });
+
+        it("loadRevisions works without historyId", async () => {
+            const revisions = [
+                {
+                    id: "rev-1",
+                    page_id: TEST_PAGE_ID,
+                    edit_source: "user",
+                    create_time: "2025-01-01",
+                    update_time: "2025-01-01",
+                },
+                {
+                    id: "rev-2",
+                    page_id: TEST_PAGE_ID,
+                    edit_source: "user",
+                    create_time: "2025-01-02",
+                    update_time: "2025-01-02",
+                },
+            ];
+            server.use(
+                http.get("/api/pages/:id/revisions", ({ response }) => {
+                    return response(200).json(revisions);
+                }) as any,
+            );
+            const store = usePageEditorStore();
+            store.mode = "standalone";
+            store.currentNotebook = STANDALONE_PAGE;
+
+            await store.loadRevisions();
+
+            expect(store.revisions).toHaveLength(2);
+            expect(store.revisions[0]!.id).toBe("rev-1");
+        });
+
+        it("restoreRevision works without historyId", async () => {
+            const restoredRevision = {
+                id: "rev-new",
+                page_id: TEST_PAGE_ID,
+                edit_source: "restore",
+                create_time: "2025-01-03",
+                update_time: "2025-01-03",
+            };
+            server.use(
+                http.post("/api/pages/:id/revisions/:revisionId/revert", ({ response }) => {
+                    return response(200).json(restoredRevision);
+                }) as any,
+                http.get("/api/pages/:id", ({ response }) => {
+                    return response(200).json(STANDALONE_PAGE);
+                }) as any,
+                http.get("/api/pages/:id/revisions", ({ response }) => {
+                    return response(200).json([restoredRevision]);
+                }) as any,
+            );
+            const store = usePageEditorStore();
+            store.mode = "standalone";
+            store.currentNotebook = STANDALONE_PAGE;
+
+            await store.restoreRevision("rev-1");
+
+            expect(store.selectedRevision).toBeNull();
+            expect(store.showRevisions).toBe(false);
+        });
     });
 });

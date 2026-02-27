@@ -419,6 +419,58 @@ describe("PageEditorView", () => {
         });
     });
 
+    describe("Revision UI (standalone mode)", () => {
+        it("shows Revisions button in standalone mode", async () => {
+            setupLoadedPage();
+            const wrapper = mountComponent({ pageId: PAGE_ID });
+            await flushPromises();
+
+            const revBtn = wrapper.find(SELECTORS.REVISIONS_BUTTON);
+            expect(revBtn.exists()).toBe(true);
+            expect(revBtn.text()).toContain("Revisions");
+        });
+
+        it("clicking Revisions button calls store.toggleRevisions in standalone mode", async () => {
+            const store = setupLoadedPage();
+            const wrapper = mountComponent({ pageId: PAGE_ID });
+            await flushPromises();
+
+            const revBtn = wrapper.find(SELECTORS.REVISIONS_BUTTON);
+            await revBtn.trigger("click");
+
+            expect(store.toggleRevisions).toHaveBeenCalled();
+        });
+
+        it("shows revision panel when store.showRevisions is true in standalone mode", async () => {
+            const store = setupLoadedPage();
+            store.showRevisions = true;
+            store.revisions = [
+                { id: "rev-1", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
+            ] as any;
+            const wrapper = mountComponent({ pageId: PAGE_ID });
+            await flushPromises();
+
+            expect(wrapper.find(SELECTORS.REVISION_PANEL).exists()).toBe(true);
+            expect(wrapper.findComponent(NotebookRevisionList).exists()).toBe(true);
+        });
+
+        it("revision panel restore calls store.restoreRevision in standalone mode", async () => {
+            const store = setupLoadedPage();
+            store.showRevisions = true;
+            store.revisions = [
+                { id: "rev-1", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
+            ] as any;
+            const wrapper = mountComponent({ pageId: PAGE_ID });
+            await flushPromises();
+
+            const revList = wrapper.findComponent(NotebookRevisionList);
+            revList.vm.$emit("restore", "rev-1");
+            await wrapper.vm.$nextTick();
+
+            expect(store.restoreRevision).toHaveBeenCalledWith("rev-1");
+        });
+    });
+
     describe("Chat Panel", () => {
         it("shows Chat button in toolbar", async () => {
             setupLoadedPage(HISTORY_ID);
