@@ -35,11 +35,53 @@ except ImportError:
 
     from lib2to3.refactor import RefactoringTool
 
-from past.translation import myfixes
+try:
+    from past.translation import myfixes
 
-# Skip libpasteurize fixers, which make sure code is py2 and py3 compatible.
-# This is not needed, we only translate code on py3.
-myfixes = [f for f in myfixes if not f.startswith("libpasteurize")]
+    # Skip libpasteurize fixers, which make sure code is py2 and py3 compatible.
+    # This is not needed, we only translate code on py3.
+    myfixes = [f for f in myfixes if not f.startswith("libpasteurize")]
+except ImportError:
+    # future is not installed, so the libfuturize fixes are not available and
+    # we can only use the ones from lib2to3/fissix.
+    myfixes = [
+        "lib2to3.fixes.fix_reduce",
+        "lib2to3.fixes.fix_xreadlines",
+        "lib2to3.fixes.fix_types",
+        "lib2to3.fixes.fix_exec",
+        "lib2to3.fixes.fix_repr",
+        "lib2to3.fixes.fix_exitfunc",
+        "lib2to3.fixes.fix_idioms",
+        "lib2to3.fixes.fix_throw",
+        "lib2to3.fixes.fix_tuple_params",
+        "lib2to3.fixes.fix_has_key",
+        "lib2to3.fixes.fix_standarderror",
+        "lib2to3.fixes.fix_ne",
+        "lib2to3.fixes.fix_ws_comma",
+        "lib2to3.fixes.fix_intern",
+        "lib2to3.fixes.fix_paren",
+        "lib2to3.fixes.fix_funcattrs",
+        "lib2to3.fixes.fix_methodattrs",
+        "lib2to3.fixes.fix_isinstance",
+        "lib2to3.fixes.fix_except",
+        "lib2to3.fixes.fix_apply",
+        "lib2to3.fixes.fix_renames",
+        "lib2to3.fixes.fix_sys_exc",
+        "lib2to3.fixes.fix_numliterals",
+        "lib2to3.fixes.fix_filter",
+        "lib2to3.fixes.fix_getcwdu",
+        "lib2to3.fixes.fix_long",
+        "lib2to3.fixes.fix_operator",
+        "lib2to3.fixes.fix_itertools_imports",
+        "lib2to3.fixes.fix_raw_input",
+        "lib2to3.fixes.fix_map",
+        "lib2to3.fixes.fix_zip",
+        "lib2to3.fixes.fix_next",
+        "lib2to3.fixes.fix_dict",
+        "lib2to3.fixes.fix_nonzero",
+        "lib2to3.fixes.fix_itertools",
+    ]
+
 refactoring_tool = RefactoringTool(myfixes, {"print_function": True})
 
 
