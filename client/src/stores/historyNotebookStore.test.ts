@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
-import type { HistoryPageDetails, HistoryPageSummary } from "@/api/historyPages";
+import type { HistoryPageDetails, HistoryPageSummary } from "@/api/pages";
 
 import { useHistoryNotebookStore } from "./historyNotebookStore";
 

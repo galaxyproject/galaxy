@@ -2,7 +2,7 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type Wrapper } from "@vue/test-utils";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { PageRevisionSummary } from "@/api/historyPages";
+import type { PageRevisionSummary } from "@/api/pages";
 
 import NotebookRevisionList from "./NotebookRevisionList.vue";
 

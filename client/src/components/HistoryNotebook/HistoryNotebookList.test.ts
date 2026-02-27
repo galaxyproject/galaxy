@@ -3,7 +3,7 @@ import { shallowMount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { HistoryPageSummary } from "@/api/historyPages";
+import type { HistoryPageSummary } from "@/api/pages";
 
 import HistoryNotebookList from "./HistoryNotebookList.vue";
 

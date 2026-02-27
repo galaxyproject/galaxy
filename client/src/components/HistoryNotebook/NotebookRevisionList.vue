@@ -3,7 +3,7 @@ import { faSpinner, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 
-import type { PageRevisionSummary } from "@/api/historyPages";
+import type { PageRevisionSummary } from "@/api/pages";
 
 defineProps<{
     revisions: PageRevisionSummary[];

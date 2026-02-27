@@ -1,6 +1,6 @@
 /**
- * API client for history-attached pages (replacing historyNotebooks.ts).
- * Uses /api/pages endpoints with history_id filtering.
+ * Unified API client for all Galaxy Pages (history-attached and standalone).
+ * Uses /api/pages endpoints.
  */
 import axios from "axios";
 
@@ -110,6 +110,15 @@ export async function updateHistoryPage(
         rethrowSimple(e);
         throw e;
     }
+}
+
+/** Save page content via PUT (replaces legacy POST /revisions save). */
+export async function savePage(
+    pageId: string,
+    content: string,
+    editSource: string = "user",
+): Promise<HistoryPageDetails> {
+    return updateHistoryPage(pageId, { content, edit_source: editSource });
 }
 
 export async function deleteHistoryPage(pageId: string): Promise<void> {

@@ -49,9 +49,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
+import { savePage } from "@/api/pages";
 import { Toast } from "@/composables/toast";
-
-import { save } from "./services";
 
 import ObjectPermissionsModal from "./ObjectPermissionsModal.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
@@ -100,7 +99,7 @@ export default {
             this.markdownText = newContent;
         },
         saveContent(showResult) {
-            save(this.pageId, this.markdownText, !showResult)
+            savePage(this.pageId, this.markdownText)
                 .then(() => {
                     if (showResult) {
                         window.location = this.publicUrl;

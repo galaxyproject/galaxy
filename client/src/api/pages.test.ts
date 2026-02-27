@@ -1,19 +1,19 @@
 /**
- * Tests for the historyPages API client (replaces old historyNotebooks tests).
- * The historyPages module uses plain axios, but MSW intercepts all HTTP.
+ * Tests for the unified pages API client.
  */
 import { describe, expect, it } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
-import type { HistoryPageDetails, HistoryPageSummary } from "./historyPages";
+import type { HistoryPageDetails, HistoryPageSummary } from "./pages";
 import {
     createHistoryPage,
     deleteHistoryPage,
     fetchHistoryPage,
     fetchHistoryPages,
+    savePage,
     updateHistoryPage,
-} from "./historyPages";
+} from "./pages";
 
 const { server, http } = useServerMock();
 
@@ -50,7 +50,7 @@ const TEST_PAGE_DETAILS: HistoryPageDetails = {
     annotation: null,
 };
 
-describe("historyPages API", () => {
+describe("pages API", () => {
     describe("fetchHistoryPages", () => {
         it("returns list of pages for a history", async () => {
             server.use(
@@ -183,6 +183,42 @@ describe("historyPages API", () => {
             );
 
             await expect(updateHistoryPage(TEST_PAGE_ID, UPDATE_PAYLOAD)).rejects.toThrow();
+        });
+    });
+
+    describe("savePage", () => {
+        it("saves content via PUT with default edit_source", async () => {
+            server.use(
+                http.put("/api/pages/:id", ({ response }) => {
+                    return response(200).json({
+                        ...TEST_PAGE_DETAILS,
+                        content: "# Saved Content",
+                        edit_source: "user",
+                    });
+                }) as any,
+            );
+
+            const result = await savePage(TEST_PAGE_ID, "# Saved Content");
+
+            expect(result.content).toBe("# Saved Content");
+            expect(result.edit_source).toBe("user");
+        });
+
+        it("saves content with custom edit_source", async () => {
+            server.use(
+                http.put("/api/pages/:id", ({ response }) => {
+                    return response(200).json({
+                        ...TEST_PAGE_DETAILS,
+                        content: "# Agent Content",
+                        edit_source: "agent",
+                    });
+                }) as any,
+            );
+
+            const result = await savePage(TEST_PAGE_ID, "# Agent Content", "agent");
+
+            expect(result.content).toBe("# Agent Content");
+            expect(result.edit_source).toBe("agent");
         });
     });
 

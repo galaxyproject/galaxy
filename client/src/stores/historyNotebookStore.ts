@@ -16,7 +16,7 @@ import {
     revertPageRevision,
     updateHistoryPage,
     type UpdateHistoryPagePayload,
-} from "@/api/historyPages";
+} from "@/api/pages";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 export const useHistoryNotebookStore = defineStore("historyNotebook", () => {

@@ -3,7 +3,7 @@ import { faChevronRight, faEye, faPlus } from "@fortawesome/free-solid-svg-icons
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 
-import type { HistoryPageSummary } from "@/api/historyPages";
+import type { HistoryPageSummary } from "@/api/pages";
 
 defineProps<{
     notebooks: HistoryPageSummary[];

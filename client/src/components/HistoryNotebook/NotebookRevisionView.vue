@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
-import type { PageRevisionDetails } from "@/api/historyPages";
+import type { PageRevisionDetails } from "@/api/pages";
 
 import Markdown from "@/components/Markdown/Markdown.vue";
 
