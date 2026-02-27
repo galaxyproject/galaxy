@@ -307,7 +307,7 @@ function handleRevisionRestore(revisionId: string) {
                     </template>
                     <template v-slot:chat>
                         <NotebookChatPanel
-                            :history-id="historyId || ''"
+                            :history-id="historyId"
                             :page-id="pageId"
                             :notebook-content="store.currentContent" />
                     </template>

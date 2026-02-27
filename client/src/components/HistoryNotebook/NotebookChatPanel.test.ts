@@ -323,4 +323,57 @@ describe("NotebookChatPanel", () => {
             expect(cells.length).toBe(1);
         });
     });
+
+    describe("Standalone page mode (no historyId)", () => {
+        function mountStandalone() {
+            return mountComponent({ pageId: PAGE_ID, notebookContent: NOTEBOOK_CONTENT });
+        }
+
+        it("renders header with Page Assistant title", async () => {
+            const wrapper = mountStandalone();
+            await flushPromises();
+            expect(wrapper.find(".chat-panel-header").text()).toContain("Page Assistant");
+        });
+
+        it("shows Page Assistant welcome message", async () => {
+            const wrapper = mountStandalone();
+            await flushPromises();
+            const cells = wrapper.findAllComponents(ChatMessageCell);
+            expect(cells.length).toBe(1);
+            // The welcome message should mention "Page Assistant"
+            expect(cells.at(0).props("message").content).toContain("Page Assistant");
+        });
+
+        it("sends query to API without historyId", async () => {
+            mockPOST.mockResolvedValue({
+                data: {
+                    response: "I can help with that.",
+                    exchange_id: 42,
+                    agent_response: null,
+                },
+                error: null,
+            });
+
+            const wrapper = mountStandalone();
+            await flushPromises();
+
+            const textarea = wrapper.find("textarea");
+            await textarea.setValue("Rewrite the intro");
+            await wrapper.find(".send-button").trigger("click");
+            await flushPromises();
+
+            expect(mockPOST).toHaveBeenCalledWith(
+                "/api/chat",
+                expect.objectContaining({
+                    params: { query: { agent_type: "notebook_assistant" } },
+                }),
+            );
+        });
+
+        it("renders Notebook Assistant header when historyId is provided", async () => {
+            const wrapper = mountComponent();
+            await flushPromises();
+            expect(wrapper.find(".chat-panel-header").text()).toContain("Notebook Assistant");
+        });
+    });
 });

@@ -7,7 +7,7 @@
 import { faBook } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BSkeleton } from "bootstrap-vue";
-import { nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import type { ChatMessage } from "@/components/ChatGXY/chatTypes";
@@ -25,11 +25,17 @@ import ChatInput from "@/components/ChatGXY/ChatInput.vue";
 import ChatMessageCell from "@/components/ChatGXY/ChatMessageCell.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-const props = defineProps<{
-    historyId: string;
-    pageId: string;
-    notebookContent: string;
-}>();
+const props = withDefaults(
+    defineProps<{
+        historyId?: string;
+        pageId: string;
+        notebookContent: string;
+    }>(),
+    { historyId: "" },
+);
+
+const isHistoryAttached = computed(() => !!props.historyId);
+const assistantName = computed(() => (isHistoryAttached.value ? "Notebook Assistant" : "Page Assistant"));
 
 const AGENT_TYPE = "notebook_assistant";
 
@@ -51,9 +57,11 @@ onMounted(async () => {
         messages.value.push({
             id: generateId(),
             role: "assistant",
-            content:
-                "I'm the Notebook Assistant. I can help you edit this notebook — " +
-                "ask me to rewrite sections, add content, fix formatting, or analyze your history datasets.",
+            content: isHistoryAttached.value
+                ? "I'm the Notebook Assistant. I can help you edit this notebook — " +
+                  "ask me to rewrite sections, add content, fix formatting, or analyze your history datasets."
+                : "I'm the Page Assistant. I can help you edit this page — " +
+                  "ask me to rewrite sections, add content, or fix formatting.",
             timestamp: new Date(),
             agentType: AGENT_TYPE,
             confidence: "high",
@@ -330,7 +338,9 @@ function startNewConversation() {
         {
             id: generateId(),
             role: "assistant",
-            content: "Starting a new conversation. How can I help with this notebook?",
+            content: isHistoryAttached.value
+                ? "Starting a new conversation. How can I help with this notebook?"
+                : "Starting a new conversation. How can I help with this page?",
             timestamp: new Date(),
             agentType: AGENT_TYPE,
             confidence: "high",
@@ -351,7 +361,7 @@ function startNewConversation() {
         <div class="chat-panel-header d-flex align-items-center justify-content-between p-2 border-bottom">
             <span class="d-flex align-items-center gap-2">
                 <FontAwesomeIcon :icon="faBook" fixed-width />
-                <strong>Notebook Assistant</strong>
+                <strong>{{ assistantName }}</strong>
             </span>
             <BButton
                 variant="outline-primary"
@@ -392,7 +402,7 @@ function startNewConversation() {
             <div v-if="busy" class="loading-cell" data-description="chat loading indicator">
                 <div class="cell-label">
                     <FontAwesomeIcon :icon="faBook" fixed-width />
-                    <span>Notebook Assistant</span>
+                    <span>{{ assistantName }}</span>
                 </div>
                 <div class="cell-content">
                     <BSkeleton animation="wave" width="85%" />

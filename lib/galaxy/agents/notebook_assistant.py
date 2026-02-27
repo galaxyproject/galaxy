@@ -167,8 +167,8 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
 
     agent_type = AgentType.NOTEBOOK_ASSISTANT
 
-    def __init__(self, deps: GalaxyAgentDependencies, history_id: int = 0, page_content: str = ""):
-        self.history_id: int = history_id
+    def __init__(self, deps: GalaxyAgentDependencies, history_id: Optional[int] = None, page_content: str = ""):
+        self.history_id: Optional[int] = history_id
         self.page_content: str = page_content
         super().__init__(deps)
 
@@ -206,7 +206,10 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
                 return agent_self.get_system_prompt()
             return agent_self._get_simple_system_prompt()
 
-        # Tools reference agent_self.history_id — set in process() from context before each run
+        # Tools reference agent_self.history_id — set in process() from context before each run.
+        # When editing standalone pages (no history), tools return a helpful message.
+        _NO_HISTORY_MSG = "This page is not associated with a history. History browsing tools are not available."
+
         @agent.tool
         async def list_history_datasets(
             ctx: RunContext[GalaxyAgentDependencies],
@@ -221,6 +224,8 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
             Call this first to understand what data is available before referencing
             specific items by HID.
             """
+            if not agent_self.history_id:
+                return _NO_HISTORY_MSG
             return await _list_history_items(
                 ctx.deps.trans.sa_session,
                 agent_self.history_id,
@@ -241,6 +246,8 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
             Returns name, format, state, size, metadata, creation time, and the
             tool that created it. Works for both datasets and collections.
             """
+            if not agent_self.history_id:
+                return _NO_HISTORY_MSG
             return await _get_dataset_info(
                 ctx.deps.trans.sa_session, agent_self.history_id, hid, encode_id=ctx.deps.trans.security.encode_id
             )
@@ -255,6 +262,8 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
             For tabular data shows column headers and sample rows. For text data
             shows the first lines. Not available for binary formats.
             """
+            if not agent_self.history_id:
+                return _NO_HISTORY_MSG
             return await _get_dataset_peek(ctx.deps.trans.sa_session, agent_self.history_id, hid)
 
         @agent.tool
@@ -268,6 +277,8 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
             Shows collection type, element count, and lists elements with names,
             formats, and states.
             """
+            if not agent_self.history_id:
+                return _NO_HISTORY_MSG
             return await _get_collection_structure(
                 ctx.deps.trans.sa_session,
                 agent_self.history_id,
@@ -286,6 +297,8 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
             history_dataset_id or history_dataset_collection_id for a directive.
             Also returns the job_id if the item was created by a tool.
             """
+            if not agent_self.history_id:
+                return _NO_HISTORY_MSG
             return await _resolve_hid(
                 ctx.deps.trans.sa_session, agent_self.history_id, hid, encode_id=ctx.deps.trans.security.encode_id
             )
@@ -298,12 +311,19 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
         template = prompt_path.read_text()
         content = self.page_content or "(empty document)"
         directive_ref = _build_directive_reference()
-        return template.replace("{page_content}", content).replace("{directive_reference}", directive_ref)
+        prompt = template.replace("{page_content}", content).replace("{directive_reference}", directive_ref)
+        if not self.history_id:
+            prompt = (
+                "**NOTE: This is a standalone page (not associated with a history). "
+                "The history browsing tools (list_history_datasets, get_dataset_info, etc.) "
+                "are not available. Focus on editing the page content directly.**\n\n" + prompt
+            )
+        return prompt
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         """Process a notebook editing or history question."""
         ctx = context or {}
-        self.history_id = ctx.get("history_id", 0)
+        self.history_id = ctx.get("history_id") or None
         self.page_content = ctx.get("page_content", "")
         try:
             enhanced_query = self._prepare_prompt(query, ctx)
@@ -368,8 +388,26 @@ class NotebookAssistantAgent(BaseGalaxyAgent):
         """Fallback prompt for models without structured output."""
         content = self.page_content or "(empty document)"
         directive_ref = _build_directive_reference()
-        return f"""You are a Galaxy History Notebook editing assistant. Help users edit their
-markdown notebooks that document scientific analysis workflows.
+        if self.history_id:
+            intro = (
+                "You are a Galaxy History Notebook editing assistant. Help users edit their\n"
+                "markdown notebooks that document scientific analysis workflows."
+            )
+            history_tools_note = (
+                "For questions about the history data, use the available tools to look up datasets.\n"
+                "Users refer to items by HID (the number in the history panel). Use resolve_hid(hid)\n"
+                "to get the encoded history_dataset_id or history_dataset_collection_id for directives.\n"
+                "All tool outputs return encoded IDs — copy them directly into directives.\n"
+                "The resolve_hid and get_dataset_info tools also return job_id for job directives."
+            )
+        else:
+            intro = (
+                "You are a Galaxy Page editing assistant. Help users edit their\n"
+                "markdown pages. This page is not associated with a history, so history\n"
+                "browsing tools are not available. Focus on editing the page content directly."
+            )
+            history_tools_note = ""
+        return f"""{intro}
 
 When proposing edits, clearly indicate whether you're rewriting the entire document
 or patching a specific section by starting your response with:
@@ -380,11 +418,7 @@ TARGET_SECTION: ## Section Name
 
 Then provide the new content after a blank line.
 
-For questions about the history data, use the available tools to look up datasets.
-Users refer to items by HID (the number in the history panel). Use resolve_hid(hid)
-to get the encoded history_dataset_id or history_dataset_collection_id for directives.
-All tool outputs return encoded IDs — copy them directly into directives.
-The resolve_hid and get_dataset_info tools also return job_id for job directives.
+{history_tools_note}
 
 Galaxy markdown uses block directives (```galaxy fenced blocks with one directive each)
 and inline directives (${{galaxy directive_name(args)}}) for embed-capable directives.
