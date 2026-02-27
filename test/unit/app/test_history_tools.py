@@ -1,7 +1,7 @@
 """Unit tests for history_tools helper functions.
 
 Tests the standalone helper functions using mocked SQLAlchemy sessions.
-These helpers are the data access layer for the notebook assistant agent.
+These helpers are the data access layer for the page assistant agent.
 """
 
 from unittest import mock

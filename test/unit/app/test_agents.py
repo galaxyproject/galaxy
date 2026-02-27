@@ -37,11 +37,11 @@ from galaxy.agents import (
     CustomToolAgent,
     ErrorAnalysisAgent,
     GalaxyAgentDependencies,
-    NotebookAssistantAgent,
+    PageAssistantAgent,
     QueryRouterAgent,
 )
 from galaxy.agents.error_analysis import ErrorAnalysisResult
-from galaxy.agents.notebook_assistant import (
+from galaxy.agents.page_assistant import (
     FullReplacementEdit,
     SectionPatchEdit,
 )
@@ -420,8 +420,8 @@ class TestAgentUnitMocked:
         return agent
 
 
-class TestNotebookAssistantAgent:
-    """Unit tests for notebook assistant agent."""
+class TestPageAssistantAgent:
+    """Unit tests for page assistant agent."""
 
     def setup_method(self):
         self.mock_config = mock.Mock()
@@ -445,37 +445,37 @@ class TestNotebookAssistantAgent:
         )
 
     def test_agent_registered(self):
-        assert agent_registry.is_registered("notebook_assistant")
-        info = agent_registry.get_agent_info("notebook_assistant")
-        assert info["class_name"] == "NotebookAssistantAgent"
+        assert agent_registry.is_registered("page_assistant")
+        info = agent_registry.get_agent_info("page_assistant")
+        assert info["class_name"] == "PageAssistantAgent"
 
     def test_agent_type_constant(self):
-        agent = NotebookAssistantAgent(self.deps, history_id=1, notebook_content="# Test")
-        assert agent.agent_type == "notebook_assistant"
+        agent = PageAssistantAgent(self.deps, history_id=1, page_content="# Test")
+        assert agent.agent_type == "page_assistant"
 
     def test_system_prompt_injects_content(self):
-        agent = NotebookAssistantAgent(self.deps, history_id=1, notebook_content="# My Notebook\n\nHello world")
+        agent = PageAssistantAgent(self.deps, history_id=1, page_content="# My Page\n\nHello world")
         prompt = agent.get_system_prompt()
-        assert "# My Notebook" in prompt
+        assert "# My Page" in prompt
         assert "Hello world" in prompt
 
     def test_system_prompt_empty_content(self):
-        agent = NotebookAssistantAgent(self.deps, history_id=1, notebook_content="")
+        agent = PageAssistantAgent(self.deps, history_id=1, page_content="")
         prompt = agent.get_system_prompt()
         assert "(empty document)" in prompt
 
     def test_config_fallback(self):
         self.mock_config.inference_services = {
-            "notebook_assistant": {"model": "claude-sonnet-4-5", "temperature": 0.2},
+            "page_assistant": {"model": "claude-sonnet-4-5", "temperature": 0.2},
             "default": {"model": "gpt-4o-mini"},
         }
-        agent = NotebookAssistantAgent(self.deps, history_id=1)
+        agent = PageAssistantAgent(self.deps, history_id=1)
         assert agent._get_agent_config("model") == "claude-sonnet-4-5"
         assert agent._get_agent_config("temperature") == 0.2
 
     @pytest.mark.asyncio
     async def test_process_full_replacement(self):
-        agent = NotebookAssistantAgent(self.deps, history_id=1, notebook_content="# Old doc")
+        agent = PageAssistantAgent(self.deps, history_id=1, page_content="# Old doc")
 
         with mock.patch.object(agent, "_run_with_retry") as mock_run:
             mock_result = mock.Mock(spec=["output"])
@@ -487,7 +487,7 @@ class TestNotebookAssistantAgent:
 
             response = await agent.process("Rewrite this entire document")
 
-            assert response.agent_type == "notebook_assistant"
+            assert response.agent_type == "page_assistant"
             assert response.metadata["method"] == "structured"
             assert response.metadata["edit_mode"] == "full_replacement"
             assert response.metadata["content"] == "# New Document\n\nRewritten content."
@@ -495,10 +495,10 @@ class TestNotebookAssistantAgent:
 
     @pytest.mark.asyncio
     async def test_process_section_patch(self):
-        agent = NotebookAssistantAgent(
+        agent = PageAssistantAgent(
             self.deps,
             history_id=1,
-            notebook_content="# Doc\n\n## Methods\n\nOld methods\n\n## Results\n\nOld results",
+            page_content="# Doc\n\n## Methods\n\nOld methods\n\n## Results\n\nOld results",
         )
 
         with mock.patch.object(agent, "_run_with_retry") as mock_run:
@@ -518,7 +518,7 @@ class TestNotebookAssistantAgent:
 
     @pytest.mark.asyncio
     async def test_process_conversational(self):
-        agent = NotebookAssistantAgent(self.deps, history_id=1, notebook_content="# Test")
+        agent = PageAssistantAgent(self.deps, history_id=1, page_content="# Test")
 
         with mock.patch.object(agent, "_run_with_retry") as mock_run:
             mock_result = mock.Mock(spec=["output"])
@@ -533,7 +533,7 @@ class TestNotebookAssistantAgent:
 
     @pytest.mark.asyncio
     async def test_process_network_error(self):
-        agent = NotebookAssistantAgent(self.deps, history_id=1)
+        agent = PageAssistantAgent(self.deps, history_id=1)
 
         with mock.patch.object(agent, "_run_with_retry", side_effect=OSError("Connection refused")):
             response = await agent.process("Help me edit this")
@@ -554,7 +554,7 @@ class TestNotebookAssistantAgent:
 
     def test_simple_prompt_fallback(self):
         self.mock_config.ai_model = "deepseek-r1"
-        agent = NotebookAssistantAgent(self.deps, history_id=1, notebook_content="# Test doc")
+        agent = PageAssistantAgent(self.deps, history_id=1, page_content="# Test doc")
         prompt = agent._get_simple_system_prompt()
         assert "EDIT_MODE:" in prompt
         assert "# Test doc" in prompt

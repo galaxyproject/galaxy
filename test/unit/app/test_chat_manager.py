@@ -1,4 +1,4 @@
-"""Unit tests for ChatManager notebook-scoped methods."""
+"""Unit tests for ChatManager page-scoped methods."""
 
 import json
 from unittest import mock
@@ -22,13 +22,13 @@ class _FakeChatExchange:
 
     user_id = mock.Mock()
     job_id = mock.Mock()
-    notebook_id = mock.Mock()
+    page_id = mock.Mock()
     id = mock.Mock()
 
-    def __init__(self, user=None, job_id=None, notebook_id=None, message=None, **kw):
+    def __init__(self, user=None, job_id=None, page_id=None, message=None, **kw):
         self.user = user
         self.job_id = job_id
-        self.notebook_id = notebook_id
+        self.page_id = page_id
         self.messages = []
         if message:
             self.add_message(message)
@@ -60,21 +60,21 @@ def _patch_models(monkeypatch):
     monkeypatch.setattr("galaxy.managers.chat.select", _chainable_select)
 
 
-class TestCreateNotebookChat:
-    def test_creates_exchange_with_notebook_id(self):
+class TestCreatePageChat:
+    def test_creates_exchange_with_page_id(self):
         mgr = ChatManager()
         trans = _make_trans()
 
-        exchange = mgr.create_notebook_chat(trans, notebook_id=42, query="Describe the datasets", response_data="OK")
+        exchange = mgr.create_page_chat(trans, page_id=42, query="Describe the datasets", response_data="OK")
 
-        assert exchange.notebook_id == 42
+        assert exchange.page_id == 42
         assert exchange.job_id is None
         assert len(exchange.messages) == 1
 
         msg_data = json.loads(exchange.messages[0].message)
         assert msg_data["query"] == "Describe the datasets"
         assert msg_data["response"] == "OK"
-        assert msg_data["agent_type"] == "notebook_assistant"
+        assert msg_data["agent_type"] == "page_assistant"
 
         trans.sa_session.add.assert_called()
         trans.sa_session.commit.assert_called_once()
@@ -84,7 +84,7 @@ class TestCreateNotebookChat:
         trans = _make_trans()
 
         response = {"response": "I see 3 datasets", "agent_response": {"edit_mode": "section_patch"}}
-        exchange = mgr.create_notebook_chat(trans, notebook_id=7, query="What's here?", response_data=response)
+        exchange = mgr.create_page_chat(trans, page_id=7, query="What's here?", response_data=response)
 
         msg_data = json.loads(exchange.messages[0].message)
         assert msg_data["response"] == "I see 3 datasets"
@@ -94,30 +94,28 @@ class TestCreateNotebookChat:
         mgr = ChatManager()
         trans = _make_trans()
 
-        exchange = mgr.create_notebook_chat(trans, notebook_id=1, query="hi", response_data="hello")
+        exchange = mgr.create_page_chat(trans, page_id=1, query="hi", response_data="hello")
         msg_data = json.loads(exchange.messages[0].message)
-        assert msg_data["agent_type"] == "notebook_assistant"
+        assert msg_data["agent_type"] == "page_assistant"
 
     def test_custom_agent_type(self):
         mgr = ChatManager()
         trans = _make_trans()
 
-        exchange = mgr.create_notebook_chat(
-            trans, notebook_id=1, query="hi", response_data="hello", agent_type="custom"
-        )
+        exchange = mgr.create_page_chat(trans, page_id=1, query="hi", response_data="hello", agent_type="custom")
         msg_data = json.loads(exchange.messages[0].message)
         assert msg_data["agent_type"] == "custom"
 
 
-class TestGetNotebookChatHistory:
-    def test_queries_by_notebook_id(self):
+class TestGetPageChatHistory:
+    def test_queries_by_page_id(self):
         mgr = ChatManager()
         trans = _make_trans()
 
         mock_exchange = mock.Mock()
         trans.sa_session.execute.return_value.scalars.return_value.all.return_value = [mock_exchange]
 
-        result = mgr.get_notebook_chat_history(trans, notebook_id=42)
+        result = mgr.get_page_chat_history(trans, page_id=42)
 
         assert result == [mock_exchange]
         trans.sa_session.execute.assert_called_once()
@@ -127,12 +125,12 @@ class TestGetNotebookChatHistory:
         trans = _make_trans()
         trans.sa_session.execute.return_value.scalars.return_value.all.return_value = []
 
-        result = mgr.get_notebook_chat_history(trans, notebook_id=99)
+        result = mgr.get_page_chat_history(trans, page_id=99)
         assert result == []
 
 
-class TestGetUserChatHistoryExcludesNotebook:
-    def test_excludes_notebook_chats_by_default(self):
+class TestGetUserChatHistoryExcludesPage:
+    def test_excludes_page_chats_by_default(self):
         mgr = ChatManager()
         trans = _make_trans()
         trans.sa_session.execute.return_value.scalars.return_value.all.return_value = []
@@ -141,11 +139,11 @@ class TestGetUserChatHistoryExcludesNotebook:
 
         trans.sa_session.execute.assert_called_once()
 
-    def test_includes_notebook_chats_when_asked(self):
+    def test_includes_page_chats_when_asked(self):
         mgr = ChatManager()
         trans = _make_trans()
         trans.sa_session.execute.return_value.scalars.return_value.all.return_value = []
 
-        mgr.get_user_chat_history(trans, include_notebook_chats=True)
+        mgr.get_user_chat_history(trans, include_page_chats=True)
 
         trans.sa_session.execute.assert_called_once()
