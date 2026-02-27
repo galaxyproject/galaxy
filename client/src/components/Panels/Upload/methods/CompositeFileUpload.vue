@@ -182,7 +182,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                 <!-- Dataset name -->
                 <div class="d-flex flex-column">
-                    <label for="composite-dataset-name" class="font-weight-bold mb-1"> Dataset Name </label>
+                    <label for="composite-dataset-name" class="font-weight-bold mb-1">
+                        Dataset Name
+                        <small class="text-muted ml-1">(optional)</small>
+                    </label>
                     <GFormInput
                         id="composite-dataset-name"
                         class="form-control"
@@ -194,7 +197,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                 <!-- DB key / Reference -->
                 <div class="d-flex flex-column">
-                    <label class="font-weight-bold mb-1 d-block" for="composite-dbkey"> Reference (dbkey) </label>
+                    <label class="font-weight-bold mb-1 d-block" for="composite-dbkey">
+                        Reference
+                        <small class="text-muted ml-1">(optional)</small>
+                    </label>
                     <UploadTableDbKeyCell
                         id="composite-dbkey"
                         :value="currentItem?.dbkey ?? defaultDbKey"
