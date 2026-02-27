@@ -49,9 +49,26 @@ async function loadHistory() {
     }
 }
 
-function handleItemClick(item: ChatHistoryItem) {
+const lastClickedIndex = ref<number | null>(null);
+
+function handleItemClick(item: ChatHistoryItem, event: MouseEvent) {
     if (selectionMode.value) {
-        toggleSelection(item.id);
+        const currentIndex = chatHistory.value.findIndex((i) => i.id === item.id);
+        if (event.shiftKey && lastClickedIndex.value !== null) {
+            const start = Math.min(lastClickedIndex.value, currentIndex);
+            const end = Math.max(lastClickedIndex.value, currentIndex);
+            const next = new Set(selectedIds.value);
+            for (let i = start; i <= end; i++) {
+                const id = chatHistory.value[i]?.id;
+                if (id) {
+                    next.add(id);
+                }
+            }
+            selectedIds.value = next;
+        } else {
+            toggleSelection(item.id);
+        }
+        lastClickedIndex.value = currentIndex;
     } else {
         router.push(`/chatgxy/${item.id}`);
     }
@@ -148,7 +165,7 @@ async function deleteSelected() {
                     :key="item.id"
                     class="history-item"
                     :class="{ selected: selectedIds.has(item.id) }"
-                    @click="handleItemClick(item)">
+                    @click="handleItemClick(item, $event)">
                     <div class="history-row">
                         <span v-if="selectionMode" class="history-checkbox">
                             <FontAwesomeIcon :icon="selectedIds.has(item.id) ? faCheckSquare : faSquare" fixed-width />
