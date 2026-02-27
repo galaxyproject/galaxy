@@ -28,7 +28,7 @@ const markdownConfig = computed(() => ({
 </script>
 
 <template>
-    <div class="notebook-revision-view d-flex flex-column h-100" data-description="page revision view">
+    <div class="page-revision-view d-flex flex-column h-100" data-description="page revision view">
         <div class="revision-view-toolbar d-flex align-items-center p-2 border-bottom">
             <BButton variant="link" size="sm" data-description="revision back button" @click="emit('back')">
                 <FontAwesomeIcon :icon="faArrowLeft" />

@@ -37,7 +37,7 @@ function formatDate(dateStr: string): string {
 </script>
 
 <template>
-    <div class="notebook-revision-list" data-description="page revision list">
+    <div class="page-revision-list" data-description="page revision list">
         <div v-if="isLoading" class="text-center p-3" data-description="revision list loading">
             <FontAwesomeIcon :icon="faSpinner" spin />
             Loading revisions...
@@ -80,7 +80,7 @@ function formatDate(dateStr: string): string {
     background: var(--gray-200);
     cursor: pointer;
 }
-.notebook-revision-list {
+.page-revision-list {
     max-height: 100%;
     overflow-y: auto;
 }

@@ -48,7 +48,7 @@ onBeforeUnmount(() => {
 <template>
     <div
         ref="containerRef"
-        class="notebook-split-view"
+        class="editor-split-view"
         :class="{ 'is-dragging': dragging }"
         data-description="editor split view">
         <div class="split-pane editor-pane" :style="{ flexBasis: splitPercent + '%' }">
@@ -64,14 +64,14 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.notebook-split-view {
+.editor-split-view {
     display: flex;
     flex: 1;
     overflow: hidden;
     min-height: 0;
 }
 
-.notebook-split-view.is-dragging {
+.editor-split-view.is-dragging {
     cursor: col-resize;
     user-select: none;
 }
