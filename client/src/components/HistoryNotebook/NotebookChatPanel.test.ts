@@ -5,7 +5,7 @@ import flushPromises from "flush-promises";
 import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useHistoryNotebookStore } from "@/stores/historyNotebookStore";
+import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import NotebookChatPanel from "./NotebookChatPanel.vue";
 import ChatInput from "@/components/ChatGXY/ChatInput.vue";
@@ -250,7 +250,7 @@ describe("NotebookChatPanel", () => {
 
     describe("Store integration", () => {
         it("does not call store methods on mount", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             mountComponent();
             await flushPromises();
 
@@ -267,7 +267,7 @@ describe("NotebookChatPanel", () => {
             });
             const wrapper = mountComponent();
             await flushPromises();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
 
             const textarea = wrapper.find("textarea");
             await textarea.setValue("hello");
@@ -280,7 +280,7 @@ describe("NotebookChatPanel", () => {
         it("clears stored exchange ID on new conversation", async () => {
             const wrapper = mountComponent();
             await flushPromises();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
 
             await wrapper.find('[data-description="new conversation button"]').trigger("click");
             await flushPromises();
@@ -289,7 +289,7 @@ describe("NotebookChatPanel", () => {
         });
 
         it("checks store for cached exchange ID on mount", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             vi.mocked(store.getCurrentChatExchangeId).mockReturnValue(55);
             // Mock the exchange messages load
             mockGET.mockResolvedValue({
@@ -310,7 +310,7 @@ describe("NotebookChatPanel", () => {
         });
 
         it("falls back to API when stored exchange ID returns empty messages", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             vi.mocked(store.getCurrentChatExchangeId).mockReturnValue(999);
             // All GET calls return empty — stored exchange has no messages, no notebook history
             mockGET.mockResolvedValue({ data: [], error: null });

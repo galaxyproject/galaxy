@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { useServerMock } from "@/api/client/__mocks__";
 import type { HistoryPageDetails, HistoryPageSummary } from "@/api/pages";
 
-import { useHistoryNotebookStore } from "./historyNotebookStore";
+import { usePageEditorStore } from "./pageEditorStore";
 
 const TEST_HISTORY_ID = "abc123historyid";
 const TEST_PAGE_ID = "def456pageid";
@@ -62,48 +62,48 @@ function useDefaultHandlers() {
     );
 }
 
-describe("useHistoryNotebookStore", () => {
+describe("usePageEditorStore", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
     });
 
     describe("computed properties", () => {
         it("hasNotebooks is false when empty", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             expect(store.hasNotebooks).toBe(false);
         });
 
         it("hasNotebooks is true when notebooks exist", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.notebooks = [TEST_PAGE_SUMMARY];
             expect(store.hasNotebooks).toBe(true);
         });
 
         it("hasCurrentNotebook is false when null", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             expect(store.hasCurrentNotebook).toBe(false);
         });
 
         it("hasCurrentNotebook is true when set", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.currentNotebook = TEST_PAGE_DETAILS;
             expect(store.hasCurrentNotebook).toBe(true);
         });
 
         it("isDirty is false initially", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             expect(store.isDirty).toBe(false);
         });
 
         it("isDirty is true when content changed", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.updateContent("new content");
             expect(store.isDirty).toBe(true);
         });
 
         it("isDirty is false when content reverted to original", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             await store.loadNotebook(TEST_PAGE_ID);
             const originalContent = store.currentContent;
@@ -116,7 +116,7 @@ describe("useHistoryNotebookStore", () => {
         });
 
         it("canSave is true only when dirty and not saving", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             expect(store.canSave).toBe(false);
 
             store.updateContent("changed");
@@ -124,7 +124,7 @@ describe("useHistoryNotebookStore", () => {
         });
 
         it("canSave is false when dirty but saving", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.updateContent("changed");
             store.$patch({ isSaving: true });
             expect(store.isDirty).toBe(true);
@@ -135,7 +135,7 @@ describe("useHistoryNotebookStore", () => {
     describe("loadNotebooks", () => {
         it("sets historyId and populates notebooks on success", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
 
             await store.loadNotebooks(TEST_HISTORY_ID);
 
@@ -145,7 +145,7 @@ describe("useHistoryNotebookStore", () => {
 
         it("sets isLoadingList during load", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
 
             const promise = store.loadNotebooks(TEST_HISTORY_ID);
             expect(store.isLoadingList).toBe(true);
@@ -160,7 +160,7 @@ describe("useHistoryNotebookStore", () => {
                     return response("4XX").json({ err_msg: "History not found", err_code: 404 }, { status: 404 });
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
 
             await store.loadNotebooks(TEST_HISTORY_ID);
 
@@ -174,7 +174,7 @@ describe("useHistoryNotebookStore", () => {
                     return response("4XX").json({ err_msg: "History not found", err_code: 404 }, { status: 404 });
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
 
             await store.loadNotebooks(TEST_HISTORY_ID);
             expect(store.error).toBeTruthy();
@@ -192,7 +192,7 @@ describe("useHistoryNotebookStore", () => {
 
     describe("loadNotebook", () => {
         it("returns early if no historyId", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
 
             await store.loadNotebook(TEST_PAGE_ID);
 
@@ -202,7 +202,7 @@ describe("useHistoryNotebookStore", () => {
 
         it("populates currentNotebook and content on success", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
 
             await store.loadNotebook(TEST_PAGE_ID);
@@ -214,7 +214,7 @@ describe("useHistoryNotebookStore", () => {
 
         it("sets originalContent to match currentContent", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
 
             await store.loadNotebook(TEST_PAGE_ID);
@@ -224,7 +224,7 @@ describe("useHistoryNotebookStore", () => {
 
         it("sets isLoadingNotebook during load", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
 
             const promise = store.loadNotebook(TEST_PAGE_ID);
@@ -240,7 +240,7 @@ describe("useHistoryNotebookStore", () => {
                     return response("4XX").json({ err_msg: "Page not found", err_code: 404 }, { status: 404 });
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
 
             await store.loadNotebook(TEST_PAGE_ID);
@@ -252,7 +252,7 @@ describe("useHistoryNotebookStore", () => {
 
     describe("createNotebook", () => {
         it("returns null if no historyId", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
 
             const result = await store.createNotebook();
 
@@ -261,7 +261,7 @@ describe("useHistoryNotebookStore", () => {
 
         it("creates page, sets as current, refreshes list", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
 
             const result = await store.createNotebook({ title: "New Page" });
@@ -276,7 +276,7 @@ describe("useHistoryNotebookStore", () => {
 
         it("sets isLoadingNotebook during creation", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
 
             const promise = store.createNotebook();
@@ -292,7 +292,7 @@ describe("useHistoryNotebookStore", () => {
                     return response("4XX").json({ err_msg: "Cannot create page", err_code: 400 }, { status: 400 });
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
 
             await expect(store.createNotebook()).rejects.toThrow();
@@ -309,7 +309,7 @@ describe("useHistoryNotebookStore", () => {
                     return response(200).json(modifiedDetails);
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             store.currentNotebook = TEST_PAGE_DETAILS;
 
@@ -321,7 +321,7 @@ describe("useHistoryNotebookStore", () => {
         });
 
         it("does nothing if no currentNotebook", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             store.updateContent("dirty");
 
@@ -332,8 +332,18 @@ describe("useHistoryNotebookStore", () => {
             expect(store.currentNotebook).toBeNull();
         });
 
-        it("does nothing if no historyId", async () => {
-            const store = useHistoryNotebookStore();
+        it("saves in standalone mode without historyId", async () => {
+            server.use(
+                http.put("/api/pages/:id", ({ response }) => {
+                    return response(200).json({
+                        ...TEST_PAGE_DETAILS,
+                        content: "dirty",
+                        edit_source: "user",
+                    });
+                }) as any,
+            );
+            const store = usePageEditorStore();
+            store.mode = "standalone";
             store.currentNotebook = TEST_PAGE_DETAILS;
             store.updateContent("dirty");
 
@@ -357,7 +367,7 @@ describe("useHistoryNotebookStore", () => {
                     return response(200).json(updatedDetails);
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             await store.loadNotebook(TEST_PAGE_ID);
             expect(store.isDirty).toBe(false);
@@ -380,7 +390,7 @@ describe("useHistoryNotebookStore", () => {
                     return response(200).json(TEST_PAGE_DETAILS);
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             await store.loadNotebook(TEST_PAGE_ID);
             store.updateContent("new content");
@@ -401,7 +411,7 @@ describe("useHistoryNotebookStore", () => {
                     return response("4XX").json({ err_msg: "Page is deleted", err_code: 400 }, { status: 400 });
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             await store.loadNotebook(TEST_PAGE_ID);
             store.updateContent("new content");
@@ -414,7 +424,7 @@ describe("useHistoryNotebookStore", () => {
 
     describe("deleteCurrentNotebook", () => {
         it("does nothing if no currentNotebook", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
 
             await store.deleteCurrentNotebook();
@@ -423,7 +433,7 @@ describe("useHistoryNotebookStore", () => {
         });
 
         it("does nothing if no historyId", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.currentNotebook = TEST_PAGE_DETAILS;
 
             await store.deleteCurrentNotebook();
@@ -443,7 +453,7 @@ describe("useHistoryNotebookStore", () => {
                     return response(204).empty();
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             await store.loadNotebook(TEST_PAGE_ID);
             expect(store.currentNotebook).not.toBeNull();
@@ -469,7 +479,7 @@ describe("useHistoryNotebookStore", () => {
                     return response("4XX").json({ err_msg: "Page not found", err_code: 404 }, { status: 404 });
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             store.currentNotebook = TEST_PAGE_DETAILS;
 
@@ -481,7 +491,7 @@ describe("useHistoryNotebookStore", () => {
     describe("resolveCurrentNotebook", () => {
         it("returns stored ID when page still exists", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.setCurrentNotebookId(TEST_HISTORY_ID, TEST_PAGE_ID);
 
             const result = await store.resolveCurrentNotebook(TEST_HISTORY_ID);
@@ -504,7 +514,7 @@ describe("useHistoryNotebookStore", () => {
                     return response(200).json([older, newer]);
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
 
             const result = await store.resolveCurrentNotebook(TEST_HISTORY_ID);
             expect(result).toBe("newer-page");
@@ -524,7 +534,7 @@ describe("useHistoryNotebookStore", () => {
                     return response(200).json(createdPage);
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
 
             const result = await store.resolveCurrentNotebook(TEST_HISTORY_ID);
             expect(result).toBe("created-page");
@@ -541,7 +551,7 @@ describe("useHistoryNotebookStore", () => {
                     return response(200).json([freshPage]);
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.setCurrentNotebookId(TEST_HISTORY_ID, "deleted-page");
 
             const result = await store.resolveCurrentNotebook(TEST_HISTORY_ID);
@@ -553,7 +563,7 @@ describe("useHistoryNotebookStore", () => {
     describe("currentNotebookId tracking", () => {
         it("loadNotebook updates stored current ID", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
 
             await store.loadNotebook(TEST_PAGE_ID);
@@ -573,7 +583,7 @@ describe("useHistoryNotebookStore", () => {
                     return response(204).empty();
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             await store.loadNotebook(TEST_PAGE_ID);
             expect(store.getCurrentNotebookId(TEST_HISTORY_ID)).toBe(TEST_PAGE_ID);
@@ -584,7 +594,7 @@ describe("useHistoryNotebookStore", () => {
         });
 
         it("setCurrentNotebookId and clearCurrentNotebookId work correctly", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
 
             store.setCurrentNotebookId("h1", "p1");
             store.setCurrentNotebookId("h2", "p2");
@@ -601,7 +611,7 @@ describe("useHistoryNotebookStore", () => {
 
     describe("panel toggle mutual exclusion", () => {
         it("toggleChatPanel opens and closes chat", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             expect(store.showChatPanel).toBe(false);
 
             store.toggleChatPanel();
@@ -612,7 +622,7 @@ describe("useHistoryNotebookStore", () => {
         });
 
         it("toggleChatPanel closes revisions and clears selectedRevision when opening chat", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ showRevisions: true });
             store.selectedRevision = {
                 id: "rev-1",
@@ -632,7 +642,7 @@ describe("useHistoryNotebookStore", () => {
         });
 
         it("toggleChatPanel does not touch revisions when closing chat", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ showChatPanel: true, showRevisions: false });
 
             store.toggleChatPanel();
@@ -643,7 +653,7 @@ describe("useHistoryNotebookStore", () => {
 
         it("toggleRevisions closes chat when opening revisions", () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID, showChatPanel: true });
             store.currentNotebook = TEST_PAGE_DETAILS;
 
@@ -654,7 +664,7 @@ describe("useHistoryNotebookStore", () => {
         });
 
         it("toggleRevisions does not touch chat when closing revisions", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ showRevisions: true, showChatPanel: false });
 
             store.toggleRevisions();
@@ -664,7 +674,7 @@ describe("useHistoryNotebookStore", () => {
         });
 
         it("$reset clears showChatPanel", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ showChatPanel: true });
 
             store.$reset();
@@ -673,7 +683,7 @@ describe("useHistoryNotebookStore", () => {
         });
 
         it("clearCurrentNotebook clears showChatPanel", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ showChatPanel: true });
 
             store.clearCurrentNotebook();
@@ -684,7 +694,7 @@ describe("useHistoryNotebookStore", () => {
 
     describe("chat exchange persistence", () => {
         it("get/set/clear exchange ID", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
 
             expect(store.getCurrentChatExchangeId("p-1")).toBeNull();
 
@@ -700,7 +710,7 @@ describe("useHistoryNotebookStore", () => {
         });
 
         it("setCurrentChatExchangeId with null stores null", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.setCurrentChatExchangeId("p-1", 42);
             store.setCurrentChatExchangeId("p-1", null);
             expect(store.getCurrentChatExchangeId("p-1")).toBeNull();
@@ -708,7 +718,7 @@ describe("useHistoryNotebookStore", () => {
 
         it("clearCurrentNotebook clears chat exchange ID", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             await store.loadNotebook(TEST_PAGE_ID);
             store.setCurrentChatExchangeId(TEST_PAGE_ID, 55);
@@ -730,7 +740,7 @@ describe("useHistoryNotebookStore", () => {
                     return response(204).empty();
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             await store.loadNotebook(TEST_PAGE_ID);
             store.setCurrentChatExchangeId(TEST_PAGE_ID, 77);
@@ -743,13 +753,13 @@ describe("useHistoryNotebookStore", () => {
 
     describe("synchronous actions", () => {
         it("updateContent updates currentContent", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.updateContent("hello world");
             expect(store.currentContent).toBe("hello world");
         });
 
         it("updateTitle updates currentTitle", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.updateTitle("New Title");
             expect(store.currentTitle).toBe("New Title");
         });
@@ -765,7 +775,7 @@ describe("useHistoryNotebookStore", () => {
                     return response(200).json(pageWithContent);
                 }) as any,
             );
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             await store.loadNotebook(TEST_PAGE_ID);
             expect(store.currentContent).toBe("original content");
@@ -781,7 +791,7 @@ describe("useHistoryNotebookStore", () => {
 
         it("clearCurrentNotebook resets current notebook state", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             await store.loadNotebook(TEST_PAGE_ID);
             store.updateContent("modified");
@@ -797,7 +807,7 @@ describe("useHistoryNotebookStore", () => {
         });
 
         it("clearCurrentNotebook does not affect notebooks list or historyId", () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.$patch({ historyId: TEST_HISTORY_ID });
             store.notebooks = [TEST_PAGE_SUMMARY];
             store.currentNotebook = TEST_PAGE_DETAILS;
@@ -808,9 +818,10 @@ describe("useHistoryNotebookStore", () => {
             expect(store.notebooks).toEqual([TEST_PAGE_SUMMARY]);
         });
 
-        it("$reset resets all state", async () => {
+        it("$reset resets all state including mode", async () => {
             useDefaultHandlers();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
+            store.mode = "standalone";
             await store.loadNotebooks(TEST_HISTORY_ID);
             await store.loadNotebook(TEST_PAGE_ID);
             store.updateContent("modified");
@@ -822,6 +833,7 @@ describe("useHistoryNotebookStore", () => {
 
             store.$reset();
 
+            expect(store.mode).toBe("history");
             expect(store.notebooks).toEqual([]);
             expect(store.currentNotebook).toBeNull();
             expect(store.currentContent).toBe("");
@@ -832,6 +844,47 @@ describe("useHistoryNotebookStore", () => {
             expect(store.isSaving).toBe(false);
             expect(store.error).toBeNull();
             expect(store.historyId).toBeNull();
+        });
+    });
+
+    describe("standalone mode", () => {
+        const STANDALONE_PAGE: HistoryPageDetails = {
+            ...TEST_PAGE_DETAILS,
+            history_id: null,
+        };
+
+        it("loadPage loads a standalone page without historyId", async () => {
+            server.use(
+                http.get("/api/pages/:id", ({ response }) => {
+                    return response(200).json(STANDALONE_PAGE);
+                }) as any,
+            );
+            const store = usePageEditorStore();
+            store.mode = "standalone";
+
+            await store.loadPage(TEST_PAGE_ID);
+
+            expect(store.currentNotebook).toEqual(STANDALONE_PAGE);
+            expect(store.currentContent).toBe(STANDALONE_PAGE.content_editor);
+            expect(store.historyId).toBeNull();
+        });
+
+        it("saveNotebook in standalone mode defaults edit_source to user", async () => {
+            let capturedBody: any = null;
+            server.use(
+                http.put("/api/pages/:id", async ({ request, response }) => {
+                    capturedBody = await request.json();
+                    return response(200).json(STANDALONE_PAGE);
+                }) as any,
+            );
+            const store = usePageEditorStore();
+            store.mode = "standalone";
+            store.currentNotebook = STANDALONE_PAGE;
+            store.updateContent("new content");
+
+            await store.saveNotebook();
+
+            expect(capturedBody.edit_source).toBe("user");
         });
     });
 });

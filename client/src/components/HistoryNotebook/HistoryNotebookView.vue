@@ -16,8 +16,8 @@ import { useRouter } from "vue-router/composables";
 import { getGalaxyInstance } from "@/app";
 import type { RouterPushOptions } from "@/components/History/Content/router-push-options";
 import { useConfig } from "@/composables/config";
-import { useHistoryNotebookStore } from "@/stores/historyNotebookStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import HistoryNotebookEditor from "./HistoryNotebookEditor.vue";
 import HistoryNotebookList from "./HistoryNotebookList.vue";
@@ -35,7 +35,7 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const store = useHistoryNotebookStore();
+const store = usePageEditorStore();
 const historyStore = useHistoryStore();
 const { config } = useConfig();
 

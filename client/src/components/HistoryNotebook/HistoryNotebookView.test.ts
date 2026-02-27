@@ -6,7 +6,7 @@ import type { Pinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
-import { useHistoryNotebookStore } from "@/stores/historyNotebookStore";
+import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import HistoryNotebookEditor from "./HistoryNotebookEditor.vue";
 import HistoryNotebookList from "./HistoryNotebookList.vue";
@@ -85,7 +85,7 @@ function mountComponent(propsData: { historyId: string; pageId?: string; display
 }
 
 function setupListViewStore(notebooks: any[] = []) {
-    const store = useHistoryNotebookStore();
+    const store = usePageEditorStore();
     store.isLoadingList = false;
     store.error = null;
     store.notebooks = notebooks as any;
@@ -105,7 +105,7 @@ describe("HistoryNotebookView", () => {
 
     describe("Loading state", () => {
         it("shows loading alert when isLoadingList is true", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.isLoadingList = true;
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
@@ -116,7 +116,7 @@ describe("HistoryNotebookView", () => {
         });
 
         it("shows loading alert when isLoadingNotebook is true and notebookId provided", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.isLoadingList = false;
             store.isLoadingNotebook = true;
             // hasCurrentNotebook is a computed - set currentNotebook to null so
@@ -133,7 +133,7 @@ describe("HistoryNotebookView", () => {
 
     describe("Error state", () => {
         it("shows error alert when store.error is set", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.isLoadingList = false;
             store.error = "Something went wrong";
             const wrapper = mountComponent({ historyId: HISTORY_ID });
@@ -169,10 +169,10 @@ describe("HistoryNotebookView", () => {
 
     describe("Editor view (with notebookId and current notebook loaded)", () => {
         let wrapper: Wrapper<Vue>;
-        let store: ReturnType<typeof useHistoryNotebookStore>;
+        let store: ReturnType<typeof usePageEditorStore>;
 
         beforeEach(async () => {
-            store = useHistoryNotebookStore();
+            store = usePageEditorStore();
             store.isLoadingList = false;
             store.isLoadingNotebook = false;
             store.error = null;
@@ -343,7 +343,7 @@ describe("HistoryNotebookView", () => {
 
     describe("DisplayOnly mode", () => {
         function setupLoadedNotebook() {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.isLoadingList = false;
             store.isLoadingNotebook = false;
             store.error = null;
@@ -423,7 +423,7 @@ describe("HistoryNotebookView", () => {
 
         it("does not call store.$reset on unmount in displayOnly mode", async () => {
             setupLoadedNotebook();
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             const wrapper = mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID, displayOnly: true });
             await flushPromises();
 
@@ -456,7 +456,7 @@ describe("HistoryNotebookView", () => {
 
     describe("Lifecycle", () => {
         it("calls store.loadNotebooks on mount", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
@@ -464,7 +464,7 @@ describe("HistoryNotebookView", () => {
         });
 
         it("calls store.loadNotebook on mount if notebookId provided", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             mountComponent({ historyId: HISTORY_ID, pageId: PAGE_ID });
             await flushPromises();
 
@@ -472,7 +472,7 @@ describe("HistoryNotebookView", () => {
         });
 
         it("does not call store.loadNotebook on mount when no notebookId", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
@@ -480,7 +480,7 @@ describe("HistoryNotebookView", () => {
         });
 
         it("calls store.$reset on unmount", async () => {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             const wrapper = mountComponent({ historyId: HISTORY_ID });
             await flushPromises();
 
@@ -491,7 +491,7 @@ describe("HistoryNotebookView", () => {
 
     describe("Revision UI", () => {
         function setupEditorView() {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.isLoadingList = false;
             store.isLoadingNotebook = false;
             store.error = null;
@@ -641,7 +641,7 @@ describe("HistoryNotebookView", () => {
 
     describe("Chat Panel", () => {
         function setupEditorView() {
-            const store = useHistoryNotebookStore();
+            const store = usePageEditorStore();
             store.isLoadingList = false;
             store.isLoadingNotebook = false;
             store.error = null;

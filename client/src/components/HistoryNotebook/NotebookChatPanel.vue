@@ -14,7 +14,7 @@ import type { ChatMessage } from "@/components/ChatGXY/chatTypes";
 import { generateId, scrollToBottom } from "@/components/ChatGXY/chatUtils";
 import { type AgentResponse, type EditProposal, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
-import { useHistoryNotebookStore } from "@/stores/historyNotebookStore";
+import { usePageEditorStore } from "@/stores/pageEditorStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { applySectionEdit } from "./sectionDiffUtils";
@@ -33,7 +33,7 @@ const props = defineProps<{
 
 const AGENT_TYPE = "notebook_assistant";
 
-const store = useHistoryNotebookStore();
+const store = usePageEditorStore();
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 const { processingAction, handleAction } = useAgentActions();
 

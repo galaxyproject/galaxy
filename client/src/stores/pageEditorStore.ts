@@ -19,7 +19,10 @@ import {
 } from "@/api/pages";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
-export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
+export type PageEditorMode = "history" | "standalone";
+
+export const usePageEditorStore = defineStore("pageEditor", () => {
+    const mode = ref<PageEditorMode>("history");
     const notebooks = ref<HistoryPageSummary[]>([]);
     const currentNotebook = ref<HistoryPageDetails | null>(null);
     const originalContent = ref("");
@@ -77,7 +80,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
     }
 
     async function loadNotebook(pageId: string) {
-        if (!historyId.value) {
+        if (mode.value === "history" && !historyId.value) {
             return;
         }
         isLoadingNotebook.value = true;
@@ -91,12 +94,19 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
             currentContent.value = editorContent;
             originalTitle.value = data.title || "";
             currentTitle.value = data.title || "";
-            setCurrentNotebookId(historyId.value, pageId);
+            if (historyId.value) {
+                setCurrentNotebookId(historyId.value, pageId);
+            }
         } catch (e: any) {
             error.value = e.message || "Failed to load page";
         } finally {
             isLoadingNotebook.value = false;
         }
+    }
+
+    /** Load any page by ID — works in both history and standalone modes. */
+    async function loadPage(pageId: string) {
+        return loadNotebook(pageId);
     }
 
     async function createNotebook(payload?: Partial<CreateHistoryPagePayload>): Promise<HistoryPageDetails | null> {
@@ -129,8 +139,12 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
     }
 
     async function saveNotebook(editSource?: string) {
-        if (!historyId.value || !currentNotebook.value || !isDirty.value) {
+        if (!currentNotebook.value || !isDirty.value) {
             return;
+        }
+        // In standalone mode, default edit_source to "user"
+        if (mode.value === "standalone" && editSource === undefined) {
+            editSource = "user";
         }
         isSaving.value = true;
         error.value = null;
@@ -301,7 +315,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
     // --- Revision actions ---
 
     async function loadRevisions() {
-        if (!historyId.value || !currentNotebook.value) {
+        if (!currentNotebook.value) {
             return;
         }
         isLoadingRevisions.value = true;
@@ -315,7 +329,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
     }
 
     async function loadRevision(revisionId: string) {
-        if (!historyId.value || !currentNotebook.value) {
+        if (!currentNotebook.value) {
             return;
         }
         isLoadingRevision.value = true;
@@ -329,7 +343,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
     }
 
     async function restoreRevision(revisionId: string) {
-        if (!historyId.value || !currentNotebook.value) {
+        if (!currentNotebook.value) {
             return;
         }
         isReverting.value = true;
@@ -380,6 +394,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
 
     /** Reset ephemeral state. Does NOT clear currentNotebookIds (persisted cross-session). */
     function $reset() {
+        mode.value = "history";
         notebooks.value = [];
         currentNotebook.value = null;
         originalContent.value = "";
@@ -396,6 +411,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
     }
 
     return {
+        mode,
         notebooks,
         currentNotebook,
         currentContent,
@@ -411,6 +427,7 @@ export const useHistoryNotebookStore = defineStore("historyNotebook", () => {
         canSave,
         loadNotebooks,
         loadNotebook,
+        loadPage,
         createNotebook,
         saveNotebook,
         deleteCurrentNotebook,

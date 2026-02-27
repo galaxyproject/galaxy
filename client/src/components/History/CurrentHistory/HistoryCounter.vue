@@ -23,7 +23,7 @@ import type { RouterPushOptions } from "@/components/History/Content/router-push
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
 import { useToast } from "@/composables/toast";
-import { useHistoryNotebookStore } from "@/stores/historyNotebookStore";
+import { usePageEditorStore } from "@/stores/pageEditorStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
@@ -119,7 +119,7 @@ async function reloadContents() {
 const isResolvingNotebook = ref(false);
 
 async function navigateToCurrentNotebook() {
-    const notebookStore = useHistoryNotebookStore();
+    const notebookStore = usePageEditorStore();
     const toast = useToast();
     isResolvingNotebook.value = true;
     try {
