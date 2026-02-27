@@ -92,21 +92,6 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
         ],
         component: defineAsyncComponent(() => import("./methods/DataLibraryUpload.vue")),
     },
-    "explore-zip": {
-        id: "explore-zip",
-        name: "Explore Compressed Zip Archive",
-        description: "Browse and select files directly from a compressed zip archive either locally or remotely",
-        icon: faFileArchive,
-        headerAction: "Extract from Archive",
-        requiresTargetHistory: true,
-        showStartButton: false,
-        tips: [
-            "Browse the contents of a ZIP archive before importing files",
-            "Select only the files you need — you don't have to extract the entire archive",
-            "Works with both local ZIP files and remote ZIP URLs. The remote option is useful for large archives hosted on external servers",
-        ],
-        component: defineAsyncComponent(() => import("./methods/ExploreZipUpload.vue")),
-    },
     "composite-file": {
         id: "composite-file",
         name: "Upload Composite Dataset",
@@ -123,6 +108,21 @@ export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
             "Drag a file directly onto a slot row to fill it quickly",
         ],
         component: defineAsyncComponent(() => import("./methods/CompositeFileUpload.vue")),
+    },
+    "explore-zip": {
+        id: "explore-zip",
+        name: "Explore Compressed Zip Archive",
+        description: "Browse and select files directly from a compressed zip archive either locally or remotely",
+        icon: faFileArchive,
+        headerAction: "Extract from Archive",
+        requiresTargetHistory: true,
+        showStartButton: false,
+        tips: [
+            "Browse the contents of a ZIP archive before importing files",
+            "Select only the files you need — you don't have to extract the entire archive",
+            "Works with both local ZIP files and remote ZIP URLs. The remote option is useful for large archives hosted on external servers",
+        ],
+        component: defineAsyncComponent(() => import("./methods/ExploreZipUpload.vue")),
     },
     "data-source-tools": {
         id: "data-source-tools",
