@@ -623,7 +623,12 @@ class WorkflowProgress:
                 step_id = step.id
                 if step_id not in self.inputs_by_step_id:
                     default_value = step.get_input_default_value(NO_REPLACEMENT)
-                    outputs["output"] = default_value
+                    # For optional parameter_input steps, explicitly set None to prevent
+                    # ConnectedValue placeholder from tool_state leaking through
+                    if step.type == "parameter_input" and step.input_optional and default_value is NO_REPLACEMENT:
+                        outputs["output"] = None
+                    else:
+                        outputs["output"] = default_value
                 elif self.inputs_by_step_id[step_id] is not None or "output" not in outputs:
                     outputs["output"] = self.inputs_by_step_id[step_id]
             else:
