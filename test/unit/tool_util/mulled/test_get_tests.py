@@ -1,3 +1,4 @@
+import os.path
 from unittest import SkipTest
 
 from galaxy.tool_util.deps.mulled.get_tests import (
@@ -14,6 +15,8 @@ from galaxy.tool_util.deps.mulled.get_tests import (
 )
 from galaxy.util import smart_str
 from ..util import external_dependency_management
+
+SCRIPT_DIRECTORY = os.path.dirname(__file__)
 
 TEST_RECIPE = r"""
 {% set name = "eagle" %}
@@ -99,6 +102,9 @@ def test_open_recipe_file():
 
 @external_dependency_management
 def test_get_alternative_versions():
+    local_versions = get_alternative_versions("recipes/my_recipe", "meta.yaml", recipes_path=SCRIPT_DIRECTORY)
+    assert local_versions == ["recipes/my_recipe/1.0/meta.yaml"]
+
     try:
         versions = get_alternative_versions("recipes/bioblend", "meta.yaml")
     except Exception as e:

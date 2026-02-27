@@ -477,7 +477,7 @@ def _is_of_exact_type(object: Any, target_type: Type):
 
 def acts_as_simple_path_component(value: str):
     cwd = os.getcwd()
-    abs_path = os.path.abspath(f"{cwd}/{value}")
+    abs_path = os.path.abspath(os.path.join(cwd, value))
     unaffected_by_normpath = os.path.normpath(abs_path) == abs_path
     if not unaffected_by_normpath:
         return False

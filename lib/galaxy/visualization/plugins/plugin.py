@@ -48,7 +48,7 @@ class VisualizationPlugin:
         if self.static_path:
             supported_formats = ["png", "svg"]
             for file_format in supported_formats:
-                logo_path = f".{self.static_path}/logo.{file_format}"
+                logo_path = os.path.join(f".{self.static_path}", f"logo.{file_format}")
                 if os.path.isfile(logo_path):
                     self.config["logo"] = logo_path
                     return

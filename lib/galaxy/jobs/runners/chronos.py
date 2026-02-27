@@ -273,7 +273,7 @@ class ChronosJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if not os.path.exists(job_wrapper.working_directory):
             LOGGER.error("No working directory found")
 
-        path = f"{job_wrapper.working_directory}/chronos_{job_wrapper.get_id_tag()}.sh"
+        path = os.path.join(job_wrapper.working_directory, f"chronos_{job_wrapper.get_id_tag()}.sh")
         mode = 0o755
 
         with open(path, "w", encoding="utf-8") as f:

@@ -173,7 +173,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         super().handle_galaxy_config_kwds(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
-        cls.object_store_cache_path = f"{temp_directory}/object_store_cache"
+        cls.object_store_cache_path = os.path.join(temp_directory, "object_store_cache")
         config_path = os.path.join(temp_directory, "object_store_conf.xml")
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
@@ -216,7 +216,7 @@ class BaseAzureObjectStoreIntegrationTestCase(
         cls._disable_workflow_scheduling(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
-        cls.object_store_cache_path = f"{temp_directory}/object_store_cache"
+        cls.object_store_cache_path = os.path.join(temp_directory, "object_store_cache")
         config_path = os.path.join(temp_directory, "object_store_conf.yml")
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
@@ -264,7 +264,7 @@ class BaseRucioObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         super().handle_galaxy_config_kwds(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
-        cls.object_store_cache_path = f"{temp_directory}/object_store_cache"
+        cls.object_store_cache_path = os.path.join(temp_directory, "object_store_cache")
         config_path = os.path.join(temp_directory, "object_store_conf.yml")
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
@@ -325,7 +325,7 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
         super().handle_galaxy_config_kwds(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
-        cls.object_store_cache_path = f"{temp_directory}/object_store_cache"
+        cls.object_store_cache_path = os.path.join(temp_directory, "object_store_cache")
         config_path = os.path.join(temp_directory, "object_store_conf.xml")
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"

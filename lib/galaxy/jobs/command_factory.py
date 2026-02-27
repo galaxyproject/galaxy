@@ -113,7 +113,7 @@ def build_command(
     # it should be preferred - at least if the directory exists.
     io_directory = "../metadata" if for_pulsar else "../outputs"
     commands_builder.capture_stdout_stderr(
-        f"{io_directory}/tool_stdout", f"{io_directory}/tool_stderr", stream_stdout_stderr=stream_stdout_stderr
+        join(io_directory, "tool_stdout"), join(io_directory, "tool_stderr"), stream_stdout_stderr=stream_stdout_stderr
     )
 
     # Don't need to create a separate tool working directory for Pulsar

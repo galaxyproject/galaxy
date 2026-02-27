@@ -250,7 +250,7 @@ class TestAdminsCanPasteFilePaths(BaseUploadContentConfigurationTestCase):
 
     def test_admin_path_paste_libraries(self) -> None:
         library = self.library_populator.new_private_library("pathpasteallowedlibraries")
-        path = f"{TEST_DATA_DIRECTORY}/1.txt"
+        path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
         assert os.path.exists(path)
         payload, files = self.library_populator.create_dataset_request(
             library, upload_option="upload_paths", paths=path
@@ -263,7 +263,7 @@ class TestAdminsCanPasteFilePaths(BaseUploadContentConfigurationTestCase):
 
     def test_admin_path_paste_libraries_link(self) -> None:
         library = self.library_populator.new_private_library("pathpasteallowedlibraries")
-        path = f"{TEST_DATA_DIRECTORY}/1.txt"
+        path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
         assert os.path.exists(path)
         payload, files = self.library_populator.create_dataset_request(
             library, upload_option="upload_paths", paths=path, link_data=True
