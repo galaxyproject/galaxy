@@ -32,6 +32,7 @@ from galaxy.schema.fields import (
     encode_id,
 )
 from galaxy.schema.schema import (
+    ChatExchangeBatchDeletePayload,
     ChatPayload,
     ChatResponse,
 )
@@ -319,6 +320,32 @@ class ChatAPI:
             trans.sa_session.rollback()
             log.exception("Error clearing chat history")
             return {"message": "Error clearing history"}
+
+    @router.delete("/api/chat/exchange/{exchange_id}", unstable=True)
+    def delete_exchange(
+        self,
+        exchange_id: DecodedDatabaseIdField,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> dict[str, str]:
+        """Delete a single chat exchange."""
+        if not user:
+            return {"message": "No user logged in"}
+        self.chat_manager.delete_exchange(trans, exchange_id)
+        return {"message": "Deleted"}
+
+    @router.put("/api/chat/exchanges/batch/delete", unstable=True)
+    def batch_delete_exchanges(
+        self,
+        payload: ChatExchangeBatchDeletePayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> dict[str, str]:
+        """Delete multiple chat exchanges."""
+        if not user:
+            return {"message": "No user logged in"}
+        count = self.chat_manager.delete_exchanges(trans, payload.ids)
+        return {"message": f"Deleted {count} exchanges"}
 
     @router.put("/api/chat/{job_id}/feedback", unstable=True)
     def feedback(

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faExternalLinkAlt, faMagic, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faExternalLinkAlt, faMagic, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
 import { nextTick, onMounted, ref, watch } from "vue";
@@ -317,6 +317,22 @@ function startNewChat() {
     errorMessage.value = "";
 }
 
+async function deleteCurrentChat() {
+    if (!currentChatId.value) {
+        return;
+    }
+    try {
+        const { error } = await GalaxyApi().DELETE("/api/chat/exchange/{exchange_id}", {
+            params: { path: { exchange_id: currentChatId.value } },
+        });
+        if (!error) {
+            startNewChat();
+        }
+    } catch (e) {
+        console.error("Failed to delete chat:", e);
+    }
+}
+
 function popOutToScratchbook() {
     const Galaxy = getGalaxyInstance();
     const path = currentChatId.value ? `/chatgxy/${currentChatId.value}` : "/chatgxy";
@@ -335,6 +351,13 @@ function popOutToScratchbook() {
                 <button class="btn btn-sm btn-outline-primary" title="Start New Chat" @click="startNewChat">
                     <FontAwesomeIcon :icon="faPlus" fixed-width />
                     New
+                </button>
+                <button
+                    v-if="currentChatId"
+                    class="btn btn-sm btn-outline-danger"
+                    title="Delete this conversation"
+                    @click="deleteCurrentChat">
+                    <FontAwesomeIcon :icon="faTrash" fixed-width />
                 </button>
                 <button
                     class="btn btn-sm btn-outline-primary"

@@ -3928,6 +3928,14 @@ class ChatResponse(BaseModel):
     )
 
 
+class ChatExchangeBatchDeletePayload(Model):
+    ids: list[DecodedDatabaseIdField] = Field(
+        ...,
+        title="Exchange IDs",
+        description="List of chat exchange IDs to delete.",
+    )
+
+
 class GenerateTourResponse(Model):
     use_datasets: bool = Field(
         ...,

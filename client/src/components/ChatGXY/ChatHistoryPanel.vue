@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faClock, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare, faClock, faPlus, faSquare, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
@@ -23,6 +23,10 @@ const router = useRouter();
 
 const chatHistory = ref<ChatHistoryItem[]>([]);
 const loading = ref(false);
+const selectionMode = ref(false);
+const selectedIds = ref(new Set<string>());
+
+const allSelected = computed(() => chatHistory.value.length > 0 && selectedIds.value.size === chatHistory.value.length);
 
 onMounted(() => {
     loadHistory();
@@ -44,25 +48,61 @@ async function loadHistory() {
     }
 }
 
-function selectChat(item: ChatHistoryItem) {
-    router.push(`/chatgxy/${item.id}`);
+function handleItemClick(item: ChatHistoryItem) {
+    if (selectionMode.value) {
+        toggleSelection(item.id);
+    } else {
+        router.push(`/chatgxy/${item.id}`);
+    }
+}
+
+function toggleSelectionMode() {
+    selectionMode.value = !selectionMode.value;
+    if (!selectionMode.value) {
+        selectedIds.value.clear();
+    }
+}
+
+function toggleSelection(id: string) {
+    const next = new Set(selectedIds.value);
+    if (next.has(id)) {
+        next.delete(id);
+    } else {
+        next.add(id);
+    }
+    selectedIds.value = next;
+}
+
+function toggleSelectAll() {
+    if (allSelected.value) {
+        selectedIds.value = new Set();
+    } else {
+        selectedIds.value = new Set(chatHistory.value.map((item) => item.id));
+    }
 }
 
 function startNewChat() {
     router.push("/chatgxy");
 }
 
-async function clearHistory() {
-    if (!confirm("Are you sure you want to clear your chat history?")) {
+async function deleteSelected() {
+    if (selectedIds.value.size === 0) {
         return;
     }
+    const ids = Array.from(selectedIds.value);
     try {
-        const { error } = await GalaxyApi().DELETE("/api/chat/history");
+        const { error } = await GalaxyApi().PUT("/api/chat/exchanges/batch/delete", {
+            body: { ids },
+        });
         if (!error) {
-            chatHistory.value = [];
+            chatHistory.value = chatHistory.value.filter((item) => !selectedIds.value.has(item.id));
+            selectedIds.value = new Set();
+            if (chatHistory.value.length === 0) {
+                selectionMode.value = false;
+            }
         }
     } catch (e) {
-        console.error("Failed to clear history:", e);
+        console.error("Failed to delete exchanges:", e);
     }
 }
 </script>
@@ -73,8 +113,12 @@ async function clearHistory() {
             <button class="btn btn-sm btn-outline-primary" title="New Chat" @click="startNewChat">
                 <FontAwesomeIcon :icon="faPlus" fixed-width />
             </button>
-            <button class="btn btn-sm btn-outline-danger" title="Clear History" @click="clearHistory">
-                <FontAwesomeIcon :icon="faTrash" fixed-width />
+            <button
+                class="btn btn-sm"
+                :class="selectionMode ? 'btn-outline-secondary' : 'btn-outline-danger'"
+                :title="selectionMode ? 'Cancel selection' : 'Select chats to delete'"
+                @click="toggleSelectionMode">
+                <FontAwesomeIcon :icon="selectionMode ? faTimes : faTrash" fixed-width />
             </button>
         </template>
 
@@ -84,26 +128,72 @@ async function clearHistory() {
 
         <div v-else-if="chatHistory.length === 0" class="text-muted p-3 text-center small">No chat history yet</div>
 
-        <div v-else class="history-list">
-            <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events vuejs-accessibility/no-static-element-interactions -->
-            <div v-for="item in chatHistory" :key="item.id" class="history-item" @click="selectChat(item)">
-                <div class="history-query">{{ item.query }}</div>
-                <div class="history-meta">
-                    <span class="history-agent">
-                        <FontAwesomeIcon :icon="getAgentIcon(item.agent_type)" fixed-width />
-                    </span>
-                    <span class="history-time">
-                        <FontAwesomeIcon :icon="faClock" class="mr-1" />
-                        <UtcDate :date="item.timestamp" mode="elapsed" />
-                    </span>
+        <template v-else>
+            <div v-if="selectionMode" class="selection-toolbar">
+                <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events vuejs-accessibility/no-static-element-interactions -->
+                <span class="select-all-toggle" @click="toggleSelectAll">
+                    <FontAwesomeIcon :icon="allSelected ? faCheckSquare : faSquare" fixed-width />
+                    {{ allSelected ? "Deselect all" : "Select all" }}
+                </span>
+                <button class="btn btn-sm btn-danger" :disabled="selectedIds.size === 0" @click="deleteSelected">
+                    Delete {{ selectedIds.size > 0 ? selectedIds.size : "" }}
+                </button>
+            </div>
+
+            <div class="history-list">
+                <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events vuejs-accessibility/no-static-element-interactions -->
+                <div
+                    v-for="item in chatHistory"
+                    :key="item.id"
+                    class="history-item"
+                    :class="{ selected: selectedIds.has(item.id) }"
+                    @click="handleItemClick(item)">
+                    <div class="history-row">
+                        <span v-if="selectionMode" class="history-checkbox">
+                            <FontAwesomeIcon :icon="selectedIds.has(item.id) ? faCheckSquare : faSquare" fixed-width />
+                        </span>
+                        <div class="history-content">
+                            <div class="history-query">{{ item.query }}</div>
+                            <div class="history-meta">
+                                <span class="history-agent">
+                                    <FontAwesomeIcon :icon="getAgentIcon(item.agent_type)" fixed-width />
+                                </span>
+                                <span class="history-time">
+                                    <FontAwesomeIcon :icon="faClock" class="mr-1" />
+                                    <UtcDate :date="item.timestamp" mode="elapsed" />
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        </template>
     </ActivityPanel>
 </template>
 
 <style lang="scss" scoped>
 @import "@/style/scss/theme/blue.scss";
+
+.selection-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.375rem 0.5rem;
+    border-bottom: 1px solid darken($panel-bg-color, 5%);
+    font-size: 0.75rem;
+}
+
+.select-all-toggle {
+    cursor: pointer;
+    color: $text-muted;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    &:hover {
+        color: $text-color;
+    }
+}
 
 .history-list {
     flex: 1;
@@ -119,6 +209,27 @@ async function clearHistory() {
 
     &:hover {
         background: darken($panel-bg-color, 3%);
+    }
+
+    &.selected {
+        background: rgba($brand-primary, 0.06);
+    }
+
+    .history-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.375rem;
+    }
+
+    .history-checkbox {
+        flex-shrink: 0;
+        color: $text-muted;
+        padding-top: 0.1rem;
+    }
+
+    .history-content {
+        flex: 1;
+        min-width: 0;
     }
 
     .history-query {
