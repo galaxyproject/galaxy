@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faThumbsDown, faThumbsUp, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
@@ -22,80 +22,75 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div :class="['notebook-cell', props.message.role === 'user' ? 'query-cell' : 'response-cell']">
-        <!-- Query cell (user input) -->
-        <template v-if="props.message.role === 'user'">
-            <div class="cell-label">
-                <FontAwesomeIcon :icon="faUser" fixed-width />
-                <span>Query</span>
-            </div>
-            <div class="cell-content">{{ props.message.content }}</div>
+    <div
+        :class="[
+            'exchange-entry',
+            props.message.role === 'user' ? 'entry-query' : 'entry-response',
+            { 'entry-system': props.message.isSystemMessage },
+        ]">
+        <!-- System/welcome messages -->
+        <template v-if="props.message.isSystemMessage">
+            <div class="system-notice">{{ props.message.content }}</div>
         </template>
 
-        <!-- Response cell (assistant output) -->
+        <!-- User query -->
+        <template v-else-if="props.message.role === 'user'">
+            <div class="query-text">{{ props.message.content }}</div>
+        </template>
+
+        <!-- Assistant response -->
         <template v-else>
-            <div class="cell-label">
-                <FontAwesomeIcon :icon="getAgentIcon(props.message.agentType)" fixed-width />
-                <span>{{ getAgentLabel(props.message.agentType) }}</span>
-                <span
-                    v-if="props.message.agentResponse?.metadata?.handoff_info"
-                    class="routing-badge"
-                    :title="'Routed by ' + props.message.agentResponse.metadata.handoff_info.source_agent">
-                    via Router
-                </span>
-            </div>
-            <div class="cell-content">
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <div v-html="props.renderMarkdown(props.message.content)" />
-
-                <!-- Action suggestions -->
-                <ActionCard
-                    v-if="props.message.suggestions?.length"
-                    :suggestions="props.message.suggestions"
-                    :processing-action="props.processingAction"
-                    @handle-action="
-                        (action) => emit('handle-action', action, getAgentResponseOrEmpty(props.message.agentResponse))
-                    " />
-
-                <slot name="after-content" />
-            </div>
-            <div v-if="!props.message.content.startsWith('❌') && !props.message.isSystemMessage" class="cell-footer">
-                <div class="feedback-actions">
-                    <button
-                        class="feedback-btn"
-                        :disabled="props.message.feedback !== null"
-                        :class="{ active: props.message.feedback === 'up' }"
-                        title="Helpful"
-                        @click="emit('feedback', props.message.id, 'up')">
-                        <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
-                    </button>
-                    <button
-                        class="feedback-btn"
-                        :disabled="props.message.feedback !== null"
-                        :class="{ active: props.message.feedback === 'down' }"
-                        title="Not helpful"
-                        @click="emit('feedback', props.message.id, 'down')">
-                        <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
-                    </button>
-                    <span v-if="props.message.feedback" class="feedback-text">Thanks!</span>
-                </div>
-                <div class="response-stats">
-                    <span class="stat-item" :title="'Agent: ' + getAgentLabel(props.message.agentType)">
+            <div class="response-body">
+                <div class="response-gutter">
+                    <span class="agent-indicator" :title="getAgentLabel(props.message.agentType)">
                         <FontAwesomeIcon :icon="getAgentIcon(props.message.agentType)" fixed-width />
-                        {{ getAgentLabel(props.message.agentType) }}
                     </span>
-                    <span
-                        v-if="props.message.agentResponse?.metadata?.model"
-                        class="stat-item"
-                        :title="'Model: ' + props.message.agentResponse.metadata.model">
-                        {{ formatModelName(props.message.agentResponse.metadata.model) }}
-                    </span>
-                    <span
-                        v-if="props.message.agentResponse?.metadata?.total_tokens"
-                        class="stat-item"
-                        title="Tokens used">
-                        {{ props.message.agentResponse.metadata.total_tokens }} tokens
-                    </span>
+                </div>
+                <div class="response-main">
+                    <!-- eslint-disable-next-line vue/no-v-html -->
+                    <div class="response-content" v-html="props.renderMarkdown(props.message.content)" />
+
+                    <ActionCard
+                        v-if="props.message.suggestions?.length"
+                        :suggestions="props.message.suggestions"
+                        :processing-action="props.processingAction"
+                        @handle-action="
+                            (action) =>
+                                emit('handle-action', action, getAgentResponseOrEmpty(props.message.agentResponse))
+                        " />
+
+                    <slot name="after-content" />
+
+                    <div v-if="!props.message.content.startsWith('❌')" class="response-meta">
+                        <div class="meta-left">
+                            <button
+                                class="feedback-btn"
+                                :disabled="props.message.feedback !== null"
+                                :class="{ active: props.message.feedback === 'up' }"
+                                title="Helpful"
+                                @click="emit('feedback', props.message.id, 'up')">
+                                <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
+                            </button>
+                            <button
+                                class="feedback-btn"
+                                :disabled="props.message.feedback !== null"
+                                :class="{ active: props.message.feedback === 'down' }"
+                                title="Not helpful"
+                                @click="emit('feedback', props.message.id, 'down')">
+                                <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
+                            </button>
+                            <span v-if="props.message.feedback" class="feedback-ack">Thanks!</span>
+                        </div>
+                        <div class="meta-right">
+                            <span class="meta-tag">{{ getAgentLabel(props.message.agentType) }}</span>
+                            <span v-if="props.message.agentResponse?.metadata?.model" class="meta-tag">
+                                {{ formatModelName(props.message.agentResponse.metadata.model) }}
+                            </span>
+                            <span v-if="props.message.agentResponse?.metadata?.total_tokens" class="meta-tag">
+                                {{ props.message.agentResponse.metadata.total_tokens }} tok
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </template>
@@ -105,90 +100,111 @@ const emit = defineEmits<{
 <style lang="scss" scoped>
 @import "@/style/scss/theme/blue.scss";
 
-.notebook-cell {
-    margin-bottom: 1rem;
-    animation: fadeIn 0.2s ease-out;
+.exchange-entry {
+    animation: entryReveal 0.25s ease-out both;
 
-    &.query-cell {
-        .cell-label {
-            color: $brand-primary;
-        }
-
-        .cell-content {
-            border-left: 3px solid $brand-primary;
-            background: rgba($brand-primary, 0.07);
-            padding: 0.75rem 1rem;
-            font-size: 0.95rem;
-            color: $text-color;
-        }
-    }
-
-    &.response-cell {
-        .cell-label {
-            color: $text-muted;
-        }
-
-        .cell-content {
-            border-left: 3px solid $brand-secondary;
-            background: $panel-bg-color;
-            padding: 0.75rem 1rem;
-        }
+    & + & {
+        margin-top: 1.25rem;
     }
 }
 
-.cell-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    margin-bottom: 0.375rem;
-    padding-left: 0.25rem;
-}
-
-.routing-badge {
-    font-weight: 400;
-    font-size: 0.65rem;
+// --- System messages: centered, quiet ---
+.system-notice {
+    text-align: center;
+    font-size: 0.8rem;
     color: $text-light;
-    text-transform: none;
-    cursor: help;
+    padding: 0.75rem 2rem;
+    position: relative;
+
+    &::before,
+    &::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        width: 2rem;
+        height: 1px;
+        background: $border-color;
+    }
 
     &::before {
-        content: "·";
-        margin: 0 0.25rem;
+        right: calc(100% - 2rem);
+        left: 0;
+    }
+
+    &::after {
+        left: calc(100% - 2rem);
+        right: 0;
     }
 }
 
-.cell-content {
-    border-radius: $border-radius-base;
-    word-wrap: break-word;
-    line-height: 1.6;
-
-    :deep(p:last-child) {
-        margin-bottom: 0;
+// --- User query: lightweight prompt marker ---
+.entry-query {
+    .query-text {
+        font-size: 0.925rem;
+        color: $text-color;
+        padding: 0.5rem 0.75rem;
+        border-left: 2px solid $brand-primary;
+        margin-left: 0.25rem;
     }
+}
+
+// --- Assistant response: the main content ---
+.response-body {
+    display: flex;
+    gap: 0;
+}
+
+.response-gutter {
+    flex-shrink: 0;
+    width: 2rem;
+    padding-top: 0.125rem;
+}
+
+.agent-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: rgba($brand-primary, 0.08);
+    color: $brand-primary;
+    font-size: 0.65rem;
+    cursor: default;
+}
+
+.response-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.response-content {
+    line-height: 1.65;
+    color: $text-color;
 
     :deep(p:first-child) {
         margin-top: 0;
     }
 
+    :deep(p:last-child) {
+        margin-bottom: 0;
+    }
+
     :deep(code) {
-        background: rgba($brand-dark, 0.08);
-        padding: 0.125rem 0.375rem;
+        background: rgba($brand-dark, 0.06);
+        padding: 0.1rem 0.35rem;
         border-radius: $border-radius-base;
         font-family: $font-family-monospace;
-        font-size: 0.85em;
+        font-size: 0.84em;
     }
 
     :deep(pre) {
-        background: $white;
+        background: darken($white, 1%);
         border: $border-default;
         padding: 0.75rem;
         border-radius: $border-radius-base;
         overflow-x: auto;
-        margin: 0.75rem 0;
+        margin: 0.625rem 0;
 
         code {
             background: none;
@@ -198,77 +214,121 @@ const emit = defineEmits<{
 
     :deep(ul),
     :deep(ol) {
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.625rem;
         padding-left: 1.5rem;
     }
 
     :deep(li) {
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.2rem;
+    }
+
+    :deep(h1),
+    :deep(h2),
+    :deep(h3),
+    :deep(h4) {
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+
+        &:first-child {
+            margin-top: 0;
+        }
+    }
+
+    :deep(table) {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0.625rem 0;
+        font-size: 0.85em;
+
+        th,
+        td {
+            padding: 0.375rem 0.625rem;
+            border: $border-default;
+            text-align: left;
+        }
+
+        th {
+            background: $panel-bg-color;
+            font-weight: 600;
+        }
+    }
+
+    :deep(blockquote) {
+        border-left: 2px solid $border-color;
+        padding-left: 0.75rem;
+        color: $text-muted;
+        margin: 0.625rem 0;
     }
 }
 
-.cell-footer {
+// --- Footer metadata: compact, secondary ---
+.response-meta {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 0.5rem;
-    padding-left: 0.25rem;
+    margin-top: 0.625rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba($border-color, 0.5);
 }
 
-.feedback-actions {
+.meta-left {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.125rem;
 }
 
-.response-stats {
+.meta-right {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    font-size: 0.7rem;
+    gap: 0.5rem;
+}
+
+.meta-tag {
+    font-size: 0.675rem;
     color: $text-light;
-
-    .stat-item {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
+    letter-spacing: 0.01em;
 }
 
 .feedback-btn {
     background: none;
     border: none;
-    padding: 0.25rem 0.5rem;
+    padding: 0.2rem 0.375rem;
     color: $text-light;
     cursor: pointer;
     border-radius: $border-radius-base;
-    transition: all 0.15s;
+    font-size: 0.75rem;
+    transition:
+        color 0.15s,
+        background 0.15s;
 
     &:hover:not(:disabled) {
         color: $brand-primary;
-        background: rgba($brand-primary, 0.08);
+        background: rgba($brand-primary, 0.06);
     }
 
     &:disabled {
         cursor: default;
-        opacity: 0.5;
+        opacity: 0.4;
     }
 
     &.active {
         color: $brand-success;
+        opacity: 1;
     }
 }
 
-.feedback-text {
-    font-size: 0.7rem;
+.feedback-ack {
+    font-size: 0.675rem;
     color: $text-light;
     margin-left: 0.25rem;
 }
 
-@keyframes fadeIn {
+// --- Animation ---
+@keyframes entryReveal {
     from {
         opacity: 0;
-        transform: translateY(4px);
+        transform: translateY(6px);
     }
     to {
         opacity: 1;
@@ -277,7 +337,7 @@ const emit = defineEmits<{
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .notebook-cell {
+    .exchange-entry {
         animation: none;
     }
 }
