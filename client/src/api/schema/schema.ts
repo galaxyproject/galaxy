@@ -8225,7 +8225,7 @@ export interface components {
              * Exchange ID
              * @description The ID of an existing chat exchange to continue.
              */
-            exchange_id?: number | null;
+            exchange_id?: string | null;
             /**
              * Query
              * @description The query to be sent to the chatbot.
@@ -8258,7 +8258,7 @@ export interface components {
              * Exchange ID
              * @description The ID of the chat exchange for continuing conversations.
              */
-            exchange_id?: number | null;
+            exchange_id?: string | null;
             /**
              * Processing Time
              * @description Time taken to process the query in seconds.
@@ -26093,7 +26093,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                exchange_id: number;
+                exchange_id: string;
             };
             cookie?: never;
         };
@@ -26142,7 +26142,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                exchange_id: number;
+                exchange_id: string;
             };
             cookie?: never;
         };

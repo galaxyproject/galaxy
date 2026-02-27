@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { faClock, faHistory, faMagic, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faClock, faExternalLinkAlt, faHistory, faMagic, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
 import { nextTick, onMounted, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { getGalaxyInstance } from "@/app";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -20,7 +21,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 interface ChatHistoryItem {
-    id: number;
+    id: string;
     query: string;
     response: string;
     agent_type: string;
@@ -31,7 +32,7 @@ interface ChatHistoryItem {
 
 const props = withDefaults(
     defineProps<{
-        exchangeId?: number;
+        exchangeId?: string;
         compact?: boolean;
     }>(),
     {
@@ -49,7 +50,7 @@ const selectedAgentType = ref("auto");
 const showHistory = ref(false);
 const chatHistory = ref<ChatHistoryItem[]>([]);
 const loadingHistory = ref(false);
-const currentChatId = ref<number | null>(null);
+const currentChatId = ref<string | null>(null);
 const hasLoadedInitialChat = ref(false);
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
@@ -253,7 +254,7 @@ async function clearHistory() {
     }
 }
 
-async function fetchConversation(exchangeId: number): Promise<boolean> {
+async function fetchConversation(exchangeId: string): Promise<boolean> {
     const { data: fullConversation } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
         params: {
             path: { exchange_id: exchangeId },
@@ -335,7 +336,7 @@ function loadSingleMessageFallback(item: ChatHistoryItem) {
     nextTick(() => scrollToBottom(chatContainer.value));
 }
 
-async function loadChatById(exchangeId: number) {
+async function loadChatById(exchangeId: string) {
     try {
         const loaded = await fetchConversation(exchangeId);
         if (loaded) {
@@ -382,6 +383,13 @@ function startNewChat() {
     errorMessage.value = "";
 }
 
+function popOutToScratchbook() {
+    const Galaxy = getGalaxyInstance();
+    const path = currentChatId.value ? `/chatgxy/${currentChatId.value}` : "/chatgxy";
+    const url = `${path}?compact=true`;
+    Galaxy.frame.add({ title: "ChatGXY", url });
+}
+
 function toggleHistory() {
     showHistory.value = !showHistory.value;
     if (showHistory.value && chatHistory.value.length === 0) {
@@ -407,6 +415,12 @@ function toggleHistory() {
                     :title="showHistory ? 'Hide History' : 'Show History'"
                     @click="toggleHistory">
                     <FontAwesomeIcon :icon="faHistory" fixed-width />
+                </button>
+                <button
+                    class="btn btn-sm btn-outline-primary"
+                    title="Open in floating window"
+                    @click="popOutToScratchbook">
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                 </button>
             </div>
         </div>

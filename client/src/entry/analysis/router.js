@@ -574,7 +574,7 @@ export function getRouter(Galaxy) {
                         component: ChatGXY,
                         redirect: redirectAnon(),
                         props: (route) => ({
-                            exchangeId: route.params.exchangeId ? parseInt(route.params.exchangeId) : undefined,
+                            exchangeId: route.params.exchangeId || undefined,
                             compact: route.query.compact === "true",
                         }),
                     },
