@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faClock, faExternalLinkAlt, faHistory, faMagic, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faExternalLinkAlt, faMagic, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
 import { nextTick, onMounted, ref, watch } from "vue";
@@ -10,15 +10,13 @@ import { type AgentResponse, useAgentActions } from "@/composables/agentActions"
 import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { getAgentIcon, getAgentLabel } from "./ChatGXY/agentTypes";
+import { getAgentIcon } from "./ChatGXY/agentTypes";
 import type { ChatMessage } from "./ChatGXY/chatTypes";
 import { generateId, scrollToBottom } from "./ChatGXY/chatUtils";
 
 import ChatInput from "./ChatGXY/ChatInput.vue";
 import ChatMessageCell from "./ChatGXY/ChatMessageCell.vue";
 import Heading from "@/components/Common/Heading.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import UtcDate from "@/components/UtcDate.vue";
 
 interface ChatHistoryItem {
     id: string;
@@ -47,9 +45,6 @@ const errorMessage = ref("");
 const busy = ref(false);
 const chatContainer = ref<HTMLElement>();
 const selectedAgentType = ref("auto");
-const showHistory = ref(false);
-const chatHistory = ref<ChatHistoryItem[]>([]);
-const loadingHistory = ref(false);
 const currentChatId = ref<string | null>(null);
 const hasLoadedInitialChat = ref(false);
 
@@ -64,20 +59,38 @@ onMounted(async () => {
     }
 
     if (!hasLoadedInitialChat.value) {
-        messages.value.push({
-            id: generateId(),
-            role: "assistant",
-            content:
-                "Welcome to ChatGXY. Ask about tools, workflows, errors, or data quality " +
-                "and your question will be routed to the appropriate specialist agent.",
-            timestamp: new Date(),
-            agentType: "router",
-            confidence: "high",
-            feedback: null,
-            isSystemMessage: true,
-        });
+        showWelcome();
     }
 });
+
+watch(
+    () => props.exchangeId,
+    async (newId, oldId) => {
+        if (newId === oldId) {
+            return;
+        }
+        if (newId) {
+            await loadChatById(newId);
+        } else {
+            startNewChat();
+        }
+    },
+);
+
+function showWelcome() {
+    messages.value.push({
+        id: generateId(),
+        role: "assistant",
+        content:
+            "Welcome to ChatGXY. Ask about tools, workflows, errors, or data quality " +
+            "and your question will be routed to the appropriate specialist agent.",
+        timestamp: new Date(),
+        agentType: "router",
+        confidence: "high",
+        feedback: null,
+        isSystemMessage: true,
+    });
+}
 
 async function submitQuery() {
     if (!query.value.trim()) {
@@ -121,7 +134,7 @@ async function submitQuery() {
             const errorMsg: ChatMessage = {
                 id: generateId(),
                 role: "assistant",
-                content: `❌ Error: ${errorMessage.value}`,
+                content: `Error: ${errorMessage.value}`,
                 timestamp: new Date(),
                 agentType: selectedAgentType.value,
                 confidence: "low",
@@ -162,7 +175,7 @@ async function submitQuery() {
         const errorMsg: ChatMessage = {
             id: generateId(),
             role: "assistant",
-            content: `❌ Unexpected error occurred. Please try again.`,
+            content: "Unexpected error occurred. Please try again.",
             timestamp: new Date(),
             agentType: selectedAgentType.value,
             confidence: "low",
@@ -212,48 +225,6 @@ async function sendFeedback(messageId: string, value: "up" | "down") {
     }
 }
 
-async function loadChatHistory() {
-    loadingHistory.value = true;
-    try {
-        const { data, error } = await GalaxyApi().GET("/api/chat/history", {
-            params: {
-                query: { limit: 50 },
-            },
-        });
-
-        if (data && !error) {
-            chatHistory.value = data as unknown as ChatHistoryItem[];
-        }
-    } catch (e) {
-        console.error("Failed to load chat history:", e);
-    } finally {
-        loadingHistory.value = false;
-    }
-}
-
-async function clearHistory() {
-    if (!confirm("Are you sure you want to clear your chat history?")) {
-        return;
-    }
-
-    try {
-        const { data, error } = await GalaxyApi().DELETE("/api/chat/history");
-        if (!error && data) {
-            console.log("Clear history response:", data);
-            chatHistory.value = [];
-            if (currentChatId.value) {
-                startNewChat();
-            }
-        } else if (error) {
-            console.error("Failed to clear history - API error:", error);
-            alert("Failed to clear history. Please try again.");
-        }
-    } catch (e) {
-        console.error("Failed to clear history - exception:", e);
-        alert("Failed to clear history. Please try again.");
-    }
-}
-
 async function fetchConversation(exchangeId: string): Promise<boolean> {
     const { data: fullConversation } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
         params: {
@@ -293,49 +264,6 @@ async function fetchConversation(exchangeId: string): Promise<boolean> {
     return true;
 }
 
-async function loadPreviousChat(item: ChatHistoryItem) {
-    try {
-        const loaded = await fetchConversation(item.id);
-        if (!loaded) {
-            loadSingleMessageFallback(item);
-        }
-        showHistory.value = false;
-    } catch (error) {
-        console.error("Error loading full conversation:", error);
-        loadSingleMessageFallback(item);
-    }
-}
-
-function loadSingleMessageFallback(item: ChatHistoryItem) {
-    const userMessage: ChatMessage = {
-        id: `hist-user-${item.id}`,
-        role: "user",
-        content: item.query,
-        timestamp: new Date(item.timestamp),
-        feedback: null,
-    };
-
-    const assistantMessage: ChatMessage = {
-        id: `hist-assistant-${item.id}`,
-        role: "assistant",
-        content: item.response,
-        timestamp: new Date(item.timestamp),
-        agentType: item.agent_type,
-        confidence: item.agent_response?.confidence || "medium",
-        feedback: item.feedback === 1 ? "up" : item.feedback === 0 ? "down" : null,
-    };
-
-    if (item.agent_response) {
-        assistantMessage.agentResponse = item.agent_response;
-        assistantMessage.suggestions = item.agent_response.suggestions || [];
-    }
-
-    messages.value = [userMessage, assistantMessage];
-    currentChatId.value = item.id;
-    showHistory.value = false;
-    nextTick(() => scrollToBottom(chatContainer.value));
-}
-
 async function loadChatById(exchangeId: string) {
     try {
         const loaded = await fetchConversation(exchangeId);
@@ -357,8 +285,14 @@ async function loadLatestChat() {
 
         if (data && !error && data.length > 0) {
             const latestChat = data[0] as unknown as ChatHistoryItem;
-            await loadPreviousChat(latestChat);
-            hasLoadedInitialChat.value = true;
+            try {
+                const loaded = await fetchConversation(latestChat.id);
+                if (loaded) {
+                    hasLoadedInitialChat.value = true;
+                }
+            } catch (e) {
+                console.error("Error loading latest conversation:", e);
+            }
         }
     } catch (e) {
         console.error("Failed to load latest chat:", e);
@@ -389,13 +323,6 @@ function popOutToScratchbook() {
     const url = `${path}?compact=true`;
     Galaxy.frame.add({ title: "ChatGXY", url });
 }
-
-function toggleHistory() {
-    showHistory.value = !showHistory.value;
-    if (showHistory.value && chatHistory.value.length === 0) {
-        loadChatHistory();
-    }
-}
 </script>
 
 <template>
@@ -410,13 +337,6 @@ function toggleHistory() {
                     New
                 </button>
                 <button
-                    class="btn btn-sm"
-                    :class="showHistory ? 'btn-primary' : 'btn-outline-primary'"
-                    :title="showHistory ? 'Hide History' : 'Show History'"
-                    @click="toggleHistory">
-                    <FontAwesomeIcon :icon="faHistory" fixed-width />
-                </button>
-                <button
                     class="btn btn-sm btn-outline-primary"
                     title="Open in floating window"
                     @click="popOutToScratchbook">
@@ -425,64 +345,27 @@ function toggleHistory() {
             </div>
         </div>
 
-        <div class="chatgxy-body">
-            <!-- History Sidebar -->
-            <div v-if="showHistory && !compact" class="history-sidebar">
-                <div class="history-header">
-                    <h5>Chat History</h5>
-                    <button class="btn btn-sm btn-link text-danger p-0" title="Clear History" @click="clearHistory">
-                        <FontAwesomeIcon :icon="faTrash" />
-                    </button>
-                </div>
+        <div ref="chatContainer" class="chat-messages">
+            <ChatMessageCell
+                v-for="message in messages"
+                :key="message.id"
+                :message="message"
+                :render-markdown="renderMarkdown"
+                :processing-action="processingAction"
+                @feedback="sendFeedback"
+                @handle-action="handleAction" />
 
-                <div v-if="loadingHistory" class="text-center p-3">
-                    <LoadingSpan message="Loading history..." />
-                </div>
-
-                <div v-else-if="chatHistory.length === 0" class="text-muted p-3 text-center">No chat history yet</div>
-
-                <div v-else class="history-list">
-                    <div
-                        v-for="item in chatHistory"
-                        :key="item.id"
-                        class="history-item"
-                        @click="() => loadPreviousChat(item)">
-                        <div class="history-query">{{ item.query }}</div>
-                        <div class="history-meta">
-                            <span class="history-agent">
-                                <FontAwesomeIcon :icon="getAgentIcon(item.agent_type)" fixed-width />
-                            </span>
-                            <span class="history-time">
-                                <FontAwesomeIcon :icon="faClock" class="mr-1" />
-                                <UtcDate :date="item.timestamp" mode="elapsed" />
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Main Chat Area -->
-            <div ref="chatContainer" class="chat-messages flex-grow-1">
-                <ChatMessageCell
-                    v-for="message in messages"
-                    :key="message.id"
-                    :message="message"
-                    :render-markdown="renderMarkdown"
-                    :processing-action="processingAction"
-                    @feedback="sendFeedback"
-                    @handle-action="handleAction" />
-
-                <!-- Loading state -->
-                <div v-if="busy" class="notebook-cell response-cell loading-cell">
-                    <div class="cell-label">
+            <!-- Loading state -->
+            <div v-if="busy" class="loading-entry">
+                <div class="loading-gutter">
+                    <span class="loading-indicator">
                         <FontAwesomeIcon :icon="getAgentIcon(selectedAgentType)" fixed-width />
-                        <span>{{ getAgentLabel(selectedAgentType) }}</span>
-                    </div>
-                    <div class="cell-content">
-                        <BSkeleton animation="wave" width="85%" />
-                        <BSkeleton animation="wave" width="55%" />
-                        <BSkeleton animation="wave" width="70%" />
-                    </div>
+                    </span>
+                </div>
+                <div class="loading-body">
+                    <BSkeleton animation="wave" width="85%" />
+                    <BSkeleton animation="wave" width="55%" />
+                    <BSkeleton animation="wave" width="70%" />
                 </div>
             </div>
         </div>
@@ -531,12 +414,6 @@ function toggleHistory() {
     }
 }
 
-.chatgxy-body {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-}
-
 .chatgxy-footer {
     padding: 0.75rem 1rem;
     background: $panel-bg-color;
@@ -551,113 +428,35 @@ function toggleHistory() {
     background: $white;
 }
 
-// Loading skeleton cell (stays in parent since it's not a real message)
-.notebook-cell {
-    margin-bottom: 1rem;
+// Loading skeleton
+.loading-entry {
+    display: flex;
+    gap: 0;
+    margin-top: 1.25rem;
     animation: fadeIn 0.2s ease-out;
-
-    &.response-cell {
-        .cell-label {
-            color: $text-muted;
-        }
-
-        .cell-content {
-            border-left: 3px solid $brand-secondary;
-            background: $panel-bg-color;
-            padding: 0.75rem 1rem;
-        }
-
-        &.loading-cell {
-            .cell-content {
-                opacity: 0.7;
-            }
-        }
-    }
 }
 
-.cell-label {
-    display: flex;
+.loading-gutter {
+    flex-shrink: 0;
+    width: 2rem;
+    padding-top: 0.125rem;
+}
+
+.loading-indicator {
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    margin-bottom: 0.375rem;
-    padding-left: 0.25rem;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: rgba($brand-primary, 0.08);
+    color: $brand-primary;
+    font-size: 0.65rem;
 }
 
-.cell-content {
-    border-radius: $border-radius-base;
-    word-wrap: break-word;
-    line-height: 1.6;
-}
-
-// History sidebar
-.history-sidebar {
-    width: 280px;
-    border-right: $border-default;
-    background: $panel-bg-color;
-    display: flex;
-    flex-direction: column;
-
-    .history-header {
-        padding: 0.75rem 1rem;
-        border-bottom: $border-default;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        h5 {
-            margin: 0;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: $text-color;
-        }
-    }
-
-    .history-list {
-        flex: 1;
-        overflow-y: auto;
-    }
-
-    .history-item {
-        padding: 0.625rem 1rem;
-        border-bottom: 1px solid darken($panel-bg-color, 5%);
-        cursor: pointer;
-        transition: background-color 0.15s;
-
-        &:hover {
-            background: darken($panel-bg-color, 3%);
-        }
-
-        .history-query {
-            font-size: 0.8rem;
-            color: $text-color;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            margin-bottom: 0.25rem;
-        }
-
-        .history-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.7rem;
-            color: $text-light;
-
-            .history-agent {
-                color: $brand-primary;
-            }
-
-            .history-time {
-                display: flex;
-                align-items: center;
-                gap: 0.25rem;
-            }
-        }
-    }
+.loading-body {
+    flex: 1;
+    opacity: 0.6;
 }
 
 @keyframes fadeIn {
@@ -668,12 +467,6 @@ function toggleHistory() {
     to {
         opacity: 1;
         transform: translateY(0);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .notebook-cell {
-        animation: none;
     }
 }
 </style>

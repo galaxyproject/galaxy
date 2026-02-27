@@ -16,6 +16,7 @@ import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
+import ChatHistoryPanel from "../ChatGXY/ChatHistoryPanel.vue";
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
@@ -390,6 +391,7 @@ defineExpose({
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
+            <ChatHistoryPanel v-else-if="isActiveSideBar('chatgxy')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" in-panel />
             <InteractiveToolsPanel v-else-if="isActiveSideBar('interactivetools')" />
