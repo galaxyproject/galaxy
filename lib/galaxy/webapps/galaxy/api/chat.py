@@ -27,7 +27,10 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    encode_id,
+)
 from galaxy.schema.schema import (
     ChatPayload,
     ChatResponse,
@@ -264,7 +267,7 @@ class ChatAPI:
                     data = json.loads(message.message)
                     history.append(
                         {
-                            "id": exchange.id,
+                            "id": encode_id(exchange.id),
                             "query": data.get("query", ""),
                             "response": data.get("response", ""),
                             "agent_type": data.get("agent_type", "unknown"),
@@ -333,7 +336,7 @@ class ChatAPI:
     @router.put("/api/chat/exchange/{exchange_id}/feedback", unstable=True)
     def set_exchange_feedback(
         self,
-        exchange_id: int,
+        exchange_id: DecodedDatabaseIdField,
         feedback: int = Body(..., description="Feedback value: 0 for negative, 1 for positive"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
@@ -348,7 +351,7 @@ class ChatAPI:
     @router.get("/api/chat/exchange/{exchange_id}/messages", unstable=True)
     def get_exchange_messages(
         self,
-        exchange_id: int,
+        exchange_id: DecodedDatabaseIdField,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> list[dict[str, Any]]:
