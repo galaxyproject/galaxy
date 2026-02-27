@@ -4806,6 +4806,19 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_completion_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time in seconds between workflow completion monitor iterations.
+    The completion monitor checks for workflows that have all jobs
+    completed and triggers completion hooks (e.g., exports,
+    notifications). Float values are allowed.
+:Default: ``5.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``calculate_dataset_hash``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
