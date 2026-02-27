@@ -23,7 +23,7 @@ class TestHistoryPages(SeleniumTestCase):
     def test_navigate_via_page_icon(self):
         """Click page icon in history counter bar opens page editor.
 
-        When no pages exist, resolveCurrentNotebook auto-creates one.
+        When no pages exist, resolveCurrentPage auto-creates one.
         """
         self.history_panel_click_edit_current_page()
         self.components.pages.history.editor.wait_for_visible()
@@ -213,8 +213,8 @@ class TestHistoryPages(SeleniumTestCase):
 
             with self.winbox_frame(0):
                 self.wait_for_selector_visible(".markdown-wrapper")
-                self.wait_for_selector_absent_or_hidden("[data-description='notebook toolbar']")
-                self.wait_for_selector_absent_or_hidden("[data-description='history notebook editor']")
+                self.wait_for_selector_absent_or_hidden("[data-description='page editor toolbar']")
+                self.wait_for_selector_absent_or_hidden("[data-description='page editor view']")
                 self.screenshot("history_page_window_rendered")
 
     @selenium_test

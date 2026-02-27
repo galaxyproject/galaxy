@@ -2180,12 +2180,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def history_panel_click_edit_current_page(self):
         """Click page icon — waits for editor toolbar (non-WM path)."""
-        self.components.history_panel.notebook_button.wait_for_and_click()
+        self.components.history_panel.page_button.wait_for_and_click()
         self.components.pages.history.toolbar.wait_for_visible()
 
     def history_panel_click_view_current_page(self):
         """Click page icon — waits for WinBox window (WM-active path)."""
-        self.components.history_panel.notebook_button.wait_for_and_click()
+        self.components.history_panel.page_button.wait_for_and_click()
         self.window_manager_wait_for_window_count_at_least(1)
 
     def history_page_create(self, screenshot_name=None):

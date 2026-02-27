@@ -338,7 +338,7 @@ history_panel:
       selector: '.history-options-button-menu > a:contains("${option_label}")'
     options_show_export_history_to_file: 'a[data-description="export to file"]'
     options_extract_workflow: '[data-description="extract workflow"]'
-    notebook_button: '[data-description="history notebook button"]'
+    page_button: '[data-description="history page button"]'
 
     collection_menu_button: '.collection-menu'
     collection_menu_edit_attributes: '.edit-btn'
@@ -630,10 +630,10 @@ pages:
     selectors:
       _:
         type: data-description
-        selector: 'history notebook view'
+        selector: 'history page view'
       list:
         type: data-description
-        selector: 'history notebook list'
+        selector: 'history page list'
       create_button:
         type: data-description
         selector: 'create page button'
@@ -642,36 +642,36 @@ pages:
         selector: 'page empty state'
       toolbar:
         type: data-description
-        selector: 'notebook toolbar'
-      toolbar_title: '[data-description="notebook toolbar title"] > span'
+        selector: 'page editor toolbar'
+      toolbar_title: '[data-description="page editor title"] > span'
       manage_button:
         type: data-description
-        selector: 'notebook manage button'
+        selector: 'page manage button'
       save_button:
         type: data-description
-        selector: 'notebook save button'
+        selector: 'page save button'
       unsaved_indicator:
         type: data-description
-        selector: 'notebook unsaved indicator'
+        selector: 'page unsaved indicator'
       editor:
         type: data-description
-        selector: 'history notebook editor'
+        selector: 'page editor view'
       markdown_editor: '.markdown-textarea'
       item:
         type: data-description
-        selector: 'notebook item'
+        selector: 'page item'
       item_title:
         type: data-description
-        selector: 'notebook title'
+        selector: 'page title'
       rendered_view:
         type: data-description
-        selector: 'notebook rendered view'
+        selector: 'page rendered view'
       revisions_button:
         type: data-description
-        selector: 'notebook revisions button'
+        selector: 'page revisions button'
       revision_list:
         type: data-description
-        selector: 'notebook revision list'
+        selector: 'page revision list'
       revision_item:
         type: data-description
         selector: 'revision item'
@@ -680,7 +680,7 @@ pages:
         selector: 'restore revision button'
       revision_view:
         type: data-description
-        selector: 'notebook revision view'
+        selector: 'page revision view'
       revision_back_button:
         type: data-description
         selector: 'revision back button'
@@ -689,17 +689,17 @@ pages:
         selector: 'revision restore button'
       view_button:
         type: data-description
-        selector: 'notebook view button'
+        selector: 'page view button'
       display_toolbar:
         type: data-description
-        selector: 'notebook display toolbar'
+        selector: 'page display toolbar'
       preview_button:
         type: data-description
-        selector: 'notebook preview button'
+        selector: 'page preview button'
       edit_button:
         type: data-description
-        selector: 'notebook edit button'
-      toolbar_title_input: '[data-description="notebook toolbar title"] input'
+        selector: 'page edit button'
+      toolbar_title_input: '[data-description="page editor title"] input'
 
 login:
   selectors:
