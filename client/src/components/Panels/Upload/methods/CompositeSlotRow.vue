@@ -217,7 +217,7 @@ const display = computed(() => {
             </small>
 
             <!-- Source mode dropdown -->
-            <BDropdown size="sm" :variant="isFilled ? 'outline-secondary' : 'primary'" class="mr-1 flex-shrink-0">
+            <BDropdown size="sm" :variant="isFilled ? 'secondary' : 'primary'" class="mr-1 flex-shrink-0">
                 <template v-slot:button-content>
                     {{ dropdownLabel }}
                 </template>
