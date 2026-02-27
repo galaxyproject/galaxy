@@ -139,9 +139,21 @@ async function handleSave() {
 async function handleSaveAndView() {
     await store.saveNotebook();
     if (store.currentNotebook) {
-        const data = store.currentNotebook as any;
-        if (data.username && data.slug) {
-            window.location.href = `/u/${data.username}/p/${data.slug}`;
+        const Galaxy = getGalaxyInstance();
+        const isWmActive = Galaxy?.frame?.active;
+        if (isWmActive) {
+            const url = `/published/page?id=${props.pageId}&embed=true`;
+            const options: RouterPushOptions = {
+                title: `Page: ${store.currentTitle || "Untitled Page"}`,
+                preventWindowManager: false,
+            };
+            // @ts-ignore - monkeypatched router
+            router.push(url, options);
+        } else {
+            const data = store.currentNotebook as any;
+            if (data.username && data.slug) {
+                window.location.href = `/u/${data.username}/p/${data.slug}`;
+            }
         }
     }
 }

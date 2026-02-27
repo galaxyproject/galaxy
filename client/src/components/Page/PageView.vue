@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
+import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
@@ -25,11 +27,13 @@ interface Props {
     pageId: string;
     embed?: boolean;
     showHeading?: boolean;
+    displayOnly?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     embed: false,
     showHeading: true,
+    displayOnly: false,
 });
 
 const { config, isConfigLoaded } = useConfig(true);
@@ -84,14 +88,28 @@ function onEdit() {
     window.location.href = `/pages/editor?id=${props.pageId}`;
 }
 
+/** Whether to render chrome-free (embed or displayOnly). */
+const isChromeFree = computed(() => props.embed || props.displayOnly);
+
 function stsUrl(config: any) {
     return `${dataUrl.value}/prepare_download`;
 }
 </script>
 
 <template>
-    <div v-if="props.embed" id="columns" class="page-view embed">
+    <div v-if="isChromeFree" id="columns" class="page-view embed">
         <div id="center" class="container-root">
+            <div
+                v-if="props.displayOnly && page && !loading"
+                class="page-display-toolbar d-flex align-items-center p-2 border-bottom">
+                <BButton variant="link" size="sm" data-description="page view edit button" @click="onEdit">
+                    <FontAwesomeIcon :icon="faArrowLeft" />
+                    Edit Page
+                </BButton>
+                <span class="flex-grow-1 text-center font-weight-bold">
+                    {{ page.title || page.name }}
+                </span>
+            </div>
             <div v-if="loading">
                 <LoadingSpan message="Loading Page" />
             </div>
@@ -102,7 +120,7 @@ function stsUrl(config: any) {
                 </BAlert>
             </div>
             <div v-else-if="page && isConfigLoaded" class="page-container">
-                <Heading v-if="props.showHeading" h1 separator size="lg" class="page-title">
+                <Heading v-if="props.showHeading && !props.displayOnly" h1 separator size="lg" class="page-title">
                     {{ page.title || page.name }}
                 </Heading>
 

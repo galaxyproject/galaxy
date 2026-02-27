@@ -1,7 +1,17 @@
-import { faEdit, faEye, faPen, faPlus, faShareAlt, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import {
+    faEdit,
+    faExternalLinkAlt,
+    faEye,
+    faPen,
+    faPlus,
+    faShareAlt,
+    faTrash,
+    faTrashRestore,
+} from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
 import { GalaxyApi } from "@/api";
+import { getGalaxyInstance } from "@/app";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
@@ -71,6 +81,21 @@ const fields: FieldArray = [
                 icon: faEye,
                 handler: (data: PageEntry) => {
                     emit(`/published/page?id=${data.id}`);
+                },
+            },
+            {
+                title: "View in Window",
+                icon: faExternalLinkAlt,
+                condition: (data: PageEntry) => {
+                    const Galaxy = getGalaxyInstance();
+                    return !data.deleted && !!Galaxy?.frame?.active;
+                },
+                handler: (data: PageEntry) => {
+                    const Galaxy = getGalaxyInstance();
+                    Galaxy?.frame?.add({
+                        url: `/published/page?id=${data.id}&embed=true`,
+                        title: `Page: ${data.title}`,
+                    });
                 },
             },
             {

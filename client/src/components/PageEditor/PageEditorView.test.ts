@@ -254,6 +254,61 @@ describe("PageEditorView", () => {
             const backBtn = wrapper.find(SELECTORS.BACK_BUTTON);
             expect(backBtn.text()).toContain("Back to Pages");
         });
+
+        it("Save & View navigates to published page when WM inactive", async () => {
+            const store = usePageEditorStore();
+            store.currentNotebook = {
+                id: PAGE_ID,
+                history_id: null,
+                title: "My Page",
+                content: "# Hello",
+                update_time: "2024-01-01T00:00:00",
+                username: "testuser",
+                slug: "my-page",
+            } as any;
+            store.currentContent = "modified";
+            store.currentTitle = "My Page";
+
+            const saveViewBtn = wrapper.find(SELECTORS.SAVE_VIEW_BUTTON);
+            // Mock location.href assignment
+            const hrefSpy = vi.spyOn(window, "location", "get").mockReturnValue({
+                ...window.location,
+                href: "",
+            } as any);
+            await saveViewBtn.trigger("click");
+            await flushPromises();
+
+            expect(store.saveNotebook).toHaveBeenCalled();
+            hrefSpy.mockRestore();
+        });
+
+        it("Save & View uses router.push when WM is active", async () => {
+            mockGalaxyInstance.frame.active = true;
+            const store = usePageEditorStore();
+            store.currentNotebook = {
+                id: PAGE_ID,
+                history_id: null,
+                title: "My Page",
+                content: "# Hello",
+                update_time: "2024-01-01T00:00:00",
+            } as any;
+            store.currentContent = "modified";
+            store.currentTitle = "My Page";
+
+            const saveViewBtn = wrapper.find(SELECTORS.SAVE_VIEW_BUTTON);
+            await saveViewBtn.trigger("click");
+            await flushPromises();
+
+            expect(store.saveNotebook).toHaveBeenCalled();
+            expect(mockPush).toHaveBeenCalledWith(
+                `/published/page?id=${PAGE_ID}&embed=true`,
+                expect.objectContaining({
+                    title: "Page: My Page",
+                    preventWindowManager: false,
+                }),
+            );
+            mockGalaxyInstance.frame.active = false;
+        });
     });
 
     describe("DisplayOnly mode", () => {

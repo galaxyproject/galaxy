@@ -192,6 +192,7 @@ export function getRouter(Galaxy) {
                     pageId: route.query.id,
                     embed: route.query.embed ? parseBool(route.query.embed) : undefined,
                     showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
+                    displayOnly: route.query.displayOnly === "true",
                 }),
             },
             {
