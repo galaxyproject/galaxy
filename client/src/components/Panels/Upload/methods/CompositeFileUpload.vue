@@ -165,9 +165,9 @@ defineExpose<UploadMethodComponent>({ startUpload });
 <template>
     <div class="composite-file-upload">
         <div class="composite-config-panel mb-3">
-            <div class="d-flex flex-wrap flex-gapx-1 flex-gapy-1">
+            <div class="d-flex flex-wrap flex-gapx-1 flex-gapy-1 align-items-start">
                 <!-- Composite type selector -->
-                <div class="d-flex flex-column">
+                <div class="composite-config-field d-flex flex-column">
                     <label class="font-weight-bold mb-1" for="composite-type-selector"> Composite Type </label>
                     <SingleItemSelector
                         id="composite-type-selector"
@@ -181,7 +181,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 </div>
 
                 <!-- Dataset name -->
-                <div class="d-flex flex-column">
+                <div class="composite-config-field d-flex flex-column">
                     <label for="composite-dataset-name" class="font-weight-bold mb-1">
                         Dataset Name
                         <small class="text-muted ml-1">(optional)</small>
@@ -196,7 +196,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 </div>
 
                 <!-- DB key / Reference -->
-                <div class="d-flex flex-column">
+                <div class="composite-config-field d-flex flex-column">
                     <label class="font-weight-bold mb-1 d-block" for="composite-dbkey">
                         Reference
                         <small class="text-muted ml-1">(optional)</small>
@@ -279,6 +279,17 @@ defineExpose<UploadMethodComponent>({ startUpload });
     background-color: $gray-100;
     border-radius: $border-radius-base;
     border: $border-default;
+}
+
+.composite-config-field {
+    flex: 1 1 15rem;
+    min-width: 0;
+}
+
+.composite-config-field :deep(.multiselect__single) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .composite-slots-container {
