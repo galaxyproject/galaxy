@@ -9,7 +9,7 @@
             v-model="content"
             aria-label="markdown text editor"
             class="markdown-textarea w-100 p-4"
-            :class="dropHighlight && `notebook-dragover-${dropHighlight}`"
+            :class="dropHighlight && `page-dragover-${dropHighlight}`"
             @input="onUpdate"
             @dragenter.prevent="onDragEnter"
             @dragover.prevent="onDragOver"
@@ -78,13 +78,13 @@ const onUpdate = debounce((e: Event) => {
     emit("update", content.value || "");
 }, 300);
 
-// Drag-and-drop support (history_notebook mode only)
+// Drag-and-drop support (page mode only)
 const eventStore = useEventStore();
 const dropHighlight = ref<string | null>(null);
 const dragTarget = ref<EventTarget | null>(null);
 
 function getDroppableItem(): { id: string; contentType: string } | null {
-    if (props.mode !== "history_notebook") {
+    if (props.mode !== "page") {
         return null;
     }
     const items = eventStore.getDragItems();
@@ -149,7 +149,7 @@ function onDrop(_evt: DragEvent) {
         monospace;
 }
 
-.markdown-textarea.notebook-dragover-success {
+.markdown-textarea.page-dragover-success {
     background: rgba(40, 167, 69, 0.08);
     border: 2px dashed #28a745;
     outline: none;

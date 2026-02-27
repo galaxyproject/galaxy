@@ -165,9 +165,9 @@ describe("PageEditorView", () => {
             expect(editor.props("markdownText")).toBe("# Hello");
         });
 
-        it("passes history_notebook mode to MarkdownEditor when historyId set", () => {
+        it("passes page mode to MarkdownEditor when historyId set", () => {
             const editor = wrapper.findComponent(MarkdownEditor);
-            expect(editor.props("mode")).toBe("history_notebook");
+            expect(editor.props("mode")).toBe("page");
         });
 
         it("shows Preview button in toolbar", () => {

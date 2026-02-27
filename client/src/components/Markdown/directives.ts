@@ -1,6 +1,6 @@
 import RAW_DIRECTIVE_DATA from "./directives.yml";
 
-export type DirectiveMode = "page" | "report" | "history_notebook";
+export type DirectiveMode = "page" | "report";
 
 type DirectiveMetadataValueByMode = {
     [key: string]: string;
@@ -48,7 +48,7 @@ export function directiveEntry(
         help = help[mode] ?? help["page"];
     }
     if (help) {
-        help = help.replace(/%MODE%/g, mode === "history_notebook" ? "notebook" : mode);
+        help = help.replace(/%MODE%/g, mode);
     }
     const entry: SidePanelEntry = { id: directiveId, ...baseEntry };
     if (name) {

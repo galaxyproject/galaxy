@@ -33,7 +33,7 @@ function mountComponent(propsOverrides: Partial<{ markdownText: string; mode: st
         localVue,
         propsData: {
             markdownText: "",
-            mode: "history_notebook",
+            mode: "page",
             title: "Test",
             ...propsOverrides,
         },
@@ -75,7 +75,7 @@ async function applyHighlight(wrapper: Wrapper<Vue>) {
     const textarea = getTextarea(wrapper);
     textarea.element.dispatchEvent(makeDragEvent("dragenter"));
     await wrapper.vm.$nextTick();
-    expect(textarea.classes()).toContain("notebook-dragover-success");
+    expect(textarea.classes()).toContain("page-dragover-success");
 }
 
 describe("TextEditor drag-and-drop", () => {
@@ -90,7 +90,7 @@ describe("TextEditor drag-and-drop", () => {
     });
 
     describe("Drop insertion logic", () => {
-        it("inserts history_dataset_display directive when dataset is dropped in notebook mode", async () => {
+        it("inserts history_dataset_display directive when dataset is dropped in page mode", async () => {
             const wrapper = mountComponent({ markdownText: "existing content" });
             setDatasetDragItem(3);
 
@@ -107,8 +107,8 @@ describe("TextEditor drag-and-drop", () => {
             expect(content).toContain("history_dataset_collection_display(history_dataset_collection_id=col123)");
         });
 
-        it("does not insert anything when mode is 'page'", async () => {
-            const wrapper = mountComponent({ mode: "page" });
+        it("does not insert anything when mode is 'report'", async () => {
+            const wrapper = mountComponent({ mode: "report" });
             setDatasetDragItem(3);
 
             const textarea = getTextarea(wrapper);
@@ -149,18 +149,18 @@ describe("TextEditor drag-and-drop", () => {
             textarea.element.dispatchEvent(makeDragEvent("dragenter"));
             await wrapper.vm.$nextTick();
 
-            expect(textarea.classes()).toContain("notebook-dragover-success");
+            expect(textarea.classes()).toContain("page-dragover-success");
         });
 
-        it("does not apply highlight class on dragenter when mode is 'page'", async () => {
-            const wrapper = mountComponent({ mode: "page" });
+        it("does not apply highlight class on dragenter when mode is 'report'", async () => {
+            const wrapper = mountComponent({ mode: "report" });
             setDatasetDragItem(1);
 
             const textarea = getTextarea(wrapper);
             textarea.element.dispatchEvent(makeDragEvent("dragenter"));
             await wrapper.vm.$nextTick();
 
-            expect(textarea.classes()).not.toContain("notebook-dragover-success");
+            expect(textarea.classes()).not.toContain("page-dragover-success");
         });
 
         it("removes highlight class on dragleave", async () => {
@@ -171,7 +171,7 @@ describe("TextEditor drag-and-drop", () => {
             const textarea = getTextarea(wrapper);
             textarea.element.dispatchEvent(makeDragEvent("dragleave"));
             await wrapper.vm.$nextTick();
-            expect(textarea.classes()).not.toContain("notebook-dragover-success");
+            expect(textarea.classes()).not.toContain("page-dragover-success");
         });
 
         it("removes highlight class after drop", async () => {
@@ -182,7 +182,7 @@ describe("TextEditor drag-and-drop", () => {
             const textarea = getTextarea(wrapper);
             textarea.element.dispatchEvent(makeDragEvent("drop"));
             await wrapper.vm.$nextTick();
-            expect(textarea.classes()).not.toContain("notebook-dragover-success");
+            expect(textarea.classes()).not.toContain("page-dragover-success");
         });
     });
 });

@@ -384,7 +384,7 @@ class TestHistoryPages(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
         classes = editor.get_attribute("class")
-        assert "notebook-dragover-success" in classes
+        assert "page-dragover-success" in classes
         self.screenshot("history_page_drag_over_highlight")
 
         ac.release().perform()

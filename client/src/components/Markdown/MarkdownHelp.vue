@@ -11,17 +11,14 @@ interface MarkdownHelpProps {
 
 const props = defineProps<MarkdownHelpProps>();
 
-const notebook = computed(() => props.mode == "history_notebook");
 const page = computed(() => props.mode == "page");
-const pagelike = computed(() => page.value || notebook.value);
 </script>
 
 <template>
     <div>
         <h3>Overview</h3>
         <p>
-            <span v-if="notebook"> This Markdown document will be used to generate your History Notebook. </span>
-            <span v-else-if="page"> This Markdown document will be used to generate your Galaxy Page. </span>
+            <span v-if="page"> This Markdown document will be used to generate your Galaxy Page. </span>
             <span v-else> This Markdown document will be used to generate your workflow invocation report. </span>
             This document should be Markdown with embedded commands for extracting and displaying Galaxy objects and/or
             their metadata.
@@ -35,7 +32,7 @@ const pagelike = computed(() => page.value || notebook.value);
         <p>
             The Galaxy extensions to Markdown are represented as code blocks, these blocks start with the line
             <tt>```galaxy</tt> and end with the line <tt>```</tt> and have a command with arguments between these lines.
-            <span v-if="pagelike">
+            <span v-if="page">
                 These arguments reference your Galaxy objects such as datasets, jobs, and workflows.
             </span>
             <span v-else>
@@ -50,7 +47,7 @@ const pagelike = computed(() => page.value || notebook.value);
             These commands reference a dataset or dataset collection. For instance, the following examples would display
             the dataset collection metadata and would embed a dataset into the document as an image.
 
-            <span v-if="pagelike">
+            <span v-if="page">
                 These elements are referenced by object IDs used by the Galaxy API. The Markdown editor will let you
                 pick objects graphically but they will be embedded into the Markdown with these IDs.
             </span>
@@ -62,7 +59,7 @@ const pagelike = computed(() => page.value || notebook.value);
             </span>
         </p>
 
-        <pre v-if="pagelike">
+        <pre v-if="page">
 ```galaxy
 history_dataset_collection_display(history_dataset_collection_id=33b43b4e7093c91f)
 ```
@@ -75,7 +72,7 @@ history_dataset_collection_display(output=mapped_bams)
 </pre
         >
 
-        <pre v-if="pagelike">
+        <pre v-if="page">
 ```galaxy
 history_dataset_as_image(history_dataset_id=33b43b4e7093c91f)
 ```
@@ -101,13 +98,13 @@ history_dataset_as_image(output=normalized_result_plot)
 
         <h3>Workflow Commands</h3>
 
-        <p v-if="pagelike">
+        <p v-if="page">
             These commands reference a workflow by an object ID. The following example would display a representation of
             the workflow in the resulting document:
         </p>
         <p v-else>These commands reference the current workflow and do not require an input for the most part.</p>
 
-        <pre v-if="pagelike">
+        <pre v-if="page">
 ```galaxy
 workflow_display(workflow_id=33b43b4e7093c91f>)
 ```
@@ -126,7 +123,7 @@ workflow_display()
 
         <h3>Job Commands</h3>
 
-        <p v-if="pagelike">
+        <p v-if="page">
             These commands reference a Galaxy job. For instance, the following example would show the job parameters the
             job ID <tt>33b43b4e7093c91f</tt>.
         </p>
@@ -136,7 +133,7 @@ workflow_display()
             <tt>mapping</tt>.
         </p>
 
-        <pre v-if="pagelike">
+        <pre v-if="page">
 ```galaxy
 job_parameters(job_id=33b43b4e7093c91f)
 ```

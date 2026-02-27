@@ -53,7 +53,7 @@ const editorTitle = computed(() => {
     return store.currentTitle || "Untitled Page";
 });
 
-const markdownEditorMode = computed(() => (props.historyId ? "history_notebook" : "page"));
+const markdownEditorMode = computed<"page" | "report">(() => "page");
 
 const markdownConfig = computed(() => {
     if (!store.currentPage) {
