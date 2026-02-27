@@ -538,6 +538,7 @@ export function getRouter(Galaxy) {
                         component: PageEditor,
                         props: (route) => ({
                             pageId: route.query.id,
+                            displayOnly: route.query.displayOnly === "true",
                         }),
                     },
                     {
