@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { faCheckSquare, faClock, faPlus, faSquare, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
+import { faClock, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
