@@ -1,14 +1,15 @@
 <template>
     <div>
-        <b-button
+        <BButton
             v-b-modal.details-modal
             class="details-btn"
             title="Show location details"
             data-testid="loc-details-btn">
-            <FontAwesomeIcon :icon="faInfoCircle" /> {{ detailsCaption }}
-        </b-button>
+            <FontAwesomeIcon :icon="faInfoCircle" />
+            {{ detailsCaption }}
+        </BButton>
 
-        <b-modal
+        <BModal
             id="details-modal"
             :static="isStatic"
             :title="titleLocationDetails"
@@ -16,47 +17,52 @@
             ok-only
             @show="getDetails">
             <div>
-                <b-alert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </b-alert>
+                <BAlert :show="hasError" variant="danger" data-testid="error-alert">
+                    {{ error }}
+                </BAlert>
+
                 <div v-if="libraryDetails">
-                    <b-table-lite
+                    <GTable
+                        caption-top
+                        compact
+                        hide-header
+                        striped
                         :fields="fields"
                         :items="libraryDetails"
-                        striped
-                        small
-                        caption-top
-                        thead-class="d-none"
                         data-testid="library-table">
                         <template v-slot:table-caption>
                             <h2 class="h-sm">
                                 <b>{{ libraryHeader }}</b>
                             </h2>
                         </template>
-                    </b-table-lite>
+                    </GTable>
                 </div>
+
                 <div>
-                    <b-table-lite
+                    <GTable
+                        caption-top
+                        compact
+                        hide-header
+                        striped
                         :fields="fields"
                         :items="folderDetails"
-                        striped
-                        small
-                        caption-top
-                        thead-class="d-none"
                         data-testid="folder-table">
                         <template v-slot:table-caption>
                             <h2 class="h-sm">
                                 <b>{{ folderHeader }}</b>
                             </h2>
                         </template>
+
                         <template v-slot:cell(value)="row">
                             <div v-if="row.item.name === libraryFieldTitles.create_time_pretty">
                                 <UtcDate :date="row.item.value" mode="elapsed" />
                             </div>
                             <div v-else>{{ row.item.value }}</div>
                         </template>
-                    </b-table-lite>
+                    </GTable>
                 </div>
             </div>
-        </b-modal>
+        </BModal>
     </div>
 </template>
 
@@ -64,16 +70,22 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
+import { BAlert, BButton, BModal } from "bootstrap-vue";
 
 import { buildFields } from "@/components/Libraries/library-utils";
 import { getAppRoot } from "@/onload/loadConfig";
 import _l from "@/utils/localization";
 
+import GTable from "@/components/Common/GTable.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 export default {
     components: {
+        BAlert,
+        BButton,
+        BModal,
         FontAwesomeIcon,
+        GTable,
         UtcDate,
     },
     props: {
@@ -101,9 +113,13 @@ export default {
             fields: [
                 {
                     key: "name",
-                    tdClass: "name-column",
+                    label: _l("Name"),
+                    class: "name-column",
                 },
-                { key: "value" },
+                {
+                    key: "value",
+                    label: _l("Value"),
+                },
             ],
             folderFieldTitles: { folder_name: _l("Name"), folder_description: _l("Description"), id: "ID" },
             libraryFieldTitles: {

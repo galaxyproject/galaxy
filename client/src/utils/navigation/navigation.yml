@@ -1263,7 +1263,7 @@ admin:
 libraries:
 
   selectors:
-    _: '#libraries_list'
+    _: '#g-table-libraries_list'
     activity: '#activity-libraries'
     create_new_library_btn: '#create-new-lib'
     permission_library_btn: '.permission_library_btn'
@@ -1313,9 +1313,9 @@ libraries:
       clear_filters: "button.clear-filters-link"
       import_progress_bar: '.progress-bar-import'
       import_from_path_textarea: '#import_paths'
-      select_all: '#select-all-checkboxes'
-      select_one: '.lib-folder-checkbox'
-      select_dataset: 'tr[aria-rowindex="${rowindex}"] .lib-folder-checkbox'
+      select_all: 'thead .g-table-select-column .custom-control'
+      select_one: '#g-table-row-0-folder_list_body .g-table-select-column .custom-control'
+      select_dataset: '#g-table-row-${row_index}-folder_list_body .g-table-select-column .custom-control'
       empty_folder_message: '.empty-folder-message'
       btn_open_parent_folder:
         type: xpath
