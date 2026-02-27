@@ -128,6 +128,9 @@ export function mapToCompositeFileUpload(item: CompositeFileItem, targetHistoryI
                 src: "files" as const,
                 file: slot.file,
                 optional: slot.optional,
+                description: slot.description || undefined,
+                displayName: slot.file?.name ?? "Unnamed file",
+                fileSize: slot.fileSize,
             };
         } else if (slot.mode === "url") {
             return {
@@ -135,6 +138,8 @@ export function mapToCompositeFileUpload(item: CompositeFileItem, targetHistoryI
                 src: "url" as const,
                 url: slot.url,
                 optional: slot.optional,
+                description: slot.description || undefined,
+                displayName: slot.url,
             };
         } else if (slot.mode === "remote") {
             return {
@@ -142,6 +147,9 @@ export function mapToCompositeFileUpload(item: CompositeFileItem, targetHistoryI
                 src: "url" as const,
                 url: slot.remoteUri,
                 optional: slot.optional,
+                description: slot.description || undefined,
+                displayName: slot.remoteName,
+                fileSize: slot.fileSize,
             };
         } else {
             return {
@@ -149,16 +157,20 @@ export function mapToCompositeFileUpload(item: CompositeFileItem, targetHistoryI
                 src: "paste" as const,
                 content: slot.content,
                 optional: slot.optional,
+                description: slot.description || undefined,
+                displayName: "Pasted content",
+                fileSize: new Blob([slot.content]).size,
             };
         }
     });
 
+    const totalSize = slots.reduce((sum, s) => sum + (s.fileSize ?? 0), 0);
     const displayName = item.name.trim() || `Unnamed ${item.extension} composite`;
 
     return {
         uploadMode: "composite-file" as const,
         name: displayName,
-        size: 0,
+        size: totalSize,
         targetHistoryId,
         dbkey: item.dbkey,
         extension: item.extension,

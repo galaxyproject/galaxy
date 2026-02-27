@@ -65,6 +65,20 @@ export interface CompositeSlotQueueItem {
     content?: string;
     /** Whether this slot is optional */
     optional: boolean;
+    /**
+     * Human-readable description of the slot from the datatype definition.
+     * Absent when the datatype provides no description.
+     */
+    description?: string;
+    /**
+     * Display label for the source: the local file name, remote file name, URL string,
+     * or "Pasted content" for paste slots. Used in the progress panel slot breakdown.
+     */
+    displayName?: string;
+    /**
+     * Size in bytes of the slot content, when known at queue time.
+     */
+    fileSize?: number;
 }
 
 /** Upload item for a composite datatype (multiple files → one HDA) */
