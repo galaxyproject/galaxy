@@ -2,7 +2,6 @@
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 // @ts-ignore missing types
-import Vue2Teleport from "vue2-teleport";
 
 import type { CardBadge } from "@/components/Common/GCard.types";
 import { useUploadStagingCounts } from "@/composables/upload/useUploadStaging";
@@ -74,13 +73,13 @@ function getStagingBadges(method: UploadMethodConfig): CardBadge[] {
 
 <template>
     <div class="upload-method-list-wrapper h-100 d-flex flex-column">
-        <Vue2Teleport v-if="searchTeleportTarget" :to="searchTeleportTarget">
+        <Teleport v-if="searchTeleportTarget" defer :to="searchTeleportTarget">
             <DelayedInput
                 :delay="100"
                 :class="searchInputClass"
                 placeholder="Search import methods..."
                 @change="updateQuery" />
-        </Vue2Teleport>
+        </Teleport>
         <DelayedInput
             v-else
             :delay="100"
