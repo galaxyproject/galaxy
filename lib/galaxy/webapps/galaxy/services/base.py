@@ -37,6 +37,12 @@ from galaxy.schema.schema import (
     ToolRequestModel,
 )
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.tool_util.parameters import (
+    encode as encode_request,
+    input_models_for_tool_source,
+)
+from galaxy.tool_util.parameters.state import RequestInternalToolState
+from galaxy.tool_util.parser import get_tool_source
 from galaxy.short_term_storage import (
     ShortTermStorageAllocator,
     ShortTermStorageTarget,
@@ -201,28 +207,22 @@ def async_task_summary(async_result: AsyncResult) -> AsyncTaskResultSummary:
     )
 
 
-def _encode_request_ids(request: dict[str, Any], security: IdEncodingHelper) -> dict[str, Any]:
-    """Walk the request dict and encode dataset IDs (raw ints → encoded strings).
-
-    Looks for dicts with ``{"id": <int>, "src": "hda"|"hdca"|...}`` and encodes the ``id``.
-    """
-    import copy
-
-    def _walk(obj):
-        if isinstance(obj, dict):
-            if "src" in obj and "id" in obj and isinstance(obj["id"], int):
-                obj = dict(obj)
-                obj["id"] = security.encode_id(obj["id"])
-            return {k: _walk(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [_walk(item) for item in obj]
-        return obj
-
-    return _walk(copy.deepcopy(request))
+def _encode_tool_request(tool_request: ToolRequest, security: IdEncodingHelper) -> dict[str, Any]:
+    """Encode request IDs using strongly-typed parameter walking."""
+    tool_source_model = tool_request.tool_source
+    raw_tool_source = cast(str, tool_source_model.source)
+    parsed_tool_source = get_tool_source(
+        tool_source_class=tool_source_model.source_class,
+        raw_tool_source=raw_tool_source,
+    )
+    parameter_bundle = input_models_for_tool_source(parsed_tool_source)
+    internal_state = RequestInternalToolState(tool_request.request)
+    encoded_state = encode_request(internal_state, parameter_bundle, security.encode_id)
+    return encoded_state.input_state
 
 
 def tool_request_to_model(tool_request: ToolRequest, security: IdEncodingHelper) -> ToolRequestModel:
-    encoded_request = _encode_request_ids(tool_request.request, security)
+    encoded_request = _encode_tool_request(tool_request, security)
     as_dict = {
         "id": tool_request.id,
         "request": encoded_request,
@@ -233,7 +233,7 @@ def tool_request_to_model(tool_request: ToolRequest, security: IdEncodingHelper)
 
 
 def tool_request_detailed_to_model(tool_request: ToolRequest, security: IdEncodingHelper) -> ToolRequestDetailedModel:
-    encoded_request = _encode_request_ids(tool_request.request, security)
+    encoded_request = _encode_tool_request(tool_request, security)
     jobs = [{"src": "job", "id": job.id} for job in tool_request.jobs]
     implicit_collections = [
         {"src": "hdca", "id": assoc.dataset_collection.id, "output_name": assoc.output_name}
