@@ -8,9 +8,9 @@
             <BButton
                 v-if="currentUser && currentUser.is_admin"
                 id="create-new-lib"
-                v-b-toggle.collapse-2
                 title="Create new folder"
-                class="mr-1">
+                class="mr-1"
+                @click="isNewLibFormVisible = !isNewLibFormVisible">
                 <FontAwesomeIcon :icon="faPlus" />
                 {{ titleLibrary }}
             </BButton>
@@ -30,7 +30,7 @@
             </BFormCheckbox>
         </div>
 
-        <BCollapse id="collapse-2" v-model="isNewLibFormVisible">
+        <GCollapse v-model="isNewLibFormVisible">
             <BCard>
                 <BForm @submit.prevent="newLibrary">
                     <BInputGroup class="mb-2 new-row">
@@ -49,7 +49,7 @@
                     </BInputGroup>
                 </BForm>
             </BCard>
-        </BCollapse>
+        </GCollapse>
 
         <GTable
             id="libraries_list"
@@ -180,7 +180,10 @@
                                     class="pagination-input-field"
                                     autocomplete="off"
                                     type="number"
-                                    onkeyup="this.value|=0;if(this.value<1)this.value=1" />
+                                    onkeyup="
+                                        this.value |= 0;
+                                        if (this.value < 1) this.value = 1;
+                                    " />
                             </td>
 
                             <td class="text-muted ml-1 paginator-text">
@@ -213,7 +216,6 @@ import {
     BButton,
     BCard,
     BCol,
-    BCollapse,
     BContainer,
     BForm,
     BFormCheckbox,
@@ -233,6 +235,7 @@ import _l from "@/utils/localization";
 import { Services } from "./services";
 import { fields } from "./table-fields";
 
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LibraryEditField from "@/components/Libraries/LibraryEditField.vue";
@@ -243,7 +246,6 @@ export default {
         BButton,
         BCard,
         BCol,
-        BCollapse,
         BContainer,
         BForm,
         BFormCheckbox,
@@ -252,6 +254,7 @@ export default {
         BPagination,
         BRow,
         FontAwesomeIcon,
+        GCollapse,
         GLink,
         GTable,
         LibraryEditField,
