@@ -5,6 +5,7 @@ import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -82,8 +83,7 @@ describe("History Navigation", () => {
             },
         );
 
-        const dropDown = wrapper.find("*[data-description='history options']");
-        const optionElements = dropDown.findAll("bdropdownitem-stub");
+        const optionElements = wrapper.findAllComponents(GDropdownItem);
         const optionTexts = optionElements.wrappers.map((el) => el.text());
 
         expect(optionTexts).toStrictEqual(expectedOptions);
@@ -95,13 +95,15 @@ describe("History Navigation", () => {
             histories: [],
         });
 
-        const dropDown = wrapper.find("*[data-description='history options']");
-        const enabledOptionElements = dropDown.findAll("bdropdownitem-stub:not([disabled])");
-        const enabledOptionTexts = enabledOptionElements.wrappers.map((el) => el.text());
+        const allItems = wrapper.findAllComponents(GDropdownItem);
+        const enabledOptionTexts = allItems.wrappers
+            .filter((el) => !el.props("disabled"))
+            .map((el) => el.text());
         expect(enabledOptionTexts).toStrictEqual(anonymousOptions);
 
-        const disabledOptionElements = dropDown.findAll("bdropdownitem-stub[disabled]");
-        const disabledOptionTexts = disabledOptionElements.wrappers.map((el) => el.text());
+        const disabledOptionTexts = allItems.wrappers
+            .filter((el) => el.props("disabled"))
+            .map((el) => el.text());
         expect(disabledOptionTexts).toStrictEqual(anonymousDisabledOptions);
     });
 
@@ -111,11 +113,11 @@ describe("History Navigation", () => {
             histories: [],
         });
 
-        const dropDown = wrapper.find("*[data-description='history options']");
-        const disabledOptionElements = dropDown.findAll("bdropdownitem-stub[disabled]");
+        const allItems = wrapper.findAllComponents(GDropdownItem);
+        const disabledItems = allItems.wrappers.filter((el) => el.props("disabled"));
 
-        disabledOptionElements.wrappers.forEach((option) => {
-            expect((option.attributes("title") as string).toLowerCase()).toContain("log in");
+        disabledItems.forEach((option) => {
+            expect((option.props("title") as string).toLowerCase()).toContain("log in");
         });
     });
 
