@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faAngleDoubleUp, faQuestion, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BModal, BPopover } from "bootstrap-vue";
+import { BModal } from "bootstrap-vue";
 import { kebabCase } from "lodash";
 import { computed, ref, set } from "vue";
 
@@ -9,6 +9,7 @@ import type Filtering from "@/utils/filtering";
 import { type Alias, type ErrorType, getOperatorForAlias, type ValidFilter } from "@/utils/filtering";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenuBoolean from "@/components/Common/FilterMenuBoolean.vue";
 import FilterMenuDropdown from "@/components/Common/FilterMenuDropdown.vue";
@@ -230,7 +231,7 @@ function updateFilterText(newFilterText: string) {
         </GButton>
 
         <component
-            :is="props.view !== 'popover' ? 'div' : BPopover"
+            :is="props.view !== 'popover' ? 'div' : GPopover"
             v-if="
                 (props.view === 'popover' && toggleMenuButton) || props.menuType == 'standalone' || props.showAdvanced
             "
