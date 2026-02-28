@@ -6,15 +6,15 @@ Base classes and utilities for Tool Shed functional tests.
 
 ```
 base/
-├── driver.py           # ToolShedTestDriver - embedded server setup
-├── testcase.py    # ShedTestCase - main test base class
+├── driver.py             # ToolShedTestDriver - embedded server setup
+├── testcase.py           # ShedTestCase - main test base class
 ├── playwrighttestcase.py # PlaywrightTestCase - browser test base
 ├── playwrightbrowser.py  # PlaywrightShedBrowser - browser abstraction
-├── browser.py          # ShedBrowser protocol
-├── populators.py       # ToolShedPopulator - API fixture creation
-├── api.py              # ShedApiTestCase - API test base
-├── api_util.py         # API interaction utilities
-└── test_db_util.py     # Direct database access
+├── browser.py            # ShedBrowser protocol
+├── populators.py         # ToolShedPopulator - API fixture creation
+├── api.py                # ShedApiTestCase - API test base
+├── api_util.py           # API interaction utilities
+└── test_db_util.py       # Direct database access
 ```
 
 ## Base Classes

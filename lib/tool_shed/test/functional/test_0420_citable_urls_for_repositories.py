@@ -83,9 +83,6 @@ class TestRepositoryCitableURLs(ShedTestCase):
         """
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
         encoded_user_id = self.security.encode_id(test_user_1.id)
-        # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
-        # then directly load the url that the iframe should be loading and check for the expected strings.
-        # The iframe should point to /repository/browse_repositories?user_id=<encoded user ID>&operation=repositories_by_user
         strings_displayed: list[str] = []
         strings_displayed_in_iframe = ["user1", "filtering_0420", repository_description]
         self.load_citable_url(
@@ -109,9 +106,6 @@ class TestRepositoryCitableURLs(ShedTestCase):
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
         encoded_user_id = self.security.encode_id(test_user_1.id)
         encoded_repository_id = repository.id
-        # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
-        # then directly load the url that the iframe should be loading and check for the expected strings.
-        # The iframe should point to /repository/bview_repository?id=<encoded repository ID>
         strings_displayed: list[str] = []
         strings_displayed_in_iframe = [
             "user1",
@@ -140,9 +134,6 @@ class TestRepositoryCitableURLs(ShedTestCase):
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
         encoded_user_id = self.security.encode_id(test_user_1.id)
         encoded_repository_id = repository.id
-        # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
-        # then directly load the url that the iframe should be loading and check for the expected strings.
-        # The iframe should point to /repository/view_repository?id=<encoded repository ID>
         strings_displayed: list[str] = []
         strings_displayed_in_iframe = [
             "user1",
@@ -185,9 +176,6 @@ class TestRepositoryCitableURLs(ShedTestCase):
         """
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
         encoded_user_id = self.security.encode_id(test_user_1.id)
-        # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
-        # then directly load the url that the iframe should be loading and check for the expected strings.
-        # The iframe should point to /repository/browse_repositories?user_id=<encoded user ID>&operation=repositories_by_user
         strings_displayed = ["Repository user1/!!invalid!! is not found"]
         strings_displayed_in_iframe: list[str] = []
         self.load_citable_url(

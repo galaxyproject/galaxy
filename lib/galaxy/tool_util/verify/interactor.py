@@ -1779,8 +1779,7 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
             output_data = data_list[name]
         except (TypeError, KeyError):
             # Legacy - fall back on ordered data list access if data_list is
-            # just a list (case with twill variant or if output changes its
-            # name).
+            # just a list (e.g. if output changes its name).
             try:
                 if hasattr(data_list, "values"):
                     output_data = list(data_list.values())[output_index]

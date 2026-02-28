@@ -46,8 +46,7 @@ The main test types are as follows:
    quickly test just a component or a few components of Galaxy's backend code.
 - Selenium: These are full stack tests meant to test the Galaxy UI with real
    browsers and are located in lib/galaxy_test/selenium.
-- ToolShed: These are web tests that use the older Python web testing
-   framework twill to test ToolShed related functionality. These are
+- ToolShed: These are tests that test ToolShed related functionality. These are
    located in lib/tool_shed/test.
 
 Python testing is done via pytest. Specific tests can be selected

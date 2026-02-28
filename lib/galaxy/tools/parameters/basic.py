@@ -1392,7 +1392,6 @@ class ColumnListParameter(SelectToolParameter):
     those columns that contain numerical values in the associated DataToolParameter.
 
     # TODO: we need better testing here, but not sure how to associate a DatatoolParameter with a ColumnListParameter
-    # from a twill perspective...
 
     >>> # Mock up a history (not connected to database)
     >>> from galaxy.model import History, HistoryDatasetAssociation
