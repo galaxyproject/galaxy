@@ -1,4 +1,4 @@
-import type { NavigationGuardNext, RouteLocationNormalized } from "vue-router";
+import type { RouteLocationNormalized, RouteLocationRaw } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import type { UploadMethod } from "@/components/Panels/Upload/types";
@@ -21,48 +21,41 @@ const LOGIN_ENTRY_ROUTES = ["/login/start", "/register/start"];
  * treats a `redirect` function returning undefined as "no match" and renders nothing --
  * which would leave anonymous users staring at a blank login page.
  */
-export function redirectLoggedIn(to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
+export function redirectLoggedIn(to: RouteLocationNormalized) {
     const Galaxy = getGalaxyInstance();
     if (!Galaxy?.user?.id) {
-        next();
         return;
     }
     const redirect = safeRedirectPath(to.query.redirect);
-    next(redirect && !LOGIN_ENTRY_ROUTES.includes(redirect) ? redirect : "/");
+    return redirect && !LOGIN_ENTRY_ROUTES.includes(redirect) ? redirect : "/";
 }
 
-async function redirectIfAnonymous(to: RouteLocationNormalized, next: NavigationGuardNext) {
+async function anonymousRedirect(to: RouteLocationNormalized): Promise<RouteLocationRaw | undefined> {
     const userStore = useUserStore();
     await userStore.loadUser(false);
 
     if (userStore.isAnonymous) {
-        next({
+        return {
             path: "/login/start",
             query: { redirect: to.fullPath },
-        });
-        return true;
+        };
     }
-    return false;
+    return undefined;
 }
 
-export async function requireAuth(to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
-    if (await redirectIfAnonymous(to, next)) {
-        return;
-    }
-    next();
+export async function requireAuth(to: RouteLocationNormalized) {
+    return await anonymousRedirect(to);
 }
 
-export async function requireAuthForUploadMethod(to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) {
+export async function requireAuthForUploadMethod(to: RouteLocationNormalized) {
     const methodId = to.params.methodId as UploadMethod;
     const method = getUploadMethod(methodId);
 
     if (!method) {
-        next({ path: "/upload", replace: true });
-        return;
+        return { path: "/upload", replace: true };
     }
 
-    if (method.requiresLogin && (await redirectIfAnonymous(to, next))) {
-        return;
+    if (method.requiresLogin) {
+        return await anonymousRedirect(to);
     }
-    next();
 }

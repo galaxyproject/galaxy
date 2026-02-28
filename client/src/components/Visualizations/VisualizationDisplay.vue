@@ -52,11 +52,9 @@ function onUnload(e: BeforeUnloadEvent) {
     }
 }
 
-const confirmDiscard: NavigationGuard = (to, from, next) => {
+const confirmDiscard: NavigationGuard = () => {
     if (hasUnsavedChanges.value && !window.confirm("Unsaved changes will be lost. Continue?")) {
-        next(false);
-    } else {
-        next();
+        return false;
     }
 };
 
