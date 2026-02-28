@@ -13,7 +13,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
-import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText, BFormTextarea } from "bootstrap-vue";
+import { BFormTextarea } from "bootstrap-vue";
 import type { ZoomTransform } from "d3-zoom";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
@@ -62,6 +62,10 @@ import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
 import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownDivider from "@/components/BaseComponents/GDropdownDivider.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
+import GDropdownText from "@/components/BaseComponents/GDropdownText.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
@@ -1452,7 +1456,7 @@ initializeWorkflowEditor();
                     </span>
 
                     <div class="d-flex align-items-center flex-gapx-1">
-                        <BDropdown
+                        <GDropdown
                             v-if="credentialSteps.length > 0"
                             no-caret
                             right
@@ -1463,13 +1467,13 @@ initializeWorkflowEditor();
                                 <FontAwesomeIcon :icon="faKey" fixed-width />
                             </template>
 
-                            <BDropdownText style="min-width: 25rem">
+                            <GDropdownText style="min-width: 25rem">
                                 This workflow contains the following steps that require credentials:
-                            </BDropdownText>
+                            </GDropdownText>
 
-                            <BDropdownDivider />
+                            <GDropdownDivider />
 
-                            <BDropdownItem
+                            <GDropdownItem
                                 v-for="cs in credentialSteps"
                                 :key="cs.id"
                                 title="Click to go to step"
@@ -1477,8 +1481,8 @@ initializeWorkflowEditor();
                                 @click="onToolClick(cs.id)">
                                 <FontAwesomeIcon :icon="faWrench" fixed-width />
                                 {{ cs.id + 1 }}: {{ cs.label ?? cs.name }}
-                            </BDropdownItem>
-                        </BDropdown>
+                            </GDropdownItem>
+                        </GDropdown>
 
                         <GButtonGroup>
                             <GButton

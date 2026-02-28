@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { faCheck, faEye } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { Panel } from "@/stores/toolStore";
 
 import { types_to_icons } from "../utilities";
+
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 const props = defineProps<{
     currentPanelView: string;
@@ -26,7 +27,7 @@ const isSelected = computed(() => props.currentPanelView === props.panelView.id)
 </script>
 
 <template>
-    <BDropdownItem
+    <GDropdownItem
         class="ml-1"
         :title="props.panelView.description"
         :data-panel-id="panelView.id"
@@ -40,5 +41,5 @@ const isSelected = computed(() => props.currentPanelView === props.panelView.id)
             class="ml-1"
             data-description="panel view item icon"
             fixed-width />
-    </BDropdownItem>
+    </GDropdownItem>
 </template>
