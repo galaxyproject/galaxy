@@ -1,5 +1,6 @@
 from typing import (
     Any,
+    TYPE_CHECKING,
 )
 from urllib.parse import urljoin
 
@@ -18,7 +19,7 @@ from slowapi.util import get_remote_address
 from starlette.middleware.cors import CORSMiddleware
 from tuspyserver import create_tus_router
 
-from galaxy.schema.generics import CustomJsonSchema
+from galaxy.schema.generics import ref_to_name
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
     add_exception_handler,
@@ -28,7 +29,14 @@ from galaxy.webapps.base.api import (
     include_all_package_routers,
 )
 from galaxy.webapps.base.webapp import config_allows_origin
+from galaxy.webapps.openapi._compat.v2 import GenerateJsonSchema
 from galaxy.webapps.openapi.utils import get_openapi
+
+if TYPE_CHECKING:
+    from pydantic.json_schema import (
+        CoreModeRef,
+        DefsRef,
+    )
 
 # https://fastapi.tiangolo.com/tutorial/metadata/#metadata-for-tags
 api_tags_metadata = [
@@ -162,6 +170,17 @@ def get_fastapi_instance(root_path="") -> FastAPI:
         license_info={"name": "MIT", "url": "https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt"},
         root_path=root_path,
     )
+
+
+class CustomJsonSchema(GenerateJsonSchema):
+    def get_defs_ref(self, core_mode_ref: "CoreModeRef") -> "DefsRef":
+        full_def = super().get_defs_ref(core_mode_ref)
+        choices = self._prioritized_defsref_choices[full_def]
+        ref, mode = core_mode_ref
+        if ref in ref_to_name:
+            for i, choice in enumerate(choices):
+                choices[i] = choice.replace(choices[0], ref_to_name[ref])  # type: ignore[call-overload]
+        return full_def
 
 
 def get_openapi_schema() -> dict[str, Any]:

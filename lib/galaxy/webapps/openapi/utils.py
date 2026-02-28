@@ -31,10 +31,10 @@ from fastapi.openapi.utils import (
     get_fields_from_routes,
     get_openapi_path,
 )
-from pydantic.json_schema import GenerateJsonSchema
 from starlette.routing import BaseRoute
 
 from ._compat import get_definitions
+from ._compat.v2 import GenerateJsonSchema
 
 
 def get_openapi(
