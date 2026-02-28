@@ -76,7 +76,8 @@ describe("DatasetAttributes", () => {
     it("check rendering", async () => {
         const wrapper = await mountDatasetAttributes();
 
-        expect(wrapper.findAll("button").length).toBe(6);
+        // 6 form buttons + 3 tab navigation buttons from GTabs
+        expect(wrapper.findAll("button").length).toBe(9);
         expect(wrapper.findAll("#attribute_text").length).toBe(1);
         expect(wrapper.findAll("#conversion_text").length).toBe(1);
         expect(wrapper.findAll("#datatype_text").length).toBe(1);
@@ -96,7 +97,8 @@ describe("DatasetAttributes", () => {
     it("check rendering without conversion option", async () => {
         const wrapper = await mountDatasetAttributes(true);
 
-        expect(wrapper.findAll("button").length).toBe(5);
+        // 5 form buttons + 3 tab navigation buttons from GTabs
+        expect(wrapper.findAll("button").length).toBe(8);
         expect(wrapper.findAll("#attribute_text").length).toBe(1);
         expect(wrapper.findAll("#conversion_text").length).toBe(0);
         expect(wrapper.findAll("#datatype_text").length).toBe(1);

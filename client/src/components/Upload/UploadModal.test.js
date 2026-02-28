@@ -62,8 +62,8 @@ describe("UploadModal.vue", () => {
             propsData,
             localVue,
             stubs: {
-                BTabs: true,
-                BTab: true,
+                GTabs: true,
+                GTab: true,
                 Collection: true,
                 Composite: true,
                 Default: true,

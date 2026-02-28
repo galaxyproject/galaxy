@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Ref, VNode } from "vue";
-import { computed, h, provide, reactive, ref, watch } from "vue";
+import { computed, h, provide, ref, watch } from "vue";
 
 export interface TabRegistration {
     title?: string;
@@ -59,11 +59,11 @@ const activeIndex = computed({
     },
 });
 
-const tabs = reactive<TabRegistration[]>([]);
+const tabs = ref<TabRegistration[]>([]);
 
 function registerTab(tab: TabRegistration): number {
-    const index = tabs.length;
-    tabs.push(tab);
+    const index = tabs.value.length;
+    tabs.value.push(tab);
     if (tab.active && index !== activeIndex.value) {
         activeIndex.value = index;
     }
@@ -71,20 +71,20 @@ function registerTab(tab: TabRegistration): number {
 }
 
 function unregisterTab(index: number) {
-    tabs.splice(index, 1);
-    if (activeIndex.value >= tabs.length && tabs.length > 0) {
-        activeIndex.value = tabs.length - 1;
+    tabs.value.splice(index, 1);
+    if (activeIndex.value >= tabs.value.length && tabs.value.length > 0) {
+        activeIndex.value = tabs.value.length - 1;
     }
 }
 
 function updateTab(index: number, tab: TabRegistration) {
-    if (index >= 0 && index < tabs.length) {
-        tabs[index] = tab;
+    if (index >= 0 && index < tabs.value.length) {
+        tabs.value[index] = tab;
     }
 }
 
 function setActive(index: number) {
-    if (index >= 0 && index < tabs.length && !tabs[index]?.disabled) {
+    if (index >= 0 && index < tabs.value.length && !tabs.value[index]?.disabled) {
         activeIndex.value = index;
     }
 }
