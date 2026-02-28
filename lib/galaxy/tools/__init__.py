@@ -1722,7 +1722,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             parameters = input_models_for_pages(pages, self.profile)
             self.parameters = parameters
         except Exception:
-            pass
+            log.warning("Failed to generate parameter models for tool '%s'", self.id, exc_info=True)
         if pages.inputs_defined:
             if hasattr(pages, "input_elem"):
                 input_elem = pages.input_elem
