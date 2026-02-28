@@ -302,9 +302,6 @@ importers:
       vue:
         specifier: 3.5.18
         version: 3.5.18(typescript@5.9.3)
-      vue-class-component:
-        specifier: ^7.2.6
-        version: 7.2.6(vue@3.5.18(typescript@5.9.3))
       vue-demi:
         specifier: 0.13.11
         version: 0.13.11(vue@3.5.18(typescript@5.9.3))
@@ -323,9 +320,6 @@ importers:
       vue-observe-visibility:
         specifier: ^1.0.0
         version: 1.0.0
-      vue-property-decorator:
-        specifier: ^9.1.2
-        version: 9.1.2(vue-class-component@7.2.6(vue@3.5.18(typescript@5.9.3)))(vue@3.5.18(typescript@5.9.3))
       vue-router:
         specifier: ^4.4.5
         version: 4.6.4(vue@3.5.18(typescript@5.9.3))
@@ -335,9 +329,6 @@ importers:
       vue-virtual-scroll-list:
         specifier: ^2.3.5
         version: 2.3.5
-      vue2-teleport:
-        specifier: ^1.0.1
-        version: 1.1.4
       vuedraggable:
         specifier: ^2.24.3
         version: 2.24.3
@@ -4376,9 +4367,6 @@ packages:
 
   vue-virtual-scroll-list@2.3.5:
     resolution: {integrity: sha512-YFK6u5yltqtAOfTBcij/KGAS2SoZvzbNIAf9qTULauPObEp53xj22tDuohrrM2vNkgoD5kejXICIUBt2Q4ZDqQ==}
-
-  vue2-teleport@1.1.4:
-    resolution: {integrity: sha512-mGTszyQP6k3sSSk7MBq+PZdVojHYLwg5772hl3UVpu5uaLBqWIZ5eNP6/TjkDrf1XUTTxybvpXC6inpjwO+i/Q==}
 
   vue@3.5.18:
     resolution: {integrity: sha512-7W4Y4ZbMiQ3SEo+m9lnoNpV9xG7QVMLa+/0RFwwiAVkeYoyGXqWE85jabU4pllJNUzqfLShJ5YLptewhCWUgNA==}
@@ -8748,8 +8736,6 @@ snapshots:
       typescript: 5.9.3
 
   vue-virtual-scroll-list@2.3.5: {}
-
-  vue2-teleport@1.1.4: {}
 
   vue@3.5.18(typescript@5.9.3):
     dependencies:

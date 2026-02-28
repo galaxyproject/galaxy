@@ -663,108 +663,101 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                             </td>
                         </tr>
 
-                        <template v-for="(item, paginatedIndex) in paginatedLocalItems">
-                            <template>
-                                <tr
-                                    :id="getRowId(props.id, getGlobalIndex(paginatedIndex))"
-                                    :key="`tr` + getGlobalIndex(paginatedIndex)"
-                                    :class="{
-                                        'g-table-row-clickable': clickableRows,
-                                        'g-table-row-selected': isRowSelected(getGlobalIndex(paginatedIndex)),
-                                    }"
-                                    @click="onRowClick(item, getGlobalIndex(paginatedIndex), $event)">
-                                    <!-- Selection checkbox column -->
-                                    <td v-if="selectable" class="g-table-select-column">
-                                        <BFormCheckbox
-                                            :id="`${getRowId(props.id, getGlobalIndex(paginatedIndex))}-select`"
+                        <template
+                            v-for="(item, paginatedIndex) in paginatedLocalItems"
+                            :key="getGlobalIndex(paginatedIndex)">
+                            <tr
+                                :id="getRowId(props.id, getGlobalIndex(paginatedIndex))"
+                                :class="{
+                                    'g-table-row-clickable': clickableRows,
+                                    'g-table-row-selected': isRowSelected(getGlobalIndex(paginatedIndex)),
+                                }"
+                                @click="onRowClick(item, getGlobalIndex(paginatedIndex), $event)">
+                                <!-- Selection checkbox column -->
+                                <td v-if="selectable" class="g-table-select-column">
+                                    <BFormCheckbox
+                                        :id="`${getRowId(props.id, getGlobalIndex(paginatedIndex))}-select`"
+                                        v-b-tooltip.hover.noninteractive
+                                        :checked="isRowSelected(getGlobalIndex(paginatedIndex))"
+                                        title="Select for bulk actions"
+                                        @click.stop
+                                        @change="onRowSelect(item, getGlobalIndex(paginatedIndex))" />
+                                </td>
+
+                                <!-- Data columns -->
+                                <td
+                                    v-for="(field, fieldIndex) in props.fields"
+                                    :id="getCellId(props.id, field.key, getGlobalIndex(paginatedIndex))"
+                                    :key="field.key"
+                                    :data-label="field.label ?? field.key"
+                                    :class="[
+                                        field.cellClass,
+                                        field.class,
+                                        getAlignmentClass(field.align),
+                                        getCellVariantClass(item, field),
+                                        { 'hide-on-small': field.hideOnSmall },
+                                    ]">
+                                    <template
+                                        v-if="fieldIndex === 0 && getStatusIcon(item, getGlobalIndex(paginatedIndex))">
+                                        <FontAwesomeIcon
+                                            v-if="getStatusIcon(item, getGlobalIndex(paginatedIndex))"
                                             v-b-tooltip.hover.noninteractive
-                                            :checked="isRowSelected(getGlobalIndex(paginatedIndex))"
-                                            title="Select for bulk actions"
-                                            @click.stop
-                                            @change="onRowSelect(item, getGlobalIndex(paginatedIndex))" />
-                                    </td>
+                                            v-bind="getIconProps(item, getGlobalIndex(paginatedIndex))"
+                                            fixed-width />
+                                    </template>
 
-                                    <!-- Data columns -->
-                                    <td
-                                        v-for="(field, fieldIndex) in props.fields"
-                                        :id="getCellId(props.id, field.key, getGlobalIndex(paginatedIndex))"
-                                        :key="field.key"
-                                        :data-label="field.label ?? field.key"
-                                        :class="[
-                                            field.cellClass,
-                                            field.class,
-                                            getAlignmentClass(field.align),
-                                            getCellVariantClass(item, field),
-                                            { 'hide-on-small': field.hideOnSmall },
-                                        ]">
-                                        <template
-                                            v-if="
-                                                fieldIndex === 0 && getStatusIcon(item, getGlobalIndex(paginatedIndex))
-                                            ">
-                                            <FontAwesomeIcon
-                                                v-if="getStatusIcon(item, getGlobalIndex(paginatedIndex))"
-                                                v-b-tooltip.hover.noninteractive
-                                                v-bind="getIconProps(item, getGlobalIndex(paginatedIndex))"
-                                                fixed-width />
-                                        </template>
+                                    <slot
+                                        :name="`cell(${field.key})`"
+                                        :value="item[field.key]"
+                                        :item="item"
+                                        :index="getGlobalIndex(paginatedIndex)"
+                                        :toggle-details="() => toggleRowDetails(getGlobalIndex(paginatedIndex))">
+                                        <span>{{ getCellValue(item, field) }}</span>
+                                    </slot>
+                                </td>
 
-                                        <slot
-                                            :name="`cell(${field.key})`"
-                                            :value="item[field.key]"
-                                            :item="item"
-                                            :index="getGlobalIndex(paginatedIndex)"
-                                            :toggle-details="() => toggleRowDetails(getGlobalIndex(paginatedIndex))">
-                                            <span>{{ getCellValue(item, field) }}</span>
-                                        </slot>
-                                    </td>
+                                <!-- Actions column -->
+                                <td v-if="props.actions" class="g-table-actions-column">
+                                    <slot name="actions" :item="item" :index="getGlobalIndex(paginatedIndex)">
+                                        <BDropdown
+                                            v-b-tooltip.hover.noninteractive
+                                            no-caret
+                                            right
+                                            title="More actions"
+                                            variant="link"
+                                            size="lg"
+                                            toggle-class="text-decoration-none p-0"
+                                            @click.stop>
+                                            <template v-slot:button-content>
+                                                <FontAwesomeIcon :icon="faEllipsisV" fixed-width />
+                                            </template>
 
-                                    <!-- Actions column -->
-                                    <td v-if="props.actions" class="g-table-actions-column">
-                                        <slot name="actions" :item="item" :index="getGlobalIndex(paginatedIndex)">
-                                            <BDropdown
-                                                v-b-tooltip.hover.noninteractive
-                                                no-caret
-                                                right
-                                                title="More actions"
-                                                variant="link"
-                                                size="lg"
-                                                toggle-class="text-decoration-none p-0"
-                                                @click.stop>
-                                                <template v-slot:button-content>
-                                                    <FontAwesomeIcon :icon="faEllipsisV" fixed-width />
-                                                </template>
-
-                                                <template v-for="ac in props.actions">
-                                                    <BDropdownItem
-                                                        v-if="ac.visible ?? true"
-                                                        :id="ac.id"
-                                                        :key="ac.id"
-                                                        :disabled="ac.disabled"
-                                                        :size="ac.size || 'sm'"
-                                                        :variant="ac.variant || 'link'"
-                                                        :to="ac.to"
-                                                        :title="ac.title"
-                                                        :href="ac.href"
-                                                        :target="ac.externalLink ? '_blank' : undefined"
-                                                        @click.stop="
-                                                            ac.handler &&
-                                                            ac.handler(item, getGlobalIndex(paginatedIndex))
-                                                        ">
-                                                        <FontAwesomeIcon v-if="ac.icon" :icon="ac.icon" fixed-width />
-                                                        {{ ac.label }}
-                                                    </BDropdownItem>
-                                                </template>
-                                            </BDropdown>
-                                        </slot>
-                                    </td>
-                                </tr>
-                            </template>
+                                            <template v-for="ac in props.actions">
+                                                <BDropdownItem
+                                                    v-if="ac.visible ?? true"
+                                                    :id="ac.id"
+                                                    :key="ac.id"
+                                                    :disabled="ac.disabled"
+                                                    :size="ac.size || 'sm'"
+                                                    :variant="ac.variant || 'link'"
+                                                    :to="ac.to"
+                                                    :title="ac.title"
+                                                    :href="ac.href"
+                                                    :target="ac.externalLink ? '_blank' : undefined"
+                                                    @click.stop="
+                                                        ac.handler && ac.handler(item, getGlobalIndex(paginatedIndex))
+                                                    ">
+                                                    <FontAwesomeIcon v-if="ac.icon" :icon="ac.icon" fixed-width />
+                                                    {{ ac.label }}
+                                                </BDropdownItem>
+                                            </template>
+                                        </BDropdown>
+                                    </slot>
+                                </td>
+                            </tr>
 
                             <!-- Row details expansion -->
-                            <tr
-                                v-if="isRowExpanded(getGlobalIndex(paginatedIndex))"
-                                :key="`details-${getGlobalIndex(paginatedIndex)}`"
-                                class="g-table-details-row">
+                            <tr v-if="isRowExpanded(getGlobalIndex(paginatedIndex))" class="g-table-details-row">
                                 <td :colspan="props.fields.length + (selectable ? 1 : 0) + (props.actions ? 1 : 0)">
                                     <slot
                                         name="row-details"
