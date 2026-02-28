@@ -80,4 +80,4 @@ class_to_diagram = {
 }
 
 for clazz, diagram_name in class_to_diagram.items():
-    erd.draw(clazz, out=f"{DOC_SOURCE_DIR}/{diagram_name}.png")
+    erd.draw(clazz, out=os.path.join(DOC_SOURCE_DIR, f"{diagram_name}.png"))

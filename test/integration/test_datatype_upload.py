@@ -18,9 +18,9 @@ from galaxy_test.driver import integration_util
 from .test_upload_configuration_options import BaseUploadContentConfigurationIntegrationInstance
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-TEST_FILE_DIR = f"{SCRIPT_DIRECTORY}/../../lib/galaxy/datatypes/test"
+GALAXY_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(SCRIPT_DIRECTORY)))
+TEST_FILE_DIR = os.path.join(GALAXY_ROOT, "lib/galaxy/datatypes/test")
 TestData = collections.namedtuple("TestData", "path datatype uploadable")
-GALAXY_ROOT = os.path.abspath(f"{SCRIPT_DIRECTORY}/../../")
 DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, "lib/galaxy/config/sample/datatypes_conf.xml.sample")
 PARENT_SNIFFER_MAP = {"fastqsolexa": "fastq"}
 

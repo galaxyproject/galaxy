@@ -1,4 +1,5 @@
 import os
+import os.path
 
 from galaxy_test.selenium.framework import retry_assertion_during_transitions
 from .framework import (
@@ -28,9 +29,8 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         current_user_import_dir = os.path.join(self.user_import_dir(), email)
         os.makedirs(current_user_import_dir)
         random_filename = self._get_random_name()
-        file = open(f"{current_user_import_dir}/{random_filename}", "w")
-        file.write(random_filename)
-        file.close()
+        with open(os.path.join(current_user_import_dir, random_filename), "w") as f:
+            f.write(random_filename)
 
         # allow user to add new datasets in the newly created library
         self.create_lib_and_permit_adding(email)

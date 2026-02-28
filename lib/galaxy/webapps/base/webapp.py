@@ -1161,17 +1161,23 @@ def build_url_map(app, global_conf, **local_conf):
     # Define static mappings from config
     static_dir = get_static_from_config("static_dir", "static/")
     static_dir_bare = static_dir.directory.rstrip("/")
-    static_dist_dir = get_static_from_config("static_dist_dir", default_static_dist_dir or f"{static_dir_bare}/dist/")
+    static_dist_dir = get_static_from_config(
+        "static_dist_dir", default_static_dist_dir or os.path.join(static_dir_bare, "dist/")
+    )
     urlmap["/static"] = static_dir
     urlmap["/static/dist"] = static_dist_dir
-    urlmap["/images"] = get_static_from_config("static_images_dir", f"{static_dir_bare}/images")
-    urlmap["/static/scripts"] = get_static_from_config("static_scripts_dir", f"{static_dir_bare}/scripts/")
+    urlmap["/images"] = get_static_from_config("static_images_dir", os.path.join(static_dir_bare, "images"))
+    urlmap["/static/scripts"] = get_static_from_config("static_scripts_dir", os.path.join(static_dir_bare, "scripts/"))
 
     urlmap["/static/welcome.html"] = get_static_from_config(
-        "static_welcome_html", f"{static_dir_bare}/welcome.html", sample=default_url_path("static/welcome.sample.html")
+        "static_welcome_html",
+        os.path.join(static_dir_bare, "welcome.html"),
+        sample=default_url_path("static/welcome.sample.html"),
     )
     urlmap["/favicon.ico"] = get_static_from_config(
-        "static_favicon_dir", f"{static_dir_bare}/favicon.ico", sample=default_url_path("static/favicon.ico")
+        "static_favicon_dir",
+        os.path.join(static_dir_bare, "favicon.ico"),
+        sample=default_url_path("static/favicon.ico"),
     )
     urlmap["/robots.txt"] = get_static_from_config(
         "static_robots_txt", f"{static_dir_bare}/robots.txt", sample=default_url_path("static/robots.txt")

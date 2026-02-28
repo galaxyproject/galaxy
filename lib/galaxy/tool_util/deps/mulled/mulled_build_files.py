@@ -12,10 +12,9 @@ Build all recipes discovered in tsv files in a single directory.
 
 """
 
-import glob
-import os
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import (
     Any,
     Iterator,
@@ -76,9 +75,9 @@ def main(argv=None):
 
 def generate_targets(target_source) -> Iterator[Target]:
     """Generate all targets from TSV files in specified file or directory."""
-    target_source = os.path.abspath(target_source)
-    if os.path.isdir(target_source):
-        target_source_files = glob.glob(f"{target_source}/*.tsv")
+    target_source = Path(target_source).resolve()
+    if target_source.is_dir():
+        target_source_files = target_source.glob("*.tsv")
     else:
         target_source_files = [target_source]
 
