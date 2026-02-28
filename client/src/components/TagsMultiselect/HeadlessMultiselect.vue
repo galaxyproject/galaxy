@@ -10,9 +10,6 @@ import { faCheck, faChevronUp, faPlus, faTags, faTimes } from "@fortawesome/free
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onClickOutside, useElementBounding, whenever } from "@vueuse/core";
 import { computed, nextTick, ref, watch } from "vue";
-// @ts-ignore missing types
-import Vue2Teleport from "vue2-teleport";
-
 import { useUid } from "@/composables/utils/uid";
 import { normalizeTag } from "@/stores/userTagsStore";
 
@@ -330,7 +327,7 @@ onClickOutside(
             <FontAwesomeIcon :icon="faTags" />
         </button>
 
-        <Vue2Teleport v-if="isOpen" :to="`#${getPopupLayerId()}`">
+        <Teleport v-if="isOpen" :to="`#${getPopupLayerId()}`">
             <div
                 :id="`${props.id}-options`"
                 tabindex="-1"
@@ -385,7 +382,7 @@ onClickOutside(
                     </span>
                 </button>
             </div>
-        </Vue2Teleport>
+        </Teleport>
     </div>
 </template>
 
