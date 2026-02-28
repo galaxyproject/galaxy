@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { faCheck, faCube, faCubes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 interface Props {
     version: string;
@@ -21,7 +22,7 @@ const availableVersions = computed(() => [...props.versions].reverse());
 </script>
 
 <template>
-    <BDropdown
+    <GDropdown
         no-caret
         right
         role="button"
@@ -35,7 +36,7 @@ const availableVersions = computed(() => [...props.versions].reverse());
                 <FontAwesomeIcon :icon="faCubes" />
             </GButton>
         </template>
-        <BDropdownItem
+        <GDropdownItem
             v-for="v of availableVersions"
             :key="v"
             :active="v === props.version"
@@ -44,6 +45,6 @@ const availableVersions = computed(() => [...props.versions].reverse());
                 <FontAwesomeIcon :icon="faCube" /> <span v-localize>Switch to</span> {{ v }}
             </span>
             <span v-else> <FontAwesomeIcon :icon="faCheck" /> <span v-localize>Selected</span> {{ v }} </span>
-        </BDropdownItem>
-    </BDropdown>
+        </GDropdownItem>
+    </GDropdown>
 </template>

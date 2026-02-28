@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownDivider, BDropdownGroup } from "bootstrap-vue";
 import type { IconDefinition } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
@@ -12,6 +11,9 @@ import localize from "@/utils/localization";
 import { types_to_icons } from "../utilities";
 
 import PanelViewMenuItem from "./PanelViewMenuItem.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownDivider from "@/components/BaseComponents/GDropdownDivider.vue";
+import GDropdownGroup from "@/components/BaseComponents/GDropdownGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -119,7 +121,7 @@ async function updatePanelView(panel: Panel) {
 </script>
 
 <template>
-    <BDropdown
+    <GDropdown
         v-b-tooltip.hover.top.noninteractive
         right
         block
@@ -161,7 +163,7 @@ async function updatePanelView(panel: Panel) {
             :panel-view="defaultPanelView"
             @onSelect="updatePanelView" />
 
-        <BDropdownGroup v-for="group in groupedPanelViews" :id="group.type" :key="group.type">
+        <GDropdownGroup v-for="group in groupedPanelViews" :id="group.type" :key="group.type">
             <template v-slot:header>
                 <small class="font-weight-bold">{{ group.title }}</small>
             </template>
@@ -171,16 +173,16 @@ async function updatePanelView(panel: Panel) {
                 :current-panel-view="currentPanelView"
                 :panel-view="panelView"
                 @onSelect="updatePanelView" />
-        </BDropdownGroup>
+        </GDropdownGroup>
 
-        <BDropdownDivider v-if="ungroupedPanelViews.length > 0" />
+        <GDropdownDivider v-if="ungroupedPanelViews.length > 0" />
         <PanelViewMenuItem
             v-for="(panelView, key) in ungroupedPanelViews"
             :key="key"
             :current-panel-view="currentPanelView"
             :panel-view="panelView"
             @onSelect="updatePanelView" />
-    </BDropdown>
+    </GDropdown>
 </template>
 
 <style scoped lang="scss">

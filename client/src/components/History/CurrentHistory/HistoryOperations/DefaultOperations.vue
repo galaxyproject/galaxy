@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCog } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem, BModal } from "bootstrap-vue";
+import { BModal } from "bootstrap-vue";
 import { toRef } from "vue";
 
 import type { HistorySummaryExtended } from "@/api";
@@ -11,6 +11,9 @@ import {
     unhideAllHiddenContent,
 } from "@/components/History/model/crud";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
+
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 interface Props {
     history: HistorySummaryExtended;
@@ -43,7 +46,7 @@ async function runOperation(operation: () => Promise<unknown>) {
 
 <template>
     <section v-if="numItemsHidden || numItemsHidden || numItemsDeleted">
-        <BDropdown
+        <GDropdown
             v-b-tooltip.hover.noninteractive
             no-caret
             size="sm"
@@ -58,18 +61,18 @@ async function runOperation(operation: () => Promise<unknown>) {
                 <FontAwesomeIcon :icon="faCog" />
             </template>
 
-            <BDropdownItem v-if="numItemsHidden" v-b-modal:show-all-hidden-content>
+            <GDropdownItem v-if="numItemsHidden" v-b-modal:show-all-hidden-content>
                 <span v-localize>Unhide All Hidden Content</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem v-if="numItemsHidden" v-b-modal:delete-all-hidden-content>
+            <GDropdownItem v-if="numItemsHidden" v-b-modal:delete-all-hidden-content>
                 <span v-localize>Delete All Hidden Content</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem v-if="numItemsDeleted" v-b-modal:purge-all-deleted-content>
+            <GDropdownItem v-if="numItemsDeleted" v-b-modal:purge-all-deleted-content>
                 <span v-localize>Purge All Deleted Content</span>
-            </BDropdownItem>
-        </BDropdown>
+            </GDropdownItem>
+        </GDropdown>
 
         <BModal id="show-all-hidden-content" title="Show Hidden Datasets" title-tag="h2" @ok="unhideAll">
             <p v-localize>Really unhide all hidden datasets?</p>

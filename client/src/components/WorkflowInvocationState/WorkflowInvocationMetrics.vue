@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BButtonGroup, BCol, BContainer, BDropdown, BDropdownItem, BRow } from "bootstrap-vue";
+import { BAlert, BButtonGroup, BCol, BContainer, BRow } from "bootstrap-vue";
 import type { VisualizationSpec } from "vega-embed";
 import type { ComputedRef } from "vue";
 import { computed, ref, watch } from "vue";
@@ -10,6 +10,8 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import LoadingSpan from "../LoadingSpan.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
 const VegaWrapper = () => import("@/components/Common/VegaWrapper.vue");
@@ -408,21 +410,21 @@ const groupByInTitles = computed(() => {
         <BContainer>
             <BRow align-h="end" class="mb-2">
                 <BButtonGroup>
-                    <BDropdown variant="outline-primary" size="sm" right :text="'Timing: ' + timingInTitles">
-                        <BDropdownItem @click="timing = 'seconds'">
+                    <GDropdown variant="outline-primary" size="sm" right :text="'Timing: ' + timingInTitles">
+                        <GDropdownItem @click="timing = 'seconds'">
                             {{ capitalizeFirstLetter("seconds") }}
-                        </BDropdownItem>
-                        <BDropdownItem @click="timing = 'minutes'">
+                        </GDropdownItem>
+                        <GDropdownItem @click="timing = 'minutes'">
                             {{ capitalizeFirstLetter("minutes") }}
-                        </BDropdownItem>
-                        <BDropdownItem @click="timing = 'hours'">
+                        </GDropdownItem>
+                        <GDropdownItem @click="timing = 'hours'">
                             {{ capitalizeFirstLetter("hours") }}
-                        </BDropdownItem>
-                    </BDropdown>
-                    <BDropdown variant="outline-primary" size="sm" right :text="'Group By: ' + groupByInTitles">
-                        <BDropdownItem @click="groupBy = 'tool_id'">Tool</BDropdownItem>
-                        <BDropdownItem @click="groupBy = 'step_id'">Workflow Step</BDropdownItem>
-                    </BDropdown>
+                        </GDropdownItem>
+                    </GDropdown>
+                    <GDropdown variant="outline-primary" size="sm" right :text="'Group By: ' + groupByInTitles">
+                        <GDropdownItem @click="groupBy = 'tool_id'">Tool</GDropdownItem>
+                        <GDropdownItem @click="groupBy = 'step_id'">Workflow Step</GDropdownItem>
+                    </GDropdown>
                 </BButtonGroup>
             </BRow>
             <BRow>

@@ -2,15 +2,7 @@
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import {
-    BAlert,
-    BButton,
-    BDropdown,
-    BDropdownDivider,
-    BDropdownGroup,
-    BDropdownItem,
-    BFormCheckbox,
-} from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -26,6 +18,10 @@ import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
 
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownDivider from "@/components/BaseComponents/GDropdownDivider.vue";
+import GDropdownGroup from "@/components/BaseComponents/GDropdownGroup.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
@@ -334,7 +330,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                         Folder
                     </BButton>
 
-                    <BDropdown
+                    <GDropdown
                         v-if="props.canAddLibraryItem"
                         v-b-tooltip.top.noninteractive
                         right
@@ -346,40 +342,40 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                             <FontAwesomeIcon :icon="faCaretDown" />
                         </template>
 
-                        <BDropdownItem @click="onAddDatasets('history')"> from History </BDropdownItem>
+                        <GDropdownItem @click="onAddDatasets('history')"> from History </GDropdownItem>
 
-                        <BDropdownItem v-if="userLibraryImportDirAvailable" @click="onAddDatasets('userdir')">
+                        <GDropdownItem v-if="userLibraryImportDirAvailable" @click="onAddDatasets('userdir')">
                             from User Directory
-                        </BDropdownItem>
+                        </GDropdownItem>
 
-                        <BDropdownDivider v-if="libraryImportDir || allowLibraryPathPaste" />
+                        <GDropdownDivider v-if="libraryImportDir || allowLibraryPathPaste" />
 
-                        <BDropdownGroup v-if="libraryImportDir || allowLibraryPathPaste" header="Admins Only">
-                            <BDropdownItem v-if="libraryImportDir" @click="onAddDatasets('importdir')">
+                        <GDropdownGroup v-if="libraryImportDir || allowLibraryPathPaste" header="Admins Only">
+                            <GDropdownItem v-if="libraryImportDir" @click="onAddDatasets('importdir')">
                                 from Import Directory
-                            </BDropdownItem>
+                            </GDropdownItem>
 
-                            <BDropdownItem v-if="allowLibraryPathPaste" @click="onAddDatasets('path')">
+                            <GDropdownItem v-if="allowLibraryPathPaste" @click="onAddDatasets('path')">
                                 from Path
-                            </BDropdownItem>
-                        </BDropdownGroup>
-                    </BDropdown>
+                            </GDropdownItem>
+                        </GDropdownGroup>
+                    </GDropdown>
 
-                    <BDropdown v-b-tooltip.top.noninteractive right no-caret class="add-to-history mr-1">
+                    <GDropdown v-b-tooltip.top.noninteractive right no-caret class="add-to-history mr-1">
                         <template v-slot:button-content>
                             <FontAwesomeIcon :icon="faBook" />
                             Add to History
                             <FontAwesomeIcon :icon="faCaretDown" />
                         </template>
 
-                        <BDropdownItem class="add-to-history-datasets" @click="importToHistoryModal(false)">
+                        <GDropdownItem class="add-to-history-datasets" @click="importToHistoryModal(false)">
                             as Datasets
-                        </BDropdownItem>
+                        </GDropdownItem>
 
-                        <BDropdownItem class="add-to-history-collection" @click="importToHistoryModal(true)">
+                        <GDropdownItem class="add-to-history-collection" @click="importToHistoryModal(true)">
                             as a Collection
-                        </BDropdownItem>
-                    </BDropdown>
+                        </GDropdownItem>
+                    </GDropdown>
 
                     <div
                         v-if="datasetManipulation"
