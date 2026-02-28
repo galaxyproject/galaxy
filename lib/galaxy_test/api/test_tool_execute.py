@@ -478,6 +478,25 @@ def test_map_over_collection(
 
 
 @requires_tool_id("cat|cat1")
+def test_dce_as_input(target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    """Test using a dataset collection element (dce) as a direct input to a tool.
+
+    This corresponds to drag-and-dropping an individual element from a collection
+    onto a tool input, which sends {"src": "dce", "id": "<dce_id>"} as the input value.
+    """
+    hdca = target_history.with_pair(["123", "456"])
+    collection_details = target_history._dataset_populator.get_history_collection_details(
+        target_history.id, content_id=hdca.id
+    )
+    forward_element = collection_details["elements"][0]
+    assert forward_element["element_identifier"] == "forward"
+    dce_src_dict = {"src": "dce", "id": forward_element["id"]}
+    inputs = tool_input_format.when.any({"input1": dce_src_dict})
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_single_job.with_single_output.with_contents_stripped("123")
+
+
+@requires_tool_id("cat|cat1")
 def test_map_over_data_with_paired_or_unpaired_unpaired(target_history: TargetHistory, required_tool: RequiredTool):
     hdca = target_history.with_unpaired()
     execute = required_tool.execute().with_inputs({"input1": {"batch": True, "values": [hdca.src_dict]}})
