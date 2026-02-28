@@ -973,27 +973,26 @@ export function getRouter(Galaxy) {
         return false;
     }
 
-    router.beforeEach(async (to, from, next) => {
+    router.beforeEach(async (to) => {
         // TODO: merge anon redirect functionality here for more standard handling
 
         if (!checkUnsavedChanges(router)) {
-            return next(false);
+            return false;
         }
 
         const isAdminAccessRequired = checkAdminAccessRequired(to);
         if (isAdminAccessRequired) {
             const error = new Error(`Admin access required for '${to.path}'.`);
             error.name = "AdminRequired";
-            return next(error);
+            throw error;
         }
 
         const isRegisteredUserAccessRequired = checkRegisteredUserAccessRequired(to);
         if (isRegisteredUserAccessRequired) {
             const error = new Error(`Registered user access required for '${to.path}'.`);
             error.name = "RegisteredUserRequired";
-            return next(error);
+            throw error;
         }
-        next();
     });
 
     router.onError((error) => {
