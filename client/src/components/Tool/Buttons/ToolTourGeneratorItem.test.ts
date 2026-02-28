@@ -207,7 +207,7 @@ describe("Tool Generated Tour Dropdown Item", () => {
     /** Confirms the tour is _(still)_ generating, given that the dropdown item is disabled
      * and the tour store not yet updated. */
     function tourIsGenerating(dropdownItem: Wrapper<Vue>) {
-        expect(dropdownItem.attributes("aria-disabled")).toBe("true");
+        expect(dropdownItem.attributes("disabled")).toBe("disabled");
         expect(setTourMock).toHaveBeenCalledTimes(0);
     }
 
@@ -215,7 +215,7 @@ describe("Tool Generated Tour Dropdown Item", () => {
     function tourHasGenerated(dropdownItem: Wrapper<Vue>) {
         // The second toast confirms the tour is ready
         expect(raisedToasts()).toContainEqual({ variant: "success", message: "You can now start the tour" });
-        expect(dropdownItem.attributes("aria-disabled")).toBeUndefined();
+        expect(dropdownItem.attributes("disabled")).toBeUndefined();
 
         // The tour is now in the store, with the expected key
         expect(setTourMock).toHaveBeenCalledWith(`tool-generated-${TEST_TOOL_ID}-${TEST_TOOL_VERSION}`);
@@ -227,7 +227,7 @@ describe("Tool Generated Tour Dropdown Item", () => {
     function tourGenerationFailedWith(dropdownItem: Wrapper<Vue>, message: string) {
         // The second toast confirms the tour generation failed
         expect(raisedToasts()).toContainEqual({ variant: "error", message });
-        expect(dropdownItem.attributes("aria-disabled")).toBeUndefined();
+        expect(dropdownItem.attributes("disabled")).toBeUndefined();
         expect(setTourMock).toHaveBeenCalledTimes(0);
     }
 });
