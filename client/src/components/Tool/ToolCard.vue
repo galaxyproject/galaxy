@@ -1,7 +1,7 @@
 <script setup>
 import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BPopover } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
@@ -14,6 +14,7 @@ import { useUserStore } from "@/stores/userStore";
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
 import GModal from "../BaseComponents/GModal.vue";
+import GPopover from "../BaseComponents/GPopover.vue";
 import ToolCredentials from "./ToolCredentials.vue";
 import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore.vue";
@@ -239,7 +240,7 @@ onBeforeMount(() => {
                     Requires credentials to run this tool.
 
                     <FontAwesomeIcon id="target" :icon="faExclamationCircle" fixed-width />
-                    <BPopover target="target" triggers="hover" boundary="window">
+                    <GPopover target="target" triggers="hover" boundary="window">
                         <div class="d-flex flex-column">
                             <span
                                 v-for="(service, index) in props.options.credentials"
@@ -249,7 +250,7 @@ onBeforeMount(() => {
                                 {{ service.description }}
                             </span>
                         </div>
-                    </BPopover>
+                    </GPopover>
                 </BAlert>
             </template>
 

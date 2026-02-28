@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import { BPopover } from "bootstrap-vue";
-
 import type { TemplateSummary } from "@/api/configTemplates";
+
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 interface Props {
     target: String;
@@ -14,8 +14,8 @@ const popoverPlacement = "rightbottom";
 </script>
 
 <template>
-    <BPopover :target="target" triggers="hover" boundary="window" :placement="popoverPlacement">
+    <GPopover :target="target" triggers="hover" boundary="window" :placement="popoverPlacement">
         <template v-slot:title>{{ props.template.name }}</template>
         <slot />
-    </BPopover>
+    </GPopover>
 </template>
