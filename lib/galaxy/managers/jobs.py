@@ -67,7 +67,6 @@ from galaxy.model import (
     Job,
     JobMetricNumeric,
     JobParameter,
-    PostJobAction,
     ToolRequest,
     User,
     Workflow,
@@ -2216,20 +2215,9 @@ class JobSubmitter:
                 credentials_context=credentials_context,
             )
             if request.tags:
-                tag_handler = request_context.tag_handler
-                for _, hda in execution_tracker.output_datasets:
-                    tag_handler.apply_item_tags(
-                        user=request_context.user, item=hda, tags_str=",".join(request.tags), flush=False
-                    )
-                for _, hdca in execution_tracker.output_collections:
-                    tag_handler.apply_item_tags(
-                        user=request_context.user, item=hdca, tags_str=",".join(request.tags), flush=False
-                    )
+                execution_tracker.apply_tags(request_context.tag_handler, request_context.user, request.tags)
             if request.send_email_notification:
-                if request_context.user is None:
-                    raise Exception("Anonymously run jobs cannot send an email notification.")
-                for job in execution_tracker.successful_jobs:
-                    job.add_post_job_action(PostJobAction("EmailAction"))
+                execution_tracker.apply_email_action(request_context.user)
             tool_request.state = ToolRequest.states.SUBMITTED
             sa_session.add(tool_request)
             sa_session.commit()

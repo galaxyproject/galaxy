@@ -25,7 +25,10 @@ from packaging.version import Version
 
 from galaxy import model
 from galaxy.exceptions import ToolInputsNotOKException
-from galaxy.model import ToolRequest
+from galaxy.model import (
+    PostJobAction,
+    ToolRequest,
+)
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import (
     get_structure,
@@ -447,6 +450,19 @@ class ExecutionTracker:
         message = "There was a failure executing a job for tool [%s] - %s"
         log.warning(message, self.tool.id, error)
         self.execution_errors.append(error)
+
+    def apply_tags(self, tag_handler, user, tags: list[str]) -> None:
+        tags_str = ",".join(tags)
+        for _, hda in self.output_datasets:
+            tag_handler.apply_item_tags(user=user, item=hda, tags_str=tags_str, flush=False)
+        for _, hdca in self.output_collections:
+            tag_handler.apply_item_tags(user=user, item=hdca, tags_str=tags_str, flush=False)
+
+    def apply_email_action(self, user) -> None:
+        if user is None:
+            raise Exception("Anonymously run jobs cannot send an email notification.")
+        for job in self.successful_jobs:
+            job.add_post_job_action(PostJobAction("EmailAction"))
 
     @staticmethod
     def _collection_info_to_collection_hids_element_ids(
