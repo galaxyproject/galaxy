@@ -180,7 +180,10 @@
                                     class="pagination-input-field"
                                     autocomplete="off"
                                     type="number"
-                                    onkeyup="this.value|=0;if(this.value<1)this.value=1" />
+                                    onkeyup="
+                                        this.value |= 0;
+                                        if (this.value < 1) this.value = 1;
+                                    " />
                             </td>
 
                             <td class="text-muted ml-1 paginator-text">

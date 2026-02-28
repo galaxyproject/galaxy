@@ -270,7 +270,7 @@ const {
             </BAlert>
             <h2 data-galaxy-file-drop-target>
                 {{ title }}
-                <a v-b-tooltip.hover aria-label="Upload Completed Workbook" :title="dropWorkbookTitle" href="#">
+                <a v-g-tooltip.hover aria-label="Upload Completed Workbook" :title="dropWorkbookTitle" href="#">
                     <FontAwesomeIcon
                         class="workbook-upload-helper mr-1"
                         :class="dropZoneClasses"

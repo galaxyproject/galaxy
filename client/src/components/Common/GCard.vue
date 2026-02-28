@@ -330,7 +330,7 @@ function onKeyDown(event: KeyboardEvent) {
                                     <slot name="select">
                                         <BFormCheckbox
                                             :id="getElementId(props.id, 'select')"
-                                            v-b-tooltip.hover.noninteractive
+                                            v-g-tooltip.hover.noninteractive
                                             :checked="selected"
                                             :title="props.selectTitle || localize('Select for bulk actions')"
                                             @change="emit('select')" />
@@ -356,7 +356,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             <BLink
                                                 v-if="typeof title === 'object'"
                                                 :id="getElementId(props.id, 'title-link')"
-                                                v-b-tooltip.hover.noninteractive
+                                                v-g-tooltip.hover.noninteractive
                                                 :title="localize(title.title)"
                                                 :class="{ 'g-card-title-truncate': props.titleNLines }"
                                                 @click.stop.prevent="title.handler">
@@ -365,7 +365,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             <template v-else>
                                                 <span
                                                     :id="getElementId(props.id, 'title-text')"
-                                                    v-b-tooltip.hover.noninteractive
+                                                    v-g-tooltip.hover.noninteractive
                                                     :title="localize(title)"
                                                     :class="{ 'g-card-title-truncate': props.titleNLines }">
                                                     {{ title }}
@@ -376,7 +376,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 <BButton
                                                     v-if="props.canRenameTitle"
                                                     :id="getElementId(props.id, 'rename')"
-                                                    v-b-tooltip.hover.noninteractive
+                                                    v-g-tooltip.hover.noninteractive
                                                     class="inline-icon-button g-card-rename"
                                                     variant="link"
                                                     :title="localize(props.renameTitle)"
@@ -396,7 +396,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             v-if="badge.visible ?? true"
                                             :id="getBadgeId(props.id, badge.id)"
                                             :key="badge.id"
-                                            v-b-tooltip.hover.noninteractive
+                                            v-g-tooltip.hover.noninteractive
                                             :pill="badge.type !== 'badge'"
                                             class="mt-1"
                                             :class="{
@@ -427,7 +427,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 props.bookmarked ? 'bookmark-remove' : 'bookmark-add',
                                             )
                                         "
-                                        v-b-tooltip.hover.noninteractive
+                                        v-g-tooltip.hover.noninteractive
                                         class="inline-icon-button"
                                         variant="link"
                                         :title="props.bookmarked ? 'Remove bookmark' : 'Add to bookmarks'"
@@ -437,7 +437,7 @@ function onKeyDown(event: KeyboardEvent) {
                                     <BButton
                                         v-else
                                         :id="getElementId(props.id, 'bookmark-loading')"
-                                        v-b-tooltip.hover.noninteractive
+                                        v-g-tooltip.hover.noninteractive
                                         class="inline-icon-button"
                                         variant="link"
                                         :title="localize('Bookmarking...')"
@@ -453,7 +453,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             props.extraActions.some((ea) => ea.visible ?? true)
                                         "
                                         :id="getElementId(props.id, 'extra-actions')"
-                                        v-b-tooltip.hover.noninteractive
+                                        v-g-tooltip.hover.noninteractive
                                         right
                                         no-caret
                                         title="More options"
@@ -496,7 +496,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 v-if="badge.visible ?? true"
                                                 :id="getBadgeId(props.id, badge.id)"
                                                 :key="badge.id"
-                                                v-b-tooltip.hover.top.noninteractive
+                                                v-g-tooltip.hover.top.noninteractive
                                                 :pill="badge.type !== 'badge'"
                                                 :class="{
                                                     'outline-badge': badge.variant?.includes('outline'),
@@ -526,7 +526,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 v-if="(indicator.visible ?? true) && !indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="`${indicator.id}-button`"
-                                                v-b-tooltip.hover.noninteractive
+                                                v-g-tooltip.hover.noninteractive
                                                 class="inline-icon-button"
                                                 :title="localize(indicator.title)"
                                                 :variant="indicator.variant || 'outline-secondary'"
@@ -546,7 +546,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 v-else-if="(indicator.visible ?? true) && indicator.disabled"
                                                 :id="getIndicatorId(props.id, indicator.id)"
                                                 :key="`${indicator.id}-icon`"
-                                                v-b-tooltip.hover.noninteractive
+                                                v-g-tooltip.hover.noninteractive
                                                 :title="localize(indicator.title)"
                                                 :icon="indicator.icon"
                                                 :size="indicator.size || 'sm'"
@@ -595,7 +595,7 @@ function onKeyDown(event: KeyboardEvent) {
                                 :id="`g-card-${props.id}-update-time`"
                                 class="align-self-end mt-1">
                                 <BBadge
-                                    v-b-tooltip.hover.noninteractive
+                                    v-g-tooltip.hover.noninteractive
                                     pill
                                     variant="secondary"
                                     :title="localize(props.updateTimeTitle)">
@@ -618,7 +618,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             v-if="sa.visible ?? true"
                                             :id="getActionId(props.id, sa.id)"
                                             :key="sa.id"
-                                            v-b-tooltip.hover.noninteractive
+                                            v-g-tooltip.hover.noninteractive
                                             :disabled="sa.disabled"
                                             :title="localize(sa.title)"
                                             :variant="sa.variant || 'outline-primary'"
@@ -648,7 +648,7 @@ function onKeyDown(event: KeyboardEvent) {
                                                 v-if="pa.visible ?? true"
                                                 :id="getActionId(props.id, pa.id)"
                                                 :key="pa.id"
-                                                v-b-tooltip.hover.noninteractive
+                                                v-g-tooltip.hover.noninteractive
                                                 class="mt-1"
                                                 :disabled="pa.disabled"
                                                 :title="localize(pa.title)"

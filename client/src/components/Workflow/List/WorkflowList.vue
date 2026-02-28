@@ -446,7 +446,7 @@ onMounted(() => {
                         <span v-localize>Filter:</span>
                         <BButton
                             id="show-deleted"
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             size="sm"
                             :title="deleteButtonTitle"
                             :pressed="showDeleted"
@@ -458,7 +458,7 @@ onMounted(() => {
 
                         <BButton
                             id="show-bookmarked"
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             size="sm"
                             :title="bookmarkButtonTitle"
                             :pressed="showBookmarked"
@@ -531,7 +531,7 @@ onMounted(() => {
                 <BButton
                     v-if="!showDeleted"
                     id="workflow-list-footer-bulk-delete-button"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :title="bulkDeleteOrRestoreLoading ? 'Deleting workflows' : 'Delete selected workflows'"
                     :disabled="bulkDeleteOrRestoreLoading"
                     size="sm"
@@ -546,7 +546,7 @@ onMounted(() => {
                 <BButton
                     v-else
                     id="workflow-list-footer-bulk-restore-button"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :title="bulkDeleteOrRestoreLoading ? 'Restoring workflows' : 'Restore selected workflows'"
                     :disabled="bulkDeleteOrRestoreLoading"
                     size="sm"
@@ -562,7 +562,7 @@ onMounted(() => {
                 <BButton
                     v-if="!showDeleted"
                     id="workflow-list-footer-bulk-add-tags-button"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :title="bulkTagsLoading ? 'Adding tags' : 'Add tags to selected workflows'"
                     :disabled="bulkTagsLoading"
                     size="sm"

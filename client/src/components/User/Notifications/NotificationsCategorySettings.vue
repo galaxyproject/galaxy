@@ -47,7 +47,7 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
 <template>
     <div>
         <div class="category-header">
-            <BFormCheckbox v-model="isCategoryEnabled" v-b-tooltip.hover :title="checkBoxTitle" switch>
+            <BFormCheckbox v-model="isCategoryEnabled" v-g-tooltip.hover :title="checkBoxTitle" switch>
                 <span v-localize class="category-title">{{ snakeCaseToTitleCase(category) }}</span>
             </BFormCheckbox>
         </div>

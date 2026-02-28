@@ -28,7 +28,7 @@ function resetSelection() {
     <BButtonGroup size="sm">
         <BButton
             v-if="hasSelection"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             :title="localize('Clear selection')"
             variant="link"
             data-test-id="clear-btn"

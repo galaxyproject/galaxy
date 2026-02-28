@@ -130,7 +130,7 @@ onMounted(() => {
         <BButtonGroup v-if="currentUser">
             <BButtonGroup>
                 <BButton
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :title="localize('Show active')"
                     variant="link"
                     size="sm"
@@ -143,7 +143,7 @@ onMounted(() => {
 
                 <BButton
                     v-if="numItemsDeleted"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :title="localize('Include deleted')"
                     variant="link"
                     size="sm"
@@ -157,7 +157,7 @@ onMounted(() => {
 
                 <BButton
                     v-if="numItemsHidden"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :title="localize('Include hidden')"
                     variant="link"
                     size="sm"
@@ -171,7 +171,7 @@ onMounted(() => {
 
                 <BButton
                     v-if="!hideReload"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :title="reloadButtonTitle"
                     :variant="reloadButtonVariant"
                     size="sm"

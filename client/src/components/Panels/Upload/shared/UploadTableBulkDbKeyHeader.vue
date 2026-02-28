@@ -36,7 +36,7 @@ function onItemSelection(item: DbKey) {
     <div class="column-header-vertical">
         <span class="column-title">Reference</span>
         <SingleItemSelector
-            v-b-tooltip.hover.noninteractive
+            v-g-tooltip.hover.noninteractive
             class="w-100"
             collection-name="References"
             :title="tooltip"

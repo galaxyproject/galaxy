@@ -11,7 +11,7 @@
                 <CreatorViewer :creator="creator">
                     <template v-slot:buttons>
                         <BButton
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             class="inline-icon-button"
                             variant="link"
                             size="sm"
@@ -20,7 +20,7 @@
                             <FontAwesomeIcon :icon="faEdit" />
                         </BButton>
                         <BButton
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             class="inline-icon-button"
                             variant="link"
                             size="sm"

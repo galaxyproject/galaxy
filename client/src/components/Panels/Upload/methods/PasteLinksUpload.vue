@@ -255,7 +255,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         <div class="d-flex align-items-center">
                             <BFormInput
                                 v-model="item.url"
-                                v-b-tooltip.hover.noninteractive
+                                v-g-tooltip.hover.noninteractive
                                 size="sm"
                                 :state="isValidUrl(item.url)"
                                 :title="getUrlValidationMessage(item.url)"
@@ -332,7 +332,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <!-- Actions column -->
                     <template v-slot:cell(actions)="{ item }">
                         <button
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover.noninteractive
                             class="btn btn-link text-danger remove-btn"
                             title="Remove URL from list"
                             @click="removeItem(item.id)">

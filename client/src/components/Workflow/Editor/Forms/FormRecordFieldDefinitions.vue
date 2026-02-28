@@ -88,10 +88,10 @@ const emit = defineEmits(["onChange"]);
                 <!-- code modelled after FormRepeat -->
                 <span class="float-right">
                     <b-button-group>
-                        <span v-b-tooltip.hover.bottom title="move down">
+                        <span v-g-tooltip.hover.bottom title="move down">
                             <b-button
                                 :id="getButtonId(index, 'up')"
-                                v-b-tooltip.hover.bottom
+                                v-g-tooltip.hover.bottom
                                 title="move up"
                                 role="button"
                                 variant="link"
@@ -101,10 +101,10 @@ const emit = defineEmits(["onChange"]);
                                 <FontAwesomeIcon :icon="faCaretUp" />
                             </b-button>
                         </span>
-                        <span v-b-tooltip.hover.bottom title="move down">
+                        <span v-g-tooltip.hover.bottom title="move down">
                             <b-button
                                 :id="getButtonId(index, 'down')"
-                                v-b-tooltip.hover.bottom
+                                v-g-tooltip.hover.bottom
                                 title="move down"
                                 role="button"
                                 variant="link"
@@ -115,7 +115,7 @@ const emit = defineEmits(["onChange"]);
                             </b-button>
                         </span>
                     </b-button-group>
-                    <span v-b-tooltip.hover.bottom :title="deleteTooltip">
+                    <span v-g-tooltip.hover.bottom :title="deleteTooltip">
                         <b-button
                             title="delete"
                             role="button"

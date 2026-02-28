@@ -216,7 +216,7 @@ onBeforeMount(() => {
                     :job-credentials-context="props.options.job_credentials_context" />
                 <BAlert
                     v-else-if="props.allowEditingCredentials"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     variant="info"
                     class="mt-2"
                     show

@@ -207,7 +207,7 @@ onMounted(async () => {
                     :key="`${wsg.toolName}-${wsg.serviceName}`"
                     class="d-flex align-items-center">
                     <BBadge
-                        v-b-tooltip.hover
+                        v-g-tooltip.hover
                         :title="getBadgeTitle(wsg.toolName, wsg.isRequired, wsg.groupName)"
                         :variant="wsg.isRequired ? 'primary' : 'secondary'">
                         <FontAwesomeIcon :icon="wsg.groupName ? faCheck : faExclamation" fixed-width />

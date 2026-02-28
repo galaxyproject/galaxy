@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { faAngleUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BTooltip } from "bootstrap-vue";
-import { computed, onMounted, ref } from "vue";
+import { BButton } from "bootstrap-vue";
+import { type ComponentPublicInstance, computed, onMounted, ref } from "vue";
 
 import { useToast } from "@/composables/toast";
 import { useUid } from "@/composables/utils/uid";
@@ -12,6 +12,7 @@ import { VALID_TAG_RE } from "../Tags/model";
 
 import HeadlessMultiselect from "./HeadlessMultiselect.vue";
 import Tag from "./Tag.vue";
+import GTooltip from "@/components/BaseComponents/GTooltip.vue";
 
 interface StatelessTagsProps {
     value?: string[];
@@ -70,6 +71,8 @@ const tags = computed(() => props.value.map((tag) => tag.replace(/^name:/, "#"))
 
 const toggledOpen = ref(false);
 const toggleButtonId = useUid("toggle-link-");
+const moreButtonRef = ref<ComponentPublicInstance | null>(null);
+const moreButtonEl = computed(() => (moreButtonRef.value?.$el as HTMLElement) ?? null);
 
 const trimmedTags = computed(() => {
     if (!props.useToggleLink || toggledOpen.value) {
@@ -120,7 +123,7 @@ function onTagClicked(tag: string) {
                 <BButton
                     v-else-if="slicedTags.length > 0 && toggledOpen"
                     :id="toggleButtonId"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     variant="link"
                     title="Show fewer tags"
                     class="toggle-link show-less-tags"
@@ -153,17 +156,14 @@ function onTagClicked(tag: string) {
                 <BButton
                     v-if="slicedTags.length > 0 && !toggledOpen"
                     :id="toggleButtonId"
+                    ref="moreButtonRef"
                     variant="link"
                     class="toggle-link"
                     @click.stop="() => (toggledOpen = true)">
                     {{ slicedTags.length }} more...
                 </BButton>
 
-                <BTooltip
-                    v-if="slicedTags.length > 0 && !toggledOpen"
-                    :target="toggleButtonId"
-                    custom-class="stateless-tags--tag-preview-tooltip"
-                    placement="bottom">
+                <GTooltip v-if="slicedTags.length > 0 && !toggledOpen" :reference="moreButtonEl" placement="bottom">
                     <Tag
                         v-for="tag in slicedTags"
                         :key="tag"
@@ -171,17 +171,11 @@ function onTagClicked(tag: string) {
                         :editable="false"
                         :clickable="props.clickable"
                         @click="onTagClicked" />
-                </BTooltip>
+                </GTooltip>
             </div>
         </div>
     </div>
 </template>
-
-<style lang="scss">
-.stateless-tags--tag-preview-tooltip {
-    opacity: 1 !important;
-}
-</style>
 
 <style lang="scss" scoped>
 .stateless-tags {

@@ -106,7 +106,7 @@ function onDelete() {
 <template>
     <div>
         <BDropdown
-            v-b-tooltip.top.hover.noninteractive
+            v-g-tooltip.top.hover.noninteractive
             no-caret
             size="sm"
             :variant="props.minimal ? 'outline-info' : 'link'"

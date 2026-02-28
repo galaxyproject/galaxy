@@ -788,7 +788,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <template v-slot:cell(permission)="{ item }">
                         <span
                             v-if="item.entry && getPermissionIcon(getItemFolderEntry(item))"
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             class="mr-2 text-muted"
                             :title="getPermissionTitle(getItemFolderEntry(item))">
                             <FontAwesomeIcon :icon="getPermissionIcon(getItemFolderEntry(item))" />
@@ -873,7 +873,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                     <template v-slot:cell(actions)="{ item }">
                         <button
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover.noninteractive
                             class="btn btn-link text-danger remove-btn"
                             title="Remove dataset from list"
                             @click="removeItem(item.id)">

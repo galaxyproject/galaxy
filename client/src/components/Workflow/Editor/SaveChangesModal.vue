@@ -63,7 +63,7 @@ function saveChanges() {
         </div>
         <template v-slot:modal-footer>
             <BButton
-                v-b-tooltip.noninteractive.hover
+                v-g-tooltip.noninteractive.hover
                 :title="buttonTitles['cancel']"
                 variant="secondary"
                 :disabled="busy"
@@ -72,7 +72,7 @@ function saveChanges() {
                 {{ localize("Cancel") }}
             </BButton>
             <BButton
-                v-b-tooltip.noninteractive.hover
+                v-g-tooltip.noninteractive.hover
                 :title="buttonTitles['dontSave']"
                 variant="danger"
                 :disabled="busy"
@@ -81,7 +81,7 @@ function saveChanges() {
                 {{ localize("Don't Save") }}
             </BButton>
             <BButton
-                v-b-tooltip.noninteractive.hover
+                v-g-tooltip.noninteractive.hover
                 :title="buttonTitles['save']"
                 variant="primary"
                 :disabled="busy"

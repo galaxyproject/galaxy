@@ -652,13 +652,13 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <template v-slot:cell(user)="{ item }">
                         <span
                             v-if="urlTracker.isAtRoot.value && !item.isLeaf && item.url.startsWith(USER_FILE_PREFIX)"
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover.noninteractive
                             title="You created this file source">
                             <FontAwesomeIcon :icon="faUser" class="text-primary" fixed-width />
                         </span>
                         <span
                             v-else-if="urlTracker.isAtRoot.value && !item.isLeaf"
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover.noninteractive
                             title="This file source was created by an administrator and is globally available">
                             <FontAwesomeIcon :icon="faGlobe" class="text-primary" fixed-width />
                         </span>
@@ -828,7 +828,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     <!-- Actions column -->
                     <template v-slot:cell(actions)="{ item }">
                         <button
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover.noninteractive
                             class="btn btn-link text-danger remove-btn"
                             title="Remove file from list"
                             @click="removeItem(item.id)">

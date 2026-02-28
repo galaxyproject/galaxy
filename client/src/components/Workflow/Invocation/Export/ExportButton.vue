@@ -21,7 +21,7 @@ const emit = defineEmits(["onClick"]);
 </script>
 
 <template>
-    <span v-b-tooltip.hover.bottom :title="title">
+    <span v-g-tooltip.hover.bottom :title="title">
         <BButton :disabled="disabled" @click="() => emit('onClick')">
             <FontAwesomeIcon v-if="isBusy" :icon="faSpinner" spin />
             <FontAwesomeIcon v-else :icon="idleIcon" />

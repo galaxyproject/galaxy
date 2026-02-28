@@ -44,20 +44,20 @@ const edamLink = (edamIRI: string) => `https://edamontology.github.io/edam-brows
             <template v-slot:cell(extension)="row">
                 <a
                     v-if="row.item.descriptionUrl"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     target="_blank"
                     :title="row.item.description"
                     :href="row.item.descriptionUrl">
                     {{ row.item.extension }}
                 </a>
-                <span v-else v-b-tooltip.hover :title="row.item.description">
+                <span v-else v-g-tooltip.hover :title="row.item.description">
                     {{ row.item.extension }}
                 </span>
             </template>
 
             <template v-slot:cell(edamFormatLabel)="row">
                 <a
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     target="_blank"
                     :href="edamLink(row.item.edamFormat)"
                     :title="row.item.edamFormatDefinition">
@@ -67,7 +67,7 @@ const edamLink = (edamIRI: string) => `https://edamontology.github.io/edam-brows
 
             <template v-slot:cell(edamDataLabel)="row">
                 <a
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     target="_blank"
                     :href="edamLink(row.item.edamData)"
                     :title="row.item.edamDataDefinition">
