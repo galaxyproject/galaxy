@@ -76,7 +76,7 @@ watch(
                 :id="`${identifier}-advanced-filter-${props.name}`"
                 ref="filterMenuInput"
                 v-model="localValue"
-                v-b-tooltip.focus.v-danger="props.error"
+                v-g-tooltip.focus.v-danger="props.error"
                 class="mw-100"
                 size="sm"
                 :state="props.error ? false : null"

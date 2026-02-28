@@ -223,7 +223,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <label class="font-weight-bold mb-1" for="composite-type-selector"> Composite Type </label>
                     <SingleItemSelector
                         id="composite-type-selector"
-                        v-b-tooltip.hover.noninteractive
+                        v-g-tooltip.hover.noninteractive
                         collection-name="Composite Types"
                         title="Composite Type"
                         :items="availableExtensions"

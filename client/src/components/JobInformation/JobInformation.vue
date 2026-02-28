@@ -224,7 +224,7 @@ watch(
                                 <li v-for="(value, name, i) in message" :key="i">
                                     <span
                                         v-if="metadataDetail[name]"
-                                        v-b-tooltip.html
+                                        v-g-tooltip.html
                                         class="tooltipJobInfo"
                                         :title="metadataDetail[name]">
                                         <strong>{{ name }}:</strong>

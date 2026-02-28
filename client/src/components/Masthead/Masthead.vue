@@ -131,7 +131,7 @@ onMounted(() => {
         <BNavbarNav>
             <BNavbarBrand
                 id="analysis"
-                v-b-tooltip.hover
+                v-g-tooltip.hover
                 class="ml-2 mr-2 p-0"
                 title="Home"
                 aria-label="homepage"

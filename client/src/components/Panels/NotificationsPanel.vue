@@ -44,7 +44,7 @@ async function onMarkAllAsRead() {
         <template v-slot:header-buttons>
             <BButtonGroup>
                 <BButton
-                    v-b-tooltip.bottom.hover
+                    v-g-tooltip.bottom.hover
                     data-description="mark all as read"
                     size="sm"
                     variant="link"

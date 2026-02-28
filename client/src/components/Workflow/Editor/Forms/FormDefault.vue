@@ -3,7 +3,7 @@
         <template v-slot:operations>
             <b-button
                 v-if="isSubworkflow"
-                v-b-tooltip.hover
+                v-g-tooltip.hover
                 role="button"
                 title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."
                 variant="link"
@@ -14,7 +14,7 @@
             </b-button>
             <b-button
                 v-if="isSubworkflow"
-                v-b-tooltip.hover
+                v-g-tooltip.hover
                 role="button"
                 title="Upgrade this Workflow Step to latest Subworkflow version."
                 variant="link"

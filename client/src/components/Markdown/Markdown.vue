@@ -125,7 +125,7 @@ onMounted(() => {
 
                         <BButton
                             v-if="!readOnly"
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             class="markdown-edit"
                             role="button"
                             size="sm"

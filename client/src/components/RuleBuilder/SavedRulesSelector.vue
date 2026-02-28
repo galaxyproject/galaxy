@@ -2,7 +2,7 @@
     <div class="btn-group dropdown">
         <span
             id="savedRulesButton"
-            v-b-tooltip.hover.bottom
+            v-g-tooltip.hover.bottom
             class="fas fa-history rule-builder-view-source"
             :class="{ disabled: numOfSavedRules == 0 }"
             :title="savedRulesMenu"
@@ -11,7 +11,7 @@
             <a
                 v-for="(session, index) in sortSavedRules"
                 :key="index"
-                v-b-tooltip.hover.right
+                v-g-tooltip.hover.right
                 class="rule-link dropdown-item saved-rule-item"
                 :title="formatPreview(session.rule)"
                 @click="$emit('update-rules', session.rule)"

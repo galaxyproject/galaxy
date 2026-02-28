@@ -14,7 +14,7 @@ const props = defineProps<Props>();
 </script>
 
 <template>
-    <b-button v-b-tooltip.hover.bottom :title="props.action.title" @click="props.action.run(modal)">
+    <b-button v-g-tooltip.hover.bottom :title="props.action.title" @click="props.action.run(modal)">
         <FontAwesomeIcon v-if="props.action.icon" :icon="props.action.icon" />
         <div v-else>
             {{ props.action.title }}

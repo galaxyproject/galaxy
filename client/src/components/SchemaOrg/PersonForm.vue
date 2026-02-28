@@ -3,7 +3,7 @@
     <b-form @submit="onSave" @reset="onReset">
         <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
-            <span v-b-tooltip.hover title="Hide Attribute"
+            <span v-g-tooltip.hover title="Hide Attribute"
                 ><FontAwesomeIcon :icon="faEyeSlash" @click="onHide(attribute.key)"
             /></span>
             <div v-if="currentErrors[attribute.key]" class="error">{{ currentErrors[attribute.key] }}</div>

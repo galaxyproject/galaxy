@@ -57,7 +57,7 @@ const deleteKey = () => {
                             <CopyToClipboard message="Key was copied to clipboard" :text="item.key" title="Copy key" />
                         </b-input-group-text>
 
-                        <b-button v-b-tooltip.hover title="Show/hide key" @click="hover = !hover">
+                        <b-button v-g-tooltip.hover title="Show/hide key" @click="hover = !hover">
                             <FontAwesomeIcon :icon="hover ? faEyeSlash : faEye" />
                         </b-button>
 

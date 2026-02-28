@@ -184,21 +184,21 @@ const display = computed(() => {
             <div class="slot-status-icon flex-shrink-0 mr-2">
                 <FontAwesomeIcon
                     v-if="isFilled"
-                    v-b-tooltip.hover.noninteractive
+                    v-g-tooltip.hover.noninteractive
                     :icon="faCheck"
                     class="text-success"
                     title="Slot filled"
                     fixed-width />
                 <FontAwesomeIcon
                     v-else-if="slotItem.optional"
-                    v-b-tooltip.hover.noninteractive
+                    v-g-tooltip.hover.noninteractive
                     :icon="faCheck"
                     class="text-info"
                     title="Optional — can be left empty"
                     fixed-width />
                 <FontAwesomeIcon
                     v-else
-                    v-b-tooltip.hover.noninteractive
+                    v-g-tooltip.hover.noninteractive
                     :icon="faExclamation"
                     class="text-warning"
                     title="Required — must be filled before upload"

@@ -307,7 +307,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 
                         <template v-slot:cell(actions)="{ index }">
                             <GButton
-                                v-b-tooltip.hover.noninteractive
+                                v-g-tooltip.hover.noninteractive
                                 class="remove-btn"
                                 color="red"
                                 outline

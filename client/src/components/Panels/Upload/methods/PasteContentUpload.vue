@@ -305,7 +305,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <!-- Expand toggle column header -->
                     <template v-slot:head(expand)>
                         <button
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover.noninteractive
                             class="btn btn-link btn-sm p-0"
                             :title="getExpandAllToggleTitle(allExpanded)"
                             :aria-label="getExpandAllToggleTitle(allExpanded)"
@@ -318,7 +318,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <template v-slot:cell(expand)="{ item, toggleDetails }">
                         <span class="sr-only">{{ registerRowToggle(item.id, toggleDetails) }}</span>
                         <button
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover.noninteractive
                             class="btn btn-link btn-sm p-0"
                             :title="getExpandToggleTitle(isExpanded(item.id))"
                             :aria-label="getExpandToggleTitle(isExpanded(item.id))"
@@ -368,7 +368,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                             </div>
                             <span
                                 v-else-if="!item.content"
-                                v-b-tooltip.hover.noninteractive
+                                v-g-tooltip.hover.noninteractive
                                 title="This dataset is empty and will be skipped during upload."
                                 class="small font-italic text-danger">
                                 No content
@@ -438,7 +438,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <!-- Actions column -->
                     <template v-slot:cell(actions)="{ item }">
                         <GButton
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover.noninteractive
                             class="remove-btn"
                             color="red"
                             outline

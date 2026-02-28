@@ -1,8 +1,8 @@
 <template>
     <li class="rule">
-        <span v-b-tooltip.hover :title="help">Set {{ columnsLabel }} as {{ typeDisplay }}</span>
-        <span v-b-tooltip.hover :title="titleEdit" class="fa fa-edit" @click="edit"></span>
-        <span v-b-tooltip.hover :title="titleRemove" class="fa fa-times" @click="remove"></span>
+        <span v-g-tooltip.hover :title="help">Set {{ columnsLabel }} as {{ typeDisplay }}</span>
+        <span v-g-tooltip.hover :title="titleEdit" class="fa fa-edit" @click="edit"></span>
+        <span v-g-tooltip.hover :title="titleRemove" class="fa fa-times" @click="remove"></span>
     </li>
 </template>
 

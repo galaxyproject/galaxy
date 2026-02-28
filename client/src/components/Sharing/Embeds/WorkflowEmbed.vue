@@ -133,7 +133,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                     <BFormInput class="embed-code-input" :value="embed" readonly />
                     <BInputGroupAppend>
                         <BButton
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             :title="clipboardTitle"
                             variant="primary"
                             @click="onCopy"

@@ -60,7 +60,7 @@ function logInTitle(title: string) {
     <span>
         <BButtonGroup>
             <BButton
-                v-b-tooltip.hover.noninteractive
+                v-g-tooltip.hover.noninteractive
                 title="Download workflow in .ga format"
                 variant="outline-primary"
                 size="md"
@@ -69,7 +69,7 @@ function logInTitle(title: string) {
                 Download
             </BButton>
             <BButton
-                v-b-tooltip.hover.noninteractive
+                v-g-tooltip.hover.noninteractive
                 title="Copy link to workflow"
                 variant="outline-primary"
                 size="md"
@@ -93,7 +93,7 @@ function logInTitle(title: string) {
 
         <BButton
             v-else-if="!props.embed && !sharedWorkflow"
-            v-b-tooltip.hover.noninteractive
+            v-g-tooltip.hover.noninteractive
             :disabled="workflowInfo.deleted"
             class="workflow-edit-button"
             :title="editButtonTitle"

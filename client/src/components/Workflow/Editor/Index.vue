@@ -120,7 +120,7 @@
                 <template v-slot:buttons>
                     <b-button
                         id="workflow-canvas-button"
-                        v-b-tooltip.hover.bottom
+                        v-g-tooltip.hover.bottom
                         title="Return to Workflow"
                         variant="link"
                         role="button"
