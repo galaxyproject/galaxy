@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdownItem, BNavItemDropdown } from "bootstrap-vue";
+import { BNavItemDropdown } from "bootstrap-vue";
 import { type PropType, ref } from "vue";
 
 import type { IconLike } from "@/components/icons/galaxyIcons";
 
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import TextShort from "@/components/Common/TextShort.vue";
 
 const dropdown = ref(null);
@@ -47,7 +48,7 @@ defineProps({
             <TextShort :text="title ?? ''" />
         </template>
         <template>
-            <BDropdownItem
+            <GDropdownItem
                 v-for="(item, idx) in menu"
                 :key="idx"
                 :data-description="`${id} ${item.title.toLowerCase()}`"
@@ -55,7 +56,7 @@ defineProps({
                 @click="item.handler">
                 <FontAwesomeIcon v-if="item.icon" fixed-width :icon="item.icon" />
                 <span>{{ item.title }}</span>
-            </BDropdownItem>
+            </GDropdownItem>
         </template>
     </BNavItemDropdown>
 </template>
