@@ -36,7 +36,7 @@ import {
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton, BCollapse } from "bootstrap-vue";
+import { BBadge, BButton } from "bootstrap-vue";
 import { faX, faXmark } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
@@ -56,6 +56,7 @@ import { SECRET_PLACEHOLDER, useUserToolsServiceCredentialsStore } from "@/store
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import GCard from "@/components/Common/GCard.vue";
 import CredentialsGroupForm from "@/components/User/Credentials/CredentialsGroupForm.vue";
 
@@ -583,7 +584,7 @@ const groupIndicators = computed(() => (group: ServiceCredentialGroupResponse): 
             </BButton>
         </div>
 
-        <BCollapse :id="`accordion-${props.serviceDefinition.name}`" v-model="isExpanded" class="px-2">
+        <GCollapse v-model="isExpanded" class="px-2">
             <div class="d-flex flex-column mt-2">
                 <span class="text-md">{{ props.serviceDefinition.description }}</span>
 
@@ -637,7 +638,7 @@ const groupIndicators = computed(() => (group: ServiceCredentialGroupResponse): 
                     </template>
                 </GCard>
             </div>
-        </BCollapse>
+        </GCollapse>
     </div>
 </template>
 

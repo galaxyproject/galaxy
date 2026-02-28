@@ -21,7 +21,7 @@
             </datalist>
         </b-form-group>
         <b-link variant="primary" @click="onAdvanced"> {{ advancedTitle }} advanced settings. </b-link>
-        <b-collapse id="advanced-collapse" v-model="advancedShow" class="mt-2">
+        <GCollapse v-model="advancedShow" class="mt-2">
             <b-card>
                 <b-form-group
                     v-if="toolConfigs.length > 1"
@@ -45,14 +45,19 @@
                     <b-form-checkbox v-model="installToolDependencies"> Install tool dependencies </b-form-checkbox>
                 </b-form-group>
             </b-card>
-        </b-collapse>
+        </GCollapse>
     </b-modal>
 </template>
 <script>
 import { GalaxyApi } from "@/api";
 import { useConfig } from "@/composables/config";
 
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
+
 export default {
+    components: {
+        GCollapse,
+    },
     props: {
         repo: {
             type: Object,

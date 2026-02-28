@@ -1,5 +1,5 @@
 <script setup>
-import { BAlert, BCollapse, BLink } from "bootstrap-vue";
+import { BAlert, BLink } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { getArgs } from "@/components/Markdown/parse";
@@ -33,6 +33,7 @@ import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
 import VisualizationWrapper from "./VisualizationWrapper.vue";
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowInvocationInputs from "@/components/WorkflowInvocationState/WorkflowInvocationInputs.vue";
 import WorkflowInvocationOutputs from "@/components/WorkflowInvocationState/WorkflowInvocationOutputs.vue";
@@ -151,7 +152,7 @@ watch(
         <BLink v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
             {{ args.collapse }}
         </BLink>
-        <BCollapse :visible="isVisible">
+        <GCollapse :visible="isVisible">
             <TextContent
                 v-if="name == 'generate_galaxy_version'"
                 class="galaxy-version"
@@ -276,6 +277,6 @@ watch(
                 :size="args.size || 'lg'"
                 :workflow-version="args.workflow_checkpoint || undefined" />
             <WorkflowLicense v-else-if="name == 'workflow_license'" :workflow-id="args.workflow_id" />
-        </BCollapse>
+        </GCollapse>
     </div>
 </template>

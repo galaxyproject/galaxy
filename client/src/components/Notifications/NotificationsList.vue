@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { faCheck, faCog, faRetweet, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox } from "bootstrap-vue";
+import { BAlert, BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 import type { UserNotification } from "@/api/notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationCard from "@/components/Notifications/NotificationCard.vue";
@@ -88,11 +89,11 @@ function togglePreferences() {
             </BButton>
         </div>
 
-        <BCollapse v-model="preferencesOpen">
+        <GCollapse v-model="preferencesOpen">
             <div class="notifications-list-preferences card-container">
                 <NotificationsPreferences v-if="preferencesOpen" header-size="h-md" :embedded="false" />
             </div>
-        </BCollapse>
+        </GCollapse>
 
         <BAlert v-if="loadingNotifications" show>
             <LoadingSpan message="Loading notifications" />
