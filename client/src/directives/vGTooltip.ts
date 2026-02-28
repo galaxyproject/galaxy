@@ -301,11 +301,6 @@ function inserted(el: HTMLElement, binding: { value?: unknown; modifiers: Record
         danger: !!modifiers["v-danger"],
     };
 
-    // Remove title attribute to prevent native browser tooltip
-    if (el.hasAttribute("title")) {
-        el.removeAttribute("title");
-    }
-
     stateMap.set(el, state);
     setupListeners(el, state, modifiers);
 }
@@ -319,10 +314,6 @@ function componentUpdated(el: HTMLElement, binding: { value?: unknown; modifiers
 
     const modifiers = binding.modifiers || {};
     const newText = resolveText(el, binding.value, state.text);
-
-    if (el.hasAttribute("title")) {
-        el.removeAttribute("title");
-    }
 
     state.text = newText;
     state.placement = resolvePlacement(binding.value, modifiers);

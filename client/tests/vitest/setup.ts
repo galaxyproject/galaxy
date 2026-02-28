@@ -7,8 +7,12 @@ import { vi } from "vitest";
 // Vue configuration
 import Vue from "vue";
 
+import { vGTooltip } from "@/directives/vGTooltip";
+
 Vue.config.productionTip = false;
 Vue.config.devtools = false;
+
+Vue.directive("g-tooltip", vGTooltip);
 
 // Mock hashedUserId and userLocalStorage by default
 vi.mock("@/composables/hashedUserId");
