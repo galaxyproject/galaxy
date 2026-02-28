@@ -71,11 +71,9 @@ function setupChangeDetection() {
     }, 1000);
 }
 
-onBeforeRouteLeave((to, from, next) => {
+onBeforeRouteLeave(() => {
     if (hasUnsavedChanges.value && !window.confirm("Unsaved changes will be lost. Continue?")) {
-        next(false);
-    } else {
-        next();
+        return false;
     }
 });
 
