@@ -32,7 +32,6 @@ from galaxy.managers.tools import (
 )
 from galaxy.model import (
     LibraryDatasetDatasetAssociation,
-    PostJobAction,
     User,
 )
 from galaxy.schema.credentials import CredentialsContext
@@ -369,23 +368,8 @@ class ToolsService(ServiceBase):
             preferred_object_store_id=preferred_object_store_id,
             credentials_context=CredentialsContext(root=credentials_context) if credentials_context else None,
             tags=tags,
+            send_email_notification=inputs.get("send_email_notification", False),
         )
-
-        new_pja_flush = False
-        for job in vars.get("jobs", []):
-            if inputs.get("send_email_notification", False):
-                # Unless an anonymous user is invoking this via the API it
-                # should never be an option, but check and enforce that here
-                if trans.user is None:
-                    raise exceptions.ToolExecutionError("Anonymously run jobs cannot send an email notification.")
-                else:
-                    job_email_action = PostJobAction("EmailAction")
-                    job.add_post_job_action(job_email_action)
-                    new_pja_flush = True
-
-        if new_pja_flush:
-            trans.sa_session.commit()
-
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 
     def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars) -> JobCreateResponse:

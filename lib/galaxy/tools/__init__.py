@@ -2393,6 +2393,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         credentials_context: Optional[CredentialsContext] = None,
         input_format: InputFormatT = "legacy",
         tags: Optional[list[str]] = None,
+        send_email_notification: bool = False,
     ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
@@ -2424,15 +2425,11 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             completed_jobs=completed_jobs,
         )
 
-        # Reserved global tags parameter. Applies to all tool outputs.
-        # This may change in the future if per-output tags are introduced.
         if tags:
-            tag_handler = trans.tag_handler
-            for _, hda in execution_tracker.output_datasets:
-                tag_handler.apply_item_tags(user=trans.user, item=hda, tags_str=",".join(tags), flush=False)
-
-            for _, hdca in execution_tracker.output_collections:
-                tag_handler.apply_item_tags(user=trans.user, item=hdca, tags_str=",".join(tags), flush=False)
+            execution_tracker.apply_tags(trans.tag_handler, trans.user, tags)
+            trans.sa_session.commit()
+        if send_email_notification:
+            execution_tracker.apply_email_action(trans.user)
             trans.sa_session.commit()
 
         # Raise an exception if there were jobs to execute and none of them were submitted,
