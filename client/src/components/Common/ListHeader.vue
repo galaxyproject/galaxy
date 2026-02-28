@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { faAngleDown, faAngleUp, faBars, faCog, faGripVertical, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownGroup, BDropdownHeader, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { type ListViewMode, useUserStore } from "@/stores/userStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownGroup from "@/components/BaseComponents/GDropdownGroup.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 type SortBy = string;
 
@@ -145,7 +148,7 @@ defineExpose({
                 </GButtonGroup>
             </div>
 
-            <BDropdown
+            <GDropdown
                 v-if="columnOptions.length > 0"
                 text="Columns"
                 size="sm"
@@ -156,8 +159,8 @@ defineExpose({
                     <FontAwesomeIcon :icon="faCog" fixed-width />
                 </template>
 
-                <BDropdownGroup>
-                    <BDropdownHeader>
+                <GDropdownGroup>
+                    <h6 class="dropdown-header">
                         Show/Hide Columns
                         <GButton
                             v-if="isAColumnNotVisible"
@@ -167,9 +170,9 @@ defineExpose({
                             @click="onResetColumns">
                             <FontAwesomeIcon :icon="faUndo" fixed-width />
                         </GButton>
-                    </BDropdownHeader>
+                    </h6>
 
-                    <BDropdownItem
+                    <GDropdownItem
                         v-for="column in columnOptions"
                         :key="column.key"
                         :disabled="column.key === 'name'"
@@ -180,9 +183,9 @@ defineExpose({
                             @click.prevent>
                             {{ column.label }}
                         </BFormCheckbox>
-                    </BDropdownItem>
-                </BDropdownGroup>
-            </BDropdown>
+                    </GDropdownItem>
+                </GDropdownGroup>
+            </GDropdown>
 
             <slot name="extra-filter" />
         </div>
