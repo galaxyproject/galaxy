@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, set } from "vue";
+import { ref } from "vue";
 
 import { GalaxyApi, type HDASummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -42,7 +42,7 @@ export const useHistoryDatasetsStore = defineStore("historyDatasetsStore", () =>
             };
         }
 
-        set(isFetching.value, filterText, true);
+        isFetching.value[filterText] = true;
 
         const filterQuery = getFilterQuery(filterText);
 
@@ -60,10 +60,10 @@ export const useHistoryDatasetsStore = defineStore("historyDatasetsStore", () =>
             error = errorMessageAsString(apiError);
             errorMessage.value = error;
         } else {
-            set(cachedDatasetsForFilterText.value, filterText, returnedData);
+            cachedDatasetsForFilterText.value[filterText] = returnedData;
         }
 
-        set(isFetching.value, filterText, false);
+        isFetching.value[filterText] = false;
         currentScope.value = { id: historyId, time: historyUpdateTime || "", text: filterText };
 
         return { data: returnedData, error };

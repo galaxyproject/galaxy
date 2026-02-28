@@ -1,5 +1,5 @@
 import type { ComputedRef, Ref } from "vue";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import type { FormParameterValue } from "../parameterTypes";
 import { matchInputs, validateInputs, visitAllInputs, visitInputs } from "../utilities";
@@ -87,11 +87,9 @@ export function useFormState(options: UseFormStateOptions = {}): UseFormStateRet
 
     function cloneInputs(inputs: FormInputNode[]): void {
         formInputs.value = JSON.parse(JSON.stringify(inputs));
-        // set() required here: error and warning are genuinely new properties
-        // on freshly cloned plain objects that Vue 2.7 hasn't observed yet.
         visitAllInputs(formInputs.value, (input: FormInputNode) => {
-            set(input, "error", null);
-            set(input, "warning", null);
+            input.error = null;
+            input.warning = null;
         });
         rebuildIndex();
     }
@@ -138,8 +136,7 @@ export function useFormState(options: UseFormStateOptions = {}): UseFormStateRet
                         attrs[key] = raw[key];
                     }
                 }
-                // set() required: attributes is a genuinely new property on clone nodes.
-                set(input, "attributes", attrs);
+                input.attributes = attrs;
             }
         });
     }
