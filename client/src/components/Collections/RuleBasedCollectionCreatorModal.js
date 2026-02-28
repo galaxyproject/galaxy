@@ -1,8 +1,7 @@
-import Vue from "vue";
-
 import { rawToTable } from "@/components/Collections/tables";
 import _l from "@/utils/localization";
 import Modal from "@/utils/modal";
+import { mountVueComponent } from "@/utils/mountVueComponent";
 
 const modal = new Modal();
 
@@ -32,8 +31,7 @@ async function ruleBasedCollectionCreatorModal(elements, elementsType, importTyp
     });
 
     const module = await import("@/components/RuleCollectionBuilder.vue");
-    const ruleCollectionBuilderInstance = Vue.extend(module.default);
-    const vm = document.createElement("div");
+    const container = document.createElement("div");
 
     // Prepare modal
     const titleSuffix = options.historyName ? `From history: <b>${options.historyName}</b>` : "";
@@ -43,14 +41,15 @@ async function ruleBasedCollectionCreatorModal(elements, elementsType, importTyp
     </div>`;
     modal.show({
         title: titleHtml,
-        body: vm,
+        body: container,
         width: "85%",
         height: "100%",
     });
 
-    // Inject rule builder component
-    new ruleCollectionBuilderInstance({
-        propsData: {
+    // Mount rule builder component
+    const mount = mountVueComponent(module.default);
+    mount(
+        {
             initialElements: elements,
             elementsType: elementsType,
             importType: importType,
@@ -62,7 +61,8 @@ async function ruleBasedCollectionCreatorModal(elements, elementsType, importTyp
             saveRulesFn: options.saveRulesFn,
             initialRules: options.initialRules,
         },
-    }).$mount(vm);
+        container,
+    );
 
     return promise;
 }
