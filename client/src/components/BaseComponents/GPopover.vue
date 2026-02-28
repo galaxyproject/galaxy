@@ -3,6 +3,9 @@
  * Popover component using @floating-ui/dom for positioning.
  * Replaces BPopover from bootstrap-vue.
  *
+ * NOTE: Uses Bootstrap CSS class names (popover, b-popover, popover-header, popover-body)
+ * for styling compatibility. Replace with custom g-popover styles when dropping Bootstrap CSS.
+ *
  * Supports:
  * - String target (element ID) or HTMLElement ref
  * - Trigger modes: hover, click, manual
