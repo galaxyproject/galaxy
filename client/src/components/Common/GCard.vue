@@ -2,7 +2,7 @@
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { faCaretDown, faEdit, faPen, faSpinner, faStar, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BDropdown, BDropdownItem, BFormCheckbox, BLink } from "bootstrap-vue";
+import { BBadge, BFormCheckbox, BLink } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { sizeToGSize, variantToColor } from "@/components/BaseComponents/variantToColor";
@@ -14,6 +14,8 @@ import type { CardAction, CardBadge, CardIndicator, Title, TitleIcon, TitleSize 
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -490,7 +492,7 @@ function onKeyDown(event: KeyboardEvent) {
                                 </slot>
 
                                 <slot name="extra-actions">
-                                    <BDropdown
+                                    <GDropdown
                                         v-if="
                                             props.extraActions?.length &&
                                             props.extraActions.some((ea) => ea.visible ?? true)
@@ -509,7 +511,7 @@ function onKeyDown(event: KeyboardEvent) {
                                         </template>
 
                                         <template v-for="ea in props.extraActions">
-                                            <BDropdownItem
+                                            <GDropdownItem
                                                 v-if="ea.visible ?? true"
                                                 :id="getActionId(props.id, ea.id)"
                                                 :key="ea.id"
@@ -523,9 +525,9 @@ function onKeyDown(event: KeyboardEvent) {
                                                 @click="ea.handler && ea.handler()">
                                                 <FontAwesomeIcon v-if="ea.icon" :icon="ea.icon" fixed-width />
                                                 {{ localize(ea.label) }}
-                                            </BDropdownItem>
+                                            </GDropdownItem>
                                         </template>
-                                    </BDropdown>
+                                    </GDropdown>
                                 </slot>
                             </div>
 

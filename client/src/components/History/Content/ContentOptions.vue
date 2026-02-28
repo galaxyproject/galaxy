@@ -11,7 +11,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BDropdown } from "bootstrap-vue";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
 import { ScanEye } from "lucide-vue";
 import { computed, type Ref, ref } from "vue";
@@ -22,6 +21,8 @@ import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 const props = defineProps({
     writable: { type: Boolean, default: true },
@@ -46,7 +47,7 @@ const emit = defineEmits<{
 
 const entryPointStore = useEntryPointStore();
 const errorMessage = ref("");
-const deleteCollectionMenu: Ref<BDropdown | null> = ref(null);
+const deleteCollectionMenu: Ref<InstanceType<typeof GDropdown> | null> = ref(null);
 
 const editButtonTitle = computed(() => (editDisabled.value ? "This dataset is not yet editable." : "Edit attributes"));
 const editDisabled = computed(() =>
@@ -168,19 +169,19 @@ function onDisplay($event: MouseEvent) {
             transparent
             @click.stop="onDelete($event)">
             <FontAwesomeIcon v-if="isDataset" :icon="faTrash" />
-            <BDropdown v-else ref="deleteCollectionMenu" size="sm" variant="link" no-caret toggle-class="p-0 m-0">
+            <GDropdown v-else ref="deleteCollectionMenu" size="sm" variant="link" no-caret toggle-class="p-0 m-0">
                 <template v-slot:button-content>
                     <FontAwesomeIcon :icon="faTrash" />
                 </template>
-                <b-dropdown-item title="Delete collection only" @click.prevent.stop="onDeleteItem">
+                <GDropdownItem title="Delete collection only" @click.prevent.stop="onDeleteItem">
                     <FontAwesomeIcon :icon="faFile" />
                     Collection only
-                </b-dropdown-item>
-                <b-dropdown-item title="Delete collection and elements" @click.prevent.stop="onDeleteItemRecursively">
+                </GDropdownItem>
+                <GDropdownItem title="Delete collection and elements" @click.prevent.stop="onDeleteItemRecursively">
                     <FontAwesomeIcon :icon="faCopy" />
                     Collection and elements
-                </b-dropdown-item>
-            </BDropdown>
+                </GDropdownItem>
+            </GDropdown>
         </GButton>
         <GButton
             v-if="writable && isHistoryItem && isDeleted"
