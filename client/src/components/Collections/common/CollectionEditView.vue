@@ -2,7 +2,7 @@
 import { faBars, faCog, faDatabase, faSave, faTable } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert, BSpinner, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BSpinner } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -18,6 +18,8 @@ import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GTab from "@/components/BaseComponents/GTab.vue";
+import GTabs from "@/components/BaseComponents/GTabs.vue";
 import ChangeDatatypeTab from "@/components/Collections/common/ChangeDatatypeTab.vue";
 import DatabaseEditTab from "@/components/Collections/common/DatabaseEditTab.vue";
 import SuitableConvertersTab from "@/components/Collections/common/SuitableConvertersTab.vue";
@@ -219,8 +221,8 @@ async function saveAttrs() {
         <BAlert v-if="successMessage" show variant="success" dismissible>
             {{ localize(successMessage) }}
         </BAlert>
-        <BTabs v-if="!errorMessage" class="mt-3">
-            <BTab title-link-class="collection-edit-attributes-nav" @click="updateInfoMessage('')">
+        <GTabs v-if="!errorMessage" class="mt-3">
+            <GTab title-link-class="collection-edit-attributes-nav" @click="updateInfoMessage('')">
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faBars" class="mr-1" />
                     {{ localize("Attributes") }}
@@ -238,8 +240,8 @@ async function saveAttrs() {
                         {{ localize("Save") }}
                     </GButton>
                 </div>
-            </BTab>
-            <BTab
+            </GTab>
+            <GTab
                 title-link-class="collection-edit-change-genome-nav"
                 @click="
                     updateInfoMessage(
@@ -263,10 +265,10 @@ async function saveAttrs() {
                             @clicked-save="clickedSave" />
                     </div>
                 </DbKeyProvider>
-            </BTab>
+            </GTab>
 
             <SuitableConvertersProvider :id="collectionId" v-slot="{ item }">
-                <BTab
+                <GTab
                     v-if="item && item.length"
                     title-link-class="collection-edit-convert-datatype-nav"
                     @click="updateInfoMessage('This will create a new collection in your History.')">
@@ -276,10 +278,10 @@ async function saveAttrs() {
                     </template>
 
                     <SuitableConvertersTab :suitable-converters="item" @clicked-convert="clickedConvert" />
-                </BTab>
+                </GTab>
             </SuitableConvertersProvider>
 
-            <BTab
+            <GTab
                 v-if="isConfigLoaded && config.enable_celery_tasks"
                 title-link-class="collection-edit-change-datatype-nav"
                 @click="
@@ -304,7 +306,7 @@ async function saveAttrs() {
                             @clicked-save="clickedDatatypeChange" />
                     </div>
                 </DatatypesProvider>
-            </BTab>
-        </BTabs>
+            </GTab>
+        </GTabs>
     </div>
 </template>

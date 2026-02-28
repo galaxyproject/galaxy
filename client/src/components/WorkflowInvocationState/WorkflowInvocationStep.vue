@@ -2,7 +2,7 @@
 import { faTimesCircle } from "@fortawesome/free-regular-svg-icons";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BTab, BTabs } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
@@ -16,6 +16,8 @@ import ParameterStep from "./ParameterStep.vue";
 import SubworkflowAlert from "./SubworkflowAlert.vue";
 import WorkflowInvocationStepHeader from "./WorkflowInvocationStepHeader.vue";
 import WorkflowStepTitle from "./WorkflowStepTitle.vue";
+import GTab from "@/components/BaseComponents/GTab.vue";
+import GTabs from "@/components/BaseComponents/GTabs.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -228,8 +230,8 @@ onUnmounted(() => {
                                     <SubworkflowAlert v-else :invocation-id="stepDetails.subworkflow_invocation_id" />
                                 </div>
 
-                                <BTabs justified>
-                                    <BTab
+                                <GTabs justified>
+                                    <GTab
                                         v-if="workflowStepType === 'tool'"
                                         class="portlet-body"
                                         style="width: 100%; overflow-x: auto">
@@ -246,9 +248,9 @@ onUnmounted(() => {
                                                 :invocation-id="props.invocation.id" />
                                             <BAlert v-else v-localize variant="info" show>This step has no jobs</BAlert>
                                         </div>
-                                    </BTab>
+                                    </GTab>
 
-                                    <BTab
+                                    <GTab
                                         v-if="hasOutputDatasets || hasOutputCollections"
                                         title="Outputs"
                                         title-item-class="invocation-step-outputs-tab">
@@ -275,8 +277,8 @@ onUnmounted(() => {
                                                 <GenericHistoryItem :item-id="value.id" :item-src="value.src" />
                                             </div>
                                         </div>
-                                    </BTab>
-                                </BTabs>
+                                    </GTab>
+                                </GTabs>
                             </div>
                         </div>
                     </div>
