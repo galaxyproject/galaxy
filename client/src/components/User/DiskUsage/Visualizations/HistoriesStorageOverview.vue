@@ -188,8 +188,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                     )
                 "
                 :data="activeVsArchivedVsDeletedTotalSizeData"
-                :enable-selection="false"
-                v-bind="byteFormattingForChart">
+                :enable-selection="false">
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip
                         v-if="data"
