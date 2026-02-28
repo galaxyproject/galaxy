@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faStar, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
+import { BAlert, BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
 import { faTrashRestore } from "font-awesome-6";
 import { filter } from "underscore";
 import { computed, onMounted, ref, watch } from "vue";
@@ -22,6 +22,7 @@ import type WorkflowCard from "./WorkflowCard.vue";
 
 import WorkflowCardList from "./WorkflowCardList.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
+import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -506,7 +507,7 @@ onMounted(() => {
                 </GLink>
             </BAlert>
         </span>
-        <BOverlay v-else id="workflow-cards" :show="overlay" rounded="sm" class="cards-list">
+        <GOverlay v-else id="workflow-cards" :show="overlay" class="cards-list">
             <WorkflowCardList
                 :workflows="workflowsLoaded"
                 :published-view="published"
@@ -521,7 +522,7 @@ onMounted(() => {
                 @refreshList="load"
                 @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
                 @updateFilter="updateFilterValue" />
-        </BOverlay>
+        </GOverlay>
 
         <div class="workflow-list-footer">
             <div
