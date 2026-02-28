@@ -68,7 +68,7 @@
                     aria-label="tool recommendations">
                     <i class="fa fa-arrow-right" />
                 </GButton>
-                <b-popover
+                <GPopover
                     v-if="isEnabled && !readonly"
                     :target="popoverId"
                     triggers="hover"
@@ -81,7 +81,7 @@
                             :datatypes-mapper="datatypesMapper"
                             @onCreate="onCreate" />
                     </div>
-                </b-popover>
+                </GPopover>
             </GButtonGroup>
             <i :class="iconClass" />
             <span v-if="step.when" v-g-tooltip.hover title="This step is conditionally executed.">
@@ -192,6 +192,7 @@ import type { OutputTerminals } from "./modules/terminals";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";

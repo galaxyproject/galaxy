@@ -2,9 +2,9 @@
     <span itemprop="creator" itemscope itemtype="https://schema.org/Organization">
         <FontAwesomeIcon ref="button" :icon="faBuilding" />
 
-        <BPopover triggers="click blur" :target="$refs['button'] || 'works-lazily'" title="Organization">
+        <GPopover triggers="click blur" :target="$refs['button'] || 'works-lazily'" title="Organization">
             <GTable :items="items" :fields="fields" />
-        </BPopover>
+        </GPopover>
 
         <span v-if="name">
             <span itemprop="name">{{ name }}</span>
@@ -36,16 +36,16 @@
 <script>
 import { faBuilding, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BPopover } from "bootstrap-vue";
 
 import ThingViewerMixin from "./ThingViewerMixin";
 
 import GLink from "@/components/BaseComponents/GLink.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
-        BPopover,
+        GPopover,
         FontAwesomeIcon,
         GLink,
         GTable,

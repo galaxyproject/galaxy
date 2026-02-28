@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BPopover } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { orList } from "@/utils/strings";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 const props = defineProps<{
     extensions: string[];
@@ -48,7 +48,7 @@ const localFormatsVisible = computed({
             <FontAwesomeIcon v-if="formatsVisible" :icon="faCaretUp" />
             <FontAwesomeIcon v-else :icon="faCaretDown" />
         </GButton>
-        <BPopover
+        <GPopover
             v-if="props.popover"
             v-model="localFormatsVisible"
             :target="props.formatsButtonId"
@@ -57,7 +57,7 @@ const localFormatsVisible = computed({
             <ul class="pl-3 m-0">
                 <li v-for="extension in props.extensions" :key="extension">{{ extension }}</li>
             </ul>
-        </BPopover>
+        </GPopover>
         <GCollapse v-else :visible="localFormatsVisible">
             <ul class="pl-3 m-0">
                 <li v-for="extension in props.extensions" :key="extension">{{ extension }}</li>

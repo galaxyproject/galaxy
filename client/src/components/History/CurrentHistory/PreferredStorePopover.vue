@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { BPopover } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 import ShowSelectedObjectStore from "@/components/ObjectStore/ShowSelectedObjectStore.vue";
 
 const { isOnlyPreference } = useStorageLocationConfiguration();
@@ -34,7 +34,7 @@ const title = computed(() => {
 </script>
 
 <template>
-    <BPopover :target="`history-storage-${historyId}`" triggers="hover" placement="bottomleft" boundary="window">
+    <GPopover :target="`history-storage-${historyId}`" triggers="hover" placement="bottomleft" boundary="window">
         <template v-slot:title>{{ title }}</template>
         <div class="popover-wide">
             <p>
@@ -58,7 +58,7 @@ const title = computed(() => {
                 :preferred-object-store-id="preferredObjectStoreId"
                 for-what="Galaxy will default to storing this history's datasets in " />
         </div>
-    </BPopover>
+    </GPopover>
 </template>
 <style scoped lang="scss">
 .popover-wide {
