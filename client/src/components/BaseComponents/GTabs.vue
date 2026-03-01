@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Ref, VNode } from "vue";
-import { computed, h, provide, ref, watch } from "vue";
+import type { PropType, Ref, VNode } from "vue";
+import { computed, defineComponent, h, provide, ref, watch } from "vue";
 
 export interface TabRegistration {
     title?: string;
@@ -121,12 +121,25 @@ const containerClasses = computed(() => ({
     "d-flex": props.vertical,
 }));
 
-function renderTabTitle(tab: TabRegistration) {
-    if (tab.titleRenderer) {
-        return tab.titleRenderer();
-    }
-    return [h("span", tab.title)];
-}
+// Vue 2.7 doesn't support plain functions as components via <component :is>,
+// so we define a proper component with setup returning a render function.
+const TabTitleContent = defineComponent({
+    props: {
+        tab: {
+            type: Object as PropType<TabRegistration>,
+            required: true,
+        },
+    },
+    setup(props) {
+        return () => {
+            if (props.tab.titleRenderer) {
+                const nodes = props.tab.titleRenderer();
+                return nodes.length === 1 ? nodes[0] : h("span", nodes);
+            }
+            return h("span", props.tab.title || "");
+        };
+    },
+});
 </script>
 
 <template>
@@ -148,7 +161,7 @@ function renderTabTitle(tab: TabRegistration) {
                     :disabled="tab.disabled"
                     v-bind="tab.titleLinkAttributes"
                     @click="setActive(index)">
-                    <component :is="() => renderTabTitle(tab)" />
+                    <TabTitleContent :tab="tab" />
                 </button>
             </li>
         </ul>
