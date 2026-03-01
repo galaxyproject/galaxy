@@ -118,6 +118,17 @@
                 @insert="insertMarkdown"
                 @update="onReportUpdate">
                 <template v-slot:buttons>
+                    <GButton
+                        tooltip
+                        title="Generate AI ChatGXY report based on the workflow and its expected results"
+                        variant="link"
+                        color="blue"
+                        transparent
+                        size="large"
+                        @click="generateAIReport">
+                        <FontAwesomeIcon :icon="faMagic" />
+                    </GButton>
+
                     <b-button
                         id="workflow-canvas-button"
                         v-b-tooltip.hover.bottom
@@ -241,7 +252,16 @@
 </template>
 
 <script>
-import { faArrowLeft, faArrowRight, faCog, faKey, faSave, faTimes, faWrench } from "@fortawesome/free-solid-svg-icons";
+import {
+    faArrowLeft,
+    faArrowRight,
+    faCog,
+    faKey,
+    faMagic,
+    faSave,
+    faTimes,
+    faWrench,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
@@ -249,6 +269,7 @@ import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText } from "boots
 import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
+import { generateAIReport } from "@/api/chat";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { ConfirmDialog, useConfirmDialog } from "@/composables/confirmDialog";
@@ -288,6 +309,7 @@ import StateUpgradeModal from "./StateUpgradeModal.vue";
 import WorkflowAttributes from "./WorkflowAttributes.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
 import SearchPanel from "@/components/Panels/SearchPanel.vue";
@@ -320,6 +342,7 @@ export default {
         BDropdown,
         BDropdownText,
         BDropdownDivider,
+        GButton,
     },
     props: {
         workflowId: {
@@ -749,6 +772,7 @@ export default {
             faArrowRight,
             faTimes,
             faCog,
+            faMagic,
             faSave,
         };
     },
@@ -1075,6 +1099,39 @@ export default {
         },
         onUpgrade() {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
+        },
+        async generateAIReport() {
+            if (this.hasChanges) {
+                Toast.error("Please save your workflow before generating the AI report.");
+                return;
+            }
+
+            if (!this.id || this.isNewTempWorkflow) {
+                Toast.error("Workflow must be saved before generating the AI report.");
+                return;
+            }
+
+            this.onWorkflowMessage("Generating AI Report", "progress");
+            try {
+                const { model, report, total_tokens } = await generateAIReport(this.id, this.version);
+                this.onReportUpdate(report);
+                Toast.success(
+                    `Report generated using ${model}${total_tokens ? `, total tokens used: ${total_tokens}` : ""}.`,
+                    "AI Report generated successfully.",
+                );
+            } catch (e) {
+                this.onWorkflowError(
+                    "Generating AI report failed",
+                    errorMessageAsString(e) || "Please contact an administrator.",
+                    {
+                        Ok: () => {
+                            this.hideModal();
+                        },
+                    },
+                );
+            } finally {
+                this.hideModal();
+            }
         },
         onReportUpdate(markdown) {
             this.hasChanges = true;

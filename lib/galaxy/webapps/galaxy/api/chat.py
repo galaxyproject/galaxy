@@ -20,13 +20,20 @@ from fastapi import (
 from pydantic import Field
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import ConfigurationError
+from galaxy.exceptions import (
+    ConfigurationError,
+    ObjectNotFound,
+)
 from galaxy.managers.agents import AgentService
 from galaxy.managers.chat import ChatManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
+from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import User
-from galaxy.schema.agents import AgentResponse
+from galaxy.schema.agents import (
+    AgentResponse,
+    WorkflowReportResponse,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     ChatPayload,
@@ -41,12 +48,16 @@ from galaxy.webapps.galaxy.api import (
 
 # Import agent system
 try:
-    from galaxy.agents import GalaxyAgentDependencies
+    from galaxy.agents import (
+        GalaxyAgentDependencies,
+    )
+    from galaxy.agents.workflow_report import WorkflowReportAgent
 
     HAS_AGENTS = True
 except ImportError:
     HAS_AGENTS = False
     GalaxyAgentDependencies = None  # type: ignore[assignment,misc,unused-ignore]
+    WorkflowReportAgent = None  # type: ignore[assignment,misc,unused-ignore]
 
 # Import pydantic-ai components (required dependency)
 from pydantic_ai import Agent
@@ -92,6 +103,7 @@ class ChatAPI:
     chat_manager: ChatManager = depends(ChatManager)
     job_manager: JobManager = depends(JobManager)
     agent_service: AgentService = depends(AgentService)
+    workflow_manager: WorkflowsManager = depends(WorkflowsManager)
 
     @router.post("/api/chat", unstable=True)
     async def query(
@@ -329,6 +341,39 @@ class ChatAPI:
         job = self.job_manager.get_accessible_job(trans, job_id)
         chat_response = self.chat_manager.set_feedback_for_job(trans, job.id, feedback)
         return chat_response.messages[0].feedback
+
+    @router.get("/api/chat/{workflow_id}/generate_report", unstable=True)
+    async def generate_report(
+        self,
+        workflow_id: str = Path(..., description="Workflow ID to generate the report for"),
+        version: Optional[int] = Query(None, description="Version of the workflow"),
+        instance: bool = Query(False, description="Whether the workflow_id is an instance ID"),
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> WorkflowReportResponse:
+        """Generate a report for the specified workflow."""
+        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(
+            trans, workflow_id, by_stored_id=not instance
+        )
+        if not stored_workflow:
+            raise ObjectNotFound("Workflow not found.")
+        if version is None and instance:
+            decoded_id = trans.app.security.decode_id(workflow_id)
+            workflow = stored_workflow.get_internal_version_by_id(decoded_id)
+        else:
+            workflow = stored_workflow.get_internal_version(version)
+        if not HAS_AGENTS:
+            raise ConfigurationError("AI agent system is not available.")
+        assert WorkflowReportAgent is not None
+
+        deps = self.agent_service.create_dependencies(trans, user)
+        agent = WorkflowReportAgent(deps)
+        response = await agent.generate_report(workflow)
+        return WorkflowReportResponse(
+            report=response.content,
+            total_tokens=response.metadata.get("total_tokens"),
+            model=response.metadata.get("model"),
+        )
 
     @router.put("/api/chat/exchange/{exchange_id}/feedback", unstable=True)
     def set_exchange_feedback(
