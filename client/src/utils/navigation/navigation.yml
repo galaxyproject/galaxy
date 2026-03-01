@@ -700,6 +700,18 @@ pages:
         type: data-description
         selector: 'page edit button'
       toolbar_title_input: '[data-description="page editor title"] input'
+      back_button:
+        type: data-description
+        selector: 'page back button'
+      permissions_button:
+        type: data-description
+        selector: 'page permissions button'
+      save_view_button:
+        type: data-description
+        selector: 'page save-view button'
+      chat_button:
+        type: data-description
+        selector: 'page chat button'
 
 login:
   selectors:

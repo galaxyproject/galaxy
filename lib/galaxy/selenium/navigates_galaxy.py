@@ -2170,6 +2170,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def click_button_new_workflow(self):
         self.wait_for_and_click(self.navigation.workflows.selectors.new_button)
 
+    # --- Page Editor helpers ---
+
+    def navigate_to_page_editor(self, page_id):
+        """Navigate to the unified editor for a standalone page."""
+        self.get(f"pages/editor?id={page_id}")
+        self.components.pages.history.editor.wait_for_visible()
+
     # --- History Page helpers ---
 
     def navigate_to_history_pages(self):

@@ -487,3 +487,29 @@ class TestHistoryPages(SeleniumTestCase):
         self.wait_for_selector_visible(".markdown-wrapper")
         self.wait_for_selector_visible(".embedded-dataset")
         self.screenshot("history_page_display_embedded_dataset")
+
+    @selenium_test
+    @managed_history
+    def test_history_toolbar_shows_history_controls_not_standalone(self):
+        """History-attached editor shows correct toolbar: no permissions, no save-view."""
+        history_id = self.current_history_id()
+        self.dataset_populator.new_history_page(history_id, title="Toolbar Test", content="# Toolbar")
+
+        self.navigate_to_history_pages()
+        self.components.pages.history.item.wait_for_and_click()
+        self.components.pages.history.editor.wait_for_visible()
+
+        # History-page controls visible
+        self.components.pages.history.save_button.wait_for_visible()
+        self.components.pages.history.revisions_button.wait_for_visible()
+        self.components.pages.history.preview_button.wait_for_visible()
+
+        # Standalone-only controls absent
+        self.components.pages.history.permissions_button.assert_absent_or_hidden()
+        self.components.pages.history.save_view_button.assert_absent_or_hidden()
+
+        # Back button says "Manage History Pages" not "Back to Pages"
+        back_text = self.components.pages.history.back_button.wait_for_text()
+        assert "Manage History Pages" in back_text
+        assert "Back to Pages" not in back_text
+        self.screenshot("history_toolbar_controls")

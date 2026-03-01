@@ -4,6 +4,7 @@ from galaxy_test.base.workflow_fixtures import (
 )
 from .framework import (
     managed_history,
+    retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase,
 )
@@ -82,3 +83,156 @@ class TestPages(SeleniumTestCase):
     @property
     def _page_editor(self):
         return self.components.pages.editor
+
+    # --- Standalone page unified editor tests ---
+
+    @selenium_test
+    @managed_history
+    def test_edit_existing_page_content(self):
+        """Edit an existing regular page via unified editor, save, reload, verify."""
+        slug = self._get_random_name(prefix="editpage")
+        page = self.dataset_populator.new_page(slug=slug, content_format="markdown", content="# Original")
+        self.navigate_to_page_editor(page["id"])
+
+        editor = self.components.pages.history.markdown_editor
+        assert "Original" in editor.wait_for_value()
+
+        self.history_page_editor_set_content("# Updated\n\nSecond version.")
+        self.history_page_save()
+
+        self.home()
+        self.navigate_to_page_editor(page["id"])
+
+        assert "Updated" in editor.wait_for_value()
+        self.screenshot("standalone_page_edit_existing")
+
+    @selenium_test
+    @managed_history
+    def test_standalone_page_unified_editor_round_trip(self):
+        """Core round-trip: edit regular page through PageEditorView, save, reload."""
+        slug = self._get_random_name(prefix="roundtrip")
+        page = self.dataset_populator.new_page(slug=slug, content_format="markdown", content="# Starter")
+        self.navigate_to_page_editor(page["id"])
+
+        self.components.pages.history.toolbar.wait_for_visible()
+        editor = self.components.pages.history.markdown_editor
+        assert "Starter" in editor.wait_for_value()
+
+        self.history_page_editor_set_content("# Full Round Trip\n\nContent from unified editor.")
+        self.components.pages.history.unsaved_indicator.wait_for_visible()
+        self.history_page_save()
+        self.components.pages.history.unsaved_indicator.assert_absent_or_hidden_after_transitions()
+
+        self.home()
+        self.navigate_to_page_editor(page["id"])
+
+        assert "Full Round Trip" in editor.wait_for_value()
+        self.screenshot("standalone_page_round_trip")
+
+    @selenium_test
+    @managed_history
+    def test_standalone_save_button_disabled_when_clean(self):
+        """Save button disabled when no changes, enabled after edit, disabled after save."""
+        slug = self._get_random_name(prefix="savebtn")
+        page = self.dataset_populator.new_page(slug=slug, content_format="markdown", content="# Clean")
+        self.navigate_to_page_editor(page["id"])
+
+        save_button = self.components.pages.history.save_button
+        save_button.assert_disabled()
+        self.components.pages.history.unsaved_indicator.assert_absent_or_hidden()
+
+        self.history_page_editor_set_content("# Dirty")
+
+        @retry_assertion_during_transitions
+        def assert_save_enabled():
+            assert not save_button.has_class("disabled")
+
+        assert_save_enabled()
+
+        self.history_page_save()
+
+        @retry_assertion_during_transitions
+        def assert_save_disabled_again():
+            save_button.assert_disabled()
+
+        assert_save_disabled_again()
+        self.screenshot("standalone_save_button_states")
+
+    @selenium_test
+    @managed_history
+    def test_standalone_page_revisions(self):
+        """Revisions work for standalone pages: list opens, restore works."""
+        slug = self._get_random_name(prefix="revisions")
+        page = self.dataset_populator.new_page(slug=slug, content_format="markdown", content="V1 content")
+        self.dataset_populator.update_history_page(page["id"], content="V2 content")
+        self.navigate_to_page_editor(page["id"])
+
+        editor = self.components.pages.history.markdown_editor
+        assert "V2 content" in editor.wait_for_value()
+
+        self.history_page_open_revisions()
+        self.history_page_assert_revision_count(2)
+
+        # Click restore on oldest revision (last in list)
+        restore_buttons = self.components.pages.history.restore_revision_button.all()
+        restore_buttons[-1].click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        assert "V1 content" in editor.wait_for_value()
+        self.screenshot("standalone_page_revision_restore")
+
+    @selenium_test
+    @managed_history
+    def test_standalone_page_revision_count_increases_after_save(self):
+        """Saving via unified editor creates new revisions."""
+        slug = self._get_random_name(prefix="revcount")
+        page = self.dataset_populator.new_page(slug=slug, content_format="markdown", content="# Initial")
+        self.navigate_to_page_editor(page["id"])
+
+        self.history_page_editor_set_content("# Save 1")
+        self.history_page_save()
+
+        self.history_page_editor_set_content("# Save 2")
+        self.history_page_save()
+
+        self.history_page_open_revisions()
+        self.history_page_assert_revision_count(3)  # initial + 2 saves
+        self.screenshot("standalone_page_revision_count")
+
+    @selenium_test
+    @managed_history
+    def test_standalone_page_back_button_returns_to_grid(self):
+        """Back button navigates from editor to pages grid."""
+        slug = self._get_random_name(prefix="backbtn")
+        page = self.dataset_populator.new_page(slug=slug, content_format="markdown", content="# Back Test")
+        self.navigate_to_page_editor(page["id"])
+
+        self.components.pages.history.toolbar.wait_for_visible()
+        self.components.pages.history.back_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+
+        # Should be on the pages grid
+        self.components.pages.activity.wait_for_visible()
+        self.screenshot("standalone_page_back_to_grid")
+
+    @selenium_test
+    @managed_history
+    def test_standalone_toolbar_shows_permissions_not_history_controls(self):
+        """Standalone editor shows correct toolbar: permissions, save-view, no history text."""
+        slug = self._get_random_name(prefix="toolbar")
+        page = self.dataset_populator.new_page(slug=slug, content_format="markdown", content="# Toolbar Test")
+        self.navigate_to_page_editor(page["id"])
+
+        self.components.pages.history.toolbar.wait_for_visible()
+        # Standalone controls visible
+        self.components.pages.history.save_button.wait_for_visible()
+        self.components.pages.history.revisions_button.wait_for_visible()
+        self.components.pages.history.preview_button.wait_for_visible()
+        self.components.pages.history.permissions_button.wait_for_visible()
+        self.components.pages.history.save_view_button.wait_for_visible()
+
+        # Back button says "Back to Pages" not "Manage History Pages"
+        back_text = self.components.pages.history.back_button.wait_for_text()
+        assert "Back to Pages" in back_text
+        assert "Manage History Pages" not in back_text
+        self.screenshot("standalone_toolbar_controls")
