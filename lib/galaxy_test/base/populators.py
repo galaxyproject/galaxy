@@ -2037,7 +2037,7 @@ class BaseDatasetPopulator(BasePopulator):
 
     def delete_history_page(self, page_id: str) -> None:
         response = self._delete(f"pages/{page_id}")
-        api_asserts.assert_status_code_is(response, 200)
+        api_asserts.assert_status_code_is(response, 204)
 
     def list_page_revisions(self, page_id: str) -> list[dict[str, Any]]:
         response = self._get(f"pages/{page_id}/revisions")

@@ -257,14 +257,18 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
 
         # Slug validation: required for non-history pages
         if history_id:
+            # Verify user owns the history
+            history = trans.sa_session.get(model.History, history_id)
+            if not history:
+                raise exceptions.ObjectNotFound("History not found")
+            if history.user != user:
+                raise exceptions.ItemOwnershipException("Cannot create page on history you do not own")
             # History-attached pages don't need a slug
             content_format = payload.content_format or "markdown"
             content = payload.content or ""
             # Auto-title from history name if not provided
             if not payload.title or payload.title == "":
-                history = trans.sa_session.get(model.History, history_id)
-                if history:
-                    payload.title = history.name
+                payload.title = history.name
         else:
             if not payload.title:
                 raise exceptions.RequestParameterInvalidException("title is required for non-history pages")
