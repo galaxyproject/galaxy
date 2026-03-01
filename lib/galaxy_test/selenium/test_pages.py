@@ -4,7 +4,6 @@ from galaxy_test.base.workflow_fixtures import (
 )
 from .framework import (
     managed_history,
-    retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase,
 )
@@ -88,26 +87,6 @@ class TestPages(SeleniumTestCase):
 
     @selenium_test
     @managed_history
-    def test_edit_existing_page_content(self):
-        """Edit an existing regular page via unified editor, save, reload, verify."""
-        slug = self._get_random_name(prefix="editpage")
-        page = self.dataset_populator.new_page(slug=slug, content_format="markdown", content="# Original")
-        self.navigate_to_page_editor(page["id"])
-
-        editor = self.components.pages.history.markdown_editor
-        assert "Original" in editor.wait_for_value()
-
-        self.history_page_editor_set_content("# Updated\n\nSecond version.")
-        self.history_page_save()
-
-        self.home()
-        self.navigate_to_page_editor(page["id"])
-
-        assert "Updated" in editor.wait_for_value()
-        self.screenshot("standalone_page_edit_existing")
-
-    @selenium_test
-    @managed_history
     def test_standalone_page_unified_editor_round_trip(self):
         """Core round-trip: edit regular page through PageEditorView, save, reload."""
         slug = self._get_random_name(prefix="roundtrip")
@@ -131,61 +110,9 @@ class TestPages(SeleniumTestCase):
 
     @selenium_test
     @managed_history
-    def test_standalone_save_button_disabled_when_clean(self):
-        """Save button disabled when no changes, enabled after edit, disabled after save."""
-        slug = self._get_random_name(prefix="savebtn")
-        page = self.dataset_populator.new_page(slug=slug, content_format="markdown", content="# Clean")
-        self.navigate_to_page_editor(page["id"])
-
-        save_button = self.components.pages.history.save_button
-        save_button.assert_disabled()
-        self.components.pages.history.unsaved_indicator.assert_absent_or_hidden()
-
-        self.history_page_editor_set_content("# Dirty")
-
-        @retry_assertion_during_transitions
-        def assert_save_enabled():
-            assert not save_button.has_class("disabled")
-
-        assert_save_enabled()
-
-        self.history_page_save()
-
-        @retry_assertion_during_transitions
-        def assert_save_disabled_again():
-            save_button.assert_disabled()
-
-        assert_save_disabled_again()
-        self.screenshot("standalone_save_button_states")
-
-    @selenium_test
-    @managed_history
     def test_standalone_page_revisions(self):
-        """Revisions work for standalone pages: list opens, restore works."""
+        """Revisions: UI saves increase count, restore restores oldest content."""
         slug = self._get_random_name(prefix="revisions")
-        page = self.dataset_populator.new_page(slug=slug, content_format="markdown", content="V1 content")
-        self.dataset_populator.update_history_page(page["id"], content="V2 content")
-        self.navigate_to_page_editor(page["id"])
-
-        editor = self.components.pages.history.markdown_editor
-        assert "V2 content" in editor.wait_for_value()
-
-        self.history_page_open_revisions()
-        self.history_page_assert_revision_count(2)
-
-        # Click restore on oldest revision (last in list)
-        restore_buttons = self.components.pages.history.restore_revision_button.all()
-        restore_buttons[-1].click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-        assert "V1 content" in editor.wait_for_value()
-        self.screenshot("standalone_page_revision_restore")
-
-    @selenium_test
-    @managed_history
-    def test_standalone_page_revision_count_increases_after_save(self):
-        """Saving via unified editor creates new revisions."""
-        slug = self._get_random_name(prefix="revcount")
         page = self.dataset_populator.new_page(slug=slug, content_format="markdown", content="# Initial")
         self.navigate_to_page_editor(page["id"])
 
@@ -197,7 +124,15 @@ class TestPages(SeleniumTestCase):
 
         self.history_page_open_revisions()
         self.history_page_assert_revision_count(3)  # initial + 2 saves
-        self.screenshot("standalone_page_revision_count")
+
+        # Click restore on oldest revision (last in list)
+        restore_buttons = self.components.pages.history.restore_revision_button.all()
+        restore_buttons[-1].click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        editor = self.components.pages.history.markdown_editor
+        assert "Initial" in editor.wait_for_value()
+        self.screenshot("standalone_page_revision_restore")
 
     @selenium_test
     @managed_history

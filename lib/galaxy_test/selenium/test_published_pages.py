@@ -15,7 +15,7 @@ class TestPublishedPagesGrid(SharedStateSeleniumTestCase):
         """User 2 views User 1's published page and sees rendered content."""
         self.home()
         self.get(f"published/page?id={self.page_id_1}")
-        self.wait_for_selector_visible(".markdown-wrapper")
+        self.components.pages.markdown_wrapper.wait_for_visible()
         self.screenshot("published_page_viewed_by_other_user")
 
     def setup_shared_state(self):

@@ -604,6 +604,7 @@ pages:
     activity: '#activity-pages'
     create: '#page-create:not([aria-disabled])'
     export: '.markdown-pdf-export'
+    markdown_wrapper: '.markdown-wrapper'
     slug_input: '#page-slug'
     submit: '#page-submit'
     title_input: '#page-title'
