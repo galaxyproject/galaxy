@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 210" width="620" height="210">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="110%" height="110%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feComponentTransfer in="blur">
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+  </defs>
+
+  <!-- Left: single input dataset -->
+  <rect x="30" y="70" width="180" height="36" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7" filter="url(#shadow)"/>
+  <text x="120" y="93" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#333">reference.fa</text>
+
+  <!-- Settings label -->
+  <text x="120" y="130" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#666">N = 3, identifier = "ref"</text>
+
+  <!-- Arrow -->
+  <line x1="230" y1="88" x2="340" y2="88" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="285" y="78" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#555">Duplicate</text>
+
+  <!-- Right: List collection -->
+  <rect x="360" y="10" width="240" height="185" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="480" y="30" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#333">List</text>
+
+  <!-- Dataset copies -->
+  <rect x="375" y="42" width="210" height="28" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="480" y="61" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#333">ref 1</text>
+
+  <rect x="375" y="78" width="210" height="28" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="480" y="97" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#333">ref 2</text>
+
+  <rect x="375" y="114" width="210" height="28" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="480" y="133" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#333">ref 3</text>
+
+  <!-- Subtitle -->
+  <text x="480" y="166" text-anchor="middle" font-family="sans-serif" font-size="10" font-style="italic" fill="#666">all copies are identical</text>
+
+</svg>
