@@ -2,11 +2,10 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
-import GPopover from "@/components/BaseComponents/GPopover.vue";
-
 import { STANDARD_FILE_SOURCE_TEMPLATE } from "./test_fixtures";
 
 import TemplateSummaryPopover from "./TemplateSummaryPopover.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 const localVue = getLocalVue(true);
 
