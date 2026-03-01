@@ -13,8 +13,8 @@
     <edam_operation>operation_2409</edam_operation>
   </edam_operations>
   <inputs>
-    <repeat name="datasets" title="Dataset" help="If collections are provided they should contain the same number of items.">
-      <param type="data" name="input" optional="true" label="Input Dataset"  help="If providing a collection here the tool will be run in batch and one collection per element is created."/>
+    <repeat name="datasets" title="Dataset(s)" help="If collections are provided they should contain the same number of items (see case 'c' in the figure below).">
+      <param type="data" name="input" optional="true" label="Input Dataset"  help="If you are using this tool to combine multiple collections, they need to contain the same number of datasets (see case 'c' in the figure below)"/>
       <conditional name="id_cond">
           <param name="id_select" type="select" label="Label to use" help="">
               <option value="idx" selected="true">Index</option>
