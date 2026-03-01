@@ -216,9 +216,12 @@ function handleRevisionRestore(revisionId: string) {
         <template v-else-if="store.hasCurrentPage && store.selectedRevision">
             <PageRevisionView
                 :revision="store.selectedRevision"
+                :current-content="store.currentContent"
+                :view-mode="store.revisionViewMode"
                 :is-reverting="store.isReverting"
                 @back="store.clearSelectedRevision"
-                @restore="handleRevisionRestore" />
+                @restore="handleRevisionRestore"
+                @update:viewMode="store.revisionViewMode = $event" />
         </template>
 
         <!-- Edit mode: toolbar + editor + optional chat/revision panels -->

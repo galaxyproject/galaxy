@@ -847,6 +847,46 @@ describe("usePageEditorStore", () => {
         });
     });
 
+    describe("revisionViewMode", () => {
+        it("defaults to 'preview'", () => {
+            const store = usePageEditorStore();
+            expect(store.revisionViewMode).toBe("preview");
+        });
+
+        it("clearSelectedRevision resets to 'preview'", () => {
+            const store = usePageEditorStore();
+            store.revisionViewMode = "changes";
+
+            store.clearSelectedRevision();
+
+            expect(store.revisionViewMode).toBe("preview");
+        });
+
+        it("clearRevisionState resets to 'preview'", () => {
+            const store = usePageEditorStore();
+            store.revisionViewMode = "changes";
+
+            store.$patch({ showRevisions: true });
+            store.clearSelectedRevision();
+            // clearSelectedRevision resets it; set it again to test clearRevisionState
+            store.revisionViewMode = "changes";
+
+            // clearRevisionState is called indirectly via clearCurrentPage
+            store.clearCurrentPage();
+
+            expect(store.revisionViewMode).toBe("preview");
+        });
+
+        it("$reset resets to 'preview'", () => {
+            const store = usePageEditorStore();
+            store.revisionViewMode = "changes";
+
+            store.$reset();
+
+            expect(store.revisionViewMode).toBe("preview");
+        });
+    });
+
     describe("standalone mode", () => {
         const STANDALONE_PAGE: HistoryPageDetails = {
             ...TEST_PAGE_DETAILS,

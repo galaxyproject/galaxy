@@ -53,6 +53,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
     const isLoadingRevisions = ref(false);
     const isLoadingRevision = ref(false);
     const isReverting = ref(false);
+    const revisionViewMode = ref<"preview" | "changes">("preview");
     const showRevisions = ref(false);
     const showChatPanel = ref(false);
 
@@ -380,6 +381,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
 
     function clearSelectedRevision() {
         selectedRevision.value = null;
+        revisionViewMode.value = "preview";
     }
 
     function clearRevisionState() {
@@ -389,6 +391,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
         isLoadingRevision.value = false;
         isReverting.value = false;
         showRevisions.value = false;
+        revisionViewMode.value = "preview";
     }
 
     /** Reset ephemeral state. Does NOT clear currentPageIds (persisted cross-session). */
@@ -450,6 +453,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
         addDismissedProposal,
         clearDismissedProposals,
         // Revision state
+        revisionViewMode,
         revisions,
         selectedRevision,
         isLoadingRevisions,
