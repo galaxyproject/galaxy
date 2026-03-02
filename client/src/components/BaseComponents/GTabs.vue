@@ -117,7 +117,9 @@ const navClasses = computed(() => ({
     "flex-column": props.vertical,
 }));
 
+// "tabs" class matches BTabs' outer div class for Selenium selector compatibility
 const containerClasses = computed(() => ({
+    tabs: true,
     "d-flex": props.vertical,
 }));
 
@@ -151,18 +153,18 @@ const TabTitleContent = defineComponent({
                 class="nav-item"
                 :class="tab.titleItemClass"
                 role="presentation">
-                <button
+                <a
                     :id="tab.buttonId"
                     class="nav-link"
                     :class="[tab.titleLinkClass, { active: index === activeIndex, disabled: tab.disabled }]"
                     role="tab"
-                    type="button"
+                    href="#"
                     :aria-selected="index === activeIndex"
-                    :disabled="tab.disabled"
+                    :aria-disabled="tab.disabled"
                     v-bind="tab.titleLinkAttributes"
-                    @click="setActive(index)">
+                    @click.prevent="!tab.disabled && setActive(index)">
                     <TabTitleContent :tab="tab" />
-                </button>
+                </a>
             </li>
         </ul>
         <div class="tab-content" :class="{ 'flex-grow-1': props.vertical }">
