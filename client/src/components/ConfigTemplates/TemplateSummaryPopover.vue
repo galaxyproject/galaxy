@@ -4,7 +4,7 @@ import type { TemplateSummary } from "@/api/configTemplates";
 import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 interface Props {
-    target: String;
+    target: string;
     template: TemplateSummary;
 }
 
