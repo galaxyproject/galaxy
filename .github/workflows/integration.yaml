@@ -80,7 +80,7 @@ jobs:
         with:
           flags: integration
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: Integration test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
