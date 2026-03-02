@@ -32,8 +32,14 @@ type TriggerType = "hover" | "click" | "click blur" | "hover focus" | "manual" |
 
 const props = withDefaults(
     defineProps<{
-        /** Element ID string or HTMLElement to anchor the popover to */
-        target?: string | HTMLElement | (() => HTMLElement | null);
+        /**
+         * Element ID string, Element ref, or function returning an element to anchor the popover to.
+         * Function return type is intentionally broad (any) to match BPopover's behavior — callers
+         * may pass `() => $refs.x` which can return a Vue component instance; resolveTarget handles
+         * unwrapping via .$el.
+         */
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        target?: string | Element | (() => any);
         /** Trigger mode(s) */
         triggers?: TriggerType;
         /** Placement relative to target */
@@ -81,23 +87,29 @@ const showState = computed({
     },
 });
 
-function resolveTarget(): HTMLElement | null {
+function resolveTarget(): Element | null {
     if (!props.target) {
         return null;
     }
     if (typeof props.target === "function") {
-        return props.target();
+        const result = props.target();
+        if (!result) {
+            return null;
+        }
+        if (result instanceof Element) {
+            return result;
+        }
+        // Vue component instance — try .$el
+        if (result.$el instanceof Element) {
+            return result.$el;
+        }
+        return null;
     }
     if (typeof props.target === "string") {
         return document.getElementById(props.target);
     }
-    if (props.target instanceof HTMLElement) {
+    if (props.target instanceof Element) {
         return props.target;
-    }
-    // Could be a Vue ref ($refs['x']) — try .$el
-    const t = props.target as any;
-    if (t.$el) {
-        return t.$el as HTMLElement;
     }
     return null;
 }
@@ -210,7 +222,7 @@ const parsedTriggers = computed(() => {
     return result;
 });
 
-let activeListeners: Array<{ el: HTMLElement; event: string; handler: (e: Event) => void }> = [];
+let activeListeners: Array<{ el: Element; event: string; handler: (e: Event) => void }> = [];
 
 function setupListeners() {
     teardownListeners();
