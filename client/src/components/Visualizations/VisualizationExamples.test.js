@@ -1,7 +1,5 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import GDropdown from "@/components/BaseComponents/GDropdown.vue";
-import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import { createPinia, defineStore, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
@@ -10,6 +8,8 @@ import { useToast } from "@/composables/toast";
 import { createUrlUploadItem, uploadDatasets } from "@/utils/upload";
 
 import UploadExamples from "./VisualizationExamples.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 vi.mock("@/utils/upload", () => ({
     createUrlUploadItem: vi.fn((url, historyId, options) => ({
