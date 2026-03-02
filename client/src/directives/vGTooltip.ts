@@ -42,7 +42,7 @@ function injectStyles() {
     top: 0;
     left: 0;
 }
-.g-tooltip-d:not(.sr-only) {
+.g-tooltip-d {
     display: block;
 }
 .g-tooltip-d.g-tooltip-danger {
@@ -134,7 +134,7 @@ function createTooltipEl(state: TooltipState): HTMLDivElement {
     const tooltip = document.createElement("div");
     tooltip.setAttribute("role", "tooltip");
     // "tooltip" class matches v-b-tooltip's rendered element for Selenium selector compatibility
-    tooltip.className = "tooltip g-tooltip-d sr-only";
+    tooltip.className = "tooltip g-tooltip-d";
 
     if (state.danger) {
         tooltip.classList.add("g-tooltip-danger");
@@ -144,12 +144,19 @@ function createTooltipEl(state: TooltipState): HTMLDivElement {
         tooltip.style.pointerEvents = "auto";
     }
 
+    // "tooltip-inner" matches Bootstrap-Vue's rendered tooltip for Selenium selector compatibility
+    // navigation.yml uses: tooltip_inner: .tooltip-inner
+    const innerDiv = document.createElement("div");
+    innerDiv.className = "tooltip-inner";
+    tooltip.appendChild(innerDiv);
+
     const arrowDiv = document.createElement("div");
     arrowDiv.className = "g-tooltip-arrow";
     tooltip.appendChild(arrowDiv);
 
     state.arrowEl = arrowDiv;
-    document.body.appendChild(tooltip);
+    // Don't append to body yet; we do that in show() and remove in hide()
+    // so that wait_for_absent() finds no .tooltip elements in the DOM when hidden
 
     return tooltip;
 }
@@ -159,18 +166,16 @@ function updateContent(state: TooltipState) {
         return;
     }
 
-    // Remove all children except arrow
-    while (state.tooltipEl.firstChild && state.tooltipEl.firstChild !== state.arrowEl) {
-        state.tooltipEl.removeChild(state.tooltipEl.firstChild);
+    const innerDiv = state.tooltipEl.querySelector(".tooltip-inner");
+
+    if (!innerDiv) {
+        return;
     }
 
     if (state.useHtml) {
-        const wrapper = document.createElement("span");
-        wrapper.innerHTML = state.text;
-        state.tooltipEl.insertBefore(wrapper, state.arrowEl);
+        innerDiv.innerHTML = state.text;
     } else {
-        const textNode = document.createTextNode(state.text);
-        state.tooltipEl.insertBefore(textNode, state.arrowEl);
+        innerDiv.textContent = state.text;
     }
 }
 
@@ -215,8 +220,11 @@ function show(el: HTMLElement, state: TooltipState) {
     }
 
     updateContent(state);
-    state.tooltipEl.classList.remove("sr-only");
-    state.tooltipEl.setAttribute("data-show", "true");
+
+    // Append to body on show so .tooltip is in the DOM (wait_for_present works)
+    if (!state.tooltipEl.isConnected) {
+        document.body.appendChild(state.tooltipEl);
+    }
 
     state.cleanup = autoUpdate(el, state.tooltipEl, () => updatePosition(el, state));
 }
@@ -230,9 +238,9 @@ function hide(_el: HTMLElement, state: TooltipState) {
     state.cleanup?.();
     state.cleanup = null;
 
-    if (state.tooltipEl) {
-        state.tooltipEl.classList.add("sr-only");
-        state.tooltipEl.removeAttribute("data-show");
+    // Remove from DOM on hide so .tooltip is absent (wait_for_absent works)
+    if (state.tooltipEl?.isConnected) {
+        state.tooltipEl.remove();
     }
 }
 
