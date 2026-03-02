@@ -28,7 +28,6 @@ class SshFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigurati
     timeout: Union[int, TemplateExpansion] = 10
     port: Union[int, TemplateExpansion] = 22
     compress: Union[bool, TemplateExpansion] = False
-    config_path: Union[str, TemplateExpansion] = "~/.ssh/config"
     path: Union[str, TemplateExpansion]
 
 
@@ -40,7 +39,6 @@ class SshFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     timeout: int = 10
     port: int = 22
     compress: bool = False
-    config_path: str = "~/.ssh/config"
     path: str
 
 
@@ -55,7 +53,7 @@ class SshFilesSource(FsspecFilesSource[SshFileSourceTemplateConfiguration, SshFi
     def _open_fs(
         self,
         context: FilesSourceRuntimeContext[SshFileSourceConfiguration],
-        cache_options: CacheOptionsDictType,
+        cache_options: CacheOptionsDictType,  # Ignored because fsspec's SFTPFileSystem does not support caching options.
     ):
         config = context.config
         fs = SFTPFileSystem(
@@ -66,8 +64,6 @@ class SshFilesSource(FsspecFilesSource[SshFileSourceTemplateConfiguration, SshFi
             port=config.port,
             timeout=config.timeout,
             compress=config.compress,
-            config_path=config.config_path,
-            **cache_options,
         )
         return fs
 
