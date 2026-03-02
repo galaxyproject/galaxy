@@ -65,14 +65,14 @@ class SshFilesSource(FsspecFilesSource[SshFileSourceTemplateConfiguration, SshFi
             pkey=config.pkey,
             port=config.port,
             timeout=config.timeout,
-            # allow_agent=False,
-            # look_for_keys=False,
+            compress=config.compress,
+            config_path=config.config_path,
+            **cache_options,
         )
         return fs
 
     def _to_filesystem_path(self, path: str) -> str:
-        print(f"{dir(self)=}")
-        return self.template_config.path + "/" + path
+        return f"{self.template_config.path}/{path}"
 
 
 __all__ = ("SshFilesSource",)
