@@ -47,15 +47,65 @@
 Synopsis
 ========
 
-Extracts a single dataset from a collection based on either position or identifier.
+Extracts a single dataset from a collection by position or identifier.
 
 ===========
 Description
 ===========
 
-This tool allows extracting datasets based on position (**The first dataset** and **Select by index** options) or name (**Select by element identifier** option). It effectively collapses the inner-most collection into a dataset.
+This tool pulls one dataset out of a collection and places it in your history as a standalone dataset. You can select the dataset in three ways:
 
-For nested collections (e.g., a list of lists of lists: ``outer:middle:inner``, extracting the inner dataset element) a new list is created where the selected element takes the position of the inner-most collection (so ``outer:middle``, where ``middle`` is not a collection but the inner dataset element).
+- **The first dataset** — takes the first element of the collection.
+- **Select by index** — takes the element at a specific position (starting from 0).
+- **Select by element identifier** — takes the element whose name matches the given identifier.
+
+The extracted dataset is a copy of the original, so the input collection is not modified.
+
+========
+Examples
+========
+
+**Extract from a flat list** (case **A** in the image below)
+
+Given a list collection with three elements::
+
+ List: "RNA-seq samples"
+
+   control    →  control.fastq
+   treated    →  treated.fastq
+   reference  →  reference.fastq
+
+Selecting **by element identifier** = ``treated`` produces a single standalone dataset: ``treated.fastq``. Selecting **by index** = ``0`` would extract ``control.fastq`` instead.
+
+-------
+
+**Extract from a nested collection** (case **B** in the image below)
+
+When the input is a nested collection such as ``list:list``, Galaxy automatically maps the extraction over the outer list. The same selection is applied to every inner list, and the result is a flat list — one nesting level is removed.
+
+For example, given a ``list:list``::
+
+ list:list: "Paired analysis"
+
+   sampleA  →  [Dataset 1, Dataset 2, Dataset 3]
+   sampleB  →  [Dataset A, Dataset B, Dataset C]
+
+Extracting **by index** = ``1`` pulls element 1 from each inner list and produces a flat list::
+
+ List: "Paired analysis (extracted element)"
+
+   sampleA  →  Dataset 2
+   sampleB  →  Dataset B
+
+The outer identifiers (``sampleA``, ``sampleB``) are preserved. The inner lists are replaced by the single extracted element from each.
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/extract_dataset.svg
+  :alt: Extract dataset from collection
+  :width: 800
+
+-------
 
 .. class:: warningmark
 
