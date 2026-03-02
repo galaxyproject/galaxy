@@ -22,7 +22,7 @@ from galaxy.util.config_templates import TemplateExpansion
 
 class SshFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
     host: Union[str, TemplateExpansion]
-    user: Union[str, TemplateExpansion]
+    user: Optional[Union[str, TemplateExpansion]] = None
     passwd: Optional[Union[str, TemplateExpansion]] = None
     pkey: Optional[Union[str, TemplateExpansion]] = None
     timeout: Union[int, TemplateExpansion] = 10
@@ -34,7 +34,7 @@ class SshFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigurati
 
 class SshFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     host: str
-    user: str
+    user: Optional[str] = None
     passwd: Optional[str] = None
     pkey: Optional[str] = None
     timeout: int = 10
