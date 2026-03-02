@@ -90,6 +90,8 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             ),
             # Custom VM image (optional)
             "custom_vm_image": dict(map=str, default=None),
+            # Job cleanup: if true, delete GCP Batch jobs after Galaxy marks them complete
+            "delete_completed_jobs": dict(map=bool, default=True),
             # Object store fallback (for future use)
             "use_object_store": dict(map=bool, default=False),
             "object_store_path": dict(map=str, default=None),
@@ -759,12 +761,30 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
 
         batch_job_name = job.get_job_runner_external_id()
         if batch_job_name:
+            if not self.runner_params.get("delete_completed_jobs", True):
+                try:
+                    job_path = f"projects/{self.runner_params['project_id']}/locations/{self.runner_params['region']}/jobs/{batch_job_name}"
+                    batch_job = self.batch_client.get_job(name=job_path)
+                    if batch_job.status.state in (
+                        batch_v1.JobStatus.State.SUCCEEDED,
+                        batch_v1.JobStatus.State.FAILED,
+                    ):
+                        log.info("Retaining completed Batch job %s (delete_completed_jobs=false)", batch_job_name)
+                        return
+                except gcp_exceptions.NotFound:
+                    log.debug("Batch job %s already deleted", batch_job_name)
+                    return
+                except Exception as e:
+                    log.warning("Failed to check Batch job %s status, proceeding with delete: %s", batch_job_name, e)
+
             try:
                 job_path = f"projects/{self.runner_params['project_id']}/locations/{self.runner_params['region']}/jobs/{batch_job_name}"
                 self.batch_client.delete_job(name=job_path)
-                log.info("Cancelled Batch job %s", batch_job_name)
+                log.info("Deleted Batch job %s", batch_job_name)
+            except gcp_exceptions.NotFound:
+                log.debug("Batch job %s already deleted", batch_job_name)
             except Exception as e:
-                log.error("Failed to cancel Batch job %s: %s", batch_job_name, e)
+                log.error("Failed to delete Batch job %s: %s", batch_job_name, e)
         else:
             log.warning("Could not stop job %s - no external job ID", job.id)
 
