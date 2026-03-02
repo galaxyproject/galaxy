@@ -4,20 +4,19 @@ import { faChevronCircleRight, faWrench } from "@fortawesome/free-solid-svg-icon
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import type { WorkflowExtractionJob } from "@/api/histories";
+import type { ClientWorkflowExtractionJob } from "./types";
 
 import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 
 const props = defineProps<{
-    job: WorkflowExtractionJob;
+    job: ClientWorkflowExtractionJob;
 }>();
 
 const nodeIcon = computed(() => {
-    if (Boolean(props.job.disabled_why) && props.job.outputs?.length === 1) {
-        const output = props.job.outputs[0];
-        return output?.history_content_type === "dataset" ? faFile : faFolder;
+    if (props.job.stepType === "tool") {
+        return faWrench;
     }
-    return faWrench;
+    return props.job.stepType === "input_collection" ? faFolder : faFile;
 });
 </script>
 
@@ -27,7 +26,10 @@ const nodeIcon = computed(() => {
             class="unselectable clearfix card-header py-1 px-2"
             :class="!props.job.checked ? 'node-header-disabled' : 'node-header'">
             <FontAwesomeIcon :id="`step-icon-${props.job.id}-${props.job.tool_id}`" :icon="nodeIcon" fixed-width />
-            <span class="node-title">{{ props.job.tool_name ?? "Unknown" }}</span>
+            <span class="node-title">
+                <template v-if="'newName' in props.job">{{ props.job.newName }}</template>
+                <template v-else>{{ props.job.tool_name }}</template>
+            </span>
 
             <ToolLinkPopover
                 v-if="props.job.tool_id && props.job.tool_version"

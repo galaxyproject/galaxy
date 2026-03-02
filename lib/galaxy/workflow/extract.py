@@ -71,7 +71,7 @@ def extract_workflow(
         dataset_ids=dataset_ids,
         dataset_collection_ids=dataset_collection_ids,
         dataset_names=dataset_names,
-        dataset_collection_names=None,
+        dataset_collection_names=dataset_collection_names,
     )
     # Workflow to populate
     workflow = model.Workflow()

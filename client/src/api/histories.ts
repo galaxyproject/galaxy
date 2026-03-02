@@ -12,7 +12,9 @@ export type UpdateHistoryPayload = components["schemas"]["UpdateHistoryPayload"]
 
 export type CustomHistoryView = components["schemas"]["CustomHistoryView"];
 
+export type WorkflowExtractionPayload = components["schemas"]["WorkflowExtractionPayload"];
 export type WorkflowExtractionJob = components["schemas"]["WorkflowExtractionJob"];
+type WorkflowExtractionResult = components["schemas"]["WorkflowExtractionResult"];
 export type WorkflowExtractionSummary = components["schemas"]["WorkflowExtractionSummary"];
 
 export type HistoryCounts = Pick<CustomHistoryView, "nice_size" | "contents_active" | "contents_states">;
@@ -276,4 +278,22 @@ export async function extractWorkflowFromHistory(historyId: string): Promise<Wor
     }
 
     return data as WorkflowExtractionSummary;
+}
+
+export async function submitWorkflowExtraction(
+    historyId: string,
+    payload: WorkflowExtractionPayload,
+): Promise<WorkflowExtractionResult> {
+    const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/extract_workflow", {
+        params: {
+            path: { history_id: historyId },
+        },
+        body: payload,
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data as WorkflowExtractionResult;
 }

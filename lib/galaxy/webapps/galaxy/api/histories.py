@@ -71,6 +71,8 @@ from galaxy.schema.types import LatestLiteral
 from galaxy.schema.workflows import (
     WorkflowExtractionJob,
     WorkflowExtractionOutput,
+    WorkflowExtractionPayload,
+    WorkflowExtractionResult,
     WorkflowExtractionSummary,
 )
 from galaxy.webapps.base.api import GalaxyFileResponse
@@ -90,7 +92,10 @@ from galaxy.webapps.galaxy.api.common import (
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
-from galaxy.workflow.extract import summarize
+from galaxy.workflow.extract import (
+    extract_workflow,
+    summarize,
+)
 from .common import HistoryIDPathParam
 
 log = logging.getLogger(__name__)
@@ -862,3 +867,28 @@ class FastAPIHistories:
             warnings=list(warnings),
             jobs=jobs_list,
         )
+
+    @router.post(
+        "/api/histories/{history_id}/extract_workflow",
+        summary="Extract a workflow from a history.",
+    )
+    def extract_workflow_from_history(
+        self,
+        history_id: HistoryIDPathParam,
+        payload: WorkflowExtractionPayload = Body(...),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> WorkflowExtractionResult:
+        history = self.service.manager.get_accessible(history_id, trans.user, current_history=trans.history)
+
+        stored_workflow = extract_workflow(
+            trans,
+            user=trans.user,
+            history=history,
+            job_ids=payload.job_ids,
+            dataset_ids=payload.dataset_hids,
+            dataset_collection_ids=payload.dataset_collection_hids,
+            workflow_name=payload.workflow_name,
+            dataset_names=payload.dataset_names,
+            dataset_collection_names=payload.dataset_collection_names,
+        )
+        return WorkflowExtractionResult(id=stored_workflow.id)  # type: ignore[arg-type]
