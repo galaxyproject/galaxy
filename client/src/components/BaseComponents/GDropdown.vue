@@ -221,7 +221,13 @@ defineExpose({
         </button>
 
         <!-- Dropdown menu -->
-        <div v-if="shouldRenderMenu" ref="menuEl" :class="menuClasses" :role="role === 'menu' ? 'menu' : undefined">
+        <!-- tabindex="-1" matches BDropdown behavior and allows send_keys/send_escape in Selenium tests -->
+        <div
+            v-if="shouldRenderMenu"
+            ref="menuEl"
+            tabindex="-1"
+            :class="menuClasses"
+            :role="role === 'menu' ? 'menu' : undefined">
             <slot />
         </div>
     </div>
