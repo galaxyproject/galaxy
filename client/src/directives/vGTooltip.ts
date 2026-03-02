@@ -133,7 +133,8 @@ function createTooltipEl(state: TooltipState): HTMLDivElement {
 
     const tooltip = document.createElement("div");
     tooltip.setAttribute("role", "tooltip");
-    tooltip.className = "g-tooltip-d sr-only";
+    // "tooltip" class matches v-b-tooltip's rendered element for Selenium selector compatibility
+    tooltip.className = "tooltip g-tooltip-d sr-only";
 
     if (state.danger) {
         tooltip.classList.add("g-tooltip-danger");
