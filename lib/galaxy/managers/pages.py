@@ -391,9 +391,9 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         session.commit()
         return page_revision
 
-    def list_revisions(self, trans, page):
+    def list_revisions(self, trans, page, sort_desc: bool = False):
         page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
-        return sorted(page.revisions, key=lambda r: r.create_time)
+        return sorted(page.revisions, key=lambda r: r.create_time, reverse=sort_desc)
 
     def get_revision(self, trans, page, revision_id):
         page = base.security_check(trans, page, check_ownership=False, check_accessible=True)

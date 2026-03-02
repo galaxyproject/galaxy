@@ -177,9 +177,9 @@ class PagesService(ServiceBase):
         rval = page.to_dict()
         return PageSummary(**rval)
 
-    def list_revisions(self, trans, id: DecodedDatabaseIdField) -> PageRevisionList:
+    def list_revisions(self, trans, id: DecodedDatabaseIdField, sort_desc: bool = False) -> PageRevisionList:
         page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
-        revisions = self.manager.list_revisions(trans, page)
+        revisions = self.manager.list_revisions(trans, page, sort_desc=sort_desc)
         return PageRevisionList(
             root=[
                 PageRevisionSummary(

@@ -292,10 +292,14 @@ class TestHistoryPages(SeleniumTestCase):
         # Click restore on the oldest revision (last in the list)
         restore_buttons = self.components.pages.history.restore_revision_button.all()
         restore_buttons[-1].click()
-        self.sleep_for(self.wait_types.UX_RENDER)
 
         editor = self.components.pages.history.markdown_editor
-        assert "Original" in editor.wait_for_value()
+
+        @retry_assertion_during_transitions
+        def assert_restored():
+            assert "Original" in editor.wait_for_value()
+
+        assert_restored()
         self.screenshot("history_page_revision_restored")
 
     @selenium_test

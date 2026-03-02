@@ -320,7 +320,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
         }
         isLoadingRevisions.value = true;
         try {
-            revisions.value = await fetchPageRevisions(currentPage.value.id);
+            revisions.value = await fetchPageRevisions(currentPage.value.id, { sortDesc: true });
         } catch (e: any) {
             error.value = e.message || "Failed to load revisions";
         } finally {

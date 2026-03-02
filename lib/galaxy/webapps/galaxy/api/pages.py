@@ -356,9 +356,14 @@ class FastAPIPages:
         self,
         id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
+        sort_desc: bool = Query(
+            default=False,
+            title="Sort Descending",
+            description="Sort by creation time descending (newest first) when true.",
+        ),
     ) -> PageRevisionList:
         """List all revisions of a page, ordered by creation time."""
-        return self.service.list_revisions(trans, id)
+        return self.service.list_revisions(trans, id, sort_desc=sort_desc)
 
     @router.get(
         "/api/pages/{id}/revisions/{revision_id}",

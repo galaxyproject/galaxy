@@ -130,9 +130,14 @@ export async function deleteHistoryPage(pageId: string): Promise<void> {
     }
 }
 
-export async function fetchPageRevisions(pageId: string): Promise<PageRevisionSummary[]> {
+export async function fetchPageRevisions(
+    pageId: string,
+    { sortDesc = false }: { sortDesc?: boolean } = {}
+): Promise<PageRevisionSummary[]> {
     try {
-        const { data } = await axios.get(withPrefix(`/api/pages/${pageId}/revisions`));
+        const { data } = await axios.get(withPrefix(`/api/pages/${pageId}/revisions`), {
+            params: { sort_desc: sortDesc },
+        });
         return data;
     } catch (e) {
         rethrowSimple(e);

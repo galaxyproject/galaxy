@@ -4,6 +4,7 @@ from galaxy_test.base.workflow_fixtures import (
 )
 from .framework import (
     managed_history,
+    retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase,
 )
@@ -128,10 +129,14 @@ class TestPages(SeleniumTestCase):
         # Click restore on oldest revision (last in list)
         restore_buttons = self.components.pages.history.restore_revision_button.all()
         restore_buttons[-1].click()
-        self.sleep_for(self.wait_types.UX_RENDER)
 
         editor = self.components.pages.history.markdown_editor
-        assert "Initial" in editor.wait_for_value()
+
+        @retry_assertion_during_transitions
+        def assert_restored():
+            assert "Initial" in editor.wait_for_value()
+
+        assert_restored()
         self.screenshot("standalone_page_revision_restore")
 
     @selenium_test
