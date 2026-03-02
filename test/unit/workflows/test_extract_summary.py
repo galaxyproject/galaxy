@@ -1,4 +1,10 @@
+from typing import (
+    Any,
+    cast,
+)
+
 from galaxy import model
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.util.unittest import TestCase
 from galaxy.workflow import extract
 
@@ -10,8 +16,12 @@ class TestWorkflowExtractSummary(TestCase):
         self.history = MockHistory()
         self.trans = MockTrans(self.history)
 
+    def _summarize(self) -> tuple[dict[Any, Any], set[str]]:
+        """Helper to call summarize with mock trans, isolating the type cast."""
+        return extract.summarize(trans=cast(ProvidesHistoryContext, self.trans))
+
     def test_empty_history(self):
-        job_dict, warnings = extract.summarize(trans=self.trans)
+        job_dict, warnings = self._summarize()
         assert not warnings
         assert not job_dict
 
@@ -25,7 +35,7 @@ class TestWorkflowExtractSummary(TestCase):
         hda3 = MockHda(output_name="out3")
         self.history.active_datasets.append(hda3)
 
-        job_dict, warnings = extract.summarize(trans=self.trans)
+        job_dict, warnings = self._summarize()
         assert len(job_dict) == 2
         assert not warnings
         assert job_dict[hda1.job] == [("out1", hda1), ("out2", hda2)]
@@ -38,7 +48,7 @@ class TestWorkflowExtractSummary(TestCase):
         derived_hda_2 = MockHda()
         derived_hda_2.copied_from_history_dataset_association = derived_hda_1
         self.history.active_datasets.append(derived_hda_2)
-        job_dict, warnings = extract.summarize(trans=self.trans)
+        job_dict, warnings = self._summarize()
         assert not warnings
         assert len(job_dict) == 1
         assert job_dict[hda.job] == [("out1", derived_hda_2)]
@@ -47,7 +57,7 @@ class TestWorkflowExtractSummary(TestCase):
         """Fakes job if creating_job_associations is empty."""
         hda = MockHda(job=UNDEFINED_JOB)
         self.history.active_datasets.append(hda)
-        job_dict, warnings = extract.summarize(trans=self.trans)
+        job_dict, warnings = self._summarize()
         assert not warnings
         assert len(job_dict) == 1
         fake_job = next(iter(job_dict.keys()))
@@ -59,7 +69,7 @@ class TestWorkflowExtractSummary(TestCase):
         hda_from_history = MockHda(job=UNDEFINED_JOB)
         hda_from_history.copied_from_history_dataset_association = MockHda(job=UNDEFINED_JOB)
         self.history.active_datasets.append(hda_from_history)
-        job_dict, warnings = extract.summarize(trans=self.trans)
+        job_dict, warnings = self._summarize()
         assert not warnings
         assert len(job_dict) == 1
         fake_job = next(iter(job_dict.keys()))
@@ -69,7 +79,7 @@ class TestWorkflowExtractSummary(TestCase):
         hda_from_library = MockHda(job=UNDEFINED_JOB)
         hda_from_library.copied_from_library_dataset_dataset_association = MockHda(job=UNDEFINED_JOB)
         self.history.active_datasets.append(hda_from_library)
-        job_dict, warnings = extract.summarize(trans=self.trans)
+        job_dict, warnings = self._summarize()
         assert not warnings
         assert len(job_dict) == 1
         fake_job = next(iter(job_dict.keys()))
@@ -78,7 +88,7 @@ class TestWorkflowExtractSummary(TestCase):
     def test_fake_job_hdca(self):
         hdca = MockHdca()
         self.history.active_datasets.append(hdca)
-        job_dict, warnings = extract.summarize(trans=self.trans)
+        job_dict, warnings = self._summarize()
         assert not warnings
         assert len(job_dict) == 1
         fake_job = next(iter(job_dict.keys()))
@@ -91,7 +101,7 @@ class TestWorkflowExtractSummary(TestCase):
         creating_job = model.Job()
         hdca = MockHdca(implicit_output_name="out1", job=creating_job)
         self.history.active_datasets.append(hdca)
-        job_dict, warnings = extract.summarize(trans=self.trans)
+        job_dict, warnings = self._summarize()
         assert not warnings
         assert len(job_dict) == 1
         job = next(iter(job_dict.keys()))
@@ -100,7 +110,7 @@ class TestWorkflowExtractSummary(TestCase):
     def test_warns_and_skips_datasets_if_not_finished(self):
         hda = MockHda(state="queued")
         self.history.active_datasets.append(hda)
-        job_dict, warnings = extract.summarize(trans=self.trans)
+        job_dict, warnings = self._summarize()
         assert warnings
         assert len(job_dict) == 0
 
