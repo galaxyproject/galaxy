@@ -227,7 +227,8 @@ defineExpose({
             ref="menuEl"
             tabindex="-1"
             :class="menuClasses"
-            :role="role === 'menu' ? 'menu' : undefined">
+            :role="role === 'menu' ? 'menu' : undefined"
+            @keydown.esc="hide">
             <slot />
         </div>
     </div>
