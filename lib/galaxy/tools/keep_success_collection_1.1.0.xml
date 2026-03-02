@@ -52,19 +52,60 @@ Keeps only datasets in the success (green) state from a collection.
 Description
 ===========
 
-This tool takes a dataset collection and retains only datasets in the success (green) state, removing any that are failed, paused, or in other non-success states. This is useful for continuing a multi-sample analysis when one or more of the samples fails or is in a paused state.
+This tool takes a dataset collection and retains only elements whose datasets are in the success (green/ok) state. Elements in any other state — failed (red), paused (gray), or still running — are removed from the output collection.
 
-Optionally, you can provide a replacement dataset. When a replacement is specified, unsuccessful elements are replaced with that dataset instead of being removed.
+This is stricter than **Filter failed datasets**, which only removes elements in the error state. **Keep success** removes *anything* that is not ok, including paused datasets that have not yet completed.
+
+This is useful when a multi-sample workflow has partially completed and you want to continue with just the samples that succeeded, discarding any that failed or stalled.
+
+Optionally, you can provide a **replacement dataset**. When specified, unsuccessful elements are replaced with that dataset instead of being removed. This preserves the collection size, which is important when element-wise pairing with another collection is needed.
+
+========
+Examples
+========
+
+**Remove unsuccessful elements**
+
+Given a collection where one sample failed and another is paused::
+
+ List: "Aligned reads"
+
+   sample1  →  aligned.bam  (ok)
+   sample2  →  aligned.bam  (error)
+   sample3  →  aligned.bam  (ok)
+   sample4  →  aligned.bam  (paused)
+
+The output keeps only the successful elements::
+
+ List: "Aligned reads (only successful datasets)"
+
+   sample1  →  aligned.bam
+   sample3  →  aligned.bam
+
+-------
+
+**Replace instead of remove**
+
+If a replacement dataset is provided, unsuccessful elements are swapped rather than dropped::
+
+ List: "Aligned reads (only successful datasets)"
+
+   sample1  →  aligned.bam
+   sample2  →  replacement.bam
+   sample3  →  aligned.bam
+   sample4  →  replacement.bam
+
+-------
 
 .. image:: ${static_path}/images/tools/collection_ops/keep_success.svg
-  :alt: Keep success datasets
+  :alt: Keep only successful datasets in a collection
   :width: 500
 
------
+-------
 
 .. class:: infomark
 
 @QUOTA_USAGE_NOTE@
 
-      ]]></help>
+    ]]></help>
 </tool>
