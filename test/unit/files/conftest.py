@@ -7,11 +7,7 @@ import tempfile
 import threading
 from collections.abc import Generator
 from dataclasses import dataclass
-from typing import IO
 
-import paramiko
-import paramiko.common
-import paramiko.sftp
 import pytest
 
 _SFTP_USER = "testuser"
@@ -27,45 +23,56 @@ class SftpServerInfo:
     passwd: str
 
 
-class _ServerInterface(paramiko.ServerInterface):
-    def check_channel_request(self, kind: str, chanid: int) -> int:
-        if kind == "session":
-            return paramiko.common.OPEN_SUCCEEDED
-        return paramiko.common.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
+@pytest.fixture()
+def sftp_server() -> Generator[SftpServerInfo, None, None]:
+    """Spin up an ephemeral in-process SFTP server backed by a temporary directory.
 
-    def check_auth_password(self, username: str, password: str) -> int:
-        if username == _SFTP_USER and password == _SFTP_PASS:
-            return paramiko.common.AUTH_SUCCESSFUL
-        return paramiko.common.AUTH_FAILED
+    The temp directory is pre-populated with a file ``a`` containing ``a\\n``
+    so that ``assert_simple_file_realize`` passes out of the box.
 
-    def get_allowed_auths(self, username: str) -> str:
-        return "password"
+    Yields an :class:`SftpServerInfo` with connection details.
+    Skips automatically if paramiko is not installed.
+    """
+    from typing import IO
 
+    import paramiko
+    import paramiko.common
+    import paramiko.sftp
 
-class _SFTPHandle(paramiko.SFTPHandle):
-    """SFTPHandle with explicit IO attributes so mypy is satisfied."""
+    # ------------------------------------------------------------------ #
+    # In-process server implementation                                   #
+    # ------------------------------------------------------------------ #
 
-    readfile: IO[bytes]
-    writefile: IO[bytes]
+    class _ServerInterface(paramiko.ServerInterface):
+        def check_channel_request(self, kind: str, chanid: int) -> int:
+            if kind == "session":
+                return paramiko.common.OPEN_SUCCEEDED
+            return paramiko.common.OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
 
-    def stat(self) -> paramiko.SFTPAttributes:
-        return paramiko.SFTPAttributes.from_stat(os.fstat(self.readfile.fileno()))
+        def check_auth_password(self, username: str, password: str) -> int:
+            if username == _SFTP_USER and password == _SFTP_PASS:
+                return paramiko.common.AUTH_SUCCESSFUL
+            return paramiko.common.AUTH_FAILED
 
-    def chattr(self, attr: paramiko.SFTPAttributes) -> int:
-        return paramiko.sftp.SFTP_OK
+        def get_allowed_auths(self, username: str) -> str:
+            return "password"
 
+    class _SFTPHandle(paramiko.SFTPHandle):
+        readfile: IO[bytes]
+        writefile: IO[bytes]
 
-def _errno_to_sftp(errno: int | None) -> int:
-    """Convert an OSError errno to an SFTP error code, treating None as EIO."""
-    return paramiko.SFTPServer.convert_errno(errno if errno is not None else 5)
+        def stat(self) -> paramiko.SFTPAttributes:
+            return paramiko.SFTPAttributes.from_stat(os.fstat(self.readfile.fileno()))
 
+        def chattr(self, attr: paramiko.SFTPAttributes) -> int:
+            return paramiko.sftp.SFTP_OK
 
-def _make_sftp_server_interface(root_dir: str) -> type[paramiko.SFTPServerInterface]:
-    """Return a SFTPServerInterface subclass that serves files from *root_dir*."""
+    def _errno_to_sftp(errno: int | None) -> int:
+        return paramiko.SFTPServer.convert_errno(errno if errno is not None else 5)
 
     class _SFTPServerInterface(paramiko.SFTPServerInterface):
         def __init__(self, server: paramiko.ServerInterface, *args: object, **kwargs: object) -> None:
-            self._root = root_dir
+            self._root = root
             super().__init__(server, *args, **kwargs)
 
         def _realpath(self, path: str) -> str:
@@ -147,24 +154,15 @@ def _make_sftp_server_interface(root_dir: str) -> type[paramiko.SFTPServerInterf
         def canonicalize(self, path: str) -> str:
             return "/" + os.path.relpath(self._realpath(path), self._root).lstrip(".")
 
-    return _SFTPServerInterface
+    # ------------------------------------------------------------------ #
+    # Server lifecycle                                                   #
+    # ------------------------------------------------------------------ #
 
-
-@pytest.fixture()
-def sftp_server() -> Generator[SftpServerInfo, None, None]:
-    """Spin up an ephemeral in-process SFTP server backed by a temporary directory.
-
-    The temp directory is pre-populated with a file ``a`` containing ``a\\n``
-    so that ``assert_simple_file_realize`` passes out of the box.
-
-    Yields an :class:`SftpServerInfo` with connection details.
-    """
     root = tempfile.mkdtemp()
     with open(os.path.join(root, "a"), "w") as fh:
         fh.write("a\n")
 
     host_key = paramiko.RSAKey.generate(2048)
-    sftp_si_class = _make_sftp_server_interface(root)
 
     srv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
@@ -184,7 +182,7 @@ def sftp_server() -> Generator[SftpServerInfo, None, None]:
                 continue
             transport = paramiko.Transport(conn)
             transport.add_server_key(host_key)
-            transport.set_subsystem_handler("sftp", paramiko.SFTPServer, sftp_si_class)
+            transport.set_subsystem_handler("sftp", paramiko.SFTPServer, _SFTPServerInterface)
             transport.start_server(event=threading.Event(), server=_ServerInterface())
             active_transports.append(transport)
 
@@ -194,7 +192,7 @@ def sftp_server() -> Generator[SftpServerInfo, None, None]:
     yield SftpServerInfo(host="127.0.0.1", port=port, root=root, user=_SFTP_USER, passwd=_SFTP_PASS)
 
     stop_event.set()
-    srv_sock.close()  # unblocks accept() so the loop exits promptly
+    srv_sock.close()
     accept_thread.join(timeout=5)
     for transport in active_transports:
         transport.close()
