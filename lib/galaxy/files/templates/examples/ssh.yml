@@ -20,6 +20,7 @@
     user:
       label: SSH User
       type: string
+      optional: true
       help: |
         Username to connect with.
     path:
@@ -30,18 +31,22 @@
     writable:
       label: Writable?
       type: boolean
+      optional: true
       help: Allow Galaxy to write data to this file source. Requires that user is allowed to write to this path on the host.
     port:
       label: SSH Port
       type: integer
+      optional: true
       help: Port used to connect to the SSH server.
       default: 22
   secrets:
     password:
       label: SSH Password
+      optional: true
       help: |
         Password to connect to SSH server with.
     pkey:
       label: Public key
+      optional: true
       help: |
         Public key.
