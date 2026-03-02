@@ -42,21 +42,58 @@
 Synopsis
 ========
 
-Removes empty datasets from a collection.
+Removes empty (zero-byte) datasets from a collection.
 
 ===========
 Description
 ===========
 
-This tool takes a dataset collection and filters out (removes) datasets that have no content (zero bytes). This is useful for continuing a multi-sample analysis when downstream tools require datasets to have content.
+This tool takes a dataset collection and filters out elements that have no content. A dataset is considered empty if it contains zero bytes of actual data (including compressed archives that decompress to nothing).
 
-Optionally, you can provide a replacement dataset. When a replacement is specified, empty elements are replaced with that dataset instead of being removed.
+This is useful when a multi-sample analysis produces some empty outputs — for example, when a filtering step removes all reads for certain samples. Downstream tools often fail on empty inputs, so removing them lets the rest of the analysis proceed.
+
+Optionally, you can provide a **replacement dataset**. When specified, empty elements are replaced with that dataset instead of being removed. This preserves the collection size, which is important when element-wise pairing with another collection is needed.
+
+========
+Examples
+========
+
+**Remove empty elements**
+
+Given a list collection where one sample produced no output::
+
+ List: "Filtered reads"
+
+   sample1  →  reads.fastq  (1.2 MB)
+   sample2  →  reads.fastq  (0 bytes)
+   sample3  →  reads.fastq  (800 KB)
+
+The output keeps only non-empty elements::
+
+ List: "Filtered reads (filtered empty datasets)"
+
+   sample1  →  reads.fastq  (1.2 MB)
+   sample3  →  reads.fastq  (800 KB)
+
+-------
+
+**Replace instead of remove**
+
+If a replacement dataset is provided, empty elements are swapped rather than dropped, preserving the collection structure::
+
+ List: "Filtered reads (filtered empty datasets)"
+
+   sample1  →  reads.fastq  (1.2 MB)
+   sample2  →  replacement.fastq
+   sample3  →  reads.fastq  (800 KB)
+
+-------
 
 .. image:: ${static_path}/images/tools/collection_ops/filter_empty.svg
-  :alt: Filtering empty datasets
+  :alt: Filter empty datasets from collection
   :width: 500
 
------
+-------
 
 .. class:: infomark
 
