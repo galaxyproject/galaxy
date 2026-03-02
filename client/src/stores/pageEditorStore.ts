@@ -18,6 +18,7 @@ import {
     type UpdateHistoryPagePayload,
 } from "@/api/pages";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 export type PageEditorMode = "history" | "standalone";
 
@@ -72,8 +73,8 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
         error.value = null;
         try {
             pages.value = await fetchHistoryPages(newHistoryId);
-        } catch (e: any) {
-            error.value = e.message || "Failed to load pages";
+        } catch (e: unknown) {
+            error.value = errorMessageAsString(e) || "Failed to load pages";
         } finally {
             isLoadingList.value = false;
         }
@@ -97,8 +98,8 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
             if (historyId.value) {
                 setCurrentPageId(historyId.value, pageId);
             }
-        } catch (e: any) {
-            error.value = e.message || "Failed to load page";
+        } catch (e: unknown) {
+            error.value = errorMessageAsString(e) || "Failed to load page";
         } finally {
             isLoadingPage.value = false;
         }
@@ -130,8 +131,8 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
             currentTitle.value = data.title || "";
             await loadPages(historyId.value);
             return data;
-        } catch (e: any) {
-            error.value = e.message || "Failed to create page";
+        } catch (e: unknown) {
+            error.value = errorMessageAsString(e) || "Failed to create page";
             throw e;
         } finally {
             isLoadingPage.value = false;
@@ -170,8 +171,8 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
                     update_time: data.update_time,
                 };
             }
-        } catch (e: any) {
-            error.value = e.message || "Failed to save page";
+        } catch (e: unknown) {
+            error.value = errorMessageAsString(e) || "Failed to save page";
             throw e;
         } finally {
             isSaving.value = false;
@@ -194,8 +195,8 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
             originalTitle.value = "";
             currentTitle.value = "";
             await loadPages(historyId.value);
-        } catch (e: any) {
-            error.value = e.message || "Failed to delete page";
+        } catch (e: unknown) {
+            error.value = errorMessageAsString(e) || "Failed to delete page";
             throw e;
         }
     }
@@ -321,8 +322,8 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
         isLoadingRevisions.value = true;
         try {
             revisions.value = await fetchPageRevisions(currentPage.value.id, { sortDesc: true });
-        } catch (e: any) {
-            error.value = e.message || "Failed to load revisions";
+        } catch (e: unknown) {
+            error.value = errorMessageAsString(e) || "Failed to load revisions";
         } finally {
             isLoadingRevisions.value = false;
         }
@@ -335,8 +336,8 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
         isLoadingRevision.value = true;
         try {
             selectedRevision.value = await fetchPageRevision(currentPage.value.id, revisionId);
-        } catch (e: any) {
-            error.value = e.message || "Failed to load revision";
+        } catch (e: unknown) {
+            error.value = errorMessageAsString(e) || "Failed to load revision";
         } finally {
             isLoadingRevision.value = false;
         }
@@ -354,8 +355,8 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
             selectedRevision.value = null;
             showRevisions.value = false;
             await loadRevisions();
-        } catch (e: any) {
-            error.value = e.message || "Failed to restore revision";
+        } catch (e: unknown) {
+            error.value = errorMessageAsString(e) || "Failed to restore revision";
         } finally {
             isReverting.value = false;
         }

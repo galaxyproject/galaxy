@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type Vue from "vue";
 import { ref } from "vue";
 
+import type { HistoryPageDetails, PageRevisionDetails, PageRevisionSummary } from "@/api/pages";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import EditorSplitView from "./EditorSplitView.vue";
@@ -18,7 +19,7 @@ import ClickToEdit from "@/components/ClickToEdit.vue";
 import Markdown from "@/components/Markdown/Markdown.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 
-const mockConfig = ref<any>({ llm_api_configured: true });
+const mockConfig = ref<Record<string, unknown>>({ llm_api_configured: true });
 
 vi.mock("@/composables/config", () => ({
     useConfig: vi.fn(() => ({
@@ -95,7 +96,7 @@ function setupLoadedPage(historyId?: string) {
         title: "My Page",
         content: "# Hello",
         update_time: "2024-01-01T00:00:00",
-    } as any;
+    } as Partial<HistoryPageDetails> as HistoryPageDetails;
     store.currentContent = "# Hello";
     store.currentTitle = "My Page";
     return store;
@@ -265,7 +266,7 @@ describe("PageEditorView", () => {
                 update_time: "2024-01-01T00:00:00",
                 username: "testuser",
                 slug: "my-page",
-            } as any;
+            } as Partial<HistoryPageDetails> as HistoryPageDetails;
             store.currentContent = "modified";
             store.currentTitle = "My Page";
 
@@ -274,7 +275,7 @@ describe("PageEditorView", () => {
             const hrefSpy = vi.spyOn(window, "location", "get").mockReturnValue({
                 ...window.location,
                 href: "",
-            } as any);
+            } as unknown as Location);
             await saveViewBtn.trigger("click");
             await flushPromises();
 
@@ -291,7 +292,7 @@ describe("PageEditorView", () => {
                 title: "My Page",
                 content: "# Hello",
                 update_time: "2024-01-01T00:00:00",
-            } as any;
+            } as Partial<HistoryPageDetails> as HistoryPageDetails;
             store.currentContent = "modified";
             store.currentTitle = "My Page";
 
@@ -367,7 +368,7 @@ describe("PageEditorView", () => {
         it("shows revision panel when store.showRevisions is true", async () => {
             const store = setupLoadedPage(HISTORY_ID);
             store.showRevisions = true;
-            store.revisions = [] as any;
+            store.revisions = [] as PageRevisionSummary[];
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
@@ -393,7 +394,7 @@ describe("PageEditorView", () => {
                 edit_source: "user",
                 create_time: "2024-01-01T00:00:00",
                 update_time: "2024-01-01T00:00:00",
-            } as any;
+            } as PageRevisionDetails;
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
@@ -406,7 +407,7 @@ describe("PageEditorView", () => {
             store.revisions = [
                 { id: "rev-1", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
                 { id: "rev-2", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
-            ] as any;
+            ] as PageRevisionSummary[];
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
@@ -425,7 +426,7 @@ describe("PageEditorView", () => {
                 edit_source: "user",
                 create_time: "2024-01-01T00:00:00",
                 update_time: "2024-01-01T00:00:00",
-            } as any;
+            } as PageRevisionDetails;
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
@@ -446,7 +447,7 @@ describe("PageEditorView", () => {
                 edit_source: "user",
                 create_time: "2024-01-01T00:00:00",
                 update_time: "2024-01-01T00:00:00",
-            } as any;
+            } as PageRevisionDetails;
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
@@ -462,7 +463,7 @@ describe("PageEditorView", () => {
             store.showRevisions = true;
             store.revisions = [
                 { id: "rev-1", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
-            ] as any;
+            ] as PageRevisionSummary[];
             const wrapper = mountComponent({ pageId: PAGE_ID, historyId: HISTORY_ID });
             await flushPromises();
 
@@ -501,7 +502,7 @@ describe("PageEditorView", () => {
             store.showRevisions = true;
             store.revisions = [
                 { id: "rev-1", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
-            ] as any;
+            ] as PageRevisionSummary[];
             const wrapper = mountComponent({ pageId: PAGE_ID });
             await flushPromises();
 
@@ -514,7 +515,7 @@ describe("PageEditorView", () => {
             store.showRevisions = true;
             store.revisions = [
                 { id: "rev-1", page_id: PAGE_ID, edit_source: "user", create_time: "", update_time: "" },
-            ] as any;
+            ] as PageRevisionSummary[];
             const wrapper = mountComponent({ pageId: PAGE_ID });
             await flushPromises();
 
