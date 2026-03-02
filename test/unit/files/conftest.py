@@ -186,7 +186,7 @@ def sftp_server() -> Generator[SftpServerInfo, None, None]:
         while not stop_event.is_set():
             try:
                 conn, _ = srv_sock.accept()
-            except (socket.timeout, OSError):
+            except OSError:
                 continue
             transport = paramiko.Transport(conn)
             transport.add_server_key(host_key)
