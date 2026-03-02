@@ -61,8 +61,8 @@ onMounted(() => {
     }
     if (isOpen.value) {
         // Already open on mount — show at full height without animating
-        el.style.maxHeight = "";
-        el.style.overflow = "";
+        el.style.maxHeight = "none";
+        el.style.overflow = "visible";
     }
     // If closed, the CSS max-height: 0 handles initial state
 });
@@ -74,8 +74,8 @@ function onTransitionEnd() {
     }
     if (isOpen.value) {
         // Release height constraint so dynamic content can grow after opening
-        el.style.maxHeight = "";
-        el.style.overflow = "";
+        el.style.maxHeight = "none";
+        el.style.overflow = "visible";
         emit("shown");
     } else {
         emit("hidden");
