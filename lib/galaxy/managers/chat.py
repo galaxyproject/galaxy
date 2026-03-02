@@ -287,6 +287,29 @@ class ChatManager:
                     pydantic_messages.append(ModelResponse(parts=[TextPart(content=msg.message)]))
             return pydantic_messages
 
+    def delete_exchange(self, trans: ProvidesUserContext, exchange_id: int) -> None:
+        """Delete a single chat exchange and its messages."""
+        exchange = self.get_exchange_by_id(trans, exchange_id)
+        if not exchange:
+            raise RequestParameterInvalidException("No accessible chat exchange found with the ID provided.")
+        for message in exchange.messages:
+            trans.sa_session.delete(message)
+        trans.sa_session.delete(exchange)
+        trans.sa_session.commit()
+
+    def delete_exchanges(self, trans: ProvidesUserContext, exchange_ids: list[int]) -> int:
+        """Delete multiple chat exchanges and their messages. Returns the count deleted."""
+        count = 0
+        for exchange_id in exchange_ids:
+            exchange = self.get_exchange_by_id(trans, exchange_id)
+            if exchange:
+                for message in exchange.messages:
+                    trans.sa_session.delete(message)
+                trans.sa_session.delete(exchange)
+                count += 1
+        trans.sa_session.commit()
+        return count
+
     def get_user_chat_history(
         self, trans: ProvidesUserContext, limit: int = 50, include_job_chats: bool = False
     ) -> list[ChatExchange]:

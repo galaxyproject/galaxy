@@ -27,8 +27,12 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    encode_id,
+)
 from galaxy.schema.schema import (
+    ChatExchangeBatchDeletePayload,
     ChatPayload,
     ChatResponse,
 )
@@ -246,9 +250,6 @@ class ChatAPI:
         user: User = DependsOnUser,
     ) -> list[dict[str, Any]]:
         """Get user's chat history."""
-        if not user:
-            return []
-
         exchanges = self.chat_manager.get_user_chat_history(trans, limit=limit, include_job_chats=False)
 
         # Format exchanges for frontend
@@ -264,7 +265,7 @@ class ChatAPI:
                     data = json.loads(message.message)
                     history.append(
                         {
-                            "id": exchange.id,
+                            "id": encode_id(exchange.id),
                             "query": data.get("query", ""),
                             "response": data.get("response", ""),
                             "agent_type": data.get("agent_type", "unknown"),
@@ -289,9 +290,6 @@ class ChatAPI:
         user: User = DependsOnUser,
     ) -> dict[str, str]:
         """Clear user's chat history (non-job chats only)."""
-        if not user:
-            return {"message": "No user logged in"}
-
         try:
             # Get all non-job chat exchanges for user
             exchanges = self.chat_manager.get_user_chat_history(trans, limit=1000, include_job_chats=False)
@@ -317,6 +315,28 @@ class ChatAPI:
             log.exception("Error clearing chat history")
             return {"message": "Error clearing history"}
 
+    @router.delete("/api/chat/exchange/{exchange_id}", unstable=True)
+    def delete_exchange(
+        self,
+        exchange_id: DecodedDatabaseIdField,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> dict[str, str]:
+        """Delete a single chat exchange."""
+        self.chat_manager.delete_exchange(trans, exchange_id)
+        return {"message": "Deleted"}
+
+    @router.put("/api/chat/exchanges/batch/delete", unstable=True)
+    def batch_delete_exchanges(
+        self,
+        payload: ChatExchangeBatchDeletePayload,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> dict[str, str]:
+        """Delete multiple chat exchanges."""
+        count = self.chat_manager.delete_exchanges(trans, payload.ids)
+        return {"message": f"Deleted {count} exchanges"}
+
     @router.put("/api/chat/{job_id}/feedback", unstable=True)
     def feedback(
         self,
@@ -333,7 +353,7 @@ class ChatAPI:
     @router.put("/api/chat/exchange/{exchange_id}/feedback", unstable=True)
     def set_exchange_feedback(
         self,
-        exchange_id: int,
+        exchange_id: DecodedDatabaseIdField,
         feedback: int = Body(..., description="Feedback value: 0 for negative, 1 for positive"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
@@ -348,7 +368,7 @@ class ChatAPI:
     @router.get("/api/chat/exchange/{exchange_id}/messages", unstable=True)
     def get_exchange_messages(
         self,
-        exchange_id: int,
+        exchange_id: DecodedDatabaseIdField,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> list[dict[str, Any]]:
