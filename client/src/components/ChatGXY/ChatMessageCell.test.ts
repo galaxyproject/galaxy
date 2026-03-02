@@ -50,64 +50,48 @@ function mountCell(message: ChatMessage, props: Record<string, unknown> = {}) {
 
 describe("ChatMessageCell", () => {
     describe("user messages", () => {
-        it("renders query cell with user content", () => {
+        it("renders user query with content", () => {
             const wrapper = mountCell(makeUserMessage());
-            expect(wrapper.find(".notebook-cell").classes()).toContain("query-cell");
-            expect(wrapper.find(".cell-content").text()).toBe("What tools can analyze my data?");
-        });
-
-        it("shows 'Query' label", () => {
-            const wrapper = mountCell(makeUserMessage());
-            expect(wrapper.find(".cell-label").text()).toContain("Query");
+            expect(wrapper.find(".exchange-entry").classes()).toContain("entry-query");
+            expect(wrapper.find(".query-text").text()).toBe("What tools can analyze my data?");
         });
 
         it("does not render feedback buttons", () => {
             const wrapper = mountCell(makeUserMessage());
-            expect(wrapper.find(".cell-footer").exists()).toBe(false);
+            expect(wrapper.find(".response-meta").exists()).toBe(false);
         });
     });
 
     describe("assistant messages", () => {
-        it("renders response cell", () => {
+        it("renders response entry", () => {
             const wrapper = mountCell(makeAssistantMessage());
-            expect(wrapper.find(".notebook-cell").classes()).toContain("response-cell");
+            expect(wrapper.find(".exchange-entry").classes()).toContain("entry-response");
         });
 
         it("renders markdown via renderMarkdown prop", () => {
             const wrapper = mountCell(makeAssistantMessage());
-            expect(wrapper.find(".cell-content").html()).toContain("<p>You can use the **Dataset Analyzer** tool.</p>");
+            expect(wrapper.find(".response-content").html()).toContain(
+                "<p>You can use the **Dataset Analyzer** tool.</p>",
+            );
         });
 
-        it("shows agent label from agentType", () => {
+        it("shows agent label in metadata", () => {
             const wrapper = mountCell(makeAssistantMessage({ agentType: "error_analysis" }));
-            expect(wrapper.find(".cell-label").text()).toContain("Error Analysis");
-        });
-
-        it("shows default label for unknown agentType", () => {
-            const wrapper = mountCell(makeAssistantMessage({ agentType: undefined }));
-            expect(wrapper.find(".cell-label").text()).toContain("AI Assistant");
+            const tags = wrapper.findAll(".meta-tag");
+            const labels = tags.wrappers.map((w) => w.text());
+            expect(labels.some((l) => l.includes("Error Analysis"))).toBe(true);
         });
     });
 
-    describe("routing badge", () => {
-        it("shows routing badge when handoff_info present", () => {
-            const message = makeAssistantMessage({
-                agentResponse: {
-                    content: "test",
-                    agent_type: "auto",
-                    confidence: "high",
-                    suggestions: [],
-                    metadata: { handoff_info: { source_agent: "router" } },
-                },
-            });
-            const wrapper = mountCell(message);
-            expect(wrapper.find(".routing-badge").exists()).toBe(true);
-            expect(wrapper.find(".routing-badge").text()).toContain("via Router");
+    describe("system messages", () => {
+        it("renders system notice", () => {
+            const wrapper = mountCell(makeAssistantMessage({ isSystemMessage: true, content: "Welcome" }));
+            expect(wrapper.find(".system-notice").text()).toBe("Welcome");
         });
 
-        it("hides routing badge when no handoff_info", () => {
-            const wrapper = mountCell(makeAssistantMessage());
-            expect(wrapper.find(".routing-badge").exists()).toBe(false);
+        it("does not render feedback for system messages", () => {
+            const wrapper = mountCell(makeAssistantMessage({ isSystemMessage: true }));
+            expect(wrapper.find(".response-meta").exists()).toBe(false);
         });
     });
 
@@ -141,21 +125,16 @@ describe("ChatMessageCell", () => {
 
         it("shows thanks text after feedback", () => {
             const wrapper = mountCell(makeAssistantMessage({ feedback: "up" }));
-            expect(wrapper.find(".feedback-text").text()).toBe("Thanks!");
+            expect(wrapper.find(".feedback-ack").text()).toBe("Thanks!");
         });
 
-        it("hides footer for error messages", () => {
+        it("hides meta for error messages", () => {
             const wrapper = mountCell(makeAssistantMessage({ content: "❌ Something failed" }));
-            expect(wrapper.find(".cell-footer").exists()).toBe(false);
-        });
-
-        it("hides footer for system messages", () => {
-            const wrapper = mountCell(makeAssistantMessage({ isSystemMessage: true }));
-            expect(wrapper.find(".cell-footer").exists()).toBe(false);
+            expect(wrapper.find(".response-meta").exists()).toBe(false);
         });
     });
 
-    describe("response stats", () => {
+    describe("response metadata", () => {
         it("shows model name when metadata.model present", () => {
             const message = makeAssistantMessage({
                 agentResponse: {
@@ -167,7 +146,9 @@ describe("ChatMessageCell", () => {
                 },
             });
             const wrapper = mountCell(message);
-            expect(wrapper.find(".response-stats").text()).toContain("gpt-4");
+            const tags = wrapper.findAll(".meta-tag");
+            const text = tags.wrappers.map((w) => w.text()).join(" ");
+            expect(text).toContain("gpt-4");
         });
 
         it("shows token count when metadata.total_tokens present", () => {
@@ -181,7 +162,9 @@ describe("ChatMessageCell", () => {
                 },
             });
             const wrapper = mountCell(message);
-            expect(wrapper.find(".response-stats").text()).toContain("150 tokens");
+            const tags = wrapper.findAll(".meta-tag");
+            const text = tags.wrappers.map((w) => w.text()).join(" ");
+            expect(text).toContain("150 tok");
         });
     });
 
@@ -234,7 +217,7 @@ describe("ChatMessageCell", () => {
                     FontAwesomeIcon: true,
                 },
             });
-            await wrapper.find(".action-button").trigger("click");
+            await wrapper.find(".g-button").trigger("click");
 
             const emitted = wrapper.emitted("handle-action");
             expect(emitted).toHaveLength(1);

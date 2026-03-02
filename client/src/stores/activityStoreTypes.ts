@@ -32,4 +32,6 @@ export interface Activity {
     // if activity should cause a click event
     click?: true;
     variant?: ActivityVariant;
+    // optional title for opening in scratchbook window manager
+    windowTitle?: string;
 }

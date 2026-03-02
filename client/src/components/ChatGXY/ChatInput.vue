@@ -69,7 +69,7 @@ function onInput(event: Event) {
 
         &:focus {
             border-color: $brand-primary;
-            box-shadow: 0 0 0 2px rgba($brand-primary, 0.1);
+            box-shadow: 0 0 0 2px rgba($brand-primary, 0.25);
             outline: none;
         }
     }

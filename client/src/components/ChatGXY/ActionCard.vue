@@ -1,17 +1,18 @@
 <template>
     <div v-if="suggestions.length > 0" class="action-card">
-        <div class="action-header">Suggested Actions</div>
+        <div class="action-header">Quick Actions</div>
         <div class="action-list">
-            <button
+            <GButton
                 v-for="action in sortedSuggestions"
                 :key="`${action.action_type}-${action.description}`"
-                class="btn action-button"
-                :class="getButtonClass(action.priority)"
+                outline
+                size="small"
+                :color="action.priority === 1 ? 'blue' : 'grey'"
                 :disabled="processingAction"
                 @click="$emit('handle-action', action)">
                 <FontAwesomeIcon :icon="getIcon(action.action_type)" fixed-width />
-                <span class="action-text">{{ action.description }}</span>
-            </button>
+                <span>{{ action.description }}</span>
+            </GButton>
         </div>
     </div>
 </template>
@@ -32,6 +33,8 @@ import { computed } from "vue";
 
 import { type ActionSuggestion, ActionType } from "@/composables/agentActions";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+
 interface Props {
     suggestions: ActionSuggestion[];
     processingAction?: boolean;
@@ -45,7 +48,6 @@ defineEmits<{
     "handle-action": [action: ActionSuggestion];
 }>();
 
-// Sort suggestions by priority (1 = highest)
 const sortedSuggestions = computed(() => {
     return [...props.suggestions].sort((a, b) => a.priority - b.priority);
 });
@@ -61,17 +63,6 @@ const iconMap: Record<ActionType, IconDefinition> = {
 
 function getIcon(actionType: ActionType): IconDefinition {
     return iconMap[actionType] || faWrench;
-}
-
-function getButtonClass(priority: number): string {
-    switch (priority) {
-        case 1:
-            return "btn-outline-primary";
-        case 2:
-            return "btn-outline-secondary";
-        default:
-            return "btn-outline-secondary";
-    }
 }
 </script>
 
@@ -99,28 +90,5 @@ function getButtonClass(priority: number): string {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-}
-
-.action-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
-    font-size: 0.8rem;
-    border-radius: $border-radius-large;
-    transition: all 0.15s ease;
-
-    &:hover:not(:disabled) {
-        transform: translateY(-1px);
-    }
-
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-}
-
-.action-text {
-    white-space: nowrap;
 }
 </style>
