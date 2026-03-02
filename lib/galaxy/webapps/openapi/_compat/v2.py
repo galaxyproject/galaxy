@@ -8,6 +8,7 @@ from typing import (
 
 from fastapi._compat.v2 import (
     _has_computed_fields,
+    GenerateJsonSchema as GenerateJsonSchema,
     get_flat_models_from_fields,
     ModelField,
 )
@@ -15,7 +16,6 @@ from fastapi.openapi.constants import REF_TEMPLATE
 from fastapi.types import ModelNameMap
 from pydantic.fields import FieldInfo as FieldInfo
 from pydantic.json_schema import (
-    GenerateJsonSchema as GenerateJsonSchema,
     JsonSchemaValue as JsonSchemaValue,
 )
 

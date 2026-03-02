@@ -21,7 +21,6 @@ from requests import (
     delete,
     get,
     post,
-    put,
 )
 
 from galaxy.exceptions import error_codes
@@ -9309,11 +9308,11 @@ outer_input:
         invocation_step_details = invocation_step_response.json()
         return invocation_step_details
 
-    def _execute_invocation_step_action(self, workflow_id, invocation_id, step_id, action):
+    def _execute_invocation_step_action(self, workflow_id: str, invocation_id: str, step_id: str, action: bool):
         raw_url = f"workflows/{workflow_id}/usage/{invocation_id}/steps/{step_id}"
         url = self._api_url(raw_url, use_key=True)
-        payload = dumps(dict(action=action))
-        action_response = put(url, data=payload)
+        payload = {"action": action}
+        action_response = self._put(url, data=payload, json=True)
         self._assert_status_code_is(action_response, 200)
         invocation_step_details = action_response.json()
         return invocation_step_details
@@ -9349,7 +9348,9 @@ outer_input:
         )
         return workflow_request, history_id, uploaded_workflow_id
 
-    def __review_paused_steps(self, uploaded_workflow_id, invocation_id, order_index, action=True):
+    def __review_paused_steps(
+        self, uploaded_workflow_id: str, invocation_id: str, order_index: int, action: bool = True
+    ) -> None:
         invocation = self._invocation_details(uploaded_workflow_id, invocation_id)
         invocation_steps = invocation["steps"]
         pause_steps = [s for s in invocation_steps if s["order_index"] == order_index]

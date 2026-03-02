@@ -116,7 +116,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
 
     def parse_file_fields(self, filename, errors=None, here="__HERE__"):
         try:
-            rgc = refgenconf.RefGenConf(filename, writable=False, skip_read_lock=True)
+            rgc = refgenconf.RefGenConf.from_yaml_file(filename)
         except refgenconf.exceptions.RefgenconfError as e:
             log.error('Unable to load refgenie config file "%s": %s', filename, e)
             if errors is not None:

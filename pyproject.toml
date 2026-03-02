@@ -88,7 +88,7 @@ dependencies = [
     "python-multipart",  # required to support form parsing in FastAPI/Starlette
     "python-slugify",
     "PyYAML",
-    "refgenconf>=0.12.0",
+    "refgenconf>=0.13.0",  # https://github.com/refgenie/refgenconf/pull/149
     "regex",
     "requests",
     "rocrate",
