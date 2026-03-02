@@ -2755,6 +2755,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/extract_workflow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Extract a workflow from a history. */
+        post: operations["extract_workflow_from_history_api_histories__history_id__extract_workflow_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/extraction_summary": {
         parameters: {
             query?: never;
@@ -25522,6 +25539,48 @@ export interface components {
              */
             state: components["schemas"]["DatasetState"];
         };
+        /** WorkflowExtractionPayload */
+        WorkflowExtractionPayload: {
+            /**
+             * Dataset Collection HIDs
+             * @description History item IDs (HIDs) of dataset collections to treat as workflow inputs.
+             */
+            dataset_collection_hids?: number[];
+            /**
+             * Dataset Collection Names
+             * @description Names for the input dataset collections, parallel to dataset_collection_hids.
+             */
+            dataset_collection_names?: string[];
+            /**
+             * Dataset HIDs
+             * @description History item IDs (HIDs) of datasets to treat as workflow inputs.
+             */
+            dataset_hids?: number[];
+            /**
+             * Dataset Names
+             * @description Names for the input datasets, parallel to dataset_hids.
+             */
+            dataset_names?: string[];
+            /**
+             * Job IDs
+             * @description Encoded IDs of compatible tool jobs to include as workflow steps.
+             */
+            job_ids?: string[];
+            /**
+             * Workflow Name
+             * @description The name for the extracted workflow.
+             */
+            workflow_name: string;
+        };
+        /** WorkflowExtractionResult */
+        WorkflowExtractionResult: {
+            /**
+             * Workflow ID
+             * @description The encoded ID of the newly created workflow.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+        };
         /** WorkflowExtractionSummary */
         WorkflowExtractionSummary: {
             /**
@@ -34931,6 +34990,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    extract_workflow_from_history_api_histories__history_id__extract_workflow_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowExtractionPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowExtractionResult"];
+                };
             };
             /** @description Request Error */
             "4XX": {
