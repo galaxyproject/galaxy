@@ -112,7 +112,7 @@ onBeforeUnmount(() => {
         v-show="isActive"
         :id="id"
         class="tab-pane"
-        :class="{ active: isActive, show: isActive }"
+        :class="{ active: isActive, show: isActive, 'card-body': context.tabsCard }"
         role="tabpanel">
         <slot />
     </div>

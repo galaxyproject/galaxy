@@ -22,6 +22,7 @@ export interface TabsContext {
     updateTab: (index: number, tab: TabRegistration) => void;
     setActive: (index: number) => void;
     tabsLazy: boolean;
+    tabsCard: boolean;
 }
 
 const props = withDefaults(
@@ -105,6 +106,7 @@ provide<TabsContext>("g-tabs-context", {
     updateTab,
     setActive,
     tabsLazy: props.lazy,
+    tabsCard: props.card,
 });
 
 const navClasses = computed(() => ({
@@ -112,15 +114,20 @@ const navClasses = computed(() => ({
     "nav-pills": props.pills,
     "nav-justified": props.justified,
     "nav-fill": props.fill,
-    "card-header-tabs": props.card && !props.pills,
-    "card-header-pills": props.card && props.pills,
+    "card-header-tabs": props.card && !props.pills && !props.vertical,
+    "card-header-pills": props.card && props.pills && !props.vertical,
     "flex-column": props.vertical,
+    "card-header": props.card && props.vertical,
+    "h-100": props.card && props.vertical,
+    "border-bottom-0": props.card && props.vertical,
+    "rounded-0": props.card && props.vertical,
 }));
 
 // "tabs" class matches BTabs' outer div class for Selenium selector compatibility
 const containerClasses = computed(() => ({
     tabs: true,
-    "d-flex": props.vertical,
+    row: props.vertical,
+    "no-gutters": props.vertical && props.card,
 }));
 
 // Vue 2.7 doesn't support plain functions as components via <component :is>,
@@ -146,7 +153,44 @@ const TabTitleContent = defineComponent({
 
 <template>
     <div :class="containerClasses">
-        <ul class="nav" :class="navClasses" role="tablist">
+        <!--
+            Nav items are duplicated across the v-if/v-else branches because vertical mode needs
+            a col-auto wrapper div for Bootstrap's grid layout. Keep both branches in sync.
+
+            TODO: migrate <a> to <button> in both branches — semantically more correct for tabs.
+            Using <a href="#"> for now because Selenium selectors in navigation.yml target `a.nav-link`
+            (e.g. `.nav-item[title="..."] > a.nav-link`) matching what BTabs rendered.
+            When updating, also change those selectors to drop the element type requirement.
+        -->
+
+        <!-- Vertical: BSV wraps the nav in a col-auto div for Bootstrap grid layout -->
+        <div v-if="props.vertical" class="col-auto">
+            <ul class="nav" :class="navClasses" role="tablist">
+                <li
+                    v-for="(tab, index) in tabs"
+                    :key="index"
+                    class="nav-item"
+                    :class="tab.titleItemClass"
+                    :title="tab.title"
+                    role="presentation">
+                    <a
+                        :id="tab.buttonId"
+                        class="nav-link"
+                        :class="[tab.titleLinkClass, { active: index === activeIndex, disabled: tab.disabled }]"
+                        role="tab"
+                        href="#"
+                        :aria-selected="index === activeIndex"
+                        :aria-disabled="tab.disabled"
+                        v-bind="tab.titleLinkAttributes"
+                        @click.prevent="!tab.disabled && setActive(index)">
+                        <TabTitleContent :tab="tab" />
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Non-vertical: nav is a direct child -->
+        <ul v-else class="nav" :class="navClasses" role="tablist">
             <li
                 v-for="(tab, index) in tabs"
                 :key="index"
@@ -154,12 +198,6 @@ const TabTitleContent = defineComponent({
                 :class="tab.titleItemClass"
                 :title="tab.title"
                 role="presentation">
-                <!--
-                    TODO: migrate to <button> — semantically more correct for tabs (action, not navigation).
-                    Using <a href="#"> for now because Selenium selectors in navigation.yml target `a.nav-link`
-                    (e.g. `.nav-item[title="..."] > a.nav-link`) matching what BTabs rendered.
-                    When updating, also change those selectors to drop the element type requirement.
-                -->
                 <a
                     :id="tab.buttonId"
                     class="nav-link"
@@ -176,7 +214,8 @@ const TabTitleContent = defineComponent({
                 </a>
             </li>
         </ul>
-        <div class="tab-content" :class="{ 'flex-grow-1': props.vertical }">
+
+        <div class="tab-content" :class="{ col: props.vertical }">
             <slot />
         </div>
     </div>
