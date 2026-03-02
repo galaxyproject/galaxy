@@ -152,7 +152,14 @@ const TabTitleContent = defineComponent({
                 :key="index"
                 class="nav-item"
                 :class="tab.titleItemClass"
+                :title="tab.title"
                 role="presentation">
+                <!--
+                    TODO: migrate to <button> — semantically more correct for tabs (action, not navigation).
+                    Using <a href="#"> for now because Selenium selectors in navigation.yml target `a.nav-link`
+                    (e.g. `.nav-item[title="..."] > a.nav-link`) matching what BTabs rendered.
+                    When updating, also change those selectors to drop the element type requirement.
+                -->
                 <a
                     :id="tab.buttonId"
                     class="nav-link"
