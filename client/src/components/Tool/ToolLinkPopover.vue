@@ -3,7 +3,8 @@ import ToolLink from "./ToolLink.vue";
 import GPopover from "@/components/BaseComponents/GPopover.vue";
 
 interface ToolLinkPopoverProps {
-    target: string | Function;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    target: string | (() => any);
     toolId?: string;
     toolVersion?: string;
 }
