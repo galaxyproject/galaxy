@@ -615,7 +615,7 @@ onMounted(async () => {
                         Filter:
                         <BButton
                             id="show-deleted"
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             size="sm"
                             :title="deleteButtonTitle"
                             :pressed="showDeleted"
@@ -691,7 +691,7 @@ onMounted(async () => {
                 <BButton
                     v-if="!showDeleted"
                     id="history-list-footer-bulk-delete-button"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :title="bulkDeleteOrRestoreLoading ? 'Deleting histories' : 'Delete selected histories'"
                     :disabled="bulkDeleteOrRestoreLoading"
                     size="sm"
@@ -706,7 +706,7 @@ onMounted(async () => {
                 <BButton
                     v-else
                     id="history-list-footer-bulk-restore-button"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :title="bulkDeleteOrRestoreLoading ? 'Restoring histories' : 'Restore selected histories'"
                     :disabled="bulkDeleteOrRestoreLoading"
                     size="sm"
@@ -722,7 +722,7 @@ onMounted(async () => {
                 <BButton
                     v-if="showBulkPurge"
                     id="history-list-footer-bulk-purge-button"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :title="bulkPurgeLoading ? 'Purging histories' : 'Purge selected histories'"
                     :disabled="bulkPurgeLoading"
                     size="sm"
@@ -738,7 +738,7 @@ onMounted(async () => {
                 <BButton
                     v-if="!showDeleted"
                     id="history-list-footer-bulk-add-tags-button"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :title="bulkTagsLoading ? 'Adding tags' : 'Add tags to selected histories'"
                     :disabled="bulkTagsLoading"
                     size="sm"
@@ -754,7 +754,7 @@ onMounted(async () => {
                 <BButton
                     v-if="showBulkMultiview"
                     id="history-list-footer-bulk-open-multiview-button"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     title="Open selected histories in multiview"
                     size="sm"
                     variant="primary"

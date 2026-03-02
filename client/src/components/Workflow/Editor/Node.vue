@@ -26,7 +26,7 @@
                 <LoadingSpan v-if="isLoading" spinner-only />
                 <BButton
                     v-if="credentials.length > 0"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     class="node-credentials py-0 inline-icon-button"
                     variant="primary"
                     size="sm"
@@ -36,7 +36,7 @@
                 </BButton>
                 <b-button
                     v-if="!readonly"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     class="node-clone py-0"
                     variant="primary"
                     size="sm"
@@ -47,7 +47,7 @@
                 </b-button>
                 <b-button
                     v-if="!readonly"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     class="node-destroy py-0"
                     variant="primary"
                     size="sm"
@@ -81,11 +81,11 @@
                 </b-popover>
             </b-button-group>
             <i :class="iconClass" />
-            <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
+            <span v-if="step.when" v-g-tooltip.hover title="This step is conditionally executed.">
                 <FontAwesomeIcon :icon="faCodeBranch" />
             </span>
             <span
-                v-b-tooltip.hover
+                v-g-tooltip.hover
                 title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
                 >{{ step.id + 1 }}:
             </span>

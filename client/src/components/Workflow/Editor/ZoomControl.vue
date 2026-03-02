@@ -41,7 +41,7 @@ function onZoomReset() {
             aria-label="Zoom Out"
             @click="onZoomOut" />
         <b-button
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             role="button"
             class="zoom-reset"
             variant="light"

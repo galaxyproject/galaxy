@@ -83,7 +83,7 @@ const emit = defineEmits(["onChange"]);
     <div class="ui-form-element section-row" data-description="edit column definitions">
         <div class="ui-form-title">
             <span class="ui-form-title-text">Column definitions</span>
-            <span v-b-tooltip.hover.bottom :title="saveTooltip">
+            <span v-g-tooltip.hover.bottom :title="saveTooltip">
                 <DownloadWorkbookButton
                     title="download example workbook"
                     @click="downloadWorkbook(value || [], props.collectionType)" />
@@ -101,7 +101,7 @@ const emit = defineEmits(["onChange"]);
                     <b-button-group>
                         <b-button
                             :id="getButtonId(index, 'up')"
-                            v-b-tooltip.hover.bottom
+                            v-g-tooltip.hover.bottom
                             title="move up"
                             role="button"
                             variant="link"
@@ -112,7 +112,7 @@ const emit = defineEmits(["onChange"]);
                         </b-button>
                         <b-button
                             :id="getButtonId(index, 'down')"
-                            v-b-tooltip.hover.bottom
+                            v-g-tooltip.hover.bottom
                             title="move down"
                             role="button"
                             variant="link"
@@ -123,7 +123,7 @@ const emit = defineEmits(["onChange"]);
                         </b-button>
                     </b-button-group>
 
-                    <span v-b-tooltip.hover.bottom :title="deleteTooltip">
+                    <span v-g-tooltip.hover.bottom :title="deleteTooltip">
                         <b-button
                             title="delete"
                             role="button"

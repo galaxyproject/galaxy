@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCollapse, BPopover, BTooltip } from "bootstrap-vue";
+import { BCollapse, BPopover } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { orList } from "@/utils/strings";
@@ -37,6 +37,7 @@ const localFormatsVisible = computed({
     <div v-else>
         <GButton
             :id="props.formatsButtonId"
+            v-g-tooltip.bottom.noninteractive="!formatsVisible ? orList([...props.extensions]) : ''"
             size="small"
             color="blue"
             transparent
@@ -56,15 +57,5 @@ const localFormatsVisible = computed({
                 <li v-for="extension in props.extensions" :key="extension">{{ extension }}</li>
             </ul>
         </component>
-        <BTooltip
-            v-if="!formatsVisible"
-            :target="props.formatsButtonId"
-            noninteractive
-            placement="bottom"
-            triggers="hover">
-            <div class="form-data-props.extensions-tooltip">
-                <span>{{ orList([...props.extensions]) }}</span>
-            </div>
-        </BTooltip>
     </div>
 </template>

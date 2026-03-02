@@ -330,7 +330,7 @@ const extendedCollectionType = computed<ExtendedCollectionType>(() => {
 
                 <span
                     v-if="isRequired && isRequiredType && props.title"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     class="ui-form-title-star"
                     title="required"
                     :class="{ warning: isEmpty }">

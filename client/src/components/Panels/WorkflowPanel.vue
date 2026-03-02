@@ -153,7 +153,7 @@ function createNew(event: Event) {
     <ActivityPanel title="Workflows">
         <template v-slot:header-buttons>
             <BButton
-                v-b-tooltip.hover.top.noninteractive
+                v-g-tooltip.hover.top.noninteractive
                 size="sm"
                 variant="link"
                 class="create-button"

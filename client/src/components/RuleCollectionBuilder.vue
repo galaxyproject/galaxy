@@ -56,7 +56,7 @@
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
                             <ColumnSelector :target.sync="addSortingTarget" :col-headers="activeRuleColHeaders" />
-                            <label v-b-tooltip.hover.noninteractive :title="titleNumericSort">
+                            <label v-g-tooltip.hover.noninteractive :title="titleNumericSort">
                                 <input v-model="addSortingNumeric" type="checkbox" />
                                 {{ l("Numeric sorting.") }}
                             </label>
@@ -141,7 +141,7 @@
                                 {{ l("Replacement Expression") }}
                                 <input v-model="addColumnRegexReplacement" type="text" class="rule-replacement" />
                             </label>
-                            <label v-b-tooltip.hover.noninteractive>
+                            <label v-g-tooltip.hover.noninteractive>
                                 <input v-model="addColumnRegexAllowUnmatched" type="checkbox" />
                                 {{ l("Allow regular expression unmatched.") }}
                             </label>
@@ -227,7 +227,7 @@
                             @saveRule="handleRuleSave">
                             <ColumnSelector :target.sync="addFilterRegexTarget" :col-headers="activeRuleColHeaders" />
                             <RegularExpressionInput :target.sync="addFilterRegexExpression" />
-                            <label v-b-tooltip.hover :title="titleInvertFilterRegex">
+                            <label v-g-tooltip.hover :title="titleInvertFilterRegex">
                                 <input v-model="addFilterRegexInvert" type="checkbox" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -238,7 +238,7 @@
                             @saveRule="handleRuleSave">
                             <ColumnSelector :target.sync="addFilterMatchesTarget" :col-headers="activeRuleColHeaders" />
                             <input v-model="addFilterMatchesValue" type="text" />
-                            <label v-b-tooltip.hover :title="titleInvertFilterMatches">
+                            <label v-g-tooltip.hover :title="titleInvertFilterMatches">
                                 <input v-model="addFilterMatchesInvert" type="checkbox" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -274,7 +274,7 @@
                                 Filter how many rows?
                                 <input v-model="addFilterCountN" type="number" />
                             </label>
-                            <label v-b-tooltip.hover :title="titleInvertFilterMatches">
+                            <label v-g-tooltip.hover :title="titleInvertFilterMatches">
                                 <input v-model="addFilterCountInvert" type="checkbox" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -284,7 +284,7 @@
                             :display-rule-type.sync="displayRuleType"
                             @saveRule="handleRuleSave">
                             <ColumnSelector :target.sync="addFilterEmptyTarget" :col-headers="activeRuleColHeaders" />
-                            <label v-b-tooltip.hover :title="titleInvertFilterEmpty">
+                            <label v-g-tooltip.hover :title="titleInvertFilterEmpty">
                                 <input v-model="addFilterEmptyInvert" type="checkbox" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -302,7 +302,7 @@
                                     :ordered="true"
                                     :value-as-list="true">
                                     <span
-                                        v-b-tooltip.hover
+                                        v-g-tooltip.hover
                                         :title="titleRemoveMapping"
                                         class="fa fa-times"
                                         @click="removeMapping(index)"></span>
@@ -359,7 +359,7 @@
                             <span class="title">
                                 {{ l("Rules") }}
                                 <span
-                                    v-b-tooltip.hover
+                                    v-g-tooltip.hover
                                     class="fa fa-wrench rule-builder-view-source"
                                     :title="titleViewSource"
                                     @click="viewSource"></span>
@@ -401,7 +401,7 @@
                             <div class="rules-buttons btn-group">
                                 <div class="dropup">
                                     <button
-                                        v-b-tooltip.hover.bottom.noninteractive
+                                        v-g-tooltip.hover.bottom.noninteractive
                                         type="button"
                                         :title="titleRulesMenu"
                                         class="rule-menu-rules-button primary-button dropdown-toggle"
@@ -425,7 +425,7 @@
                                 </div>
                                 <div class="dropup">
                                     <button
-                                        v-b-tooltip.hover.bottom.noninteractive
+                                        v-g-tooltip.hover.bottom.noninteractive
                                         type="button"
                                         :title="titleFilterMenu"
                                         class="rule-menu-filter-button primary-button dropdown-toggle"
@@ -444,7 +444,7 @@
                                 </div>
                                 <div class="dropup">
                                     <button
-                                        v-b-tooltip.hover.bottom.noninteractive
+                                        v-g-tooltip.hover.bottom.noninteractive
                                         type="button"
                                         :title="titleColumMenu"
                                         class="rule-menu-column-button primary-button dropdown-toggle"
@@ -535,7 +535,7 @@
                     <div v-if="showCollectionNameInput" class="rule-footer-name-group">
                         <b-input
                             v-model="collectionName"
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             class="collection-name"
                             :placeholder="namePlaceholder"
                             :title="namePlaceholder" />

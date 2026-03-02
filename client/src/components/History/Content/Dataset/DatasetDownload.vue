@@ -36,7 +36,7 @@ function onDownload(resource: string, extension = "") {
 <template>
     <BDropdown
         v-if="hasMetaFiles"
-        v-b-tooltip.hover
+        v-g-tooltip.hover
         dropup
         no-caret
         no-flip
@@ -66,7 +66,7 @@ function onDownload(resource: string, extension = "") {
 
     <BButton
         v-else
-        v-b-tooltip.hover
+        v-g-tooltip.hover
         class="download-btn px-1"
         title="Download"
         size="sm"

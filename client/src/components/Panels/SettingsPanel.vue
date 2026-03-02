@@ -38,7 +38,7 @@ function onQuery(newQuery: string) {
         </template>
         <template v-slot:header-buttons>
             <BButton
-                v-b-tooltip.bottom.hover
+                v-g-tooltip.bottom.hover
                 data-description="restore factory settings"
                 size="sm"
                 variant="link"

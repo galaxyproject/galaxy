@@ -37,7 +37,7 @@ watch(
 
         <FontAwesomeIcon
             v-if="channel === 'push'"
-            v-b-tooltip.hover="'Push notifications need to be enabled'"
+            v-g-tooltip.hover="'Push notifications need to be enabled'"
             class="mx-2"
             :icon="faExclamationCircle" />
     </div>

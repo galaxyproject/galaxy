@@ -82,7 +82,7 @@ watch(
         <b-card-header v-if="!embedded">
             <span class="float-right">
                 <b-button
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :href="downloadUrl"
                     variant="link"
                     size="sm"
@@ -94,7 +94,7 @@ watch(
                     <span class="fa fa-download" />
                 </b-button>
                 <b-button
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     :href="importUrl"
                     role="button"
                     variant="link"

@@ -111,7 +111,7 @@ function onDisplay($event: MouseEvent) {
         <!-- Special case for collections -->
         <BButton
             v-if="isCollection && canShowCollectionDetails"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             class="collection-job-details-btn px-1"
             :title="localize('Show Details')"
             size="sm"
@@ -123,7 +123,7 @@ function onDisplay($event: MouseEvent) {
         <!-- Common for all content items -->
         <BButton
             v-if="isDataset"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             :title="localize('View')"
             tabindex="0"
             class="display-btn px-1"
@@ -135,7 +135,7 @@ function onDisplay($event: MouseEvent) {
         </BButton>
         <BButton
             v-if="writable && isHistoryItem"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             :disabled="editDisabled"
             :title="localize(editButtonTitle)"
             tabindex="0"
@@ -148,7 +148,7 @@ function onDisplay($event: MouseEvent) {
         </BButton>
         <BButton
             v-if="isRunningInteractiveTool"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             class="delete-btn px-1"
             :title="localize('Stop this Interactive Tool')"
             size="sm"
@@ -158,7 +158,7 @@ function onDisplay($event: MouseEvent) {
         </BButton>
         <BButton
             v-else-if="writable && isHistoryItem && !isDeleted"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             :tabindex="isDataset ? '0' : '-1'"
             class="delete-btn px-1"
             :title="localize('Delete')"
@@ -182,7 +182,7 @@ function onDisplay($event: MouseEvent) {
         </BButton>
         <BButton
             v-if="writable && isHistoryItem && isDeleted"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             tabindex="0"
             class="undelete-btn px-1"
             :title="localize('Undelete')"
@@ -193,7 +193,7 @@ function onDisplay($event: MouseEvent) {
         </BButton>
         <BButton
             v-if="writable && isHistoryItem && !isVisible"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             tabindex="0"
             class="unhide-btn px-1"
             :title="localize('Unhide')"

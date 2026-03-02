@@ -7,7 +7,7 @@
                 <b-table small show-empty class="grid" :items="customBuilds" :fields="fields">
                     <template v-slot:cell(action)="row">
                         <a
-                            v-b-tooltip.bottom.hover
+                            v-g-tooltip.bottom.hover
                             href="javascript:void(0)"
                             title="Delete build"
                             @click="deleteBuild(row.item.id)">
@@ -95,7 +95,7 @@
 
                         <b-button
                             id="save"
-                            v-b-tooltip.bottom.hover
+                            v-g-tooltip.bottom.hover
                             type="submit"
                             variant="primary"
                             title="Create new build">

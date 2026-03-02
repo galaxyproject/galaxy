@@ -403,7 +403,7 @@ async function onCancel() {
             <div class="ml-auto d-flex align-items-center">
                 <BBadge
                     v-if="tabsDisabled"
-                    v-b-tooltip.hover.noninteractive
+                    v-g-tooltip.hover.noninteractive
                     class="mr-1"
                     :title="disabledTabTooltip"
                     variant="primary">
@@ -411,7 +411,7 @@ async function onCancel() {
                 </BBadge>
                 <BBadge
                     v-if="isPolling"
-                    v-b-tooltip.hover.noninteractive
+                    v-g-tooltip.hover.noninteractive
                     class="mr-1"
                     title="Polling for updates"
                     variant="link">

@@ -140,7 +140,7 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
             class="card-container push-notifications-notice">
             Allow push and tab notifications. To disable, revoke the site notification privilege in your browser.
             <BButton
-                v-b-tooltip.hover
+                v-g-tooltip.hover
                 class="mx-2"
                 title="Enable push notifications"
                 @click="onTogglePushNotifications">
