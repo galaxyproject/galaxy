@@ -76,6 +76,7 @@ describe("DatasetAttributes", () => {
     it("check rendering", async () => {
         const wrapper = await mountDatasetAttributes();
 
+        // 6 form buttons (GTabs nav uses <a> tags, not buttons)
         expect(wrapper.findAll("button").length).toBe(6);
         expect(wrapper.findAll("#attribute_text").length).toBe(1);
         expect(wrapper.findAll("#conversion_text").length).toBe(1);
@@ -96,6 +97,7 @@ describe("DatasetAttributes", () => {
     it("check rendering without conversion option", async () => {
         const wrapper = await mountDatasetAttributes(true);
 
+        // 5 form buttons (GTabs nav uses <a> tags, not buttons)
         expect(wrapper.findAll("button").length).toBe(5);
         expect(wrapper.findAll("#attribute_text").length).toBe(1);
         expect(wrapper.findAll("#conversion_text").length).toBe(0);

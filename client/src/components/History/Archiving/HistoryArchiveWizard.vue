@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
-import { BAlert, BCard, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BCard } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 
@@ -10,6 +10,8 @@ import { useFileSources } from "@/composables/fileSources";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 
+import GTab from "@/components/BaseComponents/GTab.vue";
+import GTabs from "@/components/BaseComponents/GTabs.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
@@ -95,14 +97,14 @@ const breadcrumbItems = computed(() => [
             <div v-if="canFreeStorage">
                 <h2 class="h-md">How do you want to archive this history?</h2>
                 <BCard no-body class="mt-3">
-                    <BTabs pills card vertical lazy class="archival-option-tabs">
-                        <BTab id="keep-storage-tab" title="Keep storage space" active>
+                    <GTabs pills card vertical lazy class="archival-option-tabs">
+                        <GTab id="keep-storage-tab" title="Keep storage space" active>
                             <HistoryArchiveSimple :history="history" @onArchive="onArchiveHistory" />
-                        </BTab>
-                        <BTab id="free-storage-tab" title="Free storage space">
+                        </GTab>
+                        <GTab id="free-storage-tab" title="Free storage space">
                             <HistoryArchiveExportSelector :history="history" @onArchive="onArchiveHistory" />
-                        </BTab>
-                    </BTabs>
+                        </GTab>
+                    </GTabs>
                 </BCard>
             </div>
             <HistoryArchiveSimple v-else :history="history" @onArchive="onArchiveHistory" />
