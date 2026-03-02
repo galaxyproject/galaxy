@@ -182,71 +182,71 @@
 Synopsis
 ========
 
-Changes identifiers of datasets within a collection using identifiers from a supplied file. 
+Renames collection element identifiers using a mapping from a file.
 
 ===========
 Description
 ===========
 
-New identifiers can be supplied as either a simple list or a tab-delimited file mapping old identifiers to new ones. This is controlled using **How should the new identifiers be specified?** drop-down:
+This tool changes the element identifiers (names) in a collection without modifying the datasets themselves. The new identifiers are read from a file you provide.
 
-**Use lines in a simple text file as new identifiers**
+Three mapping modes are available:
 
-Given a collection::
+========
+Examples
+========
 
- Collection: [Dataset A] 
-             [Dataset B] 
-             [Dataset X]
+**Simple text file — positional renaming**
 
-and a simple text file::
+Each line in the text file replaces the identifier at the same position in the collection. Given a collection::
 
-             Alpha
-             Beta
-             Gamma
+ List:  sampleA, sampleB, sampleC
 
-the tool will return::
+and a text file::
 
- Collection: [Dataset Alpha] 
-             [Dataset Beta] 
-             [Dataset Gamma]
+ Alpha
+ Beta
+ Gamma
+
+the output is::
+
+ List:  Alpha, Beta, Gamma
 
 .. class:: infomark
 
-**Note** that the order and number of entries in the text file must match the order of the items you want to rename in your dataset collection.
+The text file must have exactly as many lines as the collection has elements (when **Ensure strict mapping** is enabled).
 
 -------
 
-**Map original identifiers to new ones using a two-column table**
+**Two-column tabular file — lookup renaming**
 
-Given a collection::
+The first column contains the current identifier, the second column the new one. Order does not matter::
 
- Collection: [Dataset A] 
-             [Dataset B] 
-             [Dataset X]
+ sampleB    Beta
+ sampleC    Gamma
+ sampleA    Alpha
 
-and a simple tabular file (you can see that entries do not have to be in order here)::
+Output::
 
-             B Beta
-             X Gamma
-             A Alpha
-
-the tool will return::
-
- Collection: [Dataset Alpha] 
-             [Dataset Beta] 
-             [Dataset Gamma]
+ List:  Alpha, Beta, Gamma
 
 -------
 
-**Use any two columns of a table for identifier mapping**
+**Extended tabular — choose which columns to use**
 
-This mode works exactly as the previous one, but the tabular mapping file is allowed to have more than two columns, and you can specify which of them holds the original and new element identifiers, respectively.
+Works like the two-column mode, but the file may have additional columns. You select which column holds the original identifiers and which holds the new ones.
 
------
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/relabel.svg
+  :alt: Relabel collection element identifiers from a file
+  :width: 500
+
+-------
 
 .. class:: warningmark
 
-Valid identifiers must contain only characters (a-z, A-Z), numbers (0-9), dash (-), underscore (_), dot (.), space ( ) and comma (,). Other characters are not allowed.
+Valid identifiers must contain only letters (a-z, A-Z), numbers (0-9), dash (-), underscore (_), dot (.), space ( ) and comma (,). Other characters are not allowed.
 
 .. class:: infomark
 

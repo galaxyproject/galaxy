@@ -149,53 +149,53 @@
 Synopsis
 ========
 
-Sorts dataset collection alphabetically, numerically, or using predetermined order from a supplied file.
+Reorders elements of a collection alphabetically, numerically, or using a custom order from a file.
 
 ===========
 Description
 ===========
 
+This tool takes a collection and produces a new collection with the same elements in a different order. The datasets themselves are not modified — only the element ordering changes.
+
+Three sort modes are available:
+
+========
+Examples
+========
+
 **Alphabetical sort**
 
-When *alphabetical* sort is chosen, the tool sorts elements by their identifiers in ascending alphabetical order.
+Elements are sorted by their identifiers in ascending alphabetical (lexicographic) order::
+
+ Input:   sampleC, sampleA, sampleB
+ Output:  sampleA, sampleB, sampleC
 
 -------
 
 **Numeric sort**
 
-When *numeric* sort is chosen, the tool sorts elements in ascending order and ignores non-numeric characters. For example, if a collection contains the following elements::
+Non-numeric characters are stripped from each identifier, and elements are sorted by the resulting number in ascending order::
 
- Collection: [Horse123] 
-             [Donkey543] 
-             [Mule176]
-
-The tool will output::
-
- Collection: [Horse123]
-             [Mule176] 
-             [Donkey543] 
+ Input:   sample100, sample3, sample20
+ Output:  sample3, sample20, sample100
 
 -------
 
-**Sorting from file**
+**Sort from file**
 
-Alternatively, you can supply a single-column text file containing element identifiers in the desired sort order. For example, suppose there is a collection::
+You supply a single-column text file listing identifiers in the desired order. The file must contain every element identifier exactly once::
 
- Collection: [Horse123] 
-             [Donkey543] 
-             [Mule176]
+ Text file:     Output:
 
-and a file specifying sort order::
+ sampleB        sampleB
+ sampleC        sampleC
+ sampleA        sampleA
 
- Donkey543
- Horse123 
- Mule176
- 
-the output will predictably look like this::
+-------
 
- Collection: [Donkey543] 
-             [Horse123] 
-             [Mule176]
+.. image:: ${static_path}/images/tools/collection_ops/sort.svg
+  :alt: Sort collection elements
+  :width: 500
 
 -------
 
@@ -203,5 +203,5 @@ the output will predictably look like this::
 
 @QUOTA_USAGE_NOTE@
 
-     ]]></help>
+    ]]></help>
 </tool>

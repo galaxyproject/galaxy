@@ -121,33 +121,51 @@
 Synopsis
 ========
 
-Splits a collection into two output collections: one containing paired elements and one containing unpaired (single) elements.
+Splits a collection into separate paired and unpaired output collections.
 
 ===========
 Description
 ===========
 
-This tool is designed to separate mixed collections that may contain both paired-end and single-end datasets. It accepts a ``list``, ``list:paired``, or ``list:paired_or_unpaired`` collection and produces two outputs:
+This tool separates a collection that may contain a mix of paired-end and single-end datasets into two output collections:
 
-- **Paired output**: A ``list:paired`` collection containing all elements that have both forward and reverse components.
-- **Unpaired output**: A ``list`` collection containing all single (unpaired) elements.
+- **Paired output** (``list:paired``) — elements that have both forward and reverse components.
+- **Unpaired output** (``list``) — single (unpaired) elements.
 
-For example, given a ``list:paired_or_unpaired`` collection::
+The tool accepts ``list``, ``list:paired``, or ``list:paired_or_unpaired`` input collections. If the input is a plain ``list`` (all unpaired), all elements go to the unpaired output and the paired output is empty. If the input is ``list:paired`` (all paired), all elements go to the paired output and the unpaired output is empty.
 
- Input: [el1: forward + reverse]
-        [el2: single dataset]
-        [el3: single dataset]
+========
+Examples
+========
+
+**Split a mixed collection**
+
+Given a ``list:paired_or_unpaired`` collection::
+
+ Input:
+
+   sample1  →  forward + reverse  (paired)
+   sample2  →  single dataset     (unpaired)
+   sample3  →  single dataset     (unpaired)
 
 The tool produces::
 
- Paired:   [el1: forward + reverse]
+ Paired output (list:paired):
 
- Unpaired: [el2]
-           [el3]
+   sample1  →  forward + reverse
 
-If the input is a plain ``list`` (all unpaired), all elements go to the unpaired output. If the input is a ``list:paired`` (all paired), all elements go to the paired output.
+ Unpaired output (list):
 
------
+   sample2  →  Dataset 1
+   sample3  →  Dataset 2
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/split_paired_unpaired.svg
+  :alt: Split paired and unpaired elements
+  :width: 620
+
+-------
 
 .. class:: infomark
 
