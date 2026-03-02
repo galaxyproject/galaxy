@@ -25,19 +25,41 @@
 Synopsis
 ========
 
-Takes a paired collection and "unzips" it into two simple dataset collections (lists of datasets). 
+Splits a paired dataset into two individual datasets (forward and reverse).
 
 ===========
 Description
 ===========
 
-Given a paired collection of forward and reverse reads this tool will "unzip" it into two collections containing forward and reverse reads, respectively:
+This tool takes a single ``paired`` collection and extracts its two components — the **forward** and the **reverse** dataset — as separate output datasets.
+
+This is the inverse of **Zip collections**, which combines two datasets into a pair.
+
+========
+Examples
+========
+
+**Unzip a paired collection**
+
+Input ``paired`` collection::
+
+ Paired: "Sample 1"
+
+   forward  →  reads_R1.fastq
+   reverse  →  reads_R2.fastq
+
+Outputs::
+
+ Forward dataset:  reads_R1.fastq
+ Reverse dataset:  reads_R2.fastq
+
+-------
 
 .. image:: ${static_path}/images/tools/collection_ops/unzip.svg
-  :alt: Unzipping operation
+  :alt: Unzip a paired collection into forward and reverse datasets
   :width: 500
 
------
+-------
 
 .. class:: infomark
 

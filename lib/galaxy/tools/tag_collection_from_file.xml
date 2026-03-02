@@ -87,27 +87,87 @@
 Synopsis
 ========
 
-Adds tags (including name: and group: tags) to collection elements.
+Assigns tags to collection elements based on a tabular mapping file.
 
 ===========
 Description
 ===========
 
-The relationship between element names and tags is specified in a two column tab-delimited file. This file may contain fewer entries than elements in the collection. In that case only matching list identifiers will be tagged.
+This tool reads a two-column tab-delimited file and applies tags to the matching elements of a collection. The first column contains the element identifier, the second column contains one or more comma-separated tags.
 
-To create name: or group: tags prepend them with ``#`` (you can also use ``name:``) or ``group:``, respectively.
+The file does not need to list every element — only elements with a matching identifier will be tagged. Elements not listed keep their existing tags unchanged.
 
-===============
-More about tags
-===============
+Three tag update modes are available:
 
-Galaxy allows tagging datasets to facilitate analyses. There are several types of tags including simple tags, name tags, and group tags. **Simple** tags allow you to attach an alternative label to a dataset, which will make it easier to find it later. **Name** tags allow you to track propagation of a dataset through the analyses: all datasets derived from the initial dataset labeled with a name tag will inherit it. Finally, **group** tags allow you to label groups of datasets. This is useful, for example, for differential expression analysis where you can have two groups of datasets labeled as "treatment" and "control".
+- **Add** — new tags are added alongside any existing tags.
+- **Set** — existing tags are removed and replaced with the new tags.
+- **Remove** — the listed tags are removed from matching elements.
 
-To learn more about tags go to `our training site`_.
+========
+Examples
+========
 
-.. _our training site: https://training.galaxyproject.org/training-material/search?query=tags
+**Add group tags for differential expression**
 
------
+Given a collection with three samples, and a tag file::
+
+ sample1    group:treatment
+ sample2    group:control
+ sample3    group:treatment
+
+After running with mode **Add**, each element will carry the specified group tag while keeping any tags it already had.
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/tag_from_file.svg
+  :alt: Tag collection elements from a tabular file
+  :width: 500
+
+=========
+Tag types
+=========
+
+Galaxy supports three types of tags:
+
+**Simple tags**
+
+A plain keyword such as ``mytag`` or ``important``. Simple tags act as labels that help you find and organize datasets in your history. They do not have any special behavior — they are just searchable labels. In the tag file, write the tag name directly::
+
+ sample1    important
+ sample2    batch2,rerun
+
+-------
+
+**Name tags**
+
+A tag prefixed with ``#`` or ``name:`` (e.g. ``#patient42`` or ``name:patient42``). Name tags are *hereditary* — when a dataset with a name tag is used as input to a tool, the output dataset automatically inherits the same name tag. This lets you trace the origin of a dataset through a long analysis. In the tag file::
+
+ sample1    #patient42
+ sample2    name:patient99
+
+-------
+
+**Group tags**
+
+A tag prefixed with ``group:`` (e.g. ``group:treatment`` or ``group:control``). Group tags are used by tools that compare conditions — for example, **DESeq2** reads group tags to determine which samples belong to which experimental condition. In the tag file::
+
+ sample1    group:treatment
+ sample2    group:control
+ sample3    group:treatment
+
+-------
+
+You can combine multiple tags of any type by separating them with commas::
+
+ sample1    #patient42,group:treatment,batch1
+
+-------
+
+To learn more about tags, visit `the Galaxy Training Network`_.
+
+.. _the Galaxy Training Network: https://training.galaxyproject.org/training-material/search?query=tags
+
+-------
 
 .. class:: infomark
 
