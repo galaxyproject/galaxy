@@ -29,8 +29,19 @@
     <tool file="data_export/export_remote.xml" />
   </section>
   <section id="collection_operations" name="Collection Operations">
-    <tool file="${model_tools_path}/unzip_collection.xml" />
-    <tool file="${model_tools_path}/zip_collection.xml" />
+    <label id="collection_build" text="Build" />
+    <tool file="${model_tools_path}/build_list.xml" />
+    <tool file="${model_tools_path}/build_list_1.2.0.xml" />
+    <tool file="${model_tools_path}/duplicate_file_to_collection.xml" />
+    <tool file="${model_tools_path}/convert_sample_sheet.xml" />
+
+    <label id="collection_restructure" text="Restructure" />
+    <tool file="${model_tools_path}/flatten_collection.xml" />
+    <tool file="${model_tools_path}/nest_collection.xml" />
+    <tool file="${model_tools_path}/merge_collection.xml" />
+    <tool file="${model_tools_path}/split_paired_and_unpaired.xml" />
+
+    <label id="collection_filter" text="Filter" />
     <tool file="${model_tools_path}/filter_failed_collection.xml" />
     <tool file="${model_tools_path}/filter_failed_collection_1.1.0.xml" />
     <tool file="${model_tools_path}/filter_empty_collection.xml" />
@@ -39,25 +50,25 @@
     <tool file="${model_tools_path}/filter_null_1.1.0.xml" />
     <tool file="${model_tools_path}/keep_success_collection.xml" />
     <tool file="${model_tools_path}/keep_success_collection_1.1.0.xml" />
-    <tool file="${model_tools_path}/flatten_collection.xml" />
-    <tool file="${model_tools_path}/nest_collection.xml" />
-    <tool file="${model_tools_path}/merge_collection.xml" />
-    <tool file="${model_tools_path}/relabel_from_file.xml" />
     <tool file="${model_tools_path}/filter_from_file.xml" />
     <tool file="${model_tools_path}/filter_from_file_1.1.0.xml" />
-    <tool file="${model_tools_path}/sort_collection_list.xml" />
-    <tool file="${model_tools_path}/harmonize_two_collections_list.xml" />
+
+    <label id="collection_pair_combine" text="Pair and Combine" />
+    <tool file="${model_tools_path}/zip_collection.xml" />
+    <tool file="${model_tools_path}/unzip_collection.xml" />
     <tool file="${model_tools_path}/cross_product_flat.xml" />
     <tool file="${model_tools_path}/cross_product_nested.xml" />
+    <tool file="${model_tools_path}/harmonize_two_collections_list.xml" />
+
+    <label id="collection_sort_label" text="Sort and Label" />
+    <tool file="${model_tools_path}/sort_collection_list.xml" />
+    <tool file="${model_tools_path}/relabel_from_file.xml" />
     <tool file="${model_tools_path}/tag_collection_from_file.xml" />
-    <tool file="${model_tools_path}/apply_rules.xml" />
-    <tool file="${model_tools_path}/build_list.xml" />
-    <tool file="${model_tools_path}/build_list_1.2.0.xml" />
-    <tool file="${model_tools_path}/sample_sheet_to_tabular.xml" />
-    <tool file="${model_tools_path}/convert_sample_sheet.xml" />
+
+    <label id="collection_extract" text="Extract" />
     <tool file="${model_tools_path}/extract_dataset.xml" />
-    <tool file="${model_tools_path}/duplicate_file_to_collection.xml" />
-    <tool file="${model_tools_path}/split_paired_and_unpaired.xml" />
+    <tool file="${model_tools_path}/sample_sheet_to_tabular.xml" />
+    <tool file="${model_tools_path}/apply_rules.xml" />
   </section>
   <section id="expression_tools" name="Expression Tools">
     <tool file="expression_tools/parse_values_from_file.xml"/>
