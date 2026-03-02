@@ -60,11 +60,11 @@ def populate_model(request_context, inputs, state_inputs, group_inputs: list[dic
                 tool_dict["default_value"] = input.value_to_basic(initial_value, request_context.app, use_security=True)
                 tool_dict["text_value"] = input.value_to_display_text(tool_dict["value"])
             except ImplicitConversionRequired:
-                tool_dict = input.to_dict(request_context)
+                tool_dict = input.to_dict(request_context, other_values=other_values)
                 # This hack leads client to display a text field
                 tool_dict["textable"] = True
             except Exception:
-                tool_dict = input.to_dict(request_context)
+                tool_dict = input.to_dict(request_context, other_values=other_values)
                 log.exception("tools::to_json() - Skipping parameter expansion '%s'", input.name)
         if input_index >= len(group_inputs):
             group_inputs.append(tool_dict)
