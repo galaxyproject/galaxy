@@ -1,7 +1,7 @@
 import os
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 matplotlib_repository_name = "package_matplotlib_1_2_0170"
 matplotlib_repository_description = (
@@ -33,7 +33,7 @@ category_description = "Test 0170 Prior Installation Complex Dependencies"
 running_standalone = False
 
 
-class TestComplexPriorInstallation(ShedTwillTestCase):
+class TestComplexPriorInstallation(ShedTestCase):
     """Test features related to datatype converters."""
 
     requires_galaxy = True

@@ -76,7 +76,7 @@ class PlaywrightShedBrowser(ShedBrowser):
 
         from galaxy.util import smart_str
 
-        with tempfile.NamedTemporaryFile(suffix=suffix, prefix="twilltestcase-", delete=False) as fh:
+        with tempfile.NamedTemporaryFile(suffix=suffix, prefix="testcase-", delete=False) as fh:
             fh.write(smart_str(content))
         return fh.name
 
@@ -162,10 +162,6 @@ class PlaywrightShedBrowser(ShedBrowser):
         select_locator.evaluate("node => node.selectedOptions = []")
         select_locator.select_option(label=usernames)
         self.submit_form_with_name("user_access", "user_access_button")
-
-    @property
-    def is_twill(self) -> bool:
-        return False
 
     def logout_if_logged_in(self, assert_logged_out=True):
         self._page.wait_for_selector(f"{Locators.toolbar_login}, {Locators.toolbar_logout}")

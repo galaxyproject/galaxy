@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ freebayes_repository_long_description = "Long description of Freebayes tool for 
 """
 
 
-class TestToolShedBrowseUtilities(ShedTwillTestCase):
+class TestToolShedBrowseUtilities(ShedTestCase):
     """Test browsing for Galaxy utilities."""
 
     def test_0000_initiate_users(self):

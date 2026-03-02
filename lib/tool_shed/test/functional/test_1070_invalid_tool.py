@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 repository_name = "bismark_0070"
 repository_description = "Galaxy's bismark wrapper"
@@ -8,7 +8,7 @@ category_name = "Test 0070 Invalid Tool Revisions"
 category_description = "Test 1070 for a repository with an invalid tool."
 
 
-class TestFreebayesRepository(ShedTwillTestCase):
+class TestFreebayesRepository(ShedTestCase):
     """Test repository with multiple revisions with invalid tools."""
 
     requires_galaxy = True

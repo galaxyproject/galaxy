@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_repository_name = "column_maker_0080"
 column_repository_description = "Add column"
@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 running_standalone = False
 
 
-class TestRepositoryDependencies(ShedTwillTestCase):
+class TestRepositoryDependencies(ShedTestCase):
     """Testing uninstalling and reinstalling repository dependencies, and setting tool panel sections."""
 
     requires_galaxy = True

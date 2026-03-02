@@ -1,7 +1,7 @@
 import os
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 repository_name = "freebayes_0010"
 repository_description = "Galaxy's freebayes tool"
@@ -18,7 +18,7 @@ repository_long_description = "Long description of Galaxy's freebayes tool"
 """
 
 
-class TestFreebayesRepository(ShedTwillTestCase):
+class TestFreebayesRepository(ShedTestCase):
     """Testing freebayes with tool data table entries, .loc files, and tool dependencies."""
 
     def test_0000_create_or_login_admin_user(self):

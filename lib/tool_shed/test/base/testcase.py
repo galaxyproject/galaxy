@@ -77,10 +77,6 @@ from . import (
 from .api import ShedApiTestCase
 from .browser import ShedBrowser
 from .playwrightbrowser import PlaywrightShedBrowser
-from .twillbrowser import (
-    page_content,
-    visit_url,
-)
 
 if TYPE_CHECKING:
     from galaxy.model.scoped_session import install_model_scoped_session
@@ -196,8 +192,10 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
 class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
     """A Galaxy API + Database as a installation target for the tool shed."""
 
-    def __init__(self, testcase: "ShedTwillTestCase"):
+    def __init__(self, testcase: "ShedTestCase"):
         self.testcase = testcase
+        self._session = requests.Session()
+        self._last_page_content = ""
 
     def setup(self):
         self._galaxy_login()
@@ -247,7 +245,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         for data_manager_name in data_manager_names:
             params = {"id": data_managers[data_manager_name]["guid"]}
             self._visit_galaxy_url("/data_manager/jobs_list", params=params)
-            content = page_content()
+            content = self._last_page_content
             for expected in strings_displayed:
                 if content.find(expected) == -1:
                     raise AssertionError(f"Failed to find pattern {expected} in {content}")
@@ -257,7 +255,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
     ) -> dict[str, Any]:
         params = {"id": self.testcase.security.encode_id(installed_repository.id)}
         self._visit_galaxy_url("/admin_toolshed/manage_repository_json", params=params)
-        json = page_content()
+        json = self._last_page_content
         return loads(json)
 
     def install_repository(
@@ -413,7 +411,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
 
     def _galaxy_token(self):
         self._visit_galaxy_url("/")
-        html = page_content()
+        html = self._last_page_content
         token_def_index = html.find("session_csrf_token")
         token_sep_index = html.find("=", token_def_index)
         token_quote_start_index = html.find('"', token_sep_index)
@@ -426,7 +424,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         tool_guid = quote_plus(tool_metadata[0]["guid"], safe="")
         api_url = f"/api/tools/{tool_guid}"
         self._visit_galaxy_url(api_url)
-        tool_dict = loads(page_content())
+        tool_dict = loads(self._last_page_content)
         tool_panel_section = tool_dict["panel_section_name"]
         return tool_panel_section
 
@@ -445,11 +443,17 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
             allowed_codes = [200]
         url = f"{self.testcase.galaxy_url}{url}"
         url = self.testcase.join_url_and_params(url, params)
-        return visit_url(url, allowed_codes)
+        response = self._session.get(url, timeout=DEFAULT_SOCKET_TIMEOUT)
+        assert response.status_code in allowed_codes, "Invalid HTTP return code {}, allowed codes: {}".format(
+            response.status_code,
+            ", ".join(str(code) for code in allowed_codes),
+        )
+        self._last_page_content = response.text
+        return url
 
 
 class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
-    def __init__(self, testcase: "ShedTwillTestCase"):
+    def __init__(self, testcase: "ShedTestCase"):
         self.testcase = testcase
         self.temp_directory = Path(tempfile.mkdtemp(prefix="toolshedtestinstalltarget"))
         tool_shed_target = ToolShedTarget(
@@ -612,13 +616,11 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
 
 
 @pytest.mark.usefixtures("shed_browser")
-class ShedTwillTestCase(ShedApiTestCase):
+class ShedTestCase(ShedApiTestCase):
     """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     requires_galaxy: bool = False
-    _installation_client: Optional[
-        Union[StandaloneToolShedInstallationClient, GalaxyInteractorToolShedInstallationClient]
-    ] = None
+    _installation_client: Optional[ToolShedInstallationClient] = None
     __browser: Optional[ShedBrowser] = None
 
     def setUp(self):
@@ -629,14 +631,16 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.hgweb_config_dir = os.environ.get("TEST_HG_WEB_CONFIG_DIR")
         self.hgweb_config_manager = hgweb_config.hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.hgweb_config_dir
-        self.tool_shed_test_tmp_dir = os.environ.get("TOOL_SHED_TEST_TMP_DIR", None)
-        self.file_dir = os.environ.get("TOOL_SHED_TEST_FILE_DIR", None)
+        self.tool_shed_test_tmp_dir: str = os.environ.get("TOOL_SHED_TEST_TMP_DIR", "")
+        self.file_dir: str = os.environ.get("TOOL_SHED_TEST_FILE_DIR", "")
         self.shed_tool_conf = os.environ.get("GALAXY_TEST_SHED_TOOL_CONF")
         self.test_db_util = test_db_util
         if os.environ.get("TOOL_SHED_TEST_INSTALL_CLIENT") == "standalone":
             # TODO: once nose is out of the way - try to get away without
             # instantiating the unused Galaxy server here.
-            installation_client_class = StandaloneToolShedInstallationClient
+            installation_client_class: Union[
+                type[StandaloneToolShedInstallationClient], type[GalaxyInteractorToolShedInstallationClient]
+            ] = StandaloneToolShedInstallationClient
             full_stack_galaxy = False
         else:
             installation_client_class = GalaxyInteractorToolShedInstallationClient
@@ -655,12 +659,6 @@ class ShedTwillTestCase(ShedApiTestCase):
     def _browser(self) -> ShedBrowser:
         assert self.__browser
         return self.__browser
-
-    def _escape_page_content_if_needed(self, content: str) -> str:
-        # if twill browser is being used - replace spaces with "&nbsp;"
-        if self._browser.is_twill:
-            content = content.replace(" ", "&nbsp;")
-        return content
 
     def check_for_strings(self, strings_displayed=None, strings_not_displayed=None):
         strings_displayed = strings_displayed or []
@@ -837,7 +835,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         return self._browser.visit_url(url, allowed_codes=allowed_codes)
 
     def write_temp_file(self, content, suffix=".html"):
-        with tempfile.NamedTemporaryFile(suffix=suffix, prefix="twilltestcase-", delete=False) as fh:
+        with tempfile.NamedTemporaryFile(suffix=suffix, prefix="testcase-", delete=False) as fh:
             fh.write(smart_str(content))
         return fh.name
 
@@ -1260,10 +1258,6 @@ class ShedTwillTestCase(ShedApiTestCase):
                 self._browser.fill_form_value("edit_repository", input_elem_name, kwd[input_elem_name])
                 strings_displayed.append(self.escape_html(kwd[input_elem_name]))
         self._browser.submit_form_with_name("edit_repository", "edit_repository_button")
-        # TODO: come back to this (and similar conditional below), the problem is check
-        # for strings isn't working with with textboxes I think?
-        if self._browser.is_twill:
-            self.check_for_strings(strings_displayed)
         if revert:
             strings_displayed = []
             # assert original_information[input_elem_name]
@@ -1273,8 +1267,6 @@ class ShedTwillTestCase(ShedApiTestCase):
                 )
                 strings_displayed.append(self.escape_html(original_information[input_elem_name]))
             self._browser.submit_form_with_name("edit_repository", "edit_repository_button")
-            if self._browser.is_twill:
-                self.check_for_strings(strings_displayed)
 
     def enable_email_alerts(self, repository: Repository, strings_displayed=None, strings_not_displayed=None) -> None:
         repository_id = repository.id
@@ -1534,7 +1526,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def grant_role_to_user(self, user, role):
         strings_displayed = [self.security.encode_id(role.id), role.name]
-        strings_not_displayed = []
+        strings_not_displayed: list[str] = []
         self.visit_url("/admin/roles")
         self.check_for_strings(strings_displayed, strings_not_displayed)
         params = dict(operation="manage users and groups", id=self.security.encode_id(role.id))
@@ -1692,6 +1684,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def reactivate_repository(self, installed_repository):
+        assert self._installation_client
         self._installation_client.reactivate_repository(installed_repository)
 
     def reinstall_repository_api(
@@ -1703,6 +1696,7 @@ class ShedTwillTestCase(ShedApiTestCase):
     ):
         name = installed_repository.name
         owner = installed_repository.owner
+        assert self._installation_client
         self._installation_client.install_repository(
             name,
             owner,
@@ -1816,10 +1810,12 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     @property
     def shed_tool_data_table_conf(self):
+        assert self._installation_client
         return self._installation_client.shed_tool_data_table_conf
 
     @property
     def tool_data_path(self):
+        assert self._installation_client
         return self._installation_client.tool_data_path
 
     def _refresh_tool_shed_repository(self, repo: galaxy_model.ToolShedRepository) -> None:
@@ -1855,6 +1851,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         #     </table>
         # </tables>
         required_data_table_entry = None
+        assert data_tables is not None
         for table_elem in data_tables.findall("table"):
             # The value of table_elem will be something like: <table comment_char="#" name="sam_fa_indexes">
             for required_data_table_entry in required_data_table_entries:
@@ -1867,7 +1864,7 @@ class ShedTwillTestCase(ShedApiTestCase):
                     # The "path" attribute of the "file" tag is the location that Galaxy always uses because the
                     # Galaxy ToolDataTableManager was implemented in such a way that the hard-coded path is used
                     # rather than allowing the location to be a configurable setting like the tool shed requires.
-                    file_path = file_elem.get("path", None)
+                    file_path = file_elem.get("path", None) if file_elem is not None else None
                     # The value of file_path will be something like: "tool-data/all_fasta.loc"
                     assert (
                         file_path is not None

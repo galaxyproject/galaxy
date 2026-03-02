@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ For all steps, verify that the generated dependency points to the tip of the spe
 """
 
 
-class TestAutomaticDependencyRevision(ShedTwillTestCase):
+class TestAutomaticDependencyRevision(ShedTestCase):
     """Test defining repository dependencies without specifying the changeset revision."""
 
     def test_0000_initiate_users(self):

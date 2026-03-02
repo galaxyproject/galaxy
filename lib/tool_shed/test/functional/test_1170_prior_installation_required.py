@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ Verify that convert_chars was installed first, contrary to the ordering that wou
 running_standalone = False
 
 
-class TestSimplePriorInstallation(ShedTwillTestCase):
+class TestSimplePriorInstallation(ShedTestCase):
     """Test features related to datatype converters."""
 
     requires_galaxy = True

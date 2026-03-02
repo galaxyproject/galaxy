@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_repository_name = "column_maker_0080"
 column_repository_description = "Add column"
@@ -13,7 +13,7 @@ category_name = "Test 0080 Advanced Circular Dependencies"
 category_description = "Test circular dependency features"
 
 
-class TestRepositoryCircularDependencies(ShedTwillTestCase):
+class TestRepositoryCircularDependencies(ShedTestCase):
     """Verify that the code correctly handles circular dependencies."""
 
     def test_0000_initiate_users(self):

@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 repository_name = "freebayes_0010"
 repository_description = "Galaxy's freebayes tool"
@@ -10,7 +10,7 @@ category_name = "Test 0010 Repository With Tool Dependencies"
 log = logging.getLogger(__name__)
 
 
-class TestToolWithToolDependencies(ShedTwillTestCase):
+class TestToolWithToolDependencies(ShedTestCase):
     """Test installing a repository with tool dependencies."""
 
     requires_galaxy = True

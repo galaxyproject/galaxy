@@ -1,7 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ category_description = "Test 0140 Tool Help Images"
 # src="/repository/static/images/<id>/count_modes.png"
 
 
-class TestToolHelpImages(ShedTwillTestCase):
+class TestToolHelpImages(ShedTestCase):
     """Test features related to tool help images."""
 
     requires_galaxy = True

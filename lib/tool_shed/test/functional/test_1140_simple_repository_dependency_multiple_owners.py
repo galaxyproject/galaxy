@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 datatypes_repository_name = "blast_datatypes_0120"
 datatypes_repository_description = "Galaxy applicable datatypes for BLAST"
@@ -27,7 +27,7 @@ Galaxy side:
 running_standalone = False
 
 
-class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
+class TestInstallRepositoryMultipleOwners(ShedTestCase):
     requires_galaxy = True
 
     def test_0000_initiate_users(self):

@@ -5,12 +5,12 @@ from pathlib import Path
 from playwright.sync_api import Page
 
 from .playwrightbrowser import PlaywrightShedBrowser
-from .twilltestcase import ShedTwillTestCase
+from .testcase import ShedTestCase
 
 SCREENSHOT_DIR_ENV = "TOOL_SHED_TEST_SCREENSHOTS"
 
 
-class PlaywrightTestCase(ShedTwillTestCase):
+class PlaywrightTestCase(ShedTestCase):
     """Base class for Playwright-based frontend tests."""
 
     @property
