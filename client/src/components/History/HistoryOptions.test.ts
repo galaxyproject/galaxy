@@ -6,11 +6,11 @@ import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AnyHistory, RegisteredUser } from "@/api";
-import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import HistoryOptions from "./HistoryOptions.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
 const localVue = getLocalVue();
@@ -112,14 +112,10 @@ describe("History Navigation", () => {
         });
 
         const allItems = wrapper.findAllComponents(GDropdownItem);
-        const enabledOptionTexts = allItems.wrappers
-            .filter((el) => !el.props("disabled"))
-            .map((el) => el.text());
+        const enabledOptionTexts = allItems.wrappers.filter((el) => !el.props("disabled")).map((el) => el.text());
         expect(enabledOptionTexts).toStrictEqual(anonymousOptions);
 
-        const disabledOptionTexts = allItems.wrappers
-            .filter((el) => el.props("disabled"))
-            .map((el) => el.text());
+        const disabledOptionTexts = allItems.wrappers.filter((el) => el.props("disabled")).map((el) => el.text());
         expect(disabledOptionTexts).toStrictEqual(anonymousDisabledOptions);
     });
 
