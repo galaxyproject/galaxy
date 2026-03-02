@@ -80,7 +80,7 @@ describe("UploadExamples.vue", () => {
             propsData: { urlData },
         });
         const items = wrapper.findAllComponents(GDropdownItem);
-        await items.at(0).find("button").trigger("click");
+        await items.at(0).find("a").trigger("click");
         expect(createUrlUploadItem).toHaveBeenCalledWith(urlData[0].url, "fake-history-id", {
             name: "Example 1",
             ext: urlData[0].ftype,
@@ -110,7 +110,7 @@ describe("UploadExamples.vue", () => {
             propsData: { urlData },
         });
         const items = wrapper.findAllComponents(GDropdownItem);
-        await items.at(1).find("button").trigger("click");
+        await items.at(1).find("a").trigger("click");
         vi.mocked(uploadDatasets).mock.calls[0][1].error();
         expect(toastError).toHaveBeenCalledWith("Uploading the sample dataset 'Example 2' has failed.");
     });
