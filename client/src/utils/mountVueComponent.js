@@ -15,14 +15,14 @@ Vue.use(PiniaVuePlugin);
 // Bootstrap components
 Vue.use(BootstrapVue);
 
+// Custom tooltip directive
+Vue.directive("g-tooltip", vGTooltip);
+
 // localization filters and directives
 Vue.use(localizationPlugin);
 
 // rxjs utilities
 Vue.use(vueRxShortcutPlugin);
-
-// Custom tooltip directive (replaces v-b-tooltip)
-Vue.directive("g-tooltip", vGTooltip);
 
 function getOrCreatePinia() {
     // We sometimes use this utility mounting function in a context where there
