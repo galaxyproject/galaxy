@@ -277,7 +277,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
             if page_exists(trans.sa_session, user, payload.slug):
                 raise exceptions.DuplicatedSlugException("Page identifier must be unique")
             content_format = payload.content_format
-            content = payload.content
+            content = payload.content or ""
 
         # Populate content from invocation if specified
         if payload.invocation_id:
