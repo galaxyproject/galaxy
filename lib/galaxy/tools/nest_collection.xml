@@ -87,33 +87,60 @@
 Synopsis
 ========
 
-Nest a collection, i.e. add a nesting level to a collection.
+Wraps each element of a collection inside its own inner list, adding one nesting level.
 
 ===========
 Description
 ===========
 
-This tool takes a collection and creates a collection of collections where the top level elements are lists each containing one element of the input collection.
-For instance, for a simple list (of datasets) the tool will produce a list of lists where the inner lists each contain one of the datasets.
+This tool takes a collection and produces a nested collection (``list:list``) where each top-level element becomes a single-element inner list. The inner list and its sole element share the same identifier.
+
+For example, a ``list`` with elements ``[A, B, C]`` becomes a ``list:list`` where the outer list has three elements, each containing a one-element inner list: ``[A→[A], B→[B], C→[C]]``.
+
+If the input is already nested (e.g. ``list:paired``), the output gains one more level of nesting (``list:list:paired``), where each inner ``list`` contains a single paired collection.
+
+========
+Examples
+========
+
+**Nest a flat list**
+
+Input ``list``::
+
+ List: "Samples"
+
+   sample1  →  Dataset 1
+   sample2  →  Dataset 2
+   sample3  →  Dataset 3
+
+Output ``list:list``::
+
+ Nested list: "Samples (nested)"
+
+   sample1/
+     sample1  →  Dataset 1
+   sample2/
+     sample2  →  Dataset 2
+   sample3/
+     sample3  →  Dataset 3
+
+-------
+
+**Why is this useful?**
+
+Some Galaxy tools expect a ``list`` as input — when you feed them a ``list``, Galaxy runs the tool once on the entire list. If you want Galaxy to run the tool separately on each element (map over the collection), you need the input to be a ``list:list`` so that Galaxy maps over the outer list and passes each inner list to the tool individually. Nesting provides that extra level.
+
+-------
 
 .. image:: ${static_path}/images/tools/collection_ops/nest.svg
-  :alt: Nest operation
+  :alt: Nest a collection by adding a nesting level
   :width: 500
 
-=======
-Purpose
-=======
-
-Assume a tool processes an item of type X (where X can be a dataset, a dataset pair, a collection). Galaxy also allows to input a collection of items of type X.
-In this case Galaxy will map-over the elements of the collection, i.e. create separate jobs (each processing one item of type X).
-If X is a list (of datasets, pairs, or lists) then one needs to add an extra nesting level to the collection, such that Galaxy maps-over the elements of X instead
-of processing the elements of X jointly.
-
-----
+-------
 
 .. class:: infomark
 
 @QUOTA_USAGE_NOTE@
 
-     ]]></help>
+    ]]></help>
 </tool>
