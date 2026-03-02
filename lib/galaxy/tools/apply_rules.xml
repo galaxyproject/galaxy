@@ -27,28 +27,53 @@
 Synopsis
 ========
 
-This tool allows one to process an existing Galaxy dataset collection's metadata as tabular data,
-apply a series of rules to it, and generate a new collection. 
+Reorganizes a collection by applying a chain of rules (filter, sort, rename, nest, flatten, tag) through an interactive rule builder.
 
 ===========
 Description
 ===========
 
-When used interactively in the tool form, a dynamic preview of the processing will be available in a tabular data viewer but this tool
-may be used in workflows as well where no such preview can be generated.
+This tool opens an interactive rule builder that lets you manipulate the element identifiers (and nesting structure) of a collection as if they were columns in a spreadsheet. You can chain multiple operations together — for example, split an identifier on a delimiter, use one part as a new nesting level and another as the element name, filter rows by a pattern, and sort the result — all in a single step.
 
-This tool is an advanced feature but has a lot of flexibility - it can be used to process collections with arbitrary nesting and can do many kinds of filtering, re-sorting, nesting, flattening, and arbitrary combinations thereof not possible with Galaxy's other, more simple
-collection operation tools.
+This is an advanced tool that combines the capabilities of many simpler collection operations (sort, relabel, nest, flatten, filter) into one flexible interface. Use it when the simpler tools cannot achieve the reorganization you need.
 
-More information about the rule processor in general can be found at `our training site`_. 
+========
+Examples
+========
 
-.. _our training site: https://training.galaxyproject.org/training-material/search?query=rule+builder
+**Flatten and re-nest by a different criterion**
 
------
+Given a ``list:list`` collection where the outer identifiers are sequencing lanes and inner identifiers are sample names, you could use the rule builder to re-nest so that the outer level is sample name and the inner level is lane — effectively transposing the collection structure.
+
+-------
+
+**Extract metadata from identifiers**
+
+If your element identifiers encode multiple pieces of information (e.g. ``patient01_treatment_rep2``), you can split on ``_`` to create columns, then use those columns to define new nesting levels, group tags, or filters.
+
+-------
+
+**Assign tags based on identifier patterns**
+
+You can add a column derived from an identifier (e.g. extract "treatment" or "control" from the name) and assign it as a group tag, all within the rule builder.
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/apply_rules.svg
+  :alt: Apply rules to reorganize a collection
+  :width: 500
+
+-------
+
+For detailed tutorials on the rule builder, visit `the Galaxy Training Network`_.
+
+.. _the Galaxy Training Network: https://training.galaxyproject.org/training-material/search?query=rule+builder
+
+-------
 
 .. class:: infomark
 
 @QUOTA_USAGE_NOTE@
 
-      ]]></help>
+    ]]></help>
 </tool>
