@@ -250,9 +250,6 @@ class ChatAPI:
         user: User = DependsOnUser,
     ) -> list[dict[str, Any]]:
         """Get user's chat history."""
-        if not user:
-            return []
-
         exchanges = self.chat_manager.get_user_chat_history(trans, limit=limit, include_job_chats=False)
 
         # Format exchanges for frontend
@@ -293,9 +290,6 @@ class ChatAPI:
         user: User = DependsOnUser,
     ) -> dict[str, str]:
         """Clear user's chat history (non-job chats only)."""
-        if not user:
-            return {"message": "No user logged in"}
-
         try:
             # Get all non-job chat exchanges for user
             exchanges = self.chat_manager.get_user_chat_history(trans, limit=1000, include_job_chats=False)
@@ -329,8 +323,6 @@ class ChatAPI:
         user: User = DependsOnUser,
     ) -> dict[str, str]:
         """Delete a single chat exchange."""
-        if not user:
-            return {"message": "No user logged in"}
         self.chat_manager.delete_exchange(trans, exchange_id)
         return {"message": "Deleted"}
 
@@ -342,8 +334,6 @@ class ChatAPI:
         user: User = DependsOnUser,
     ) -> dict[str, str]:
         """Delete multiple chat exchanges."""
-        if not user:
-            return {"message": "No user logged in"}
         count = self.chat_manager.delete_exchanges(trans, payload.ids)
         return {"message": f"Deleted {count} exchanges"}
 
