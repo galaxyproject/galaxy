@@ -517,6 +517,8 @@ class WorkflowProgress:
                     dependent_workflow_step_id=output_step_id,
                 )
             )
+        if isinstance(replacement, NoReplacement):
+            return NO_REPLACEMENT
         if isinstance(replacement, MutableMapping) and replacement.get("__class__") == "NoReplacement":
             return NO_REPLACEMENT
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
@@ -622,7 +624,9 @@ class WorkflowProgress:
                 outputs["output"] = step.get_input_default_value(NO_REPLACEMENT)
 
         if step.label and step.type == "parameter_input" and "output" in outputs:
-            self.runtime_replacements[step.label] = str(outputs["output"])
+            output_value = outputs["output"]
+            if output_value is not NO_REPLACEMENT:
+                self.runtime_replacements[step.label] = str(output_value)
         invocation = invocation_step.workflow_invocation
         if not invocation.has_input_for_step(step.id):
             content = outputs.get("output", NO_REPLACEMENT)
