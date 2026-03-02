@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { faEllipsisV, faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BDropdown, BDropdownItem, BFormCheckbox, BOverlay } from "bootstrap-vue";
+import { BAlert, BDropdown, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { BootstrapSize } from "@/components/Common";
@@ -17,6 +17,7 @@ import type {
     TableField,
 } from "./GTable.types";
 
+import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -642,7 +643,7 @@ defineExpose({
 <template>
     <div :id="`g-table-container-${props.id}`" class="g-table-container" :class="containerClass">
         <!-- Table wrapper -->
-        <BOverlay :show="overlayLoading" rounded="sm" class="position-relative w-100">
+        <GOverlay :show="overlayLoading" class="position-relative w-100">
             <div
                 :id="`g-table-wrapper-${props.id}`"
                 class="position-relative w-100"
@@ -845,7 +846,7 @@ defineExpose({
                     <LoadingSpan :message="props.loadMoreMessage" />
                 </div>
             </div>
-        </BOverlay>
+        </GOverlay>
     </div>
 </template>
 

@@ -12,6 +12,7 @@ import type { BroadcastNotification } from "@/stores/broadcastsStore";
 import BroadcastCard from "./BroadcastCard.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -160,7 +161,7 @@ loadBroadcastsList();
             There are no broadcast notifications to show. Use the button above to create a new broadcast notification or
             change the filters.
         </BAlert>
-        <BOverlay v-else :show="overlay" rounded="sm">
+        <GOverlay v-else :show="overlay">
             <BroadcastCard
                 v-for="notification in filteredBroadcasts"
                 :key="notification.id"
@@ -169,7 +170,7 @@ loadBroadcastsList();
                 @edit="onEdit"
                 @expire="onForceExpire"
                 @go-to-link="onGoToLink" />
-        </BOverlay>
+        </GOverlay>
     </div>
 </template>
 
