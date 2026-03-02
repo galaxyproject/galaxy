@@ -1,7 +1,12 @@
 <script setup lang="ts">
 /**
  * Dropdown menu item replacing BDropdownItem from bootstrap-vue.
- * Renders as a router-link, anchor, or button depending on props.
+ * Renders as a router-link when `to` is provided, otherwise always renders as `<a>` (defaulting to
+ * href="#") to match BDropdownItem's behavior. This is required for Selenium compatibility:
+ * label-based selectors use By.LINK_TEXT which only finds <a> elements, and select_dropdown_item()
+ * uses CSS selector "a.dropdown-item".
+ * TODO: once Selenium selectors are updated, consider rendering action items as <button> (semantically
+ * more correct for non-navigation actions).
  */
 
 import { computed, inject } from "vue";
@@ -40,6 +45,14 @@ const emit = defineEmits<{
 
 const hideDropdown = inject<() => void>("g-dropdown-hide", () => {});
 
+const tag = computed(() => {
+    if (props.to) {
+        return "router-link";
+    }
+    // Always use <a> like BDropdownItem — required for Selenium By.LINK_TEXT selectors
+    return "a";
+});
+
 const classes = computed(() => ({
     "dropdown-item": true,
     active: props.active,
@@ -52,19 +65,13 @@ function onClick(event: MouseEvent) {
         event.preventDefault();
         return;
     }
+    // Prevent href="#" anchor navigation for action items (non-router-link <a> tags)
+    if (tag.value === "a") {
+        event.preventDefault();
+    }
     emit("click", event);
     hideDropdown();
 }
-
-const tag = computed(() => {
-    if (props.to) {
-        return "router-link";
-    }
-    if (props.href) {
-        return "a";
-    }
-    return "button";
-});
 </script>
 
 <template>
@@ -72,11 +79,10 @@ const tag = computed(() => {
         :is="tag"
         :class="classes"
         :to="to"
-        :href="href"
+        :href="to ? undefined : (href ?? '#')"
         :target="target"
         :title="title"
         :disabled="disabled || undefined"
-        :type="tag === 'button' ? 'button' : undefined"
         role="menuitem"
         @click="onClick">
         <slot />
