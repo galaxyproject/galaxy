@@ -13,7 +13,10 @@ from pydantic import (
     UUID4,
 )
 
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.schema.schema import (
     AnnotationField,
     CreatorOrganization,
@@ -396,4 +399,45 @@ class WorkflowExtractionSummary(Model):
         default_factory=list,
         title="Jobs",
         description="Ordered list of jobs (and fake input entries) found in the history.",
+    )
+
+
+class WorkflowExtractionPayload(Model):
+    workflow_name: str = Field(
+        ...,
+        title="Workflow Name",
+        description="The name for the extracted workflow.",
+    )
+    job_ids: list[DecodedDatabaseIdField] = Field(
+        default_factory=list,
+        title="Job IDs",
+        description="Encoded IDs of compatible tool jobs to include as workflow steps.",
+    )
+    dataset_hids: list[int] = Field(
+        default_factory=list,
+        title="Dataset HIDs",
+        description="History item IDs (HIDs) of datasets to treat as workflow inputs.",
+    )
+    dataset_collection_hids: list[int] = Field(
+        default_factory=list,
+        title="Dataset Collection HIDs",
+        description="History item IDs (HIDs) of dataset collections to treat as workflow inputs.",
+    )
+    dataset_names: list[str] = Field(
+        default_factory=list,
+        title="Dataset Names",
+        description="Names for the input datasets, parallel to dataset_hids.",
+    )
+    dataset_collection_names: list[str] = Field(
+        default_factory=list,
+        title="Dataset Collection Names",
+        description="Names for the input dataset collections, parallel to dataset_collection_hids.",
+    )
+
+
+class WorkflowExtractionResult(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Workflow ID",
+        description="The encoded ID of the newly created workflow.",
     )

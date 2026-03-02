@@ -193,6 +193,12 @@ interface Props {
     selectable?: boolean;
 
     /**
+     * Title for the selection checkboxes (for accessibility and tooltips)
+     * @default "Select for bulk actions"
+     */
+    selectCheckboxTitle?: string;
+
+    /**
      * Array of selected item indices
      * @default []
      */
@@ -276,6 +282,7 @@ const props = withDefaults(defineProps<Props>(), {
     overlayLoading: false,
     perPage: undefined,
     selectable: false,
+    selectCheckboxTitle: "Select for bulk actions",
     selectedItems: () => [],
     showEmpty: false,
     showSelectAll: false,
@@ -743,7 +750,7 @@ defineExpose({
                                             :id="`${getRowId(props.id, getGlobalIndex(paginatedIndex))}-select`"
                                             v-b-tooltip.hover.noninteractive
                                             :checked="isRowSelected(getGlobalIndex(paginatedIndex))"
-                                            title="Select for bulk actions"
+                                            :title="props.selectCheckboxTitle"
                                             @click.stop
                                             @change="onRowSelect(item, getGlobalIndex(paginatedIndex))" />
                                     </td>
