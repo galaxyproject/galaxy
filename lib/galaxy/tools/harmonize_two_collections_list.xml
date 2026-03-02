@@ -218,31 +218,58 @@ Harmonizes two collections so they contain the same element identifiers in the s
 Description
 ===========
 
-This tool takes two collections and produces two output collections that share exactly the same set of identifiers in the same order. Any identifiers that are present in only one of the two input collections are removed from both outputs. The order of the first input collection is preserved.
+This tool takes two collections and produces two output collections that share exactly the same set of identifiers in the same order. It performs two operations:
 
-=======
-Example
-=======
+1. **Intersection** — any identifier that appears in only one of the two input collections is removed from both outputs.
+2. **Reordering** — the output elements follow the order of the **first** input collection.
 
-If the inputs are::
+This is useful when two collections were produced by independent analyses and you need to pair them element-wise for a downstream tool. Without harmonization, mismatched identifiers or different ordering would cause errors.
 
- Collection 1: [Horse123]
-               [Donkey543]
-               [Mule176]
+The two input collections do not need to have the same collection type. For example, you can harmonize a ``list`` with a ``list:paired`` — each output preserves the type of its corresponding input.
 
- Collection 2: [Horse]
-               [Mule176]
-               [Donkey543]
+========
+Examples
+========
 
-The tool will output::
+**Keep only shared identifiers**
 
- Collection 1: [Donkey543]
-               [Mule176]
+Given two collections with partially overlapping identifiers::
 
- Collection 2: [Donkey543]
-               [Mule176]
+ Collection 1 (reference order):
 
-Note that ``Horse123`` and ``Horse`` are removed because they do not match between collections.
+   sampleA  →  Dataset 1
+   sampleB  →  Dataset 2
+   sampleC  →  Dataset 3
+
+ Collection 2 (different order, extra element):
+
+   sampleD  →  Dataset 4
+   sampleC  →  Dataset 5
+   sampleA  →  Dataset 6
+
+Output 1 (from Collection 1, matching order preserved)::
+
+   sampleA  →  Dataset 1
+   sampleC  →  Dataset 3
+
+Output 2 (from Collection 2, reordered to match Collection 1)::
+
+   sampleA  →  Dataset 6
+   sampleC  →  Dataset 5
+
+``sampleB`` and ``sampleD`` are removed because they are not present in both collections.
+
+-------
+
+**No matching identifiers**
+
+If the two collections share no identifiers at all, both outputs will be empty collections.
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/harmonize.svg
+  :alt: Harmonize two collections to match identifiers and order
+  :width: 620
 
 -------
 
@@ -250,5 +277,5 @@ Note that ``Horse123`` and ``Horse`` are removed because they do not match betwe
 
 @QUOTA_USAGE_NOTE@
 
-     ]]></help>
+    ]]></help>
 </tool>
