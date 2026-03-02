@@ -246,6 +246,7 @@ ResourceType = Literal[
     "cuda_device_count_min",
     "cuda_device_count_max",
     "shm_size",
+    "timelimit",
 ]
 VALID_RESOURCE_TYPES = get_args(ResourceType)
 
@@ -291,6 +292,10 @@ def resource_requirements_from_list(requirements: Iterable[Dict[str, Any]]) -> L
         "cudaDeviceCountMin": "cuda_device_count_min",
         "cudaDeviceCountMax": "cuda_device_count_max",
         "ShmSize": "shm_size",
+        # timelimit is not a CWL ResourceRequirement field - CWL uses a separate
+        # ToolTimeLimit requirement class. This entry is needed because Galaxy-format
+        # resource dicts (type=resource) validate keys against cwl_to_galaxy.values().
+        "timelimit": "timelimit",
     }
     rr = []
     for r in requirements:

@@ -1560,6 +1560,11 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.ports = tool_source.parse_interactivetool()
 
         self._is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
+        self.timelimit = None
+        for rr in self.resource_requirements:
+            if rr.resource_type == "timelimit" and not rr.runtime_required:
+                self.timelimit = rr.get_value()
+                break
 
     def __parse_legacy_features(self, tool_source: ToolSource):
         self.code_namespace: dict[str, Any] = {}
