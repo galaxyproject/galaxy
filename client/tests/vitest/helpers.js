@@ -75,6 +75,17 @@ export function suppressLucideVue2Deprecation() {
     );
 }
 
+export function suppressExpectedErrorMessages(expectedMessages = []) {
+    const originalError = console.error;
+    vi.spyOn(console, "error").mockImplementation(
+        vi.fn((msg) => {
+            if (!expectedMessages.some((expected) => msg.indexOf(expected) >= 0)) {
+                originalError(msg);
+            }
+        }),
+    );
+}
+
 function isTestLocalized(received) {
     return received && received.indexOf && received.indexOf("test_localized<") == 0;
 }
