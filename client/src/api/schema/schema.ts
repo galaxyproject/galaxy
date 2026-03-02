@@ -185,6 +185,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat/reports/workflow/{workflow_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Generate Workflow Report
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        get: operations["generate_workflow_report_api_chat_reports_workflow__workflow_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chat/{job_id}/feedback": {
         parameters: {
             query?: never;
@@ -198,26 +218,6 @@ export interface paths {
          * @description **Warning**: This API is unstable and may change without notice.
          */
         put: operations["feedback_api_chat__job_id__feedback_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/chat/{workflow_id}/generate_report": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Generate Report
-         * @description **Warning**: This API is unstable and may change without notice.
-         */
-        get: operations["generate_report_api_chat__workflow_id__generate_report_get"];
-        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -26309,53 +26309,7 @@ export interface operations {
             };
         };
     };
-    feedback_api_chat__job_id__feedback_put: {
-        parameters: {
-            query: {
-                feedback: number;
-            };
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path: {
-                /** @description The Job ID the chat exchange is linked to. */
-                job_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": number | null;
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    generate_report_api_chat__workflow_id__generate_report_get: {
+    generate_workflow_report_api_chat_reports_workflow__workflow_id__get: {
         parameters: {
             query?: {
                 /** @description Version of the workflow */
@@ -26382,6 +26336,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkflowReportResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    feedback_api_chat__job_id__feedback_put: {
+        parameters: {
+            query: {
+                feedback: number;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The Job ID the chat exchange is linked to. */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number | null;
                 };
             };
             /** @description Request Error */

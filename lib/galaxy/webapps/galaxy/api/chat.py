@@ -342,8 +342,8 @@ class ChatAPI:
         chat_response = self.chat_manager.set_feedback_for_job(trans, job.id, feedback)
         return chat_response.messages[0].feedback
 
-    @router.get("/api/chat/{workflow_id}/generate_report", unstable=True)
-    async def generate_report(
+    @router.get("/api/chat/reports/workflow/{workflow_id}", unstable=True)
+    async def generate_workflow_report(
         self,
         workflow_id: str = Path(..., description="Workflow ID to generate the report for"),
         version: Optional[int] = Query(None, description="Version of the workflow"),
