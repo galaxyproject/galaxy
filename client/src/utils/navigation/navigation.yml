@@ -1161,16 +1161,16 @@ admin:
     selectors:
       toolshed:
         type: xpath
-        selector: '//a[contains(text(), "Toolshed Tools")]'
+        selector: '//a[contains(., "Toolshed Tools")]'
       local:
         type: xpath
-        selector: '//a[contains(text(), "Local Tools")]'
+        selector: '//a[contains(., "Local Tools")]'
       sanitized:
         type: xpath
-        selector: '//a[contains(text(), "HTML Sanitized")]'
+        selector: '//a[contains(., "HTML Sanitized")]'
       rendered_active:
         type: xpath
-        selector: '//div[contains(@class, "active")]//a[contains(text(), "HTML Rendered")]'
+        selector: '//div[contains(@class, "active")]//a[contains(., "HTML Rendered")]'
 
   manage_dependencies:
     selectors:
