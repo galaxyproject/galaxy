@@ -3,7 +3,10 @@ from typing import (
     Union,
 )
 
-from fsspec.implementations.sftp import SFTPFileSystem
+try:
+    from fsspec.implementations.sftp import SFTPFileSystem
+except ImportError:
+    SFTPFileSystem = None
 
 from galaxy.files.models import FilesSourceRuntimeContext
 from galaxy.files.sources._fsspec import (
@@ -50,6 +53,9 @@ class SshFilesSource(FsspecFilesSource[SshFileSourceTemplateConfiguration, SshFi
         context: FilesSourceRuntimeContext[SshFileSourceConfiguration],
         cache_options: CacheOptionsDictType,  # Ignored because fsspec's SFTPFileSystem does not support caching options.
     ):
+        if SFTPFileSystem is None:
+            raise self.required_package_exception
+
         config = context.config
         # config.pkey is an Optional[str] (raw private-key content). Passing a
         # non-None string to paramiko's SSHClient.connect() makes it attempt
