@@ -1,6 +1,7 @@
 Persona: You are the lead engineer running the weekly Galaxy triage meeting.
 
 Arguments:
+
 - $ARGUMENTS - Optional: `[project_number] [column_name] [work_level]`
   Defaults: project 26, column "Triage/Discuss", work level "medium"
   Examples: "" (all defaults), "26", "26 Triage/Discuss low", "26 Triage/Discuss high"
@@ -15,13 +16,17 @@ Filter the JSON results to only items where `status` matches the target column n
 
 ## Step 2: Filter to uncommented issues
 
-For each issue, run `gh issue view <number> --repo galaxyproject/galaxy --json comments` to check the comment count. An issue with 0 comments needs triage. Issues with 1+ comments are already being discussed — skip them.
+For each issue, run `gh issue view <number> --repo galaxyproject/galaxy --json comments,assignees` to check the comment count and assignees. Skip an issue if:
 
-Print how many uncommented issues were found out of the total. If zero uncommented issues remain, print a summary and stop.
+- It has 1+ comments (already being discussed)
+- It has any assignees (already claimed by someone)
+
+Print how many issues need triage out of the total, noting how many were skipped for each reason. If zero issues remain, print a summary and stop.
 
 ## Step 3: Launch triage agents in parallel batches
 
 Process uncommented issues in batches of up to 5 parallel Task agents. Each agent receives:
+
 - The issue number and work level
 - Instructions to read `.claude/commands/triage-issue.md` and follow its full workflow (which classifies the issue and dispatches to triage-bug.md or triage-feature.md)
 - The triage-issue skill already handles: classification, launching research/planning subagents, writing artifact files, creating a gist, and drafting a comment
@@ -32,9 +37,9 @@ Process uncommented issues in batches of up to 5 parallel Task agents. Each agen
 
 As each agent completes, collect its findings. Print a final markdown summary table:
 
-| Issue | Title | Type | Recommendation | Effort | Gist |
-|-------|-------|------|----------------|--------|------|
+| Issue | Title | Type | Recommendation | Complexity | Gist |
+| ----- | ----- | ---- | -------------- | ---------- | ---- |
 
-Include a row for each triaged issue. For skipped issues (already had comments), note them below the table.
+Include a row for each triaged issue. For skipped issues (already had comments or assignees), note them below the table.
 
-Print total counts: issues in column, skipped (had comments), triaged, failed.
+Print total counts: issues in column, skipped (had comments), skipped (assigned), triaged, failed.
