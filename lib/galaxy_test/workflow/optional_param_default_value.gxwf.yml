@@ -1,0 +1,24 @@
+class: GalaxyWorkflow
+doc: |
+  Test that omitting an optional parameter_input from an invocation does not
+  leak NO_REPLACEMENT sentinel into runtime replacements used in post-job
+  actions (e.g. output renames).
+  Regression test for https://github.com/galaxyproject/galaxy/issues/21947
+inputs:
+  required_input:
+    type: data
+  optional_text:
+    type: text
+    optional: true
+outputs:
+  out:
+    outputSource: cat/out_file1
+steps:
+  cat:
+    tool_id: cat
+    in:
+      input1:
+        source: required_input
+    outputs:
+      out_file1:
+        rename: "prefix_${optional_text}_suffix"
