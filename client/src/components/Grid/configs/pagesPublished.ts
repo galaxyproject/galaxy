@@ -19,12 +19,13 @@ type PageEntry = Record<string, unknown>;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
+    const typeFilteredSearch = search ? `type:standalone ${search}` : "type:standalone";
     const { response, data, error } = await GalaxyApi().GET("/api/pages", {
         params: {
             query: {
                 limit,
                 offset,
-                search,
+                search: typeFilteredSearch,
                 sort_by: sort_by as SortKeyLiteral,
                 sort_desc,
                 show_own: false,

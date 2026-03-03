@@ -95,6 +95,7 @@ query_tags = [
     IndexQueryTag("slug", "The page's slug.", "s"),
     IndexQueryTag("tag", "The page's tags.", "t"),
     IndexQueryTag("user", "The page's owner's username.", "u"),
+    IndexQueryTag("type", "Page type filter: 'standalone', 'history_attached', or 'all'."),
 ]
 
 SearchQueryParam: Optional[str] = search_query_param(

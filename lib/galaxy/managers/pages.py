@@ -122,6 +122,7 @@ INDEX_SEARCH_FILTERS = {
     "s": "slug",
     "t": "tag",
     "is": "is",
+    "type": "type",
 }
 
 
@@ -216,6 +217,22 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
                                 raise exceptions.RequestParameterInvalidException(message)
                             stmt = stmt.where(PageUserShareAssociation.user == user)
+                    elif key == "type":
+                        page_types = set(q.split(","))
+                        valid_types = {"standalone", "history_attached", "all"}
+                        if not page_types.issubset(valid_types):
+                            invalid = page_types - valid_types
+                            raise exceptions.RequestParameterInvalidException(
+                                f"Invalid page type(s): {invalid}. Valid: standalone, history_attached, all"
+                            )
+                        if "all" not in page_types:
+                            type_filters = []
+                            if "standalone" in page_types:
+                                type_filters.append(Page.history_id == None)
+                            if "history_attached" in page_types:
+                                type_filters.append(Page.history_id != None)
+                            if type_filters:
+                                stmt = stmt.where(or_(*type_filters))
                 elif isinstance(term, RawTextTerm):
                     tf = p_tag_filter(term.text, False)
                     alias = aliased(User)

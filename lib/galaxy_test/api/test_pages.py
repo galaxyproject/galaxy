@@ -38,6 +38,19 @@ class BasePagesApiTestCase(ApiTestCase):
         self._assert_status_code_is(page_response, 200)
         return page_response.json()
 
+    def _create_history_attached_page(self, slug: str = "history-page", title: str = "History Page") -> dict[str, Any]:
+        history_id = self.dataset_populator.new_history()
+        page_request = dict(
+            slug=slug,
+            title=title,
+            content="*History page*\n\n",
+            content_format="markdown",
+            history_id=history_id,
+        )
+        page_response = self._post("pages", page_request, json=True)
+        self._assert_status_code_is(page_response, 200)
+        return page_response.json()
+
     def _test_page_payload(self, **kwds):
         return self.dataset_populator.new_page_payload(**kwds)
 
@@ -297,6 +310,34 @@ steps:
         assert response_shared in self._index_ids(
             dict(show_published=True, show_shared=True, search="is:shared_with_me")
         )
+
+    def test_index_type_standalone(self):
+        standalone = self._create_valid_page_with_slug("type-standalone-only")
+        history_attached = self._create_history_attached_page("type-standalone-ha")
+        index_ids = self._index_ids(dict(search="type:standalone"))
+        assert standalone["id"] in index_ids
+        assert history_attached["id"] not in index_ids
+
+    def test_index_type_history_attached(self):
+        standalone = self._create_valid_page_with_slug("type-ha-only-sa")
+        history_attached = self._create_history_attached_page("type-ha-only")
+        index_ids = self._index_ids(dict(search="type:history_attached"))
+        assert standalone["id"] not in index_ids
+        assert history_attached["id"] in index_ids
+
+    def test_index_type_default_returns_both(self):
+        standalone = self._create_valid_page_with_slug("type-default-sa")
+        history_attached = self._create_history_attached_page("type-default-ha")
+        index_ids = self._index_ids()
+        assert standalone["id"] in index_ids
+        assert history_attached["id"] in index_ids
+
+    def test_index_type_all_returns_both(self):
+        standalone = self._create_valid_page_with_slug("type-all-sa")
+        history_attached = self._create_history_attached_page("type-all-ha")
+        index_ids = self._index_ids(dict(search="type:all"))
+        assert standalone["id"] in index_ids
+        assert history_attached["id"] in index_ids
 
     def test_index_does_not_show_unavailable_pages(self):
         create_response_json = self._create_valid_page_as("others_page_index@bx.psu.edu", "otherspageindex")
