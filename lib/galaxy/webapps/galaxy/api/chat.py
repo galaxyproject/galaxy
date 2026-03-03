@@ -362,7 +362,7 @@ class ChatAPI:
 
         deps = self.agent_service.create_dependencies(trans, user)
         agent = WorkflowReportAgent(deps)
-        response = await agent.generate_invocation_report(workflow, invocation)
+        response = await agent.generate_invocation_report(workflow, invocation, invocation_id)
         return WorkflowReportResponse(
             report=response.content,
             total_tokens=response.metadata.get("total_tokens"),
