@@ -30,15 +30,6 @@ from galaxy.webapps.galaxy.api import (
     Router,
 )
 
-# Import agent system
-try:
-    from galaxy.agents import agent_registry
-
-    HAS_AGENTS = True
-except ImportError:
-    HAS_AGENTS = False
-    agent_registry = None  # type: ignore[assignment,unused-ignore]
-
 log = logging.getLogger(__name__)
 
 router = Router(tags=["ai"])
@@ -62,14 +53,11 @@ class AgentAPI:
         user: User = DependsOnUser,
     ) -> AgentListResponse:
         """List available AI agents."""
-        if not HAS_AGENTS:
-            raise ConfigurationError("Agent system is not available")
-
         config = trans.app.config
 
         agents = []
-        for agent_type in agent_registry.list_agents():
-            agent_info = agent_registry.get_agent_info(agent_type)
+        for agent_type in self.agent_service.list_agents():
+            agent_info = self.agent_service.get_agent_info(agent_type)
 
             # Check if agent is enabled in config
             agent_config = getattr(config, "agents", {}).get(agent_type, {})
@@ -101,9 +89,6 @@ class AgentAPI:
         removed in a future release.
         """
         log.warning("DEPRECATED: /api/ai/agents/query is deprecated. Use /api/chat instead.")
-
-        if not HAS_AGENTS:
-            raise ConfigurationError("Agent system is not available")
 
         start_time = time.time()
 

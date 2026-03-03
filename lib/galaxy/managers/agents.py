@@ -6,29 +6,14 @@ from typing import (
     Optional,
 )
 
+from galaxy.agents import GalaxyAgentDependencies
+from galaxy.agents.registry import AgentRegistry
+from galaxy.agents.router import QueryRouterAgent
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import ConfigurationError
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
-
-# Import agent system (pydantic_ai is optional)
-try:
-    from galaxy.agents import (
-        agent_registry,
-        GalaxyAgentDependencies,
-    )
-    from galaxy.agents.error_analysis import ErrorAnalysisAgent
-    from galaxy.agents.router import QueryRouterAgent
-
-    HAS_AGENTS = True
-except ImportError:
-    HAS_AGENTS = False
-    agent_registry = None  # type: ignore[assignment,misc,unused-ignore]
-    GalaxyAgentDependencies = None  # type: ignore[assignment,misc,unused-ignore]
-    QueryRouterAgent = None  # type: ignore[assignment,misc,unused-ignore]
-    ErrorAnalysisAgent = None  # type: ignore[assignment,misc,unused-ignore]
 
 log = logging.getLogger(__name__)
 
@@ -40,12 +25,11 @@ class AgentService:
         self,
         config: GalaxyAppConfiguration,
         job_manager: JobManager,
+        registry: AgentRegistry,
     ):
-        if not HAS_AGENTS:
-            raise ConfigurationError("Agent system is not available")
-
         self.config = config
         self.job_manager = job_manager
+        self.registry = registry
 
     def create_dependencies(self, trans: ProvidesUserContext, user: User) -> GalaxyAgentDependencies:
         """Create agent dependencies for dependency injection."""
@@ -56,7 +40,7 @@ class AgentService:
             config=self.config,
             job_manager=self.job_manager,
             toolbox=toolbox,
-            get_agent=agent_registry.get_agent,
+            get_agent=self.registry.get_agent,
         )
 
     async def execute_agent(
@@ -75,7 +59,7 @@ class AgentService:
 
         try:
             log.info(f"Executing {agent_type} agent for query: '{query[:100]}...'")
-            agent = agent_registry.get_agent(agent_type, deps)
+            agent = self.registry.get_agent(agent_type, deps)
             response = await agent.process(query, context)
 
             return AgentResponse(
@@ -134,3 +118,9 @@ class AgentService:
             # Explicit agent request - execute directly
             log.info(f"User explicitly requested agent: {agent_type}")
             return await self.execute_agent(agent_type, query, trans, user, context)
+
+    def list_agents(self) -> list[str]:
+        return self.registry.list_agents()
+
+    def get_agent_info(self, agent_type: str) -> dict:
+        return self.registry.get_agent_info(agent_type)
