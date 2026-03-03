@@ -3,7 +3,7 @@ import assert from "assert";
 import flushPromises from "flush-promises";
 import { http, HttpResponse } from "msw";
 import { createPinia, setActivePinia } from "pinia";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
@@ -19,7 +19,7 @@ vi.mock("@/utils/tusUpload", () => ({
 
 const { server } = useServerMock();
 
-/** Creates a paste-content upload item, used only for validateUploadItem tests. */
+/** Creates a paste-content upload item. */
 function makePastedItem(overrides: Partial<NewUploadItem> = {}): NewUploadItem {
     return {
         uploadMode: "paste-content",
@@ -100,37 +100,32 @@ function makeCollectionConfig(overrides: Partial<CollectionConfig> = {}): Collec
     };
 }
 
+/** Creates a local-file upload item with a real File object. */
+function makeLocalFileItem(overrides: Partial<NewUploadItem> = {}): NewUploadItem {
+    const file = new File(["content"], "test.txt");
+    return {
+        uploadMode: "local-file",
+        name: "test.txt",
+        size: file.size,
+        targetHistoryId: "hist_1",
+        dbkey: "?",
+        extension: "auto",
+        spaceToTab: false,
+        toPosixLines: false,
+        deferred: false,
+        fileData: file,
+        ...overrides,
+    } as NewUploadItem;
+}
+
 describe("validateUploadItem", () => {
-    it("accepts a valid paste-content item", () => {
-        expect(validateUploadItem(makePastedItem())).toBeUndefined();
-    });
-
-    it("accepts a valid paste-links item", () => {
-        expect(validateUploadItem(makeUrlItem())).toBeUndefined();
-    });
-
-    it("accepts a valid remote-files item", () => {
-        expect(validateUploadItem(makeRemoteFilesItem())).toBeUndefined();
-    });
-
-    it("accepts a valid data-library item", () => {
-        expect(validateUploadItem(makeLibraryItem())).toBeUndefined();
-    });
-
-    it("accepts a valid local-file item", () => {
-        const file = new File(["content"], "test.txt");
-        const item: NewUploadItem = {
-            uploadMode: "local-file",
-            name: "test.txt",
-            size: file.size,
-            targetHistoryId: "hist_1",
-            dbkey: "?",
-            extension: "auto",
-            spaceToTab: false,
-            toPosixLines: false,
-            deferred: false,
-            fileData: file,
-        };
+    it.each([
+        ["paste-content", makePastedItem()],
+        ["paste-links", makeUrlItem()],
+        ["remote-files", makeRemoteFilesItem()],
+        ["data-library", makeLibraryItem()],
+        ["local-file", makeLocalFileItem()],
+    ] as [string, NewUploadItem][])("accepts a valid %s item", (_mode, item) => {
         expect(validateUploadItem(item)).toBeUndefined();
     });
 
@@ -201,6 +196,10 @@ describe("useUploadQueue", () => {
         queue = useUploadQueue();
     });
 
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     describe("enqueue — single item", () => {
         it("marks the item as completed after a successful upload", async () => {
             server.use(http.post("/api/tools/fetch", () => HttpResponse.json({})));
@@ -211,7 +210,7 @@ describe("useUploadQueue", () => {
             expect(queue.state.activeItems.value.find((i) => i.id === id)?.status).toBe("completed");
         });
 
-        it("processes multiple items sequentially — all reach completed status", async () => {
+        it("all items reach completed status when multiple items are enqueued", async () => {
             server.use(http.post("/api/tools/fetch", () => HttpResponse.json({})));
 
             const ids = queue.enqueue([
