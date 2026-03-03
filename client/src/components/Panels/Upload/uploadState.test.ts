@@ -167,8 +167,6 @@ describe("useUploadState", () => {
         it("totalProgress is the average progress across all items", () => {
             const id1 = state.addUploadItem(makePastedItem("a.txt"));
             const id2 = state.addUploadItem(makePastedItem("b.txt"));
-            state.setStatus(id1, "uploading");
-            state.setStatus(id2, "uploading");
             state.updateProgress(id1, 40);
             state.updateProgress(id2, 60);
 
@@ -179,8 +177,6 @@ describe("useUploadState", () => {
             // makePastedItem uses content.length as size: "hello" = 5, "world!" = 6
             const id1 = state.addUploadItem(makePastedItem("a.txt", "hello"));
             const id2 = state.addUploadItem(makePastedItem("b.txt", "world!"));
-            state.setStatus(id1, "uploading");
-            state.setStatus(id2, "uploading");
             state.updateProgress(id1, 100);
             state.updateProgress(id2, 0);
 
