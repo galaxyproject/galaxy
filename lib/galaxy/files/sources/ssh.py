@@ -1,8 +1,3 @@
-try:
-    from fs.sshfs.sshfs import SSHFS
-except ImportError:
-    SSHFS = None
-
 from typing import (
     Optional,
     Union,
