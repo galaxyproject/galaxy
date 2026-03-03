@@ -61,7 +61,8 @@ onMounted(async () => {
                 ? "I'm the Page Assistant. I can help you edit this page — " +
                   "ask me to rewrite sections, add content, fix formatting, or analyze your history datasets."
                 : "I'm the Page Assistant. I can help you edit this page — " +
-                  "ask me to rewrite sections, add content, or fix formatting.",
+                  "ask me to rewrite sections, add content, fix formatting, " +
+                  "or browse your current history's datasets.",
             timestamp: new Date(),
             agentType: AGENT_TYPE,
             confidence: "high",

@@ -188,6 +188,12 @@ class ChatAPI:
                     page_obj = trans.sa_session.get(Page, page_id)
                     if page_obj:
                         full_context["history_id"] = page_obj.history_id
+                        # Fallback to session history for standalone pages
+                        if not full_context.get("history_id"):
+                            session_history = getattr(trans, "history", None)
+                            if session_history:
+                                full_context["history_id"] = session_history.id
+                                full_context["history_is_session"] = True
                         if page_obj.latest_revision_id:
                             from galaxy.managers.markdown_util import ready_galaxy_markdown_for_export
 

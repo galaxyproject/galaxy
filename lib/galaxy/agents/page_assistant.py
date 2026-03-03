@@ -169,6 +169,7 @@ class PageAssistantAgent(BaseGalaxyAgent):
 
     def __init__(self, deps: GalaxyAgentDependencies, history_id: Optional[int] = None, page_content: str = ""):
         self.history_id: Optional[int] = history_id
+        self.history_is_session: bool = False
         self.page_content: str = page_content
         super().__init__(deps)
 
@@ -314,9 +315,16 @@ class PageAssistantAgent(BaseGalaxyAgent):
         prompt = template.replace("{page_content}", content).replace("{directive_reference}", directive_ref)
         if not self.history_id:
             prompt = (
-                "**NOTE: This is a standalone page (not associated with a history). "
+                "**NOTE: This is a standalone page with no history available. "
                 "The history browsing tools (list_history_datasets, get_dataset_info, etc.) "
                 "are not available. Focus on editing the page content directly.**\n\n" + prompt
+            )
+        elif self.history_is_session:
+            prompt = (
+                "**NOTE: This is a standalone page. You have access to the user's "
+                "current active history for reference, but this page is not attached "
+                "to it. You can use history tools to browse datasets, but be aware "
+                "the user may switch histories during their session.**\n\n" + prompt
             )
         return prompt
 
@@ -324,6 +332,7 @@ class PageAssistantAgent(BaseGalaxyAgent):
         """Process a page editing or history question."""
         ctx = context or {}
         self.history_id = ctx.get("history_id") or None
+        self.history_is_session = ctx.get("history_is_session", False)
         self.page_content = ctx.get("page_content", "")
         try:
             enhanced_query = self._prepare_prompt(query, ctx)
@@ -388,13 +397,26 @@ class PageAssistantAgent(BaseGalaxyAgent):
         """Fallback prompt for models without structured output."""
         content = self.page_content or "(empty document)"
         directive_ref = _build_directive_reference()
-        if self.history_id:
+        if self.history_id and not self.history_is_session:
             intro = (
                 "You are a Galaxy History Page editing assistant. Help users edit their\n"
                 "markdown pages that document scientific analysis workflows."
             )
             history_tools_note = (
                 "For questions about the history data, use the available tools to look up datasets.\n"
+                "Users refer to items by HID (the number in the history panel). Use resolve_hid(hid)\n"
+                "to get the encoded history_dataset_id or history_dataset_collection_id for directives.\n"
+                "All tool outputs return encoded IDs — copy them directly into directives.\n"
+                "The resolve_hid and get_dataset_info tools also return job_id for job directives."
+            )
+        elif self.history_id and self.history_is_session:
+            intro = (
+                "You are a Galaxy Page editing assistant. This is a standalone page, but you\n"
+                "have access to the user's current active history for reference. The page is not\n"
+                "attached to this history — the user may switch histories during their session."
+            )
+            history_tools_note = (
+                "You can use history tools to browse datasets in the user's current session history.\n"
                 "Users refer to items by HID (the number in the history panel). Use resolve_hid(hid)\n"
                 "to get the encoded history_dataset_id or history_dataset_collection_id for directives.\n"
                 "All tool outputs return encoded IDs — copy them directly into directives.\n"

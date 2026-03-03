@@ -559,6 +559,65 @@ class TestPageAssistantAgent:
         assert "EDIT_MODE:" in prompt
         assert "# Test doc" in prompt
 
+    def test_system_prompt_no_history(self):
+        """System prompt includes no-history note when history_id is None."""
+        agent = PageAssistantAgent(self.deps, history_id=None, page_content="# Test")
+        prompt = agent.get_system_prompt()
+        assert "standalone page with no history available" in prompt
+        assert "not available" in prompt
+
+    def test_system_prompt_session_history(self):
+        """System prompt includes session-history note when history_is_session=True."""
+        agent = PageAssistantAgent(self.deps, history_id=5, page_content="# Test")
+        agent.history_is_session = True
+        prompt = agent.get_system_prompt()
+        assert "standalone page" in prompt
+        assert "current active history" in prompt
+        assert "not attached" in prompt
+
+    def test_system_prompt_attached_history(self):
+        """System prompt has no standalone note when page has attached history."""
+        agent = PageAssistantAgent(self.deps, history_id=5, page_content="# Test")
+        prompt = agent.get_system_prompt()
+        assert "standalone page" not in prompt
+
+    @pytest.mark.asyncio
+    async def test_process_sets_session_history_from_context(self):
+        """process() with history_is_session=True enables history tools."""
+        agent = PageAssistantAgent(self.deps, page_content="# Test")
+
+        with mock.patch.object(agent, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = "Here are the datasets in your history."
+            mock_run.return_value = mock_result
+
+            response = await agent.process(
+                "What's in my history?",
+                context={"history_id": 5, "history_is_session": True},
+            )
+
+            assert agent.history_id == 5
+            assert agent.history_is_session is True
+            assert response.content is not None
+
+    def test_simple_prompt_session_history(self):
+        """Simple prompt fallback handles session history."""
+        self.mock_config.ai_model = "deepseek-r1"
+        agent = PageAssistantAgent(self.deps, history_id=5, page_content="# Test doc")
+        agent.history_is_session = True
+        prompt = agent._get_simple_system_prompt()
+        assert "standalone page" in prompt
+        assert "current active history" in prompt
+        assert "resolve_hid" in prompt
+
+    def test_simple_prompt_no_history(self):
+        """Simple prompt fallback for no history."""
+        self.mock_config.ai_model = "deepseek-r1"
+        agent = PageAssistantAgent(self.deps, history_id=None, page_content="# Test doc")
+        prompt = agent._get_simple_system_prompt()
+        assert "not associated with a history" in prompt
+        assert "not available" in prompt
+
 
 @pytestmark_live_llm
 class TestAgentUnitLiveLLM:
