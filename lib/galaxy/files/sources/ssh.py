@@ -51,11 +51,17 @@ class SshFilesSource(FsspecFilesSource[SshFileSourceTemplateConfiguration, SshFi
         cache_options: CacheOptionsDictType,  # Ignored because fsspec's SFTPFileSystem does not support caching options.
     ):
         config = context.config
+        # config.pkey is an Optional[str] (raw private-key content). Passing a
+        # non-None string to paramiko's SSHClient.connect() makes it attempt
+        # public-key auth with a str instead of a PKey object, which raises
+        # AttributeError.  Until proper key-object parsing is implemented, skip
+        # pkey when the value is absent.
+        pkey: Optional[str] = config.pkey if config.pkey and config.pkey != "None" else None
         fs = SFTPFileSystem(
             host=config.host,
             username=config.user,
             password=config.passwd,
-            pkey=config.pkey,
+            pkey=pkey,
             port=config.port,
             timeout=config.timeout,
             compress=config.compress,

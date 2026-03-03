@@ -8,7 +8,6 @@
     host: "{{ variables.host }}"
     user: "{{ variables.user }}"
     passwd: "{{ secrets.password }}"
-    pkey: "{{ secrets.pkey }}"
     port: "{{ variables.port }}"
     path: "{{ variables.path }}"
     writable: "{{ variables.writable }}"
@@ -38,15 +37,9 @@
       type: integer
       optional: true
       help: Port used to connect to the SSH server.
-      default: 22
   secrets:
     password:
       label: SSH Password
       optional: true
       help: |
         Password to connect to SSH server with.
-    pkey:
-      label: Public key
-      optional: true
-      help: |
-        Public key.
