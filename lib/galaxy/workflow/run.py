@@ -631,7 +631,7 @@ class WorkflowProgress:
         if not invocation.has_input_for_step(step.id):
             content = outputs.get("output", NO_REPLACEMENT)
             if content is not NO_REPLACEMENT:
-                log.info("ADDING INPUT FOR STEP %s: %s", step.id, content, exc_info=True)
+                log.debug("Adding input for step %s: %s", step.id, content)
                 invocation.add_input(content, step.id)
         self.set_step_outputs(invocation_step, outputs, already_persisted=already_persisted)
 
