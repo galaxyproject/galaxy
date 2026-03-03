@@ -22,6 +22,7 @@ describe("uploadMethodRegistry", () => {
         it("returns the matching config for a known ID", () => {
             const config = getUploadMethod("local-file");
             expect(config?.id).toBe("local-file");
+            expect(config?.name).toBe("Upload from Computer");
         });
 
         it("returns undefined for an unknown ID", () => {
