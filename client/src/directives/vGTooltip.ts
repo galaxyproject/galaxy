@@ -57,17 +57,6 @@ const TOOLTIP_STYLES = `
     top: 0;
     left: 0;
 }
-.g-tooltip-d:not(.g-tooltip-show) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
 .g-tooltip-d.g-tooltip-danger {
     background-color: var(--color-red-700, #dc3545);
 }
@@ -159,20 +148,24 @@ function getContent(el: HTMLElement, bindingValue: unknown): string {
 function createTooltipEl(isDanger: boolean): { tooltipEl: HTMLElement; arrowEl: HTMLElement; contentEl: HTMLElement } {
     injectStyles();
     const tooltipEl = document.createElement("div");
-    tooltipEl.className = "g-tooltip-d";
     tooltipEl.setAttribute("role", "tooltip");
+    // "tooltip" class matches bootstrap-vue's rendered element for Selenium selector compat
+    tooltipEl.className = "tooltip g-tooltip-d";
     if (isDanger) {
         tooltipEl.classList.add("g-tooltip-danger");
     }
 
+    // "tooltip-inner" matches bootstrap-vue's inner element for Selenium selector compat
     const contentEl = document.createElement("div");
+    contentEl.className = "tooltip-inner";
     tooltipEl.appendChild(contentEl);
 
     const arrowEl = document.createElement("div");
     arrowEl.className = "g-tooltip-d-arrow";
     tooltipEl.appendChild(arrowEl);
 
-    document.body.appendChild(tooltipEl);
+    // Don't append to body yet — add on show, remove on hide,
+    // so Selenium wait_for_absent(".tooltip") works correctly
     return { tooltipEl, arrowEl, contentEl };
 }
 
@@ -204,7 +197,11 @@ function showTooltip(el: HTMLElement) {
         return;
     }
 
-    if ((el as HTMLButtonElement).disabled || el.getAttribute("disabled") === "true") {
+    if (
+        (el as HTMLButtonElement).disabled ||
+        el.getAttribute("disabled") === "true" ||
+        el.getAttribute("aria-disabled") === "true"
+    ) {
         return;
     }
 
@@ -213,7 +210,10 @@ function showTooltip(el: HTMLElement) {
         return;
     }
 
-    state.tooltipEl.classList.add("g-tooltip-show");
+    if (!state.tooltipEl.isConnected) {
+        document.body.appendChild(state.tooltipEl);
+    }
+
     state.cleanupAutoUpdate = autoUpdate(el, state.tooltipEl, () => updatePosition(el, state));
 }
 
@@ -223,9 +223,12 @@ function hideTooltip(el: HTMLElement) {
         return;
     }
 
-    state.tooltipEl.classList.remove("g-tooltip-show");
     state.cleanupAutoUpdate?.();
     state.cleanupAutoUpdate = null;
+
+    if (state.tooltipEl.isConnected) {
+        state.tooltipEl.remove();
+    }
 }
 
 function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg?: string): () => void {
@@ -304,6 +307,12 @@ export const vGTooltip: DirectiveOptions = {
         }
         updateContent(el, binding.value, state);
         state.placement = getPlacement(binding.modifiers || {}, binding.value);
+
+        // Hide if content became empty
+        const content = state.isHtml ? state.contentEl.innerHTML : state.contentEl.textContent;
+        if (!content && state.tooltipEl.isConnected) {
+            hideTooltip(el);
+        }
     },
 
     unbind(el) {
