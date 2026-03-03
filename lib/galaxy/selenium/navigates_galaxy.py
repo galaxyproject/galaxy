@@ -2216,7 +2216,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.pages.history.unsaved_indicator.assert_absent_or_hidden_after_transitions()
 
     def history_page_manage(self):
-        """Click 'Manage History Pages' button to return to page list."""
+        """Click 'This History's Pages' button to return to page list."""
         self.components.pages.history.manage_button.wait_for_and_click()
         self.components.pages.history.list.wait_for_visible()
 

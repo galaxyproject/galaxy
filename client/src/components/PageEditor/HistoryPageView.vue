@@ -134,7 +134,7 @@ function handleBack() {
                 data-description="page display toolbar">
                 <BButton variant="link" size="sm" data-description="page manage button" @click="handleBack">
                     <FontAwesomeIcon :icon="faArrowLeft" />
-                    Manage History Pages
+                    This History's Pages
                 </BButton>
                 <span class="flex-grow-1 text-center font-weight-bold">
                     {{ store.currentTitle || "Untitled Page" }}

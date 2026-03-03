@@ -193,7 +193,7 @@ function handleRevisionRestore(revisionId: string) {
                 data-description="page display toolbar">
                 <BButton variant="link" size="sm" data-description="page back button" @click="handleBack">
                     <FontAwesomeIcon :icon="faArrowLeft" />
-                    {{ historyId ? "Manage History Pages" : "Back to Pages" }}
+                    {{ historyId ? "This History's Pages" : "Back to Pages" }}
                 </BButton>
                 <span class="flex-grow-1 text-center font-weight-bold">
                     {{ store.currentTitle || "Untitled Page" }}
@@ -231,7 +231,7 @@ function handleRevisionRestore(revisionId: string) {
                 data-description="page editor toolbar">
                 <BButton variant="link" size="sm" data-description="page back button" @click="handleBack">
                     <FontAwesomeIcon :icon="faArrowLeft" />
-                    {{ historyId ? "Manage History Pages" : "Back to Pages" }}
+                    {{ historyId ? "This History's Pages" : "Back to Pages" }}
                 </BButton>
                 <ClickToEdit
                     :value="store.currentTitle || 'Untitled Page'"

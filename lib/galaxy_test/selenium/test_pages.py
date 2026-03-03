@@ -171,8 +171,8 @@ class TestPages(SeleniumTestCase):
         self.components.pages.history.permissions_button.wait_for_visible()
         self.components.pages.history.save_view_button.wait_for_visible()
 
-        # Back button says "Back to Pages" not "Manage History Pages"
+        # Back button says "Back to Pages" not "This History's Pages"
         back_text = self.components.pages.history.back_button.wait_for_text()
         assert "Back to Pages" in back_text
-        assert "Manage History Pages" not in back_text
+        assert "This History's Pages" not in back_text
         self.screenshot("standalone_toolbar_controls")

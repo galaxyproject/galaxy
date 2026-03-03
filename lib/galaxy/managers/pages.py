@@ -268,7 +268,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
             content = payload.content or ""
             # Auto-title from history name if not provided
             if not payload.title or payload.title == "":
-                payload.title = history.name
+                payload.title = "Unnamed History Page"
         else:
             if not payload.title:
                 raise exceptions.RequestParameterInvalidException("title is required for non-history pages")
