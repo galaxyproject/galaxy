@@ -145,7 +145,7 @@ const TabTitleContent = defineComponent({
                 const nodes = props.tab.titleRenderer();
                 return nodes.length === 1 ? nodes[0] : h("span", nodes);
             }
-            return h("span", props.tab.title || "");
+            return props.tab.title || "";
         };
     },
 });
