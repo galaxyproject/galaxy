@@ -2650,6 +2650,7 @@ class BaseWorkflowPopulator(BasePopulator):
         raw_yaml: bool = False,
         use_cached_job: bool = False,
         copy_inputs_to_history: bool = False,
+        job_dir: Optional[str] = None,
     ):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
         workflow_populator = self
@@ -2683,9 +2684,33 @@ class BaseWorkflowPopulator(BasePopulator):
         replacement_parameters = test_data_dict.pop("replacement_parameters", {})
         if history_id is None:
             history_id = self.dataset_populator.new_history()
-        inputs, label_map, has_uploads = load_data_dict(
-            history_id, test_data_dict, self.dataset_populator, self.dataset_collection_populator
-        )
+        if _uses_class_syntax(test_data_dict):
+            # Copy because galactic_job_json() mutates the dict in-place
+            job_copy = dict(test_data_dict)
+            # Extract raw parameters before staging — galactic_job_json
+            # doesn't understand type: raw and would misinterpret them
+            raw_params = {}
+            for k, v in list(job_copy.items()):
+                if isinstance(v, dict) and v.get("type") == "raw":
+                    raw_params[k] = v["value"]
+                    del job_copy[k]
+            staged_job, datasets = stage_inputs(
+                self.dataset_populator.galaxy_interactor,
+                history_id,
+                job_copy,
+                use_path_paste=False,
+                job_dir=job_dir,
+            )
+            if datasets:
+                self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            staged_job.update(raw_params)
+            label_map = staged_job
+            inputs = staged_job
+            has_uploads = bool(datasets)
+        else:
+            inputs, label_map, has_uploads = load_data_dict(
+                history_id, test_data_dict, self.dataset_populator, self.dataset_collection_populator
+            )
         workflow_request: dict[str, Any] = dict(
             history=f"hist_id={history_id}",
             workflow_id=workflow_id,
@@ -3952,6 +3977,16 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
         return create_response
 
 
+def _uses_class_syntax(test_data_dict: dict) -> bool:
+    """Detect Planemo-style class: Collection/File syntax in test data."""
+    for value in test_data_dict.values():
+        if isinstance(value, dict) and "class" in value:
+            return True
+        if isinstance(value, list):  # CWL list shorthand
+            return True
+    return False
+
+
 LoadDataDictResponseT = tuple[dict[str, Any], dict[str, Any], bool]
 
 
@@ -4075,6 +4110,17 @@ def stage_inputs(
     job_dir: Optional[str] = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Alternative to load_data_dict that uses production-style workflow inputs."""
+    test_data_resolver = TestDataResolver()
+
+    def resolve_data(filename):
+        result = galaxy_interactor._find_in_test_data_directories(filename)
+        if result and os.path.exists(result):
+            return result
+        try:
+            return test_data_resolver.get_filename(filename)
+        except Exception:
+            return None
+
     kwds = {}
     if job_dir is not None:
         kwds["job_dir"] = job_dir
@@ -4084,7 +4130,7 @@ def stage_inputs(
         job=job,
         use_path_paste=use_path_paste,
         to_posix_lines=to_posix_lines,
-        resolve_data=galaxy_interactor._find_in_test_data_directories,
+        resolve_data=resolve_data,
         **kwds,
     )
 
@@ -4745,6 +4791,15 @@ class TargetHistory:
                 self._history_id, contents=contents, direct_upload=True, wait=True
             )
         )
+
+    def with_sample_sheet(self, contents: Optional[ListContentsDescription] = None) -> "HasSrcDict":
+        if contents is None:
+            contents = [("foo", "text for foo element")]
+        create_response = self._dataset_collection_populator.create_sample_sheet(
+            self._history_id, contents=contents, column_definitions=[], rows={c[0]: [] for c in contents}
+        )
+        api_asserts.assert_status_code_is_ok(create_response)
+        return HasSrcDict("hdca", create_response.json())
 
     def with_example_list_of_pairs(self) -> "HasSrcDict":
         return HasSrcDict("hdca", self._dataset_collection_populator.example_list_of_pairs(self._history_id))

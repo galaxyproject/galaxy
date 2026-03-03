@@ -1,10 +1,28 @@
-- doc: | 
+- doc: |
     Test that a basic list:list:list parameter is consumed directly by the tool
     and not mapped over.
   job:
     input:
-      type: collection
+      class: Collection
       collection_type: list:list:list
+      elements:
+        - identifier: test_level_2
+          class: Collection
+          type: list:list
+          elements:
+            - identifier: test_level_1
+              class: Collection
+              type: list
+              elements:
+                - identifier: data1
+                  class: File
+                  contents: "TestData123"
+                - identifier: data2
+                  class: File
+                  contents: "TestData123"
+                - identifier: data3
+                  class: File
+                  contents: "TestData123"
   outputs:
     out:
       asserts:
@@ -13,12 +31,34 @@
       - that: has_text
         text: "collection_type<list:list>"
 
-- doc: | 
+- doc: |
     Test that mapping over a list:list:list input parameter.
   job:
     input:
-      type: collection
+      class: Collection
       collection_type: list:list:list:list
+      elements:
+        - identifier: test_level_3
+          class: Collection
+          type: list:list:list
+          elements:
+            - identifier: test_level_2
+              class: Collection
+              type: list:list
+              elements:
+                - identifier: test_level_1
+                  class: Collection
+                  type: list
+                  elements:
+                    - identifier: data1
+                      class: File
+                      contents: "TestData123"
+                    - identifier: data2
+                      class: File
+                      contents: "TestData123"
+                    - identifier: data3
+                      class: File
+                      contents: "TestData123"
   outputs:
     out:
       class: Collection

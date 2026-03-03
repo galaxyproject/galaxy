@@ -40,6 +40,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
+from galaxy.model.dataset_collections.adapters import PromoteCollectionElementToCollectionAdapter
 from galaxy.model.dataset_collections.query import HistoryQuery
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
@@ -638,6 +639,20 @@ class WorkflowModule:
 
                 subcollection_type_description = history_query.can_map_over(data) or None
                 if subcollection_type_description:
+                    # Translate paired_or_unpaired to concrete mapping type for
+                    # flat collections. Mirrors logic in basic.py:2675-2679 that
+                    # the API tool execution path uses.
+                    _sub_ct = subcollection_type_description.collection_type
+                    _hdca_ct = data.collection.collection_type
+                    if _sub_ct == "paired_or_unpaired" and not _hdca_ct.endswith("paired_or_unpaired"):
+                        if _hdca_ct.endswith("paired"):
+                            subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
+                                "paired"
+                            )
+                        else:
+                            subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
+                                "single_datasets"
+                            )
                     subcollection_type_list = subcollection_type_description.collection_type.split(":")
                     for collection_type in reversed(subcollection_type_list):
                         if type_list:
@@ -2414,9 +2429,25 @@ class ToolModule(WorkflowModule):
             def callback(input, prefixed_name: str, **kwargs):
                 input_dict = all_inputs_by_name[prefixed_name]
 
-                replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
+                replacement: Union[model.Dataset, NoReplacement, PromoteCollectionElementToCollectionAdapter] = (
+                    NO_REPLACEMENT
+                )
                 if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
                     replacement = iteration_elements[prefixed_name]  # noqa: B023
+                    # When mapping flat collections over paired_or_unpaired via
+                    # single_datasets, wrap each element in an adapter so the
+                    # tool sees a paired_or_unpaired collection.
+                    if (
+                        collection_info  # noqa: B023
+                        and isinstance(replacement, model.DatasetCollectionElement)
+                        and not replacement.child_collection
+                    ):
+                        mapping_type = collection_info.subcollection_mapping_type(prefixed_name)  # noqa: B023
+                        if (
+                            hasattr(mapping_type, "collection_type")
+                            and mapping_type.collection_type == "single_datasets"
+                        ):
+                            replacement = PromoteCollectionElementToCollectionAdapter(replacement)
                 else:
                     replacement = progress.replacement_for_input(trans, step, input_dict)
 

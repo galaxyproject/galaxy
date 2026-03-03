@@ -218,7 +218,7 @@ def _check_collection_type(v: str) -> str:
         raise ValueError("Invalid empty collection_type specified.")
     collection_levels = v.split(":")
     for collection_level in collection_levels:
-        if collection_level not in ["list", "paired"]:
+        if collection_level not in ["list", "paired", "paired_or_unpaired", "record", "sample_sheet"]:
             raise ValueError(f"Invalid collection_type specified [{v}]")
     return v
 

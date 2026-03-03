@@ -5,15 +5,17 @@
     string.
   job:
     input:
-      type: collection
+      class: Collection
       collection_type: list
       elements:
         - identifier: the_example_2
-          content: '"ex2"'
-          ext: 'expression.json'
+          class: File
+          contents: '"ex2"'
+          filetype: 'expression.json'
         - identifier: the_example_5
-          content: '"ex5"'
-          ext: 'expression.json'
+          class: File
+          contents: '"ex5"'
+          filetype: 'expression.json'
   outputs:
     output:
       class: Collection

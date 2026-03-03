@@ -70,6 +70,7 @@ class TestWorkflow(ApiTestCase):
                     yaml_content,
                     test_data=test_job["job"],
                     history_id=history_id,
+                    job_dir=str(workflow_path.parent),
                 )
                 if TEST_WORKFLOW_AFTER_RERUN:
                     run_summary = self.workflow_populator.rerun(run_summary)
