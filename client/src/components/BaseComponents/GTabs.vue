@@ -141,8 +141,8 @@ const TabTitleContent = defineComponent({
     },
     setup(props) {
         return () => {
-            if (props.tab.titleRenderer) {
-                const nodes = props.tab.titleRenderer();
+            const nodes = props.tab.titleRenderer?.();
+            if (nodes && nodes.length > 0) {
                 return nodes.length === 1 ? nodes[0] : h("span", nodes);
             }
             return props.tab.title || "";
@@ -183,7 +183,8 @@ const TabTitleContent = defineComponent({
                         :aria-disabled="tab.disabled"
                         v-bind="tab.titleLinkAttributes"
                         @click.prevent="!tab.disabled && setActive(index)">
-                        <TabTitleContent :tab="tab" />
+                        <TabTitleContent v-if="tab.titleRenderer" :tab="tab" />
+                        <template v-else>{{ tab.title }}</template>
                     </a>
                 </li>
             </ul>
@@ -210,7 +211,8 @@ const TabTitleContent = defineComponent({
                     :data-tab-title="tab.title"
                     v-bind="tab.titleLinkAttributes"
                     @click.prevent="!tab.disabled && setActive(index)">
-                    <TabTitleContent :tab="tab" />
+                    <TabTitleContent v-if="tab.titleRenderer" :tab="tab" />
+                    <template v-else>{{ tab.title }}</template>
                 </a>
             </li>
         </ul>
