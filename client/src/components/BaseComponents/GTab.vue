@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, inject, onBeforeUnmount, onMounted, ref, useSlots, watch } from "vue";
+import { computed, inject, onBeforeUnmount, onMounted, ref, useSlots, watch } from "vue";
 
 import type { TabRegistration, TabsContext } from "./GTabs.vue";
 
@@ -58,7 +58,7 @@ function titleRenderer() {
     if (slots.title) {
         return slots.title();
     }
-    return props.title ? [h("span", props.title)] : [];
+    return undefined;
 }
 
 function buildRegistration(): TabRegistration {
