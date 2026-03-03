@@ -82,7 +82,7 @@ Use block syntax for visual embeds (images, tables, dataset cards). Use inline s
 | `history_dataset_as_image`           | Embedded image [inline-capable]    | Plots, charts, visual outputs                                                 |
 | `history_dataset_as_table`           | Formatted table                    | Tabular results; supports `compact`, `title`, `footer`, `show_column_headers` |
 | `history_dataset_embedded`           | Raw content (datatype-dependent)   | Small text/HTML outputs                                                       |
-| `history_dataset_collection_display` | Collection browser                 | Paired/list collections (uses history_dataset_collection_id=ID)               |
+| `history_dataset_collection_display` | Collection browser                 | Paired/list collections (uses history_dataset_collection_id=ID); for image collections, prefer `history_dataset_as_image` instead |
 | `history_dataset_index`              | Composite file listing             | Multi-file composite datasets                                                 |
 | `history_dataset_info`               | Dataset "info" metadata            | Tool output metadata                                                          |
 | `history_dataset_link`               | Download link                      | Inline reference with custom `label`                                          |
