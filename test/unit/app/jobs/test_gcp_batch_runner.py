@@ -4,8 +4,8 @@ import pytest
 
 from galaxy.jobs.runners.util.gcp_batch import (
     convert_cpu_to_milli,
+    convert_duration_to_seconds,
     convert_memory_to_mib,
-    convert_to_duration,
     DEFAULT_MAX_RUN_DURATION,
     parse_docker_volumes_param,
     parse_volume_spec,
@@ -196,13 +196,13 @@ class TestParseDockerVolumesParam:
         assert result == '-v "/cvmfs/data.galaxyproject.org:/cvmfs/data.galaxyproject.org:ro"'
 
 
-class TestConvertToDuration:
-    """Tests for convert_to_duration helper function."""
+class TestConvertDurationToSeconds:
+    """Tests for convert_duration_to_seconds helper function."""
 
     @pytest.mark.parametrize(
         "input_value,expected",
         [
-            ("3600s", "3600s"),  # seconds suffix passthrough
+            ("3600s", "3600s"),  # seconds suffix
             ("86400s", "86400s"),  # larger seconds value
             ("0s", "0s"),  # zero seconds
             ("30m", "1800s"),  # minutes to seconds
@@ -228,8 +228,8 @@ class TestConvertToDuration:
             ("qqd", DEFAULT_MAX_RUN_DURATION),  # invalid with d suffix -> default
         ],
     )
-    def test_convert_to_duration(self, input_value, expected):
-        result = convert_to_duration(input_value)
+    def test_convert_duration_to_seconds(self, input_value, expected):
+        result = convert_duration_to_seconds(input_value)
         assert result == expected
 
 
@@ -291,7 +291,7 @@ class TestResolveMaxRunDuration:
         assert result == "172800s"
 
     def test_destination_max_run_duration_normalizes_format(self):
-        """Duration values are normalized through convert_to_duration."""
+        """Duration values are normalized through convert_duration_to_seconds."""
         result = resolve_max_run_duration(
             destination_params={"max_run_duration": "48h"},
             runner_params={},

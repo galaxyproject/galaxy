@@ -3,6 +3,8 @@
 import logging
 import re
 
+from humanfriendly import parse_timespan
+
 log = logging.getLogger(__name__)
 
 # Default values for GCP Batch runner configuration
@@ -181,57 +183,25 @@ def convert_memory_to_mib(memory_str):
 DEFAULT_MAX_RUN_DURATION = "86400s"
 
 
-def convert_to_duration(value):
+def convert_duration_to_seconds(duration_str) -> str:
     """
     Convert a duration value to GCP Batch duration format (e.g., '3600s').
 
     Accepts:
         - Duration string with suffix: '3600s', '60m', '2h', '1d'
+        - Human-friendly strings: '1.5 hours', '2 days'
         - Numeric string or number (treated as seconds): '3600', 3600
+
+    Returns:
+        Duration string in GCP Batch format (e.g., '3600s').
     """
-    if not value:
+    if not duration_str:
         return DEFAULT_MAX_RUN_DURATION
-
-    value_str = str(value).strip()
-
-    # Already has a unit suffix
-    if value_str.endswith("s"):
-        try:
-            seconds = int(float(value_str[:-1]))
-            return f"{seconds}s"
-        except ValueError:
-            log.warning("Invalid duration format: %s, using default", value_str)
-            return DEFAULT_MAX_RUN_DURATION
-    elif value_str.endswith("m"):
-        try:
-            seconds = int(float(value_str[:-1]) * 60)
-            return f"{seconds}s"
-        except ValueError:
-            log.warning("Invalid duration format: %s, using default", value_str)
-            return DEFAULT_MAX_RUN_DURATION
-    elif value_str.endswith("h"):
-        try:
-            seconds = int(float(value_str[:-1]) * 3600)
-            return f"{seconds}s"
-        except ValueError:
-            log.warning("Invalid duration format: %s, using default", value_str)
-            return DEFAULT_MAX_RUN_DURATION
-    elif value_str.endswith("d"):
-        try:
-            seconds = int(float(value_str[:-1]) * 86400)
-            return f"{seconds}s"
-        except ValueError:
-            log.warning("Invalid duration format: %s, using default", value_str)
-            return DEFAULT_MAX_RUN_DURATION
-
-    # Plain number — treat as seconds
     try:
-        seconds = int(float(value_str))
-        return f"{seconds}s"
-    except ValueError:
-        log.warning("Invalid duration format: %s, using default", value_str)
+        return f"{int(parse_timespan(str(duration_str)))}s"
+    except Exception:
+        log.warning("Invalid duration format: %s, using default %s", duration_str, DEFAULT_MAX_RUN_DURATION)
         return DEFAULT_MAX_RUN_DURATION
-
 
 def resolve_max_run_duration(destination_params, runner_params, resource_params):
     """
@@ -252,15 +222,15 @@ def resolve_max_run_duration(destination_params, runner_params, resource_params)
         Duration string in GCP Batch format (e.g., '86400s')
     """
     if resource_params.get("walltime"):
-        return convert_to_duration(resource_params["walltime"])
+        return convert_duration_to_seconds(resource_params["walltime"])
 
     if "max_run_duration" in destination_params:
-        return convert_to_duration(destination_params["max_run_duration"])
+        return convert_duration_to_seconds(destination_params["max_run_duration"])
 
     if "walltime" in destination_params:
-        return convert_to_duration(destination_params["walltime"])
+        return convert_duration_to_seconds(destination_params["walltime"])
 
-    return convert_to_duration(runner_params.get("max_run_duration", DEFAULT_MAX_RUN_DURATION))
+    return convert_duration_to_seconds(runner_params.get("max_run_duration", DEFAULT_MAX_RUN_DURATION))
 
 
 def compute_machine_type(cpu_milli, memory_mib, machine_type_family="n2"):
