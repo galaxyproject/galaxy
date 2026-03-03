@@ -121,20 +121,19 @@ class AgentRegistry:
         return [self.get_agent_info(agent_type) for agent_type in self._agents.keys()]
 
 
-# Global registry instance
-_global_registry = AgentRegistry()
+def build_default_registry() -> AgentRegistry:
+    """Create an AgentRegistry with all default Galaxy agents."""
+    from .base import AgentType
+    from .custom_tool import CustomToolAgent
+    from .error_analysis import ErrorAnalysisAgent
+    from .orchestrator import WorkflowOrchestratorAgent
+    from .router import QueryRouterAgent
+    from .tools import ToolRecommendationAgent
 
-
-def get_global_registry() -> AgentRegistry:
-    """Get the global agent registry instance."""
-    return _global_registry
-
-
-def register_agent(agent_type: str, agent_class: type[BaseGalaxyAgent], metadata: Optional[dict] = None):
-    """Register an agent in the global registry."""
-    _global_registry.register(agent_type, agent_class, metadata)
-
-
-def get_agent(agent_type: str, deps: GalaxyAgentDependencies) -> BaseGalaxyAgent:
-    """Create an agent from the global registry."""
-    return _global_registry.get_agent(agent_type, deps)
+    registry = AgentRegistry()
+    registry.register(AgentType.ROUTER, QueryRouterAgent)
+    registry.register(AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent)
+    registry.register(AgentType.CUSTOM_TOOL, CustomToolAgent)
+    registry.register(AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
+    registry.register(AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)
+    return registry
