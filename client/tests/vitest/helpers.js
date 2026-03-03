@@ -4,7 +4,7 @@
 import { createLocalVue } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
 import { PiniaVuePlugin } from "pinia";
-import { expect, test, vi } from "vitest";
+import { expect, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { localizationPlugin } from "@/components/plugins/localization";
@@ -34,6 +34,7 @@ export function getLocalVue(instrumentLocalization = false) {
     localVue.use(localizationPlugin, l);
     localVue.use(vueRxShortcutPlugin);
     localVue.directive("b-tooltip", mockedDirective);
+    localVue.directive("g-tooltip", mockedDirective);
     localVue.directive("b-popover", mockedDirective);
     return localVue;
 }
