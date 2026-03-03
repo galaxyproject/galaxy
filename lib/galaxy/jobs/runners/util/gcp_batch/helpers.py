@@ -203,6 +203,7 @@ def convert_duration_to_seconds(duration_str) -> str:
         log.warning("Invalid duration format: %s, using default %s", duration_str, DEFAULT_MAX_RUN_DURATION)
         return DEFAULT_MAX_RUN_DURATION
 
+
 def resolve_max_run_duration(destination_params, runner_params, resource_params):
     """
     Resolve the maximum run duration from multiple configuration sources.

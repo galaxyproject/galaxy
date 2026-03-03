@@ -6,8 +6,8 @@ from galaxy.util.resources import resource_string
 from .helpers import (
     compute_machine_type,
     convert_cpu_to_milli,
-    convert_memory_to_mib,
     convert_duration_to_seconds,
+    convert_memory_to_mib,
     DEFAULT_CPU_MILLI,
     DEFAULT_CVMFS_DOCKER_VOLUME,
     DEFAULT_MAX_RUN_DURATION,
