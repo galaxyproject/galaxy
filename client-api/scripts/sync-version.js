@@ -3,7 +3,7 @@
 /**
  * Galaxy Client API Version Synchronization Script
  *
- * Reads Galaxy's version.py and updates package.json with a semver-compatible version.
+ * Reads Galaxy's version/__init__.py and updates package.json with a semver-compatible version.
  */
 
 import fs from "fs";
@@ -17,10 +17,10 @@ const galaxyRoot = process.env.GALAXY_ROOT || path.resolve(__dirname, "../..");
 const clientApiRoot = path.resolve(__dirname, "..");
 
 // File paths
-const galaxyVersionPath = path.join(galaxyRoot, "lib/galaxy/version.py");
+const galaxyVersionPath = path.join(galaxyRoot, "lib/galaxy/version/__init__.py");
 const packageJsonPath = path.join(clientApiRoot, "package.json");
 
-// Check if Galaxy version.py exists
+// Check if Galaxy version/__init__.py exists
 if (!fs.existsSync(galaxyVersionPath)) {
     console.error(`Galaxy version file not found at ${galaxyVersionPath}`);
     process.exit(1);
@@ -32,7 +32,7 @@ const majorMatch = versionPy.match(/VERSION_MAJOR\s*=\s*"([^"]+)"/);
 const minorMatch = versionPy.match(/VERSION_MINOR\s*=\s*"([^"]+)"/);
 
 if (!majorMatch) {
-    console.error("Could not find VERSION_MAJOR in version.py");
+    console.error("Could not find VERSION_MAJOR in version/__init__.py");
     process.exit(1);
 }
 

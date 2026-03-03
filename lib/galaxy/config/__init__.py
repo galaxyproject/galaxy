@@ -54,7 +54,7 @@ from galaxy.util.resources import (
     resource_path,
 )
 from galaxy.util.themes import flatten_theme
-from ..version import (
+from galaxy.version import (
     VERSION_MAJOR,
     VERSION_MINOR,
 )
