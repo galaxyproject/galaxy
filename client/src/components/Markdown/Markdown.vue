@@ -99,6 +99,8 @@ onMounted(() => {
                         {{ pageTitle }}
                     </Heading>
                     <div>
+                        <slot name="extra-actions" />
+
                         <template v-if="effectiveExportLink">
                             <GButton
                                 v-if="directDownloadLink"

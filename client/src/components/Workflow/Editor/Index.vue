@@ -269,7 +269,7 @@ import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText } from "boots
 import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
-import { generateAIReport } from "@/api/chat";
+import { generateAIWorkflowReport } from "@/api/chat";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { ConfirmDialog, useConfirmDialog } from "@/composables/confirmDialog";
@@ -1113,7 +1113,7 @@ export default {
 
             this.onWorkflowMessage("Generating AI Report", "progress");
             try {
-                const { model, report, total_tokens } = await generateAIReport(this.id, this.version);
+                const { model, report, total_tokens } = await generateAIWorkflowReport(this.id, this.version);
                 this.onReportUpdate(report);
                 Toast.success(
                     `Report generated using ${model}${total_tokens ? `, total tokens used: ${total_tokens}` : ""}.`,

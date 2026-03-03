@@ -342,6 +342,33 @@ class ChatAPI:
         chat_response = self.chat_manager.set_feedback_for_job(trans, job.id, feedback)
         return chat_response.messages[0].feedback
 
+    @router.get("/api/chat/reports/invocation/{invocation_id}", unstable=True)
+    async def generate_invocation_report(
+        self,
+        invocation_id: str = Path(..., description="Invocation ID to generate the report for"),
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> WorkflowReportResponse:
+        """Generate a report for the specified invocation."""
+        decoded_id = trans.app.security.decode_id(invocation_id)
+        invocation = self.workflow_manager.get_invocation(
+            trans, decoded_id, check_ownership=False, check_accessible=True
+        )
+        workflow = invocation.workflow
+
+        if not HAS_AGENTS:
+            raise ConfigurationError("AI agent system is not available.")
+        assert WorkflowReportAgent is not None
+
+        deps = self.agent_service.create_dependencies(trans, user)
+        agent = WorkflowReportAgent(deps)
+        response = await agent.generate_invocation_report(workflow, invocation)
+        return WorkflowReportResponse(
+            report=response.content,
+            total_tokens=response.metadata.get("total_tokens"),
+            model=response.metadata.get("model"),
+        )
+
     @router.get("/api/chat/reports/workflow/{workflow_id}", unstable=True)
     async def generate_workflow_report(
         self,
@@ -368,7 +395,7 @@ class ChatAPI:
 
         deps = self.agent_service.create_dependencies(trans, user)
         agent = WorkflowReportAgent(deps)
-        response = await agent.generate_report(workflow)
+        response = await agent.generate_workflow_report(workflow)
         return WorkflowReportResponse(
             report=response.content,
             total_tokens=response.metadata.get("total_tokens"),

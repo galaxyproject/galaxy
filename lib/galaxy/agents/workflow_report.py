@@ -5,7 +5,10 @@ Workflow report agent for generating markdown reports from Galaxy workflows.
 import logging
 from pathlib import Path
 
-from galaxy.model import Workflow
+from galaxy.model import (
+    Workflow,
+    WorkflowInvocation,
+)
 from .base import (
     AgentResponse,
     GalaxyAgentDependencies,
@@ -25,6 +28,63 @@ class WorkflowReportAgent(SimpleGalaxyAgent):
     def get_system_prompt(self) -> str:
         prompt_path = Path(__file__).parent / "prompts" / "workflow_report.md"
         return prompt_path.read_text()
+
+    def _serialize_invocation(self, invocation: WorkflowInvocation) -> str:
+        """Serialize a WorkflowInvocation into a structured string for the LLM prompt.
+
+        Maps actual run state and outputs against the workflow's expected steps,
+        giving the LLM enough context to produce a post-run report.
+        """
+        lines = []
+
+        lines.append(f"Invocation state: {invocation.state}")
+        if invocation.history:
+            lines.append(f"History: {invocation.history.name}")
+
+        # Inputs used in this run
+        input_datasets = list(invocation.input_datasets)
+        input_collections = list(invocation.input_dataset_collections)
+        if input_datasets or input_collections:
+            lines.append("\nInputs used:")
+            for assoc in input_datasets:
+                label = assoc.workflow_step.label if assoc.workflow_step else assoc.name
+                dataset_name = assoc.dataset.name if assoc.dataset else "(unknown)"
+                lines.append(f"  - {label}: {dataset_name}")
+            for assoc in input_collections:
+                label = assoc.workflow_step.label if assoc.workflow_step else assoc.name
+                collection_name = assoc.dataset_collection.name if assoc.dataset_collection else "(unknown)"
+                lines.append(f"  - {label}: {collection_name} (collection)")
+
+        # Per-step run state — only labeled tool steps (matching the directive allowlist)
+        tool_invocation_steps = [
+            s
+            for s in invocation.steps
+            if s.workflow_step
+            and not s.workflow_step.is_input_type
+            and s.workflow_step.type == "tool"
+            and s.workflow_step.label
+        ]
+        if tool_invocation_steps:
+            lines.append("\nStep execution states:")
+            for step in sorted(tool_invocation_steps, key=lambda s: s.workflow_step.order_index):
+                label = step.workflow_step.label
+                lines.append(f"  - {label}: {step.state or 'unknown'}")
+
+        # Workflow-level outputs produced (these map to output= directives)
+        output_datasets = list(invocation.output_datasets)
+        output_collections = list(invocation.output_dataset_collections)
+        if output_datasets or output_collections:
+            lines.append("\nOutputs produced:")
+            for assoc in output_datasets:
+                label = assoc.workflow_output.label or assoc.workflow_output.output_name
+                dataset_name = assoc.dataset.name if assoc.dataset else "(unknown)"
+                lines.append(f"  - {label}: {dataset_name}")
+            for assoc in output_collections:
+                label = assoc.workflow_output.label or assoc.workflow_output.output_name
+                collection_name = assoc.dataset_collection.name if assoc.dataset_collection else "(unknown)"
+                lines.append(f"  - {label}: {collection_name} (collection)")
+
+        return "\n".join(lines)
 
     def _serialize_workflow(self, workflow: Workflow) -> str:
         """Serialize a Workflow into a structured string for the LLM prompt."""
@@ -88,7 +148,20 @@ class WorkflowReportAgent(SimpleGalaxyAgent):
         ]
         return "\n".join(lines)
 
-    async def generate_report(self, workflow: Workflow) -> AgentResponse:
+    async def generate_invocation_report(self, workflow: Workflow, invocation: WorkflowInvocation) -> AgentResponse:
+        """Generate a post-run markdown report for the given workflow invocation."""
+        serialized_workflow = self._serialize_workflow(workflow)
+        serialized_invocation = self._serialize_invocation(invocation)
+        allowlist = self._allowed_labels(workflow)
+        query = (
+            f"Generate a Galaxy invocation report for the following workflow run:\n\n"
+            f"## Workflow definition\n{serialized_workflow}\n\n"
+            f"## Run details\n{serialized_invocation}\n"
+            f"{allowlist}"
+        )
+        return await self.process(query)
+
+    async def generate_workflow_report(self, workflow: Workflow) -> AgentResponse:
         """Generate a markdown report for the given workflow."""
         serialized = self._serialize_workflow(workflow)
         allowlist = self._allowed_labels(workflow)
