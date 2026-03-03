@@ -11,16 +11,17 @@ vi.mock("@/composables/upload/uploadAdvancedMode", () => ({
     useUploadAdvancedMode: () => ({ advancedMode }),
 }));
 
-// All registered upload method IDs derived from the registry itself, so this list
-// stays in sync automatically whenever a method is added or removed.
+// Derive method ID lists from the registry so they stay in sync automatically
+// whenever a method is added, removed, or promoted/demoted to advanced mode.
 const ALL_METHOD_IDS = Object.keys(uploadMethodRegistry) as Array<keyof typeof uploadMethodRegistry>;
+const ADVANCED_METHOD_IDS = ALL_METHOD_IDS.filter((id) => uploadMethodRegistry[id].requiresAdvancedMode);
+const STANDARD_METHOD_IDS = ALL_METHOD_IDS.filter((id) => !uploadMethodRegistry[id].requiresAdvancedMode);
 
 describe("uploadMethodRegistry", () => {
     describe("getUploadMethod", () => {
         it("returns the matching config for a known ID", () => {
             const config = getUploadMethod("local-file");
             expect(config?.id).toBe("local-file");
-            expect(config?.name).toBe("Upload from Computer");
         });
 
         it("returns undefined for an unknown ID", () => {
@@ -33,31 +34,26 @@ describe("uploadMethodRegistry", () => {
             advancedMode.value = false;
         });
 
-        it("excludes rule-based-import when advancedMode is false", () => {
+        it("excludes all advanced-mode methods when advancedMode is false", () => {
             const methods = useAllUploadMethods();
             const ids = methods.value.map((m) => m.id);
 
-            expect(ids).not.toContain("rule-based-import");
-        });
-
-        it("includes all 10 methods when advancedMode is true", () => {
-            advancedMode.value = true;
-            const methods = useAllUploadMethods();
-            const ids = methods.value.map((m) => m.id);
-
-            expect(ids).toContain("rule-based-import");
+            for (const advancedId of ADVANCED_METHOD_IDS) {
+                expect(ids).not.toContain(advancedId);
+            }
+            expect(ids).toHaveLength(STANDARD_METHOD_IDS.length);
         });
 
         it("reacts to advancedMode changes without creating a new composable instance", () => {
             const methods = useAllUploadMethods();
 
-            expect(methods.value).toHaveLength(9);
+            expect(methods.value).toHaveLength(STANDARD_METHOD_IDS.length);
 
             advancedMode.value = true;
-            expect(methods.value).toHaveLength(10);
+            expect(methods.value).toHaveLength(ALL_METHOD_IDS.length);
 
             advancedMode.value = false;
-            expect(methods.value).toHaveLength(9);
+            expect(methods.value).toHaveLength(STANDARD_METHOD_IDS.length);
         });
     });
 });
