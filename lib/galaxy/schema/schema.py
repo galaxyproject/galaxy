@@ -3881,7 +3881,7 @@ class ChatPayload(Model):
         title="Context",
         description="The context for the chatbot.",
     )
-    exchange_id: Optional[int] = Field(
+    exchange_id: Optional[DecodedDatabaseIdField] = Field(
         default=None,
         title="Exchange ID",
         description="The ID of an existing chat exchange to continue.",
@@ -3914,7 +3914,7 @@ class ChatResponse(BaseModel):
         title="Agent Response",
         description="Full structured agent response with metadata and suggestions.",
     )
-    exchange_id: Optional[int] = Field(
+    exchange_id: Optional[EncodedDatabaseIdField] = Field(
         default=None,
         title="Exchange ID",
         description="The ID of the chat exchange for continuing conversations.",
@@ -3923,6 +3923,14 @@ class ChatResponse(BaseModel):
         default=None,
         title="Processing Time",
         description="Time taken to process the query in seconds.",
+    )
+
+
+class ChatExchangeBatchDeletePayload(Model):
+    ids: list[DecodedDatabaseIdField] = Field(
+        ...,
+        title="Exchange IDs",
+        description="List of chat exchange IDs to delete.",
     )
 
 

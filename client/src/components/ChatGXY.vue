@@ -44,7 +44,7 @@ interface Message {
 }
 
 interface ChatHistoryItem {
-    id: number;
+    id: string;
     query: string;
     response: string;
     agent_type: string;
@@ -62,7 +62,7 @@ const selectedAgentType = ref("auto");
 const showHistory = ref(false);
 const chatHistory = ref<ChatHistoryItem[]>([]);
 const loadingHistory = ref(false);
-const currentChatId = ref<number | null>(null);
+const currentChatId = ref<string | null>(null);
 const hasLoadedInitialChat = ref(false);
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
