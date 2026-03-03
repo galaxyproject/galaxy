@@ -273,6 +273,9 @@ release-create: ## Create a release branch
 
 release-create-point: release-create ## Create a point release
 
+mypy:
+	cd lib && mypy . ../test
+
 .PHONY: help
 
 help:

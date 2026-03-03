@@ -1,2 +1,2 @@
-include *.rst *.txt LICENSE */py.typed
+include *.rst *.txt LICENSE galaxy/*/py.typed
 graft galaxy/web/proxy/js/

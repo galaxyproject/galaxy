@@ -25,7 +25,7 @@ VERIFY_PACKAGES=(wheel packaging)
 
 BRANCH_CURR=$(git branch --show-current)
 
-: "${RELEASE_CURR:=$(grep '^VERSION_MAJOR' lib/galaxy/version.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/")}"
+: "${RELEASE_CURR:=$(grep '^VERSION_MAJOR' lib/galaxy/version/__init__.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/")}"
 RELEASE_NEXT=
 RELEASE_CURR_MINOR=
 RELEASE_CURR_MINOR_NEXT=
@@ -334,7 +334,7 @@ function _perform_forward_merge() {
         PUSH_BRANCHES+=("${next_local_branch}:${DEV_BRANCH}")
     fi
     git_checkout_temp "$next_local_branch" "$next_branch"
-    # This should necessarily result in conflicts merging version.py
+    # This should necessarily result in conflicts merging version/__init__.py
 	log_exec git merge -X ours -m "Merge branch 'release_${curr}' into 'release_${next}'" "$curr_local_branch"
     if $recurse; then
         _perform_forward_merge "$next"
@@ -422,12 +422,12 @@ function increment_minor() {
 
 
 function get_version_major() {
-    grep '^VERSION_MAJOR' lib/galaxy/version.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/"
+    grep '^VERSION_MAJOR' lib/galaxy/version/__init__.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/"
 }
 
 
 function get_version_minor() {
-    grep '^VERSION_MINOR' lib/galaxy/version.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/" | tr -d '[[:space:]]'
+    grep '^VERSION_MINOR' lib/galaxy/version/__init__.py | sed -E -e "s/^[^'\"]*['\"]([^'\"]*)['\"]$/\1/" | tr -d '[[:space:]]'
 }
 
 
@@ -447,8 +447,8 @@ function update_galaxy_version() {
     local key="$1"
     local val="$2"
     local match="${3:-.*}"
-    log "Updating lib/galaxy/version.py for ${key} = ${val}..."
-    sed_inplace -E -e "s/^${key} = ${match}/${key} = \"$val\"/" lib/galaxy/version.py
+    log "Updating lib/galaxy/version/__init__.py for ${key} = ${val}..."
+    sed_inplace -E -e "s/^${key} = ${match}/${key} = \"$val\"/" lib/galaxy/version/__init__.py
 }
 
 
@@ -517,8 +517,8 @@ function perform_version_update_dev() {
     [ "$RELEASE_TYPE" == 'initial' ] || [ "$RELEASE_TYPE" == 'point' ] || return 0
     log "Incrementing release version to '${RELEASE_CURR}.${RELEASE_CURR_MINOR_NEXT_DEV}' for development of next point release"
     update_galaxy_version 'VERSION_MINOR' "$RELEASE_CURR_MINOR_NEXT_DEV"
-    log_exec git diff --exit-code && { log_error 'Missing expected version.py changes'; exit 1; } || true
-    git add -- lib/galaxy/version.py
+    log_exec git diff --exit-code && { log_error 'Missing expected version/__init__.py changes'; exit 1; } || true
+    git add -- lib/galaxy/version/__init__.py
     update_package_versions
     git add -- packages/
     log_exec git commit -m "Update version to ${RELEASE_CURR}.${RELEASE_CURR_MINOR_NEXT_DEV}"
@@ -537,8 +537,8 @@ function create_release_rc_initial() {
 
     update_galaxy_version 'VERSION_MAJOR' "$RELEASE_CURR"
     update_galaxy_version 'VERSION_MINOR' "$RELEASE_CURR_MINOR_NEXT"
-    log_exec git diff --exit-code && { log_error 'Missing expected version.py changes'; exit 1; } || true
-    git add -- lib/galaxy/version.py
+    log_exec git diff --exit-code && { log_error 'Missing expected version/__init__.py changes'; exit 1; } || true
+    git add -- lib/galaxy/version/__init__.py
 
     perform_version_update
 
@@ -547,8 +547,8 @@ function create_release_rc_initial() {
 
     update_galaxy_version 'VERSION_MAJOR' "$RELEASE_NEXT"
     update_galaxy_version 'VERSION_MINOR' 'dev0'
-    log_exec git diff --exit-code && { log_error 'Missing expected version.py changes'; exit 1; } || true
-    git add -- lib/galaxy/version.py
+    log_exec git diff --exit-code && { log_error 'Missing expected version/__init__.py changes'; exit 1; } || true
+    git add -- lib/galaxy/version/__init__.py
     sed_inplace -e "s/^RELEASE_CURR:=.*/RELEASE_CURR:=${RELEASE_NEXT}/" Makefile
     log_exec git diff --exit-code && { log_error 'Missing expected Makefile changes'; exit 1; } || true
     git add -- Makefile
@@ -588,9 +588,9 @@ function create_release_local() {
     # Set the minor version to 0 and append the local version if the release version is not set (e.g. .0)
     update_galaxy_version 'VERSION_MINOR' "0+${RELEASE_LOCAL_VERSION}" 'None'
     update_galaxy_version 'VERSION_MINOR' "0+${RELEASE_LOCAL_VERSION}" '""'
-    log_exec git diff --exit-code && { log_error 'Missing expected version.py changes'; exit 1; } || true
+    log_exec git diff --exit-code && { log_error 'Missing expected version/__init__.py changes'; exit 1; } || true
     update_package_versions
-    ##git add -- lib/galaxy/version.py packages/*/galaxy/project_*.py
+    ##git add -- lib/galaxy/version/__init__.py packages/*/galaxy/project_*.py
     packages_make_all clean
     log 'Building packages (logs in packages/*/make-dist.log)...'
     packages_make_all dist
@@ -612,8 +612,8 @@ function create_release_normal() {
     test_forward_merge "$RELEASE_CURR"
 
     update_galaxy_version 'VERSION_MINOR' "$RELEASE_CURR_MINOR_NEXT"
-    log_exec git diff --exit-code && { log_error 'Missing expected version.py changes'; exit 1; } || true
-    git add -- lib/galaxy/version.py
+    log_exec git diff --exit-code && { log_error 'Missing expected version/__init__.py changes'; exit 1; } || true
+    git add -- lib/galaxy/version/__init__.py
 
     perform_version_update
     perform_stable_merge

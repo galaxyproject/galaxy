@@ -48,6 +48,7 @@ from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import expression
 from typing_extensions import Protocol
 
+from galaxy import model
 from galaxy.datatypes.registry import Registry
 from galaxy.exceptions import (
     MalformedContents,
@@ -122,7 +123,6 @@ from ..item_attrs import (
     add_item_annotation,
     get_item_annotation_str,
 )
-from ... import model
 
 if TYPE_CHECKING:
     from galaxy.managers.workflows import WorkflowContentsManager

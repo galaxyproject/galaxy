@@ -1,4 +1,4 @@
-include *.rst *.txt LICENSE */py.typed
+include *.rst *.txt LICENSE galaxy/*/py.typed
 include galaxy/carbon_emissions/carbon_intensity.csv
 include galaxy/dependencies/*.txt
 include galaxy/dependencies/*.sh

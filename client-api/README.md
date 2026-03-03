@@ -155,7 +155,7 @@ To work on this package:
 3. Synchronize the version with Galaxy:
 
     ```bash
-    # Update the version in package.json from Galaxy's version.py
+    # Update the version in package.json from Galaxy's version/__init__.py
     npm run sync-version
     ```
 
@@ -174,7 +174,7 @@ To work on this package:
 
 ### Version Synchronization
 
-This package maintains version parity with Galaxy to indicate API compatibility. The version number in `package.json` is derived from Galaxy's `lib/galaxy/version.py` file but formatted to comply with npm's semver requirements.
+This package maintains version parity with Galaxy to indicate API compatibility. The version number in `package.json` is derived from Galaxy's `lib/galaxy/version/__init__.py` file but formatted to comply with npm's semver requirements.
 
 **Important:** npm does not allow republishing the same version, even for development versions. When making changes to the client API during development:
 
@@ -201,7 +201,7 @@ npm run sync-version
 
 The script will:
 
-1. Read the version from Galaxy's `version.py` file
+1. Read the version from Galaxy's `version/__init__.py` file
 2. Convert it to npm-compatible semver format
 3. Update the version in `package.json` if different
 
