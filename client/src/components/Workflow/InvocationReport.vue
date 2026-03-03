@@ -26,7 +26,6 @@ const markdownConfig = ref({});
 const invocationMarkdown = ref<string | null>(null);
 const aiReportGenerated = ref(false);
 const aiReportLoading = ref(false);
-const reportKey = ref<"default" | "ai">("default");
 
 const exportUrl = computed(() => `/api/invocations/${props.invocationId}/report.pdf`);
 
@@ -52,7 +51,6 @@ async function generateAIReport() {
         );
 
         (markdownConfig.value as any).markdown = report;
-        reportKey.value = "ai"; // Force re-render of Markdown component to show updated report
         aiReportGenerated.value = true;
     } catch (error) {
         Toast.error("Failed to generate AI report.");
@@ -67,7 +65,6 @@ function onEdit() {
 
 function resetAIReport() {
     (markdownConfig.value as any).markdown = invocationMarkdown.value;
-    reportKey.value = "default"; // Force re-render of Markdown component to show original report
     aiReportGenerated.value = false;
 }
 
@@ -78,7 +75,7 @@ provide("invocationId", props.invocationId);
 <template>
     <Markdown
         v-if="isConfigLoaded"
-        :key="reportKey"
+        :key="aiReportGenerated"
         :markdown-config="markdownConfig"
         :enable_beta_markdown_export="config.enable_beta_markdown_export"
         :export-link="exportUrl"
