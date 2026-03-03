@@ -1,2 +1,0 @@
-include *.rst *.txt LICENSE galaxy/*/py.typed
-graft tool_shed/webapp/templates/

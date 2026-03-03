@@ -54,7 +54,7 @@ if [ "${PIP_CMD}" = 'python -m pip' ]; then
     ${PIP_CMD} install --upgrade pip setuptools wheel
 fi
 if [ $FOR_PULSAR -eq 0 ]; then
-    # shellcheck disable=SC2086 - word splitting is intentional for PIP_EXTRA_ARGS
+    # shellcheck disable=SC2086 # word splitting is intentional for PIP_EXTRA_ARGS
     ${PIP_CMD} install ${PIP_EXTRA_ARGS} -r ../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 fi
 
@@ -78,7 +78,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     cd "$package_dir"
 
     # Install extras (if needed)
-    # shellcheck disable=SC2086 - word splitting is intentional for PIP_EXTRA_ARGS
+    # shellcheck disable=SC2086 # word splitting is intentional for PIP_EXTRA_ARGS
     if [ "$package_dir" = "util" ]; then
         ${PIP_CMD} install ${PIP_EXTRA_ARGS} '.[image-util,template,jstree,config-template,test]'
     elif [ "$package_dir" = "tool_util" ]; then
@@ -95,11 +95,16 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
         marker_args=()
     fi
     # Ignore exit code 5 (no tests ran)
-    pytest "${marker_args[@]}" . || test $? -eq 5
+    if [ -d tests ] ; then pytest "${marker_args[@]}" tests || test $? -eq 5 ; fi
     if [ $FOR_PULSAR -eq 0 ]; then
         # make mypy uses uv now and so this legacy code should just run mypy
         # directly to use the venv we have already activated
-        mypy .
+        if [ -d tests ] ; then mypy tests ; fi
+        if [ -d src/galaxy ] ; then
+          for mod in $(cd src/galaxy; ls); do mypy -p "galaxy.${mod}"; done
+        fi
+        if [ -d src/tool_shed_client ] ; then mypy -p tool_shed_client ; fi
+        if [ -d src/tool_shed ] ; then mypy -p tool_shed ; fi
     fi
     cd ..
 done < $PACKAGE_LIST_FILE

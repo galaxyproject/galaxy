@@ -1,16 +1,19 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools"]
+requires = ["setuptools", "setuptools-scm>=8"]
 
 [project]
 dynamic = [
     "authors",
+    "classifiers",
     "dependencies",
     "description",
+    "keywords",
     "license",
     "optional-dependencies",
     "readme",
     "requires-python",
+    "scripts",
     "version",
 ]
 name = "galaxy-data"
