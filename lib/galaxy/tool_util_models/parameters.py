@@ -375,7 +375,7 @@ class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 
 DataSrcT = Literal["hda", "ldda"]
-MultiDataSrcT = Literal["hda", "ldda", "hdca"]
+MultiDataSrcT = Literal["hda", "ldda", "hdca", "dce"]
 # @jmchilton you meant CollectionSrcT - fix that at some point please.
 CollectionStrT = Literal["hdca"]
 # Internal collection source type - includes dce for subcollection mapping
@@ -409,6 +409,11 @@ class DataRequestLd(LegacyRequestModelAttributes):
 
 class DataRequestHdca(LegacyRequestModelAttributes):
     src: Literal["hdca"] = "hdca"
+    id: StrictStr
+
+
+class DataRequestDce(LegacyRequestModelAttributes):
+    src: Literal["dce"] = "dce"
     id: StrictStr
 
 
@@ -534,6 +539,7 @@ DataOrCollectionRequestAdapter: TypeAdapter[DataOrCollectionRequest] = TypeAdapt
 class BatchDataInstance(StrictModel):
     src: MultiDataSrcT
     id: StrictStr
+    map_over_type: Optional[str] = None
 
 
 def multi_data_discriminator(v: Any) -> str:
@@ -548,6 +554,8 @@ def multi_data_discriminator(v: Any) -> str:
             return "data_request_ldda"
         elif src == "hdca":
             return "data_request_hdca"
+        elif src == "dce":
+            return "data_request_dce"
         elif src == "url":
             return "data_request_uri"
     return ""
@@ -566,6 +574,7 @@ MultiDataInstance: Type = cast(
                 tag(DataRequestHda, "data_request_hda"),
                 tag(DataRequestLdda, "data_request_ldda"),
                 tag(DataRequestHdca, "data_request_hdca"),
+                tag(DataRequestDce, "data_request_dce"),
                 tag(DataRequestUri, "data_request_uri"),
                 tag(DataRequestCollectionUri, "data_request_collection_uri"),
             ]
@@ -588,6 +597,11 @@ class DataRequestInternalLdda(StrictModel):
 
 class DataRequestInternalHdca(StrictModel):
     src: Literal["hdca"]
+    id: StrictInt
+
+
+class DataRequestInternalDce(StrictModel):
+    src: Literal["dce"]
     id: StrictInt
 
 
@@ -865,6 +879,7 @@ DataRequestInternal: Type = cast(
                 tag(DataRequestInternalHda, "data_request_hda"),
                 tag(DataRequestInternalLdda, "data_request_ldda"),
                 tag(DataRequestInternalHdca, "data_request_hdca"),
+                tag(DataRequestInternalDce, "data_request_dce"),
                 tag(DataRequestUri, "data_request_uri"),
                 tag(DataRequestCollectionUri, "data_request_collection_uri"),
             ]
@@ -883,19 +898,27 @@ DataJobInternal = DataRequestInternalDereferenced
 class BatchDataInstanceInternal(StrictModel):
     src: MultiDataSrcT
     id: StrictInt
+    map_over_type: Optional[str] = None
 
 
 MultiDataInstanceInternal: Type = cast(
     Type,
     Annotated[
-        Union[DataRequestInternalHda, DataRequestInternalLdda, DataRequestInternalHdca, DataRequestUri],
+        Union[
+            DataRequestInternalHda,
+            DataRequestInternalLdda,
+            DataRequestInternalHdca,
+            DataRequestInternalDce,
+            DataRequestUri,
+        ],
         Field(discriminator="src"),
     ],
 )
 MultiDataInstanceInternalDereferenced: Type = cast(
     Type,
     Annotated[
-        Union[DataRequestInternalHda, DataRequestInternalLdda, DataRequestInternalHdca], Field(discriminator="src")
+        Union[DataRequestInternalHda, DataRequestInternalLdda, DataRequestInternalHdca, DataRequestInternalDce],
+        Field(discriminator="src"),
     ],
 )
 
@@ -1363,7 +1386,7 @@ class RulesMapping(StrictModel):
 
 class RulesModel(StrictModel):
     rules: List[Dict[str, Any]]
-    mappings: List[RulesMapping]
+    mapping: List[RulesMapping]
 
 
 class RulesParameterModel(BaseGalaxyToolParameterModelDefinition):

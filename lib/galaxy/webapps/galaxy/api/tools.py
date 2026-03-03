@@ -299,7 +299,7 @@ class FetchTools:
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> ToolRequestDetailedModel:
         tool_request = self._get_tool_request_or_raise_not_found(trans, id)
-        return tool_request_detailed_to_model(tool_request)
+        return tool_request_detailed_to_model(tool_request, trans.security)
 
     @router.get(
         "/api/tool_requests/{id}/state",

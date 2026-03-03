@@ -41,6 +41,7 @@ from galaxy.schema.history import (
     HistoryIndexQueryPayload,
     HistorySortByEnum,
 )
+from galaxy.schema.history_graph import HistoryGraphResponse
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
     AnyHistoryView,
@@ -330,6 +331,17 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
         return self.service.show(trans, serialization_params, history_id)
+
+    @router.get(
+        "/api/histories/{history_id}/graph",
+        summary="Returns a computational provenance graph for the history.",
+    )
+    def graph(
+        self,
+        history_id: HistoryIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> HistoryGraphResponse:
+        return self.service.graph(trans, history_id)
 
     @router.post(
         "/api/histories/{history_id}/prepare_store_download",
