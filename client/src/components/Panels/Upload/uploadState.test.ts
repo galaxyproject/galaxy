@@ -1,5 +1,5 @@
 import { suppressExpectedErrorMessages } from "@tests/vitest/helpers";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import type { CollectionConfig } from "@/composables/uploadQueue";
@@ -37,6 +37,10 @@ describe("useUploadState", () => {
     beforeEach(() => {
         state = useUploadState();
         state.clearAll();
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
 
     describe("initial state", () => {
@@ -276,6 +280,34 @@ describe("useUploadState", () => {
             expect(remainingIds).toContain(uploadingId);
             expect(remainingIds).toContain(erroredId);
             expect(remainingIds).not.toContain(completedId);
+        });
+
+        it("removes a completed batch after all its items are cleared", () => {
+            const id1 = state.addUploadItem(makePastedItem("a.txt"));
+            const id2 = state.addUploadItem(makePastedItem("b.txt"));
+            const batchId = state.addBatch(BATCH_CONFIG, [id1, id2]);
+            state.updateBatchStatus(batchId, "completed");
+            state.updateProgress(id1, 100);
+            state.updateProgress(id2, 100);
+
+            state.clearCompleted();
+
+            expect(state.activeBatches.value.find((b) => b.id === batchId)).toBeUndefined();
+        });
+
+        it("keeps a batch with at least one non-completed item after clearing", () => {
+            const completedId = state.addUploadItem(makePastedItem("done.txt"));
+            const uploadingId = state.addUploadItem(makePastedItem("active.txt"));
+            const batchId = state.addBatch(BATCH_CONFIG, [completedId, uploadingId]);
+            state.updateProgress(completedId, 100);
+            state.setStatus(uploadingId, "uploading");
+
+            state.clearCompleted();
+
+            // Batch stays because uploadingId is still active
+            expect(state.activeBatches.value.find((b) => b.id === batchId)).toBeDefined();
+            // But the completed item is gone
+            expect(state.activeItems.value.find((i) => i.id === completedId)).toBeUndefined();
         });
     });
 
