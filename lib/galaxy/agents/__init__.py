@@ -13,7 +13,10 @@ from .base import (
 from .custom_tool import CustomToolAgent
 from .error_analysis import ErrorAnalysisAgent
 from .orchestrator import WorkflowOrchestratorAgent
-from .registry import AgentRegistry
+from .registry import (
+    AgentRegistry,
+    build_default_registry,
+)
 from .router import QueryRouterAgent
 from .tools import ToolRecommendationAgent
 
@@ -22,19 +25,10 @@ __all__ = [
     "BaseGalaxyAgent",
     "GalaxyAgentDependencies",
     "AgentRegistry",
+    "build_default_registry",
     "QueryRouterAgent",
     "ErrorAnalysisAgent",
     "CustomToolAgent",
     "WorkflowOrchestratorAgent",
     "ToolRecommendationAgent",
 ]
-
-# Global agent registry instance
-agent_registry = AgentRegistry()
-
-# Register default agents
-agent_registry.register(AgentType.ROUTER, QueryRouterAgent)
-agent_registry.register(AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent)
-agent_registry.register(AgentType.CUSTOM_TOOL, CustomToolAgent)
-agent_registry.register(AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
-agent_registry.register(AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)
