@@ -26,8 +26,8 @@ class GenericModel(BaseModel):
         return f"{class_name}{suffix}"
 
     @classmethod
-    def __get_pydantic_core_schema__(cls, *args, **kwargs):
-        result = super().__get_pydantic_core_schema__(*args, **kwargs)
+    def __get_pydantic_core_schema__(cls, source, handler):
+        result = handler(source)
         ref_to_name[result["ref"]] = cls.__name__
         return result
 
