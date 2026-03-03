@@ -239,6 +239,15 @@ describe("useUploadQueue", () => {
             expect(item?.status).toBe("error");
             expect(item?.error).toBeTruthy();
         });
+
+        it("marks item as error when enqueued with invalid content (no server call needed)", async () => {
+            const [id] = queue.enqueue([makePastedItem({ content: "   " })]);
+            await flushPromises();
+
+            const item = queue.state.activeItems.value.find((i) => i.id === id);
+            expect(item?.status).toBe("error");
+            expect(item?.error).toMatch(/No content provided/);
+        });
     });
 
     describe("enqueue — direct collection batch", () => {
