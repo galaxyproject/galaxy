@@ -494,6 +494,57 @@ class TestHistoryPages(SeleniumTestCase):
 
     @selenium_test
     @managed_history
+    def test_revision_diff_view(self):
+        """Two diff modes: compare to previous and compare to current."""
+        history_id = self.current_history_id()
+        nb = self.dataset_populator.new_history_page(
+            history_id, title="Diff Test", content="# V1\n\nOriginal content"
+        )
+        self.dataset_populator.update_history_page(
+            nb["id"], content="# V1\n\nModified content\n\nNew section"
+        )
+
+        self.navigate_to_history_pages()
+        self.components.pages.history.item.wait_for_and_click()
+        self.components.pages.history.editor.wait_for_visible()
+
+        self.history_page_open_revisions()
+        self.history_page_assert_revision_count(2)
+
+        # Click newest revision (first in list)
+        items = self.components.pages.history.revision_item.all()
+        items[0].click()
+        self.components.pages.history.revision_view.wait_for_visible()
+
+        # Newest: "Compare to Current" should be hidden, "Compare to Previous" visible
+        self.components.pages.history.revision_compare_current_button.assert_absent_or_hidden()
+        self.components.pages.history.revision_compare_previous_button.wait_for_visible()
+
+        # Click "Compare to Previous"
+        self.components.pages.history.revision_compare_previous_button.wait_for_and_click()
+        self.components.pages.history.revision_diff_view.wait_for_visible()
+
+        # Diff should show changes from V1 to V2
+        diff_text = self.components.pages.history.revision_diff_view.wait_for_visible().text
+        assert "Modified content" in diff_text or "New section" in diff_text
+
+        # Go back, click oldest revision
+        self.components.pages.history.revision_back_button.wait_for_and_click()
+        items = self.components.pages.history.revision_item.all()
+        items[-1].click()
+        self.components.pages.history.revision_view.wait_for_visible()
+
+        # Oldest: "Compare to Previous" should be hidden, "Compare to Current" visible
+        self.components.pages.history.revision_compare_previous_button.assert_absent_or_hidden()
+        self.components.pages.history.revision_compare_current_button.wait_for_visible()
+
+        # Click "Compare to Current"
+        self.components.pages.history.revision_compare_current_button.wait_for_and_click()
+        self.components.pages.history.revision_diff_view.wait_for_visible()
+        self.screenshot("history_page_revision_diff_view")
+
+    @selenium_test
+    @managed_history
     def test_history_toolbar_shows_history_controls_not_standalone(self):
         """History-attached editor shows correct toolbar: no permissions, no save-view."""
         history_id = self.current_history_id()

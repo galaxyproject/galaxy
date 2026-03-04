@@ -855,7 +855,7 @@ describe("usePageEditorStore", () => {
 
         it("clearSelectedRevision resets to 'preview'", () => {
             const store = usePageEditorStore();
-            store.revisionViewMode = "changes";
+            store.revisionViewMode = "changes_current";
 
             store.clearSelectedRevision();
 
@@ -864,12 +864,12 @@ describe("usePageEditorStore", () => {
 
         it("clearRevisionState resets to 'preview'", () => {
             const store = usePageEditorStore();
-            store.revisionViewMode = "changes";
+            store.revisionViewMode = "changes_current";
 
             store.$patch({ showRevisions: true });
             store.clearSelectedRevision();
             // clearSelectedRevision resets it; set it again to test clearRevisionState
-            store.revisionViewMode = "changes";
+            store.revisionViewMode = "changes_current";
 
             // clearRevisionState is called indirectly via clearCurrentPage
             store.clearCurrentPage();
@@ -879,11 +879,119 @@ describe("usePageEditorStore", () => {
 
         it("$reset resets to 'preview'", () => {
             const store = usePageEditorStore();
-            store.revisionViewMode = "changes";
+            store.revisionViewMode = "changes_current";
 
             store.$reset();
 
             expect(store.revisionViewMode).toBe("preview");
+        });
+    });
+
+    describe("isNewestRevision / isOldestRevision", () => {
+        it("isNewestRevision true when selected is first in desc-sorted revisions", () => {
+            const store = usePageEditorStore();
+            store.$patch({
+                revisions: [
+                    { id: "rev-2", page_id: TEST_PAGE_ID, edit_source: "user", create_time: "2025-01-02", update_time: "2025-01-02" },
+                    { id: "rev-1", page_id: TEST_PAGE_ID, edit_source: "user", create_time: "2025-01-01", update_time: "2025-01-01" },
+                ],
+            });
+            store.selectedRevision = { id: "rev-2", page_id: TEST_PAGE_ID, content: "", content_format: "markdown", edit_source: "user", create_time: "2025-01-02", update_time: "2025-01-02" } as any;
+            expect(store.isNewestRevision).toBe(true);
+            expect(store.isOldestRevision).toBe(false);
+        });
+
+        it("isOldestRevision true when selected is last in desc-sorted revisions", () => {
+            const store = usePageEditorStore();
+            store.$patch({
+                revisions: [
+                    { id: "rev-2", page_id: TEST_PAGE_ID, edit_source: "user", create_time: "2025-01-02", update_time: "2025-01-02" },
+                    { id: "rev-1", page_id: TEST_PAGE_ID, edit_source: "user", create_time: "2025-01-01", update_time: "2025-01-01" },
+                ],
+            });
+            store.selectedRevision = { id: "rev-1", page_id: TEST_PAGE_ID, content: "", content_format: "markdown", edit_source: "user", create_time: "2025-01-01", update_time: "2025-01-01" } as any;
+            expect(store.isNewestRevision).toBe(false);
+            expect(store.isOldestRevision).toBe(true);
+        });
+
+        it("both false when selected is a middle revision", () => {
+            const store = usePageEditorStore();
+            store.$patch({
+                revisions: [
+                    { id: "rev-3", page_id: TEST_PAGE_ID, edit_source: "user", create_time: "2025-01-03", update_time: "2025-01-03" },
+                    { id: "rev-2", page_id: TEST_PAGE_ID, edit_source: "user", create_time: "2025-01-02", update_time: "2025-01-02" },
+                    { id: "rev-1", page_id: TEST_PAGE_ID, edit_source: "user", create_time: "2025-01-01", update_time: "2025-01-01" },
+                ],
+            });
+            store.selectedRevision = { id: "rev-2", page_id: TEST_PAGE_ID, content: "", content_format: "markdown", edit_source: "user", create_time: "2025-01-02", update_time: "2025-01-02" } as any;
+            expect(store.isNewestRevision).toBe(false);
+            expect(store.isOldestRevision).toBe(false);
+        });
+
+        it("both false when no selectedRevision", () => {
+            const store = usePageEditorStore();
+            expect(store.isNewestRevision).toBe(false);
+            expect(store.isOldestRevision).toBe(false);
+        });
+    });
+
+    describe("previousRevisionContent", () => {
+        it("is set after loadRevision when predecessor exists", async () => {
+            const revSummaries = [
+                { id: "rev-2", page_id: TEST_PAGE_ID, edit_source: "user", create_time: "2025-01-02", update_time: "2025-01-02" },
+                { id: "rev-1", page_id: TEST_PAGE_ID, edit_source: "user", create_time: "2025-01-01", update_time: "2025-01-01" },
+            ];
+            const rev2Details = { ...revSummaries[0], content: "# V2", content_format: "markdown", title: "" };
+            const rev1Details = { ...revSummaries[1], content: "# V1", content_format: "markdown", title: "" };
+            server.use(
+                http.get("/api/pages/:id/revisions/:revisionId", ({ params, response }) => {
+                    if (params["revisionId"] === "rev-2") {
+                        return response(200).json(rev2Details);
+                    }
+                    return response(200).json(rev1Details);
+                }) as any,
+            );
+            const store = usePageEditorStore();
+            store.currentPage = TEST_PAGE_DETAILS;
+            store.$patch({ revisions: revSummaries });
+
+            await store.loadRevision("rev-2");
+
+            expect(store.selectedRevision?.id).toBe("rev-2");
+            expect(store.previousRevisionContent).toBe("# V1");
+        });
+
+        it("is null when selected is the oldest (no predecessor)", async () => {
+            const revSummaries = [
+                { id: "rev-1", page_id: TEST_PAGE_ID, edit_source: "user", create_time: "2025-01-01", update_time: "2025-01-01" },
+            ];
+            const rev1Details = { ...revSummaries[0], content: "# V1", content_format: "markdown", title: "" };
+            server.use(
+                http.get("/api/pages/:id/revisions/:revisionId", ({ response }) => {
+                    return response(200).json(rev1Details);
+                }) as any,
+            );
+            const store = usePageEditorStore();
+            store.currentPage = TEST_PAGE_DETAILS;
+            store.$patch({ revisions: revSummaries });
+
+            await store.loadRevision("rev-1");
+
+            expect(store.previousRevisionContent).toBeNull();
+        });
+
+        it("is cleared by clearSelectedRevision", () => {
+            const store = usePageEditorStore();
+            store.$patch({ previousRevisionContent: "old" } as any);
+            store.clearSelectedRevision();
+            expect(store.previousRevisionContent).toBeNull();
+        });
+
+        it("is cleared by clearRevisionState (via clearCurrentPage)", () => {
+            const store = usePageEditorStore();
+            store.$patch({ previousRevisionContent: "old" } as any);
+            store.clearCurrentPage();
+            expect(store.previousRevisionContent).toBeNull();
         });
     });
 

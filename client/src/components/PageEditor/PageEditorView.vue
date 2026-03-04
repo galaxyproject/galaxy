@@ -220,6 +220,9 @@ function handleRevisionRestore(revisionId: string) {
             <PageRevisionView
                 :revision="store.selectedRevision"
                 :current-content="store.currentContent"
+                :previous-content="store.previousRevisionContent"
+                :is-newest-revision="store.isNewestRevision"
+                :is-oldest-revision="store.isOldestRevision"
                 :view-mode="store.revisionViewMode"
                 :is-reverting="store.isReverting"
                 @back="store.clearSelectedRevision"

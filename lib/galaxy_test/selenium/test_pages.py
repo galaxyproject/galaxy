@@ -157,6 +157,50 @@ class TestPages(SeleniumTestCase):
 
     @selenium_test
     @managed_history
+    def test_standalone_page_revision_diff(self):
+        """Two diff modes on standalone page: compare to previous and compare to current."""
+        slug = self._get_random_name(prefix="diff")
+        page = self.dataset_populator.new_page(slug=slug, content_format="markdown", content="# Start\n\nAlpha")
+        self.dataset_populator.update_history_page(page["id"], content="# Start\n\nBeta")
+
+        self.navigate_to_page_editor(page["id"])
+
+        self.history_page_open_revisions()
+        self.history_page_assert_revision_count(2)
+
+        # Click newest revision
+        items = self.components.pages.history.revision_item.all()
+        items[0].click()
+        self.components.pages.history.revision_view.wait_for_visible()
+
+        # Newest: "Compare to Current" hidden, "Compare to Previous" visible
+        self.components.pages.history.revision_compare_current_button.assert_absent_or_hidden()
+        self.components.pages.history.revision_compare_previous_button.wait_for_visible()
+
+        # Click "Compare to Previous"
+        self.components.pages.history.revision_compare_previous_button.wait_for_and_click()
+        self.components.pages.history.revision_diff_view.wait_for_visible()
+
+        diff_text = self.components.pages.history.revision_diff_view.wait_for_visible().text
+        assert "Beta" in diff_text or "Alpha" in diff_text
+
+        # Go back, click oldest revision
+        self.components.pages.history.revision_back_button.wait_for_and_click()
+        items = self.components.pages.history.revision_item.all()
+        items[-1].click()
+        self.components.pages.history.revision_view.wait_for_visible()
+
+        # Oldest: "Compare to Previous" hidden, "Compare to Current" visible
+        self.components.pages.history.revision_compare_previous_button.assert_absent_or_hidden()
+        self.components.pages.history.revision_compare_current_button.wait_for_visible()
+
+        # Click "Compare to Current"
+        self.components.pages.history.revision_compare_current_button.wait_for_and_click()
+        self.components.pages.history.revision_diff_view.wait_for_visible()
+        self.screenshot("standalone_page_revision_diff")
+
+    @selenium_test
+    @managed_history
     def test_standalone_toolbar_shows_permissions_not_history_controls(self):
         """Standalone editor shows correct toolbar: permissions, save-view, no history text."""
         slug = self._get_random_name(prefix="toolbar")

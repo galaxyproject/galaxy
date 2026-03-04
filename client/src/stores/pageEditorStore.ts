@@ -55,7 +55,8 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
     const isLoadingRevisions = ref(false);
     const isLoadingRevision = ref(false);
     const isReverting = ref(false);
-    const revisionViewMode = ref<"preview" | "changes">("preview");
+    const previousRevisionContent = ref<string | null>(null);
+    const revisionViewMode = ref<"preview" | "changes_current" | "changes_previous">("preview");
     const showRevisions = ref(false);
     const showChatPanel = ref(false);
 
@@ -67,6 +68,14 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
     const canSave = computed(() => isDirty.value && !isSaving.value);
     const revisionCount = computed(() => revisions.value.length);
     const hasRevisions = computed(() => revisions.value.length > 1);
+    const isNewestRevision = computed(
+        () => selectedRevision.value !== null && selectedRevision.value.id === revisions.value[0]?.id,
+    );
+    const isOldestRevision = computed(
+        () =>
+            selectedRevision.value !== null &&
+            selectedRevision.value.id === revisions.value[revisions.value.length - 1]?.id,
+    );
 
     async function loadPages(newHistoryId: string) {
         historyId.value = newHistoryId;
@@ -337,6 +346,15 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
         isLoadingRevision.value = true;
         try {
             selectedRevision.value = await fetchPageRevision(currentPage.value.id, revisionId);
+            // Fetch predecessor revision content
+            const idx = revisions.value.findIndex((r) => r.id === revisionId);
+            if (idx >= 0 && idx + 1 < revisions.value.length) {
+                const predecessorId = revisions.value[idx + 1]!.id;
+                const predecessor = await fetchPageRevision(currentPage.value.id, predecessorId);
+                previousRevisionContent.value = predecessor.content || "";
+            } else {
+                previousRevisionContent.value = null;
+            }
         } catch (e: unknown) {
             error.value = errorMessageAsString(e) || ERROR_MESSAGES.loadRevision;
         } finally {
@@ -383,12 +401,14 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
 
     function clearSelectedRevision() {
         selectedRevision.value = null;
+        previousRevisionContent.value = null;
         revisionViewMode.value = "preview";
     }
 
     function clearRevisionState() {
         revisions.value = [];
         selectedRevision.value = null;
+        previousRevisionContent.value = null;
         isLoadingRevisions.value = false;
         isLoadingRevision.value = false;
         isReverting.value = false;
@@ -458,6 +478,9 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
         revisionViewMode,
         revisions,
         selectedRevision,
+        previousRevisionContent,
+        isNewestRevision,
+        isOldestRevision,
         isLoadingRevisions,
         isLoadingRevision,
         isReverting,

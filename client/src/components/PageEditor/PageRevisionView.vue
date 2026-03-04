@@ -10,17 +10,22 @@ import { computeLineDiff, diffStats } from "./sectionDiffUtils";
 
 import Markdown from "@/components/Markdown/Markdown.vue";
 
+type ViewMode = "preview" | "changes_current" | "changes_previous";
+
 const props = defineProps<{
     revision: PageRevisionDetails;
     currentContent: string;
-    viewMode: "preview" | "changes";
+    previousContent: string | null;
+    isNewestRevision: boolean;
+    isOldestRevision: boolean;
+    viewMode: ViewMode;
     isReverting: boolean;
 }>();
 
 const emit = defineEmits<{
     (e: "back"): void;
     (e: "restore", revisionId: string): void;
-    (e: "update:viewMode", mode: "preview" | "changes"): void;
+    (e: "update:viewMode", mode: ViewMode): void;
 }>();
 
 const markdownConfig = computed(() => ({
@@ -32,9 +37,19 @@ const markdownConfig = computed(() => ({
 }));
 
 const revisionContent = computed(() => props.revision.content || "");
-const changes = computed(() => computeLineDiff(revisionContent.value, props.currentContent));
-const stats = computed(() => diffStats(changes.value));
-const hasNoChanges = computed(() => revisionContent.value === props.currentContent);
+const currentChanges = computed(() => computeLineDiff(revisionContent.value, props.currentContent));
+const currentStats = computed(() => diffStats(currentChanges.value));
+const hasNoCurrentChanges = computed(() => revisionContent.value === props.currentContent);
+
+const previousChanges = computed(() => computeLineDiff(props.previousContent ?? "", revisionContent.value));
+const previousStats = computed(() => diffStats(previousChanges.value));
+const hasNoPreviousChanges = computed(() => (props.previousContent ?? "") === revisionContent.value);
+
+const activeChanges = computed(() => (props.viewMode === "changes_current" ? currentChanges.value : previousChanges.value));
+const activeStats = computed(() => (props.viewMode === "changes_current" ? currentStats.value : previousStats.value));
+const activeHasNoChanges = computed(() =>
+    props.viewMode === "changes_current" ? hasNoCurrentChanges.value : hasNoPreviousChanges.value,
+);
 </script>
 
 <template>
@@ -54,13 +69,24 @@ const hasNoChanges = computed(() => revisionContent.value === props.currentConte
                     Preview
                 </BButton>
                 <BButton
-                    :variant="viewMode === 'changes' ? 'primary' : 'outline-primary'"
+                    v-if="!isNewestRevision"
+                    :variant="viewMode === 'changes_current' ? 'primary' : 'outline-primary'"
                     size="sm"
                     class="ml-1"
-                    data-description="revision changes button"
-                    @click="emit('update:viewMode', 'changes')">
+                    data-description="revision compare current button"
+                    @click="emit('update:viewMode', 'changes_current')">
                     <FontAwesomeIcon :icon="faExchangeAlt" />
-                    Changes
+                    Compare to Current
+                </BButton>
+                <BButton
+                    v-if="!isOldestRevision"
+                    :variant="viewMode === 'changes_previous' ? 'primary' : 'outline-primary'"
+                    size="sm"
+                    class="ml-1"
+                    data-description="revision compare previous button"
+                    @click="emit('update:viewMode', 'changes_previous')">
+                    <FontAwesomeIcon :icon="faExchangeAlt" />
+                    Compare to Previous
                 </BButton>
             </span>
             <span class="flex-grow-1"></span>
@@ -80,23 +106,30 @@ const hasNoChanges = computed(() => revisionContent.value === props.currentConte
                 :markdown-config="markdownConfig"
                 :read-only="true"
                 download-endpoint="" />
-            <div v-else class="revision-diff-view" data-description="revision diff view">
-                <div v-if="hasNoChanges" class="p-3 text-muted text-center" data-description="revision no changes">
-                    No changes — this revision matches the current content.
+            <div
+                v-else-if="viewMode === 'changes_current' || viewMode === 'changes_previous'"
+                class="revision-diff-view"
+                data-description="revision diff view">
+                <div
+                    v-if="activeHasNoChanges"
+                    class="p-3 text-muted text-center"
+                    data-description="revision no changes">
+                    No changes — this revision matches the
+                    {{ viewMode === "changes_current" ? "current content" : "previous revision" }}.
                 </div>
                 <template v-else>
                     <div class="diff-header d-flex align-items-center p-2">
                         <span class="diff-stats">
-                            <span class="text-success">+{{ stats.additions }}</span>
+                            <span class="text-success">+{{ activeStats.additions }}</span>
                             <span class="mx-1">/</span>
-                            <span class="text-danger">-{{ stats.deletions }}</span>
+                            <span class="text-danger">-{{ activeStats.deletions }}</span>
                             lines
                         </span>
                     </div>
                     <div class="diff-content">
-                        <div v-for="(change, idx) in changes" :key="idx" class="diff-block">
+                        <div v-for="(change, idx) in activeChanges" :key="idx" class="diff-block">
                             <pre
-                                v-for="(line, li) in change.value.split('\n').slice(0, -1)"
+                                v-for="(line, li) in change.value.replace(/\n$/, '').split('\n')"
                                 :key="`${idx}-${li}`"
                                 :class="{
                                     'diff-line': true,

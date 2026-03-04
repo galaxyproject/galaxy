@@ -713,6 +713,21 @@ pages:
       chat_button:
         type: data-description
         selector: 'page chat button'
+      revision_compare_current_button:
+        type: data-description
+        selector: 'revision compare current button'
+      revision_compare_previous_button:
+        type: data-description
+        selector: 'revision compare previous button'
+      revision_preview_button_mode:
+        type: data-description
+        selector: 'revision preview button'
+      revision_diff_view:
+        type: data-description
+        selector: 'revision diff view'
+      revision_no_changes:
+        type: data-description
+        selector: 'revision no changes'
 
 login:
   selectors:
