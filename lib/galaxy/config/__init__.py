@@ -118,9 +118,9 @@ LOGGING_CONFIG_DEFAULT: dict[str, Any] = {
             "level": "ERROR",
             "qualname": "py.warnings",
         },
-        "celery.utils.functional": {
+        "celery": {
             "level": "INFO",
-            "qualname": "celery.utils.functional",
+            "qualname": "celery",
         },
         "sentry_sdk.errors": {
             "level": "INFO",
