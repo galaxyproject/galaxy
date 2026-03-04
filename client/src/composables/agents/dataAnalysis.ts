@@ -665,28 +665,33 @@ export function useDataAnalysisAgent(
             if (blob.size === 0) {
                 continue;
             }
-            const formData = new FormData();
-            formData.append("file", blob, artifact.name || "artifact");
-            if (artifact.name) {
-                formData.append("name", artifact.name);
+
+            const body = {
+                file: blob as any, // schema types this as string (OpenAPI format:binary limitation); passing Blob directly works at runtime via multipart/form-data
+                name: artifact.name || "artifact",
+                mime_type: artifact.mime_type || blob.type || "application/octet-stream",
+                size: blob.size,
+            };
+
+            const { data: uploadedPayload, error } = await GalaxyApi().POST(
+                `/api/chat/exchange/{exchange_id}/artifacts`,
+                {
+                    params: {
+                        path: { exchange_id: currentChatId.value },
+                    },
+                    body,
+                    credentials: "include",
+                },
+            );
+
+            if (error) {
+                throw new Error(errorMessageAsString(error, "Failed to upload artifact"));
             }
-            formData.append("mime_type", artifact.mime_type || blob.type || "application/octet-stream");
-            formData.append("size", String(blob.size));
 
-            // TODO: Can we not use GalaxyApi here?
-            const response = await fetch(`${getAppRoot()}api/chat/exchange/${currentChatId.value}/artifacts`, {
-                method: "POST",
-                body: formData,
-                credentials: "include",
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                const description = errorText || response.statusText || "Unknown error";
-                throw new Error(`Artifact upload failed (${response.status}): ${description}`);
+            if (!uploadedPayload) {
+                continue;
             }
 
-            const uploadedPayload = (await response.json()) as UploadedArtifact;
             if (uploadedPayload.download_url) {
                 uploadedPayload.download_url = resolveDownloadUrl(uploadedPayload.download_url);
             }
