@@ -44,7 +44,10 @@ from galaxy.managers.context import (
 from galaxy.managers.jobs import JobManager
 from galaxy.model import HistoryDatasetAssociation, User
 from galaxy.schema.agents import AgentResponse, UploadedArtifact
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    encode_id,
+)
 from galaxy.schema.schema import (
     ChatExchangeBatchDeletePayload,
     ChatPayload,
