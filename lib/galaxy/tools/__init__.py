@@ -1321,6 +1321,13 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         """
         if self.require_login and user is None:
             return False
+        if self.dynamic_tool and not self.dynamic_tool.public:
+            if user is None:
+                return False
+            try:
+                self.app.dynamic_tool_manager.ensure_can_use_unprivileged_tool(user)
+            except Exception:
+                return False
         return True
 
     def parse(self, tool_source: ToolSource, guid: Optional[str] = None, dynamic: bool = False) -> None:
