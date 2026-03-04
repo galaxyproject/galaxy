@@ -485,6 +485,7 @@ function popOutToScratchbook() {
                         outline
                         size="small"
                         :pressed="usingDataAnalysisAgent"
+                        tooltip
                         :title="
                             !usingDataAnalysisAgent
                                 ? 'Include datasets from my current history in the conversation context'
@@ -494,7 +495,7 @@ function popOutToScratchbook() {
                         <FontAwesomeIcon :icon="faMicroscope" fixed-width />
                         Include Datasets
                     </GButton>
-                    <GButton color="blue" outline size="small" title="Start New Chat" @click="startNewChat">
+                    <GButton color="blue" outline size="small" tooltip title="Start New Chat" @click="startNewChat">
                         <FontAwesomeIcon :icon="faPlus" fixed-width />
                         New
                     </GButton>
@@ -502,11 +503,12 @@ function popOutToScratchbook() {
                         v-if="currentChatId"
                         color="red"
                         outline
+                        tooltip
                         title="Delete this conversation"
                         @click="deleteCurrentChat">
                         <FontAwesomeIcon :icon="faTrash" fixed-width />
                     </GButton>
-                    <GButton color="blue" outline title="Open in floating window" @click="popOutToScratchbook">
+                    <GButton color="blue" outline tooltip title="Open in floating window" @click="popOutToScratchbook">
                         <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                     </GButton>
                 </div>
