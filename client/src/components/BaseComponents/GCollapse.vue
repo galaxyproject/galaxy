@@ -3,6 +3,9 @@
  * Collapsible content container with animated height transition.
  * Replaces bootstrap-vue's BCollapse for regular (non-navbar) usage.
  *
+ * Uses the same transition approach as Bootstrap: animates the `height`
+ * property and hides with `display: none` when fully collapsed.
+ *
  * Supports both one-way `:visible` prop and two-way `v-model` binding.
  * Accordion groups ensure only one collapse is open at a time.
  */
@@ -38,6 +41,7 @@ const emit = defineEmits<{
 
 const contentRef = ref<HTMLElement | null>(null);
 const internalOpen = ref(false);
+const transitioning = ref(false);
 
 const isOpen = computed(() => {
     if (props.value !== undefined) {
@@ -55,33 +59,34 @@ function closeSelf() {
 }
 
 onMounted(() => {
-    const el = contentRef.value;
-    if (!el) {
-        return;
+    if (isOpen.value && props.accordion) {
+        accordionRegistry.set(props.accordion, closeSelf);
     }
-    if (isOpen.value) {
-        // Already open on mount — show at full height without animating
-        el.style.maxHeight = "none";
-        el.style.overflow = "visible";
-    }
-    // If closed, the CSS max-height: 0 handles initial state
 });
 
-function onTransitionEnd() {
+function onTransitionEnd(e: TransitionEvent) {
     const el = contentRef.value;
-    if (!el) {
+    if (!el || e.target !== el) {
         return;
     }
     if (isOpen.value) {
-        // Release height constraint so dynamic content can grow after opening
-        el.style.maxHeight = "none";
-        el.style.overflow = "visible";
+        el.style.height = "";
+        transitioning.value = false;
         emit("shown");
     } else {
+        transitioning.value = false;
         emit("hidden");
     }
 }
 
+// Pre-flush watcher: set transitioning BEFORE the DOM update so class
+// bindings include .g-collapsing (which keeps the element visible during
+// the close animation instead of jumping to display:none).
+watch(isOpen, () => {
+    transitioning.value = true;
+});
+
+// Post-flush watcher: run the animation AFTER Vue has applied the new classes.
 watch(
     isOpen,
     (open) => {
@@ -98,19 +103,14 @@ watch(
                 }
                 accordionRegistry.set(props.accordion, closeSelf);
             }
-            // Keep overflow hidden during animation so content doesn't escape the container
-            el.style.overflow = "hidden";
-            // Explicitly start from 0 so the transition always plays from the closed position
-            el.style.maxHeight = "0";
-            el.offsetHeight; // force reflow to commit the 0 before transitioning to target height
-            el.style.maxHeight = el.scrollHeight + "px";
+            el.style.height = "0px";
+            el.offsetHeight; // force reflow
+            el.style.height = el.scrollHeight + "px";
         } else {
             emit("hide");
-            el.style.overflow = "hidden";
-            // Explicitly set current height so the transition has a defined start point
-            el.style.maxHeight = el.scrollHeight + "px";
+            el.style.height = el.offsetHeight + "px";
             el.offsetHeight; // force reflow
-            el.style.maxHeight = "0";
+            el.style.height = "0px";
         }
     },
     { flush: "post" },
@@ -124,15 +124,26 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div ref="contentRef" class="g-collapse" :class="{ 'g-collapse-open': isOpen }" @transitionend="onTransitionEnd">
+    <div
+        ref="contentRef"
+        class="g-collapse"
+        :class="{
+            'g-collapse-open': isOpen,
+            'g-collapse-hidden': !isOpen && !transitioning,
+            'g-collapsing': transitioning,
+        }"
+        @transitionend="onTransitionEnd">
         <slot />
     </div>
 </template>
 
 <style scoped>
-.g-collapse {
+.g-collapse-hidden {
+    display: none;
+}
+.g-collapsing {
+    position: relative;
     overflow: hidden;
-    max-height: 0;
-    transition: max-height 0.35s ease;
+    transition: height 0.35s ease;
 }
 </style>
