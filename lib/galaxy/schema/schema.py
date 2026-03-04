@@ -3905,7 +3905,7 @@ class ChatPayload(Model):
         title="Regenerate",
         description="Force fresh analysis even if a cached response exists (for job-based queries). Defaults to false if not provided.",
     )
-    dataset_ids: Optional[list[str]] = Field(
+    dataset_ids: Optional[list[DecodedDatabaseIdField]] = Field(
         default=None,
         title="Dataset Identifiers",
         description="Optional list of encoded dataset IDs selected by the user.",
@@ -3973,7 +3973,7 @@ class ChatResponse(BaseModel):
         title="Processing Time",
         description="Time taken to process the query in seconds.",
     )
-    dataset_ids: Optional[list[str]] = Field(
+    dataset_ids: Optional[list[EncodedDatabaseIdField]] = Field(
         default=None,
         title="Dataset Identifiers",
         description="Optional list of encoded dataset IDs selected for this exchange.",

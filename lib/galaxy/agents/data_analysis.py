@@ -31,6 +31,10 @@ except ImportError:  # pragma: no cover - optional dependency
 
 from galaxy import exceptions
 from galaxy.managers.hdas import HDAManager
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    encode_id,
+)
 from .base import (
     ActionSuggestion,
     ActionType,
@@ -95,7 +99,7 @@ class DataAnalysisAgent(BaseGalaxyAgent):
 
     async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
         context = context or {}
-        datasets = context.get("dataset_ids", [])
+        datasets: list[DecodedDatabaseIdField] = context.get("dataset_ids", [])
         conversation_history = context.get("conversation_history", [])
 
         execution_messages = [entry for entry in conversation_history if entry.get("role") == "execution_result"]
@@ -122,7 +126,7 @@ class DataAnalysisAgent(BaseGalaxyAgent):
             log.exception("Data analysis planner failed")
             error_message = f"Planning failed: {exc}" if exc else "Planning failed"
             metadata: Dict[str, Any] = {
-                "datasets_used": datasets,
+                "datasets_used": [encode_id(d) for d in datasets],
                 "planner": "dspy",
                 "planning_error": str(exc),
             }
@@ -157,7 +161,7 @@ class DataAnalysisAgent(BaseGalaxyAgent):
         plan: DSPyPlanResult,
         question: str,
         context_text: str,
-        datasets: List[str],
+        datasets: List[DecodedDatabaseIdField],
         last_executed_task: Optional[Dict[str, Any]],
         latest_execution_message: Optional[Dict[str, Any]],
     ) -> AgentResponse:
@@ -188,7 +192,7 @@ class DataAnalysisAgent(BaseGalaxyAgent):
             if dataset_descriptors and self._dataset_token_signer is None:
                 metadata: Dict[str, Any] = {
                     "datasets_used": [str(entry.get("id")) for entry in dataset_descriptors if entry.get("id")]
-                    or list(datasets),
+                    or [encode_id(d) for d in datasets],
                     "planner": "dspy",
                     "pyodide_status": "error",
                     "is_complete": False,
@@ -278,7 +282,9 @@ class DataAnalysisAgent(BaseGalaxyAgent):
 
         summary_text = active_plan.summary or ""
 
-        dataset_ids_used = [str(entry.get("id")) for entry in dataset_descriptors if entry.get("id")] or list(datasets)
+        dataset_ids_used = [str(entry.get("id")) for entry in dataset_descriptors if entry.get("id")] or [
+            encode_id(d) for d in datasets
+        ]
         metadata: Dict[str, Any] = {
             "datasets_used": dataset_ids_used,
             "summary": summary_text,
@@ -464,7 +470,7 @@ class DataAnalysisAgent(BaseGalaxyAgent):
 
     def _dataset_descriptors(
         self,
-        dataset_ids: List[str],
+        dataset_ids: List[DecodedDatabaseIdField],
     ) -> Tuple[List[Dict[str, Any]], Dict[str, str]]:
         if not dataset_ids:
             return [], {}
@@ -492,15 +498,16 @@ class DataAnalysisAgent(BaseGalaxyAgent):
 
         if not descriptors:
             for dataset_id in dataset_ids:
+                encoded = encode_id(dataset_id)
                 descriptors.append(
                     {
-                        "id": dataset_id,
-                        "name": dataset_id,
+                        "id": encoded,
+                        "name": encoded,
                         "size": None,
-                        "aliases": [dataset_id],
+                        "aliases": [encoded],
                     }
                 )
-                alias_index[str(dataset_id)] = str(dataset_id)
+                alias_index[encoded] = encoded
 
         if alias_map:
             alias_index.update({str(key): str(value) for key, value in alias_map.items()})
@@ -651,7 +658,7 @@ class DataAnalysisAgent(BaseGalaxyAgent):
         mime_type, _ = mimetypes.guess_type(str(name))
         return mime_type
 
-    def _prepare_dataset_aliases(self, dataset_ids: List[str]) -> tuple[Dict[str, str], List[Dict[str, Any]]]:
+    def _prepare_dataset_aliases(self, dataset_ids: List[DecodedDatabaseIdField]) -> tuple[Dict[str, str], List[Dict[str, Any]]]:
         trans = getattr(self.deps, "trans", None)
         app = getattr(trans, "app", None)
         if not dataset_ids or not trans or not getattr(trans, "security", None) or not app:
@@ -673,31 +680,30 @@ class DataAnalysisAgent(BaseGalaxyAgent):
         metadata: List[Dict[str, Any]] = []
         used_aliases: set[str] = set()
 
-        for index, encoded_id in enumerate(dataset_ids, start=1):
+        for index, dataset_id in enumerate(dataset_ids, start=1):
             try:
-                decoded_id = trans.security.decode_id(encoded_id)
-                hda = hda_manager.get_accessible(decoded_id, trans.user)
+                hda = hda_manager.get_accessible(dataset_id, trans.user)
                 ensure_on_disk = getattr(hda_manager, "ensure_dataset_on_disk", None)
                 if callable(ensure_on_disk):
                     ensure_on_disk(trans, hda)
                 else:
                     hda_manager.dataset_manager.ensure_dataset_on_disk(trans, hda)
             except exceptions.ItemAccessibilityException:
-                log.warning("Dataset %s is not accessible to the current user", encoded_id)
+                log.warning("Dataset %s is not accessible to the current user", dataset_id)
                 continue
             except exceptions.Conflict as exc:
-                log.warning("Dataset %s is not in a usable state: %s", encoded_id, exc)
+                log.warning("Dataset %s is not in a usable state: %s", dataset_id, exc)
                 continue
             except Exception as exc:  # pragma: no cover - defensive guard
-                log.warning("Error preparing dataset %s: %s", encoded_id, exc)
+                log.warning("Error preparing dataset %s: %s", dataset_id, exc)
                 continue
 
             file_path = self._get_dataset_file_path(hda)
             if not file_path or not os.path.exists(file_path):
-                log.warning("Dataset file is not available for %s", encoded_id)
+                log.warning("Dataset file is not available for %s", dataset_id)
                 continue
 
-            alias_candidates = [encoded_id, f"dataset_{index}"]
+            alias_candidates = [dataset_id, f"dataset_{index}"]
             if hda.name:
                 alias_candidates.append(hda.name)
                 alias_candidates.append(self._sanitize_alias(hda.name))
@@ -719,10 +725,10 @@ class DataAnalysisAgent(BaseGalaxyAgent):
 
             alias_map[file_basename] = file_path
             alias_map[self._sanitize_alias(file_basename)] = file_path
-            log.debug('prepared_dataset_entry', extra={'id': encoded_id, 'aliases': unique_aliases, 'path': file_path})
+            log.debug('prepared_dataset_entry', extra={'id': dataset_id, 'aliases': unique_aliases, 'path': file_path})
             metadata.append(
                 {
-                    "id": encoded_id,
+                    "id": encode_id(hda.id),
                     "name": hda.name or f"dataset_{index}",
                     "path": file_path,
                     "size": os.path.getsize(file_path) if os.path.exists(file_path) else None,

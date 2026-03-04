@@ -216,7 +216,7 @@ class ChatAPI:
             "processing_time": None,
         }
 
-        dataset_ids: list[str] = []
+        dataset_ids: list[DecodedDatabaseIdField] = []
         # The UI posts `agent_type` in the request body; keep the query parameter for
         # backwards compatibility but prefer the body value when present.
         effective_agent_type = (
@@ -232,9 +232,7 @@ class ChatAPI:
             context_str = payload.context if hasattr(payload, "context") else None
             query_context = {"context_type": context_str} if context_str else {}
             regenerate = bool(payload.regenerate) if hasattr(payload, "regenerate") else False
-            raw_dataset_ids = getattr(payload, "dataset_ids", None) or getattr(payload, "selected_dataset_ids", None)
-            if raw_dataset_ids:
-                dataset_ids = [str(ds_id) for ds_id in raw_dataset_ids or []]
+            dataset_ids = payload.dataset_ids if hasattr(payload, "dataset_ids") and payload.dataset_ids else []
         elif query:
             # New format: query parameters (context not supported in this path)
             query_text = query
@@ -323,7 +321,7 @@ class ChatAPI:
                         "response": result.get("response", ""),
                         "agent_type": effective_agent_type,
                         "agent_response": agent_resp.model_dump() if agent_resp else None,
-                        "dataset_ids": dataset_ids,
+                        "dataset_ids": [encode_id(d) for d in dataset_ids],
                     }
                     message_content = json.dumps(conversation_data)
                     await anyio.to_thread.run_sync(
