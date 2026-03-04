@@ -1,20 +1,12 @@
 <script setup lang="ts">
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
-    faBug,
     faClock,
-    faGraduationCap,
+    faExternalLinkAlt,
     faHistory,
     faMagic,
     faMicroscope,
-    faPaperPlane,
     faPlus,
-    faRobot,
-    faRoute,
-    faThumbsDown,
-    faThumbsUp,
     faTrash,
-    faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BSkeleton } from "bootstrap-vue";
@@ -22,6 +14,7 @@ import { storeToRefs } from "pinia";
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { getGalaxyInstance } from "@/app";
 import { useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
 import { useToast } from "@/composables/toast";
@@ -36,9 +29,10 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import { getAgentIcon } from "./ChatGXY/agentTypes";
+import type { ChatMessage } from "./ChatGXY/chatTypes";
+import { generateId, scrollToBottom } from "./ChatGXY/chatUtils";
 import type {
-    ActionSuggestion,
-    AgentResponse,
     AnalysisStep,
     ChatHistoryItem,
     ConfidenceLevel,
@@ -50,7 +44,8 @@ import { hasArtifacts } from "./ChatGXY/utilities";
 import type { DataOption } from "./Form/Elements/FormData/types";
 
 import GButton from "./BaseComponents/GButton.vue";
-import ActionCard from "./ChatGXY/ActionCard.vue";
+import ChatInput from "./ChatGXY/ChatInput.vue";
+import ChatMessageCell from "./ChatGXY/ChatMessageCell.vue";
 import MessageArtifacts from "./ChatGXY/MessageArtifacts.vue";
 import MessageIntermediateDetails from "./ChatGXY/MessageIntermediateDetails.vue";
 import DatasetSelector from "./Form/Elements/FormData/FormData.vue";
@@ -58,51 +53,38 @@ import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
+const props = withDefaults(
+    defineProps<{
+        exchangeId?: string;
+        compact?: boolean;
+    }>(),
+    {
+        exchangeId: undefined,
+        compact: false,
+    },
+);
+
 const query = ref("");
 const messages = ref<ChatMessage[]>([]);
 const busy = ref(false);
 const chatContainer = ref<HTMLElement>();
 const selectedAgentType = ref("auto");
-const currentChatId = ref<string | null>(null);
+const currentChatId = ref<number | null>(null);
 const hasLoadedInitialChat = ref(false);
 const pendingCollapsedMessages: Message[] = [];
 
+// ── History sidebar state ─────────────────────────────────────────────────────
+const showHistory = ref(false);
+const chatHistory = ref<ChatHistoryItem[]>([]);
+const loadingHistory = ref(false);
+
+// ── Dataset selection state ───────────────────────────────────────────────────
 const selectedDatasets = ref<string[]>([]);
-/** A computed ref that gets/sets the selected datasets as `FormData` structured data,
- * based on the `selectedDatasets` array of IDs.
- *
- * TODO: Fix a major bug here with multiselect, somehow, in column select, when we select/deselect all,
- * the counts do not update correctly. Possibly related to how the options are built?
- */
-const selectedDatasetsFormData = computed<{
-    values: Array<DataOption>;
-} | null>({
-    get() {
-        if (selectedDatasets.value.length === 0) {
-            return null;
-        }
-        const selected = datasetOptions.value.filter((dataset) => selectedDatasets.value.includes(dataset.id));
-        return {
-            values: selected,
-        };
-    },
-    set(value) {
-        if (value === null) {
-            selectedDatasets.value = [];
-        } else {
-            selectedDatasets.value = value.values.map((dataset) => dataset.id);
-        }
-    },
-});
-/** `FormData` structured options for datasets */
-const formDataOptions = computed<Record<string, Array<DataOption>>>(() => ({ hda: datasetOptions.value }));
-
-const { currentHistoryId } = storeToRefs(useHistoryStore());
-
 /** Whether fetching datasets is allowed/enabled (for Data Analysis agent type) */
 const allowFetchingDatasets = ref(false);
 
-// History items variables
+const { currentHistoryId } = storeToRefs(useHistoryStore());
+
 const {
     datasets: currentHistoryDatasets,
     isFetching: loadingDatasets,
@@ -116,9 +98,7 @@ const datasetOptions = computed<DataOption[]>(() => {
     if (loadingDatasets.value) {
         return [];
     }
-    const datasets = currentHistoryDatasets.value;
-
-    return datasets
+    return currentHistoryDatasets.value
         .map((item) => {
             const name = item.name || `Dataset ${item.hid || ""}`;
             const hidden = Boolean(item.visible === false);
@@ -126,19 +106,30 @@ const datasetOptions = computed<DataOption[]>(() => {
             if (!item.id || hidden || generated) {
                 return null;
             }
-            // TODO: We aren't using `file_size` key in `useHistoryDatasets` currently
-            //       Neither are we storing the extensions for the datasets.
-            return {
-                id: item.id,
-                hid: item.hid,
-                name,
-                src: "hda",
-            } as DataOption;
+            return { id: item.id, hid: item.hid, name, src: "hda" } as DataOption;
         })
         .filter((entry): entry is DataOption => entry !== null && Boolean(entry));
 });
 
-// Ensure selected datasets are valid when dataset options change
+const selectedDatasetsFormData = computed<{ values: Array<DataOption> } | null>({
+    get() {
+        if (selectedDatasets.value.length === 0) {
+            return null;
+        }
+        const selected = datasetOptions.value.filter((dataset) => selectedDatasets.value.includes(dataset.id));
+        return { values: selected };
+    },
+    set(value) {
+        if (value === null) {
+            selectedDatasets.value = [];
+        } else {
+            selectedDatasets.value = value.values.map((dataset) => dataset.id);
+        }
+    },
+});
+
+const formDataOptions = computed<Record<string, Array<DataOption>>>(() => ({ hda: datasetOptions.value }));
+
 watch(
     () => datasetOptions.value,
     () => {
@@ -148,86 +139,6 @@ watch(
     { immediate: true, deep: true },
 );
 
-const toast = useToast();
-const pyodideRunner = usePyodideRunner();
-const pyodideExecutions = reactive<Record<string, ExecutionState>>({});
-const chatStream = ref<WebSocket | null>(null);
-const streamSupported = typeof window !== "undefined" && typeof WebSocket !== "undefined";
-const deliveredTaskIds = new Set<string>();
-const pyodideTaskToMessage = new Map<string, Message>();
-const isChatBusy = computed(
-    () => busy.value || pyodideRunner.isRunning.value || messages.value.some((message) => isAwaitingExecution(message)),
-);
-
-const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
-const { processingAction, handleAction } = useAgentActions();
-
-function escapeHtml(raw: string): string {
-    // Minimal escaping for fallback rendering.
-    return raw
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
-
-function safeRenderMarkdown(content: unknown): string {
-    const text = typeof content === "string" ? content : String(content ?? "");
-    try {
-        return renderMarkdown(text);
-    } catch (error) {
-        console.error("Failed to render markdown for chat message:", error);
-        return `<pre>${escapeHtml(text)}</pre>`;
-    }
-}
-
-function normaliseSuggestions(raw: unknown): ActionSuggestion[] {
-    return Array.isArray(raw) ? (raw as ActionSuggestion[]) : [];
-}
-
-interface AgentType {
-    value: string;
-    label: string;
-    icon: IconDefinition;
-    description: string;
-}
-
-const agentTypes: AgentType[] = [
-    { value: "auto", label: "Auto (Router)", icon: faMagic, description: "Intelligent routing" },
-    { value: "router", label: "Router", icon: faRoute, description: "Query router" },
-    { value: "error_analysis", label: "Error Analysis", icon: faBug, description: "Debug tool errors" },
-    { value: "custom_tool", label: "Custom Tool", icon: faPlus, description: "Create custom tools" },
-    {
-        value: "data_analysis",
-        label: "Data Analysis",
-        icon: faMicroscope,
-        description: "Explore datasets with generated code",
-    },
-    // { value: "data_analysis_dspy", label: "📊 Data Analysis (DSPy)", description: "Iterative planning with DSPy + auto code execution" },
-    { value: "gtn_training", label: "GTN Training", icon: faGraduationCap, description: "Find tutorials" },
-];
-
-// Map agent types to their icons for quick lookup
-const agentIconMap: Record<string, IconDefinition> = {
-    auto: faMagic,
-    router: faRoute,
-    error_analysis: faBug,
-    custom_tool: faPlus,
-    data_analysis: faMicroscope,
-    gtn_training: faGraduationCap,
-};
-
-onMounted(async () => {
-    // Try to load the most recent chat
-    await loadLatestChat();
-
-    // If no chat was loaded, show the welcome message
-    if (!hasLoadedInitialChat.value) {
-        showWelcome();
-    }
-});
-
 watch(
     () => currentHistoryId.value,
     () => {
@@ -236,8 +147,125 @@ watch(
     { immediate: false },
 );
 
-function generateId() {
-    return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+// ── Pyodide / streaming state ─────────────────────────────────────────────────
+const toast = useToast();
+const pyodideRunner = usePyodideRunner();
+const pyodideExecutions = reactive<Record<string, ExecutionState>>({});
+const chatStream = ref<WebSocket | null>(null);
+const streamSupported = typeof window !== "undefined" && typeof WebSocket !== "undefined";
+const deliveredTaskIds = new Set<string>();
+const pyodideTaskToMessage = new Map<string, Message>();
+
+const isChatBusy = computed(
+    () => busy.value || pyodideRunner.isRunning.value || messages.value.some((message) => isAwaitingExecution(message)),
+);
+
+// ── Composables ───────────────────────────────────────────────────────────────
+const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
+const { processingAction, handleAction } = useAgentActions();
+
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
+onMounted(async () => {
+    if (props.exchangeId) {
+        await loadChatById(props.exchangeId);
+    } else {
+        await loadLatestChat();
+    }
+    if (!hasLoadedInitialChat.value) {
+        showWelcome();
+    }
+});
+
+onBeforeUnmount(() => {
+    closeChatStream();
+});
+
+// ── Watchers ──────────────────────────────────────────────────────────────────
+watch(
+    () => props.exchangeId,
+    async (newId, oldId) => {
+        if (newId === oldId) {
+            return;
+        }
+        if (newId) {
+            await loadChatById(newId);
+        } else {
+            startNewChat();
+        }
+    },
+);
+
+watch(busy, (isBusy) => {
+    if (isBusy) {
+        nextTick(() => scrollToBottom(chatContainer.value));
+    }
+});
+
+watch(
+    messages,
+    () => {
+        ensurePendingPyodideTasks();
+    },
+    { deep: true },
+);
+
+watch(
+    currentChatId,
+    (newId, oldId) => {
+        if (!streamSupported) {
+            return;
+        }
+        if (oldId && newId !== oldId) {
+            closeChatStream();
+            deliveredTaskIds.clear();
+        }
+        if (typeof newId === "number") {
+            openChatStream(newId);
+        }
+        if (newId == null) {
+            deliveredTaskIds.clear();
+        }
+    },
+    { immediate: false },
+);
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function escapeHtml(raw: string): string {
+    return raw
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function safeRenderMarkdown(text: string): string {
+    try {
+        return renderMarkdown(text);
+    } catch (error) {
+        console.error("Failed to render markdown for chat message:", error);
+        return `<pre>${escapeHtml(text)}</pre>`;
+    }
+}
+
+function normaliseSuggestions(raw: unknown) {
+    return Array.isArray(raw) ? raw : [];
+}
+
+// ── Chat state management ─────────────────────────────────────────────────────
+function showWelcome() {
+    messages.value.push({
+        id: generateId(),
+        role: "assistant",
+        content:
+            "Welcome to ChatGXY. Ask about tools, workflows, errors, or data quality " +
+            "and your question will be routed to the appropriate specialist agent.",
+        timestamp: new Date(),
+        agentType: "router",
+        confidence: "high",
+        feedback: null,
+        isSystemMessage: true,
+    });
 }
 
 function applyDatasetSelectionFromMessages(conversation: any[]) {
@@ -261,7 +289,6 @@ function attachPendingCollapsedMessages(target: Message) {
     });
     for (let i = pendingCollapsedMessages.length - 1; i >= 0; i -= 1) {
         const msg = pendingCollapsedMessages[i];
-
         if (msg) {
             if (!target.generatedPlots?.length && msg.generatedPlots?.length) {
                 target.generatedPlots = [...msg.generatedPlots];
@@ -362,7 +389,7 @@ function populateAssistantMessage(
     fallbackAgentType: string,
     options?: { skipDatasetUpdate?: boolean },
 ) {
-    const agentResponse = (payload?.agent_response ?? payload?.response?.agent_response) as AgentResponse | undefined;
+    const agentResponse = (payload?.agent_response ?? payload?.response?.agent_response) as any;
     const rawContent =
         typeof payload === "string" ? payload : (payload?.response ?? agentResponse?.content ?? "No response received");
     const content = typeof rawContent === "string" ? rawContent : String(rawContent ?? "No response received");
@@ -445,7 +472,6 @@ function appendAssistantMessage(payload: any, fallbackAgentType: string): Messag
     }
 
     attachPendingCollapsedMessages(assistantMessage);
-
     messages.value.push(assistantMessage);
 
     if (payload?.exchange_id) {
@@ -458,6 +484,16 @@ function appendAssistantMessage(payload: any, fallbackAgentType: string): Messag
     return assistantMessage;
 }
 
+function isAwaitingExecution(message: Message): boolean {
+    const metadata = message.agentResponse?.metadata;
+    if (!metadata) {
+        return false;
+    }
+    const status = typeof metadata.pyodide_status === "string" ? metadata.pyodide_status : undefined;
+    return Boolean(status && status !== "completed" && status !== "error" && status !== "timeout");
+}
+
+// ── Pyodide execution ─────────────────────────────────────────────────────────
 function maybeRunPyodideForMessage(message: Message) {
     const metadata = message.agentResponse?.metadata;
     if (!metadata) {
@@ -477,7 +513,6 @@ function maybeRunPyodideForMessage(message: Message) {
     }
     const existing = pyodideExecutions[taskKey];
     if (existing) {
-        // Do not retry if we have already completed or errored out.
         if (existing.status === "completed" || existing.status === "error") {
             metadata.pyodide_status = existing.status;
             return;
@@ -562,14 +597,6 @@ function ensurePendingPyodideTasks() {
     });
 }
 
-watch(
-    messages,
-    () => {
-        ensurePendingPyodideTasks();
-    },
-    { deep: true },
-);
-
 function runPyodideTaskForMessage(message: Message, task: PyodideTask, taskKey: string, metadata: Record<string, any>) {
     const state = reactive<ExecutionState>({
         status: "initialising",
@@ -584,8 +611,6 @@ function runPyodideTaskForMessage(message: Message, task: PyodideTask, taskKey: 
 
     let executionPromise: Promise<any>;
     try {
-        // `runTask` may throw synchronously (e.g. Worker construction failures). Make
-        // sure we surface the error instead of taking down the whole chat UI.
         executionPromise = pyodideRunner.runTask(runnerTask, {
             onStdout: (line) => {
                 state.stdout += line;
@@ -661,6 +686,7 @@ function runPyodideTaskForMessage(message: Message, task: PyodideTask, taskKey: 
         });
 }
 
+// ── WebSocket streaming ───────────────────────────────────────────────────────
 function openChatStream(exchangeId: number) {
     if (!streamSupported) {
         return;
@@ -744,6 +770,7 @@ function handleStreamMessage(event: MessageEvent) {
     }
 }
 
+// ── Artifact helpers ──────────────────────────────────────────────────────────
 async function uploadArtifacts(artifacts: PyodideArtifact[]): Promise<UploadedArtifact[]> {
     if (!currentChatId.value) {
         throw new Error("No active chat to attach artifacts.");
@@ -770,7 +797,6 @@ async function uploadArtifacts(artifacts: PyodideArtifact[]): Promise<UploadedAr
         formData.append("mime_type", artifact.mime_type || blob.type || "application/octet-stream");
         formData.append("size", String(blob.size));
 
-        // TODO: Use GalaxyApi here?
         const response = await fetch(`${getAppRoot()}api/chat/exchange/${currentChatId.value}/artifacts`, {
             method: "POST",
             body: formData,
@@ -783,11 +809,11 @@ async function uploadArtifacts(artifacts: PyodideArtifact[]): Promise<UploadedAr
             throw new Error(`Artifact upload failed (${response.status}): ${description}`);
         }
 
-        const payload = (await response.json()) as UploadedArtifact;
-        if (payload.download_url) {
-            payload.download_url = resolveDownloadUrl(payload.download_url);
+        const uploadedPayload = (await response.json()) as UploadedArtifact;
+        if (uploadedPayload.download_url) {
+            uploadedPayload.download_url = resolveDownloadUrl(uploadedPayload.download_url);
         }
-        results.push(payload);
+        results.push(uploadedPayload);
         artifact.buffer = undefined;
     }
     return results;
@@ -868,29 +894,6 @@ async function submitPyodideExecutionResult(
         appendAssistantMessage(data, message.agentType || selectedAgentType.value);
     }
 }
-
-watch(
-    currentChatId,
-    (newId, oldId) => {
-        if (!streamSupported) {
-            return;
-        }
-        if (oldId && newId !== oldId) {
-            closeChatStream();
-            deliveredTaskIds.clear();
-        }
-        if (typeof newId === "number") {
-            openChatStream(newId);
-        }
-        if (newId == null) {
-            deliveredTaskIds.clear();
-        }
-    },
-    { immediate: false },
-);
-onBeforeUnmount(() => {
-    closeChatStream();
-});
 
 function normalisePathList(raw: unknown): string[] {
     if (!Array.isArray(raw)) {
@@ -1018,7 +1021,6 @@ function normaliseAnalysisSteps(raw: unknown): AnalysisStep[] {
     if (!Array.isArray(raw)) {
         return [];
     }
-
     return raw
         .map((step) => {
             if (!step || typeof step !== "object") {
@@ -1054,6 +1056,7 @@ function normaliseAnalysisSteps(raw: unknown): AnalysisStep[] {
         .filter((step): step is AnalysisStep => Boolean(step));
 }
 
+// ── API calls ─────────────────────────────────────────────────────────────────
 async function submitQuery() {
     if (isChatBusy.value) {
         return;
@@ -1101,7 +1104,7 @@ async function submitQuery() {
             const errorMsg: ChatMessage = {
                 id: generateId(),
                 role: "assistant",
-                content: `Error: ${errorText}`,
+                content: `Error: ${errorMessage.value}`,
                 timestamp: new Date(),
                 agentType: selectedAgentType.value,
                 confidence: "low",
@@ -1112,7 +1115,6 @@ async function submitQuery() {
             await nextTick();
             scrollToBottom(chatContainer.value);
         } else if (data) {
-            // Extract typed response fields
             const agentResponse = data.agent_response;
             const content = data.response || "No response received";
 
@@ -1160,30 +1162,27 @@ async function submitQuery() {
     }
 }
 
-watch(busy, (isBusy) => {
-    if (isBusy) {
-        nextTick(() => scrollToBottom(chatContainer.value));
-    }
-});
-
 async function sendFeedback(messageId: string, value: "up" | "down") {
     const message = messages.value.find((m) => m.id === messageId);
     if (message) {
         message.feedback = value;
 
         if (currentChatId.value) {
-            const feedbackValue = value === "up" ? 1 : 0;
+            try {
+                const feedbackValue = value === "up" ? 1 : 0;
+                const { error } = await GalaxyApi().PUT("/api/chat/exchange/{exchange_id}/feedback", {
+                    params: {
+                        path: { exchange_id: currentChatId.value },
+                    },
+                    body: feedbackValue,
+                });
 
-            const { error } = await GalaxyApi().PUT("/api/chat/exchange/{exchange_id}/feedback", {
-                params: {
-                    path: { exchange_id: currentChatId.value },
-                },
-                body: feedbackValue,
-            });
-
-            if (error) {
-                console.error("Failed to save feedback:", error);
-                // Revert on error
+                if (error) {
+                    console.error("Failed to save feedback:", error);
+                    message.feedback = null;
+                }
+            } catch (e) {
+                console.error("Failed to save feedback:", e);
                 message.feedback = null;
             }
         }
@@ -1197,35 +1196,115 @@ async function fetchConversation(exchangeId: string): Promise<boolean> {
         },
     });
 
-function getAgentLabel(agentType?: string) {
-    const agent = agentTypes.find((a) => a.value === agentType);
-    return agent?.label || agentType || "AI Assistant";
-}
-
-function formatModelName(model?: string): string {
-    if (!model) {
-        return "";
-    }
-    // Extract just the model name from full paths like "openai/gpt-4" or "anthropic/claude-3"
-    const parts = model.split("/");
-    return parts[parts.length - 1] || model;
-}
-
-function getAgentResponseOrEmpty(response?: AgentResponse | null): AgentResponse {
-    return (
-        response || ({ content: "", agent_type: "", confidence: "low", suggestions: [], metadata: {} } as AgentResponse)
-    );
-}
-
-function isAwaitingExecution(message: Message): boolean {
-    const metadata = message.agentResponse?.metadata;
-    if (!metadata) {
+    if (!fullConversation || fullConversation.length === 0) {
         return false;
     }
-    const status = typeof metadata.pyodide_status === "string" ? metadata.pyodide_status : undefined;
-    return Boolean(status && status !== "completed" && status !== "error" && status !== "timeout");
+
+    messages.value = fullConversation.map((msg: any, index: number) => {
+        const message: Message = {
+            id: `hist-${msg.role}-${exchangeId}-${index}`,
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            feedback: null,
+        };
+
+        if (msg.role === "assistant") {
+            message.agentType = msg.agent_type;
+            message.confidence = msg.agent_response?.confidence || "medium";
+            message.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
+
+            if (msg.agent_response) {
+                message.agentResponse = msg.agent_response;
+                message.suggestions = normaliseSuggestions(msg.agent_response.suggestions);
+            }
+        }
+
+        return message;
+    });
+
+    const numericId = parseInt(exchangeId, 10);
+    currentChatId.value = isNaN(numericId) ? null : numericId;
+    nextTick(() => scrollToBottom(chatContainer.value));
+    return true;
 }
 
+async function loadChatById(exchangeId: string) {
+    try {
+        const loaded = await fetchConversation(exchangeId);
+        if (loaded) {
+            hasLoadedInitialChat.value = true;
+        }
+    } catch (e) {
+        console.error("Failed to load chat by ID:", e);
+    }
+}
+
+async function loadLatestChat() {
+    try {
+        const { data, error } = await GalaxyApi().GET("/api/chat/history", {
+            params: {
+                query: { limit: 1 },
+            },
+        });
+
+        if (data && !error && data.length > 0) {
+            const latestChat = data[0] as unknown as ChatHistoryItem;
+            await loadPreviousChat(latestChat);
+            hasLoadedInitialChat.value = true;
+        }
+    } catch (e) {
+        console.error("Failed to load latest chat:", e);
+    }
+}
+
+function startNewChat() {
+    pendingCollapsedMessages.length = 0;
+    messages.value = [
+        {
+            id: generateId(),
+            role: "assistant",
+            content: "New conversation started. How can I help?",
+            timestamp: new Date(),
+            agentType: "router",
+            confidence: "high",
+            feedback: null,
+            isSystemMessage: true,
+        },
+    ];
+    Object.keys(pyodideExecutions).forEach((key) => delete pyodideExecutions[key]);
+    currentChatId.value = null;
+    deliveredTaskIds.clear();
+    pyodideTaskToMessage.clear();
+    selectedDatasets.value = [];
+    query.value = "";
+    errorMessage.value = "";
+}
+
+async function deleteCurrentChat() {
+    if (!currentChatId.value) {
+        return;
+    }
+    try {
+        const { error } = await GalaxyApi().DELETE("/api/chat/exchange/{exchange_id}", {
+            params: { path: { exchange_id: currentChatId.value } },
+        });
+        if (!error) {
+            startNewChat();
+        }
+    } catch (e) {
+        console.error("Failed to delete chat:", e);
+    }
+}
+
+function popOutToScratchbook() {
+    const Galaxy = getGalaxyInstance();
+    const path = currentChatId.value ? `/chatgxy/${currentChatId.value}` : "/chatgxy";
+    const url = `${path}?compact=true`;
+    Galaxy.frame.add({ title: "ChatGXY", url });
+}
+
+// ── History sidebar ───────────────────────────────────────────────────────────
 async function loadChatHistory() {
     loadingHistory.value = true;
     try {
@@ -1249,71 +1328,37 @@ async function clearHistory() {
     if (!confirm("Are you sure you want to clear your chat history?")) {
         return;
     }
-
-    messages.value = fullConversation.map((msg: any, index: number) => {
-        const message: ChatMessage = {
-            id: `hist-${msg.role}-${exchangeId}-${index}`,
-            role: msg.role as "user" | "assistant",
-            content: msg.content,
-            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-            feedback: null,
-        };
-
-        if (msg.role === "assistant") {
-            message.agentType = msg.agent_type;
-            message.confidence = msg.agent_response?.confidence || "medium";
-            message.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
-
-            if (msg.agent_response) {
-                message.agentResponse = msg.agent_response;
-                message.suggestions = msg.agent_response.suggestions || [];
-            }
-        }
-
-        return message;
-    });
-
-    currentChatId.value = exchangeId;
-    nextTick(() => scrollToBottom(chatContainer.value));
-    return true;
-}
-
-async function loadChatById(exchangeId: string) {
     try {
-        const loaded = await fetchConversation(exchangeId);
-        if (loaded) {
-            hasLoadedInitialChat.value = true;
+        const { data, error } = await GalaxyApi().DELETE("/api/chat/history");
+        if (!error && data) {
+            chatHistory.value = [];
+            if (currentChatId.value) {
+                startNewChat();
+            }
+        } else if (error) {
+            console.error("Failed to clear history:", error);
         }
     } catch (e) {
-        console.error("Failed to load chat by ID:", e);
+        console.error("Failed to clear history:", e);
     }
 }
 
 async function loadPreviousChat(item: ChatHistoryItem) {
     pendingCollapsedMessages.length = 0;
-    // Try to load the full conversation from the backend
     try {
-        // @ts-ignore TODO: Add pydantic model later
         const { data } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
-            params: {
-                path: {
-                    exchange_id: item.id,
-                },
-            },
+            params: { path: { exchange_id: item.id } },
         });
 
-        // TODO: Define proper type for response, then we wouldn't need to define `fullConversation` here separately
         const fullConversation = data as any[] | undefined;
-
         if (fullConversation && fullConversation.length > 0) {
-            // Clear and rebuild messages from full conversation
             messages.value = [];
             deliveredTaskIds.clear();
             pyodideTaskToMessage.clear();
             const taskIdToMessage: Record<string, Message> = {};
             const pendingExecResults: Record<string, any> = {};
-
             const assistantMessagesToReplay: Message[] = [];
+
             for (let index = 0; index < fullConversation.length; index += 1) {
                 const msg = fullConversation[index];
                 if (msg?.role === "execution_result") {
@@ -1329,7 +1374,6 @@ async function loadPreviousChat(item: ChatHistoryItem) {
                     continue;
                 }
                 if (msg?.role !== "user" && msg?.role !== "assistant") {
-                    // Defensive: ignore unexpected roles to avoid template/runtime errors.
                     continue;
                 }
                 const message: Message = {
@@ -1348,7 +1392,7 @@ async function loadPreviousChat(item: ChatHistoryItem) {
                     if (msg.agent_response) {
                         message.agentResponse = msg.agent_response;
                         message.suggestions = normaliseSuggestions(msg.agent_response.suggestions);
-                        const metadata = (msg.agent_response as AgentResponse)?.metadata;
+                        const metadata = msg.agent_response?.metadata;
                         const steps = metadata ? normaliseAnalysisSteps(metadata?.analysis_steps) : [];
                         if (steps.length) {
                             message.analysisSteps = steps;
@@ -1405,22 +1449,19 @@ async function loadPreviousChat(item: ChatHistoryItem) {
                 pendingCollapsedMessages.length = 0;
             }
         } else {
-            // Fallback to single message if no full conversation available
             loadSingleMessageFallback(item);
         }
 
         currentChatId.value = item.id;
         showHistory.value = false;
-        nextTick(() => scrollToBottom());
+        nextTick(() => scrollToBottom(chatContainer.value));
     } catch (error) {
         console.error("Error loading full conversation:", error);
-        // Fallback to simple loading on error
         loadSingleMessageFallback(item);
     }
 }
 
 function loadSingleMessageFallback(item: ChatHistoryItem) {
-    // Fallback method for loading just the first message pair
     const userMessage: Message = {
         id: `hist-user-${item.id}`,
         role: "user",
@@ -1475,61 +1516,8 @@ function loadSingleMessageFallback(item: ChatHistoryItem) {
     messages.value = [userMessage, assistantMessage];
     currentChatId.value = item.id;
     showHistory.value = false;
-    nextTick(() => scrollToBottom());
-
+    nextTick(() => scrollToBottom(chatContainer.value));
     maybeRunPyodideForMessage(assistantMessage);
-
-    const metadataDatasets = item.agent_response?.metadata?.datasets_used;
-    if (Array.isArray(metadataDatasets) && metadataDatasets.length > 0) {
-        selectedDatasets.value = metadataDatasets.map(String);
-    }
-}
-
-async function loadLatestChat() {
-    try {
-        const { data, error } = await GalaxyApi().GET("/api/chat/history", {
-            params: {
-                query: { limit: 1 },
-            },
-        });
-
-        if (data && !error && data.length > 0) {
-            const latestChat = data[0] as unknown as ChatHistoryItem;
-            try {
-                const loaded = await fetchConversation(latestChat.id);
-                if (loaded) {
-                    hasLoadedInitialChat.value = true;
-                }
-            } catch (e) {
-                console.error("Error loading latest conversation:", e);
-            }
-        }
-    } catch (e) {
-        console.error("Failed to load latest chat:", e);
-    }
-}
-
-function startNewChat() {
-    pendingCollapsedMessages.length = 0;
-    // Clear messages and reset to welcome message
-    messages.value = [
-        {
-            id: generateId(),
-            role: "assistant",
-            content: "New conversation started. How can I help?",
-            timestamp: new Date(),
-            agentType: "router",
-            confidence: "high",
-            feedback: null,
-            isSystemMessage: true,
-        },
-    ];
-    Object.keys(pyodideExecutions).forEach((key) => delete pyodideExecutions[key]);
-    currentChatId.value = null;
-    deliveredTaskIds.clear();
-    pyodideTaskToMessage.clear();
-    selectedDatasets.value = [];
-    query.value = "";
 }
 
 async function deleteCurrentChat() {
@@ -1557,8 +1545,8 @@ function popOutToScratchbook() {
 </script>
 
 <template>
-    <div class="chatgxy-container">
-        <div class="chatgxy-header">
+    <div class="chatgxy-container" :class="{ 'chatgxy-compact': compact }">
+        <div v-if="!compact" class="chatgxy-header">
             <div class="header-main">
                 <Heading h2 :icon="faMagic" size="lg">
                     <span>ChatGXY</span>
@@ -1582,6 +1570,21 @@ function popOutToScratchbook() {
                         <FontAwesomeIcon :icon="faPlus" fixed-width />
                         New
                     </GButton>
+
+                    <button
+                        v-if="currentChatId"
+                        class="btn btn-sm btn-outline-danger"
+                        title="Delete this conversation"
+                        @click="deleteCurrentChat">
+                        <FontAwesomeIcon :icon="faTrash" fixed-width />
+                    </button>
+
+                    <button
+                        class="btn btn-sm btn-outline-primary"
+                        title="Open in floating window"
+                        @click="popOutToScratchbook">
+                        <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
+                    </button>
 
                     <GButton
                         color="blue"
@@ -1617,15 +1620,15 @@ function popOutToScratchbook() {
             </div>
         </div>
 
-        <div ref="chatContainer" class="chat-messages">
-            <ChatMessageCell
-                v-for="message in messages"
-                :key="message.id"
-                :message="message"
-                :render-markdown="renderMarkdown"
-                :processing-action="processingAction"
-                @feedback="sendFeedback"
-                @handle-action="handleAction" />
+        <div class="chatgxy-body">
+            <!-- History Sidebar -->
+            <div v-if="showHistory && !compact" class="history-sidebar">
+                <div class="history-header">
+                    <h5>Chat History</h5>
+                    <button class="btn btn-sm btn-link text-danger p-0" title="Clear History" @click="clearHistory">
+                        <FontAwesomeIcon :icon="faTrash" />
+                    </button>
+                </div>
 
                 <div v-if="loadingHistory" class="text-center p-3">
                     <LoadingSpan message="Loading history..." />
@@ -1657,135 +1660,48 @@ function popOutToScratchbook() {
             </div>
 
             <!-- Main Chat Area -->
-            <div ref="chatContainer" class="chat-messages flex-grow-1">
-                <div
+            <div ref="chatContainer" class="chat-messages">
+                <ChatMessageCell
                     v-for="message in messages"
                     :key="message.id"
-                    :class="['notebook-cell', message.role === 'user' ? 'query-cell' : 'response-cell']">
-                    <!-- Query cell (user input) -->
-                    <template v-if="message.role === 'user'">
-                        <div class="cell-label">
-                            <FontAwesomeIcon :icon="faUser" fixed-width />
-                            <span>Query</span>
-                        </div>
-                        <div class="cell-content">{{ message.content }}</div>
-                    </template>
-
-                    <!-- Response cell (assistant output) -->
-                    <template v-else>
-                        <div class="cell-label">
-                            <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
-                            <span>{{ getAgentLabel(message.agentType) }}</span>
-                            <span
-                                v-if="message.agentResponse?.metadata?.handoff_info"
-                                class="routing-badge"
-                                :title="'Routed by ' + message.agentResponse.metadata.handoff_info.source_agent">
-                                <!-- Had title as :title="message.routingInfo.reasoning" for DA agent -->
-                                via Router
-                            </span>
-                        </div>
-                        <div class="cell-content">
-                            <!-- eslint-disable-next-line vue/no-v-html -->
-                            <div v-html="safeRenderMarkdown(message.content)" />
-
-                            <div v-if="isAwaitingExecution(message)" class="alert alert-warning pyodide-hint mb-2">
-                                ⚙️ Analysis still running… please keep this tab open; refreshing will restart the
-                                execution.
-                            </div>
-                            <div
-                                v-else-if="message.agentResponse?.metadata?.pyodide_status === 'timeout'"
-                                class="alert alert-warning pyodide-hint mb-2">
-                                ⚠️ Previous run timed out before the result was sent. Please ask again if you still need
-                                this step to complete.
-                            </div>
-
-                            <MessageArtifacts v-if="hasArtifacts(message)" :message="message" />
-
-                            <MessageIntermediateDetails :message="message" :pyodide-executions="pyodideExecutions" />
-
-                            <!-- Action suggestions -->
-                            <ActionCard
-                                v-if="Array.isArray(message.suggestions) && message.suggestions.length"
-                                :suggestions="message.suggestions"
-                                :processing-action="processingAction"
-                                @handle-action="
-                                    (action) => handleAction(action, getAgentResponseOrEmpty(message.agentResponse))
-                                " />
+                    :message="message"
+                    :render-markdown="safeRenderMarkdown"
+                    :processing-action="processingAction"
+                    @feedback="sendFeedback"
+                    @handle-action="handleAction">
+                    <template v-slot:after-content>
+                        <div v-if="isAwaitingExecution(message)" class="alert alert-warning pyodide-hint mb-2">
+                            ⚙️ Analysis still running… please keep this tab open; refreshing will restart the execution.
                         </div>
                         <div
-                            v-if="!(message.content || '').startsWith('❌') && !message.isSystemMessage"
-                            class="cell-footer">
-                            <div class="feedback-actions">
-                                <button
-                                    class="feedback-btn"
-                                    :disabled="message.feedback !== null"
-                                    :class="{ active: message.feedback === 'up' }"
-                                    title="Helpful"
-                                    @click="sendFeedback(message.id, 'up')">
-                                    <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
-                                </button>
-                                <button
-                                    class="feedback-btn"
-                                    :disabled="message.feedback !== null"
-                                    :class="{ active: message.feedback === 'down' }"
-                                    title="Not helpful"
-                                    @click="sendFeedback(message.id, 'down')">
-                                    <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
-                                </button>
-                                <span v-if="message.feedback" class="feedback-text">Thanks!</span>
-                            </div>
-                            <div class="response-stats">
-                                <span class="stat-item" :title="'Agent: ' + getAgentLabel(message.agentType)">
-                                    <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
-                                    {{ getAgentLabel(message.agentType) }}
-                                </span>
-                                <span
-                                    v-if="message.agentResponse?.metadata?.model"
-                                    class="stat-item"
-                                    :title="'Model: ' + message.agentResponse.metadata.model">
-                                    {{ formatModelName(message.agentResponse.metadata.model) }}
-                                </span>
-                                <span
-                                    v-if="message.agentResponse?.metadata?.total_tokens"
-                                    class="stat-item"
-                                    title="Tokens used">
-                                    {{ message.agentResponse.metadata.total_tokens }} tokens
-                                </span>
-                            </div>
+                            v-else-if="message.agentResponse?.metadata?.pyodide_status === 'timeout'"
+                            class="alert alert-warning pyodide-hint mb-2">
+                            ⚠️ Previous run timed out before the result was sent. Please ask again if you still need
+                            this step to complete.
                         </div>
+                        <MessageArtifacts v-if="hasArtifacts(message)" :message="message" />
+                        <MessageIntermediateDetails :message="message" :pyodide-executions="pyodideExecutions" />
                     </template>
-                </div>
+                </ChatMessageCell>
 
                 <!-- Loading state -->
-                <div v-if="busy" class="notebook-cell response-cell loading-cell">
-                    <div class="cell-label">
-                        <FontAwesomeIcon :icon="getAgentIcon(selectedAgentType)" fixed-width />
-                    </span>
-                </div>
-                <div class="loading-body">
-                    <BSkeleton animation="wave" width="85%" />
-                    <BSkeleton animation="wave" width="55%" />
-                    <BSkeleton animation="wave" width="70%" />
+                <div v-if="busy" class="loading-entry">
+                    <div class="loading-gutter">
+                        <span class="loading-indicator">
+                            <FontAwesomeIcon :icon="getAgentIcon(selectedAgentType)" fixed-width />
+                        </span>
+                    </div>
+                    <div class="loading-body">
+                        <BSkeleton animation="wave" width="85%" />
+                        <BSkeleton animation="wave" width="55%" />
+                        <BSkeleton animation="wave" width="70%" />
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="chatgxy-footer">
-            <div class="chat-input-container">
-                <label for="chat-input" class="sr-only">Chat message</label>
-                <textarea
-                    id="chat-input"
-                    v-model="query"
-                    :disabled="isChatBusy"
-                    placeholder="Ask about tools, workflows, errors, or anything Galaxy..."
-                    rows="1"
-                    class="form-control chat-input"
-                    @keydown.enter.prevent="!$event.shiftKey && submitQuery()" />
-                <button :disabled="busy || !query.trim()" class="btn btn-primary send-button" @click="submitQuery">
-                    <FontAwesomeIcon v-if="!busy" :icon="faPaperPlane" fixed-width />
-                    <LoadingSpan v-else message="" />
-                </button>
-            </div>
+            <ChatInput :value="query" :busy="isChatBusy" @input="query = $event" @submit="submitQuery" />
         </div>
     </div>
 </template>
@@ -1819,15 +1735,18 @@ function popOutToScratchbook() {
     background: $panel-bg-color;
     border-bottom: $border-default;
 
-    .header-actions {
-        display: flex;
-        gap: 0.5rem;
-    }
     .header-main {
         display: flex;
         align-items: center;
         justify-content: space-between;
     }
+
+    .header-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
     .header-expand {
         margin-top: 0.625rem;
         padding-top: 0.625rem;
@@ -1841,11 +1760,6 @@ function popOutToScratchbook() {
             letter-spacing: 0.04em;
             color: $text-muted;
         }
-
-        // TODO: If the dataset selector expands beyond a height,
-        //       we need to allow scrolling etc.
-        // :deep(.form-data) {
-        // }
     }
 }
 
@@ -1867,8 +1781,11 @@ function popOutToScratchbook() {
     font-size: 0.85rem;
 }
 
-.notebook-cell {
-    margin-bottom: 1rem;
+// Loading skeleton
+.loading-entry {
+    display: flex;
+    gap: 0;
+    margin-top: 1.25rem;
     animation: fadeIn 0.2s ease-out;
 }
 
@@ -1893,6 +1810,73 @@ function popOutToScratchbook() {
 .loading-body {
     flex: 1;
     opacity: 0.6;
+}
+
+// History sidebar
+.history-sidebar {
+    width: 280px;
+    border-right: $border-default;
+    background: $panel-bg-color;
+    display: flex;
+    flex-direction: column;
+
+    .history-header {
+        padding: 0.75rem 1rem;
+        border-bottom: $border-default;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        h5 {
+            margin: 0;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: $text-color;
+        }
+    }
+
+    .history-list {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .history-item {
+        padding: 0.625rem 1rem;
+        border-bottom: 1px solid darken($panel-bg-color, 5%);
+        cursor: pointer;
+        transition: background-color 0.15s;
+
+        &:hover {
+            background: darken($panel-bg-color, 3%);
+        }
+
+        .history-query {
+            font-size: 0.8rem;
+            color: $text-color;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 0.25rem;
+        }
+
+        .history-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.7rem;
+            color: $text-light;
+
+            .history-agent {
+                color: $brand-primary;
+            }
+
+            .history-time {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+        }
+    }
 }
 
 @keyframes fadeIn {
