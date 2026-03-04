@@ -7,7 +7,7 @@ export type AnalysisStep = components["schemas"]["AnalysisStep"];
 export type ConfidenceLevel = components["schemas"]["ConfidenceLevel"];
 export type UploadedArtifact = components["schemas"]["UploadedArtifact"];
 
-export interface Message {
+export interface ChatMessage {
     id: string;
     role: "user" | "assistant";
     content: string;
@@ -17,7 +17,7 @@ export interface Message {
     feedback?: "up" | "down" | null;
     agentResponse?: AgentResponse | null;
     suggestions?: ActionSuggestion[];
-    isSystemMessage?: boolean; // Flag for welcome/placeholder messages that shouldn't have feedback
+    isSystemMessage?: boolean;
     routingInfo?: {
         selected_agent: string;
         reasoning: string;
@@ -28,11 +28,11 @@ export interface Message {
     generatedFiles?: string[];
     isCollapsible?: boolean;
     isCollapsed?: boolean;
-    collapsedHistory?: Message[];
+    collapsedHistory?: ChatMessage[];
 }
 
 export interface ChatHistoryItem {
-    id: number;
+    id: string;
     query: string;
     response: string;
     agent_type: string;

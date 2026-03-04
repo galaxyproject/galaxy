@@ -52,18 +52,19 @@ function getIcon(actionType: ActionType): IconDefinition {
 
 <template>
     <div v-if="suggestions.length > 0" class="action-card">
-        <div class="action-header">Suggested Actions</div>
+        <div class="action-header">Quick Actions</div>
         <div class="action-list">
-            <button
+            <GButton
                 v-for="(action, index) in sortedSuggestions"
                 :key="`${action.action_type}-${index}-${action.description}`"
-                class="btn action-button"
-                :class="getButtonClass(action.priority)"
+                outline
+                size="small"
+                :color="action.priority === 1 ? 'blue' : 'grey'"
                 :disabled="processingAction"
                 @click="emit('handle-action', action)">
                 <FontAwesomeIcon :icon="getIcon(action.action_type)" fixed-width />
-                <span class="action-text">{{ action.description }}</span>
-            </button>
+                <span>{{ action.description }}</span>
+            </GButton>
         </div>
     </div>
 </template>

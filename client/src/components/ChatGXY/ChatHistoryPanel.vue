@@ -10,7 +10,7 @@ import { getGalaxyInstance } from "@/app";
 import { useSidebarSelection } from "@/composables/useSidebarSelection";
 
 import { getAgentIcon } from "./agentTypes";
-import type { ChatHistoryItem } from "./chatTypes";
+import type { ChatHistoryItem } from "./types";
 
 import SidebarList from "@/components/Common/SidebarList.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";

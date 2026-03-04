@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Message } from "./types";
+import type { ChatMessage } from "./types";
 import { downloadArtifact, formatSize } from "./utilities";
 
 const props = defineProps<{
-    message: Message & {
-        artifacts: NonNullable<Message["artifacts"]>;
+    message: ChatMessage & {
+        artifacts: NonNullable<ChatMessage["artifacts"]>;
     };
 }>();
 </script>

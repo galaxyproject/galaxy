@@ -1,30 +1,19 @@
 <script setup lang="ts">
 import { useMarkdown } from "@/composables/markdown";
 
-import type { Message } from "./types";
-import { collapsedSummary, hasArtifacts } from "./utilities";
+import type { ChatMessage } from "./types";
+import { collapsedSummary, escapeHtml, hasArtifacts } from "./utilities";
 
 import AnalysisSteps from "./AnalysisSteps.vue";
 import ExecutedCode from "./ExecutedCode.vue";
 import MessageArtifacts from "./MessageArtifacts.vue";
 
 const props = defineProps<{
-    message: Message & { collapsedHistory: NonNullable<Message["collapsedHistory"]> };
+    message: ChatMessage & { collapsedHistory: NonNullable<ChatMessage["collapsedHistory"]> };
     collapsible?: boolean;
 }>();
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
-
-function escapeHtml(raw: string): string {
-    // Minimal escaping for fallback rendering.
-    return raw
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
-
 function safeRenderMarkdown(content: unknown): string {
     const text = typeof content === "string" ? content : String(content ?? "");
     try {
