@@ -141,6 +141,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat/exchange/{exchange_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Exchange
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        delete: operations["delete_exchange_api_chat_exchange__exchange_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chat/exchange/{exchange_id}/artifacts": {
         parameters: {
             query?: never;
@@ -215,6 +235,26 @@ export interface paths {
          * @description Persist results from client-side Pyodide execution and trigger follow-up reasoning.
          */
         post: operations["submit_pyodide_result_api_chat_exchange__exchange_id__pyodide_result_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/exchanges/batch/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Batch Delete Exchanges
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        put: operations["batch_delete_exchanges_api_chat_exchanges_batch_delete_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8061,10 +8101,7 @@ export interface components {
         };
         /** Body_upload_pyodide_artifact_api_chat_exchange__exchange_id__artifacts_post */
         Body_upload_pyodide_artifact_api_chat_exchange__exchange_id__artifacts_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
             /** Mime Type */
             mime_type?: string | null;
@@ -26756,6 +26793,51 @@ export interface operations {
             };
         };
     };
+    delete_exchange_api_chat_exchange__exchange_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                exchange_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     upload_pyodide_artifact_api_chat_exchange__exchange_id__artifacts_post: {
         parameters: {
             query?: never;
@@ -26764,7 +26846,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                exchange_id: number;
+                exchange_id: string;
             };
             cookie?: never;
         };
@@ -26905,7 +26987,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                exchange_id: number;
+                exchange_id: string;
             };
             cookie?: never;
         };
@@ -26923,6 +27005,53 @@ export interface operations {
                 content: {
                     "application/json": {
                         [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    batch_delete_exchanges_api_chat_exchanges_batch_delete_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatExchangeBatchDeletePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
                     };
                 };
             };
