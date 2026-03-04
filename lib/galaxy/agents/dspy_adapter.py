@@ -10,10 +10,15 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, ClassVar
 
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.agents import (
     AnalysisStep,
     AnalysisStepStatus,
     AnalysisStepType,
+)
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    encode_id,
 )
 from galaxy.util.pyodide import infer_requirements_from_python
 
@@ -580,14 +585,14 @@ class GalaxyDSPyPlanner:
             return []
 def build_context_text(
     question: str,
-    datasets: Iterable[str],
+    datasets: Iterable[DecodedDatabaseIdField],
     conversation_history: Iterable[Dict[str, Any]],
     execution_messages: Iterable[Dict[str, Any]],
     examples_snippet: str,
 ) -> str:
     dataset_lines = (
         "\n".join(
-            f"- Dataset {index + 1} (ID: {dataset_id}) — use load_dataset(\"{dataset_id}\") or get_dataset_path(\"{dataset_id}\") (dataset_{index + 1} and other aliases are also available)"
+            f"- Dataset {index + 1} (ID: {encode_id(dataset_id)}) — use load_dataset(\"{encode_id(dataset_id)}\") or get_dataset_path(\"{encode_id(dataset_id)}\") (dataset_{index + 1} and other aliases are also available)"
             for index, dataset_id in enumerate(datasets)
         )
         or "- None"
