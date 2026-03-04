@@ -89,6 +89,7 @@ from galaxy.schema.schema import (
 from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
     QueueJobs,
+    RequestUser,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import (
@@ -2122,8 +2123,10 @@ class JobSubmitter:
     def materialize_request_for(
         self, trans: WorkRequestContext, hda: model.HistoryDatasetAssociation
     ) -> MaterializeDatasetInstanceTaskRequest:
+        if trans.user is None:
+            raise RequestParameterInvalidException("Materialization of URL-sourced inputs requires an authenticated user")
         return MaterializeDatasetInstanceTaskRequest(
-            user=trans.async_request_user,
+            user=RequestUser(user_id=trans.user.id),
             history_id=trans.history.id,
             source="hda",
             content=hda.id,
