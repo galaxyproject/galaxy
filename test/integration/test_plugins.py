@@ -19,6 +19,16 @@ openai = pytest.importorskip("openai")
 TEST_VISUALIZATION_PLUGINS_DIR = os.path.join(os.path.dirname(__file__), "test_visualization_plugins")
 
 
+def _create_chat_payload(extra=None):
+    payload = {
+        "messages": [{"role": "user", "content": "hi"}],
+        "tools": [],
+    }
+    if extra:
+        payload.update(extra)
+    return payload
+
+
 class TestVisualizationPluginsApi(IntegrationTestCase):
     """Tests for the visualization plugins API endpoints."""
 
@@ -81,15 +91,6 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         assert "tests" in plugin
         assert len(plugin["tests"]) >= 1
 
-    def _create_payload(self, extra=None):
-        payload = {
-            "messages": [{"role": "user", "content": "hi"}],
-            "tools": [],
-        }
-        if extra:
-            payload.update(extra)
-        return payload
-
     def _post_payload(self, payload=None, anon=False):
         return self._post("plugins/jupyterlite/chat/completions", payload, json=True, anon=anon)
 
@@ -100,7 +101,7 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         mock_instance = MagicMock()
         mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
         mock_client.return_value = mock_instance
-        payload = self._create_payload()
+        payload = _create_chat_payload()
         response = self._post_payload(payload, anon=False)
         self._assert_status_code_is(response, 200)
         assert response.json()["id"] == "test"
@@ -119,7 +120,7 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         mock_instance.chat.completions.create = AsyncMock(return_value=stream_gen())
         mock_instance.close = AsyncMock()
         mock_client.return_value = mock_instance
-        payload = self._create_payload({"stream": True})
+        payload = _create_chat_payload({"stream": True})
         response = self._post_payload(payload, anon=False)
         self._assert_status_code_is(response, 200)
         body = response.text
@@ -131,7 +132,7 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         assert mock_instance.close.called
 
     def test_tools_exceed_max(self):
-        payload = self._create_payload(
+        payload = _create_chat_payload(
             {"tools": [{"type": "function", "function": {"name": "f", "parameters": {}}}] * 129}
         )
         response = self._post_payload(payload)
@@ -139,7 +140,7 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
 
     def test_tool_schema_too_large(self):
         big_params = {"x": "a" * 20000}
-        payload = self._create_payload(
+        payload = _create_chat_payload(
             {"tools": [{"type": "function", "function": {"name": "f", "parameters": big_params}}]}
         )
         response = self._post_payload(payload)
@@ -147,7 +148,7 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
 
     def test_exceed_max_messages(self):
         msgs = {"messages": [{"role": "user", "content": "x"}] * (1024 + 1)}
-        payload = self._create_payload(msgs)
+        payload = _create_chat_payload(msgs)
         response = self._post_payload(payload)
         assert "You have exceeded the number of maximum messages" in response.json()["error"]["message"]
 
@@ -195,7 +196,7 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         mock_instance = MagicMock()
         mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
         mock_client.return_value = mock_instance
-        payload = self._create_payload(
+        payload = _create_chat_payload(
             {
                 "tools": [
                     {
@@ -234,44 +235,11 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         mock_instance = MagicMock()
         mock_instance.chat.completions.create = AsyncMock(side_effect=MockOpenAIError())
         mock_client.return_value = mock_instance
-        response = self._post_payload(self._create_payload())
+        response = self._post_payload(_create_chat_payload())
         self._assert_status_code_is(response, 404)
         body = response.json()
         assert body["error"]["message"] == "original error message"
         assert body["error"]["type"] == "api_error"
-
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_inference_services_plugin_specific(self, mock_client):
-        """Plugin-specific inference_services config takes priority over global."""
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
-
-        payload = self._create_payload()
-        response = self._post_payload(payload)
-        self._assert_status_code_is(response, 200)
-
-        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        # Global config sets ai_model="ai_model", but plugin-specific overrides it
-        assert call_kwargs["model"] == "ai_model"
-
-    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
-    def test_inference_services_default_fallback(self, mock_client):
-        """inference_services.default is used when no plugin-specific config exists."""
-        mock_response = MagicMock()
-        mock_response.model_dump.return_value = {"id": "test", "choices": []}
-        mock_instance = MagicMock()
-        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
-        mock_client.return_value = mock_instance
-
-        payload = self._create_payload()
-        response = self._post_payload(payload)
-        self._assert_status_code_is(response, 200)
-
-        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
-        assert call_kwargs["model"] == "ai_model"
 
 
 class TestPluginsInferenceServicesConfig(IntegrationTestCase):
@@ -296,17 +264,8 @@ class TestPluginsInferenceServicesConfig(IntegrationTestCase):
             },
         }
 
-    def _create_payload(self, extra=None):
-        payload = {
-            "messages": [{"role": "user", "content": "hi"}],
-            "tools": [],
-        }
-        if extra:
-            payload.update(extra)
-        return payload
-
-    def _post_payload(self, plugin="jupyterlite", payload=None, anon=False):
-        return self._post(f"plugins/{plugin}/chat/completions", payload, json=True, anon=anon)
+    def _post_payload(self, payload=None, anon=False):
+        return self._post("plugins/jupyterlite/chat/completions", payload, json=True, anon=anon)
 
     @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
     def test_plugin_specific_config_used(self, mock_client):
@@ -317,7 +276,7 @@ class TestPluginsInferenceServicesConfig(IntegrationTestCase):
         mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
         mock_client.return_value = mock_instance
 
-        response = self._post_payload(payload=self._create_payload())
+        response = self._post_payload(payload=_create_chat_payload())
         self._assert_status_code_is(response, 200)
 
         call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
@@ -344,15 +303,6 @@ class TestPluginsInferenceServicesDefault(IntegrationTestCase):
             },
         }
 
-    def _create_payload(self, extra=None):
-        payload = {
-            "messages": [{"role": "user", "content": "hi"}],
-            "tools": [],
-        }
-        if extra:
-            payload.update(extra)
-        return payload
-
     def _post_payload(self, payload=None, anon=False):
         return self._post("plugins/jupyterlite/chat/completions", payload, json=True, anon=anon)
 
@@ -365,7 +315,7 @@ class TestPluginsInferenceServicesDefault(IntegrationTestCase):
         mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
         mock_client.return_value = mock_instance
 
-        response = self._post_payload(payload=self._create_payload())
+        response = self._post_payload(payload=_create_chat_payload())
         self._assert_status_code_is(response, 200)
 
         call_kwargs = mock_instance.chat.completions.create.call_args.kwargs

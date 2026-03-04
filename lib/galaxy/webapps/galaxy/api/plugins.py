@@ -166,19 +166,20 @@ class FastAPIPlugins:
         """
         inference_config = getattr(self.config, "inference_services", None)
         if isinstance(inference_config, dict):
-            plugin_specific = inference_config.get(plugin_name, {})
+            plugin_specific = inference_config.get(plugin_name)
             if isinstance(plugin_specific, dict) and key in plugin_specific:
                 return plugin_specific[key]
-            default_config = inference_config.get("default", {})
+            default_config = inference_config.get("default")
             if isinstance(default_config, dict) and key in default_config:
                 return default_config[key]
 
-        global_map = {
-            "model": self.config.ai_model,
-            "api_key": self.config.ai_api_key,
-            "api_base_url": self.config.ai_api_base_url,
-        }
-        return global_map.get(key)
+        if key == "model":
+            return self.config.ai_model
+        elif key == "api_key":
+            return self.config.ai_api_key
+        elif key == "api_base_url":
+            return self.config.ai_api_base_url
+        return None
 
     async def _open_ai_adapter(
         self,
