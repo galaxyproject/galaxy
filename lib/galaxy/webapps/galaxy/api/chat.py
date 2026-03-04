@@ -622,7 +622,7 @@ class ChatAPI:
     @router.post("/api/chat/exchange/{exchange_id}/artifacts")
     async def upload_pyodide_artifact(
         self,
-        exchange_id: int,
+        exchange_id: DecodedDatabaseIdField,
         file: UploadFile = File(...),
         name: Optional[str] = Form(default=None),
         mime_type: Optional[str] = Form(default=None),
@@ -717,7 +717,7 @@ class ChatAPI:
     @router.websocket("/api/chat/exchange/{exchange_id}/stream")
     async def chat_exchange_stream(
         self,
-        exchange_id: int,
+        exchange_id: DecodedDatabaseIdField,
         websocket: WebSocket,
     ) -> None:
         await websocket.accept()
@@ -739,7 +739,7 @@ class ChatAPI:
     @router.post("/api/chat/exchange/{exchange_id}/pyodide_result")
     async def submit_pyodide_result(
         self,
-        exchange_id: int,
+        exchange_id: DecodedDatabaseIdField,
         payload: PyodideResultPayload,
         trans: ProvidesHistoryContext = DependsOnTrans,
         user: User = DependsOnUser,
