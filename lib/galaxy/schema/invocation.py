@@ -89,6 +89,7 @@ class FailureReason(str, Enum):
     when_not_boolean = "when_not_boolean"
     unexpected_failure = "unexpected_failure"
     workflow_parameter_invalid = "workflow_parameter_invalid"
+    step_input_deleted = "step_input_deleted"
 
 
 # The reasons below are attached to the invocation and user-actionable.
@@ -103,6 +104,7 @@ FAILURE_REASONS_EXPECTED = (
     FailureReason.job_failed,
     FailureReason.output_not_found,
     FailureReason.when_not_boolean,
+    FailureReason.step_input_deleted,
 )
 
 
@@ -236,6 +238,21 @@ class GenericInvocationFailureWorkflowParameterInvalid(InvocationFailureMessageB
     details: str = Field(..., description="Message raised by validator")
 
 
+class GenericInvocationFailureStepInputDeleted(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
+    reason: Literal[FailureReason.step_input_deleted]
+    hda_id: Optional[DatabaseIdT] = Field(
+        None,
+        title="HistoryDatasetAssociation ID",
+        description="HistoryDatasetAssociation ID of the deleted dataset, if applicable.",
+    )
+    hdca_id: Optional[DatabaseIdT] = Field(
+        None,
+        title="HistoryDatasetCollectionAssociation ID",
+        description="HistoryDatasetCollectionAssociation ID of the deleted collection, if applicable.",
+    )
+    details: str = Field(..., description="Details about which input referenced a deleted dataset.")
+
+
 InvocationCancellationReviewFailed = GenericInvocationCancellationReviewFailed[int]
 InvocationCancellationHistoryDeleted = GenericInvocationCancellationHistoryDeleted[int]
 InvocationCancellationUserRequest = GenericInvocationCancellationUserRequest[int]
@@ -248,6 +265,7 @@ InvocationFailureWhenNotBoolean = GenericInvocationFailureWhenNotBoolean[int]
 InvocationUnexpectedFailure = GenericInvocationUnexpectedFailure[int]
 InvocationWarningWorkflowOutputNotFound = GenericInvocationEvaluationWarningWorkflowOutputNotFound[int]
 InvocationFailureWorkflowParameterInvalid = GenericInvocationFailureWorkflowParameterInvalid[int]
+InvocationFailureStepInputDeleted = GenericInvocationFailureStepInputDeleted[int]
 
 InvocationMessageUnion = Union[
     InvocationCancellationReviewFailed,
@@ -262,6 +280,7 @@ InvocationMessageUnion = Union[
     InvocationUnexpectedFailure,
     InvocationWarningWorkflowOutputNotFound,
     InvocationFailureWorkflowParameterInvalid,
+    InvocationFailureStepInputDeleted,
 ]
 
 InvocationCancellationReviewFailedResponseModel = GenericInvocationCancellationReviewFailed[EncodedDatabaseIdField]
@@ -282,6 +301,7 @@ InvocationWarningWorkflowOutputNotFoundResponseModel = GenericInvocationEvaluati
 InvocationFailureWorkflowParameterInvalidResponseModel = GenericInvocationFailureWorkflowParameterInvalid[
     EncodedDatabaseIdField
 ]
+InvocationFailureStepInputDeletedResponseModel = GenericInvocationFailureStepInputDeleted[EncodedDatabaseIdField]
 
 _InvocationMessageResponseUnion = Annotated[
     Union[
@@ -297,6 +317,7 @@ _InvocationMessageResponseUnion = Annotated[
         InvocationUnexpectedFailureResponseModel,
         InvocationWarningWorkflowOutputNotFoundResponseModel,
         InvocationFailureWorkflowParameterInvalidResponseModel,
+        InvocationFailureStepInputDeletedResponseModel,
     ],
     Field(discriminator="reason"),
 ]

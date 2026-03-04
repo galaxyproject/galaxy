@@ -2246,7 +2246,9 @@ class DataToolParameter(BaseDataToolParameter):
                     raise ParameterValueError("Collection element in unexpected state", self.name)
             if isinstance(value_to_check, DatasetInstance):
                 if value_to_check.deleted:
-                    raise ParameterValueError("the previously selected dataset has been deleted.", self.name)
+                    raise ParameterValueError(
+                        "the previously selected dataset has been deleted.", self.name, value_to_check
+                    )
                 elif value_to_check.dataset and value_to_check.dataset.state in [
                     Dataset.states.ERROR,
                     Dataset.states.DISCARDED,
@@ -2259,7 +2261,11 @@ class DataToolParameter(BaseDataToolParameter):
                     value_to_check.implicit_conversion = True  # type: ignore[attr-defined]
             elif isinstance(value_to_check, HistoryDatasetCollectionAssociation):
                 if value_to_check.deleted:
-                    raise ParameterValueError("the previously selected dataset collection has been deleted.", self.name)
+                    raise ParameterValueError(
+                        "the previously selected dataset collection has been deleted.",
+                        self.name,
+                        value_to_check,
+                    )
                 value_to_check = value_to_check.collection
             if isinstance(value_to_check, DatasetCollection):
                 if value_to_check.elements_deleted:
@@ -2594,7 +2600,9 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         if rval:
             if isinstance(rval, HistoryDatasetCollectionAssociation):
                 if rval.deleted:
-                    raise ParameterValueError("the previously selected dataset collection has been deleted", self.name)
+                    raise ParameterValueError(
+                        "the previously selected dataset collection has been deleted", self.name, rval
+                    )
                 if rval.collection.elements_deleted:
                     raise ParameterValueError(
                         "the previously selected dataset collection has elements that are deleted.", self.name

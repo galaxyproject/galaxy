@@ -212,6 +212,12 @@ const messageInfo = computed(() => {
             suffix: `failed validation: ${invocationMessage.details}`,
             hasStepPath: true,
         };
+    } else if (reason === "step_input_deleted") {
+        return {
+            prefix: `${FAIL_FRAGMENT}a dataset input on`,
+            suffix: "has been deleted.",
+            hasStepPath: true,
+        };
     } else {
         return { text: reason, hasStepPath: false };
     }

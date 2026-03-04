@@ -18,6 +18,7 @@ export const INVOCATION_MSG_LEVEL = {
     unexpected_failure: "error",
     workflow_output_not_found: "warning",
     workflow_parameter_invalid: "error",
+    step_input_deleted: "error",
 } as const satisfies Readonly<Record<string, "cancel" | "error" | "warning">>;
 
 function countStates(jobSummary: InvocationJobsSummary | StepJobSummary | null, queryStates: string[]): number {
