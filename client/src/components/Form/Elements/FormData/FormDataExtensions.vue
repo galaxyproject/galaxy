@@ -37,7 +37,7 @@ const localFormatsVisible = computed({
     <div v-else>
         <GButton
             :id="props.formatsButtonId"
-            v-g-tooltip.hover.bottom.noninteractive="!formatsVisible ? orList([...props.extensions]) : ''"
+            v-g-tooltip.bottom.noninteractive="!formatsVisible ? orList([...props.extensions]) : ''"
             size="small"
             color="blue"
             transparent

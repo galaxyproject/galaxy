@@ -2,7 +2,7 @@
 import { faAngleUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-import { type ComponentPublicInstance, computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { useToast } from "@/composables/toast";
 import { useUid } from "@/composables/utils/uid";
@@ -71,8 +71,6 @@ const tags = computed(() => props.value.map((tag) => tag.replace(/^name:/, "#"))
 
 const toggledOpen = ref(false);
 const toggleButtonId = useUid("toggle-link-");
-const moreButtonRef = ref<ComponentPublicInstance | null>(null);
-const moreButtonEl = computed(() => (moreButtonRef.value?.$el as HTMLElement) ?? null);
 
 const trimmedTags = computed(() => {
     if (!props.useToggleLink || toggledOpen.value) {
@@ -97,6 +95,9 @@ function isValid(tag: string) {
 function onTagClicked(tag: string) {
     emit("tag-click", tag);
 }
+
+const moreTagsBtn = ref<{ $el: HTMLElement } | null>(null);
+const moreTagsBtnEl = computed(() => (moreTagsBtn.value?.$el as HTMLElement) ?? null);
 </script>
 
 <template>
@@ -156,14 +157,14 @@ function onTagClicked(tag: string) {
                 <BButton
                     v-if="slicedTags.length > 0 && !toggledOpen"
                     :id="toggleButtonId"
-                    ref="moreButtonRef"
+                    ref="moreTagsBtn"
                     variant="link"
                     class="toggle-link"
                     @click.stop="() => (toggledOpen = true)">
                     {{ slicedTags.length }} more...
                 </BButton>
 
-                <GTooltip v-if="slicedTags.length > 0 && !toggledOpen" :reference="moreButtonEl" placement="bottom">
+                <GTooltip v-if="slicedTags.length > 0 && !toggledOpen" :reference="moreTagsBtnEl" placement="bottom">
                     <Tag
                         v-for="tag in slicedTags"
                         :key="tag"

@@ -1,32 +1,47 @@
-import { arrow, autoUpdate, computePosition, flip, offset, type Placement, shift } from "@floating-ui/dom";
+/**
+ * Custom tooltip directive to replace bootstrap-vue's v-b-tooltip.
+ * Uses @floating-ui/dom for positioning (same library as GTooltip component).
+ *
+ * Supports the same modifier API as v-b-tooltip:
+ *   Placement: .top (default), .bottom, .left, .right, .topright
+ *   Trigger:   .hover (default), .focus
+ *   Content:   .html (innerHTML instead of textContent)
+ *   Compat:    .noninteractive, .nofade (accepted, no-op — all tooltips are noninteractive)
+ *   Styling:   .v-danger
+ *
+ * Value forms:
+ *   v-g-tooltip                           → reads element's title attribute
+ *   v-g-tooltip="'text'"                  → string content
+ *   v-g-tooltip="{ title, placement }"    → object config (title optional, falls back to :title)
+ */
+
+import {
+    arrow as arrowMiddleware,
+    autoUpdate,
+    computePosition,
+    flip,
+    offset,
+    type Placement,
+    shift,
+} from "@floating-ui/dom";
+import type { DirectiveOptions } from "vue";
 
 interface TooltipState {
-    tooltipEl: HTMLDivElement | null;
-    arrowEl: HTMLDivElement | null;
-    cleanup: (() => void) | null;
-    listeners: Array<[string, EventListener]>;
-    showing: boolean;
-    text: string;
+    tooltipEl: HTMLElement;
+    arrowEl: HTMLElement;
+    contentEl: HTMLElement;
+    cleanupAutoUpdate: (() => void) | null;
+    cleanupListeners: () => void;
     placement: Placement;
-    noninteractive: boolean;
-    useHtml: boolean;
-    danger: boolean;
+    isHtml: boolean;
 }
 
 const stateMap = new WeakMap<HTMLElement, TooltipState>();
 
+let tooltipCounter = 0;
 let stylesInjected = false;
 
-function injectStyles() {
-    if (stylesInjected) {
-        return;
-    }
-
-    stylesInjected = true;
-
-    const style = document.createElement("style");
-    style.setAttribute("data-g-tooltip-directive", "");
-    style.textContent = `
+const TOOLTIP_STYLES = `
 .g-tooltip-d {
     background-color: var(--color-blue-800);
     color: var(--color-grey-100);
@@ -42,17 +57,11 @@ function injectStyles() {
     top: 0;
     left: 0;
 }
-.g-tooltip-d {
-    display: block;
-}
 .g-tooltip-d.g-tooltip-danger {
     background-color: var(--color-red-700, #dc3545);
 }
-.g-tooltip-d .g-tooltip-arrow {
-    visibility: hidden;
-}
-.g-tooltip-d .g-tooltip-arrow,
-.g-tooltip-d .g-tooltip-arrow::before {
+.g-tooltip-d .g-tooltip-d-arrow,
+.g-tooltip-d .g-tooltip-d-arrow::before {
     position: absolute;
     width: 8px;
     height: 8px;
@@ -61,308 +70,268 @@ function injectStyles() {
     top: 0;
     left: 0;
 }
-.g-tooltip-d .g-tooltip-arrow::before {
+.g-tooltip-d .g-tooltip-d-arrow {
+    visibility: hidden;
+}
+.g-tooltip-d .g-tooltip-d-arrow::before {
     visibility: visible;
     content: "";
     transform: rotate(45deg);
 }
-.g-tooltip-d .g-tooltip-arrow[data-placement^="top"] {
+.g-tooltip-d .g-tooltip-d-arrow[data-placement^="top"] {
     top: unset;
     bottom: -4px;
 }
-.g-tooltip-d .g-tooltip-arrow[data-placement^="bottom"] {
+.g-tooltip-d .g-tooltip-d-arrow[data-placement^="bottom"] {
     top: -4px;
     bottom: unset;
 }
-.g-tooltip-d .g-tooltip-arrow[data-placement^="left"] {
+.g-tooltip-d .g-tooltip-d-arrow[data-placement^="left"] {
     left: unset;
     right: -4px;
 }
-.g-tooltip-d .g-tooltip-arrow[data-placement^="right"] {
+.g-tooltip-d .g-tooltip-d-arrow[data-placement^="right"] {
     left: -4px;
     right: unset;
 }
 `;
+
+const PLACEMENT_MAP: Record<string, Placement> = {
+    top: "top",
+    bottom: "bottom",
+    left: "left",
+    right: "right",
+    topright: "top-end",
+    topleft: "top-start",
+    bottomright: "bottom-end",
+    bottomleft: "bottom-start",
+};
+
+function injectStyles() {
+    if (stylesInjected) {
+        return;
+    }
+    stylesInjected = true;
+    const style = document.createElement("style");
+    style.textContent = TOOLTIP_STYLES;
     document.head.appendChild(style);
 }
 
-function getPlacementFromModifiers(modifiers: Record<string, boolean>): Placement {
-    if (modifiers.bottom) {
-        return "bottom";
+function getPlacement(modifiers: Record<string, boolean>, bindingValue: unknown): Placement {
+    for (const [mod, placement] of Object.entries(PLACEMENT_MAP)) {
+        if (modifiers[mod]) {
+            return placement;
+        }
     }
-
-    if (modifiers.left) {
-        return "left";
+    if (typeof bindingValue === "object" && bindingValue !== null && "placement" in bindingValue) {
+        return (bindingValue as { placement: Placement }).placement;
     }
-
-    if (modifiers.right) {
-        return "right";
-    }
-
     return "top";
 }
 
-function resolveText(el: HTMLElement, value: unknown, existingText: string): string {
-    if (typeof value === "string" && value) {
-        return value;
+function getContent(el: HTMLElement, bindingValue: unknown): string {
+    if (typeof bindingValue === "string" && bindingValue) {
+        return bindingValue;
     }
-
-    if (value && typeof value === "object" && "title" in value && (value as { title: string }).title) {
-        return (value as { title: string }).title;
+    if (typeof bindingValue === "object" && bindingValue !== null && "title" in bindingValue) {
+        return String((bindingValue as { title: string }).title || "");
     }
-
-    const titleAttr = el.getAttribute("title");
-
-    if (titleAttr) {
-        return titleAttr;
+    // Fall back to element's title attribute; capture and remove it to prevent native tooltip
+    const title = el.getAttribute("title");
+    if (title) {
+        el.removeAttribute("title");
+        el.dataset.gTooltipTitle = title;
     }
-
-    return existingText;
+    return el.dataset.gTooltipTitle || "";
 }
 
-function resolvePlacement(value: unknown, modifiers: Record<string, boolean>): Placement {
-    if (value && typeof value === "object" && "placement" in value) {
-        return (value as { placement: Placement }).placement;
-    }
-
-    return getPlacementFromModifiers(modifiers);
-}
-
-function createTooltipEl(state: TooltipState): HTMLDivElement {
+function createTooltipEl(isDanger: boolean): { tooltipEl: HTMLElement; arrowEl: HTMLElement; contentEl: HTMLElement } {
     injectStyles();
-
-    const tooltip = document.createElement("div");
-    tooltip.setAttribute("role", "tooltip");
-    // "tooltip" class matches v-b-tooltip's rendered element for Selenium selector compatibility
-    tooltip.className = "tooltip g-tooltip-d";
-
-    if (state.danger) {
-        tooltip.classList.add("g-tooltip-danger");
+    const tooltipEl = document.createElement("div");
+    tooltipEl.setAttribute("role", "tooltip");
+    // "tooltip" class matches bootstrap-vue's rendered element for Selenium selector compat
+    tooltipEl.className = "tooltip g-tooltip-d";
+    if (isDanger) {
+        tooltipEl.classList.add("g-tooltip-danger");
     }
 
-    if (!state.noninteractive) {
-        tooltip.style.pointerEvents = "auto";
-    }
+    // "tooltip-inner" matches bootstrap-vue's inner element for Selenium selector compat
+    const contentEl = document.createElement("div");
+    contentEl.className = "tooltip-inner";
+    tooltipEl.appendChild(contentEl);
 
-    // "tooltip-inner" matches Bootstrap-Vue's rendered tooltip for Selenium selector compatibility
-    // navigation.yml uses: tooltip_inner: .tooltip-inner
-    const innerDiv = document.createElement("div");
-    innerDiv.className = "tooltip-inner";
-    tooltip.appendChild(innerDiv);
+    const arrowEl = document.createElement("div");
+    arrowEl.className = "g-tooltip-d-arrow";
+    tooltipEl.appendChild(arrowEl);
 
-    const arrowDiv = document.createElement("div");
-    arrowDiv.className = "g-tooltip-arrow";
-    tooltip.appendChild(arrowDiv);
-
-    state.arrowEl = arrowDiv;
-    // Don't append to body yet; we do that in show() and remove in hide()
-    // so that wait_for_absent() finds no .tooltip elements in the DOM when hidden
-
-    return tooltip;
-}
-
-function updateContent(state: TooltipState) {
-    if (!state.tooltipEl || !state.arrowEl) {
-        return;
-    }
-
-    const innerDiv = state.tooltipEl.querySelector(".tooltip-inner");
-
-    if (!innerDiv) {
-        return;
-    }
-
-    if (state.useHtml) {
-        innerDiv.innerHTML = state.text;
-    } else {
-        innerDiv.textContent = state.text;
-    }
+    // Don't append to body yet — add on show, remove on hide,
+    // so Selenium wait_for_absent(".tooltip") works correctly
+    return { tooltipEl, arrowEl, contentEl };
 }
 
 async function updatePosition(el: HTMLElement, state: TooltipState) {
-    if (!state.tooltipEl || !state.arrowEl) {
-        return;
-    }
-
     const { x, y, middlewareData, placement } = await computePosition(el, state.tooltipEl, {
         placement: state.placement,
         middleware: [
             offset(8),
             flip({ altBoundary: true }),
             shift({ altBoundary: true }),
-            arrow({ element: state.arrowEl }),
+            arrowMiddleware({ element: state.arrowEl }),
         ],
     });
 
     state.tooltipEl.style.transform = `translate(${x}px, ${y}px)`;
 
     if (middlewareData.arrow) {
-        const { x: ax, y: ay } = middlewareData.arrow;
-        state.arrowEl.style.transform = `translate(${ax ?? 0}px, ${ay ?? 0}px)`;
+        const ax = middlewareData.arrow.x ?? 0;
+        const ay = middlewareData.arrow.y ?? 0;
+        state.arrowEl.style.transform = `translate(${ax}px, ${ay}px)`;
     }
 
-    state.arrowEl.setAttribute("data-placement", placement);
+    state.arrowEl.dataset.placement = placement;
 }
 
-function show(el: HTMLElement, state: TooltipState) {
-    if (state.showing || !state.text) {
+function showTooltip(el: HTMLElement) {
+    const state = stateMap.get(el);
+    if (!state) {
         return;
     }
 
-    if (el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true") {
+    if (
+        (el as HTMLButtonElement).disabled ||
+        el.getAttribute("disabled") === "true" ||
+        el.getAttribute("aria-disabled") === "true"
+    ) {
         return;
     }
 
-    state.showing = true;
-
-    if (!state.tooltipEl) {
-        state.tooltipEl = createTooltipEl(state);
+    const content = state.isHtml ? state.contentEl.innerHTML : state.contentEl.textContent;
+    if (!content) {
+        return;
     }
 
-    updateContent(state);
-
-    // Append to body on show so .tooltip is in the DOM (wait_for_present works)
     if (!state.tooltipEl.isConnected) {
         document.body.appendChild(state.tooltipEl);
     }
 
-    state.cleanup = autoUpdate(el, state.tooltipEl, () => updatePosition(el, state));
+    state.cleanupAutoUpdate = autoUpdate(el, state.tooltipEl, () => updatePosition(el, state));
 }
 
-function hide(_el: HTMLElement, state: TooltipState) {
-    if (!state.showing) {
+function hideTooltip(el: HTMLElement) {
+    const state = stateMap.get(el);
+    if (!state) {
         return;
     }
 
-    state.showing = false;
-    state.cleanup?.();
-    state.cleanup = null;
+    state.cleanupAutoUpdate?.();
+    state.cleanupAutoUpdate = null;
 
-    // Remove from DOM on hide so .tooltip is absent (wait_for_absent works)
-    if (state.tooltipEl?.isConnected) {
+    if (state.tooltipEl.isConnected) {
         state.tooltipEl.remove();
     }
 }
 
-function setupListeners(el: HTMLElement, state: TooltipState, modifiers: Record<string, boolean>) {
-    for (const [event, handler] of state.listeners) {
-        el.removeEventListener(event, handler);
+function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg?: string): () => void {
+    const listeners: Array<[string, EventListener]> = [];
+
+    function addListener(event: string, handler: EventListener) {
+        el.addEventListener(event, handler);
+        listeners.push([event, handler]);
     }
 
-    state.listeners = [];
-
-    const focusOnly = modifiers.focus && !modifiers.hover;
-    const showHandler = () => show(el, state);
-    const hideHandler = () => hide(el, state);
+    const focusOnly = (modifiers.focus || arg === "focus") && !modifiers.hover && arg !== "hover";
+    const showHandler = () => showTooltip(el);
+    const hideHandler = () => hideTooltip(el);
     const keyHandler = (e: Event) => {
         if ((e as KeyboardEvent).key === "Escape") {
-            hide(el, state);
+            hideTooltip(el);
         }
     };
 
-    if (focusOnly) {
-        el.addEventListener("focusin", showHandler);
-        el.addEventListener("focusout", hideHandler);
-        state.listeners.push(["focusin", showHandler], ["focusout", hideHandler]);
+    if (!focusOnly) {
+        addListener("mouseenter", showHandler);
+        addListener("mouseleave", hideHandler);
+    }
+    addListener("focusin", showHandler);
+    addListener("focusout", hideHandler);
+    addListener("keydown", keyHandler);
+
+    return () => {
+        for (const [event, handler] of listeners) {
+            el.removeEventListener(event, handler);
+        }
+    };
+}
+
+function sanitizeHtml(raw: string): string {
+    const doc = new DOMParser().parseFromString(raw, "text/html");
+    doc.querySelectorAll("script,style,iframe,object,embed,form").forEach((el) => el.remove());
+    return doc.body.innerHTML;
+}
+
+function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipState) {
+    const content = getContent(el, bindingValue);
+    if (state.isHtml) {
+        state.contentEl.innerHTML = sanitizeHtml(content);
     } else {
-        // Default: hover + focus for accessibility
-        el.addEventListener("mouseenter", showHandler);
-        el.addEventListener("mouseleave", hideHandler);
-        el.addEventListener("focus", showHandler);
-        el.addEventListener("blur", hideHandler);
-        state.listeners.push(
-            ["mouseenter", showHandler],
-            ["mouseleave", hideHandler],
-            ["focus", showHandler],
-            ["blur", hideHandler],
-        );
-    }
-
-    el.addEventListener("keydown", keyHandler);
-    state.listeners.push(["keydown", keyHandler]);
-}
-
-function destroyTooltip(state: TooltipState) {
-    state.cleanup?.();
-    state.cleanup = null;
-
-    if (state.tooltipEl) {
-        state.tooltipEl.remove();
-        state.tooltipEl = null;
-        state.arrowEl = null;
+        state.contentEl.textContent = content;
     }
 }
 
-function inserted(el: HTMLElement, binding: { value?: unknown; modifiers: Record<string, boolean> }) {
-    const modifiers = binding.modifiers || {};
-    const text = resolveText(el, binding.value, "");
+export const vGTooltip: DirectiveOptions = {
+    inserted(el, binding) {
+        const modifiers = binding.modifiers || {};
+        const isDanger = !!modifiers["v-danger"];
+        const isHtml = !!modifiers.html;
+        const placement = getPlacement(modifiers, binding.value);
 
-    const state: TooltipState = {
-        tooltipEl: null,
-        arrowEl: null,
-        cleanup: null,
-        listeners: [],
-        showing: false,
-        text,
-        placement: resolvePlacement(binding.value, modifiers),
-        noninteractive: !!modifiers.noninteractive,
-        useHtml: !!modifiers.html,
-        danger: !!modifiers["v-danger"],
-    };
+        const { tooltipEl, arrowEl, contentEl } = createTooltipEl(isDanger);
+        const cleanupListeners = setupListeners(el, modifiers, binding.arg);
 
-    stateMap.set(el, state);
-    setupListeners(el, state, modifiers);
-}
+        const uid = `g-tooltip-${tooltipCounter++}`;
+        tooltipEl.id = uid;
+        el.setAttribute("aria-describedby", uid);
 
-function componentUpdated(el: HTMLElement, binding: { value?: unknown; modifiers: Record<string, boolean> }) {
-    const state = stateMap.get(el);
+        const state: TooltipState = {
+            tooltipEl,
+            arrowEl,
+            contentEl,
+            cleanupAutoUpdate: null,
+            cleanupListeners,
+            placement,
+            isHtml,
+        };
 
-    if (!state) {
-        return;
-    }
+        stateMap.set(el, state);
+        updateContent(el, binding.value, state);
+    },
 
-    const modifiers = binding.modifiers || {};
-    const newText = resolveText(el, binding.value, state.text);
-
-    state.text = newText;
-    state.placement = resolvePlacement(binding.value, modifiers);
-    state.danger = !!modifiers["v-danger"];
-
-    if (state.tooltipEl) {
-        updateContent(state);
-
-        if (state.danger) {
-            state.tooltipEl.classList.add("g-tooltip-danger");
-        } else {
-            state.tooltipEl.classList.remove("g-tooltip-danger");
+    componentUpdated(el, binding) {
+        const state = stateMap.get(el);
+        if (!state) {
+            return;
         }
-    }
+        updateContent(el, binding.value, state);
+        state.placement = getPlacement(binding.modifiers || {}, binding.value);
 
-    // Hide if text became empty
-    if (!state.text && state.showing) {
-        hide(el, state);
-    }
-}
+        // Hide if content became empty
+        const content = state.isHtml ? state.contentEl.innerHTML : state.contentEl.textContent;
+        if (!content && state.tooltipEl.isConnected) {
+            hideTooltip(el);
+        }
+    },
 
-function unbind(el: HTMLElement) {
-    const state = stateMap.get(el);
-
-    if (!state) {
-        return;
-    }
-
-    for (const [event, handler] of state.listeners) {
-        el.removeEventListener(event, handler);
-    }
-
-    destroyTooltip(state);
-    stateMap.delete(el);
-}
-
-export const vGTooltip = {
-    inserted,
-    componentUpdated,
-    unbind,
+    unbind(el) {
+        const state = stateMap.get(el);
+        if (!state) {
+            return;
+        }
+        state.cleanupListeners();
+        state.cleanupAutoUpdate?.();
+        state.tooltipEl.remove();
+        el.removeAttribute("aria-describedby");
+        stateMap.delete(el);
+    },
 };
 
 export default vGTooltip;
