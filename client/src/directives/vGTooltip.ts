@@ -263,10 +263,16 @@ function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg
     };
 }
 
+function sanitizeHtml(raw: string): string {
+    const doc = new DOMParser().parseFromString(raw, "text/html");
+    doc.querySelectorAll("script,style,iframe,object,embed,form").forEach((el) => el.remove());
+    return doc.body.innerHTML;
+}
+
 function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipState) {
     const content = getContent(el, bindingValue);
     if (state.isHtml) {
-        state.contentEl.innerHTML = content;
+        state.contentEl.innerHTML = sanitizeHtml(content);
     } else {
         state.contentEl.textContent = content;
     }
