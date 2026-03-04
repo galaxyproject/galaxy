@@ -31,6 +31,8 @@ from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.managers.credentials import _build_user_credentials_query
 from galaxy.model import (
+    DatasetInstance,
+    HistoryDatasetCollectionAssociation,
     Job,
     PostJobAction,
     Workflow,
@@ -56,6 +58,7 @@ from galaxy.schema.invocation import (
     InvocationFailureDatasetFailed,
     InvocationFailureExpressionEvaluationFailed,
     InvocationFailureOutputNotFound,
+    InvocationFailureStepInputDeleted,
     InvocationFailureWhenNotBoolean,
     InvocationFailureWorkflowParameterInvalid,
 )
@@ -94,6 +97,7 @@ from galaxy.tools.parameters.basic import (
     HiddenToolParameter,
     IntegerToolParameter,
     parameter_types,
+    ParameterValueError,
     raw_to_galaxy,
     SelectToolParameter,
     TextToolParameter,
@@ -502,7 +506,9 @@ class WorkflowModule:
 
             def update_value(input, context, prefixed_name, **kwargs):
                 if prefixed_name in step_updates:
-                    value, error = check_param(trans, input, step_updates.get(prefixed_name), context)
+                    value, error = check_param(
+                        trans, input, step_updates.get(prefixed_name), context, simple_errors=False
+                    )
                     if error is not None:
                         step_errors[prefixed_name] = error
                     return value
@@ -2389,9 +2395,12 @@ class ToolModule(WorkflowModule):
             # TODO: why do we even create an invocation, seems like something we could check on submit?
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
             raise exceptions.MessageException(message)
-        self.state, _ = self.compute_runtime_state(
+        self.state, step_errors = self.compute_runtime_state(
             trans, step, step_updates=progress.param_map.get(step.id), replace_default_values=True
         )
+        if step_errors:
+            failure = self._build_step_error_failure(trans, step, step_errors, progress)
+            raise FailWorkflowEvaluation(why=failure)
         step.state = self.state
         tool_state = step.state
         assert tool_state is not None
@@ -2604,6 +2613,36 @@ class ToolModule(WorkflowModule):
             raise exceptions.MessageException(message)
 
         return complete
+
+    @staticmethod
+    def _build_step_error_failure(trans, step, step_errors, progress):
+        """Build the appropriate invocation failure message for step parameter errors.
+
+        Inspects the ParameterValueError objects to determine whether the error
+        is due to a deleted dataset/collection input or a generic validation failure.
+        """
+        for error in step_errors.values():
+            if isinstance(error, ParameterValueError):
+                pv = error.parameter_value
+                if isinstance(pv, DatasetInstance) and pv.deleted:
+                    return InvocationFailureStepInputDeleted(
+                        reason=FailureReason.step_input_deleted,
+                        workflow_step_id=step.id,
+                        hda_id=pv.id,
+                        details=str(error),
+                    )
+                if isinstance(pv, HistoryDatasetCollectionAssociation) and pv.deleted:
+                    return InvocationFailureStepInputDeleted(
+                        reason=FailureReason.step_input_deleted,
+                        workflow_step_id=step.id,
+                        hdca_id=pv.id,
+                        details=str(error),
+                    )
+        return InvocationFailureWorkflowParameterInvalid(
+            reason=FailureReason.workflow_parameter_invalid,
+            workflow_step_id=step.id,
+            details=str({k: str(v) for k, v in step_errors.items()}),
+        )
 
     def _effective_post_job_actions(self, step):
         effective_post_job_actions = step.post_job_actions[:]
@@ -2839,7 +2878,8 @@ def populate_module_and_state(
         step_errors = module_injector.compute_runtime_state(step, step_args=step_args)
         if step_errors:
             raise exceptions.MessageException(
-                "Error computing workflow step runtime state", err_data={step.order_index: step_errors}
+                "Error computing workflow step runtime state",
+                err_data={step.order_index: {k: str(v) for k, v in step_errors.items()}},
             )
         if step.upgrade_messages:
             if allow_tool_state_corrections:

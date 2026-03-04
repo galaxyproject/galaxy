@@ -5765,6 +5765,64 @@ steps:
             assert datasets[PAUSED_1]["state"] == state
             assert datasets[PAUSED_2]["state"] == "paused"
 
+    @skip_without_tool("cat")
+    def test_workflow_with_deleted_dataset_step_parameter(self):
+        """Verify workflow fails gracefully when a step parameter references a deleted dataset.
+
+        Uses a pause step so we can delete the dataset after the invocation is
+        queued but before the cat step executes, avoiding a race condition.
+        """
+        with self.dataset_populator.test_history() as history_id:
+            workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: data
+steps:
+  the_pause:
+    type: pause
+    in:
+      input: input1
+  first_cat:
+    tool_id: cat
+    in:
+      input1: the_pause
+""")
+            valid_hda = self.dataset_populator.new_dataset(history_id, wait=True)
+            to_delete_hda = self.dataset_populator.new_dataset(history_id, wait=True)
+            to_delete_id = to_delete_hda["id"]
+            # Pass the to-be-deleted dataset as a step parameter override for the cat step
+            # (step order_index 2). This passes initial validation because the dataset
+            # is still valid at invocation time.
+            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                workflow_id,
+                history_id=history_id,
+                inputs={"input1": {"src": "hda", "id": valid_hda["id"]}},
+                request={
+                    "parameters": dumps({"2": {"input1": {"src": "hda", "id": to_delete_id}}}),
+                    "parameters_normalized": True,
+                },
+                inputs_by="name",
+            )
+            # Invocation is paused — delete the dataset before resuming.
+            self.dataset_populator.delete_dataset(history_id=history_id, content_id=to_delete_id, purge=False)
+            # Resume the pause step. The cat step will now run and
+            # ToolModule.execute() → compute_runtime_state will find the deleted dataset.
+            self.__review_paused_steps(workflow_id, invocation_id, order_index=1, action=True)
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id,
+                workflow_id=workflow_id,
+                invocation_id=invocation_id,
+                assert_ok=False,
+            )
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            assert invocation["state"] == "failed", invocation
+            assert len(invocation["messages"]) == 1
+            message = invocation["messages"][0]
+            assert message["reason"] == "step_input_deleted"
+            assert message["hda_id"] == to_delete_id
+            assert "the previously selected dataset has been deleted" in message["details"]
+
     def test_run_with_implicit_connection(self):
         with self.dataset_populator.test_history() as history_id:
             run_summary = self._run_workflow(

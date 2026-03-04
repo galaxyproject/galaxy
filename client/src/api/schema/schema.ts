@@ -16375,6 +16375,39 @@ export interface components {
              */
             workflow_step_index_path?: number[] | null;
         };
+        /** InvocationFailureStepInputDeletedResponse */
+        InvocationFailureStepInputDeletedResponse: {
+            /**
+             * Details
+             * @description Details about which input referenced a deleted dataset.
+             */
+            details: string;
+            /**
+             * HistoryDatasetAssociation ID
+             * @description HistoryDatasetAssociation ID of the deleted dataset, if applicable.
+             */
+            hda_id?: string | null;
+            /**
+             * HistoryDatasetCollectionAssociation ID
+             * @description HistoryDatasetCollectionAssociation ID of the deleted collection, if applicable.
+             */
+            hdca_id?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            reason: "step_input_deleted";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+            /**
+             * Workflow Step Index Path
+             * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
+             */
+            workflow_step_index_path?: number[] | null;
+        };
         /** InvocationFailureWhenNotBooleanResponse */
         InvocationFailureWhenNotBooleanResponse: {
             /**
@@ -16499,7 +16532,8 @@ export interface components {
             | components["schemas"]["InvocationFailureWhenNotBooleanResponse"]
             | components["schemas"]["InvocationUnexpectedFailureResponse"]
             | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"]
-            | components["schemas"]["InvocationFailureWorkflowParameterInvalidResponse"];
+            | components["schemas"]["InvocationFailureWorkflowParameterInvalidResponse"]
+            | components["schemas"]["InvocationFailureStepInputDeletedResponse"];
         /** InvocationOutput */
         InvocationOutput: {
             /**
