@@ -482,8 +482,9 @@ function popOutToScratchbook() {
                 <div class="header-actions">
                     <GButton
                         color="blue"
-                        :outline="!usingDataAnalysisAgent"
+                        outline
                         size="small"
+                        :pressed="usingDataAnalysisAgent"
                         :title="
                             !usingDataAnalysisAgent
                                 ? 'Include datasets from my current history in the conversation context'
@@ -493,23 +494,21 @@ function popOutToScratchbook() {
                         <FontAwesomeIcon :icon="faMicroscope" fixed-width />
                         Include Datasets
                     </GButton>
-                    <button class="btn btn-sm btn-outline-primary" title="Start New Chat" @click="startNewChat">
+                    <GButton color="blue" outline size="small" title="Start New Chat" @click="startNewChat">
                         <FontAwesomeIcon :icon="faPlus" fixed-width />
                         New
-                    </button>
-                    <button
+                    </GButton>
+                    <GButton
                         v-if="currentChatId"
-                        class="btn btn-sm btn-outline-danger"
+                        color="red"
+                        outline
                         title="Delete this conversation"
                         @click="deleteCurrentChat">
                         <FontAwesomeIcon :icon="faTrash" fixed-width />
-                    </button>
-                    <button
-                        class="btn btn-sm btn-outline-primary"
-                        title="Open in floating window"
-                        @click="popOutToScratchbook">
+                    </GButton>
+                    <GButton color="blue" outline title="Open in floating window" @click="popOutToScratchbook">
                         <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
-                    </button>
+                    </GButton>
                 </div>
             </div>
 
@@ -546,15 +545,16 @@ function popOutToScratchbook() {
                 @feedback="sendFeedback"
                 @handle-action="handleAction">
                 <template v-slot:after-content>
-                    <div v-if="isAwaitingExecution(message)" class="alert alert-warning mb-2">
+                    <BAlert v-if="isAwaitingExecution(message)" variant="warning" show>
                         ⚙️ Analysis still running… please keep this tab open; refreshing will restart the execution.
-                    </div>
-                    <div
+                    </BAlert>
+                    <BAlert
                         v-else-if="message.agentResponse?.metadata?.pyodide_status === 'timeout'"
-                        class="alert alert-warning mb-2">
+                        variant="warning"
+                        show>
                         ⚠️ Previous run timed out before the result was sent. Please ask again if you still need this
                         step to complete.
-                    </div>
+                    </BAlert>
                     <MessageArtifacts v-if="hasArtifacts(message)" :message="message" />
                     <MessageIntermediateDetails :message="message" :pyodide-executions="pyodideExecutions" />
                 </template>
@@ -619,7 +619,7 @@ function popOutToScratchbook() {
     .header-actions {
         display: flex;
         gap: 0.5rem;
-        align-items: center;
+        align-items: stretch;
     }
 
     .header-expand {
