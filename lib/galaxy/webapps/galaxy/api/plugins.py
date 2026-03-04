@@ -150,23 +150,48 @@ class FastAPIPlugins:
             plugin_specs = plugin and plugin.config.get("specs")
             plugin_ai_prompt = plugin_specs and plugin_specs.get("ai_prompt")
             if plugin_ai_prompt:
-                return await self._open_ai_adapter(payload, plugin_ai_prompt)
+                return await self._open_ai_adapter(payload, plugin_ai_prompt, plugin_name)
             else:
                 return self._create_error("Selected plugin has no AI prompt.")
         else:
             return self._create_error("Visualization registry is not available.")
 
+    def _get_plugin_config(self, plugin_name: str, key: str) -> Optional[str]:
+        """Get config for a plugin with fallback through inference_services.
+
+        Precedence:
+        1. Plugin-specific: inference_services.<plugin_name>.<key>
+        2. Default inference: inference_services.default.<key>
+        3. Global config: ai_model / ai_api_key / ai_api_base_url
+        """
+        inference_config = getattr(self.config, "inference_services", None)
+        if isinstance(inference_config, dict):
+            plugin_specific = inference_config.get(plugin_name, {})
+            if isinstance(plugin_specific, dict) and key in plugin_specific:
+                return plugin_specific[key]
+            default_config = inference_config.get("default", {})
+            if isinstance(default_config, dict) and key in default_config:
+                return default_config[key]
+
+        global_map = {
+            "model": self.config.ai_model,
+            "api_key": self.config.ai_api_key,
+            "api_base_url": self.config.ai_api_base_url,
+        }
+        return global_map.get(key)
+
     async def _open_ai_adapter(
         self,
         payload: ChatCompletionRequest,
         prompt: str,
+        plugin_name: str,
     ):
         """Galaxy managed chat completion adapter with prompt injection"""
 
-        # Collect configuration
-        ai_api_key = self.config.ai_api_key
-        ai_api_base_url = self.config.ai_api_base_url
-        ai_model = self.config.ai_model
+        # Collect configuration via inference_services fallback chain
+        ai_api_key = self._get_plugin_config(plugin_name, "api_key")
+        ai_api_base_url = self._get_plugin_config(plugin_name, "api_base_url")
+        ai_model = self._get_plugin_config(plugin_name, "model")
         if ai_api_key is None:
             return self._create_error("AI service not configured: API key is required.")
         if ai_model is None:

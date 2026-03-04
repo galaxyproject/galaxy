@@ -239,3 +239,137 @@ class TestVisualizationPluginsApi(IntegrationTestCase):
         body = response.json()
         assert body["error"]["message"] == "original error message"
         assert body["error"]["type"] == "api_error"
+
+    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
+    def test_inference_services_plugin_specific(self, mock_client):
+        """Plugin-specific inference_services config takes priority over global."""
+        mock_response = MagicMock()
+        mock_response.model_dump.return_value = {"id": "test", "choices": []}
+        mock_instance = MagicMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_client.return_value = mock_instance
+
+        payload = self._create_payload()
+        response = self._post_payload(payload)
+        self._assert_status_code_is(response, 200)
+
+        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
+        # Global config sets ai_model="ai_model", but plugin-specific overrides it
+        assert call_kwargs["model"] == "ai_model"
+
+    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
+    def test_inference_services_default_fallback(self, mock_client):
+        """inference_services.default is used when no plugin-specific config exists."""
+        mock_response = MagicMock()
+        mock_response.model_dump.return_value = {"id": "test", "choices": []}
+        mock_instance = MagicMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_client.return_value = mock_instance
+
+        payload = self._create_payload()
+        response = self._post_payload(payload)
+        self._assert_status_code_is(response, 200)
+
+        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
+        assert call_kwargs["model"] == "ai_model"
+
+
+class TestPluginsInferenceServicesConfig(IntegrationTestCase):
+    """Tests for inference_services config resolution in plugins."""
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config) -> None:
+        config["ai_api_key"] = "global_key"
+        config["ai_api_base_url"] = "http://global-url"
+        config["ai_model"] = "global_model"
+        config["visualization_plugins_directory"] = TEST_VISUALIZATION_PLUGINS_DIR
+        config["inference_services"] = {
+            "default": {
+                "model": "default_model",
+                "api_key": "default_key",
+                "api_base_url": "http://default-url",
+            },
+            "jupyterlite": {
+                "model": "jupyterlite_model",
+                "api_key": "jupyterlite_key",
+                "api_base_url": "http://jupyterlite-url",
+            },
+        }
+
+    def _create_payload(self, extra=None):
+        payload = {
+            "messages": [{"role": "user", "content": "hi"}],
+            "tools": [],
+        }
+        if extra:
+            payload.update(extra)
+        return payload
+
+    def _post_payload(self, plugin="jupyterlite", payload=None, anon=False):
+        return self._post(f"plugins/{plugin}/chat/completions", payload, json=True, anon=anon)
+
+    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
+    def test_plugin_specific_config_used(self, mock_client):
+        """Plugin-specific inference_services config overrides default and global."""
+        mock_response = MagicMock()
+        mock_response.model_dump.return_value = {"id": "test", "choices": []}
+        mock_instance = MagicMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_client.return_value = mock_instance
+
+        response = self._post_payload(payload=self._create_payload())
+        self._assert_status_code_is(response, 200)
+
+        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
+        assert call_kwargs["model"] == "jupyterlite_model"
+        client_kwargs = mock_client.call_args.kwargs
+        assert client_kwargs["api_key"] == "jupyterlite_key"
+        assert client_kwargs["base_url"] == "http://jupyterlite-url"
+
+
+class TestPluginsInferenceServicesDefault(IntegrationTestCase):
+    """Tests that inference_services.default is used when no plugin-specific config exists."""
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config) -> None:
+        config["ai_api_key"] = "global_key"
+        config["ai_api_base_url"] = "http://global-url"
+        config["ai_model"] = "global_model"
+        config["visualization_plugins_directory"] = TEST_VISUALIZATION_PLUGINS_DIR
+        config["inference_services"] = {
+            "default": {
+                "model": "default_model",
+                "api_key": "default_key",
+                "api_base_url": "http://default-url",
+            },
+        }
+
+    def _create_payload(self, extra=None):
+        payload = {
+            "messages": [{"role": "user", "content": "hi"}],
+            "tools": [],
+        }
+        if extra:
+            payload.update(extra)
+        return payload
+
+    def _post_payload(self, payload=None, anon=False):
+        return self._post("plugins/jupyterlite/chat/completions", payload, json=True, anon=anon)
+
+    @patch("galaxy.webapps.galaxy.api.plugins.AsyncOpenAI")
+    def test_default_config_fallback(self, mock_client):
+        """inference_services.default is used when no plugin-specific entry exists."""
+        mock_response = MagicMock()
+        mock_response.model_dump.return_value = {"id": "test", "choices": []}
+        mock_instance = MagicMock()
+        mock_instance.chat.completions.create = AsyncMock(return_value=mock_response)
+        mock_client.return_value = mock_instance
+
+        response = self._post_payload(payload=self._create_payload())
+        self._assert_status_code_is(response, 200)
+
+        call_kwargs = mock_instance.chat.completions.create.call_args.kwargs
+        assert call_kwargs["model"] == "default_model"
+        client_kwargs = mock_client.call_args.kwargs
+        assert client_kwargs["api_key"] == "default_key"
+        assert client_kwargs["base_url"] == "http://default-url"
