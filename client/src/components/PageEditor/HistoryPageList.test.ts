@@ -63,16 +63,16 @@ describe("HistoryPageList", () => {
             wrapper = await mountComponent({ pages: [] });
         });
 
-        it("always shows 'Pages' heading", () => {
+        it("always shows 'Galaxy Notebooks' heading", () => {
             const heading = wrapper.find(SELECTORS.HEADER_TITLE);
             expect(heading.exists()).toBe(true);
-            expect(heading.text()).toBe("Pages");
+            expect(heading.text()).toBe("Galaxy Notebooks");
         });
 
-        it("always shows 'New Page' button", () => {
+        it("always shows 'New Notebook' button", () => {
             const button = wrapper.find(SELECTORS.NEW_BUTTON);
             expect(button.exists()).toBe(true);
-            expect(button.text()).toContain("New Page");
+            expect(button.text()).toContain("New Notebook");
         });
     });
 
@@ -83,15 +83,15 @@ describe("HistoryPageList", () => {
             wrapper = await mountComponent({ pages: [] });
         });
 
-        it("shows 'No pages yet' when pages prop is empty array", () => {
+        it("shows 'No notebooks yet' when pages prop is empty array", () => {
             const emptyState = wrapper.find(SELECTORS.EMPTY_STATE);
             expect(emptyState.exists()).toBe(true);
-            expect(emptyState.text()).toContain("No pages yet");
+            expect(emptyState.text()).toContain("No notebooks yet");
         });
 
         it("shows create guidance text when no pages", () => {
             const emptyState = wrapper.find(SELECTORS.EMPTY_STATE);
-            expect(emptyState.text()).toContain("Create a page to document your analysis");
+            expect(emptyState.text()).toContain("Create a notebook to document your analysis");
         });
 
         it("does NOT show page items when empty", () => {
@@ -118,9 +118,9 @@ describe("HistoryPageList", () => {
             expect(titles.at(0).text()).toBe("My Analysis");
         });
 
-        it("shows 'Untitled Page' when title is empty", () => {
+        it("shows 'Untitled Notebook' when title is empty", () => {
             const titles = wrapper.findAll(SELECTORS.PAGE_TITLE);
-            expect(titles.at(1).text()).toBe("Untitled Page");
+            expect(titles.at(1).text()).toBe("Untitled Notebook");
         });
 
         it("displays formatted update_time for each page", () => {

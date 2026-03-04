@@ -16,6 +16,7 @@ import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
 import type { RouterPushOptions } from "@/components/History/Content/router-push-options";
+import { PAGE_LABELS, PERMISSIONS_LABELS } from "@/components/Page/constants";
 import { useConfig } from "@/composables/config";
 import { useHistoryStore } from "@/stores/historyStore";
 import { type PageEditorMode, usePageEditorStore } from "@/stores/pageEditorStore";
@@ -45,12 +46,14 @@ const agentsAvailable = computed(() => !!config.value?.llm_api_configured);
 const editorMode = computed<PageEditorMode>(() => (props.historyId ? "history" : "standalone"));
 const isStandalone = computed(() => editorMode.value === "standalone");
 
+const labels = computed(() => PAGE_LABELS[editorMode.value]);
+
 const editorTitle = computed(() => {
     if (props.historyId) {
         const history = historyStore.getHistoryById(props.historyId);
-        return history?.name || "History Page";
+        return history?.name || labels.value.entityName;
     }
-    return store.currentTitle || "Untitled Page";
+    return store.currentTitle || labels.value.defaultTitle;
 });
 
 const markdownEditorMode = computed<"page" | "report">(() => "page");
@@ -62,7 +65,7 @@ const markdownConfig = computed(() => {
     const content = props.displayOnly ? (store.currentPage.content ?? store.currentContent) : store.currentContent;
     return {
         id: store.currentPage.id,
-        title: store.currentTitle || "Untitled Page",
+        title: store.currentTitle || labels.value.defaultTitle,
         content,
         model_class: "Page",
         update_time: store.currentPage.update_time,
@@ -113,7 +116,7 @@ function handlePreview() {
         if (isWmActive) {
             const url = `/pages/editor?id=${props.pageId}&displayOnly=true`;
             const options: RouterPushOptions = {
-                title: `Page: ${store.currentTitle || "Untitled Page"}`,
+                title: `${labels.value.entityName}: ${store.currentTitle || labels.value.defaultTitle}`,
                 preventWindowManager: false,
             };
             // @ts-ignore - monkeypatched router
@@ -144,7 +147,7 @@ async function handleSaveAndView() {
         if (isWmActive) {
             const url = `/published/page?id=${props.pageId}&embed=true`;
             const options: RouterPushOptions = {
-                title: `Page: ${store.currentTitle || "Untitled Page"}`,
+                title: `${labels.value.entityName}: ${store.currentTitle || labels.value.defaultTitle}`,
                 preventWindowManager: false,
             };
             // @ts-ignore - monkeypatched router
@@ -193,10 +196,10 @@ function handleRevisionRestore(revisionId: string) {
                 data-description="page display toolbar">
                 <BButton variant="link" size="sm" data-description="page back button" @click="handleBack">
                     <FontAwesomeIcon :icon="faArrowLeft" />
-                    {{ historyId ? "This History's Pages" : "Back to Pages" }}
+                    {{ labels.editorBackLabel }}
                 </BButton>
                 <span class="flex-grow-1 text-center font-weight-bold">
-                    {{ store.currentTitle || "Untitled Page" }}
+                    {{ store.currentTitle || labels.defaultTitle }}
                 </span>
                 <BButton variant="outline-primary" size="sm" data-description="page edit button" @click="handleEdit">
                     <FontAwesomeIcon :icon="faEdit" />
@@ -231,12 +234,12 @@ function handleRevisionRestore(revisionId: string) {
                 data-description="page editor toolbar">
                 <BButton variant="link" size="sm" data-description="page back button" @click="handleBack">
                     <FontAwesomeIcon :icon="faArrowLeft" />
-                    {{ historyId ? "This History's Pages" : "Back to Pages" }}
+                    {{ labels.editorBackLabel }}
                 </BButton>
                 <ClickToEdit
-                    :value="store.currentTitle || 'Untitled Page'"
+                    :value="store.currentTitle || labels.defaultTitle"
                     tag-name="span"
-                    placeholder="Untitled Page"
+                    :placeholder="labels.defaultTitle"
                     class="flex-grow-1 text-center font-weight-bold"
                     data-description="page editor title"
                     @input="handleTitleChange" />

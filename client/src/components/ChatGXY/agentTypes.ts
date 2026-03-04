@@ -10,6 +10,7 @@ import {
     faRoute,
 } from "@fortawesome/free-solid-svg-icons";
 
+import { AGENT_LABELS } from "@/components/Page/constants";
 import type { AgentResponse } from "@/composables/agentActions";
 
 export interface AgentType {
@@ -28,9 +29,9 @@ export const agentTypes: AgentType[] = [
     { value: "gtn_training", label: "GTN Training", icon: faGraduationCap, description: "Find tutorials" },
     {
         value: "page_assistant",
-        label: "Page Assistant",
+        label: AGENT_LABELS.pageAssistantLabel,
         icon: faBook,
-        description: "Page editing assistant",
+        description: AGENT_LABELS.pageAssistantDescription,
     },
 ];
 

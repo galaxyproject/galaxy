@@ -12,9 +12,10 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { GalaxyApi } from "@/api";
 import type { ChatMessage } from "@/components/ChatGXY/chatTypes";
 import { generateId, scrollToBottom } from "@/components/ChatGXY/chatUtils";
+import { PAGE_LABELS } from "@/components/Page/constants";
 import { type AgentResponse, type EditProposal, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
-import { usePageEditorStore } from "@/stores/pageEditorStore";
+import { type PageEditorMode, usePageEditorStore } from "@/stores/pageEditorStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { applySectionEdit } from "./sectionDiffUtils";
@@ -35,7 +36,9 @@ const props = withDefaults(
 );
 
 const isHistoryAttached = computed(() => !!props.historyId);
-const assistantName = computed(() => "Page Assistant");
+const chatMode = computed<PageEditorMode>(() => (isHistoryAttached.value ? "history" : "standalone"));
+const chatLabels = computed(() => PAGE_LABELS[chatMode.value]);
+const assistantName = computed(() => chatLabels.value.assistantName);
 
 const AGENT_TYPE = "page_assistant";
 
@@ -57,12 +60,7 @@ onMounted(async () => {
         messages.value.push({
             id: generateId(),
             role: "assistant",
-            content: isHistoryAttached.value
-                ? "I'm the Page Assistant. I can help you edit this page — " +
-                  "ask me to rewrite sections, add content, fix formatting, or analyze your history datasets."
-                : "I'm the Page Assistant. I can help you edit this page — " +
-                  "ask me to rewrite sections, add content, fix formatting, " +
-                  "or browse your current history's datasets.",
+            content: chatLabels.value.assistantWelcome,
             timestamp: new Date(),
             agentType: AGENT_TYPE,
             confidence: "high",
@@ -339,9 +337,7 @@ function startNewConversation() {
         {
             id: generateId(),
             role: "assistant",
-            content: isHistoryAttached.value
-                ? "Starting a new conversation. How can I help with this page?"
-                : "Starting a new conversation. How can I help with this page?",
+            content: chatLabels.value.newConversation,
             timestamp: new Date(),
             agentType: AGENT_TYPE,
             confidence: "high",
@@ -418,11 +414,7 @@ function startNewConversation() {
         </div>
 
         <div class="chat-panel-footer p-2 border-top">
-            <ChatInput
-                v-model="query"
-                :busy="busy"
-                placeholder="Ask about your history or request page edits..."
-                @submit="submitQuery" />
+            <ChatInput v-model="query" :busy="busy" :placeholder="chatLabels.chatPlaceholder" @submit="submitQuery" />
         </div>
     </div>
 </template>

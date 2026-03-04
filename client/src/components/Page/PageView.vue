@@ -6,6 +6,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import type { PublishedItem as PublishedItemType } from "@/components/Common/models/PublishedItem";
+import { PAGE_LABELS, PUBLISHED_LABELS } from "@/components/Page/constants";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import { urlData } from "@/utils/url";
@@ -68,9 +69,9 @@ async function load() {
         // Ensure data has the expected shape for PublishedItem
         page.value = {
             ...data,
-            name: data.title || data.name || "Untitled Page",
+            name: data.title || data.name || PAGE_LABELS.standalone.defaultTitle,
             title: data.title,
-            model_class: "Page",
+            model_class: PUBLISHED_LABELS.modelClass,
             username: data.username || data.owner,
         } as PageData;
     } catch (error) {
@@ -104,17 +105,17 @@ function stsUrl(config: any) {
                 class="page-display-toolbar d-flex align-items-center p-2 border-bottom">
                 <BButton variant="link" size="sm" data-description="page view edit button" @click="onEdit">
                     <FontAwesomeIcon :icon="faArrowLeft" />
-                    Edit Page
+                    {{ PUBLISHED_LABELS.editButton }}
                 </BButton>
                 <span class="flex-grow-1 text-center font-weight-bold">
                     {{ page.title || page.name }}
                 </span>
             </div>
             <div v-if="loading">
-                <LoadingSpan message="Loading Page" />
+                <LoadingSpan :message="PUBLISHED_LABELS.loadingMessage" />
             </div>
             <div v-else-if="hasError">
-                <Heading h1 separator size="lg">Failed to load Page</Heading>
+                <Heading h1 separator size="lg">{{ PUBLISHED_LABELS.errorHeading }}</Heading>
                 <BAlert show variant="danger">
                     {{ errorMessage }}
                 </BAlert>

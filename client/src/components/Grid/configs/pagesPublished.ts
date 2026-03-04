@@ -2,6 +2,7 @@ import { faEye, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
 import { GalaxyApi } from "@/api";
+import { GRID_LABELS } from "@/components/Page/constants";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -113,11 +114,11 @@ const gridConfig: GridConfig = {
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
-    plural: "Pages",
+    plural: GRID_LABELS.gridPlural,
     sortBy: "update_time",
     sortDesc: true,
     sortKeys: ["create_time", "title", "update_time"],
-    title: "Published Pages",
+    title: GRID_LABELS.publishedTitle,
 };
 
 export default gridConfig;

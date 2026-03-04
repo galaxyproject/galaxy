@@ -21,6 +21,7 @@ import { type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import { getGalaxyInstance } from "@/app";
 import type { RouterPushOptions } from "@/components/History/Content/router-push-options";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
+import { PAGE_LABELS } from "@/components/Page/constants";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
 import { useToast } from "@/composables/toast";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
@@ -129,10 +130,10 @@ async function navigateToCurrentPage() {
 
         if (isWmActive) {
             const page = pageStore.pages.find((n) => n.id === pageId);
-            const title = page?.title || "Page";
+            const title = page?.title || PAGE_LABELS.history.entityName;
             const url = `/histories/${props.history.id}/pages/${pageId}?displayOnly=true`;
             const options: RouterPushOptions = {
-                title: `Page: ${title}`,
+                title: `${PAGE_LABELS.history.entityName}: ${title}`,
                 preventWindowManager: false,
             };
             // @ts-ignore - monkeypatched router, drop with migration.
@@ -173,7 +174,7 @@ onMounted(() => {
 
             <GButton
                 tooltip
-                :title="localize('History Pages')"
+                :title="PAGE_LABELS.history.historyCounterTooltip"
                 transparent
                 size="small"
                 color="blue"

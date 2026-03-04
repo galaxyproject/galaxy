@@ -94,7 +94,7 @@ describe("HistoryPageView", () => {
             await flushPromises();
 
             const alerts = wrapper.findAll(SELECTORS.INFO_ALERT);
-            const loadingAlert = alerts.wrappers.find((w) => w.text().includes("Loading pages"));
+            const loadingAlert = alerts.wrappers.find((w) => w.text().includes("Loading galaxy notebooks"));
             expect(loadingAlert).toBeTruthy();
         });
     });
@@ -282,7 +282,7 @@ describe("HistoryPageView", () => {
             list.vm.$emit("create");
             await flushPromises();
 
-            expect(store.createPage).toHaveBeenCalledWith({ title: "Untitled Page" });
+            expect(store.createPage).toHaveBeenCalledWith({ title: "Untitled Notebook" });
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/new-page`);
         });
 
@@ -315,7 +315,7 @@ describe("HistoryPageView", () => {
             await wrapper.vm.$nextTick();
 
             expect(mockPush).toHaveBeenCalledWith(`/histories/${HISTORY_ID}/pages/nb-1?displayOnly=true`, {
-                title: "Page: NB1",
+                title: "Galaxy Notebook: NB1",
                 preventWindowManager: false,
             });
         });

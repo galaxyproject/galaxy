@@ -38,6 +38,7 @@ import { ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
+import { FORM_LABELS } from "@/components/Page/constants";
 import pageTemplate from "@/components/PageDisplay/pageTemplate.yml";
 
 import FormInput from "@/components/Form/Elements/FormInput.vue";
@@ -60,7 +61,7 @@ const title = ref("");
 
 const router = useRouter();
 
-const cardTitle = props.mode === "edit" ? "Edit Page" : "Create a new Page";
+const cardTitle = props.mode === "edit" ? FORM_LABELS.editTitle : FORM_LABELS.createTitle;
 const buttonText = props.mode === "edit" ? "Update" : "Create";
 
 async function fetchData() {

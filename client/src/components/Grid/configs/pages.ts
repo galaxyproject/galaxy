@@ -12,6 +12,7 @@ import { useEventBus } from "@vueuse/core";
 
 import { GalaxyApi } from "@/api";
 import { getGalaxyInstance } from "@/app";
+import { GRID_LABELS } from "@/components/Page/constants";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
@@ -95,7 +96,7 @@ const fields: FieldArray = [
                     const Galaxy = getGalaxyInstance();
                     Galaxy?.frame?.add({
                         url: `/published/page?id=${data.id}&embed=true`,
-                        title: `Page: ${data.title}`,
+                        title: GRID_LABELS.windowTitle(data.title),
                     });
                 },
             },
@@ -128,7 +129,7 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: PageEntry) => !data.deleted,
                 handler: async (data: PageEntry) => {
-                    if (confirm(_l(`Are you sure that you want to delete the selected page?`))) {
+                    if (confirm(_l(GRID_LABELS.deleteConfirm))) {
                         const { error } = await GalaxyApi().DELETE("/api/pages/{id}", {
                             params: {
                                 path: { id: String(data.id) },
@@ -154,7 +155,7 @@ const fields: FieldArray = [
                 icon: faTrashRestore,
                 condition: (data: PageEntry) => !!data.deleted,
                 handler: async (data: PageEntry) => {
-                    if (confirm(_l(`Are you sure that you want to restore the selected page?`))) {
+                    if (confirm(_l(GRID_LABELS.restoreConfirm))) {
                         const { error } = await GalaxyApi().PUT("/api/pages/{id}/undelete", {
                             params: {
                                 path: { id: String(data.id) },
@@ -232,11 +233,11 @@ const gridConfig: GridConfig = {
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
-    plural: "Pages",
+    plural: GRID_LABELS.gridPlural,
     sortBy: "update_time",
     sortDesc: true,
     sortKeys: ["create_time", "title", "update_time"],
-    title: "Saved Pages",
+    title: GRID_LABELS.savedTitle,
 };
 
 export default gridConfig;

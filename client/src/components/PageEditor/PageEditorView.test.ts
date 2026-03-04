@@ -134,12 +134,12 @@ describe("PageEditorView", () => {
             expect(clickToEdit.props("value")).toBe("My Page");
         });
 
-        it("shows 'Untitled Page' in ClickToEdit when currentTitle is empty", async () => {
+        it("shows 'Untitled Notebook' in ClickToEdit when currentTitle is empty", async () => {
             store.currentTitle = "";
             await wrapper.vm.$nextTick();
 
             const clickToEdit = wrapper.findComponent(ClickToEdit);
-            expect(clickToEdit.props("value")).toBe("Untitled Page");
+            expect(clickToEdit.props("value")).toBe("Untitled Notebook");
         });
 
         it("shows 'Unsaved' indicator when store.isDirty is true", async () => {
@@ -251,9 +251,9 @@ describe("PageEditorView", () => {
             expect(mockPush).toHaveBeenCalledWith("/pages/list");
         });
 
-        it("back button text says 'Back to Pages'", () => {
+        it("back button text says 'Back to Reports'", () => {
             const backBtn = wrapper.find(SELECTORS.BACK_BUTTON);
-            expect(backBtn.text()).toContain("Back to Pages");
+            expect(backBtn.text()).toContain("Back to Reports");
         });
 
         it("Save & View navigates to published page when WM inactive", async () => {
@@ -304,7 +304,7 @@ describe("PageEditorView", () => {
             expect(mockPush).toHaveBeenCalledWith(
                 `/published/page?id=${PAGE_ID}&embed=true`,
                 expect.objectContaining({
-                    title: "Page: My Page",
+                    title: "Report: My Page",
                     preventWindowManager: false,
                 }),
             );

@@ -558,8 +558,8 @@ export function getRouter(Galaxy) {
                         component: Sharing,
                         props: (route) => ({
                             id: route.query.id,
-                            pluralName: "Pages",
-                            modelClass: "Page",
+                            pluralName: "Reports",
+                            modelClass: "Report",
                         }),
                     },
                     {

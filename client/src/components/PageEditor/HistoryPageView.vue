@@ -7,6 +7,7 @@ import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
 import type { RouterPushOptions } from "@/components/History/Content/router-push-options";
+import { PAGE_LABELS } from "@/components/Page/constants";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 
 import HistoryPageList from "./HistoryPageList.vue";
@@ -21,6 +22,7 @@ const props = defineProps<{
 
 const router = useRouter();
 const store = usePageEditorStore();
+const labels = PAGE_LABELS.history;
 
 const markdownConfig = computed(() => {
     if (!store.currentPage) {
@@ -29,7 +31,7 @@ const markdownConfig = computed(() => {
     const content = props.displayOnly ? (store.currentPage.content ?? store.currentContent) : store.currentContent;
     return {
         id: store.currentPage.id,
-        title: store.currentTitle || "Untitled Page",
+        title: store.currentTitle || labels.defaultTitle,
         content,
         model_class: "Page",
         update_time: store.currentPage.update_time,
@@ -76,10 +78,10 @@ function handleSelect(pageId: string) {
 
     if (isWmActive) {
         const page = store.pages.find((n) => n.id === pageId);
-        const title = page?.title || "Page";
+        const title = page?.title || labels.entityName;
         const url = `/histories/${props.historyId}/pages/${pageId}?displayOnly=true`;
         const options: RouterPushOptions = {
-            title: `Page: ${title}`,
+            title: `${labels.entityName}: ${title}`,
             preventWindowManager: false,
         };
         // @ts-ignore - monkeypatched router, drop with migration.
@@ -90,7 +92,7 @@ function handleSelect(pageId: string) {
 }
 
 async function handleCreate() {
-    const page = await store.createPage({ title: "Untitled Page" });
+    const page = await store.createPage({ title: labels.defaultTitle });
     if (page) {
         router.push(`/histories/${props.historyId}/pages/${page.id}`);
     }
@@ -116,7 +118,7 @@ function handleBack() {
     <div class="history-page-view d-flex flex-column h-100" data-description="history page view">
         <BAlert v-if="store.isLoadingList" variant="info" show>
             <FontAwesomeIcon :icon="faSpinner" spin />
-            Loading pages...
+            Loading {{ labels.entityNamePlural.toLowerCase() }}...
         </BAlert>
 
         <BAlert v-else-if="store.error" variant="danger" show dismissible @dismissed="store.error = null">
@@ -134,10 +136,10 @@ function handleBack() {
                 data-description="page display toolbar">
                 <BButton variant="link" size="sm" data-description="page manage button" @click="handleBack">
                     <FontAwesomeIcon :icon="faArrowLeft" />
-                    This History's Pages
+                    {{ labels.editorBackLabel }}
                 </BButton>
                 <span class="flex-grow-1 text-center font-weight-bold">
-                    {{ store.currentTitle || "Untitled Page" }}
+                    {{ store.currentTitle || labels.defaultTitle }}
                 </span>
                 <BButton variant="outline-primary" size="sm" data-description="page edit button" @click="handleEdit">
                     <FontAwesomeIcon :icon="faEdit" />
@@ -160,7 +162,7 @@ function handleBack() {
 
         <BAlert v-else-if="store.isLoadingPage" variant="info" show>
             <FontAwesomeIcon :icon="faSpinner" spin />
-            Loading page...
+            Loading {{ labels.entityName.toLowerCase() }}...
         </BAlert>
     </div>
 </template>

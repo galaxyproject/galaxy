@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 
 import type { HistoryPageSummary } from "@/api/pages";
+import { PAGE_LABELS } from "@/components/Page/constants";
 
 defineProps<{
     pages: HistoryPageSummary[];
@@ -15,8 +16,10 @@ defineEmits<{
     (e: "create"): void;
 }>();
 
+const labels = PAGE_LABELS.history;
+
 function getPageTitle(page: HistoryPageSummary): string {
-    return page.title || "Untitled Page";
+    return page.title || labels.defaultTitle;
 }
 
 function formatDate(dateStr: string): string {
@@ -32,17 +35,17 @@ function formatDate(dateStr: string): string {
 <template>
     <div class="history-page-list" data-description="history page list">
         <div class="list-header d-flex justify-content-between align-items-center p-3 border-bottom">
-            <h4 class="mb-0">Pages</h4>
+            <h4 class="mb-0">{{ labels.entityNamePlural }}</h4>
             <BButton variant="primary" size="sm" data-description="create page button" @click="$emit('create')">
                 <FontAwesomeIcon :icon="faPlus" />
-                New Page
+                {{ labels.newButton }}
             </BButton>
         </div>
 
         <div v-if="pages.length === 0" class="empty-state text-center p-4" data-description="page empty state">
-            <p class="text-muted">No pages yet</p>
+            <p class="text-muted">{{ labels.emptyStateTitle }}</p>
             <p class="text-muted small">
-                Create a page to document your analysis with rich markdown, embedded datasets, and visualizations.
+                {{ labels.emptyStateDescription }}
             </p>
         </div>
 
@@ -65,7 +68,7 @@ function formatDate(dateStr: string): string {
                             variant="link"
                             size="sm"
                             class="p-1"
-                            title="View page"
+                            :title="labels.viewButton"
                             data-description="page view button"
                             @click.stop="$emit('view', page.id)">
                             <FontAwesomeIcon :icon="faEye" />

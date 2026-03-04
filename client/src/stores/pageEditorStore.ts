@@ -17,6 +17,7 @@ import {
     updateHistoryPage,
     type UpdateHistoryPagePayload,
 } from "@/api/pages";
+import { ERROR_MESSAGES } from "@/components/Page/constants";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -74,7 +75,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
         try {
             pages.value = await fetchHistoryPages(newHistoryId);
         } catch (e: unknown) {
-            error.value = errorMessageAsString(e) || "Failed to load pages";
+            error.value = errorMessageAsString(e) || ERROR_MESSAGES.loadList;
         } finally {
             isLoadingList.value = false;
         }
@@ -99,7 +100,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
                 setCurrentPageId(historyId.value, pageId);
             }
         } catch (e: unknown) {
-            error.value = errorMessageAsString(e) || "Failed to load page";
+            error.value = errorMessageAsString(e) || ERROR_MESSAGES.loadPage;
         } finally {
             isLoadingPage.value = false;
         }
@@ -132,7 +133,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
             await loadPages(historyId.value);
             return data;
         } catch (e: unknown) {
-            error.value = errorMessageAsString(e) || "Failed to create page";
+            error.value = errorMessageAsString(e) || ERROR_MESSAGES.createPage;
             throw e;
         } finally {
             isLoadingPage.value = false;
@@ -172,7 +173,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
                 };
             }
         } catch (e: unknown) {
-            error.value = errorMessageAsString(e) || "Failed to save page";
+            error.value = errorMessageAsString(e) || ERROR_MESSAGES.savePage;
             throw e;
         } finally {
             isSaving.value = false;
@@ -196,7 +197,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
             currentTitle.value = "";
             await loadPages(historyId.value);
         } catch (e: unknown) {
-            error.value = errorMessageAsString(e) || "Failed to delete page";
+            error.value = errorMessageAsString(e) || ERROR_MESSAGES.deletePage;
             throw e;
         }
     }
@@ -323,7 +324,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
         try {
             revisions.value = await fetchPageRevisions(currentPage.value.id, { sortDesc: true });
         } catch (e: unknown) {
-            error.value = errorMessageAsString(e) || "Failed to load revisions";
+            error.value = errorMessageAsString(e) || ERROR_MESSAGES.loadRevisions;
         } finally {
             isLoadingRevisions.value = false;
         }
@@ -337,7 +338,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
         try {
             selectedRevision.value = await fetchPageRevision(currentPage.value.id, revisionId);
         } catch (e: unknown) {
-            error.value = errorMessageAsString(e) || "Failed to load revision";
+            error.value = errorMessageAsString(e) || ERROR_MESSAGES.loadRevision;
         } finally {
             isLoadingRevision.value = false;
         }
@@ -356,7 +357,7 @@ export const usePageEditorStore = defineStore("pageEditor", () => {
             showRevisions.value = false;
             await loadRevisions();
         } catch (e: unknown) {
-            error.value = errorMessageAsString(e) || "Failed to restore revision";
+            error.value = errorMessageAsString(e) || ERROR_MESSAGES.restoreRevision;
         } finally {
             isReverting.value = false;
         }

@@ -72,10 +72,10 @@ describe("PageChatPanel", () => {
             expect(wrapper.find('[data-description="page chat panel"]').exists()).toBe(true);
         });
 
-        it("renders header with Page Assistant title", async () => {
+        it("renders header with Markdown Assistant title", async () => {
             const wrapper = mountComponent();
             await flushPromises();
-            expect(wrapper.find(".chat-panel-header").text()).toContain("Page Assistant");
+            expect(wrapper.find(".chat-panel-header").text()).toContain("Markdown Assistant");
         });
 
         it("renders ChatInput component", async () => {
@@ -329,19 +329,19 @@ describe("PageChatPanel", () => {
             return mountComponent({ pageId: PAGE_ID, pageContent: PAGE_CONTENT });
         }
 
-        it("renders header with Page Assistant title", async () => {
+        it("renders header with Markdown Assistant title", async () => {
             const wrapper = mountStandalone();
             await flushPromises();
-            expect(wrapper.find(".chat-panel-header").text()).toContain("Page Assistant");
+            expect(wrapper.find(".chat-panel-header").text()).toContain("Markdown Assistant");
         });
 
-        it("shows Page Assistant welcome message", async () => {
+        it("shows Markdown Assistant welcome message", async () => {
             const wrapper = mountStandalone();
             await flushPromises();
             const cells = wrapper.findAllComponents(ChatMessageCell);
             expect(cells.length).toBe(1);
-            // The welcome message should mention "Page Assistant"
-            expect(cells.at(0).props("message").content).toContain("Page Assistant");
+            // The welcome message should mention "Markdown Assistant"
+            expect(cells.at(0).props("message").content).toContain("Markdown Assistant");
         });
 
         it("sends query to API without historyId", async () => {
@@ -370,10 +370,10 @@ describe("PageChatPanel", () => {
             );
         });
 
-        it("renders Page Assistant header when historyId is provided", async () => {
+        it("renders Markdown Assistant header when historyId is provided", async () => {
             const wrapper = mountComponent();
             await flushPromises();
-            expect(wrapper.find(".chat-panel-header").text()).toContain("Page Assistant");
+            expect(wrapper.find(".chat-panel-header").text()).toContain("Markdown Assistant");
         });
     });
 });
