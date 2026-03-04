@@ -9995,6 +9995,9 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         for content in self.input_dataset_collections:
             if content.workflow_step_id == step_id:
                 return True
+        for content in self.input_step_parameters:
+            if content.workflow_step_id == step_id:
+                return True
         return False
 
     def set_handler(self, handler: str) -> None:
