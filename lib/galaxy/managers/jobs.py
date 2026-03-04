@@ -2124,7 +2124,9 @@ class JobSubmitter:
         self, trans: WorkRequestContext, hda: model.HistoryDatasetAssociation
     ) -> MaterializeDatasetInstanceTaskRequest:
         if trans.user is None:
-            raise RequestParameterInvalidException("Materialization of URL-sourced inputs requires an authenticated user")
+            raise RequestParameterInvalidException(
+                "Materialization of URL-sourced inputs requires an authenticated user"
+            )
         return MaterializeDatasetInstanceTaskRequest(
             user=RequestUser(user_id=trans.user.id),
             history_id=trans.history.id,
