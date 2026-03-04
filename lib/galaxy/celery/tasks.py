@@ -81,7 +81,7 @@ def cached_create_tool_from_representation(
     app: MinimalManagerApp,
     raw_tool_source: str,
     tool_source_class: TOOL_SOURCE_CLASS,
-    tool_dir: str = "",
+    tool_dir: Optional[str] = None,
 ):
     return create_tool_from_representation(
         app=app, raw_tool_source=raw_tool_source, tool_dir=tool_dir, tool_source_class=tool_source_class
@@ -363,7 +363,7 @@ def queue_jobs(request: QueueJobs, app: MinimalManagerApp, job_submitter: JobSub
     tool = cached_create_tool_from_representation(
         app=app,
         raw_tool_source=raw_tool_source,
-        tool_dir=request.tool_source.tool_dir or "",
+        tool_dir=request.tool_source.tool_dir,
         tool_source_class=tool_source_class,
     )
 
