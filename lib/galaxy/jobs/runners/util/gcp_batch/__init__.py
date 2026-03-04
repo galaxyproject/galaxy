@@ -36,7 +36,7 @@ __all__ = (
     "compute_machine_type",
     "convert_cpu_to_milli",
     "convert_memory_to_mib",
-    "convert_to_duration",
+    "convert_duration_to_seconds",
     "parse_docker_volumes_param",
     "resolve_max_run_duration",
     "parse_volume_spec",
