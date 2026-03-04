@@ -2,10 +2,10 @@
 import { faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
+import type {} from "@/composables/agentActions";
 
 import { formatModelName, getAgentIcon, getAgentLabel, getAgentResponseOrEmpty } from "./agentTypes";
-import type { ChatMessage } from "./chatTypes";
+import type { ActionSuggestion, AgentResponse, ChatMessage } from "./types";
 
 import ActionCard from "./ActionCard.vue";
 

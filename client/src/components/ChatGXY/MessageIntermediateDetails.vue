@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import type { ExecutionState, Message } from "./types";
+import type { ChatMessage, ExecutionState } from "./types";
 import { hasCollapsedHistory, isDataAnalysisMessage } from "./utilities";
 
 import AnalysisSteps from "./AnalysisSteps.vue";
@@ -10,7 +10,7 @@ import ExecutedCode from "./ExecutedCode.vue";
 import PyodideStatus from "./PyodideStatus.vue";
 
 const props = defineProps<{
-    message: Message;
+    message: ChatMessage;
     pyodideExecutions: Record<string, ExecutionState>;
 }>();
 

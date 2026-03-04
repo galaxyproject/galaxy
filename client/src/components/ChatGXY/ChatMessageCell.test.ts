@@ -1,10 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 
-import type { ActionSuggestion } from "@/composables/agentActions";
-import { ActionType } from "@/composables/agentActions";
-
-import type { ChatMessage } from "./chatTypes";
+import type { ActionSuggestion, ChatMessage } from "./types";
 
 import ChatMessageCell from "./ChatMessageCell.vue";
 
@@ -172,7 +169,7 @@ describe("ChatMessageCell", () => {
         it("renders ActionCard when suggestions present", () => {
             const suggestions: ActionSuggestion[] = [
                 {
-                    action_type: ActionType.TOOL_RUN,
+                    action_type: "tool_run",
                     description: "Run the tool",
                     parameters: {},
                     confidence: "high",
@@ -190,7 +187,7 @@ describe("ChatMessageCell", () => {
 
         it("emits handle-action with action and resolved agentResponse", async () => {
             const action: ActionSuggestion = {
-                action_type: ActionType.TOOL_RUN,
+                action_type: "tool_run",
                 description: "Run tool",
                 parameters: { tool_id: "filter1" },
                 confidence: "high",
