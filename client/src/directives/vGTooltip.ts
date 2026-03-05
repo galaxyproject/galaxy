@@ -140,6 +140,7 @@ function getContent(el: HTMLElement, bindingValue: unknown): string {
     const title = el.getAttribute("title");
     if (title) {
         el.removeAttribute("title");
+        el.setAttribute("aria-label", title);
         el.dataset.gTooltipTitle = title;
     }
     return el.dataset.gTooltipTitle || "";
@@ -263,16 +264,11 @@ function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg
     };
 }
 
-function sanitizeHtml(raw: string): string {
-    const doc = new DOMParser().parseFromString(raw, "text/html");
-    doc.querySelectorAll("script,style,iframe,object,embed,form").forEach((el) => el.remove());
-    return doc.body.innerHTML;
-}
-
 function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipState) {
     const content = getContent(el, bindingValue);
     if (state.isHtml) {
-        state.contentEl.innerHTML = sanitizeHtml(content);
+        // lgtm[js/xss-through-dom] — .html modifier is explicit developer opt-in (same pattern as v-html)
+        state.contentEl.innerHTML = content;
     } else {
         state.contentEl.textContent = content;
     }

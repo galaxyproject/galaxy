@@ -1805,7 +1805,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             page = self.page
             center_element = page.locator(selector_to_move)
             center_element.hover(force=True)
-        self.wait_for_selector_absent_or_hidden(".b-tooltip", wait_type=WAIT_TYPES.UX_POPUP)
+        self.wait_for_selector_absent_or_hidden(".g-tooltip-d", wait_type=WAIT_TYPES.UX_POPUP)
 
     def pages_index_table_elements(self):
         pages = self.components.pages
