@@ -77,8 +77,8 @@ from . import (
 )
 from .api import ShedApiTestCase
 from .browser import ShedBrowser
-from .populators import ToolShedPopulator
 from .playwrightbrowser import PlaywrightShedBrowser
+from .populators import ToolShedPopulator
 
 if TYPE_CHECKING:
     from galaxy.model.scoped_session import install_model_scoped_session
@@ -782,7 +782,8 @@ class ShedTestCase(ShedApiTestCase):
         # Reload to pick up the new session
         self.visit_url("/")
         # Store a populator for the logged-in user so API calls use correct credentials
-        self._logged_in_populator = self.user_populator(email=email, password=password)
+        # Use __class__ so it persists across test method instances
+        self.__class__._logged_in_populator = self.user_populator(email=email, password=password)
 
     @property
     def _playwright_browser(self) -> PlaywrightShedBrowser:
