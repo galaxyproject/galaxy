@@ -180,11 +180,17 @@ def test_map_over_with_output_format_actions(
 
 
 @requires_tool_id("output_action_change_format_paired")
-def test_map_over_with_nested_paired_output_format_actions(target_history: TargetHistory, required_tool: RequiredTool):
+def test_map_over_with_nested_paired_output_format_actions(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
     hdca = target_history.with_example_list_of_pairs()
-    execute = required_tool.execute().with_inputs(
-        {"input": {"batch": True, "values": [dict(map_over_type="paired", **hdca.src_dict)]}}
+    batch_val = dict(map_over_type="paired", **hdca.src_dict)
+    inputs = (
+        tool_input_format.when.flat({"input": {"batch": True, "values": [batch_val]}})
+        .when.nested({"input": {"batch": True, "values": [batch_val]}})
+        .when.request({"input": {"__class__": "Batch", "values": [batch_val]}})
     )
+    execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
     execute.assert_has_job(0).with_single_output.with_file_ext("txt")
     execute.assert_has_job(1).with_single_output.with_file_ext("txt")
@@ -502,11 +508,17 @@ def test_map_over_data_with_list_paired_or_unpaired(target_history: TargetHistor
 
 
 @requires_tool_id("collection_paired_or_unpaired")
-def test_map_over_paired_or_unpaired_with_list_paired(target_history: TargetHistory, required_tool: RequiredTool):
+def test_map_over_paired_or_unpaired_with_list_paired(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
     hdca = target_history.with_example_list_of_pairs()
-    execute = required_tool.execute().with_inputs(
-        {"f1": {"batch": True, "values": [{"map_over_type": "paired", **hdca.src_dict}]}}
+    batch_val = {"map_over_type": "paired", **hdca.src_dict}
+    inputs = (
+        tool_input_format.when.flat({"f1": {"batch": True, "values": [batch_val]}})
+        .when.nested({"f1": {"batch": True, "values": [batch_val]}})
+        .when.request({"f1": {"__class__": "Batch", "values": [batch_val]}})
     )
+    execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)
     output_collection.assert_has_dataset_element("test0").with_contents_stripped("123\n456")
@@ -514,12 +526,18 @@ def test_map_over_paired_or_unpaired_with_list_paired(target_history: TargetHist
 
 
 @requires_tool_id("collection_paired_or_unpaired")
-def test_map_over_paired_or_unpaired_with_list(target_history: TargetHistory, required_tool: RequiredTool):
+def test_map_over_paired_or_unpaired_with_list(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
     contents = [("foo", "text for foo element")]
     hdca = target_history.with_list(contents)
-    execute = required_tool.execute().with_inputs(
-        {"f1": {"batch": True, "values": [{"map_over_type": "single_datasets", **hdca.src_dict}]}}
+    batch_val = {"map_over_type": "single_datasets", **hdca.src_dict}
+    inputs = (
+        tool_input_format.when.flat({"f1": {"batch": True, "values": [batch_val]}})
+        .when.nested({"f1": {"batch": True, "values": [batch_val]}})
+        .when.request({"f1": {"__class__": "Batch", "values": [batch_val]}})
     )
+    execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)
     output_collection.assert_has_dataset_element("foo").with_contents_stripped("text for foo element")
@@ -549,6 +567,24 @@ def test_map_over_paired_or_unpaired_with_list_of_lists(target_history: TargetHi
     assert output_collection.details["collection_type"] == "list:list"
     as_dict_0 = output_collection.with_element_dict(0)
     assert len(as_dict_0["object"]["elements"]) == 3
+
+
+@requires_tool_id("collection_paired_test")
+def test_simple_subcollection_mapping(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    hdca = target_history.with_example_list_of_pairs()
+    batch_val = {"map_over_type": "paired", **hdca.src_dict}
+    inputs = (
+        tool_input_format.when.flat({"f1": {"batch": True, "values": [batch_val]}})
+        .when.nested({"f1": {"batch": True, "values": [batch_val]}})
+        .when.request({"f1": {"__class__": "Batch", "values": [batch_val]}})
+    )
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_has_dataset_element("test0").with_contents_stripped("123\n456")
+    output_collection.assert_has_dataset_element("test1").with_contents_stripped("789\n0ab")
 
 
 @requires_tool_id("collection_paired_or_unpaired")

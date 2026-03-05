@@ -19,7 +19,8 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionInternalJsonBase,
     DataCollectionRequestInternal,
     DataInternalJson,
-    DataRequestInternalDereferencedT,
+    DataJobInternalT,
+    DatasetCollectionElementReference,
     DataRequestInternalHda,
 )
 
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
 
 # Type aliases for callbacks
-DatasetToRuntimeJson = Callable[[DataRequestInternalDereferencedT], DataInternalJson]
+DatasetToRuntimeJson = Callable[[DataJobInternalT], DataInternalJson]
 CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], DataCollectionInternalJsonBase]
 
 # Input dataset collections dict type - values are HDCAs (from job.input_dataset_collections)
@@ -74,7 +75,15 @@ def setup_for_runtimeify(
             elif isinstance(value, DatasetCollectionElement):
                 dces_by_id[value.id] = value
 
-    def adapt_dataset(value: DataRequestInternalDereferencedT) -> DataInternalJson:
+    def adapt_dataset(value: DataJobInternalT) -> DataInternalJson:
+        if isinstance(value, DatasetCollectionElementReference):
+            dce = dces_by_id.get(value.id)
+            if not dce:
+                raise ValueError(f"DCE {value.id} not found")
+            hda = dce.hda
+            if not hda:
+                raise ValueError(f"DCE {value.id} does not reference an HDA")
+            return adapt_dataset(DataRequestInternalHda(src="hda", id=hda.id))
         hda_id = value.id
         if hda_id not in hdas_by_id:
             raise ValueError(f"Could not find HDA for dataset id {hda_id}")

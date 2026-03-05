@@ -469,21 +469,27 @@ def __expand_collection_parameter_async(
     # be "hdca_id|subcollection_type" else it will just be hdca_id
     try:
         src = incoming_val["src"]
-        if src != "hdca":
+        if src not in ("hdca", "dce"):
             raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
-        hdc_id = incoming_val["id"]
+        item_id = incoming_val["id"]
         subcollection_type = incoming_val.get("map_over_type", None)
     except TypeError:
-        hdc_id = incoming_val
+        item_id = incoming_val
+        src = "hdca"
         subcollection_type = None
-    hdc = app.model.context.get(HistoryDatasetCollectionAssociation, hdc_id)
-    collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
+    if src == "dce":
+        item = app.model.context.get(DatasetCollectionElement, item_id)
+        collection = item.child_collection
+    else:
+        item = app.model.context.get(HistoryDatasetCollectionAssociation, item_id)
+        collection = item.collection
+    collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
-        subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)
+        subcollection_elements = subcollections._split_dataset_collection(collection, subcollection_type)
         return subcollection_elements
     else:
         hdas: list[DatasetInstance] = []
-        for element in hdc.collection.dataset_elements:
+        for element in collection.dataset_elements:
             hda = element.dataset_instance
             hda.element_identifier = element.element_identifier
             hdas.append(hda)
