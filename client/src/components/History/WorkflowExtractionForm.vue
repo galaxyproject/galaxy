@@ -9,6 +9,7 @@ import {
     type WorkflowExtractionJob,
     type WorkflowExtractionPayload,
 } from "@/api/histories";
+import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -28,6 +29,8 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
+
+const Toast = useToast();
 
 const historyStore = useHistoryStore();
 const historyName = computed(() => historyStore.getHistoryNameById(props.historyId));
@@ -57,8 +60,17 @@ const selectedIndices = computed(() => {
     return jobsList.value.map((job, index) => (job.checked ? index : -1)).filter((i) => i !== -1);
 });
 
-// TODO: Add an alert when it is disabled, with the reason
 const submissionDisabled = computed(() => hasUnnamedSelectedInputs.value || !workflowName.value.trim());
+
+const submissionDisabledMsg = computed(() => {
+    if (!workflowName.value.trim()) {
+        return "Workflow name is required";
+    }
+    if (hasUnnamedSelectedInputs.value) {
+        return "All selected inputs must have a name";
+    }
+    return "";
+});
 
 /** Selected job ids for workflow steps (not inputs) */
 const selectedJobIds = computed<Array<string>>(() => {
@@ -180,7 +192,7 @@ function onRowSelect(event: { item: ClientWorkflowExtractionJob; index: number; 
 async function submitWorkflow() {
     try {
         if (submissionDisabled.value) {
-            // TODO: Maybe Toast a reason?
+            Toast.error(submissionDisabledMsg.value || "Cannot submit workflow extraction", "Submission Disabled");
             return;
         }
         loading.value = true;
@@ -209,24 +221,39 @@ async function submitWorkflow() {
 </script>
 
 <template>
-    <div>
-        <BreadcrumbHeading :items="breadcrumbItems" />
+    <div class="workflow-extraction-form">
+        <div class="workflow-extraction-header">
+            <BreadcrumbHeading :items="breadcrumbItems" />
 
-        <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-        <BAlert v-else-if="loading" variant="info" show>
-            <LoadingSpan message="Extracting workflow from history" />
-        </BAlert>
+            <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+            <BAlert v-else-if="loading" variant="info" show>
+                <LoadingSpan message="Extracting workflow from history" />
+            </BAlert>
+            <div v-else-if="jobsList.length" class="d-flex flex-column flex-gapy-1">
+                <div class="workflow-extraction-actions">
+                    <GFormInput
+                        v-model="workflowName"
+                        placeholder="Please provide a name for the workflow"
+                        @keydown.enter.prevent="submitWorkflow" />
 
-        <div v-else-if="jobsList.length">
-            <div class="workflow-extraction-header">
-                <GFormInput
-                    v-model="workflowName"
-                    placeholder="Please provide a name for the workflow"
-                    @keydown.enter.prevent="submitWorkflow" />
-
-                <GButton :disabled="submissionDisabled" @click="submitWorkflow">Create Workflow</GButton>
+                    <GButton
+                        tooltip
+                        title="Create the extracted workflow"
+                        :disabled="submissionDisabled"
+                        :disabled-title="submissionDisabledMsg"
+                        @click="submitWorkflow">
+                        Create Workflow
+                    </GButton>
+                </div>
+                <div>
+                    The following table contains each tool that was run to create the datasets in your current history.
+                    Please select those that you wish to include in the workflow.
+                </div>
             </div>
+            <BAlert v-else variant="info" show> No workflow could be extracted from this history. </BAlert>
+        </div>
 
+        <div v-if="jobsList.length" class="workflow-extraction-table">
             <GTable
                 :hover="false"
                 selectable
@@ -259,7 +286,36 @@ async function submitWorkflow() {
                 </template>
             </GTable>
         </div>
-
-        <BAlert v-else variant="info" show> No workflow could be extracted from this history. </BAlert>
     </div>
 </template>
+
+<style scoped lang="scss">
+.workflow-extraction-form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    .workflow-extraction-header {
+        display: flex;
+        flex-direction: column;
+
+        .workflow-extraction-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            input {
+                width: 100%;
+            }
+            button {
+                white-space: nowrap;
+            }
+        }
+    }
+
+    .workflow-extraction-table {
+        flex-grow: 1;
+        overflow: auto;
+    }
+}
+</style>
