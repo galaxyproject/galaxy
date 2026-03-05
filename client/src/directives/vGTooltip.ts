@@ -140,7 +140,6 @@ function getContent(el: HTMLElement, bindingValue: unknown): string {
     const title = el.getAttribute("title");
     if (title) {
         el.removeAttribute("title");
-        el.setAttribute("aria-label", title);
         el.dataset.gTooltipTitle = title;
     }
     return el.dataset.gTooltipTitle || "";
@@ -272,6 +271,14 @@ function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipSta
     } else {
         state.contentEl.textContent = content;
     }
+    // Set aria-label so icon-only buttons have an accessible name
+    if (content) {
+        el.setAttribute("aria-label", content);
+        el.dataset.gTooltipAriaLabel = "1";
+    } else if (el.dataset.gTooltipAriaLabel) {
+        el.removeAttribute("aria-label");
+        el.dataset.gTooltipAriaLabel = "";
+    }
 }
 
 export const vGTooltip: DirectiveOptions = {
@@ -326,6 +333,10 @@ export const vGTooltip: DirectiveOptions = {
         state.cleanupAutoUpdate?.();
         state.tooltipEl.remove();
         el.removeAttribute("aria-describedby");
+        if (el.dataset.gTooltipAriaLabel) {
+            el.removeAttribute("aria-label");
+        }
+        delete el.dataset.gTooltipAriaLabel;
         stateMap.delete(el);
     },
 };
