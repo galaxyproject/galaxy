@@ -24,7 +24,7 @@ import {
     type Placement,
     shift,
 } from "@floating-ui/dom";
-import type { DirectiveOptions } from "vue";
+import type { DirectiveOptions, VNode } from "vue";
 
 interface TooltipState {
     tooltipEl: HTMLElement;
@@ -129,18 +129,24 @@ function getPlacement(modifiers: Record<string, boolean>, bindingValue: unknown)
     return "top";
 }
 
-function getContent(el: HTMLElement, bindingValue: unknown): string {
+function getContent(el: HTMLElement, bindingValue: unknown, vnode?: VNode): string {
     if (typeof bindingValue === "string" && bindingValue) {
         return bindingValue;
     }
     if (typeof bindingValue === "object" && bindingValue !== null && "title" in bindingValue) {
         return String((bindingValue as { title: string }).title || "");
     }
-    // Fall back to element's title attribute; capture and remove it to prevent native tooltip
-    const title = el.getAttribute("title");
+    // Fall back to element's title attribute; capture and remove it to prevent native tooltip.
+    // Also check vnode attrs/props for components with inheritAttrs: false (e.g. BFormCheckbox)
+    // where :title doesn't land on the root DOM element.
+    const title =
+        el.getAttribute("title") ||
+        (vnode?.data?.attrs as Record<string, unknown> | undefined)?.title ||
+        (vnode?.componentOptions?.propsData as Record<string, unknown> | undefined)?.title ||
+        null;
     if (title) {
         el.removeAttribute("title");
-        el.dataset.gTooltipTitle = title;
+        el.dataset.gTooltipTitle = String(title);
     }
     return el.dataset.gTooltipTitle || "";
 }
@@ -263,8 +269,8 @@ function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg
     };
 }
 
-function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipState) {
-    const content = getContent(el, bindingValue);
+function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipState, vnode?: VNode) {
+    const content = getContent(el, bindingValue, vnode);
     if (state.isHtml) {
         // lgtm[js/xss-through-dom] — .html modifier is explicit developer opt-in (same pattern as v-html)
         state.contentEl.innerHTML = content;
@@ -282,7 +288,7 @@ function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipSta
 }
 
 export const vGTooltip: DirectiveOptions = {
-    inserted(el, binding) {
+    inserted(el, binding, vnode) {
         const modifiers = binding.modifiers || {};
         const isDanger = !!modifiers["v-danger"];
         const isHtml = !!modifiers.html;
@@ -306,15 +312,15 @@ export const vGTooltip: DirectiveOptions = {
         };
 
         stateMap.set(el, state);
-        updateContent(el, binding.value, state);
+        updateContent(el, binding.value, state, vnode);
     },
 
-    componentUpdated(el, binding) {
+    componentUpdated(el, binding, vnode) {
         const state = stateMap.get(el);
         if (!state) {
             return;
         }
-        updateContent(el, binding.value, state);
+        updateContent(el, binding.value, state, vnode);
         state.placement = getPlacement(binding.modifiers || {}, binding.value);
 
         // Hide if content became empty
