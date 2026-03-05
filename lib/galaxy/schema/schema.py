@@ -1987,27 +1987,25 @@ class ExportObjectResultMetadata(Model):
     error: Optional[str] = None
 
     @model_validator(mode="after")
-    @classmethod
-    def validate_success(cls, model):
+    def validate_success(self):
         """
         Ensure successful exports do not have error text.
         """
-        if model.success and model.error is not None:
+        if self.success and self.error is not None:
             raise ValueError("successful exports cannot have error text")
 
-        return model
+        return self
 
     @model_validator(mode="after")
-    @classmethod
-    def validate_uri(cls, model):
+    def validate_uri(self):
         """
         Ensure unsuccessful exports do not have a URI.
         """
 
-        if not model.success and model.uri:
+        if not self.success and self.uri:
             raise ValueError("unsuccessful exports cannot have a URI")
 
-        return model
+        return self
 
 
 class ExportObjectMetadata(Model):

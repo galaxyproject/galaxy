@@ -5,6 +5,7 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 
 import configparser
+import copy
 import json
 import locale
 import logging
@@ -117,9 +118,9 @@ LOGGING_CONFIG_DEFAULT: dict[str, Any] = {
             "level": "ERROR",
             "qualname": "py.warnings",
         },
-        "celery.utils.functional": {
+        "celery": {
             "level": "INFO",
-            "qualname": "celery.utils.functional",
+            "qualname": "celery",
         },
         "sentry_sdk.errors": {
             "level": "INFO",
@@ -162,6 +163,13 @@ DEFAULT_EMAIL_FROM_LOCAL_PART = "galaxy-no-reply"
 DISABLED_FLAG = "disabled"  # Used to mark a config option as disabled
 
 
+def default_log_config(log_level: str = "DEBUG") -> dict[str, Any]:
+    logging_conf = copy.deepcopy(LOGGING_CONFIG_DEFAULT)
+    if log_level != "DEBUG":
+        logging_conf["handlers"]["console"]["level"] = log_level
+    return logging_conf
+
+
 def configure_logging(config, facts=None):
     """Allow some basic logging configuration to be read from ini file.
 
@@ -186,9 +194,7 @@ def configure_logging(config, facts=None):
         logging_conf = config.get("logging", None)
         if logging_conf is None:
             # if using the default logging config, honor the log_level setting
-            logging_conf = LOGGING_CONFIG_DEFAULT
-            if config.get("log_level", "DEBUG") != "DEBUG":
-                logging_conf["handlers"]["console"]["level"] = config.get("log_level", "DEBUG")
+            logging_conf = default_log_config(config.get("log_level", "DEBUG"))
         # configure logging with logging dict in config, template *FileHandler handler filenames with the `filename_template` option
         for name, conf in logging_conf.get("handlers", {}).items():
             if (

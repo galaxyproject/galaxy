@@ -293,7 +293,9 @@ TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
                                 tool shed test server files to be placed.
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
-GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
+GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages.
+GALAXY_TEST_LOG_LEVEL           Set Galaxy server log level for tests
+                                (default: DEBUG). E.g. WARNING to reduce output.
 GALAXY_TEST_AXE_SCRIPT_URL      URL of aXe script to use for accessibility testing.
 GALAXY_TEST_SKIP_AXE            Set this to '1' to skip aXe accessibilty testing when
                                 running selenium tests.
