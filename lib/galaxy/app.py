@@ -775,7 +775,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
 
         # AI agent registry and service
-        agent_registry = build_default_registry()
+        agent_registry = build_default_registry(self.config)
         self._register_singleton(AgentRegistry, agent_registry)
         self._register_singleton(AgentService, AgentService(self.config, JobQueryManager(self), agent_registry))
 
