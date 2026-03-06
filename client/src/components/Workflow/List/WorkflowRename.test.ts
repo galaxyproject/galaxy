@@ -1,6 +1,5 @@
 import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { createWrapper, mount } from "@vue/test-utils";
-import { BModal } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -9,6 +8,7 @@ import { updateWorkflow } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
 
 import WorkflowRename from "./WorkflowRename.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 
 vi.mock("@/components/Workflow/workflows.services", () => ({
     updateWorkflow: vi.fn(),
@@ -50,7 +50,7 @@ describe("WorkflowRename", () => {
         const wrapper = await mountWorkflowRename();
 
         await createWrapper(document.body).find("#workflow-name-input").setValue("Renamed Workflow");
-        wrapper.findComponent(BModal).vm.$emit("ok");
+        wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
         expect(updateWorkflow).toHaveBeenCalledWith(WORKFLOW_ID, { name: "Renamed Workflow" });
@@ -63,7 +63,7 @@ describe("WorkflowRename", () => {
         const wrapper = await mountWorkflowRename();
 
         await createWrapper(document.body).find("#workflow-name-input").setValue("Attempted New Name");
-        wrapper.findComponent(BModal).vm.$emit("ok");
+        wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
         expect(Toast.error).toHaveBeenCalled();
@@ -82,6 +82,6 @@ describe("WorkflowRename", () => {
     it("keeps ok button disabled when name is unchanged", async () => {
         const wrapper = await mountWorkflowRename();
 
-        expect(wrapper.findComponent(BModal).props("okDisabled")).toBe(true);
+        expect(wrapper.findComponent(GModal).props("okDisabled")).toBe(true);
     });
 });
