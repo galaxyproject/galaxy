@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { faCheck } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -210,11 +212,13 @@ async function submitWorkflow() {
                         @keydown.enter.prevent="submitWorkflow" />
 
                     <GButton
+                        color="blue"
                         tooltip
                         title="Create the extracted workflow"
                         :disabled="submissionDisabled"
                         :disabled-title="submissionDisabledMsg"
                         @click="submitWorkflow">
+                        <FontAwesomeIcon :icon="faCheck" fixed-width />
                         Create Workflow
                     </GButton>
                 </div>
