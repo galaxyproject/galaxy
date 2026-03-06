@@ -59,9 +59,12 @@ class AgentAPI:
         for agent_type in self.agent_service.list_agents():
             agent_info = self.agent_service.get_agent_info(agent_type)
 
-            # Check if agent is enabled in config
-            agent_config = getattr(config, "agents", {}).get(agent_type, {})
+            # Only include enabled agents (disabled agents are already
+            # excluded from registry, but double-check config here)
+            agent_config = (getattr(config, "agents", {}) or {}).get(agent_type, {})
             enabled = agent_config.get("enabled", True)
+            if not enabled:
+                continue
 
             agents.append(
                 AvailableAgent(

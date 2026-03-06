@@ -39,6 +39,7 @@ from galaxy.agents import (
     QueryRouterAgent,
 )
 from galaxy.agents.registry import build_default_registry
+from galaxy.managers.agents import AgentService
 
 agent_registry = build_default_registry()
 from galaxy.agents.error_analysis import ErrorAnalysisResult
@@ -172,6 +173,51 @@ class TestAgentUnitMocked:
         assert registry.is_registered("orchestrator")
         assert registry.is_registered("tool_recommendation")
         assert len(registry.list_agents()) == 5
+
+    def test_disabled_agent_not_registered(self):
+        """Disabled agent should not be in registry."""
+        config = mock.Mock()
+        config.agents = {
+            "custom_tool": {"enabled": False},
+            "error_analysis": {"enabled": True},
+        }
+        registry = build_default_registry(config)
+        assert not registry.is_registered("custom_tool")
+        assert registry.is_registered("error_analysis")
+        # Router always registered even if disabled in config
+        assert registry.is_registered("router")
+
+    def test_router_always_registered(self):
+        """Router should always be registered even if config says disabled."""
+        config = mock.Mock()
+        config.agents = {"router": {"enabled": False}}
+        registry = build_default_registry(config)
+        assert registry.is_registered("router")
+
+    def test_build_registry_no_config_registers_all(self):
+        """Without config, all agents registered (backwards compat)."""
+        registry = build_default_registry()
+        assert len(registry.list_agents()) == 5
+
+    @pytest.mark.asyncio
+    async def test_disabled_agent_execution_raises(self):
+        """Executing a disabled agent should raise ConfigurationError."""
+        from galaxy.exceptions import ConfigurationError
+
+        config = mock.Mock()
+        config.agents = {"custom_tool": {"enabled": False}}
+        registry = build_default_registry(config)
+        service = AgentService(config, mock.Mock(), registry)
+        with pytest.raises(ConfigurationError, match="disabled"):
+            await service.execute_agent("custom_tool", "test", self.mock_trans, self.mock_user)
+
+    def test_disabled_agent_registry_get_agent_raises(self):
+        """Registry.get_agent for a disabled agent gives a clear 'disabled' error."""
+        config = mock.Mock()
+        config.agents = {"custom_tool": {"enabled": False}}
+        registry = build_default_registry(config)
+        with pytest.raises(ValueError, match="disabled"):
+            registry.get_agent("custom_tool", self.deps)
 
     def test_agent_registry(self):
         """Test that all required agents are registered."""

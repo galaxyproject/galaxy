@@ -10,6 +10,7 @@ from galaxy.agents import GalaxyAgentDependencies
 from galaxy.agents.registry import AgentRegistry
 from galaxy.agents.router import QueryRouterAgent
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.exceptions import ConfigurationError
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
@@ -52,6 +53,11 @@ class AgentService:
         context: Optional[dict[str, Any]] = None,
     ) -> AgentResponse:
         """Execute a specific agent and return response."""
+        # Guard: reject disabled agents before attempting execution
+        agent_cfg = getattr(self.config, "agents", {}) or {}
+        if not agent_cfg.get(agent_type, {}).get("enabled", True):
+            raise ConfigurationError(f"Agent '{agent_type}' is disabled in configuration")
+
         deps = self.create_dependencies(trans, user)
 
         if context is None:
