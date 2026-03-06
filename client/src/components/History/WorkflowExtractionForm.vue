@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BBadge } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -13,16 +13,13 @@ import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import type { TableField } from "../Common/GTable.types";
 import type { ClientWorkflowExtractionJob } from "./WorkflowExtraction/types";
 
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GButton from "../BaseComponents/GButton.vue";
 import BreadcrumbHeading from "../Common/BreadcrumbHeading.vue";
-import GTable from "../Common/GTable.vue";
 import LoadingSpan from "../LoadingSpan.vue";
-import WorkflowExtractionNode from "./WorkflowExtraction/WorkflowExtractionNode.vue";
-import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
+import WorkflowExtractionCard from "./WorkflowExtraction/WorkflowExtractionCard.vue";
 
 const props = defineProps<{
     historyId: string;
@@ -49,16 +46,6 @@ const loading = ref(true);
 const errorMessage = ref<string | null>(null);
 const jobsList = ref<ClientWorkflowExtractionJob[]>([]);
 const workflowName = ref("");
-
-/** The indices in the jobsList that are currently selected
- * (regardless of whether they are inputs or steps)
- */
-const selectedIndices = computed(() => {
-    if (!jobsList.value?.length) {
-        return [];
-    }
-    return jobsList.value.map((job, index) => (job.checked ? index : -1)).filter((i) => i !== -1);
-});
 
 const submissionDisabled = computed(() => hasUnnamedSelectedInputs.value || !workflowName.value.trim());
 
@@ -113,22 +100,6 @@ const hasUnnamedSelectedInputs = computed(() => {
     return selectedInputs.value.some((input) => !input.newName);
 });
 
-const tableFields: TableField[] = [
-    {
-        key: "tool_name",
-        label: "Workflow Step",
-    },
-    {
-        key: "tool_id",
-        label: "Rename Input (optional)",
-    },
-    {
-        key: "outputs",
-        label: "Outputs",
-        width: "25vw",
-    },
-];
-
 extractWorkflow();
 
 function getStepType(job: WorkflowExtractionJob): ClientWorkflowExtractionJob["stepType"] {
@@ -179,13 +150,13 @@ async function extractWorkflow() {
     }
 }
 
-function onRowSelect(event: { item: ClientWorkflowExtractionJob; index: number; selected: boolean }) {
+function onJobSelect(index: number) {
     if (!jobsList.value?.length) {
         return;
     }
-    const job = jobsList.value[event.index];
+    const job = jobsList.value[index];
     if (job) {
-        job.checked = event.selected;
+        job.checked = !job.checked;
     }
 }
 
@@ -247,46 +218,21 @@ async function submitWorkflow() {
                         Create Workflow
                     </GButton>
                 </div>
-                <div>
-                    The following table contains each tool that was run to create the datasets in your current history.
+                <div class="my-2">
+                    The following list contains each tool that was run to create the datasets in your current history.
                     Please select those that you wish to include in the workflow.
                 </div>
             </div>
             <BAlert v-else variant="info" show> No workflow could be extracted from this history. </BAlert>
         </div>
 
-        <div v-if="jobsList.length" class="workflow-extraction-table">
-            <GTable
-                :hover="false"
-                selectable
-                select-checkbox-title="Include as a step in the workflow"
-                :selected-items="selectedIndices"
-                :striped="false"
-                :fields="tableFields"
-                :items="jobsList"
-                @row-select="onRowSelect">
-                <template v-slot:cell(tool_name)="{ item }">
-                    <WorkflowExtractionNode :job="item" />
-                </template>
-
-                <template v-slot:cell(tool_id)="{ item }">
-                    <GFormInput
-                        v-if="'newName' in item"
-                        v-model="item.newName"
-                        :disabled="!item.checked"
-                        placeholder="Input must have a name" />
-
-                    <BBadge v-else>Workflow Step</BBadge>
-                </template>
-
-                <template v-slot:cell(outputs)="{ item }">
-                    <div v-for="(output, index) in item.outputs" :key="index">
-                        <GenericHistoryItem
-                            :item-id="output.id"
-                            :item-src="output.history_content_type === 'dataset' ? 'hda' : 'hdca'" />
-                    </div>
-                </template>
-            </GTable>
+        <div v-if="jobsList.length" class="workflow-extraction-list">
+            <WorkflowExtractionCard
+                v-for="(job, index) in jobsList"
+                :id="`workflow-extraction-job-${index}`"
+                :key="index"
+                :job="job"
+                @select="onJobSelect(index)" />
         </div>
     </div>
 </template>
@@ -315,7 +261,7 @@ async function submitWorkflow() {
         }
     }
 
-    .workflow-extraction-table {
+    .workflow-extraction-list {
         flex-grow: 1;
         overflow: auto;
     }
