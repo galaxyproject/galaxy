@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import { updateWorkflow } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
 
@@ -10,11 +9,14 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
-    id: string;
     name: string;
+    itemType?: string;
+    renameAction: (newName: string) => Promise<unknown>;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    itemType: "item",
+});
 
 const emit = defineEmits<{
     (e: "close"): void;
@@ -32,10 +34,10 @@ async function onRename(newName: string) {
 
     try {
         renaming.value = true;
-        await updateWorkflow(props.id, { name: newName.trim() });
-        Toast.success("Workflow renamed");
+        await props.renameAction(newName.trim());
+        Toast.success(`${props.itemType.charAt(0).toUpperCase() + props.itemType.slice(1)} renamed`);
     } catch (e) {
-        Toast.error("Failed to rename workflow");
+        Toast.error(`Failed to rename ${props.itemType}`);
     } finally {
         renaming.value = false;
         emit("close");
@@ -48,13 +50,13 @@ async function onRename(newName: string) {
         show
         :ok-text="localize('Rename')"
         :ok-disabled="nameRemainsSame || renaming"
-        :title="`Rename workflow: ${props.name}`"
+        :title="`Rename ${props.itemType}: ${props.name}`"
         confirm
         @ok="onRename(nameModel)"
         @close="emit('close')"
         @cancel="emit('close')">
         <GFormInput
-            id="workflow-name-input"
+            :id="`${props.itemType}-name-input`"
             v-model="nameModel"
             class="w-100"
             :disabled="renaming"
@@ -63,7 +65,7 @@ async function onRename(newName: string) {
             @keydown.enter.prevent="onRename(nameModel)" />
 
         <template v-slot:footer>
-            <LoadingSpan v-if="renaming" :message="localize('Renaming workflow')" />
+            <LoadingSpan v-if="renaming" :message="localize(`Renaming ${props.itemType}`)" />
         </template>
     </GModal>
 </template>
