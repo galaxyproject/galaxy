@@ -1,6 +1,6 @@
 # AI Agent Configuration
 
-Galaxy includes a multi-agent AI system built on [pydantic-ai](https://github.com/pydantic/pydantic-ai). The agents provide specialized assistants for answering platform questions, diagnosing job errors, creating custom tools, recommending tools, and more. The entire system is gated behind AI API key configuration -- if no AI credentials are provided, the agent features are completely invisible to users.
+Galaxy includes a multi-agent AI system built on [pydantic-ai](https://github.com/pydantic/pydantic-ai). The agents provide specialized assistants for answering platform questions, diagnosing job errors, creating custom tools, recommending tools, and more. The entire system is gated behind AI inference configuration -- if no AI credentials are provided, the agent features are completely invisible to users.
 
 ## Overview
 
@@ -13,29 +13,28 @@ All AI configuration lives in `galaxy.yml` under the `galaxy:` section. There is
 
 ## Minimum Required Configuration
 
-The single most important setting is `ai_api_key`. Setting this value (or `inference_services` or `ai_api_base_url`) is what activates the entire agent system. Without at least one of these, no agent code loads, the ChatGXY sidebar entry is hidden, and the GalaxyWizard error-analysis widget does not appear.
+The recommended way to configure AI is through `inference_services`. Setting this value (or the deprecated `ai_api_key` / `ai_api_base_url`) is what activates the entire agent system. Without at least one of these, no agent code loads, the ChatGXY sidebar entry is hidden, and the GalaxyWizard error-analysis widget does not appear.
 
 ```yaml
 galaxy:
-  # Required: API key for an AI provider (OpenAI by default)
-  ai_api_key: "sk-..."
+    inference_services:
+        default:
+            model: "openai:gpt-4o-mini"
+            api_key: "sk-..."
 ```
 
-That is all you need to get started with the default configuration (OpenAI, model `gpt-4o-mini`).
+That is all you need to get started.
 
 ## Configuration Settings
 
 All AI-related settings go under the `galaxy:` section in `galaxy.yml`:
 
-| Setting              | Default  | Description                                                                                        |
-| -------------------- | -------- | -------------------------------------------------------------------------------------------------- |
-| `ai_api_key`         | (none)   | API key for an AI provider. Required unless using `inference_services` or `ai_api_base_url`.       |
-| `ai_api_base_url`    | (none)   | Override the default OpenAI base URL for OpenAI-compatible backends (vLLM, Ollama, LiteLLM, etc.). |
-| `ai_model`           | `gpt-4o-mini` | Global model fallback for all agents.                                                         |
-| `inference_services` | (none)   | Per-agent configuration with fine-grained control over model, temperature, tokens, and API keys.   |
+| Setting              | Default | Description                                                                                                                                    |
+| -------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `inference_services` | (none)  | Per-agent configuration with fine-grained control over model, temperature, tokens, and API keys. This is the recommended configuration method. |
 
 ```{note}
-The legacy config keys `openai_api_key` and `openai_model` still work as deprecated aliases for `ai_api_key` and `ai_model` respectively. They will be removed in a future release. Prefer the `ai_*` keys in new deployments.
+The legacy config keys `ai_api_key`, `ai_api_base_url`, and `ai_model` (and their older aliases `openai_api_key` and `openai_model`) still work but are deprecated. They will be removed in a future release. Use `inference_services` in new deployments.
 ```
 
 ## Supported AI Backends
@@ -48,8 +47,10 @@ Use bare model names like `gpt-4o` or prefixed as `openai:gpt-4o`. This is the d
 
 ```yaml
 galaxy:
-  ai_api_key: "sk-..."
-  ai_model: "gpt-4o"
+    inference_services:
+        default:
+            model: "openai:gpt-4o"
+            api_key: "sk-..."
 ```
 
 ### Anthropic / Claude
@@ -58,10 +59,10 @@ Use the `anthropic:` prefix, e.g. `anthropic:claude-sonnet-4-5`.
 
 ```yaml
 galaxy:
-  inference_services:
-    default:
-      model: "anthropic:claude-sonnet-4-5"
-      api_key: "sk-ant-..."
+    inference_services:
+        default:
+            model: "anthropic:claude-sonnet-4-5"
+            api_key: "sk-ant-..."
 ```
 
 ```{warning}
@@ -74,10 +75,10 @@ Use the `google:` prefix, e.g. `google:gemini-2.5-pro`.
 
 ```yaml
 galaxy:
-  inference_services:
-    default:
-      model: "google:gemini-2.5-pro"
-      api_key: "AIza..."
+    inference_services:
+        default:
+            model: "google:gemini-2.5-pro"
+            api_key: "AIza..."
 ```
 
 ```{warning}
@@ -90,9 +91,11 @@ Use any model name combined with `api_base_url` to point at a self-hosted or ins
 
 ```yaml
 galaxy:
-  ai_api_key: "not-needed-but-required-by-some-clients"
-  ai_api_base_url: "http://localhost:11434/v1/"
-  ai_model: "llama3.1"
+    inference_services:
+        default:
+            model: "llama3.1"
+            api_base_url: "http://localhost:11434/v1/"
+            api_key: "not-needed-but-required-by-some-clients"
 ```
 
 ```{note}
@@ -119,19 +122,19 @@ Use a cheap model globally but a more capable model for agents that need it:
 
 ```yaml
 galaxy:
-  ai_api_key: "sk-..."
-  inference_services:
-    default:
-      model: "gpt-4o-mini"
-      temperature: 0.7
-    custom_tool:
-      model: "openai:gpt-4o"
-      temperature: 0.4
-      max_tokens: 2000
-    error_analysis:
-      model: "openai:gpt-4o"
-      temperature: 0.2
-      max_tokens: 2000
+    inference_services:
+        default:
+            model: "openai:gpt-4o-mini"
+            api_key: "sk-..."
+            temperature: 0.7
+        custom_tool:
+            model: "openai:gpt-4o"
+            temperature: 0.4
+            max_tokens: 2000
+        error_analysis:
+            model: "openai:gpt-4o"
+            temperature: 0.2
+            max_tokens: 2000
 ```
 
 ### Example: Mixed Providers
@@ -140,41 +143,39 @@ Use different providers for different agents:
 
 ```yaml
 galaxy:
-  inference_services:
-    default:
-      model: "anthropic:claude-sonnet-4-5"
-      api_key: "sk-ant-..."
-      temperature: 0.3
-    custom_tool:
-      model: "openai:gpt-4o"
-      api_key: "sk-..."
-      temperature: 0.4
+    inference_services:
+        default:
+            model: "anthropic:claude-sonnet-4-5"
+            api_key: "sk-ant-..."
+            temperature: 0.3
+        custom_tool:
+            model: "openai:gpt-4o"
+            api_key: "sk-..."
+            temperature: 0.4
 ```
 
 ### Example: Self-Hosted with Ollama
 
 ```yaml
 galaxy:
-  ai_api_key: "ollama"
-  ai_api_base_url: "http://localhost:11434/v1/"
-  ai_model: "llama3.1"
-  inference_services:
-    default:
-      model: "llama3.1"
-      api_base_url: "http://localhost:11434/v1/"
-      temperature: 0.7
+    inference_services:
+        default:
+            model: "llama3.1"
+            api_base_url: "http://localhost:11434/v1/"
+            api_key: "ollama"
+            temperature: 0.7
 ```
 
 ### Example: Institutional Endpoint (TACC, LiteLLM proxy)
 
 ```yaml
 galaxy:
-  inference_services:
-    default:
-      model: "llama-4-scout"
-      api_base_url: "http://litellm-proxy.internal:4000/v1/"
-      api_key: "internal-key"
-      temperature: 0.7
+    inference_services:
+        default:
+            model: "llama-4-scout"
+            api_base_url: "http://litellm-proxy.internal:4000/v1/"
+            api_key: "internal-key"
+            temperature: 0.7
 ```
 
 ## Configuration Cascade
@@ -183,23 +184,24 @@ At runtime, each agent resolves its configuration through a four-level cascade. 
 
 1. **Agent-specific config** -- `inference_services.<agent_type>.<key>` (e.g. `inference_services.custom_tool.model`)
 2. **Default inference config** -- `inference_services.default.<key>`
-3. **Global config** -- `ai_model`, `ai_api_key`, `ai_api_base_url`
+3. **Legacy global config** -- `ai_model`, `ai_api_key`, `ai_api_base_url` (deprecated)
 4. **Hardcoded defaults** -- model `gpt-4o-mini`, no base URL override
 
 This means you can set a cheap model as the global default and override only the agents that need a more capable (and more expensive) model.
 
-## Enabling and Disabling Agents
+## Available Agents
 
 Galaxy registers the following agent types:
 
-| Agent Type            | Default State | Purpose                                                          |
-| --------------------- | ------------- | ---------------------------------------------------------------- |
-| `router`              | Enabled       | Routes user queries to the appropriate specialized agent         |
-| `error_analysis`      | Enabled       | Diagnoses failed jobs and suggests fixes                         |
-| `custom_tool`         | Enabled       | Generates custom Galaxy tools from natural language descriptions |
-| `orchestrator`        | Enabled       | Coordinates multi-step workflow tasks                            |
-| `tool_recommendation` | Enabled       | Recommends tools from the toolbox for a given task               |
-| `dataset_analyzer`    | Disabled      | Analyzes dataset contents (beta)                                 |
+| Agent Type            | Purpose                                                          |
+| --------------------- | ---------------------------------------------------------------- |
+| `router`              | Routes user queries to the appropriate specialized agent         |
+| `error_analysis`      | Diagnoses failed jobs and suggests fixes                         |
+| `custom_tool`         | Generates custom Galaxy tools from natural language descriptions |
+| `orchestrator`        | Coordinates multi-step workflow tasks                            |
+| `tool_recommendation` | Recommends tools from the toolbox for a given task               |
+
+All registered agents are enabled when the AI system is active.
 
 ## Prerequisites and Dependencies
 
@@ -232,7 +234,7 @@ You should see a list of enabled agents with their types. If AI is not configure
 
 Log in to the Galaxy web interface. If AI is properly configured, a **ChatGXY** entry should appear in the Activity Bar on the left side of the screen. If it does not appear:
 
-1. Verify that at least one of `ai_api_key`, `ai_api_base_url`, or `inference_services` is set in `galaxy.yml`.
+1. Verify that `inference_services` is set in `galaxy.yml` (or the deprecated `ai_api_key` / `ai_api_base_url`).
 2. Check that Galaxy was restarted after the configuration change.
 3. Check the Galaxy server log for import errors related to `pydantic-ai`.
 
@@ -250,7 +252,7 @@ This should return `"llm_api_configured": true` when AI is active.
 
 ### ChatGXY does not appear in the sidebar
 
-- Confirm that `ai_api_key`, `ai_api_base_url`, or `inference_services` is set in `galaxy.yml` under the `galaxy:` section.
+- Confirm that `inference_services` is set in `galaxy.yml` under the `galaxy:` section (or the deprecated `ai_api_key` / `ai_api_base_url`).
 - Restart Galaxy after any configuration change.
 - Check that `pydantic-ai` is installed: `pip show pydantic-ai`.
 - Check Galaxy's log for `Agent system is not available` errors, which indicate a missing or broken `pydantic-ai` installation.
@@ -280,7 +282,7 @@ The `custom_tool` agent requires a model that supports structured JSON output (J
 
 ### Self-hosted endpoint returns connection errors
 
-- Verify the `ai_api_base_url` or `inference_services.default.api_base_url` is reachable from the Galaxy server.
+- Verify the `inference_services.default.api_base_url` is reachable from the Galaxy server.
 - The URL should include the path prefix expected by the API (typically `/v1/`).
 - Check firewall rules if the inference service is on a different host.
 
@@ -290,30 +292,20 @@ A production deployment using a LiteLLM proxy with per-agent model overrides:
 
 ```yaml
 galaxy:
-  # Global fallback
-  ai_api_key: "proxy-key-..."
-  ai_api_base_url: "http://litellm.internal:4000/v1/"
-  ai_model: "llama-4-scout"
-
-  # Per-agent overrides
-  inference_services:
-    default:
-      model: "llama-4-scout"
-      api_base_url: "http://litellm.internal:4000/v1/"
-      temperature: 0.5
-    custom_tool:
-      model: "openai:gpt-4o"
-      api_key: "sk-..."
-      temperature: 0.4
-      max_tokens: 2000
-    error_analysis:
-      model: "anthropic:claude-sonnet-4-5"
-      api_key: "sk-ant-..."
-      temperature: 0.2
-      max_tokens: 2000
-
-  # Optionally disable beta agents
-  agents:
-    dataset_analyzer:
-      enabled: false
+    inference_services:
+        default:
+            model: "llama-4-scout"
+            api_base_url: "http://litellm.internal:4000/v1/"
+            api_key: "proxy-key-..."
+            temperature: 0.5
+        custom_tool:
+            model: "openai:gpt-4o"
+            api_key: "sk-..."
+            temperature: 0.4
+            max_tokens: 2000
+        error_analysis:
+            model: "anthropic:claude-sonnet-4-5"
+            api_key: "sk-ant-..."
+            temperature: 0.2
+            max_tokens: 2000
 ```
