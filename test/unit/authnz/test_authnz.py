@@ -119,3 +119,82 @@ def test_psa_authnz_config(mock_app):
         app_config=mock_app.config,
     )
     assert psa_authnz.config[setting_name("USERNAME_KEY")] == config_values["username_key"]
+
+
+def _create_backend_config_with_idphint(idphint_value: str = None) -> tuple[str, str]:
+    """Create a Keycloak backend config, optionally including an <idphint> element."""
+    idphint_element = f"        <idphint>{idphint_value}</idphint>" if idphint_value else ""
+    contents = f"""<?xml version="1.0"?>
+<OIDC>
+    <provider name="keycloak">
+        <url>https://auth.example.org/realms/MyRealm/</url>
+        <client_id>galaxy-oidc</client_id>
+        <client_secret>secret</client_secret>
+        <redirect_uri>https://galaxy.example.org/authnz/keycloak/callback</redirect_uri>
+        <enable_idp_logout>true</enable_idp_logout>
+{idphint_element}
+    </provider>
+</OIDC>
+"""
+    file = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".xml")
+    file.write(contents)
+    file.flush()
+    return contents, file.name
+
+
+def test_parse_idphint_from_xml(mock_app):
+    """
+    Regression test: <idphint> in oidc_backends_config.xml must be parsed into
+    the oidc_backend_config dict so that PSAAuthnz can forward it as IDPHINT to
+    the Keycloak/CILogon backends (which use it to set kc_idp_hint).
+
+    Previously, _parse_idp_config() had no branch for <idphint>, so the element
+    was silently ignored and oidc_backend_config.get("idphint") always returned
+    None, causing kc_idp_hint to never be sent to Keycloak.
+    """
+    _, oidc_path = create_oidc_config()
+    _, backend_path = _create_backend_config_with_idphint(idphint_value="my-switch-edu-id")
+    manager = AuthnzManager(app=mock_app, oidc_config_file=oidc_path, oidc_backends_config_file=backend_path)
+    parsed = manager.oidc_backends_config["keycloak"]
+    assert "idphint" in parsed, "<idphint> element must be parsed into oidc_backend_config dict"
+    assert parsed["idphint"] == "my-switch-edu-id"
+
+
+def test_idphint_propagated_to_psa_config(mock_app):
+    """
+    When <idphint> is configured, PSAAuthnz must expose it as IDPHINT in its
+    config so the Keycloak/CILogon PSA backend can add kc_idp_hint to the
+    authorization URL.
+    """
+    from galaxy.authnz.psa_authnz import PSAAuthnz
+
+    _, oidc_path = create_oidc_config()
+    _, backend_path = _create_backend_config_with_idphint(idphint_value="stage")
+    manager = AuthnzManager(app=mock_app, oidc_config_file=oidc_path, oidc_backends_config_file=backend_path)
+    psa = PSAAuthnz(
+        provider="keycloak",
+        oidc_config=manager.oidc_config,
+        oidc_backend_config=manager.oidc_backends_config["keycloak"],
+        app_config=mock_app.config,
+    )
+    assert psa.config.get("IDPHINT") == "stage", "IDPHINT must be 'stage' when <idphint>stage</idphint> is in XML"
+
+
+def test_missing_idphint_is_none(mock_app):
+    """
+    When <idphint> is absent from the XML, IDPHINT must be None (not a hardcoded
+    default string like 'oidc'), so the Keycloak backend omits kc_idp_hint
+    entirely rather than sending a wrong value.
+    """
+    from galaxy.authnz.psa_authnz import PSAAuthnz
+
+    _, oidc_path = create_oidc_config()
+    _, backend_path = _create_backend_config_with_idphint(idphint_value=None)
+    manager = AuthnzManager(app=mock_app, oidc_config_file=oidc_path, oidc_backends_config_file=backend_path)
+    psa = PSAAuthnz(
+        provider="keycloak",
+        oidc_config=manager.oidc_config,
+        oidc_backend_config=manager.oidc_backends_config["keycloak"],
+        app_config=mock_app.config,
+    )
+    assert psa.config.get("IDPHINT") is None, "IDPHINT must be None when <idphint> is absent from XML"

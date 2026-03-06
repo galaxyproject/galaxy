@@ -187,6 +187,12 @@ class AuthnzManager:
         if config_xml.find("checkin_env") is not None:
             rtv["checkin_env"] = config_xml.find("checkin_env").text
 
+        # Keycloak/CILogon IDP hint: tells Keycloak which federated IdP to redirect
+        # to directly (kc_idp_hint), bypassing the Keycloak login page.
+        # Corresponds to <idphint> in oidc_backends_config.xml (already in XSD).
+        if config_xml.find("idphint") is not None:
+            rtv["idphint"] = config_xml.find("idphint").text
+
         return rtv
 
     def _parse_custos_config(self, config_xml):
