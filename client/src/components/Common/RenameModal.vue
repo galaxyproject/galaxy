@@ -25,10 +25,11 @@ const emit = defineEmits<{
 const nameModel = ref(props.name);
 const renaming = ref(false);
 
-const nameRemainsSame = computed(() => nameModel.value.trim() === props.name.trim());
+/** The new name is invalid if it's the same as original or empty */
+const nameInvalid = computed(() => nameModel.value.trim() === props.name.trim() || !nameModel.value.trim());
 
 async function onRename(newName: string) {
-    if (nameRemainsSame.value || renaming.value) {
+    if (nameInvalid.value || renaming.value) {
         return;
     }
 
@@ -49,7 +50,7 @@ async function onRename(newName: string) {
     <GModal
         show
         :ok-text="localize('Rename')"
-        :ok-disabled="nameRemainsSame || renaming"
+        :ok-disabled="nameInvalid || renaming"
         :title="`Rename ${props.itemType}: ${props.name}`"
         confirm
         @ok="onRename(nameModel)"
