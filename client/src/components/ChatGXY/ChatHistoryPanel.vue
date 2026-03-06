@@ -2,11 +2,12 @@
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faClock, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 import { getGalaxyInstance } from "@/app";
+import { useSidebarSelection } from "@/composables/useSidebarSelection";
 
 import { getAgentIcon } from "./agentTypes";
 import type { ChatHistoryItem } from "./chatTypes";
@@ -19,10 +20,9 @@ const router = useRouter();
 
 const chatHistory = ref<ChatHistoryItem[]>([]);
 const loading = ref(false);
-const selectionMode = ref(false);
-const selectedIds = ref(new Set<string>());
 
-const allSelected = computed(() => chatHistory.value.length > 0 && selectedIds.value.size === chatHistory.value.length);
+const { selectionMode, selectedIds, allSelected, toggleSelectionMode, toggleSelectAll, handleSelectionClick, pruneAfterDelete } =
+    useSidebarSelection(chatHistory, (item) => item.id);
 
 onMounted(() => {
     loadHistory();
@@ -44,59 +44,16 @@ async function loadHistory() {
     }
 }
 
-const lastClickedIndex = ref<number | null>(null);
-
 function handleItemClick(item: ChatHistoryItem, index: number, event: MouseEvent) {
-    if (selectionMode.value) {
-        const currentIndex = index;
-        if (event.shiftKey && lastClickedIndex.value !== null) {
-            const start = Math.min(lastClickedIndex.value, currentIndex);
-            const end = Math.max(lastClickedIndex.value, currentIndex);
-            const next = new Set(selectedIds.value);
-            for (let i = start; i <= end; i++) {
-                const id = chatHistory.value[i]?.id;
-                if (id) {
-                    next.add(id);
-                }
-            }
-            selectedIds.value = next;
-        } else {
-            toggleSelection(item.id);
-        }
-        lastClickedIndex.value = currentIndex;
-    } else {
-        const Galaxy = getGalaxyInstance();
-        if (Galaxy?.frame?.active) {
-            // @ts-ignore - monkeypatched router, second arg is RouterPushOptions
-            router.push(`/chatgxy/${item.id}?compact=true`, { title: "ChatGXY" });
-        } else {
-            router.push(`/chatgxy/${item.id}`);
-        }
+    if (handleSelectionClick(item, index, event)) {
+        return;
     }
-}
-
-function toggleSelectionMode() {
-    selectionMode.value = !selectionMode.value;
-    if (!selectionMode.value) {
-        selectedIds.value.clear();
-    }
-}
-
-function toggleSelection(id: string) {
-    const next = new Set(selectedIds.value);
-    if (next.has(id)) {
-        next.delete(id);
+    const Galaxy = getGalaxyInstance();
+    if (Galaxy?.frame?.active) {
+        // @ts-ignore - monkeypatched router, second arg is RouterPushOptions
+        router.push(`/chatgxy/${item.id}?compact=true`, { title: "ChatGXY" });
     } else {
-        next.add(id);
-    }
-    selectedIds.value = next;
-}
-
-function toggleSelectAll() {
-    if (allSelected.value) {
-        selectedIds.value = new Set();
-    } else {
-        selectedIds.value = new Set(chatHistory.value.map((item) => item.id));
+        router.push(`/chatgxy/${item.id}`);
     }
 }
 
@@ -121,10 +78,7 @@ async function deleteSelected() {
         });
         if (!error) {
             chatHistory.value = chatHistory.value.filter((item) => !selectedIds.value.has(item.id));
-            selectedIds.value = new Set();
-            if (chatHistory.value.length === 0) {
-                selectionMode.value = false;
-            }
+            pruneAfterDelete();
         }
     } catch (e) {
         console.error("Failed to delete exchanges:", e);
