@@ -20,6 +20,7 @@ import type { ClientWorkflowExtractionJob } from "./WorkflowExtraction/types";
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GButton from "../BaseComponents/GButton.vue";
 import BreadcrumbHeading from "../Common/BreadcrumbHeading.vue";
+import RenameModal from "../Common/RenameModal.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import WorkflowExtractionCard from "./WorkflowExtraction/WorkflowExtractionCard.vue";
 
@@ -48,6 +49,7 @@ const loading = ref(true);
 const errorMessage = ref<string | null>(null);
 const jobsList = ref<ClientWorkflowExtractionJob[]>([]);
 const workflowName = ref("");
+const renameIndex = ref<number | null>(null);
 
 const submissionDisabled = computed(() => hasUnnamedSelectedInputs.value || !workflowName.value.trim());
 
@@ -152,6 +154,14 @@ async function extractWorkflow() {
     }
 }
 
+function onJobRename(index: number) {
+    if (!jobsList.value?.length) {
+        return;
+    }
+
+    renameIndex.value = index;
+}
+
 function onJobSelect(index: number) {
     if (!jobsList.value?.length) {
         return;
@@ -160,6 +170,25 @@ function onJobSelect(index: number) {
     if (job) {
         job.checked = !job.checked;
     }
+}
+
+async function renameInput(newName: string) {
+    if (!jobsList.value?.length) {
+        throw new Error("No jobs available to rename");
+    }
+    if (renameIndex.value === null) {
+        throw new Error("Invalid job index");
+    }
+    const jobToRename = jobsList.value[renameIndex.value];
+
+    if (!jobToRename) {
+        throw new Error("Job not found");
+    }
+    if (jobToRename.stepType === "tool" || !("newName" in jobToRename)) {
+        throw new Error("Renaming workflow steps is not supported");
+    }
+    // Now we can rename
+    jobsList.value[renameIndex.value]!.newName = newName;
 }
 
 async function submitWorkflow() {
@@ -236,8 +265,16 @@ async function submitWorkflow() {
                 :id="`workflow-extraction-job-${index}`"
                 :key="index"
                 :job="job"
+                @rename="onJobRename(index)"
                 @select="onJobSelect(index)" />
         </div>
+
+        <RenameModal
+            v-if="renameIndex !== null && jobsList[renameIndex]"
+            item-type="input"
+            :name="jobsList[renameIndex]?.newName ?? ''"
+            :rename-action="renameInput"
+            @close="renameIndex = null" />
     </div>
 </template>
 
