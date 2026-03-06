@@ -116,12 +116,12 @@ def get_named_tmpfile_from_ctx(ctx, filename, dir):
                 fctx = None
                 continue
             if fctx:
-                fh = tempfile.NamedTemporaryFile("wb", prefix="tmp-toolshed-gntfc", dir=dir)
-                tmp_filename = fh.name
-                fh.close()
-                fh = open(tmp_filename, "wb")
-                fh.write(fctx.data())
-                fh.close()
+                fh1 = tempfile.NamedTemporaryFile("wb", prefix="tmp-toolshed-gntfc", dir=dir)
+                tmp_filename = fh1.name
+                fh1.close()
+                fh2 = open(tmp_filename, "wb")
+                fh2.write(fctx.data())
+                fh2.close()
                 return tmp_filename
     return None
 
@@ -142,7 +142,7 @@ def get_repository_heads(repo):
 
 def get_reversed_changelog_changesets(repo):
     """Return a list of changesets in reverse order from that provided by the repository manifest."""
-    reversed_changelog = []
+    reversed_changelog: list[str] = []
     for changeset in repo.changelog:
         reversed_changelog.insert(0, changeset)
     return reversed_changelog

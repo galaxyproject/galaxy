@@ -16,7 +16,7 @@ new_hgweb_config_template = """
 class HgWebConfigManager:
     def __init__(self):
         self.hgweb_config_dir = None
-        self.in_memory_config = None
+        self.in_memory_config: configparser.ConfigParser | None = None
         self.lock = threading.Lock()
         self.hgweb_repo_prefix = None
 
@@ -26,6 +26,7 @@ class HgWebConfigManager:
         try:
             # Since we're changing the config, make sure the latest is loaded into memory.
             self.read_config(force_read=True)
+            assert self.in_memory_config is not None
             # An entry looks something like: repos/test/mira_assembler = database/community_files/000/repo_123.
             if rhs.startswith("./"):
                 rhs = rhs.replace("./", "", 1)
@@ -45,6 +46,7 @@ class HgWebConfigManager:
         try:
             self.make_backup()
             # Remove the old entry.
+            assert self.in_memory_config is not None
             self.in_memory_config.remove_option("paths", old_lhs)
             # Add the new entry.
             self.in_memory_config.set("paths", new_lhs, new_rhs)
@@ -59,11 +61,13 @@ class HgWebConfigManager:
         """Return an entry in the hgweb.config file for a repository"""
         self.read_config()
         try:
+            assert self.in_memory_config is not None
             entry = self.in_memory_config.get("paths", lhs)
         except configparser.NoOptionError:
             try:
                 # We have a multi-threaded front-end, so one of the threads may not have the latest version of the hgweb.config file.
                 self.read_config(force_read=True)
+                assert self.in_memory_config is not None
                 entry = self.in_memory_config.get("paths", lhs)
             except configparser.NoOptionError:
                 raise Exception(f"Entry for repository {lhs} missing in file {self.hgweb_config}.")
@@ -99,6 +103,7 @@ class HgWebConfigManager:
 
     def write_config(self):
         """Writing the in-memory configuration to the hgweb.config file on disk."""
+        assert self.in_memory_config is not None
         with open(self.hgweb_config, "w") as config_file:
             self.in_memory_config.write(config_file)
 

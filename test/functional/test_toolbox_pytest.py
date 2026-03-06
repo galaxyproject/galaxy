@@ -69,6 +69,7 @@ class TestFrameworkTools(ApiTestCase):
         use_legacy_api = os.environ.get("GALAXY_TEST_USE_LEGACY_TOOL_API", DEFAULT_USE_LEGACY_API)
         assert use_legacy_api in get_args(UseLegacyApiT)
         cast(UseLegacyApiT, use_legacy_api)  # https://github.com/python/mypy/issues/15106
+        assert self._test_driver
         self._test_driver.run_tool_test(
             testcase.tool_id, testcase.test_index, tool_version=testcase.tool_version, use_legacy_api=use_legacy_api
         )

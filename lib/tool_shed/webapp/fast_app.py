@@ -148,7 +148,7 @@ def initialize_fast_app(gx_webapp, tool_shed_app):
     add_exception_handler(app)
     add_request_id_middleware(app)
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     def mount_static(directory: Path):
         name = directory.name
@@ -169,7 +169,7 @@ def initialize_fast_app(gx_webapp, tool_shed_app):
     wsgi_handler = WSGIMiddleware(gx_webapp)
     tool_shed_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
     # https://github.com/abersheeran/a2wsgi/issues/44
-    app.mount("/", wsgi_handler)  # type: ignore[arg-type]
+    app.mount("/", wsgi_handler)
     return app
 
 

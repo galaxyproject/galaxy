@@ -33,6 +33,13 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     default_config_file_name = "tool_shed.yml"
 
     add_sample_file_to_defaults = {"datatypes_config_file"}
+    tool_data_path: str
+    file_path: str
+    hgweb_config_dir: str
+    template_cache_path: str
+    database_connection: str
+    new_file_path: str
+    pretty_datetime_format: str
 
     def _load_schema(self):
         return AppSchema(TOOL_SHED_CONFIG_SCHEMA_PATH, TOOLSHED_APP_NAME)
