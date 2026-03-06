@@ -211,7 +211,9 @@ async function submitWorkflow() {
 
         const data = await submitWorkflowExtraction(props.historyId, payload);
 
-        router.push(`/workflows/edit?id=${data.id}`);
+        Toast.success("Workflow created successfully", "Success");
+
+        router.push(`/published/workflow?id=${data.id}`);
     } catch (error) {
         errorMessage.value = errorMessageAsString(error);
     } finally {
