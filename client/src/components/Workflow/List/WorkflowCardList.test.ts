@@ -1,11 +1,11 @@
-import { getLocalVue, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import WorkflowCard from "./WorkflowCard.vue";
 import WorkflowCardList from "./WorkflowCardList.vue";
-import WorkflowRename from "./WorkflowRename.vue";
+import WorkflowRename from "@/components/Common/RenameModal.vue";
 
 vi.mock("@/components/Workflow/workflows.services", () => ({
     updateWorkflow: vi.fn(),
@@ -28,7 +28,6 @@ const FAKE_WORKFLOW_2 = { id: WORKFLOW_2_ID, name: WORKFLOW_2_NAME };
 
 describe("WorkflowCardList — rename flow", () => {
     beforeEach(() => {
-        suppressBootstrapVueWarnings();
         vi.clearAllMocks();
     });
 
@@ -45,7 +44,6 @@ describe("WorkflowCardList — rename flow", () => {
 
         const renameModal = wrapper.findComponent(WorkflowRename);
         expect(renameModal.exists()).toBe(true);
-        expect(renameModal.props("id")).toBe(WORKFLOW_ID);
         expect(renameModal.props("name")).toBe(WORKFLOW_NAME);
     });
 
@@ -68,7 +66,6 @@ describe("WorkflowCardList — rename flow", () => {
         await flushPromises();
 
         const renameModal = wrapper.findComponent(WorkflowRename);
-        expect(renameModal.props("id")).toBe(WORKFLOW_2_ID);
         expect(renameModal.props("name")).toBe(WORKFLOW_2_NAME);
     });
 });

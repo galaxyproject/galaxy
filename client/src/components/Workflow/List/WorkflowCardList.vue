@@ -2,12 +2,13 @@
 import { reactive, type Ref, ref } from "vue";
 
 import type { WorkflowSummary } from "@/api/workflows";
+import { updateWorkflow } from "@/components/Workflow/workflows.services";
 
 import type { SelectedWorkflow } from "./types";
 
 import WorkflowCard from "./WorkflowCard.vue";
-import WorkflowRename from "./WorkflowRename.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
+import WorkflowRename from "@/components/Common/RenameModal.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 import WorkflowPublishedButtons from "@/components/Workflow/Published/WorkflowPublishedButtons.vue";
 
@@ -124,8 +125,9 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
 
         <WorkflowRename
             v-if="showRename"
-            :id="modalOptions.rename.id"
+            item-type="workflow"
             :name="modalOptions.rename.name"
+            :rename-action="(newName) => updateWorkflow(modalOptions.rename.id, { name: newName })"
             @close="onRenameClose" />
 
         <GModal
