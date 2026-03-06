@@ -16,6 +16,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+    (e: "rename"): void;
     (e: "select"): void;
 }>();
 
@@ -75,9 +76,10 @@ const titleIcon = computed<TitleIcon>(() => {
         :badges="badges"
         :title="'newName' in props.job ? props.job.newName : props.job.tool_name || 'Unnamed Step'"
         :title-icon="titleIcon"
-        :can-rename-title="props.job.stepType !== 'tool'"
+        :can-rename-title="props.job.stepType !== 'tool' && props.job.checked"
         selectable
         :selected="props.job.checked"
+        @rename="emit('rename')"
         @select="emit('select')">
         <template v-if="props.job.outputs?.length" v-slot:description>
             <Heading

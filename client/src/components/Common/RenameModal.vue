@@ -9,8 +9,18 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
+    /**
+     * The current name of the item to be renamed. This is used to initialize the input field and to determine if the name has changed.
+     */
     name: string;
+    /**
+     * What is being renamed, used for display in the modal title and toast messages, as well as setting the input field `id`
+     * @default "item"
+     */
     itemType?: string;
+    /**
+     * The action to perform the rename. Should return a promise that resolves if the rename was successful and rejects if it failed. The new name is passed as an argument.
+     */
     renameAction: (newName: string) => Promise<unknown>;
 }
 
@@ -53,6 +63,7 @@ async function onRename(newName: string) {
         :ok-disabled="nameInvalid || renaming"
         :title="`Rename ${props.itemType}: ${props.name}`"
         confirm
+        :close-on-ok="false"
         @ok="onRename(nameModel)"
         @close="emit('close')"
         @cancel="emit('close')">
