@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { BForm, BFormInput, BModal } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { updateWorkflow } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
 
-import Heading from "@/components/Common/Heading.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     id: string;
@@ -17,47 +18,52 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "close"): void;
-    (e: "onRename", name: string): void;
 }>();
 
 const nameModel = ref(props.name);
+const renaming = ref(false);
 
 const nameRemainsSame = computed(() => nameModel.value.trim() === props.name.trim());
 
 async function onRename(newName: string) {
+    if (nameRemainsSame.value || renaming.value) {
+        return;
+    }
+
     try {
+        renaming.value = true;
         await updateWorkflow(props.id, { name: newName.trim() });
         Toast.success("Workflow renamed");
     } catch (e) {
         Toast.error("Failed to rename workflow");
     } finally {
+        renaming.value = false;
         emit("close");
     }
-}
-
-function onClose() {
-    emit("close");
 }
 </script>
 
 <template>
-    <BModal
-        visible
-        :ok-title="localize('Rename')"
-        :ok-disabled="nameRemainsSame"
+    <GModal
+        show
+        :ok-text="localize('Rename')"
+        :ok-disabled="nameRemainsSame || renaming"
+        :title="`Rename workflow: ${props.name}`"
+        confirm
         @ok="onRename(nameModel)"
-        @hide="onClose">
-        <template v-slot:modal-title>
-            <Heading h2 inline size="sm"> Rename workflow: {{ localize(name) }}</Heading>
-        </template>
+        @close="emit('close')"
+        @cancel="emit('close')">
+        <GFormInput
+            id="workflow-name-input"
+            v-model="nameModel"
+            class="w-100"
+            :disabled="renaming"
+            type="text"
+            placeholder="Enter new name"
+            @keydown.enter.prevent="onRename(nameModel)" />
 
-        <BForm @submit.prevent="onRename(nameModel)">
-            <BFormInput
-                id="workflow-name-input"
-                ref="workflowNameInput"
-                v-model="nameModel"
-                type="text"
-                placeholder="Enter new name" />
-        </BForm>
-    </BModal>
+        <template v-slot:footer>
+            <LoadingSpan v-if="renaming" :message="localize('Renaming workflow')" />
+        </template>
+    </GModal>
 </template>
