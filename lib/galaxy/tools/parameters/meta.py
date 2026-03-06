@@ -23,7 +23,10 @@ from galaxy.model.dataset_collections import (
     matching,
     subcollections,
 )
-from galaxy.model.dataset_collections.adapters import PromoteCollectionElementToCollectionAdapter
+from galaxy.model.dataset_collections.adapters import (
+    CollectionAdapter,
+    PromoteCollectionElementToCollectionAdapter,
+)
 from galaxy.tool_util.parameters import RequestInternalDereferencedToolState
 from galaxy.util.permutations import (
     build_combos,
@@ -399,6 +402,8 @@ def to_decoded_json(has_objects):
         return decoded_json
     elif isinstance(has_objects, list):
         return [to_decoded_json(o) for o in has_objects]
+    elif isinstance(has_objects, CollectionAdapter):
+        return has_objects.to_adapter_model().model_dump()
     elif isinstance(has_objects, DatasetCollectionElement):
         return {"src": "dce", "id": has_objects.id}
     elif isinstance(has_objects, HistoryDatasetAssociation):

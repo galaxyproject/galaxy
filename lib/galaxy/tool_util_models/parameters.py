@@ -1154,6 +1154,10 @@ AdaptedDataCollectionRequestInternalTypeAdapter = TypeAdapter(
     AdaptedDataCollectionRequestInternal
 )  # type: ignore[var-annotated]
 
+DataCollectionJobInternal: Type = union_type(
+    [DataCollectionRequestInternal, AdaptedDataCollectionRequestInternal]
+)
+
 
 class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_data_collection"] = "gx_data_collection"
@@ -1252,7 +1256,9 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
                 BatchCollectionInstanceInternal,
             )
         elif state_representation == "job_internal":
-            return dynamic_model_information_from_py_type(self, self.py_type_internal, requires_value=True)
+            return dynamic_model_information_from_py_type(
+                self, optional_if_needed(DataCollectionJobInternal, self.optional), requires_value=True
+            )
         elif state_representation == "job_runtime":
             return dynamic_model_information_from_py_type(self, self.py_type_internal_json, requires_value=True)
         elif state_representation == "workflow_step":
