@@ -9,6 +9,7 @@ from typing import (
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
+    DatasetInstance,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     InpDataDictT,
@@ -62,7 +63,7 @@ def setup_for_runtimeify(
     hda_references: list[HistoryDatasetAssociation] = []
 
     # Build lookup for individual datasets
-    hdas_by_id: dict[int, tuple[HistoryDatasetAssociation, int]] = {d.id: (d, i) for (i, d) in enumerate(input_datasets.values()) if d is not None}
+    hdas_by_id: dict[int, tuple[DatasetInstance, int]] = {d.id: (d, i) for (i, d) in enumerate(input_datasets.values()) if d is not None}
 
     # Build separate lookups for HDCAs and DCEs
     hdcas_by_id: dict[int, HistoryDatasetCollectionAssociation] = {}
@@ -87,6 +88,7 @@ def setup_for_runtimeify(
         hda_id = value.id
         if hda_id not in hdas_by_id:
             raise ValueError(f"Could not find HDA for dataset id {hda_id}")
+        hda: DatasetInstance
         hda, index = hdas_by_id[hda_id]
         if not hda:
             raise ValueError(f"Could not find HDA for dataset id {hda_id}")

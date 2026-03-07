@@ -1154,9 +1154,7 @@ AdaptedDataCollectionRequestInternalTypeAdapter = TypeAdapter(
     AdaptedDataCollectionRequestInternal
 )  # type: ignore[var-annotated]
 
-DataCollectionJobInternal: Type = union_type(
-    [DataCollectionRequestInternal, AdaptedDataCollectionRequestInternal]
-)
+DataCollectionJobInternal: Type = Union[DataCollectionRequestInternal, AdaptedDataCollectionRequestInternal]  # type: ignore[assignment]
 
 
 class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
