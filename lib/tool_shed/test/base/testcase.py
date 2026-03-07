@@ -1200,6 +1200,9 @@ class ShedTestCase(ShedApiTestCase):
         new_category_ids = list((current_category_ids - remove_ids) | add_ids)
         request = UpdateRepositoryRequest(category_ids=new_category_ids)
         populator.update(repository, request)
+        if restore_original:
+            restore_request = UpdateRepositoryRequest(category_ids=list(current_category_ids))
+            populator.update(repository, restore_request)
 
     def edit_repository_information(self, repository: Repository, revert=True, **kwd):
         populator = self._logged_in_populator or self.populator
@@ -1516,8 +1519,8 @@ class ShedTestCase(ShedApiTestCase):
         populator = self._logged_in_populator or self.populator
         repository = populator.get_repository(repository_id)
         repo = self.get_hg_repo(self.get_repo_path(repository))
-        ctx = repo[changeset_revision.encode("ascii")]
-        assert ctx is not None, f"Changeset {changeset_revision} not found"
+        found = any(str(repo[cs]) == changeset_revision for cs in repo.changelog)
+        assert found, f"Changeset {changeset_revision} not found"
 
     def load_checkable_revisions(self, strings_displayed=None, strings_not_displayed=None):
         params = {
