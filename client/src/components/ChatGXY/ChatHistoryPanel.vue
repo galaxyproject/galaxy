@@ -122,8 +122,8 @@ async function deleteSelected() {
         <SidebarList
             :items="chatHistory"
             :is-loading="loading"
-            :item-key="(item: ChatHistoryItem) => item.id"
-            :item-class="(item: ChatHistoryItem) => ({ selected: selectedIds.has(item.id) })"
+            :item-key="(item) => item.id"
+            :item-class="(item) => ({ selected: selectedIds.has(item.id) })"
             loading-message="Loading history..."
             empty-message="No chat history yet"
             @select="handleItemClick">
