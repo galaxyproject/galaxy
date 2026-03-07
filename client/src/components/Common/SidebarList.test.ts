@@ -177,5 +177,4 @@ describe("SidebarList", () => {
             expect(items.at(1)!.classes()).not.toContain("first");
         });
     });
-
 });

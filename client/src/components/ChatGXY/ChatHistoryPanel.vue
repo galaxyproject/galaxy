@@ -21,8 +21,15 @@ const router = useRouter();
 const chatHistory = ref<ChatHistoryItem[]>([]);
 const loading = ref(false);
 
-const { selectionMode, selectedIds, allSelected, toggleSelectionMode, toggleSelectAll, handleSelectionClick, pruneAfterDelete } =
-    useSidebarSelection(chatHistory, (item) => item.id);
+const {
+    selectionMode,
+    selectedIds,
+    allSelected,
+    toggleSelectionMode,
+    toggleSelectAll,
+    handleSelectionClick,
+    pruneAfterDelete,
+} = useSidebarSelection(chatHistory, (item) => item.id);
 
 onMounted(() => {
     loadHistory();
@@ -120,7 +127,7 @@ async function deleteSelected() {
             loading-message="Loading history..."
             empty-message="No chat history yet"
             @select="handleItemClick">
-            <template #item="{ item }">
+            <template v-slot:item="{ item }">
                 <span v-if="selectionMode" class="history-checkbox">
                     <FontAwesomeIcon :icon="selectedIds.has(item.id) ? faCheckSquare : faSquare" fixed-width />
                 </span>

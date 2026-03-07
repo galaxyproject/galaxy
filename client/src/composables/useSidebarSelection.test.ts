@@ -1,5 +1,5 @@
-import { ref } from "vue";
 import { describe, expect, it } from "vitest";
+import { ref } from "vue";
 
 import { useSidebarSelection } from "./useSidebarSelection";
 
@@ -39,7 +39,7 @@ describe("useSidebarSelection", () => {
             const items = ref(makeItems("a", "b"));
             const { selectionMode, selectedIds, toggleSelectionMode, toggleSelection } = useSidebarSelection(
                 items,
-                (i) => i.id
+                (i) => i.id,
             );
 
             toggleSelectionMode();
@@ -130,10 +130,7 @@ describe("useSidebarSelection", () => {
 
         it("toggles item and returns true in selection mode", () => {
             const items = ref(makeItems("a", "b"));
-            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(
-                items,
-                (i) => i.id
-            );
+            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(items, (i) => i.id);
 
             toggleSelectionMode();
             const consumed = handleSelectionClick(items.value[0]!, 0, mouseEvent());
@@ -146,10 +143,7 @@ describe("useSidebarSelection", () => {
 
         it("shift-click selects range", () => {
             const items = ref(makeItems("a", "b", "c", "d", "e"));
-            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(
-                items,
-                (i) => i.id
-            );
+            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(items, (i) => i.id);
 
             toggleSelectionMode();
             handleSelectionClick(items.value[1]!, 1, mouseEvent());
@@ -163,10 +157,7 @@ describe("useSidebarSelection", () => {
 
         it("shift-click backwards selects range", () => {
             const items = ref(makeItems("a", "b", "c", "d"));
-            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(
-                items,
-                (i) => i.id
-            );
+            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(items, (i) => i.id);
 
             toggleSelectionMode();
             handleSelectionClick(items.value[3]!, 3, mouseEvent());
@@ -177,10 +168,7 @@ describe("useSidebarSelection", () => {
 
         it("shift-click without prior click acts as normal click", () => {
             const items = ref(makeItems("a", "b"));
-            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(
-                items,
-                (i) => i.id
-            );
+            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(items, (i) => i.id);
 
             toggleSelectionMode();
             handleSelectionClick(items.value[1]!, 1, mouseEvent({ shiftKey: true }));
@@ -190,10 +178,7 @@ describe("useSidebarSelection", () => {
 
         it("resets shift-click anchor when toggling mode off and back on", () => {
             const items = ref(makeItems("a", "b", "c", "d"));
-            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(
-                items,
-                (i) => i.id
-            );
+            const { selectedIds, toggleSelectionMode, handleSelectionClick } = useSidebarSelection(items, (i) => i.id);
 
             toggleSelectionMode();
             handleSelectionClick(items.value[0]!, 0, mouseEvent());
@@ -225,7 +210,7 @@ describe("useSidebarSelection", () => {
             const items = ref(makeItems("a"));
             const { selectionMode, toggleSelectionMode, toggleSelection, pruneAfterDelete } = useSidebarSelection(
                 items,
-                (i) => i.id
+                (i) => i.id,
             );
 
             toggleSelectionMode();
@@ -241,7 +226,7 @@ describe("useSidebarSelection", () => {
             const items = ref(makeItems("a", "b"));
             const { selectionMode, toggleSelectionMode, toggleSelection, pruneAfterDelete } = useSidebarSelection(
                 items,
-                (i) => i.id
+                (i) => i.id,
             );
 
             toggleSelectionMode();

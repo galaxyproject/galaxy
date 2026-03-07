@@ -1,13 +1,11 @@
-import { computed, ref, unref, type ComputedRef, type Ref } from "vue";
+import { computed, type ComputedRef, type Ref, ref, unref } from "vue";
 
 export function useSidebarSelection<T>(items: Ref<T[]> | ComputedRef<T[]>, getId: (item: T) => string) {
     const selectionMode = ref(false);
     const selectedIds = ref(new Set<string>());
     const lastClickedIndex = ref<number | null>(null);
 
-    const allSelected = computed(
-        () => unref(items).length > 0 && selectedIds.value.size === unref(items).length
-    );
+    const allSelected = computed(() => unref(items).length > 0 && selectedIds.value.size === unref(items).length);
 
     function toggleSelectionMode() {
         selectionMode.value = !selectionMode.value;
