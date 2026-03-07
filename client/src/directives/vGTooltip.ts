@@ -136,7 +136,7 @@ function getContent(el: HTMLElement, bindingValue: unknown, vnode?: VNode): stri
     if (typeof bindingValue === "object" && bindingValue !== null && "title" in bindingValue) {
         return String((bindingValue as { title: string }).title || "");
     }
-    // Fall back to element's title attribute; capture and remove it to prevent native tooltip.
+    // Fall back to element's title attribute.
     // Also check vnode attrs/props for components with inheritAttrs: false (e.g. BFormCheckbox)
     // where :title doesn't land on the root DOM element.
     const title =
@@ -145,7 +145,6 @@ function getContent(el: HTMLElement, bindingValue: unknown, vnode?: VNode): stri
         (vnode?.componentOptions?.propsData as Record<string, unknown> | undefined)?.title ||
         null;
     if (title) {
-        el.removeAttribute("title");
         el.dataset.gTooltipTitle = String(title);
     }
     return el.dataset.gTooltipTitle || "";
@@ -216,6 +215,11 @@ function showTooltip(el: HTMLElement) {
         return;
     }
 
+    // Suppress native tooltip while ours is visible
+    if (el.hasAttribute("title")) {
+        el.setAttribute("title", "");
+    }
+
     if (!state.tooltipEl.isConnected) {
         document.body.appendChild(state.tooltipEl);
     }
@@ -231,6 +235,11 @@ function hideTooltip(el: HTMLElement) {
 
     state.cleanupAutoUpdate?.();
     state.cleanupAutoUpdate = null;
+
+    // Restore native title attribute
+    if (el.dataset.gTooltipTitle) {
+        el.setAttribute("title", el.dataset.gTooltipTitle);
+    }
 
     if (state.tooltipEl.isConnected) {
         state.tooltipEl.remove();
