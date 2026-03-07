@@ -147,23 +147,22 @@ def build_default_registry(config=None) -> AgentRegistry:
         agent_cfg = agents_config.get(agent_type, {})
         return agent_cfg.get("enabled", True)
 
-    all_agents = [
-        (AgentType.ROUTER, QueryRouterAgent),
-        (AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent),
-        (AgentType.CUSTOM_TOOL, CustomToolAgent),
-        (AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent),
-        (AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent),
-    ]
-
-    registry = AgentRegistry()
-    for agent_type, agent_class in all_agents:
-        if agent_type == AgentType.ROUTER:
-            if not _is_enabled(agent_type):
-                log.warning("Router agent cannot be disabled — ignoring enabled: false")
-            registry.register(agent_type, agent_class)
-        elif _is_enabled(agent_type):
+    def _register_or_disable(registry: AgentRegistry, agent_type: str, agent_class: type[BaseGalaxyAgent]):
+        if _is_enabled(agent_type):
             registry.register(agent_type, agent_class)
         else:
             registry._disabled.add(agent_type)
             log.info(f"Agent '{agent_type}' disabled by configuration, skipping registration")
+
+    registry = AgentRegistry()
+
+    # Router is always registered
+    if not _is_enabled(AgentType.ROUTER):
+        log.warning("Router agent cannot be disabled — ignoring enabled: false")
+    registry.register(AgentType.ROUTER, QueryRouterAgent)
+
+    _register_or_disable(registry, AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent)
+    _register_or_disable(registry, AgentType.CUSTOM_TOOL, CustomToolAgent)
+    _register_or_disable(registry, AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
+    _register_or_disable(registry, AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)
     return registry
