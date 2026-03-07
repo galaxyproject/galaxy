@@ -1,15 +1,15 @@
-<script setup lang="ts" generic="T">
+<script setup lang="ts">
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const props = withDefaults(
     defineProps<{
-        items: T[];
+        items: any[];
         isLoading: boolean;
         loadingMessage?: string;
         emptyMessage?: string;
-        itemKey: (item: T) => string | number;
-        itemClass?: (item: T, index: number) => string | Record<string, boolean> | undefined;
+        itemKey: (item: any) => string | number;
+        itemClass?: (item: any, index: number) => string | Record<string, boolean> | undefined;
     }>(),
     {
         loadingMessage: "Loading...",
@@ -19,14 +19,14 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-    (e: "select", item: T, index: number, event: MouseEvent): void;
+    (e: "select", item: any, index: number, event: MouseEvent): void;
 }>();
 
-function onItemClick(item: T, index: number, event: MouseEvent) {
+function onItemClick(item: any, index: number, event: MouseEvent) {
     emit("select", item, index, event);
 }
 
-function onItemKeydown(item: T, index: number, event: KeyboardEvent) {
+function onItemKeydown(item: any, index: number, event: KeyboardEvent) {
     if (event.key === "Enter") {
         emit("select", item, index, event as unknown as MouseEvent);
     }
