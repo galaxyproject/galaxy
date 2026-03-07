@@ -11,7 +11,7 @@ from whoosh import index
 from galaxy.util.compression_utils import CompressedFile
 from tool_shed.util.shed_index import build_index
 
-URL = "https://github.com/mvdbeek/toolshed-test-data/blob/master/toolshed_community_files.tgz?raw=true"
+URL = "https://github.com/mvdbeek/toolshed-test-data/raw/refs/heads/master/toolshed_community_files.tgz"
 
 
 @pytest.fixture
