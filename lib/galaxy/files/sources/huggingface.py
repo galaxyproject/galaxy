@@ -155,7 +155,7 @@ class HuggingFaceFilesSource(
             endpoint=config.endpoint,
         )
         try:
-            repos_iter = api.list_models(search=query, sort=DEFAULT_SORT_BY, direction=-1, limit=MAX_REPO_LIMIT)
+            repos_iter = api.list_models(search=query, sort=DEFAULT_SORT_BY, limit=MAX_REPO_LIMIT)
 
             # Convert repositories to directory entries
             entries_list: list[AnyRemoteEntry] = []
