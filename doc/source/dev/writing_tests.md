@@ -1602,6 +1602,30 @@ ping the Galaxy committers on the pull request and request a re-run. The
 GitHub actions workflow definition for these tests is located in
 ``.github/workflows/integration_selenium.yaml`` below Galaxy's root.
 
+{#avoiding_external_dependencies}
+## Avoiding External Dependencies in Tests
+
+Tests fetching from external services (GitHub, etc.) fail transiently due to
+network issues or rate limiting. Use ``DatasetPopulator``'s base64 URL helpers
+to encode local test data as ``base64://`` URLs instead — Galaxy's fetch API
+handles these identically to remote URLs.
+
+| Helper | Use Case |
+|--------|----------|
+| ``base64_url_for_test_file(filename)`` | Encode a file from ``test-data/`` |
+| ``base64_url_for_string(content)`` | Encode a string literal |
+| ``base64_url_for_bytes(content)`` | Encode raw bytes |
+
+```python
+# Instead of: "location": "https://github.com/.../1.fasta.gz?raw=true"
+base64_url = self.dataset_populator.base64_url_for_test_file("1.fasta.gz")
+job = {"input1": {"class": "File", "format": "fasta", "location": base64_url, "decompress": True}}
+```
+
+These work anywhere a URL is accepted: ``stage_inputs`` jobs, fetch API targets,
+deferred datasets, and workflow inputs. Only use real external URLs when the test
+specifically validates remote-fetch behavior.
+
 {#transient_failures}
 ## Handling Flaky Tests
 
