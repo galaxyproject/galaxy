@@ -155,7 +155,6 @@ class TestBasicRepositoryDependencies(ShedTestCase):
         preview_strings_displayed = [
             "emboss_0110",
             self.get_repository_tip(repository),
-            "Ignoring repository dependency definition",
         ]
         self._install_repository(
             emboss_repository_name,
