@@ -3310,7 +3310,9 @@ class ExpressionTool(Tool):
                     output.extension if output.extension not in ("data", "expression.json") else copy_object.extension
                 )
                 require_metadata_regeneration = copy_object.extension != new_ext
+                visible = output.visible
                 output.copy_from(copy_object, include_metadata=not require_metadata_regeneration)
+                output.visible = visible
                 output.extension = new_ext
                 if require_metadata_regeneration:
                     if app.config.enable_celery_tasks:
