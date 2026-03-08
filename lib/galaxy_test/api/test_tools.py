@@ -3186,11 +3186,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
     def test_metadata_validator_can_fail_on_deferred_input(self, history_id):
         # This test fails because we just skip the validator
         # Fixing this is a TODO
-        deferred_bam_details = self.dataset_populator.create_deferred_hda(
-            history_id,
-            "https://github.com/galaxyproject/galaxy/blob/dev/test-data/3unsorted.bam?raw=true",
-            ext="unsorted.bam",
-        )
+        url_1 = self.dataset_populator.base64_url_for_test_file("3unsorted.bam")
+        deferred_bam_details = self.dataset_populator.create_deferred_hda(history_id, url_1, ext="unsorted.bam")
         fasta1_contents = open(self.get_filename("1.fasta")).read()
         fasta = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
         inputs = {"input1": dataset_to_param(deferred_bam_details), "reference": dataset_to_param(fasta)}
