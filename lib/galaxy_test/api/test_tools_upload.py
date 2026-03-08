@@ -307,13 +307,13 @@ class TestToolsUpload(ApiTestCase):
         details = self.dataset_populator.get_history_dataset_details(history_id=history_id, dataset=dataset)
         assert details["genome_build"] == "hg19"
 
-    @skip_if_github_down
     def test_stage_fetch_decompress_true(self, history_id: str) -> None:
+        base64_url = self.dataset_populator.base64_url_for_test_file("1.fasta.gz")
         job = {
             "input1": {
                 "class": "File",
                 "format": "fasta",
-                "location": "https://github.com/galaxyproject/galaxy/blob/dev/test-data/1.fasta.gz?raw=true",
+                "location": base64_url,
                 "decompress": True,
             }
         }
@@ -324,13 +324,13 @@ class TestToolsUpload(ApiTestCase):
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         assert content.startswith(">hg17")
 
-    @skip_if_github_down
     def test_stage_fetch_decompress_false(self, history_id: str) -> None:
+        base64_url = self.dataset_populator.base64_url_for_test_file("1.fasta.gz")
         job = {
             "input1": {
                 "class": "File",
                 "format": "fasta",
-                "location": "https://github.com/galaxyproject/galaxy/blob/dev/test-data/1.fasta.gz?raw=true",
+                "location": base64_url,
                 "decompress": False,
             }
         }
