@@ -9577,6 +9577,56 @@ steps:
                 len(copied_collections_with_tags) > 0
             ), f"Should find copied collection with tags {collection_tags} in new history"
 
+    def test_pick_value_output_visible_with_hidden_inputs(self):
+        """Test that pick_value output doesn't inherit hidden state from inputs."""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input_dataset:
+    type: data
+outputs:
+  pick_out:
+    outputSource: pick_value/data_param
+steps:
+  cat_skipped:
+    tool_id: cat1
+    in:
+      input1: input_dataset
+    when: $(false)
+  pick_value:
+    tool_id: pick_value
+    tool_state:
+      style_cond:
+        pick_style: first
+        type_cond:
+          param_type: data
+          pick_from:
+          - __index__: 0
+            value:
+              __class__: RuntimeValue
+          - __index__: 1
+            value:
+              __class__: RuntimeValue
+    in:
+      style_cond|type_cond|pick_from_0|value:
+        source: cat_skipped/out_file1
+      style_cond|type_cond|pick_from_1|value:
+        source: input_dataset
+""",
+                test_data="""input_dataset:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            pick_value_hda = invocation_details["outputs"]["pick_out"]
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id=history_id, content_id=pick_value_hda["id"]
+            )
+            assert dataset_details["visible"], "pick_value output should be visible even when inputs are hidden"
+
 
 class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):
     require_admin_user = True

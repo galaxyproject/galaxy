@@ -1,0 +1,27 @@
+- doc: |
+    Test that omitting an optional text parameter connected to an expression
+    tool that converts text to boolean produces false, correctly skipping
+    the conditional downstream step.
+  job:
+    required_input:
+      type: File
+      value: 1.fasta
+  outputs:
+    out:
+      asserts:
+        has_text:
+          text: "null"
+- doc: |
+    Test that providing an optional text parameter connected to an expression
+    tool that converts text to boolean produces true, so the conditional
+    downstream step runs.
+  job:
+    required_input:
+      type: File
+      value: 1.fasta
+    optional_text: some_value
+  outputs:
+    out:
+      asserts:
+        has_size:
+          min: 1
