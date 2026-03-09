@@ -293,6 +293,13 @@ backends:
     # TODO: read from Galaxy's config API.
     os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir or os.path.join(tmpdir, "dependencies")
 
+    # Static agent backend for deterministic AI agent testing
+    static_agents_path = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), "..", "base", "data", "static_agents.yml")
+    )
+    if os.path.exists(static_agents_path):
+        config["inference_services"] = {"static_responses": static_agents_path}
+
     return config
 
 

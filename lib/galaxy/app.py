@@ -25,10 +25,8 @@ from galaxy import (
     jobs,
     tools,
 )
-from galaxy.agents.registry import (
-    AgentRegistry,
-    build_default_registry,
-)
+from galaxy.agents.factory import build_registry as build_agent_registry
+from galaxy.agents.registry import AgentRegistry
 from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.celery.base_task import (
     GalaxyTaskBeforeStart,
@@ -775,7 +773,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
 
         # AI agent registry and service
-        agent_registry = build_default_registry(self.config)
+        agent_registry = build_agent_registry(self.config)
         self._register_singleton(AgentRegistry, agent_registry)
         self._register_singleton(AgentService, AgentService(self.config, JobQueryManager(self), agent_registry))
 
