@@ -479,7 +479,8 @@ class GalaxyDSPyPlanner:
         self._configure_lm()
         code_tool = CodeCaptureTool()
         dataset_tool = DatasetLookupTool(self._deps)
-        module = GalaxyDataAnalysisModule([code_tool, dataset_tool])
+        # Skip the ReAct tool loop; just extract a final answer using the context.
+        module = GalaxyDataAnalysisModule([code_tool, dataset_tool], max_iters=0)
 
         observation_payload = {
             'success': execution_result.get('success'),
@@ -500,8 +501,7 @@ class GalaxyDSPyPlanner:
         )
 
         try:
-            # Skip the ReAct tool loop; just extract a final answer using the context.
-            result = module(question=question, context=refined_context, max_iters=0)
+            result = module(question=question, context=refined_context)
         except Exception as exc:  # pragma: no cover - DSPy runtime path
             log.exception('DSPy module execution failed during refinement')
             raise RuntimeError(f"DSPy refinement failed: {exc}") from exc

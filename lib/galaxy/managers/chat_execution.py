@@ -51,10 +51,12 @@ class ChatExecutionService:
 
         metadata = dict(payload.metadata or {})
 
+        artifacts_payload = self._normalize_artifacts(payload.artifacts or [])
+
         # Best effort: aggregate artifact datasets into a collection for convenience.
-        if payload.artifacts:
+        if artifacts_payload:
             try:
-                collection_info = self._create_artifact_collection(trans, payload.artifacts, metadata.get("original_query"))
+                collection_info = self._create_artifact_collection(trans, artifacts_payload, metadata.get("original_query"))
                 if collection_info:
                     metadata["artifacts_collection"] = collection_info
             except Exception as exc:  # pragma: no cover - best effort logging
@@ -66,7 +68,7 @@ class ChatExecutionService:
                 "task_id": payload.task_id,
                 "stdout": payload.stdout,
                 "stderr": payload.stderr,
-                "artifacts": payload.artifacts,
+                "artifacts": artifacts_payload,
                 "metadata": metadata,
                 "success": payload.success,
             }
@@ -74,7 +76,7 @@ class ChatExecutionService:
         self.chat_manager.add_message(trans, exchange_id, execution_message)
 
         try:
-            self._apply_execution_result_to_exchange(trans, exchange_id, payload)
+            self._apply_execution_result_to_exchange(trans, exchange_id, payload, artifacts_payload)
         except Exception as exc:  # pragma: no cover - protective path
             log.warning(
                 "Unable to merge execution metadata into exchange %s for task %s: %s",
@@ -200,11 +202,29 @@ class ChatExecutionService:
             dataset_id = artifact.get("dataset_id")
             if not dataset_id:
                 continue
+            decoded_id = None
             try:
                 decoded_id = trans.security.decode_id(dataset_id)
             except Exception:
-                log.warning("Failed to decode dataset id '%s' while building artifact collection", dataset_id)
-                continue
+                decode_guid = getattr(trans.security, "decode_guid", None)
+                if callable(decode_guid):
+                    recovered = dataset_id
+                    for _ in range(3):
+                        try:
+                            recovered = decode_guid(recovered)
+                        except Exception:
+                            break
+                        if not recovered or recovered == dataset_id:
+                            break
+                        try:
+                            decoded_id = trans.security.decode_id(recovered)
+                            dataset_id = recovered
+                            break
+                        except Exception:
+                            decoded_id = None
+                if decoded_id is None:
+                    log.warning("Failed to decode dataset id '%s' while building artifact collection", dataset_id)
+                    continue
             base_name = (artifact.get("name") or f"artifact_{index}").strip() or f"artifact_{index}"
             candidate = base_name
             suffix = 1
@@ -245,11 +265,35 @@ class ChatExecutionService:
             "elements": len(element_identifiers),
         }
 
+    def _normalize_artifacts(self, artifacts: list[Any]) -> list[dict[str, Any]]:
+        normalized: list[dict[str, Any]] = []
+        for entry in artifacts:
+            if isinstance(entry, dict):
+                normalized.append(dict(entry))
+                continue
+            model_dump = getattr(entry, "model_dump", None)
+            if callable(model_dump):
+                try:
+                    dumped = model_dump()
+                except TypeError:
+                    dumped = model_dump  # type: ignore[assignment]
+                if isinstance(dumped, dict):
+                    normalized.append(dumped)
+                continue
+            to_dict = getattr(entry, "dict", None)
+            if callable(to_dict):
+                dumped = to_dict()
+                if isinstance(dumped, dict):
+                    normalized.append(dumped)
+                continue
+        return normalized
+
     def _apply_execution_result_to_exchange(
         self,
         trans: ProvidesUserContext,
         exchange_id: int,
         payload: PyodideResultPayload,
+        artifacts: list[dict[str, Any]],
     ) -> None:
         if not payload.task_id:
             return
@@ -293,7 +337,7 @@ class ChatExecutionService:
             success=payload.success,
             stdout=payload.stdout,
             stderr=payload.stderr,
-            artifacts=payload.artifacts or [],
+            artifacts=artifacts,
         )
         agent_response["metadata"] = metadata
         target_payload["agent_response"] = agent_response
