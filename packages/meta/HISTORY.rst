@@ -10,6 +10,60 @@ History
 
 
 -------------------
+25.1.2 (2026-03-09)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Add missing enable_beta_tool_formats config option by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21190 <https://github.com/galaxyproject/galaxy/pull/21190>`_
+* Properly parse build info from requirement info by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21481 <https://github.com/galaxyproject/galaxy/pull/21481>`_
+* Fix private dataset sharing error handling by `@davelopez <https://github.com/davelopez>`_ in `#21689 <https://github.com/galaxyproject/galaxy/pull/21689>`_
+* Add selenium test and fix inline images in workflow report tables by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21698 <https://github.com/galaxyproject/galaxy/pull/21698>`_
+* Fix route to workflow editor with version does not load expected version by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#21711 <https://github.com/galaxyproject/galaxy/pull/21711>`_
+* Fix database migration error from 25.0 > 25.1 by `@jdavcs <https://github.com/jdavcs>`_ in `#21737 <https://github.com/galaxyproject/galaxy/pull/21737>`_
+* Fix npm trusted publishing in 25.1 release workflow by `@dannon <https://github.com/dannon>`_ in `#21747 <https://github.com/galaxyproject/galaxy/pull/21747>`_
+* Make galaxy-web-apps package compatible with latest FastAPI by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21753 <https://github.com/galaxyproject/galaxy/pull/21753>`_
+* Fix disable_local_accounts displays register link by `@davelopez <https://github.com/davelopez>`_ in `#21764 <https://github.com/galaxyproject/galaxy/pull/21764>`_
+* Fix help forum integration by `@davelopez <https://github.com/davelopez>`_ in `#21773 <https://github.com/galaxyproject/galaxy/pull/21773>`_
+* Fix workflow rename modal is not reactive to prop changes by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#21785 <https://github.com/galaxyproject/galaxy/pull/21785>`_
+* Fix tag dropdown not closing on outside click, and not selecting in Safari by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21797 <https://github.com/galaxyproject/galaxy/pull/21797>`_
+* Make database heartbeat more robust (backport) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21812 <https://github.com/galaxyproject/galaxy/pull/21812>`_
+* Allow workflow download with missing file source references by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21814 <https://github.com/galaxyproject/galaxy/pull/21814>`_
+* Fix AWS Batch monitor crash, delete copied monitor method by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21818 <https://github.com/galaxyproject/galaxy/pull/21818>`_
+* Fix form number negative handling by `@davelopez <https://github.com/davelopez>`_ in `#21819 <https://github.com/galaxyproject/galaxy/pull/21819>`_
+* Fix tool credentials on containerized (Singularity/Docker) destinations by `@arash77 <https://github.com/arash77>`_ in `#21821 <https://github.com/galaxyproject/galaxy/pull/21821>`_
+* Pin setuptools<82 for galaxy-files package - Backport #21824 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21826 <https://github.com/galaxyproject/galaxy/pull/21826>`_
+* Add `builtin_converters` section to integrated tool panel by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#21838 <https://github.com/galaxyproject/galaxy/pull/21838>`_
+* Fix Galaxy UI nesting in data manager job info view by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21840 <https://github.com/galaxyproject/galaxy/pull/21840>`_
+* Fix output dataset permission guessing by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21862 <https://github.com/galaxyproject/galaxy/pull/21862>`_
+* Fix loading non-tool files from watched tool directories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21880 <https://github.com/galaxyproject/galaxy/pull/21880>`_
+* Fix credential validation logic in tool form component by `@itisAliRH <https://github.com/itisAliRH>`_ in `#21889 <https://github.com/galaxyproject/galaxy/pull/21889>`_
+* Ensure markdown elements do not render if argument is undefined by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#21908 <https://github.com/galaxyproject/galaxy/pull/21908>`_
+* Fix "Create New" in workflow editor not resetting editor state by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#21918 <https://github.com/galaxyproject/galaxy/pull/21918>`_
+* Enforce storage quota for Celery-based data fetch jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21941 <https://github.com/galaxyproject/galaxy/pull/21941>`_
+* Fix optional parameter persisting ``NO_REPLACEMENT`` sentinel when not provided by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21964 <https://github.com/galaxyproject/galaxy/pull/21964>`_
+* Fix recording duplicate workflow_request_input_step_parameter rows by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21980 <https://github.com/galaxyproject/galaxy/pull/21980>`_
+* Fix AttributeError when requesting invalid metadata file by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21985 <https://github.com/galaxyproject/galaxy/pull/21985>`_
+* Fix NoReplacement handling in workflow callback_helper by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21994 <https://github.com/galaxyproject/galaxy/pull/21994>`_
+* Fix pick_value output inheriting hidden state from input datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21995 <https://github.com/galaxyproject/galaxy/pull/21995>`_
+
+============
+Enhancements
+============
+
+* Add Deacon idx format by `@SantaMcCloud <https://github.com/SantaMcCloud>`_ in `#21632 <https://github.com/galaxyproject/galaxy/pull/21632>`_
+* Add amnis cif flow cytometry data type by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21829 <https://github.com/galaxyproject/galaxy/pull/21829>`_
+
+=============
+Other changes
+=============
+
+* Fix worker segfault in gunicorn preload mode on OSX by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21837 <https://github.com/galaxyproject/galaxy/pull/21837>`_
+
+-------------------
 25.1.1 (2026-02-03)
 -------------------
 
