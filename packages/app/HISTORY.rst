@@ -10,6 +10,27 @@ History
 
 
 -------------------
+25.1.2 (2026-03-09)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Add selenium test and fix inline images in workflow report tables by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21698 <https://github.com/galaxyproject/galaxy/pull/21698>`_
+* Allow workflow download with missing file source references by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21814 <https://github.com/galaxyproject/galaxy/pull/21814>`_
+* Fix AWS Batch monitor crash, delete copied monitor method by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21818 <https://github.com/galaxyproject/galaxy/pull/21818>`_
+* Fix tool credentials on containerized (Singularity/Docker) destinations by `@arash77 <https://github.com/arash77>`_ in `#21821 <https://github.com/galaxyproject/galaxy/pull/21821>`_
+* Add `builtin_converters` section to integrated tool panel by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#21838 <https://github.com/galaxyproject/galaxy/pull/21838>`_
+* Fix output dataset permission guessing by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21862 <https://github.com/galaxyproject/galaxy/pull/21862>`_
+* Enforce storage quota for Celery-based data fetch jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21941 <https://github.com/galaxyproject/galaxy/pull/21941>`_
+* Fix optional parameter persisting ``NO_REPLACEMENT`` sentinel when not provided by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21964 <https://github.com/galaxyproject/galaxy/pull/21964>`_
+* Fix recording duplicate workflow_request_input_step_parameter rows by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21980 <https://github.com/galaxyproject/galaxy/pull/21980>`_
+* Fix NoReplacement handling in workflow callback_helper by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21994 <https://github.com/galaxyproject/galaxy/pull/21994>`_
+* Fix pick_value output inheriting hidden state from input datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21995 <https://github.com/galaxyproject/galaxy/pull/21995>`_
+
+-------------------
 25.1.1 (2026-02-03)
 -------------------
 
