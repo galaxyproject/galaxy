@@ -23,6 +23,7 @@ import BreadcrumbHeading from "../Common/BreadcrumbHeading.vue";
 import RenameModal from "../Common/RenameModal.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import WorkflowExtractionCard from "./WorkflowExtraction/WorkflowExtractionCard.vue";
+import WorkflowExtractionMessages from "./WorkflowExtraction/WorkflowExtractionMessages.vue";
 
 const props = defineProps<{
     historyId: string;
@@ -50,6 +51,7 @@ const errorMessage = ref<string | null>(null);
 const jobsList = ref<ClientWorkflowExtractionJob[]>([]);
 const workflowName = ref("");
 const renameIndex = ref<number | null>(null);
+const warnings = ref<string[]>([]);
 
 const submissionDisabled = computed(() => hasUnnamedSelectedInputs.value || !workflowName.value.trim());
 
@@ -146,7 +148,7 @@ async function extractWorkflow() {
             });
         }
 
-        // TODO: Handle/display result.warnings
+        warnings.value = result.warnings || [];
     } catch (error) {
         errorMessage.value = errorMessageAsString(error);
     } finally {
@@ -251,10 +253,7 @@ async function submitWorkflow() {
                         Create Workflow
                     </GButton>
                 </div>
-                <div class="my-2">
-                    The following list contains each tool that was run to create the datasets in your current history.
-                    Please select those that you wish to include in the workflow.
-                </div>
+                <WorkflowExtractionMessages :warnings="warnings" />
             </div>
             <BAlert v-else variant="info" show> No workflow could be extracted from this history. </BAlert>
         </div>
