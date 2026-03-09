@@ -208,7 +208,6 @@ function onDelete() {
             </BDropdownItem>
 
             <BDropdownItem
-                v-if="historyStore.currentHistoryId === history.id"
                 :disabled="isAnonymous"
                 data-description="extract workflow"
                 :title="userTitle('Convert History to Workflow')"
