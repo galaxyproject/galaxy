@@ -58,7 +58,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push container image to ghcr
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           build-args: |
               GIT_COMMIT=${{ steps.buildargs.outputs.gitcommit }}
@@ -124,7 +124,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Build and push galaxy-min image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: .k8s_ci.Dockerfile
@@ -139,7 +139,7 @@ jobs:
       - name: Create Dockerfile for auto-expiring image
         run: echo "FROM galaxy/galaxy-min:${{ steps.branch.outputs.name }}" > /tmp/Dockerfile.auto
       - name: Build and push auto-expiring per-commit image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           file: /tmp/Dockerfile.auto
           push: true
