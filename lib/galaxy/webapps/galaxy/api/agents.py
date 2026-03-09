@@ -54,25 +54,36 @@ class AgentAPI:
     ) -> AgentListResponse:
         """List available AI agents."""
         config = trans.app.config
+        inference_config = getattr(config, "inference_services", {}) or {}
 
         agents = []
         for agent_type in self.agent_service.list_agents():
             agent_info = self.agent_service.get_agent_info(agent_type)
 
-            # Only include enabled agents (disabled agents are already
-            # excluded from registry, but double-check config here)
-            agent_config = (getattr(config, "agents", {}) or {}).get(agent_type, {})
-            enabled = agent_config.get("enabled", True)
-            if not enabled:
+            # Disabled agents are already excluded from the registry,
+            # but double-check inference_services config here
+            agent_config = inference_config.get(agent_type, {})
+            if isinstance(agent_config, dict) and not agent_config.get("enabled", True):
                 continue
+
+            # Resolve model: agent-specific -> default -> global
+            model = None
+            if isinstance(agent_config, dict):
+                model = agent_config.get("model")
+            if model is None:
+                default_config = inference_config.get("default", {})
+                if isinstance(default_config, dict):
+                    model = default_config.get("model")
+            if model is None:
+                model = getattr(config, "ai_model", None)
 
             agents.append(
                 AvailableAgent(
                     agent_type=agent_type,
                     name=agent_info["class_name"].replace("Agent", "").replace("_", " ").title(),
                     description=agent_info.get("description", "No description available"),
-                    enabled=enabled,
-                    model=agent_config.get("model"),
+                    enabled=True,
+                    model=model,
                     specialties=self._get_agent_specialties(agent_type),
                 )
             )

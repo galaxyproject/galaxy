@@ -54,8 +54,9 @@ class AgentService:
     ) -> AgentResponse:
         """Execute a specific agent and return response."""
         # Guard: reject disabled agents before attempting execution
-        agent_cfg = getattr(self.config, "agents", {}) or {}
-        if not agent_cfg.get(agent_type, {}).get("enabled", True):
+        inference_config = getattr(self.config, "inference_services", {}) or {}
+        agent_cfg = inference_config.get(agent_type, {})
+        if isinstance(agent_cfg, dict) and not agent_cfg.get("enabled", True):
             raise ConfigurationError(f"Agent '{agent_type}' is disabled in configuration")
 
         deps = self.create_dependencies(trans, user)

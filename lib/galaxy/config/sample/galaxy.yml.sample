@@ -2993,10 +2993,12 @@ galaxy:
   #ai_model: gpt-4o
 
   # Configuration for AI inference services used by agents. Supports
-  # per-agent model, temperature, and token settings. Agents inherit
-  # from 'default' configuration, which itself falls back to global
-  # ai_model/ai_api_key settings. Example: inference_services: {
-  # default: { model: gpt-4o-mini, temperature: 0.7 } }
+  # per-agent model, temperature, max_tokens, api_key, api_base_url,
+  # and enabled settings. Agents inherit from 'default' configuration,
+  # which itself falls back to global ai_model/ai_api_key settings. All
+  # agents are enabled by default. Example: inference_services: {
+  # default: { model: gpt-4o-mini, temperature: 0.7 }, custom_tool: {
+  # enabled: false } }
   #inference_services: null
 
   # Allow the display of tool recommendations in workflow editor and
