@@ -76,6 +76,8 @@ const titleIcon = computed<TitleIcon>(() => {
         :can-rename-title="props.job.stepType !== 'tool' && props.job.checked"
         selectable
         :selected="props.job.checked"
+        select-title="Include as a step in the workflow"
+        dim-when-unselected
         @rename="emit('rename')"
         @select="emit('select')">
         <template v-if="props.job.outputs?.length" v-slot:description>
