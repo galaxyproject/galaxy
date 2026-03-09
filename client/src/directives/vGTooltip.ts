@@ -56,6 +56,7 @@ const TOOLTIP_STYLES = `
     position: absolute;
     top: 0;
     left: 0;
+    opacity: 1;
 }
 .g-tooltip-d.g-tooltip-danger {
     background-color: var(--color-red-700, #dc3545);
