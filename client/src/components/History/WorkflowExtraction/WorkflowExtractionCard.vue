@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faPencilAlt, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { computed } from "vue";
 
 import type { CardBadge, TitleIcon } from "@/components/Common/GCard.types";
@@ -9,6 +9,15 @@ import type { ClientWorkflowExtractionJob } from "./types";
 
 import GCard from "@/components/Common/GCard.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
+
+/** Badge for renamable workflow inputs. Only applied to workflow inputs, never tool steps. */
+const INPUT_IS_RENAMABLE_BADGE: CardBadge = {
+    id: "is-renamable-input",
+    label: "Renamable",
+    icon: faPencilAlt,
+    title: "Click the pencil icon next to the step title to rename this workflow input",
+    class: "unselectable",
+};
 
 const props = defineProps<{
     job: ClientWorkflowExtractionJob;
@@ -27,23 +36,24 @@ const badges = computed<CardBadge[]>(() => {
             label: "Workflow Step",
             icon: faWrench,
             title: "This will be a tool step in the workflow",
-            class: "node-header",
+            class: "node-header unselectable",
         });
-    } else if (props.job.stepType === "input_collection") {
+        badges.push(INPUT_IS_RENAMABLE_BADGE);
         badges.push({
             id: "step-type",
             label: "Input Dataset Collection",
             icon: faFolder,
             title: "This will be a dataset collection workflow input",
-            class: "node-header",
+            class: "node-header unselectable",
         });
     } else {
+        badges.push(INPUT_IS_RENAMABLE_BADGE);
         badges.push({
             id: "step-type",
             label: "Input Dataset",
             icon: faFile,
             title: "This will be a dataset workflow input",
-            class: "node-header",
+            class: "node-header unselectable",
         });
     }
     return badges;
