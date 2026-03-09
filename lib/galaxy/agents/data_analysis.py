@@ -99,7 +99,8 @@ class DataAnalysisAgent(BaseGalaxyAgent):
 
     async def process(self, query: str, context: Optional[Dict[str, Any]] = None) -> AgentResponse:
         context = context or {}
-        datasets: list[DecodedDatabaseIdField] = context.get("dataset_ids", [])
+        datasets_raw = context.get("dataset_ids", [])
+        datasets: list[DecodedDatabaseIdField] = self._normalize_dataset_ids(datasets_raw)
         conversation_history = context.get("conversation_history", [])
 
         execution_messages = [entry for entry in conversation_history if entry.get("role") == "execution_result"]
@@ -155,6 +156,59 @@ class DataAnalysisAgent(BaseGalaxyAgent):
             last_executed_task,
             latest_execution_message,
         )
+
+    def _normalize_dataset_ids(self, dataset_ids: Any) -> list[DecodedDatabaseIdField]:
+        """Return decoded dataset ids.
+
+        ChatGXY dataset selections arrive as encoded string ids, while the
+        backend managers expect decoded integer identifiers.
+        """
+
+        if not dataset_ids:
+            return []
+        if not isinstance(dataset_ids, list):
+            dataset_ids = [dataset_ids]
+
+        trans = getattr(self.deps, "trans", None)
+        security = getattr(trans, "security", None) if trans else None
+
+        normalized: list[DecodedDatabaseIdField] = []
+        seen: set[int] = set()
+
+        for raw_id in dataset_ids:
+            decoded: Optional[int] = None
+            if isinstance(raw_id, int):
+                decoded = raw_id
+            elif isinstance(raw_id, str):
+                raw_id = raw_id.strip()
+                if not raw_id:
+                    continue
+                if security is not None and hasattr(security, "decode_id"):
+                    try:
+                        decoded = security.decode_id(raw_id)
+                    except Exception:
+                        decoded = None
+                if decoded is None:
+                    # Best-effort: accept plain integer strings.
+                    try:
+                        decoded = int(raw_id)
+                    except Exception:
+                        decoded = None
+            else:
+                try:
+                    decoded = int(raw_id)
+                except Exception:
+                    decoded = None
+
+            if decoded is None:
+                log.warning("Skipping invalid dataset reference in context: %r", raw_id)
+                continue
+            if decoded in seen:
+                continue
+            seen.add(decoded)
+            normalized.append(decoded)
+
+        return normalized
 
     def _response_from_plan(
         self,
@@ -681,8 +735,17 @@ class DataAnalysisAgent(BaseGalaxyAgent):
         used_aliases: set[str] = set()
 
         for index, dataset_id in enumerate(dataset_ids, start=1):
+            decoded_id = dataset_id
+            dataset_alias_value = dataset_id
+            if isinstance(dataset_id, str):
+                dataset_alias_value = dataset_id.strip()
+                try:
+                    decoded_id = trans.security.decode_id(dataset_alias_value)
+                except Exception:
+                    log.warning("Skipping unknown dataset alias in context: %s", dataset_id)
+                    continue
             try:
-                hda = hda_manager.get_accessible(dataset_id, trans.user)
+                hda = hda_manager.get_accessible(decoded_id, trans.user)
                 ensure_on_disk = getattr(hda_manager, "ensure_dataset_on_disk", None)
                 if callable(ensure_on_disk):
                     ensure_on_disk(trans, hda)
@@ -703,7 +766,8 @@ class DataAnalysisAgent(BaseGalaxyAgent):
                 log.warning("Dataset file is not available for %s", dataset_id)
                 continue
 
-            alias_candidates = [dataset_id, f"dataset_{index}"]
+            encoded_id = encode_id(hda.id)
+            alias_candidates = [encoded_id, dataset_alias_value, decoded_id, f"dataset_{index}"]
             if hda.name:
                 alias_candidates.append(hda.name)
                 alias_candidates.append(self._sanitize_alias(hda.name))
@@ -714,21 +778,24 @@ class DataAnalysisAgent(BaseGalaxyAgent):
 
             unique_aliases = []
             for candidate in alias_candidates:
-                if not candidate:
+                if candidate is None:
                     continue
-                alias_str = candidate.strip()
+                alias_str = str(candidate).strip()
                 if not alias_str or alias_str in used_aliases:
                     continue
                 used_aliases.add(alias_str)
                 unique_aliases.append(alias_str)
-                alias_map[alias_str] = file_path
+                alias_map[alias_str] = encoded_id
 
-            alias_map[file_basename] = file_path
-            alias_map[self._sanitize_alias(file_basename)] = file_path
-            log.debug('prepared_dataset_entry', extra={'id': dataset_id, 'aliases': unique_aliases, 'path': file_path})
+            alias_map[file_basename] = encoded_id
+            alias_map[self._sanitize_alias(file_basename)] = encoded_id
+            log.debug(
+                'prepared_dataset_entry',
+                extra={'id': dataset_id, 'encoded_id': encoded_id, 'aliases': unique_aliases, 'path': file_path},
+            )
             metadata.append(
                 {
-                    "id": encode_id(hda.id),
+                    "id": encoded_id,
                     "name": hda.name or f"dataset_{index}",
                     "path": file_path,
                     "size": os.path.getsize(file_path) if os.path.exists(file_path) else None,
