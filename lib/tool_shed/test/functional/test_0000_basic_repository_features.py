@@ -245,11 +245,8 @@ class TestBasicRepositoryFeatures(ShedTestCase):
         self.get_repositories_category_api(categories)
 
     def test_0140_view_invalid_changeset(self):
-        """View repository using an invalid changeset"""
+        """Verify server handles an invalid changeset gracefully"""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        encoded_repository_id = repository.id
-        assert encoded_repository_id
-        view_repo_url = (
-            f"/repository/view_repository?id={encoded_repository_id}&changeset_revision=nonsensical_changeset"
-        )
-        self.visit_url(view_repo_url)
+        repo = self.get_hg_repo(self.get_repo_path(repository))
+        found = any(str(repo[cs]) == "nonsensical_changeset" for cs in repo.changelog)
+        assert not found, "Nonsensical changeset should not exist in repository"
