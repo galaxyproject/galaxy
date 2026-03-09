@@ -177,7 +177,7 @@ class TestAgentUnitMocked:
     def test_disabled_agent_not_registered(self):
         """Disabled agent should not be in registry."""
         config = mock.Mock()
-        config.agents = {
+        config.inference_services = {
             "custom_tool": {"enabled": False},
             "error_analysis": {"enabled": True},
         }
@@ -190,7 +190,7 @@ class TestAgentUnitMocked:
     def test_router_always_registered(self):
         """Router should always be registered even if config says disabled."""
         config = mock.Mock()
-        config.agents = {"router": {"enabled": False}}
+        config.inference_services = {"router": {"enabled": False}}
         registry = build_default_registry(config)
         assert registry.is_registered("router")
 
@@ -205,7 +205,7 @@ class TestAgentUnitMocked:
         from galaxy.exceptions import ConfigurationError
 
         config = mock.Mock()
-        config.agents = {"custom_tool": {"enabled": False}}
+        config.inference_services = {"custom_tool": {"enabled": False}}
         registry = build_default_registry(config)
         service = AgentService(config, mock.Mock(), registry)
         with pytest.raises(ConfigurationError, match="disabled"):
@@ -214,7 +214,7 @@ class TestAgentUnitMocked:
     def test_disabled_agent_registry_get_agent_raises(self):
         """Registry.get_agent for a disabled agent gives a clear 'disabled' error."""
         config = mock.Mock()
-        config.agents = {"custom_tool": {"enabled": False}}
+        config.inference_services = {"custom_tool": {"enabled": False}}
         registry = build_default_registry(config)
         with pytest.raises(ValueError, match="disabled"):
             registry.get_agent("custom_tool", self.deps)

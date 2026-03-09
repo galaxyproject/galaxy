@@ -129,7 +129,7 @@ def build_default_registry(config=None) -> AgentRegistry:
 
     Args:
         config: Optional app config. When provided, agents with
-            ``enabled: false`` in ``config.agents`` are skipped.
+            ``enabled: false`` in ``inference_services`` are skipped.
             The router agent is always registered regardless of config.
     """
     from .base import AgentType
@@ -139,13 +139,15 @@ def build_default_registry(config=None) -> AgentRegistry:
     from .router import QueryRouterAgent
     from .tools import ToolRecommendationAgent
 
-    agents_config: dict = {}
+    inference_config: dict = {}
     if config is not None:
-        agents_config = getattr(config, "agents", {}) or {}
+        inference_config = getattr(config, "inference_services", {}) or {}
 
     def _is_enabled(agent_type: str) -> bool:
-        agent_cfg = agents_config.get(agent_type, {})
-        return agent_cfg.get("enabled", True)
+        agent_cfg = inference_config.get(agent_type, {})
+        if isinstance(agent_cfg, dict):
+            return agent_cfg.get("enabled", True)
+        return True
 
     def _register_or_disable(registry: AgentRegistry, agent_type: str, agent_class: type[BaseGalaxyAgent]):
         if _is_enabled(agent_type):
