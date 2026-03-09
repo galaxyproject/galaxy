@@ -21,8 +21,8 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionRequestInternal,
     DataInternalJson,
     DataJobInternalT,
-    DatasetCollectionElementReference,
     DataRequestInternalHda,
+    DatasetCollectionElementReference,
 )
 
 if TYPE_CHECKING:
@@ -63,7 +63,9 @@ def setup_for_runtimeify(
     hda_references: list[HistoryDatasetAssociation] = []
 
     # Build lookup for individual datasets
-    hdas_by_id: dict[int, tuple[DatasetInstance, int]] = {d.id: (d, i) for (i, d) in enumerate(input_datasets.values()) if d is not None}
+    hdas_by_id: dict[int, tuple[DatasetInstance, int]] = {
+        d.id: (d, i) for (i, d) in enumerate(input_datasets.values()) if d is not None
+    }
 
     # Build separate lookups for HDCAs and DCEs
     hdcas_by_id: dict[int, HistoryDatasetCollectionAssociation] = {}
@@ -81,27 +83,34 @@ def setup_for_runtimeify(
             dce = dces_by_id.get(value.id)
             if not dce:
                 raise ValueError(f"DCE {value.id} not found")
-            hda = dce.hda
-            if not hda:
+            dce_hda = dce.hda
+            if not dce_hda:
                 raise ValueError(f"DCE {value.id} does not reference an HDA")
-            return adapt_dataset(DataRequestInternalHda(src="hda", id=hda.id))
+            # Resolve to HDA but preserve element_identifier for output naming
+            # and collection traceability
+            result = adapt_dataset(DataRequestInternalHda(src="hda", id=dce_hda.id))
+            return DataInternalJson(
+                **{**result.model_dump(by_alias=True), "element_identifier": dce.element_identifier}
+            )
         hda_id = value.id
         if hda_id not in hdas_by_id:
             raise ValueError(f"Could not find HDA for dataset id {hda_id}")
-        hda: DatasetInstance
-        hda, index = hdas_by_id[hda_id]
-        if not hda:
+        hda_entry: DatasetInstance
+        hda_entry, index = hdas_by_id[hda_id]
+        if not hda_entry:
             raise ValueError(f"Could not find HDA for dataset id {hda_id}")
-        size = hda.dataset.get_size() if hda and hda.dataset else 0
+        size = hda_entry.dataset.get_size() if hda_entry and hda_entry.dataset else 0
         properties: dict[str, Any] = {
             "class": "File",
             "location": f"step_input://{index}",
-            "format": hda.extension,
-            "path": compute_environment.input_path_rewrite(hda) if compute_environment else hda.get_file_name(),
+            "format": hda_entry.extension,
+            "path": (
+                compute_environment.input_path_rewrite(hda_entry) if compute_environment else hda_entry.get_file_name()
+            ),
             "size": int(size),
             "listing": [],
         }
-        set_basename_and_derived_properties(properties, hda.dataset.created_from_basename or hda.name)
+        set_basename_and_derived_properties(properties, hda_entry.dataset.created_from_basename or hda_entry.name)
         return DataInternalJson(**properties)
 
     def adapt_collection(
@@ -271,10 +280,7 @@ def _element_to_runtime(
         hda = element.element_object
         assert hda is not None
         request = DataRequestInternalHda(src="hda", id=hda.id)
-        result = adapt_dataset(request).model_dump()
-        # Rename class_ back to class for JSON output
-        if "class_" in result:
-            result["class"] = result.pop("class_")
+        result = adapt_dataset(request).model_dump(by_alias=True)
         result["element_identifier"] = element.element_identifier
         # Add columns for sample_sheet leaf elements
         if element.columns:

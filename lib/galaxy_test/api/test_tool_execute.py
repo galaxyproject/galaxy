@@ -13,6 +13,8 @@ import pytest
 
 from galaxy_test.base.decorators import requires_tool_id
 from galaxy_test.base.populators import (
+    DatasetCollectionPopulator,
+    DatasetPopulator,
     DescribeToolExecution,
     DescribeToolInputs,
     RequiredTool,
@@ -808,3 +810,55 @@ def test_deferred_multi_input(required_tool: RequiredTool, target_history: Targe
     output = required_tool.execute().with_inputs(inputs).assert_has_single_job.with_single_output
     output.assert_contains("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
     output.assert_contains("chr1    4225    19670")
+
+
+@requires_tool_id("collection_mixed_param")
+def test_combined_mapping_and_subcollection_mapping(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    hdca = target_history.with_example_list_of_pairs()
+    list_hdca = target_history.with_list(contents=["xxx\n", "yyy\n"])
+    f1_batch = {"map_over_type": "paired", **hdca.src_dict}
+    f2_batch = {**list_hdca.src_dict}
+    inputs = (
+        tool_input_format.when.flat(
+            {"f1": {"batch": True, "values": [f1_batch]}, "f2": {"batch": True, "values": [f2_batch]}}
+        )
+        .when.nested({"f1": {"batch": True, "values": [f1_batch]}, "f2": {"batch": True, "values": [f2_batch]}})
+        .when.request(
+            {
+                "f1": {"__class__": "Batch", "values": [f1_batch]},
+                "f2": {"__class__": "Batch", "values": [f2_batch]},
+            }
+        )
+    )
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_has_dataset_element("test0").with_contents_stripped("123\n456\nxxx")
+    output_collection.assert_has_dataset_element("test1").with_contents_stripped("789\n0ab\nyyy")
+
+
+@requires_tool_id("cat1")
+def test_map_over_dce_on_non_multiple_data_param(
+    target_history: TargetHistory,
+    required_tool: RequiredTool,
+    tool_input_format: DescribeToolInputs,
+    dataset_populator: DatasetPopulator,
+    dataset_collection_populator: DatasetCollectionPopulator,
+    history_id: str,
+):
+    hdca = target_history.with_example_list_of_pairs()
+    collection_details = dataset_populator.get_history_collection_details(history_id, content_id=hdca.id)
+    dce_id = collection_details["elements"][0]["id"]
+    dce_val = {"src": "dce", "id": dce_id}
+    inputs = (
+        tool_input_format.when.flat({"input1": {"batch": True, "values": [dce_val]}})
+        .when.nested({"input1": {"batch": True, "values": [dce_val]}})
+        .when.request({"input1": {"__class__": "Batch", "values": [dce_val]}})
+    )
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_has_dataset_element("test0").with_contents_stripped("123")
+    output_collection.assert_has_dataset_element("test1").with_contents_stripped("456")

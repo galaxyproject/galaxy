@@ -537,6 +537,12 @@ class BatchDataHdcaInstance(StrictModel):
     map_over_type: Optional[str] = None
 
 
+class BatchDataDceInstance(StrictModel):
+    src: Literal["dce"]
+    id: StrictStr
+    map_over_type: Optional[str] = None
+
+
 class BatchDataNonCollectionInstance(StrictModel):
     src: Literal["hda", "ldda"]
     id: StrictStr
@@ -544,7 +550,9 @@ class BatchDataNonCollectionInstance(StrictModel):
 
 BatchDataInstance: Type = cast(
     Type,
-    Annotated[Union[BatchDataHdcaInstance, BatchDataNonCollectionInstance], Field(discriminator="src")],
+    Annotated[
+        Union[BatchDataHdcaInstance, BatchDataDceInstance, BatchDataNonCollectionInstance], Field(discriminator="src")
+    ],
 )
 
 
@@ -622,6 +630,9 @@ class DataInternalJson(StrictModel):
     # "secondaryFiles": List[Any],
     checksum: Optional[str] = None
     size: int
+    # When a gx_data param receives a DCE (subcollection mapping), preserve element_identifier
+    # for output naming and collection traceability
+    element_identifier: Optional[str] = None
 
 
 class DataCollectionElementInternalJson(DataInternalJson):
@@ -909,6 +920,12 @@ class BatchDataHdcaInstanceInternal(StrictModel):
     map_over_type: Optional[str] = None
 
 
+class BatchDataDceInstanceInternal(StrictModel):
+    src: Literal["dce"]
+    id: StrictInt
+    map_over_type: Optional[str] = None
+
+
 class BatchDataNonCollectionInstanceInternal(StrictModel):
     src: Literal["hda", "ldda"]
     id: StrictInt
@@ -916,7 +933,10 @@ class BatchDataNonCollectionInstanceInternal(StrictModel):
 
 BatchDataInstanceInternal: Type = cast(
     Type,
-    Annotated[Union[BatchDataHdcaInstanceInternal, BatchDataNonCollectionInstanceInternal], Field(discriminator="src")],
+    Annotated[
+        Union[BatchDataHdcaInstanceInternal, BatchDataDceInstanceInternal, BatchDataNonCollectionInstanceInternal],
+        Field(discriminator="src"),
+    ],
 )
 
 
@@ -1230,9 +1250,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         if state_representation in ["request", "relaxed_request"]:
-            return allow_batching(
-                dynamic_model_information_from_py_type(self, self.py_type), BatchCollectionInstance
-            )
+            return allow_batching(dynamic_model_information_from_py_type(self, self.py_type), BatchCollectionInstance)
         elif state_representation == "landing_request":
             return allow_batching(
                 dynamic_model_information_from_py_type(self, self.py_type, requires_value=False),

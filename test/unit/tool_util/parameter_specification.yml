@@ -1244,10 +1244,12 @@ gx_data:
    - parameter: {__class__: "Batch", values: [{src: hdca, id: abcdabcd, map_over_type: paired}]}
    - parameter: {__class__: "Batch", values: [{src: hdca, id: abcdabcd, map_over_type: "list:paired"}]}
    - parameter: {__class__: "Batch", values: [{src: hdca, id: abcdabcd, map_over_type: null}]}
+   - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd}]}
+   - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd, map_over_type: paired}]}
+   - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd, map_over_type: null}]}
   request_invalid:
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
-   - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd}]}
-   # map_over_type only valid on hdca, not hda/ldda
+   # map_over_type only valid on hdca/dce, not hda/ldda
    - parameter: {__class__: "Batch", values: [{src: hda, id: abcdabcd, map_over_type: paired}]}
    - parameter: {src: dce, id: abcdabcd}
    - parameter: {src: hda, id: 7}
@@ -1263,12 +1265,14 @@ gx_data:
   request_internal_valid:
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5, map_over_type: paired}]}
+   - parameter: {__class__: "Batch", values: [{src: dce, id: 5}]}
+   - parameter: {__class__: "Batch", values: [{src: dce, id: 5, map_over_type: paired}]}
    - parameter: {src: hda, id: 5}
    - parameter: {src: hda, id: 0}
    - parameter: {src: url, url: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt", ext: "txt"}
   request_internal_invalid:
    - parameter: {__class__: "Batch", values: [{src: hdca, id: abcdabcd}]}
-   # map_over_type only valid on hdca, not hda/ldda
+   # map_over_type only valid on hdca/dce, not hda/ldda
    - parameter: {__class__: "Batch", values: [{src: hda, id: 5, map_over_type: paired}]}
    - parameter: {src: hda, id: abcdabcd}
    - parameter: {}
@@ -1279,6 +1283,8 @@ gx_data:
   request_internal_dereferenced_valid:
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5, map_over_type: paired}]}
+   - parameter: {__class__: "Batch", values: [{src: dce, id: 5}]}
+   - parameter: {__class__: "Batch", values: [{src: dce, id: 5, map_over_type: paired}]}
    - parameter: {src: hda, id: 5}
    - parameter: {src: hda, id: 0}
   request_internal_dereferenced_invalid:
@@ -1321,6 +1327,10 @@ gx_data:
   job_runtime_valid:
    - parameter: {class: File, basename: "f.txt", location: "step_input://0",
       path: "/tmp/f.txt", nameroot: "f", nameext: ".txt", format: "txt", size: 100}
+   # DCE resolved to File preserves element_identifier for output naming
+   - parameter: {class: File, basename: "f.txt", location: "step_input://0",
+      path: "/tmp/f.txt", nameroot: "f", nameext: ".txt", format: "txt", size: 100,
+      element_identifier: "test0"}
   job_runtime_invalid:
    - parameter: {src: hda, id: 7}
    - parameter: null
@@ -1656,8 +1666,10 @@ gx_data_collection:
   - parameter: {class: Collection, elements: []}
   job_internal_valid:
     - parameter: {src: hdca, id: 5}
+    - parameter: {src: dce, id: 5}
   job_internal_invalid:
     - parameter: {src: hdca, id: abcdabcd}
+    - parameter: {src: dce, id: abcdabcd}
     - parameter: null
     - {}
   job_runtime_valid:

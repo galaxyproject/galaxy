@@ -21,14 +21,14 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionRequestInternal,
     DataColumnParameterModel,
     DataInternalJson,
+    DataJobInternalT,
     DataParameterModel,
     DataRequestCollectionUri,
     DataRequestHda,
-    DataJobInternalT,
     DataRequestInternalHda,
     DataRequestInternalHdca,
-    DatasetCollectionElementReference,
     DataRequestUri,
+    DatasetCollectionElementReference,
     DiscriminatorType,
     DrillDownParameterModel,
     FloatParameterModel,
@@ -549,12 +549,10 @@ def runtimeify(
         src = value.get("src")
         if src == "dce":
             dce_ref = DatasetCollectionElementReference(**value)
-            as_json = adapt_dataset(dce_ref).model_dump()
+            as_json = adapt_dataset(dce_ref).model_dump(by_alias=True)
         else:
             data_request_internal_hda = DataRequestInternalHda(**value)
-            as_json = adapt_dataset(data_request_internal_hda).model_dump()
-        # well this is wrong
-        as_json["class"] = as_json.pop("class_")
+            as_json = adapt_dataset(data_request_internal_hda).model_dump(by_alias=True)
         return as_json
 
     def to_runtime_callback(parameter: ToolParameterT, value: Any):

@@ -2633,30 +2633,6 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert len(response_object["jobs"]) == 2
         assert len(response_object["implicit_collections"]) == 1
 
-    @skip_without_tool("cat1")
-    def test_can_map_over_dce_on_non_multiple_data_param(self):
-        with self.dataset_populator.test_history() as history_id:
-            pair_id = self.dataset_collection_populator.create_pair_in_history(
-                history_id, contents=["0", "0"], wait=True
-            ).json()["outputs"][0]["id"]
-            ok_hdca = self.dataset_collection_populator.create_list_from_pairs(history_id, [pair_id])
-            assert ok_hdca.json()["elements"][0]["model_class"] == "DatasetCollectionElement"
-            dce_id = ok_hdca.json()["elements"][0]["id"]
-
-            inputs = {
-                "input1": {
-                    "batch": True,
-                    "values": [{"src": "dce", "id": dce_id, "map_over_type": None}],
-                },
-            }
-            response = self._run_cat1(history_id, inputs=inputs)
-            self._assert_status_code_is(response, 200)
-
-            response_object = response.json()
-            assert len(response_object["outputs"]) == 1
-            assert len(response_object["jobs"]) == 1
-            assert len(response_object["implicit_collections"]) == 1
-
     @skip_without_tool("identifier_source")
     def test_default_identifier_source_map_over(self):
         with self.dataset_populator.test_history() as history_id:
@@ -3017,37 +2993,6 @@ class TestToolsApi(ApiTestCase, TestsTools):
         output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
         assert output1_content.strip() == "123\n456", output1_content
         assert len(output2_content.strip().split("\n")) == 3, output2_content
-
-    @skip_without_tool("collection_mixed_param")
-    def test_combined_mapping_and_subcollection_mapping(self):
-        with self.dataset_populator.test_history() as history_id:
-            nested_list_id = self.__build_nested_list(history_id)
-            create_response = self.dataset_collection_populator.create_list_in_history(
-                history_id, contents=["xxx\n", "yyy\n"], wait=True
-            )
-            list_id = create_response.json()["output_collections"][0]["id"]
-            inputs = {
-                "f1": {
-                    "batch": True,
-                    "values": [{"src": "hdca", "map_over_type": "paired", "id": nested_list_id}],
-                },
-                "f2": {
-                    "batch": True,
-                    "values": [{"src": "hdca", "id": list_id}],
-                },
-            }
-            self._check_combined_mapping_and_subcollection_mapping(history_id, inputs)
-
-    def _check_combined_mapping_and_subcollection_mapping(self, history_id, inputs):
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        outputs = self._run_and_get_outputs("collection_mixed_param", history_id, inputs)
-        assert len(outputs), 2
-        output1 = outputs[0]
-        output2 = outputs[1]
-        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        assert output1_content.strip() == "123\n456\nxxx", output1_content
-        assert output2_content.strip() == "789\n0ab\nyyy", output2_content
 
     def _check_implicit_collection_populated(self, run_response):
         implicit_collections = run_response["implicit_collections"]
