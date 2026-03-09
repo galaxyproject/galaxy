@@ -3,11 +3,17 @@ History
 
 .. to_doc
 
------------
-25.1.2.dev0
------------
+-------------------
+25.1.2 (2026-03-09)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Add selenium test and fix inline images in workflow report tables by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21698 <https://github.com/galaxyproject/galaxy/pull/21698>`_
+* Fix tool credentials on containerized (Singularity/Docker) destinations by `@arash77 <https://github.com/arash77>`_ in `#21821 <https://github.com/galaxyproject/galaxy/pull/21821>`_
 
 -------------------
 25.1.1 (2026-02-03)

@@ -3,11 +3,17 @@ History
 
 .. to_doc
 
------------
-25.1.2.dev0
------------
+-------------------
+25.1.2 (2026-03-09)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Make galaxy-web-apps package compatible with latest FastAPI by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21753 <https://github.com/galaxyproject/galaxy/pull/21753>`_
+* Fix AttributeError when requesting invalid metadata file by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21985 <https://github.com/galaxyproject/galaxy/pull/21985>`_
 
 -------------------
 25.1.1 (2026-02-03)

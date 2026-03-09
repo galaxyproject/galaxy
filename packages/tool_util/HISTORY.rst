@@ -3,11 +3,17 @@ History
 
 .. to_doc
 
------------
-25.1.2.dev0
------------
+-------------------
+25.1.2 (2026-03-09)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Properly parse build info from requirement info by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21481 <https://github.com/galaxyproject/galaxy/pull/21481>`_
+* Fix loading non-tool files from watched tool directories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21880 <https://github.com/galaxyproject/galaxy/pull/21880>`_
 
 -------------------
 25.1.1 (2026-02-03)

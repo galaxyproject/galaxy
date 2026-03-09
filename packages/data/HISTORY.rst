@@ -3,11 +3,25 @@ History
 
 .. to_doc
 
------------
-25.1.2.dev0
------------
+-------------------
+25.1.2 (2026-03-09)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix private dataset sharing error handling by `@davelopez <https://github.com/davelopez>`_ in `#21689 <https://github.com/galaxyproject/galaxy/pull/21689>`_
+* Fix database migration error from 25.0 > 25.1 by `@jdavcs <https://github.com/jdavcs>`_ in `#21737 <https://github.com/galaxyproject/galaxy/pull/21737>`_
+* Make database heartbeat more robust (backport) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21812 <https://github.com/galaxyproject/galaxy/pull/21812>`_
+* Fix recording duplicate workflow_request_input_step_parameter rows by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21980 <https://github.com/galaxyproject/galaxy/pull/21980>`_
+
+=============
+Other changes
+=============
+
+* Fix worker segfault in gunicorn preload mode on OSX by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21837 <https://github.com/galaxyproject/galaxy/pull/21837>`_
 
 -------------------
 25.1.1 (2026-02-03)
