@@ -72,8 +72,8 @@ class ToolDefinition(BaseModel):
     outputs: dict[str, str] = Field(alias="out")
 
     def as_latex(self) -> str:
-        inputs = ", ".join([f"{k}: \\text{{ {v} }}" for (k, v) in self.inputs.items()])
-        outputs = ", ".join([f"{k}: \\text{{ {v} }}" for (k, v) in self.outputs.items()])
+        inputs = ", ".join([f"{k}: \\text{{ {_escape_underscores(v)} }}" for (k, v) in self.inputs.items()])
+        outputs = ", ".join([f"{k}: \\text{{ {_escape_underscores(v)} }}" for (k, v) in self.outputs.items()])
         return f"tool \\text{{ is }} ({inputs}) \\Rightarrow \\{{ {outputs} \\}}"
 
 
@@ -104,10 +104,8 @@ class CollectionDefinition(NamedTuple):
     elements: dict[str, Any]
 
     def as_latex(self) -> str:
-        collection_type = self.collection_type.replace("_", "\\_")
-        return (
-            f"\\text{{CollectionInstance<}}{collection_type},{_assumption_elements_to_latex(self.elements)}\\text{{>}}"
-        )
+        ct = _latex_collection_type(self.collection_type)
+        return f"\\text{{CollectionInstance<}}{ct},{_assumption_elements_to_latex(self.elements)}\\text{{>}}"
 
 
 class CollectionDeclarations(BaseModel):
@@ -120,11 +118,14 @@ Expression = Union[str, DatasetsDeclaration, ToolDeclaration, CollectionDeclarat
 # --- Structured Then Expression Models ---
 
 
+def _escape_underscores(text: str) -> str:
+    return text.replace("_", "\\_")
+
+
 def _latex_type_word(word: str) -> str:
-    if word == "paired_or_unpaired":
-        return "\\text{paired\\_or\\_unpaired}"
-    if word == "single_datasets":
-        return "\\text{single\\_datasets}"
+    if "_" in word:
+        escaped = word.replace("_", "\\_")
+        return "\\text{" + escaped + "}"
     return "\\text{" + word + "}"
 
 
@@ -313,6 +314,9 @@ YAMLRootModel = RootModel[list[Union[DocEntry, ExampleEntry]]]
 
 WORDS_TO_TEXTIFY = ["list", "forward", "reverse", "mapOver", "collection", "dataset", "inner"]
 _POU_PLACEHOLDER = "\x00POU\x00"
+_UNPAIRED_PLACEHOLDER = "\x00UNPAIRED\x00"
+_SINGLE_DATASETS_PLACEHOLDER = "\x00SINGLEDATASETS\x00"
+_SAMPLE_SHEET_PLACEHOLDER = "\x00SAMPLESHEET\x00"
 
 
 def expression_to_latex(expression: str, wrap: bool = True):
@@ -320,13 +324,19 @@ def expression_to_latex(expression: str, wrap: bool = True):
     expression = expression.replace("~>", "\\mapsto")
     expression = expression.replace("{", "\\left\\{")
     expression = expression.replace("}", "\\right\\}")
-    expression = expression.replace("single_datasets", "\\text{single\\_datasets}")
+    # Replace multi-word identifiers with placeholders before WORDS_TO_TEXTIFY
+    # to prevent double-replacement (e.g. "dataset" inside "single_datasets")
+    expression = expression.replace("single_datasets", _SINGLE_DATASETS_PLACEHOLDER)
+    expression = expression.replace("sample_sheet", _SAMPLE_SHEET_PLACEHOLDER)
     expression = expression.replace("paired_or_unpaired", _POU_PLACEHOLDER)
-    expression = expression.replace("unpaired", "\\text{unpaired}")
+    expression = expression.replace("unpaired", _UNPAIRED_PLACEHOLDER)
     expression = expression.replace("paired", "\\text{paired}")
+    expression = expression.replace(_UNPAIRED_PLACEHOLDER, "\\text{unpaired}")
     expression = expression.replace(_POU_PLACEHOLDER, "\\text{paired\\_or\\_unpaired}")
     for word in WORDS_TO_TEXTIFY:
         expression = expression.replace(word, "\\text{" + word + "}")
+    expression = expression.replace(_SINGLE_DATASETS_PLACEHOLDER, "\\text{single\\_datasets}")
+    expression = expression.replace(_SAMPLE_SHEET_PLACEHOLDER, "\\text{sample\\_sheet}")
     if wrap:
         return f"$ {expression} $"
     else:
