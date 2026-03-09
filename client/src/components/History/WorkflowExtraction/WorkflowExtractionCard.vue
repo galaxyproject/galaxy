@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faWrench } from "@fortawesome/free-solid-svg-icons";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 import type { CardBadge, TitleIcon } from "@/components/Common/GCard.types";
 
 import type { ClientWorkflowExtractionJob } from "./types";
 
 import GCard from "@/components/Common/GCard.vue";
-import Heading from "@/components/Common/Heading.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 const props = defineProps<{
@@ -19,8 +18,6 @@ const emit = defineEmits<{
     (e: "rename"): void;
     (e: "select"): void;
 }>();
-
-const collapse = ref(false);
 
 const badges = computed<CardBadge[]>(() => {
     const badges: CardBadge[] = [];
@@ -35,7 +32,7 @@ const badges = computed<CardBadge[]>(() => {
     } else if (props.job.stepType === "input_collection") {
         badges.push({
             id: "step-type",
-            label: "Dataset Collection Input",
+            label: "Input Dataset Collection",
             icon: faFolder,
             title: "This will be a dataset collection workflow input",
             class: "node-header",
@@ -43,7 +40,7 @@ const badges = computed<CardBadge[]>(() => {
     } else {
         badges.push({
             id: "step-type",
-            label: "Dataset Input",
+            label: "Input Dataset",
             icon: faFile,
             title: "This will be a dataset workflow input",
             class: "node-header",
@@ -62,11 +59,11 @@ const titleIcon = computed<TitleIcon>(() => {
     return props.job.stepType === "input_collection"
         ? {
               icon: faFolder,
-              title: "Dataset Collection Input",
+              title: "Input Dataset Collection",
           }
         : {
               icon: faFile,
-              title: "Dataset Input",
+              title: "Input Dataset",
           };
 });
 </script>
@@ -82,27 +79,11 @@ const titleIcon = computed<TitleIcon>(() => {
         @rename="emit('rename')"
         @select="emit('select')">
         <template v-if="props.job.outputs?.length" v-slot:description>
-            <Heading
-                :collapse="collapse === false ? 'open' : 'closed'"
-                separator
-                size="sm"
-                class="mb-2"
-                @click="collapse = !collapse">
-                History
-                <span v-if="props.job.outputs.length > 1">Items</span>
-                <span v-else>Item</span>
-                Created
-                <span v-if="props.job.outputs.length > 1">({{ props.job.outputs.length }})</span>
-            </Heading>
-            <transition name="slide">
-                <div v-if="!collapse">
-                    <div v-for="(output, outputIndex) in props.job.outputs" :key="outputIndex">
-                        <GenericHistoryItem
-                            :item-id="output.id"
-                            :item-src="output.history_content_type === 'dataset' ? 'hda' : 'hdca'" />
-                    </div>
-                </div>
-            </transition>
+            <div v-for="(output, outputIndex) in props.job.outputs" :key="outputIndex">
+                <GenericHistoryItem
+                    :item-id="output.id"
+                    :item-src="output.history_content_type === 'dataset' ? 'hda' : 'hdca'" />
+            </div>
         </template>
     </GCard>
 </template>
@@ -110,25 +91,14 @@ const titleIcon = computed<TitleIcon>(() => {
 <style scoped lang="scss">
 @import "@/style/scss/theme/blue.scss";
 
-.slide-enter-active,
-.slide-leave-active {
-    transition: all 0.3s ease;
-    max-height: 200px;
-    opacity: 1;
-    overflow: hidden;
-}
-
-.slide-enter-from,
-.slide-leave-to {
-    max-height: 0;
-    opacity: 0;
-}
-
 .g-card {
     :deep(.node-header) {
         background: $brand-primary;
         color: $white;
-        font-weight: unset;
+        font-weight: normal;
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem 0.25rem 0 0;
     }
 }
 </style>
