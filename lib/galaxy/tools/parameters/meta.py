@@ -446,10 +446,11 @@ def __expand_collection_parameter(
     if src == "dce":
         item = trans.sa_session.get_one(DatasetCollectionElement, decoded_id)
         collection = item.child_collection
+        if not collection:
+            raise exceptions.ToolMetaParameterException(f"DCE {decoded_id} does not contain a child collection")
     else:
         item = trans.sa_session.get_one(HistoryDatasetCollectionAssociation, decoded_id)
         collection = item.collection
-    assert collection
     if not collection.populated_optimized:
         raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
     collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
@@ -485,6 +486,8 @@ def __expand_collection_parameter_async(
     if src == "dce":
         item = app.model.context.get(DatasetCollectionElement, item_id)
         collection = item.child_collection
+        if not collection:
+            raise exceptions.ToolMetaParameterException(f"DCE {item_id} does not contain a child collection")
     else:
         item = app.model.context.get(HistoryDatasetCollectionAssociation, item_id)
         collection = item.collection
