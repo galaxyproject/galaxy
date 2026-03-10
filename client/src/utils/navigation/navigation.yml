@@ -1060,23 +1060,15 @@ workflow_show:
 
 workflow_extract:
   selectors:
-    _: 'body.full-content'
-    workflow_name_input: 'input[name="workflow_name"]'
-    create_button: 'input[type="submit"].btn-primary'
-    job_checkbox: 'input[name="job_ids"][value="${job_id}"]'
-    job_checkbox_any: 'input[name="job_ids"]'
-    dataset_checkbox: 'input[name="dataset_ids"][value="${hid}"]'
-    dataset_collection_checkbox: 'input[name="dataset_collection_ids"][value="${hid}"]'
-    as_input_checkbox: '#as-input-${encoded_id}'
-    as_named_input: '#as-named-input-${encoded_id}'
-    tool_form: '.toolForm'
-    tool_form_disabled: '.toolFormDisabled'
-    tool_form_title: '.toolFormTitle'
-    warning_message: '.warningmark'
-    info_message: '.alert-info'
-    success_message: '.alert-success'
-    history_item: '#dataset-${encoded_id}'
-    history_item_title: '#dataset-${encoded_id} .title'
+    _: '[data-description="workflow-extraction-form"]'
+    workflow_name_input: '[data-description="workflow-name-input"]'
+    create_button: '[data-description="create-workflow-button"]'
+    no_workflow_message: '[data-description="no-workflow-message"]'
+    tool_card: '[data-step-type="tool"]'
+    tool_card_checkbox: '[data-step-type="tool"] input[id^="g-card-select-"]'
+    tool_card_checkbox_checked: '[data-step-type="tool"] input[id^="g-card-select-"]:checked'
+    card_checkbox_by_job_id: '[data-job-id="${job_id}"] input[id^="g-card-select-"]'
+    all_card_checkboxes_checked: '[data-description="workflow-extraction-form"] input[id^="g-card-select-"]:checked'
 
 invocations:
   selectors:

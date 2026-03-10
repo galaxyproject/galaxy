@@ -241,7 +241,7 @@ async function submitWorkflow() {
 </script>
 
 <template>
-    <div class="workflow-extraction-form">
+    <div class="workflow-extraction-form" data-description="workflow-extraction-form">
         <div class="workflow-extraction-header">
             <BreadcrumbHeading :items="breadcrumbItems" />
 
@@ -253,12 +253,14 @@ async function submitWorkflow() {
                 <div class="workflow-extraction-actions">
                     <GFormInput
                         v-model="workflowName"
+                        data-description="workflow-name-input"
                         placeholder="Please provide a name for the workflow"
                         @keydown.enter.prevent="submitWorkflow" />
 
                     <GButton
                         color="blue"
                         tooltip
+                        data-description="create-workflow-button"
                         title="Create the extracted workflow"
                         :disabled="submissionDisabled"
                         :disabled-title="submissionDisabledMsg"
@@ -269,7 +271,9 @@ async function submitWorkflow() {
                 </div>
                 <WorkflowExtractionMessages :warnings="warnings" />
             </div>
-            <BAlert v-else variant="info" show> No workflow could be extracted from this history. </BAlert>
+            <BAlert v-else data-description="no-workflow-message" variant="info" show>
+                No workflow could be extracted from this history.
+            </BAlert>
         </div>
 
         <div v-if="jobsList.length" class="workflow-extraction-list">
@@ -278,6 +282,8 @@ async function submitWorkflow() {
                 :id="`workflow-extraction-job-${index}`"
                 :key="index"
                 :job="job"
+                :data-step-type="job.step_type"
+                :data-job-id="job.id || undefined"
                 @rename="onJobRename(index)"
                 @select="onJobSelect(index)" />
         </div>
