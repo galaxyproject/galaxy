@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCopy, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCard, BCollapse, BNav, BNavItem, BSpinner } from "bootstrap-vue";
+import { BAlert, BButton, BCard, BCollapse, BNav, BNavItem, BSpinner } from "bootstrap-vue";
 import { computed, onMounted, onUpdated, ref, toRef } from "vue";
 
 import { getCitations } from "@/components/Citation/services";
@@ -37,6 +37,7 @@ const emit = defineEmits(["rendered", "show", "shown", "hide", "hidden"]);
 
 const outputFormat = ref<string>(outputFormats.CITATION);
 const fetchedCitations = ref<Citation[]>([]);
+const warnings = ref<string[]>([]);
 const isLoading = ref<boolean>(false);
 
 onUpdated(() => {
@@ -46,7 +47,9 @@ onUpdated(() => {
 onMounted(async () => {
     try {
         isLoading.value = true;
-        fetchedCitations.value = await getCitations(props.source, props.id);
+        const result = await getCitations(props.source, props.id);
+        fetchedCitations.value = result.citations;
+        warnings.value = result.warnings;
     } catch (e) {
         console.error(e);
     } finally {
@@ -181,6 +184,12 @@ function citationsToBibtexAsText() {
                 <div v-if="source === 'histories'" class="infomessage">
                     <div v-html="config?.citations_export_message_html"></div>
                 </div>
+
+                <BAlert v-if="warnings.length > 0" variant="warning" show>
+                    <ul class="mb-0">
+                        <li v-for="(warning, idx) in warnings" :key="idx">{{ warning }}</li>
+                    </ul>
+                </BAlert>
 
                 <div class="citations-formatted">
                     <CitationItem

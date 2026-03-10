@@ -560,7 +560,8 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             if not tool_id:
                 continue
             tool_ids.add(tool_id)
-        return [citation.to_dict("bibtex") for citation in self.citations_manager.citations_for_tool_ids(tool_ids)]
+        citations, errors = self.citations_manager.citations_for_tool_ids(tool_ids)
+        return [citation.to_dict("bibtex") for citation in citations] + errors
 
     def index_exports(
         self,

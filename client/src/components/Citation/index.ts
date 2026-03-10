@@ -14,3 +14,8 @@ export interface Citation {
         ) => string;
     };
 }
+
+export interface CitationsResult {
+    citations: Citation[];
+    warnings: string[];
+}

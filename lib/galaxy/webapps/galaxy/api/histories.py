@@ -33,6 +33,9 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
+from galaxy.schema.citations import (
+    CitationItem,
+)
 from galaxy.schema.fields import (
     AcceptHeaderValidator,
     DecodedDatabaseIdField,
@@ -371,7 +374,7 @@ class FastAPIHistories:
         self,
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> list[Any]:
+    ) -> list[CitationItem]:
         return self.service.citations(trans, history_id)
 
     @router.get(
