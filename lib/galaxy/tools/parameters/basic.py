@@ -1528,7 +1528,10 @@ class ColumnListParameter(SelectToolParameter):
         Show column labels rather than c1..cn if use_header_names=True
         """
         options: Sequence[ParameterOption] = []
-        column_list = self.get_column_list(trans, other_values)
+        try:
+            column_list = self.get_column_list(trans, other_values)
+        except ImplicitConversionRequired:
+            return options
         if not column_list:
             return options
         # if available use column_names metadata for option names
