@@ -888,7 +888,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     ):
         # anon user: ensure that history ids match up and the history is the current,
         #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
-        if hda := self.__datasets_for_update(trans, history, [id], payload)[0]:
+        hdas = self.__datasets_for_update(trans, history, [id], payload)
+        if hdas and (hda := hdas[0]):
             self.__deserialize_dataset(trans, hda, payload)
             serialization_params.default_view = "detailed"
             return self.hda_serializer.serialize_to_view(
