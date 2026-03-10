@@ -805,13 +805,15 @@ class FastAPIHistories:
         jobs, warnings = summarize(trans, history)
 
         def serialize_output(content) -> WorkflowExtractionOutput:
-            return WorkflowExtractionOutput(
-                id=content.id,  # type: ignore[arg-type]
-                hid=content.hid,
-                name=content.name,
-                state=content.state,
-                deleted=content.deleted,
-                history_content_type=content.history_content_type,
+            return WorkflowExtractionOutput.model_validate(
+                {
+                    "id": content.id,
+                    "hid": content.hid,
+                    "name": content.name,
+                    "state": content.state,
+                    "deleted": content.deleted,
+                    "history_content_type": content.history_content_type,
+                }
             )
 
         def input_step_type(outputs: list) -> Literal["input_dataset", "input_collection"]:
@@ -868,22 +870,26 @@ class FastAPIHistories:
                         else None
                     )
                     jobs_list.append(
-                        WorkflowExtractionJob(
-                            id=job.id,  # type: ignore[arg-type]
-                            step_type="tool",
-                            tool_name=tool.name,
-                            tool_id=job.tool_id,
-                            tool_version=job.tool_version,
-                            checked=checked,
-                            tool_version_warning=tool_version_warning,
-                            outputs=outputs,
+                        WorkflowExtractionJob.model_validate(
+                            {
+                                "id": job.id,
+                                "step_type": "tool",
+                                "tool_name": tool.name,
+                                "tool_id": job.tool_id,
+                                "tool_version": job.tool_version,
+                                "checked": checked,
+                                "tool_version_warning": tool_version_warning,
+                                "outputs": outputs,
+                            }
                         )
                     )
 
-        return WorkflowExtractionSummary(
-            history_id=history.id,  # type: ignore[arg-type]
-            warnings=list(warnings),
-            jobs=jobs_list,
+        return WorkflowExtractionSummary.model_validate(
+            {
+                "history_id": history.id,
+                "warnings": list(warnings),
+                "jobs": jobs_list,
+            }
         )
 
     @router.post(
@@ -909,4 +915,4 @@ class FastAPIHistories:
             dataset_names=payload.dataset_names,
             dataset_collection_names=payload.dataset_collection_names,
         )
-        return WorkflowExtractionResult(id=stored_workflow.id)  # type: ignore[arg-type]
+        return WorkflowExtractionResult.model_validate({"id": stored_workflow.id})
