@@ -669,47 +669,31 @@ export function useDataAnalysisAgent(
             const name = artifact.name || "artifact";
             const mimeType = artifact.mime_type || blob.type || "application/octet-stream";
 
-            // Build multipart explicitly to ensure FastAPI receives `file: UploadFile = File(...)`.
-            // The OpenAPI schema currently types `file` as string (format:binary limitation), so relying
-            // on automatic serialization can incorrectly send this as a text field instead of a file part.
+            // Build multipart explicitly so `file` is sent as an actual file part with its filename.
+            // The OpenAPI schema types `file` as string (format:binary limitation), so openapi-fetch's
+            // automatic FormData serialization omits the filename; the 3-arg form.append() fixes that.
             const form = new FormData();
             form.append("file", blob, name);
             form.append("name", name);
             form.append("mime_type", mimeType);
             form.append("size", String(blob.size));
 
-            const rawRoot = getAppRoot() || "";
-            // Strip trailing slashes; if root is "/" this becomes "" so we don't accidentally build "//api/..."
-            const appRoot = rawRoot.replace(/\/+$/, "");
-            const url = `${appRoot}/api/chat/exchange/${currentChatId.value}/artifacts`;
-
-            let response: Response;
-            try {
-                response = await fetch(url, {
-                    method: "POST",
+            const { data: uploadedPayload, error } = await GalaxyApi().POST(
+                `/api/chat/exchange/{exchange_id}/artifacts`,
+                {
+                    params: { path: { exchange_id: currentChatId.value } },
+                    body: form as any,
                     credentials: "include",
-                    body: form,
-                });
-            } catch (error) {
-                throw new Error(`Failed to upload artifact (network error) to ${url}: ${errorMessageAsString(error)}`);
+                },
+            );
+
+            if (error) {
+                throw new Error(errorMessageAsString(error, "Failed to upload artifact"));
             }
 
-            if (!response.ok) {
-                let detail = "";
-                try {
-                    const payload = await response.json();
-                    detail = payload?.err_msg || payload?.detail || JSON.stringify(payload);
-                } catch {
-                    try {
-                        detail = await response.text();
-                    } catch {
-                        detail = "";
-                    }
-                }
-                throw new Error(`Failed to upload artifact${detail ? `: ${detail}` : ""}`);
+            if (!uploadedPayload) {
+                continue;
             }
-
-            const uploadedPayload = (await response.json()) as UploadedArtifact;
 
             if (uploadedPayload.download_url) {
                 uploadedPayload.download_url = resolveDownloadUrl(uploadedPayload.download_url);
