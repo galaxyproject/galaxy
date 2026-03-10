@@ -324,6 +324,46 @@ class TestToolsApi(ApiTestCase, TestsTools):
         with pytest.raises(ValidationError):
             validate(instance={"parameter": "Foobar"}, schema=landing_schema)
 
+    @skip_without_tool("cat_data_and_sleep")
+    def test_tool_schema_metadata(self):
+        """Test that tool parameter JSON schemas include Galaxy metadata attributes."""
+
+        # cat_data_and_sleep has an integer param with label and help
+        schema = self.dataset_populator.get_request_schema("cat_data_and_sleep")
+        props = schema["properties"]
+        sleep_prop = props["sleep_time"]
+        assert sleep_prop["title"] == "Sleep"
+        assert "Optionally simulates computation" in sleep_prop["description"]
+        assert sleep_prop["gx_type"] == "gx_integer"
+
+        # data param should have gx_type and gx_extensions
+        input1_prop = props["input1"]
+        assert input1_prop["title"] == "Concatenate Dataset"
+        assert input1_prop["gx_type"] == "gx_data"
+        assert "gx_extensions" in input1_prop
+
+        # repeat param should have gx_type
+        queries_prop = props["queries"]
+        assert queries_prop["gx_type"] == "gx_repeat"
+
+    @skip_without_tool("gx_int_min_max")
+    def test_tool_schema_min_max(self):
+        schema = self.dataset_populator.get_request_schema("gx_int_min_max")
+        param_prop = schema["properties"]["parameter"]
+        assert param_prop["gx_type"] == "gx_integer"
+        assert param_prop["gx_min"] == 0
+        assert param_prop["gx_max"] == 10
+
+    @skip_without_tool("gx_select")
+    def test_tool_schema_select_options(self):
+        schema = self.dataset_populator.get_request_schema("gx_select")
+        param_prop = schema["properties"]["parameter"]
+        assert param_prop["gx_type"] == "gx_select"
+        assert "gx_options" in param_prop
+        option_values = [o["value"] for o in param_prop["gx_options"]]
+        assert "--ex1" in option_values
+        assert "ex2" in option_values
+
     @skip_without_tool("test_data_source")
     @skip_if_github_down
     def test_data_source_ok_request(self):

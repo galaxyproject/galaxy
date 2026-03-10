@@ -1803,6 +1803,11 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
 
+    def get_request_schema(self, tool_id: str) -> dict[str, Any]:
+        response = self._get(f"tools/{tool_id}/parameter_request_schema")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
     def get_history_tool_requests(self, history_id: str) -> list[dict[str, Any]]:
         response = self._get(f"histories/{history_id}/tool_requests")
         api_asserts.assert_status_code_is_ok(response)
