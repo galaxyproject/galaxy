@@ -7,6 +7,7 @@ import logging
 from typing import (
     Annotated,
     Optional,
+    Union,
 )
 
 from fastapi import Query
@@ -91,7 +92,7 @@ class FastAPIExports:
 
         return ExportTaskListResponse(root=results)
 
-    def _parse_export_metadata(self, metadata) -> Optional[ExportObjectMetadata]:
+    def _parse_export_metadata(self, metadata: Union[dict, str]) -> Optional[ExportObjectMetadata]:
         """Parse export metadata dict without double-encoding ID fields.
 
         We use model_construct() to skip Pydantic validation because the ID fields
@@ -100,6 +101,7 @@ class FastAPIExports:
         """
         if isinstance(metadata, str):
             metadata = json.loads(metadata)
+        assert isinstance(metadata, dict)
         request_data_raw = metadata.get("request_data", {})
         result_data_raw = metadata.get("result_data")
 

@@ -684,11 +684,12 @@ class HistoryExportManager:
         return self.export_tracker.create_export_association(object_id=history_id, object_type=self.export_object_type)
 
     def get_record_metadata(self, export: model.StoreExportAssociation) -> Optional[ExportObjectMetadata]:
-        metadata: Any = export.export_metadata
+        metadata: Union[dict, str, None] = export.export_metadata
         if not metadata:
             return None
         if isinstance(metadata, str):
             metadata = json.loads(metadata)
+        assert isinstance(metadata, dict)
         # Use model_construct to skip validation and avoid double-encoding of ID fields
         request_data_raw = metadata.get("request_data", {})
         result_data_raw = metadata.get("result_data")
