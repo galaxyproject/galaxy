@@ -3,6 +3,8 @@ import { computed, ref } from "vue";
 
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
@@ -46,9 +48,9 @@ async function onRename(newName: string) {
     try {
         renaming.value = true;
         await props.renameAction(newName.trim());
-        Toast.success(`${props.itemType.charAt(0).toUpperCase() + props.itemType.slice(1)} renamed`);
+        Toast.success(`${capitalizeFirstLetter(props.itemType)} renamed`);
     } catch (e) {
-        Toast.error(`Failed to rename ${props.itemType}`);
+        Toast.error(errorMessageAsString(e), localize(`Failed to rename ${props.itemType}`));
     } finally {
         renaming.value = false;
         emit("close");
@@ -73,7 +75,7 @@ async function onRename(newName: string) {
             class="w-100"
             :disabled="renaming"
             type="text"
-            placeholder="Enter new name"
+            :placeholder="localize('Enter new name')"
             @keydown.enter.prevent="onRename(nameModel)" />
 
         <template v-slot:footer>

@@ -6,7 +6,7 @@ import { computed } from "vue";
 import type { WorkflowExtractionJob } from "@/api/histories";
 import type { CardBadge, TitleIcon } from "@/components/Common/GCard.types";
 
-import type { WorkflowExtractionInput } from "./types";
+import { isWorkflowExtractionInput, type WorkflowExtractionInput } from "./types";
 
 import GCard from "@/components/Common/GCard.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
@@ -20,6 +20,20 @@ const INPUT_IS_RENAMABLE_BADGE: CardBadge = {
     class: "unselectable",
 };
 
+/** Metadata for each step type, used for displaying the step type badge and title icon */
+const STEP_TYPE_META: Record<
+    "tool" | "input_dataset" | "input_collection",
+    { icon: typeof faWrench | typeof faFile | typeof faFolder; label: string; title: string }
+> = {
+    tool: { icon: faWrench, label: "Workflow Step", title: "This will be a tool step in the workflow" },
+    input_dataset: { icon: faFile, label: "Input Dataset", title: "This will be a dataset workflow input" },
+    input_collection: {
+        icon: faFolder,
+        label: "Input Dataset Collection",
+        title: "This will be a dataset collection workflow input",
+    },
+};
+
 const props = defineProps<{
     job: WorkflowExtractionInput | WorkflowExtractionJob;
 }>();
@@ -31,6 +45,7 @@ const emit = defineEmits<{
 
 const badges = computed<CardBadge[]>(() => {
     const badges: CardBadge[] = [];
+    const meta = STEP_TYPE_META[props.job.step_type];
     if (props.job.step_type === "tool") {
         if (props.job.id) {
             badges.push({
@@ -44,7 +59,6 @@ const badges = computed<CardBadge[]>(() => {
                 variant: "info",
             });
         }
-
         if (props.job.tool_version_warning) {
             badges.push({
                 id: "tool-version-warning",
@@ -55,59 +69,29 @@ const badges = computed<CardBadge[]>(() => {
                 variant: "warning",
             });
         }
-
-        badges.push({
-            id: "step-type",
-            label: "Workflow Step",
-            icon: faWrench,
-            title: "This will be a tool step in the workflow",
-            class: "node-header unselectable",
-        });
-    } else if (props.job.step_type === "input_collection") {
-        badges.push(INPUT_IS_RENAMABLE_BADGE);
-        badges.push({
-            id: "step-type",
-            label: "Input Dataset Collection",
-            icon: faFolder,
-            title: "This will be a dataset collection workflow input",
-            class: "node-header unselectable",
-        });
     } else {
         badges.push(INPUT_IS_RENAMABLE_BADGE);
-        badges.push({
-            id: "step-type",
-            label: "Input Dataset",
-            icon: faFile,
-            title: "This will be a dataset workflow input",
-            class: "node-header unselectable",
-        });
     }
+    badges.push({
+        id: "step-type",
+        label: meta.label,
+        icon: meta.icon,
+        title: meta.title,
+        class: "node-header unselectable",
+    });
     return badges;
 });
 
 const titleIcon = computed<TitleIcon>(() => {
-    if (props.job.step_type === "tool") {
-        return {
-            icon: faWrench,
-            title: "Workflow Step",
-        };
-    }
-    return props.job.step_type === "input_collection"
-        ? {
-              icon: faFolder,
-              title: "Input Dataset Collection",
-          }
-        : {
-              icon: faFile,
-              title: "Input Dataset",
-          };
+    const { icon, label } = STEP_TYPE_META[props.job.step_type];
+    return { icon, title: label };
 });
 </script>
 
 <template>
     <GCard
         :badges="badges"
-        :title="'newName' in props.job ? props.job.newName : props.job.tool_name || 'Unnamed Step'"
+        :title="isWorkflowExtractionInput(props.job) ? props.job.newName : props.job.tool_name || 'Unnamed Step'"
         :title-icon="titleIcon"
         :can-rename-title="props.job.step_type !== 'tool' && props.job.checked"
         selectable
