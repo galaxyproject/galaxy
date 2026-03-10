@@ -4,7 +4,7 @@
 
         <b-row>
             <b-col>
-                <b-table small show-empty class="grid" :items="customBuilds" :fields="fields">
+                <GTable compact show-empty :items="customBuilds" :fields="fields" class="mb-3">
                     <template v-slot:cell(action)="row">
                         <a
                             v-b-tooltip.bottom.hover
@@ -14,7 +14,7 @@
                             <i class="icon fa fa-lg fa-trash-o" />
                         </a>
                     </template>
-                </b-table>
+                </GTable>
             </b-col>
         </b-row>
         <template v-if="installedBuilds.length > 0">
@@ -153,12 +153,14 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { withPrefix } from "@/utils/redirect";
 
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         BreadcrumbHeading,
+        GTable,
         Multiselect,
     },
     data() {
