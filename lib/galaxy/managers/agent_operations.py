@@ -13,6 +13,12 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
+from galaxy.schema.fetch_data import (
+    DataElementsTarget,
+    FetchDataPayload,
+    HdaDestination,
+    UrlDataElement,
+)
 from galaxy.schema.invocation import InvocationSerializationParams
 from galaxy.schema.schema import (
     CreateHistoryPayload,
@@ -392,25 +398,25 @@ class AgentOperationsManager:
         dbkey: str = "?",
         file_name: str | None = None,
     ) -> dict[str, Any]:
-        # The upload tool (upload1) uses files_0|url_paste for URL uploads
-        inputs = {
-            "files_0|url_paste": url,
-            "files_0|type": "upload_dataset",
-            "files_0|auto_decompress": True,
-            "file_type": file_type,
-            "dbkey": dbkey,
-        }
-
-        if file_name:
-            inputs["files_0|name"] = file_name
-
-        payload = {
-            "history_id": history_id,
-            "tool_id": "upload1",
-            "inputs": inputs,
-        }
-
-        result = self.tools_service._create(self.trans, payload)
+        decoded_history_id = self.trans.security.decode_id(history_id)
+        fetch_payload = FetchDataPayload(
+            history_id=decoded_history_id,
+            targets=[
+                DataElementsTarget(
+                    destination=HdaDestination(type="hdas"),
+                    elements=[
+                        UrlDataElement(
+                            src="url",
+                            url=url,
+                            ext=file_type,
+                            dbkey=dbkey,
+                            name=file_name,
+                        )
+                    ],
+                )
+            ],
+        )
+        result = self.tools_service.create_fetch(self.trans, fetch_payload)
         return self._encode_ids_in_response(result)
 
     def list_workflows(
