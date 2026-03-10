@@ -41,6 +41,7 @@ from galaxy.model import (
     WorkflowStepConnection,
 )
 from galaxy.model.base import ensure_object_added_to_session
+from galaxy.objectstore import ObjectStorePopulator
 from galaxy.model.dataset_collections import matching
 from galaxy.model.dataset_collections.adapters import PromoteCollectionElementToCollectionAdapter
 from galaxy.model.dataset_collections.query import HistoryQuery
@@ -1947,6 +1948,197 @@ class PauseModule(WorkflowModule):
         return bool(action)
 
 
+class PickValueModule(WorkflowModule):
+    """Workflow module that selects among conditional branch outputs.
+
+    Accepts N inputs from conditional steps and produces a single output
+    based on the configured selection mode. Supports first_non_null,
+    first_or_skip, the_only_non_null, and all_non_null modes.
+    """
+
+    type = "pick_value"
+    name = "Pick Value"
+
+    MODES = ("first_non_null", "first_or_skip", "the_only_non_null", "all_non_null")
+
+    def get_inputs(self):
+        # State managed by frontend Vue component, not backend forms
+        return {}
+
+    def validate_state(self, inputs: dict[str, Any]) -> None:
+        mode = inputs.get("mode")
+        if mode and mode not in self.MODES:
+            raise ValueError(f"Invalid pick_value mode: {mode}")
+
+    def get_export_state(self):
+        return self._get_state_dict()
+
+    def _get_state_dict(self):
+        mode = self.state.inputs.get("mode", "first_non_null")
+        num_inputs = self.state.inputs.get("num_inputs", 2)
+        return {"mode": mode, "num_inputs": num_inputs}
+
+    def save_to_step(self, step, detached=False):
+        step.type = self.type
+        step.tool_inputs = self._get_state_dict()
+
+    @property
+    def _num_inputs(self):
+        """Number of input terminals — at least 2, grows with connections."""
+        num_from_state = self.state.inputs.get("num_inputs", 2)
+        num_from_connections = 0
+        if hasattr(self, "workflow_step") and self.workflow_step:
+            num_from_connections = len(self.workflow_step.input_connections_by_name)
+        return max(2, num_from_state, num_from_connections)
+
+    def get_all_inputs(self, data_only=False, connectable_only=False):
+        inputs = []
+        # N connected terminals + 1 empty terminal for grow-on-connect
+        for i in range(self._num_inputs + 1):
+            inputs.append(
+                dict(
+                    name=f"input_{i}",
+                    label=f"Input {i}",
+                    multiple=False,
+                    extensions=["input"],
+                    input_type="dataset",
+                    optional=True,
+                )
+            )
+        return inputs
+
+    def get_all_outputs(self, data_only=False):
+        mode = self.state.inputs.get("mode", "first_non_null")
+        if mode == "all_non_null":
+            return [
+                dict(
+                    name="output",
+                    label="Picked values",
+                    extensions=["input"],
+                    collection=True,
+                    collection_type="list",
+                )
+            ]
+        return [
+            dict(
+                name="output",
+                label="Picked value",
+                extensions=["input"],
+            )
+        ]
+
+    def get_runtime_state(self):
+        state = DefaultToolState()
+        state.inputs = {}
+        return state
+
+    @staticmethod
+    def _is_null_or_skipped(value) -> bool:
+        """Check if a replacement value represents a skipped/null output."""
+        if value is NO_REPLACEMENT:
+            return True
+        if isinstance(value, model.HistoryDatasetAssociation):
+            if value.extension == "expression.json" and value.blurb == "skipped":
+                return True
+        return False
+
+    def execute(
+        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+    ) -> Optional[bool]:
+        step = invocation_step.workflow_step
+        mode = step.tool_inputs.get("mode", "first_non_null") if step.tool_inputs else "first_non_null"
+
+        # Gather replacements from each named input terminal, in order
+        replacements = []
+        for input_dict in self.get_all_inputs():
+            replacement = progress.replacement_for_input(trans, step, input_dict)
+            if replacement is not NO_REPLACEMENT:
+                replacements.append(replacement)
+
+        # Separate non-null from null/skipped, preserving order
+        non_null = [r for r in replacements if not self._is_null_or_skipped(r)]
+
+        if mode == "first_non_null":
+            if not non_null:
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureExpressionEvaluationFailed(
+                        reason=FailureReason.expression_evaluation_failed,
+                        workflow_step_id=step.id,
+                    )
+                )
+            output = non_null[0]
+
+        elif mode == "first_or_skip":
+            if not non_null:
+                output = self._create_skipped_output(trans, invocation_step)
+            else:
+                output = non_null[0]
+
+        elif mode == "the_only_non_null":
+            if len(non_null) != 1:
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureExpressionEvaluationFailed(
+                        reason=FailureReason.expression_evaluation_failed,
+                        workflow_step_id=step.id,
+                    )
+                )
+            output = non_null[0]
+
+        elif mode == "all_non_null":
+            if not non_null:
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureExpressionEvaluationFailed(
+                        reason=FailureReason.expression_evaluation_failed,
+                        workflow_step_id=step.id,
+                    )
+                )
+            output = self._create_collection_from_list(trans, invocation_step, non_null)
+
+        else:
+            raise ValueError(f"Unknown pick_value mode: {mode}")
+
+        progress.set_step_outputs(invocation_step, {"output": output})
+        return None
+
+    def _create_skipped_output(self, trans, invocation_step):
+        """Create a skipped HDA for first_or_skip when all inputs are null."""
+        invocation = invocation_step.workflow_invocation
+        history = invocation.history
+        hda = model.HistoryDatasetAssociation(
+            name="Pick Value - skipped",
+            history=history,
+            create_dataset=True,
+            flush=False,
+        )
+        object_store_populator = ObjectStorePopulator(trans.app, trans.user)
+        hda.set_skipped(object_store_populator, replace_dataset=False)
+        trans.sa_session.add(hda)
+        return hda
+
+    def _create_collection_from_list(self, trans, invocation_step, hdas):
+        """Create an HDCA from a list of non-null HDAs for all_non_null mode."""
+        invocation = invocation_step.workflow_invocation
+        history = invocation.history
+        elements = []
+        for i, hda in enumerate(hdas):
+            elements.append(
+                dict(
+                    name=str(i),
+                    src="hda",
+                    id=hda.id,
+                )
+            )
+        collection_manager = trans.app.dataset_collection_manager
+        hdca = collection_manager.create(
+            trans,
+            history,
+            name="Pick Value - all non-null",
+            collection_type="list",
+            element_identifiers=elements,
+        )
+        return hdca
+
+
 class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
@@ -2776,6 +2968,7 @@ module_types = dict(
     data_collection_input=InputDataCollectionModule,
     parameter_input=InputParameterModule,
     pause=PauseModule,
+    pick_value=PickValueModule,
     tool=ToolModule,
     subworkflow=SubWorkflowModule,
 )

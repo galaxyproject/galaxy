@@ -543,7 +543,7 @@ class WorkflowsAPIController(
         module_type = payload.get("type", "tool")
         inputs = payload.get("inputs", {})
         trans.workflow_building_mode = workflow_building_modes.ENABLED
-        from_tool_form = True if module_type != "data_collection_input" else False
+        from_tool_form = True if module_type not in ("data_collection_input", "pick_value") else False
         if not from_tool_form and "tool_state" not in payload and "inputs" in payload:
             # tool state not sent, use the manually constructed inputs
             payload["tool_state"] = payload["inputs"]

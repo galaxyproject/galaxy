@@ -3154,6 +3154,404 @@ test_data:
             )
             self.dataset_populator.wait_for_history(history_id=history_id, assert_ok=True)
 
+    def test_pick_value_first_non_null(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input_data:
+    type: data
+steps:
+  branch_a:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(true)
+  branch_b:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(false)
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+input_data:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            output_details = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=invocation["outputs"]["picked"]["id"]
+            )
+            assert output_details["state"] == "ok"
+
+    def test_pick_value_first_non_null_error_all_null(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input_data:
+    type: data
+steps:
+  branch_a:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(false)
+  branch_b:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(false)
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+input_data:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+                assert_ok=False,
+                wait=True,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation["state"] == "failed"
+
+    def test_pick_value_first_or_skip(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input_data:
+    type: data
+steps:
+  branch_a:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(true)
+  branch_b:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(false)
+  pick:
+    type: pick_value
+    state:
+      mode: first_or_skip
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+input_data:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            output_details = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=invocation["outputs"]["picked"]["id"]
+            )
+            assert output_details["state"] == "ok"
+
+    def test_pick_value_first_or_skip_all_null(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input_data:
+    type: data
+steps:
+  branch_a:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(false)
+  branch_b:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(false)
+  pick:
+    type: pick_value
+    state:
+      mode: first_or_skip
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+input_data:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            output_details = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=invocation["outputs"]["picked"]["id"]
+            )
+            assert output_details["extension"] == "expression.json"
+            assert output_details["misc_blurb"] == "skipped"
+
+    def test_pick_value_the_only_non_null(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input_data:
+    type: data
+steps:
+  branch_a:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(true)
+  branch_b:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(false)
+  pick:
+    type: pick_value
+    state:
+      mode: the_only_non_null
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+input_data:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            output_details = self.dataset_populator.get_history_dataset_details(
+                history_id, content_id=invocation["outputs"]["picked"]["id"]
+            )
+            assert output_details["state"] == "ok"
+
+    def test_pick_value_the_only_non_null_error_multiple(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input_data:
+    type: data
+steps:
+  branch_a:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(true)
+  branch_b:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(true)
+  pick:
+    type: pick_value
+    state:
+      mode: the_only_non_null
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+input_data:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+                assert_ok=False,
+                wait=True,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation["state"] == "failed"
+
+    def test_pick_value_all_non_null(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input_data:
+    type: data
+steps:
+  branch_a:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(true)
+  branch_b:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(true)
+  branch_c:
+    tool_id: cat1
+    in:
+      input1: input_data
+    when: $(false)
+  pick:
+    type: pick_value
+    state:
+      mode: all_non_null
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+      input_2: branch_c/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+input_data:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            output_collection = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=invocation["output_collections"]["picked"]["id"]
+            )
+            assert output_collection["collection_type"] == "list"
+            assert len(output_collection["elements"]) == 2
+
+    def test_pick_value_first_non_null_ordering(self):
+        """Verify first_non_null picks input_0 over input_1 when both are non-null."""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input_a:
+    type: data
+  input_b:
+    type: data
+steps:
+  branch_a:
+    tool_id: cat1
+    in:
+      input1: input_a
+    when: $(true)
+  branch_b:
+    tool_id: cat1
+    in:
+      input1: input_b
+    when: $(true)
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+input_a:
+  value: 1.bed
+  type: File
+input_b:
+  value: 2.bed
+  type: File
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            picked_content = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=invocation["outputs"]["picked"]["id"]
+            )
+            input_a_content = open(self.test_data_resolver.get_filename("1.bed")).read()
+            assert picked_content == input_a_content
+
+    def test_pick_value_first_non_null_ordering_skipped_first(self):
+        """Verify first_non_null skips null input_0 and picks input_1."""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input_a:
+    type: data
+  input_b:
+    type: data
+steps:
+  branch_a:
+    tool_id: cat1
+    in:
+      input1: input_a
+    when: $(false)
+  branch_b:
+    tool_id: cat1
+    in:
+      input1: input_b
+    when: $(true)
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+outputs:
+  picked:
+    outputSource: pick/output
+""",
+                test_data="""
+input_a:
+  value: 1.bed
+  type: File
+input_b:
+  value: 2.bed
+  type: File
+""",
+                history_id=history_id,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            picked_content = self.dataset_populator.get_history_dataset_content(
+                history_id, content_id=invocation["outputs"]["picked"]["id"]
+            )
+            input_b_content = open(self.test_data_resolver.get_filename("2.bed")).read()
+            assert picked_content == input_b_content
+
     def test_run_workflow_simple_conditional_step(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
