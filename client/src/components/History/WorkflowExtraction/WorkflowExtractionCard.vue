@@ -3,9 +3,10 @@ import { faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faPencilAlt, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { computed } from "vue";
 
+import type { WorkflowExtractionJob } from "@/api/histories";
 import type { CardBadge, TitleIcon } from "@/components/Common/GCard.types";
 
-import type { ClientWorkflowExtractionJob } from "./types";
+import type { WorkflowExtractionInput } from "./types";
 
 import GCard from "@/components/Common/GCard.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
@@ -20,7 +21,7 @@ const INPUT_IS_RENAMABLE_BADGE: CardBadge = {
 };
 
 const props = defineProps<{
-    job: ClientWorkflowExtractionJob;
+    job: WorkflowExtractionInput | WorkflowExtractionJob;
 }>();
 
 const emit = defineEmits<{
@@ -30,7 +31,7 @@ const emit = defineEmits<{
 
 const badges = computed<CardBadge[]>(() => {
     const badges: CardBadge[] = [];
-    if (props.job.stepType === "tool") {
+    if (props.job.step_type === "tool") {
         badges.push({
             id: "step-type",
             label: "Workflow Step",
@@ -38,6 +39,7 @@ const badges = computed<CardBadge[]>(() => {
             title: "This will be a tool step in the workflow",
             class: "node-header unselectable",
         });
+    } else if (props.job.step_type === "input_collection") {
         badges.push(INPUT_IS_RENAMABLE_BADGE);
         badges.push({
             id: "step-type",
@@ -60,13 +62,13 @@ const badges = computed<CardBadge[]>(() => {
 });
 
 const titleIcon = computed<TitleIcon>(() => {
-    if (props.job.stepType === "tool") {
+    if (props.job.step_type === "tool") {
         return {
             icon: faWrench,
             title: "Workflow Step",
         };
     }
-    return props.job.stepType === "input_collection"
+    return props.job.step_type === "input_collection"
         ? {
               icon: faFolder,
               title: "Input Dataset Collection",
@@ -83,7 +85,7 @@ const titleIcon = computed<TitleIcon>(() => {
         :badges="badges"
         :title="'newName' in props.job ? props.job.newName : props.job.tool_name || 'Unnamed Step'"
         :title-icon="titleIcon"
-        :can-rename-title="props.job.stepType !== 'tool' && props.job.checked"
+        :can-rename-title="props.job.step_type !== 'tool' && props.job.checked"
         selectable
         :selected="props.job.checked"
         select-title="Include as a step in the workflow"

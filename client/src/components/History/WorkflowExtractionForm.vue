@@ -15,7 +15,7 @@ import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import type { ClientWorkflowExtractionJob } from "./WorkflowExtraction/types";
+import { isWorkflowExtractionInput, type WorkflowExtractionInput } from "./WorkflowExtraction/types";
 
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GButton from "../BaseComponents/GButton.vue";
@@ -48,10 +48,22 @@ const breadcrumbItems = computed(() => [
 
 const loading = ref(true);
 const errorMessage = ref<string | null>(null);
-const jobsList = ref<ClientWorkflowExtractionJob[]>([]);
+const jobsList = ref<(WorkflowExtractionInput | WorkflowExtractionJob)[]>([]);
 const workflowName = ref("");
 const renameIndex = ref<number | null>(null);
 const warnings = ref<string[]>([]);
+
+/** The job (input step) to rename based on the current `renameIndex`. */
+const toRenameInput = computed(() => {
+    if (renameIndex.value === null || !jobsList.value?.length) {
+        return null;
+    }
+    const job = jobsList.value[renameIndex.value];
+    if (job && isWorkflowExtractionInput(job)) {
+        return job;
+    }
+    return null;
+});
 
 const submissionDisabled = computed(() => hasUnnamedSelectedInputs.value || !workflowName.value.trim());
 
@@ -71,7 +83,7 @@ const selectedJobIds = computed<Array<string>>(() => {
         return [];
     }
     return jobsList.value
-        .filter((job) => job.checked && job.stepType === "tool")
+        .filter((job) => job.checked && job.step_type === "tool")
         .map((job) => job.id)
         .filter((id): id is string => Boolean(id));
 });
@@ -82,7 +94,7 @@ const selectedJobIds = computed<Array<string>>(() => {
 const selectedInputs = computed<
     {
         hid: number;
-        newName: string | undefined;
+        newName: string;
         history_content_type: "dataset" | "dataset_collection";
     }[]
 >(() => {
@@ -90,11 +102,14 @@ const selectedInputs = computed<
         return [];
     }
     const retVal = jobsList.value
-        .filter((job) => job.checked && job.stepType !== "tool" && job.outputs?.length)
+        .filter(
+            (job): job is WorkflowExtractionInput =>
+                job.checked && isWorkflowExtractionInput(job) && (job.outputs?.length ?? 0) > 0,
+        )
         .flatMap((job) =>
             job.outputs?.map((output) => ({
                 hid: output.hid,
-                newName: "newName" in job ? job.newName : output.name,
+                newName: job.newName,
                 history_content_type: output.history_content_type,
             })),
         )
@@ -108,16 +123,11 @@ const hasUnnamedSelectedInputs = computed(() => {
 
 extractWorkflow();
 
-function getStepType(job: WorkflowExtractionJob): ClientWorkflowExtractionJob["stepType"] {
-    if (!job.tool_id || Boolean(job.disabled_why)) {
-        if (job.outputs?.length === 1 && job.outputs[0]) {
-            const output = job.outputs[0];
-            return output.history_content_type === "dataset" ? "input_dataset" : "input_collection";
-        }
-        // Default to input_dataset for jobs without a tool_id, even if they have multiple outputs
-        return "input_dataset";
+function getInputName(job: WorkflowExtractionInput): string | undefined {
+    if (job.outputs?.length && job.outputs[0]) {
+        const output = job.outputs[0];
+        return output.name || `Input ${output.hid}`;
     }
-    return "tool";
 }
 
 function getSelectedInputs(type: "dataset" | "dataset_collection"): { hids: number[]; names: string[] } {
@@ -126,24 +136,21 @@ function getSelectedInputs(type: "dataset" | "dataset_collection"): { hids: numb
     );
     return {
         hids: inputs.map((input) => input.hid),
-        names: inputs.map((input) => input.newName ?? ""),
+        names: inputs.map((input) => input.newName),
     };
 }
 
 async function extractWorkflow() {
     try {
-        let unnamedToolIndex = 0;
-
         const result = await extractWorkflowFromHistory(props.historyId);
         if (result.jobs) {
             jobsList.value = result.jobs.map((job) => {
-                const stepType = getStepType(job);
                 return {
                     ...job,
-                    ...(stepType.includes("input") && {
-                        newName: job.tool_name ?? `Workflow Input ${++unnamedToolIndex}`,
+                    checked: job.checked ?? false,
+                    ...(isWorkflowExtractionInput(job) && {
+                        newName: getInputName(job) || "",
                     }),
-                    stepType,
                 };
             });
         }
@@ -181,16 +188,14 @@ async function renameInput(newName: string) {
     if (renameIndex.value === null) {
         throw new Error("Invalid job index");
     }
-    const jobToRename = jobsList.value[renameIndex.value];
 
-    if (!jobToRename) {
-        throw new Error("Job not found");
+    if (!toRenameInput.value) {
+        throw new Error("Job not found or is not an input");
     }
-    if (jobToRename.stepType === "tool" || !("newName" in jobToRename)) {
-        throw new Error("Renaming workflow steps is not supported");
-    }
-    // Now we can rename
-    jobsList.value[renameIndex.value]!.newName = newName;
+
+    // Instead of using the computed `toRenameInput`, we directly update the `newName` in the `jobsList`
+    // to ensure reactivity and that the change is reflected in the UI immediately.
+    (jobsList.value[renameIndex.value] as WorkflowExtractionInput).newName = newName;
 }
 
 async function submitWorkflow() {
@@ -269,9 +274,9 @@ async function submitWorkflow() {
         </div>
 
         <RenameModal
-            v-if="renameIndex !== null && jobsList[renameIndex]"
+            v-if="toRenameInput"
             item-type="input"
-            :name="jobsList[renameIndex]?.newName ?? ''"
+            :name="toRenameInput.newName"
             :rename-action="renameInput"
             @close="renameIndex = null" />
     </div>
