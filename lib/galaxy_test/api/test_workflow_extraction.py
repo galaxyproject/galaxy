@@ -599,4 +599,94 @@ test_data:
         return implicit_hdca, job_id
 
 
+class TestWorkflowExtractionSummaryApi(BaseWorkflowsApiTestCase):
+    """Tests for GET /api/histories/{history_id}/extraction_summary."""
+
+    def _get_extraction_summary(self, history_id: str) -> dict:
+        response = self._get(f"histories/{history_id}/extraction_summary")
+        self._assert_status_code_is(response, 200)
+        return response.json()
+
+    def test_extraction_summary_empty_history(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._get_extraction_summary(history_id)
+            assert summary["jobs"] == []
+            assert summary["warnings"] == []
+
+    def test_extraction_summary_input_datasets_from_upload(self):
+        # Datasets uploaded directly have no workflow-compatible creating job,
+        # so they should appear as input_dataset steps.
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.new_dataset(history_id, content="foo", wait=True)
+            self.dataset_populator.new_dataset(history_id, content="bar", wait=True)
+            summary = self._get_extraction_summary(history_id)
+            jobs = summary["jobs"]
+            assert len(jobs) == 2
+            for job in jobs:
+                assert job["step_type"] == "input_dataset", job
+                assert job["checked"] is True
+                assert job["id"] is None
+                assert job["tool_id"] is None
+                assert len(job["outputs"]) == 1
+                assert job["outputs"][0]["history_content_type"] == "dataset"
+
+    def test_extraction_summary_input_collection(self):
+        # A collection created directly (not from a workflow-compatible tool)
+        # should appear as an input_collection step.
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_collection_populator.create_pair_in_history(history_id, contents=["foo", "bar"], wait=True)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            summary = self._get_extraction_summary(history_id)
+            # The pair collection itself should be the input step; ignore any
+            # individual dataset fake jobs that may also appear.
+            collection_jobs = [j for j in summary["jobs"] if j["step_type"] == "input_collection"]
+            assert len(collection_jobs) >= 1, summary["jobs"]
+            job = collection_jobs[0]
+            assert job["id"] is None
+            assert job["checked"] is True
+
+    @skip_without_tool("cat1")
+    def test_extraction_summary_tool_step(self):
+        # Running a workflow-compatible tool should produce a "tool" step.
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
+            hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
+            inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
+            self.dataset_populator.run_tool("cat1", inputs, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            summary = self._get_extraction_summary(history_id)
+            tool_jobs = [j for j in summary["jobs"] if j["step_type"] == "tool"]
+            assert len(tool_jobs) == 1, summary["jobs"]
+            tool_job = tool_jobs[0]
+            assert tool_job["id"] is not None
+            assert tool_job["tool_id"] == "cat1"
+            assert tool_job["checked"] is True
+            assert tool_job["tool_version_warning"] is None
+            assert len(tool_job["outputs"]) >= 1
+
+    @skip_without_tool("cat1")
+    def test_extraction_summary_structure(self):
+        # After running cat1 the summary should contain two input steps (the
+        # uploaded datasets) and one tool step — covering all three step_type
+        # values that matter for this feature.
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
+            hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
+            inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
+            self.dataset_populator.run_tool("cat1", inputs, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            summary = self._get_extraction_summary(history_id)
+            jobs = summary["jobs"]
+            step_types = {j["step_type"] for j in jobs}
+            assert "tool" in step_types
+            assert "input_dataset" in step_types
+            # Every job must have a valid step_type
+            for job in jobs:
+                assert job["step_type"] in {"tool", "input_dataset", "input_collection"}, job
+                assert isinstance(job["checked"], bool)
+                assert isinstance(job["outputs"], list)
+
+
 RunJobsSummary = namedtuple("RunJobsSummary", ["history_id", "workflow_id", "inputs", "jobs"])
