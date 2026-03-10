@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
+import type { TableField } from "@/components/Common/GTable.types";
 import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { useFilterObjectArray } from "@/composables/filter";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 const filter = ref("");
 const filterFields: Array<keyof DetailedDatatypes> = ["extension"];
@@ -12,9 +14,10 @@ const filterFields: Array<keyof DetailedDatatypes> = ["extension"];
 const { datatypes } = useDetailedDatatypes();
 const filteredDatatypes = useFilterObjectArray(datatypes, filter, filterFields);
 
-const fields = [
+const fields: TableField[] = [
     {
         key: "extension",
+        label: "Extension",
         sortable: true,
     },
     {
@@ -40,46 +43,37 @@ const edamLink = (edamIRI: string) => `https://edamontology.github.io/edam-brows
             can be filtered by in the History, by expanding "search datasets".
         </p>
         <DelayedInput placeholder="filter extensions" class="mb-3" :delay="200" @change="(val) => (filter = val)" />
-        <b-table striped small sort-icon-left sort-by="extension" :items="filteredDatatypes" :fields="fields">
-            <template v-slot:cell(extension)="row">
+
+        <GTable compact show-empty striped sort-by="extension" :fields="fields" :items="filteredDatatypes">
+            <template v-slot:cell(extension)="{ item }">
                 <a
-                    v-if="row.item.descriptionUrl"
+                    v-if="item.descriptionUrl"
                     v-b-tooltip.hover
                     target="_blank"
-                    :title="row.item.description"
-                    :href="row.item.descriptionUrl">
-                    {{ row.item.extension }}
+                    :title="item.description"
+                    :href="item.descriptionUrl">
+                    {{ item.extension }}
                 </a>
-                <span v-else v-b-tooltip.hover :title="row.item.description">
-                    {{ row.item.extension }}
+                <span v-else v-b-tooltip.hover :title="item.description">
+                    {{ item.extension }}
                 </span>
             </template>
 
-            <template v-slot:cell(edamFormatLabel)="row">
+            <template v-slot:cell(edamFormatLabel)="{ item }">
                 <a
                     v-b-tooltip.hover
                     target="_blank"
-                    :href="edamLink(row.item.edamFormat)"
-                    :title="row.item.edamFormatDefinition">
-                    {{ row.item.edamFormatLabel }}
+                    :href="edamLink(item.edamFormat)"
+                    :title="item.edamFormatDefinition">
+                    {{ item.edamFormatLabel }}
                 </a>
             </template>
 
-            <template v-slot:cell(edamDataLabel)="row">
-                <a
-                    v-b-tooltip.hover
-                    target="_blank"
-                    :href="edamLink(row.item.edamData)"
-                    :title="row.item.edamDataDefinition">
-                    {{ row.item.edamDataLabel }}
+            <template v-slot:cell(edamDataLabel)="{ item }">
+                <a v-b-tooltip.hover target="_blank" :href="edamLink(item.edamData)" :title="item.edamDataDefinition">
+                    {{ item.edamDataLabel }}
                 </a>
             </template>
-        </b-table>
+        </GTable>
     </div>
 </template>
-
-<style scoped>
-table {
-    cursor: default;
-}
-</style>
