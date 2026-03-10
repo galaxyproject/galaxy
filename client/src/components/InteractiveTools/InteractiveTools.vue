@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faExternalLinkAlt, faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton, BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -106,33 +107,35 @@ onMounted(() => {
 </script>
 <template>
     <div aria-labelledby="interactive-tools-heading">
-        <b-alert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</b-alert>
-        <Heading id="interactive-tools-heading" h1 separator inline size="lg">Active Interactive Tools</Heading>
-        <b-row class="mb-3">
-            <b-col cols="6">
-                <b-input
-                    id="interactivetool-search"
-                    v-model="filter"
-                    class="m-1"
-                    name="query"
-                    placeholder="Search Interactive Tool"
-                    autocomplete="off"
-                    type="text" />
-            </b-col>
-        </b-row>
+        <BAlert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">
+            {{ message }}
+        </BAlert>
+
+        <Heading id="interactive-tools-heading" h1 separator inline size="lg"> Active Interactive Tools </Heading>
+
+        <BFormInput
+            id="interactivetool-search"
+            v-model="filter"
+            class="m-1"
+            name="query"
+            placeholder="Search Interactive Tool"
+            autocomplete="off"
+            type="text" />
+
         <div id="interactive-tool-table">
             <GTable id="interactive-tool-table" show-empty striped :fields="fields" :items="filteredTools">
                 <template v-slot:empty>
-                    <b-alert variant="info" show class="mb-0">
+                    <BAlert variant="info" show class="mb-0">
                         <div v-if="isActiveToolsListEmpty">You do not have active interactive tools yet</div>
                         <div v-else-if="showNotFound">
                             No matching entries found for:
                             <span class="font-weight-bold"> {{ filter }} </span>.
                         </div>
-                    </b-alert>
+                    </BAlert>
                 </template>
+
                 <template v-slot:cell(actions)="{ item }">
-                    <b-button
+                    <BButton
                         :id="createId('stop', item.id)"
                         v-b-tooltip.hover
                         variant="link"
@@ -140,8 +143,9 @@ onMounted(() => {
                         title="Stop this interactive tool"
                         @click.stop="stopInteractiveTool(item.id, item.name)">
                         <FontAwesomeIcon :icon="faStop" />
-                    </b-button>
+                    </BButton>
                 </template>
+
                 <template v-slot:cell(name)="{ item, index }">
                     <a
                         :id="createId('link', item.id)"
@@ -150,9 +154,10 @@ onMounted(() => {
                         :index="index"
                         href="#"
                         :name="item.name"
-                        @click.prevent="openInteractiveTool(item.id)"
-                        >{{ item.name }}
+                        @click.prevent="openInteractiveTool(item.id)">
+                        {{ item.name }}
                     </a>
+
                     <a
                         v-if="item.target"
                         :id="createId('external-link', item.id)"
@@ -164,13 +169,16 @@ onMounted(() => {
                         <FontAwesomeIcon :icon="faExternalLinkAlt" />
                     </a>
                 </template>
+
                 <template v-slot:cell(job_info)="{ item }">
-                    <label v-if="item.active"> Running </label>
-                    <label v-else> Starting </label>
+                    <span v-if="item.active"> Running </span>
+                    <span v-else> Starting </span>
                 </template>
+
                 <template v-slot:cell(created_time)="{ item }">
                     <UtcDate :date="item.created_time" mode="elapsed" />
                 </template>
+
                 <template v-slot:cell(modified_time)="{ item }">
                     <UtcDate :date="item.modified_time" mode="elapsed" />
                 </template>
