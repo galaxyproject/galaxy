@@ -507,6 +507,17 @@ interface Rootinvocations extends Component {
     step_job_information: SelectorTemplate;
     step_job_information_tool_id: SelectorTemplate;
 }
+interface Rootworkflow_extract extends Component {
+    _: SelectorTemplate;
+    workflow_name_input: SelectorTemplate;
+    create_button: SelectorTemplate;
+    no_workflow_message: SelectorTemplate;
+    tool_card: SelectorTemplate;
+    tool_card_checkbox: SelectorTemplate;
+    tool_card_checkbox_checked: SelectorTemplate;
+    card_checkbox_by_job_id: SelectorTemplate;
+    all_card_checkboxes_checked: SelectorTemplate;
+}
 interface Roottourpopover extends Component {
     _: SelectorTemplate;
     title: SelectorTemplate;
@@ -765,6 +776,7 @@ export interface root_component {
     workflow_editor: Rootworkflow_editor;
     workflow_show: Rootworkflow_show;
     invocations: Rootinvocations;
+    workflow_extract: Rootworkflow_extract;
     tour: Roottour;
     admin: Rootadmin;
     libraries: Rootlibraries;
