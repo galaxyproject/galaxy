@@ -244,9 +244,8 @@ class ToolExpressionOutput(ToolOutputBase):
             model_class = ToolOutputIntegerModel
         elif self.output_type == "float":
             model_class = ToolOutputFloatModel
-        elif self.output_type == "bool":
+        elif self.output_type == "boolean":
             model_class = ToolOutputBooleanModel
-            model_type = "boolean"
         elif self.output_type == "text":
             model_class = ToolOutputTextModel
         assert model_class
