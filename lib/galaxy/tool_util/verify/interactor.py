@@ -708,10 +708,6 @@ class GalaxyInteractorApi:
         if testdef.value_state_representation == "test_case_json":
             # Don't submit user / YAML tools to the old endpoint.
             submit_with_legacy_api = False
-        if testdef.credentials:
-            # Credentials require the non-legacy API path to pass credentials_context.
-            submit_with_legacy_api = False
-
         if submit_with_legacy_api:
             inputs_tree = testdef.inputs.copy()
             for key, value in inputs_tree.items():
@@ -1103,6 +1099,16 @@ class GalaxyInteractorApi:
     ):
         extra_data = extra_data or {}
         if use_legacy_api:
+            if credentials_context:
+                data = dict(
+                    history_id=history_id,
+                    tool_id=tool_id,
+                    inputs=tool_input,
+                    tool_version=tool_version,
+                    credentials_context=credentials_context,
+                    **extra_data,
+                )
+                return self._post("tools", data=data, json=True)
             data = dict(
                 history_id=history_id,
                 tool_id=tool_id,
