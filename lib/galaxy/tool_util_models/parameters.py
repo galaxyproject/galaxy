@@ -1684,14 +1684,16 @@ class DirectoryUriParameterModel(BaseGalaxyToolParameterModelDefinition):
         return True
 
 
-class RulesMapping(StrictModel):
+class RulesMapping(BaseModel):
     type: str
     columns: list[StrictInt]
+    model_config = ConfigDict(extra="allow")
 
 
-class RulesModel(StrictModel):
+class RulesModel(BaseModel):
     rules: list[dict[str, Any]]
     mapping: list[RulesMapping]
+    model_config = ConfigDict(extra="allow")
 
 
 class RulesParameterModel(BaseGalaxyToolParameterModelDefinition):
