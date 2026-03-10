@@ -45,6 +45,7 @@ from tool_shed.repository_types import util as rt_util
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util import hg_util
 from tool_shed.util.metadata_util import (
+    build_invalid_tools,
     get_all_dependencies,
     get_current_repository_metadata_for_changeset_revision,
     get_metadata_revisions,
@@ -447,20 +448,7 @@ def get_repository_revision_metadata_dict(
         metadata_dict["repository_dependencies"] = []
     if metadata.includes_tools:
         metadata_dict["tools"] = metadata.metadata["tools"]
-    raw_invalid_tools = metadata.metadata.get("invalid_tools", [])
-    invalid_tool_errors = metadata.metadata.get("invalid_tool_errors", {})
-    invalid_tools = []
-    for item in raw_invalid_tools:
-        if isinstance(item, str):
-            invalid_tools.append(
-                {
-                    "tool_config": item,
-                    "error_message": invalid_tool_errors.get(item, ""),
-                }
-            )
-        elif isinstance(item, dict):
-            invalid_tools.append(item)
-    metadata_dict["invalid_tools"] = invalid_tools
+    metadata_dict["invalid_tools"] = build_invalid_tools(metadata.metadata)
     return metadata_dict
 
 

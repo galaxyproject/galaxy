@@ -394,9 +394,7 @@ class BaseMetadataGenerator:
             invalid_tool_errors = {}
             for name, error_msg in self.invalid_file_tups:
                 if name in invalid_tool_configs:
-                    # Strip HTML tags from error messages for plain text display
-                    plain_msg = error_msg.replace("<br/>", " ").replace("<b>", "").replace("</b>", "")
-                    invalid_tool_errors[name] = plain_msg
+                    invalid_tool_errors[name] = error_msg
             metadata_dict["invalid_tool_errors"] = invalid_tool_errors
         self.metadata_dict = metadata_dict
         # Only remove work_dir if not resetting all metadata - in that case the caller handles cleanup

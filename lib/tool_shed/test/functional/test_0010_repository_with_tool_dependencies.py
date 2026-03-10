@@ -70,7 +70,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
         Uploading the tool_data_table_conf.xml.sample alone should not make the tool valid, but the error message should change.
         """
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        strings_displayed = ["Upload a file named <b>sam_fa_indices.loc.sample"]
+        strings_displayed = ["Upload a file named sam_fa_indices.loc.sample"]
         self.add_file_to_repository(
             repository, "freebayes/tool_data_table_conf.xml.sample", strings_displayed=strings_displayed
         )

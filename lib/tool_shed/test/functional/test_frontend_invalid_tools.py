@@ -39,6 +39,7 @@ class TestFrontendInvalidTools(PlaywrightTestCase):
         assert invalid_tool.error_message
 
         # Navigate to the repository page in the frontend
+        assert not isinstance(repository, str)
         page = self._page
         page.goto(f"{self.url}/repositories/{repository.id}")
 
