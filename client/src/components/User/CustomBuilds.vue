@@ -4,13 +4,9 @@
 
         <GTable compact show-empty :items="customBuilds" :fields="fields" class="mb-3">
             <template v-slot:cell(action)="row">
-                <a
-                    v-b-tooltip.bottom.hover
-                    href="javascript:void(0)"
-                    title="Delete build"
-                    @click="deleteBuild(row.item.id)">
-                    <i class="icon fa fa-lg fa-trash-o" />
-                </a>
+                <GLink tooltip title="Delete build" @click="deleteBuild(row.item.id)">
+                    <FontAwesomeIcon :icon="faTrash" />
+                </GLink>
             </template>
         </GTable>
 
@@ -105,7 +101,7 @@
                             type="submit"
                             variant="primary"
                             title="Create new build">
-                            <i class="icon fa fa-save" />
+                            <FontAwesomeIcon :icon="faSave" />
                             Save
                         </BButton>
                     </BForm>
@@ -151,6 +147,8 @@ chr5    152537259
 <script>
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
+import { faSave, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import {
     BAlert,
@@ -172,6 +170,7 @@ import { getGalaxyInstance } from "@/app";
 import { useHistoryStore } from "@/stores/historyStore";
 import { withPrefix } from "@/utils/redirect";
 
+import GLink from "@/components/BaseComponents/GLink.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import GTable from "@/components/Common/GTable.vue";
 
@@ -190,12 +189,16 @@ export default {
         BProgress,
         BreadcrumbHeading,
         BRow,
+        FontAwesomeIcon,
+        GLink,
         GTable,
         Multiselect,
     },
     data() {
         const Galaxy = getGalaxyInstance();
         return {
+            faSave,
+            faTrash,
             breadcrumbItems: [{ title: "User Preferences", to: "/user" }, { title: "Current Custom Builds" }],
             customBuildsUrl: withPrefix(`/api/users/${Galaxy.user.id}/custom_builds`),
             selectedInstalledBuilds: [],
