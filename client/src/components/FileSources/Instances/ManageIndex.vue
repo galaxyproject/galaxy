@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
@@ -42,8 +43,8 @@ const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testi
 <template>
     <div>
         <ConfigurationTestSummaryModal v-model="showTestResults" :error="testingError" :test-results="testResults" />
-        <ManageIndexHeader header="My Repositories" :message="message" create-route="/file_source_instances/create">
-        </ManageIndexHeader>
+
+        <ManageIndexHeader header="My Repositories" :message="message" create-route="/file_source_instances/create" />
 
         <GTable
             id="user-file-sources-index"
@@ -56,18 +57,19 @@ const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testi
             :items="activeInstances">
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading your user's file source instances" />
-                <b-alert v-else id="no-file-source-instances" variant="info" show>
-                    <div>
-                        No file source instances found for your users, click the create button to configure a new one.
-                    </div>
-                </b-alert>
+                <BAlert v-else id="no-file-source-instances" variant="info" show>
+                    No file source instances found for your users, click the create button to configure a new one.
+                </BAlert>
             </template>
+
             <template v-slot:cell(name)="{ item }">
                 <InstanceDropdown :file-source="item" @entryRemoved="reload" @test="test(item)" />
             </template>
+
             <template v-slot:cell(type)="{ item }">
                 <FileSourceTypeSpan :type="item.type" />
             </template>
+
             <template v-slot:cell(template)="{ item }">
                 <TemplateSummarySpan :template-version="item.template_version ?? 0" :template-id="item.template_id" />
             </template>
