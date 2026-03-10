@@ -246,11 +246,12 @@ class FastAPIPlugins:
             return self._create_error("Number of tools exceeded or invalid tools list.")
 
         # Build openai client with timeout
-        client_kwargs = dict(api_key=ai_api_key, timeout=TIMEOUT)
-        if ai_api_base_url:
-            client_kwargs["base_url"] = ai_api_base_url
         try:
-            client = AsyncOpenAI(**client_kwargs)
+            client = AsyncOpenAI(
+                api_key=ai_api_key,
+                timeout=TIMEOUT,
+                base_url=ai_api_base_url or None,
+            )
         except Exception as e:
             log.debug("Failed to initialize OpenAI client.", exc_info=e)
             return self._create_error("Failed to initialize OpenAI client.", 500)
