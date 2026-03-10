@@ -2171,6 +2171,13 @@ export interface components {
             /** value */
             value?: number | null
         }
+        /** InvalidTool */
+        InvalidTool: {
+            /** Error Message */
+            error_message: string
+            /** Tool Config */
+            tool_config: string
+        }
         /** LabelValue */
         LabelValue: {
             /** Label */
@@ -2441,7 +2448,7 @@ export interface components {
             /** Includes Workflows */
             includes_workflows?: boolean | null
             /** Invalid Tools */
-            invalid_tools: string[]
+            invalid_tools: components["schemas"]["InvalidTool"][]
             /** Malicious */
             malicious: boolean
             /** Missing Test Components */
@@ -2532,7 +2539,7 @@ export interface components {
             /** Includes Workflows */
             includes_workflows?: boolean | null
             /** Invalid Tools */
-            invalid_tools: string[]
+            invalid_tools: components["schemas"]["InvalidTool"][]
             /** Malicious */
             malicious: boolean
             /** Missing Test Components */

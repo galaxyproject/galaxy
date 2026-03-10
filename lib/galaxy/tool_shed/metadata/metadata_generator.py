@@ -391,6 +391,13 @@ class BaseMetadataGenerator:
                 self.invalid_file_tups.append((TOOL_DEPENDENCY_DEFINITION_FILENAME, error_message))
         if invalid_tool_configs:
             metadata_dict["invalid_tools"] = invalid_tool_configs
+            invalid_tool_errors = {}
+            for name, error_msg in self.invalid_file_tups:
+                if name in invalid_tool_configs:
+                    # Strip HTML tags from error messages for plain text display
+                    plain_msg = error_msg.replace("<br/>", " ").replace("<b>", "").replace("</b>", "")
+                    invalid_tool_errors[name] = plain_msg
+            metadata_dict["invalid_tool_errors"] = invalid_tool_errors
         self.metadata_dict = metadata_dict
         # Only remove work_dir if not resetting all metadata - in that case the caller handles cleanup
         if not self.resetting_all_metadata_on_repository:
