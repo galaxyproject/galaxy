@@ -113,6 +113,12 @@ interface Props {
     hover?: boolean;
 
     /**
+     * Header variant style for the table header
+     * @default light
+     */
+    headVariant?: "light" | "dark";
+
+    /**
      * Whether to hide the table header
      * @default false
      */
@@ -264,6 +270,7 @@ const props = withDefaults(defineProps<Props>(), {
     filterIncludedFields: undefined,
     fixed: false,
     hover: true,
+    headVariant: "light",
     hideHeader: false,
     items: () => [],
     loading: false,
@@ -342,6 +349,10 @@ const stickyHeaderMaxHeight = computed(() => {
         return undefined;
     }
     return props.stickyHeader === true ? "300px" : props.stickyHeader;
+});
+
+const headerVariantClass = computed(() => {
+    return props.headVariant === "dark" ? "g-header-dark" : undefined;
 });
 
 const paginatedLocalItems = computed(() => {
@@ -668,7 +679,7 @@ defineExpose({
 
                     <thead v-if="!props.hideHeader">
                         <tr>
-                            <th v-if="selectable" class="g-table-select-column">
+                            <th v-if="selectable" class="g-table-select-column" :class="headerVariantClass">
                                 <slot name="head-select">
                                     <BFormCheckbox
                                         v-if="showSelectAll"
@@ -690,6 +701,7 @@ defineExpose({
                                 :key="field.key"
                                 :class="[
                                     field.headerClass,
+                                    headerVariantClass,
                                     { 'g-table-sortable': field.sortable },
                                     { 'g-table-sorted': sortBy === field.key },
                                     { 'hide-on-small': field.hideOnSmall },
@@ -954,6 +966,11 @@ defineExpose({
             border-bottom: 2px solid $brand-secondary;
             font-weight: 600;
             padding: 0.75rem;
+
+            &.g-header-dark {
+                background-color: $brand-primary;
+                color: $body-bg;
+            }
 
             &.g-table-sortable {
                 cursor: pointer;
