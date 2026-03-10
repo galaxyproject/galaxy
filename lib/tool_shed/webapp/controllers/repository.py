@@ -126,9 +126,7 @@ class RepositoryController(BaseUIController):
         includes_data_managers = has_galaxy_utilities_dict["includes_data_managers"]
         includes_datatypes = has_galaxy_utilities_dict["includes_datatypes"]
         includes_tools = has_galaxy_utilities_dict["includes_tools"]
-        includes_tools_for_display_in_tool_panel = has_galaxy_utilities_dict[
-            "includes_tools_for_display_in_tool_panel"
-        ]
+        includes_tools_for_display_in_tool_panel = has_galaxy_utilities_dict["includes_tools_for_display_in_tool_panel"]
         includes_tool_dependencies = has_galaxy_utilities_dict["includes_tool_dependencies"]
         has_repository_dependencies = has_galaxy_utilities_dict["has_repository_dependencies"]
         has_repository_dependencies_only_if_compiling_contained_td = has_galaxy_utilities_dict[
@@ -168,10 +166,8 @@ class RepositoryController(BaseUIController):
                     has_repository_dependencies_only_if_compiling_contained_td = False
                     changeset_hash = str(repo[changeset])
                     if update_to_changeset_hash:
-                        update_to_repository_metadata = (
-                            metadata_util.get_repository_metadata_by_changeset_revision(
-                                trans.app, trans.security.encode_id(repository.id), changeset_hash
-                            )
+                        update_to_repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
+                            trans.app, trans.security.encode_id(repository.id), changeset_hash
                         )
                         if update_to_repository_metadata:
                             has_galaxy_utilities_dict = has_galaxy_utilities(repository_metadata)
@@ -191,9 +187,7 @@ class RepositoryController(BaseUIController):
                                 update_to_ctx = hg_util.get_changectx_for_changeset(repo, changeset_hash)
                                 latest_changeset_revision = changeset_hash
                             else:
-                                update_to_ctx = hg_util.get_changectx_for_changeset(
-                                    repo, update_to_changeset_hash
-                                )
+                                update_to_ctx = hg_util.get_changectx_for_changeset(repo, update_to_changeset_hash)
                                 latest_changeset_revision = update_to_changeset_hash
                             break
                     elif not update_to_changeset_hash and changeset_hash == changeset_revision:
@@ -201,9 +195,7 @@ class RepositoryController(BaseUIController):
                 update_dict["includes_data_managers"] = includes_data_managers
                 update_dict["includes_datatypes"] = includes_datatypes
                 update_dict["includes_tools"] = includes_tools
-                update_dict["includes_tools_for_display_in_tool_panel"] = (
-                    includes_tools_for_display_in_tool_panel
-                )
+                update_dict["includes_tools_for_display_in_tool_panel"] = includes_tools_for_display_in_tool_panel
                 update_dict["includes_tool_dependencies"] = includes_tool_dependencies
                 update_dict["includes_workflows"] = includes_workflows
                 update_dict["has_repository_dependencies"] = has_repository_dependencies
