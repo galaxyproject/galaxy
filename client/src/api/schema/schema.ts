@@ -25416,25 +25416,21 @@ export interface components {
              */
             checked: boolean;
             /**
-             * Disabled Why
-             * @description Reason this job cannot be included in a workflow. None means the job is enabled.
-             */
-            disabled_why?: string | null;
-            /**
              * ID
              * @description Encoded job ID, or null for fake input dataset entries.
              */
             id: string | null;
             /**
-             * Is Fake
-             * @description True for input datasets that have no real creating job.
-             */
-            is_fake: boolean;
-            /**
              * Outputs
              * @description The history items produced by this job.
              */
             outputs?: components["schemas"]["WorkflowExtractionOutput"][];
+            /**
+             * Step Type
+             * @description The role this job plays in the extracted workflow.
+             * @enum {string}
+             */
+            step_type: "tool" | "input_dataset" | "input_collection";
             /**
              * Tool ID
              * @description The tool ID that created this job.

@@ -2,6 +2,7 @@ import json
 from typing import (
     Annotated,
     Any,
+    Literal,
     Optional,
     Union,
 )
@@ -342,10 +343,10 @@ class WorkflowExtractionJob(Model):
         title="ID",
         description="Encoded job ID, or null for fake input dataset entries.",
     )
-    is_fake: bool = Field(
+    step_type: Literal["tool", "input_dataset", "input_collection"] = Field(
         ...,
-        title="Is Fake",
-        description="True for input datasets that have no real creating job.",
+        title="Step Type",
+        description="The role this job plays in the extracted workflow.",
     )
     tool_id: Optional[str] = Field(
         None,
@@ -361,11 +362,6 @@ class WorkflowExtractionJob(Model):
         None,
         title="Tool Version",
         description="The tool version used by this job.",
-    )
-    disabled_why: Optional[str] = Field(
-        None,
-        title="Disabled Why",
-        description="Reason this job cannot be included in a workflow. None means the job is enabled.",
     )
     checked: bool = Field(
         ...,

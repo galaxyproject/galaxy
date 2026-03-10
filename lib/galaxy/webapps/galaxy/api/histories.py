@@ -814,53 +814,71 @@ class FastAPIHistories:
                 history_content_type=content.history_content_type,
             )
 
+        def input_step_type(outputs: list) -> Literal["input_dataset", "input_collection"]:
+            if outputs and outputs[0].history_content_type == "dataset_collection":
+                return "input_collection"
+            return "input_dataset"
+
         jobs_list = []
         for job, datasets in jobs.items():
             is_fake = getattr(job, "is_fake", False)
             outputs = [serialize_output(data) for _, data in datasets]
+            checked = any(not data.deleted for _, data in datasets)
+
             if is_fake:
-                # FakeJob / DatasetCollectionCreationJob: always disabled.
-                # Use the job's own disabled_why if present (e.g. collection jobs)
-                disabled_why = getattr(job, "disabled_why", "This tool cannot be used in workflows")
+                # FakeJob / DatasetCollectionCreationJob: input with no creating tool.
                 jobs_list.append(
                     WorkflowExtractionJob(
                         id=None,
-                        is_fake=True,
+                        step_type=input_step_type(outputs),
                         tool_name=getattr(job, "name", None),
                         tool_id=None,
                         tool_version=None,
-                        disabled_why=disabled_why,
-                        checked=False,
+                        checked=checked,
                         tool_version_warning=None,
                         outputs=outputs,
                     )
                 )
             else:
                 tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
-                # Disabled if tool missing or not workflow compatible.
-                if tool is None or not tool.is_workflow_compatible:
-                    disabled_why = "This tool cannot be used in workflows"
+                if tool is None:
+                    # Tool missing
+                    continue
+                if not tool.is_workflow_compatible:
+                    # Not a workflow step (e.g. upload, data fetch) — treat as input.
+                    jobs_list.append(
+                        WorkflowExtractionJob(
+                            id=None,
+                            step_type=input_step_type(outputs),
+                            tool_name=tool.name,
+                            tool_id=None,
+                            tool_version=None,
+                            checked=checked,
+                            tool_version_warning=None,
+                            outputs=outputs,
+                        )
+                    )
                 else:
-                    disabled_why = None
-                tool_version_warning = None
-                if tool and tool.version != job.tool_version:
                     tool_version_warning = (
-                        f'Dataset was created with tool version "{job.tool_version}", '
-                        f'but workflow extraction will use version "{tool.version}".'
+                        (
+                            f'Dataset was created with tool version "{job.tool_version}", '
+                            f'but workflow extraction will use version "{tool.version}".'
+                        )
+                        if tool.version != job.tool_version
+                        else None
                     )
-                jobs_list.append(
-                    WorkflowExtractionJob(
-                        id=job.id,  # type: ignore[arg-type]
-                        is_fake=False,
-                        tool_name=tool.name if tool else "Unknown",
-                        tool_id=job.tool_id,
-                        tool_version=job.tool_version,
-                        disabled_why=disabled_why,
-                        checked=any(not data.deleted for _, data in datasets),
-                        tool_version_warning=tool_version_warning,
-                        outputs=outputs,
+                    jobs_list.append(
+                        WorkflowExtractionJob(
+                            id=job.id,  # type: ignore[arg-type]
+                            step_type="tool",
+                            tool_name=tool.name,
+                            tool_id=job.tool_id,
+                            tool_version=job.tool_version,
+                            checked=checked,
+                            tool_version_warning=tool_version_warning,
+                            outputs=outputs,
+                        )
                     )
-                )
 
         return WorkflowExtractionSummary(
             history_id=history.id,  # type: ignore[arg-type]
