@@ -241,6 +241,17 @@ class InteractorStagingInterface(StagingInterface):
         return True
 
 
+def raise_for_status(response: Response) -> None:
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        try:
+            body = response.json()
+        except Exception:
+            body = response.text
+        raise requests.exceptions.HTTPError(f"{e} - Response body: {body}", response=response) from e
+
+
 class GalaxyInteractorApi:
     # api_key and cookies can also be manually set by UsesApiTestCaseMixin._different_user()
     api_key: Optional[str]
@@ -794,14 +805,14 @@ class GalaxyInteractorApi:
 
                 # Create credentials via API
                 create_response = self._post(f"users/{user_id}/credentials", data=credential_payload, json=True)
-                create_response.raise_for_status()
+                raise_for_status(create_response)
                 created_cred = create_response.json()
 
                 # Get the user_credentials_id by listing credentials
                 # (POST returns ServiceCredentialGroupResponse which only has the group id,
                 # we need UserServiceCredentialsResponse which has the user_credentials_id)
                 list_response = self._get(f"users/{user_id}/credentials")
-                list_response.raise_for_status()
+                raise_for_status(list_response)
                 all_credentials = list_response.json()
 
                 # Find the user_credentials_id by searching for the UserCredentials entry
@@ -908,7 +919,7 @@ class GalaxyInteractorApi:
                     delete_response = self._delete(
                         f"users/{cred_info['user_id']}/credentials/{cred_info['user_credentials_id']}"
                     )
-                    delete_response.raise_for_status()
+                    raise_for_status(delete_response)
                 except Exception as e:
                     # Log but don't fail the test if cleanup fails
                     print(f"Warning: Failed to delete test credentials: {e}")
