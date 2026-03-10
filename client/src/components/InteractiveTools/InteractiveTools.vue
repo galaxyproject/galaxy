@@ -9,6 +9,7 @@ import { useRouter } from "vue-router/composables";
 import type { TableField } from "@/components/Common/GTable.types";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 
+import GLink from "../BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import Heading from "@/components/Common/Heading.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -147,27 +148,26 @@ onMounted(() => {
                 </template>
 
                 <template v-slot:cell(name)="{ item, index }">
-                    <a
+                    <GLink
                         :id="createId('link', item.id)"
-                        v-b-tooltip
+                        tooltip
                         title="Open Interactive Tool"
                         :index="index"
-                        href="#"
                         :name="item.name"
                         @click.prevent="openInteractiveTool(item.id)">
                         {{ item.name }}
-                    </a>
+                    </GLink>
 
-                    <a
+                    <GLink
                         v-if="item.target"
                         :id="createId('external-link', item.id)"
-                        v-b-tooltip
+                        tooltip
                         class="ml-2"
+                        target="_blank"
                         title="Open in new tab"
-                        :href="item.target"
-                        target="_blank">
+                        :href="item.target">
                         <FontAwesomeIcon :icon="faExternalLinkAlt" />
-                    </a>
+                    </GLink>
                 </template>
 
                 <template v-slot:cell(job_info)="{ item }">
