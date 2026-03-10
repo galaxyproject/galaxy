@@ -535,7 +535,9 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response.json())
         hdca_id = collection["id"]
         self._put(
-            f"histories/{history_id}/contents/{hdca_id}", data={"tags": ["hdca_tag"]}, json=True
+            f"histories/{history_id}/contents/dataset_collections/{hdca_id}",
+            data={"tags": ["hdca_tag"]},
+            json=True,
         ).raise_for_status()
         # Also tag a dataset within the collection
         element_hda_id = collection["elements"][0]["object"]["id"]
