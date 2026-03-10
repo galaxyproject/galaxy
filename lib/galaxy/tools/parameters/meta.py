@@ -23,7 +23,10 @@ from galaxy.model.dataset_collections import (
     matching,
     subcollections,
 )
-from galaxy.model.dataset_collections.adapters import PromoteCollectionElementToCollectionAdapter
+from galaxy.model.dataset_collections.adapters import (
+    CollectionAdapter,
+    PromoteCollectionElementToCollectionAdapter,
+)
 from galaxy.tool_util.parameters import RequestInternalDereferencedToolState
 from galaxy.util.permutations import (
     build_combos,
@@ -399,6 +402,8 @@ def to_decoded_json(has_objects):
         return decoded_json
     elif isinstance(has_objects, list):
         return [to_decoded_json(o) for o in has_objects]
+    elif isinstance(has_objects, CollectionAdapter):
+        return has_objects.to_adapter_model().model_dump()
     elif isinstance(has_objects, DatasetCollectionElement):
         return {"src": "dce", "id": has_objects.id}
     elif isinstance(has_objects, HistoryDatasetAssociation):
@@ -441,10 +446,11 @@ def __expand_collection_parameter(
     if src == "dce":
         item = trans.sa_session.get_one(DatasetCollectionElement, decoded_id)
         collection = item.child_collection
+        if not collection:
+            raise exceptions.ToolMetaParameterException(f"DCE {decoded_id} does not contain a child collection")
     else:
         item = trans.sa_session.get_one(HistoryDatasetCollectionAssociation, decoded_id)
         collection = item.collection
-    assert collection
     if not collection.populated_optimized:
         raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
     collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
@@ -469,21 +475,29 @@ def __expand_collection_parameter_async(
     # be "hdca_id|subcollection_type" else it will just be hdca_id
     try:
         src = incoming_val["src"]
-        if src != "hdca":
+        if src not in ("hdca", "dce"):
             raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
-        hdc_id = incoming_val["id"]
+        item_id = incoming_val["id"]
         subcollection_type = incoming_val.get("map_over_type", None)
     except TypeError:
-        hdc_id = incoming_val
+        item_id = incoming_val
+        src = "hdca"
         subcollection_type = None
-    hdc = app.model.context.get(HistoryDatasetCollectionAssociation, hdc_id)
-    collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
+    if src == "dce":
+        item = app.model.context.get(DatasetCollectionElement, item_id)
+        collection = item.child_collection
+        if not collection:
+            raise exceptions.ToolMetaParameterException(f"DCE {item_id} does not contain a child collection")
+    else:
+        item = app.model.context.get(HistoryDatasetCollectionAssociation, item_id)
+        collection = item.collection
+    collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
-        subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)
+        subcollection_elements = subcollections._split_dataset_collection(collection, subcollection_type)
         return subcollection_elements
     else:
         hdas: list[DatasetInstance] = []
-        for element in hdc.collection.dataset_elements:
+        for element in collection.dataset_elements:
             hda = element.dataset_instance
             hda.element_identifier = element.element_identifier
             hdas.append(hda)

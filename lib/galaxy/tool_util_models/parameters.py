@@ -531,9 +531,29 @@ DataRequestCollectionUri.model_rebuild()
 DataOrCollectionRequestAdapter: TypeAdapter[DataOrCollectionRequest] = TypeAdapter(DataOrCollectionRequest)
 
 
-class BatchDataInstance(StrictModel):
-    src: MultiDataSrcT
+class BatchDataHdcaInstance(StrictModel):
+    src: Literal["hdca"]
     id: StrictStr
+    map_over_type: Optional[str] = None
+
+
+class BatchDataDceInstance(StrictModel):
+    src: Literal["dce"]
+    id: StrictStr
+    map_over_type: Optional[str] = None
+
+
+class BatchDataNonCollectionInstance(StrictModel):
+    src: Literal["hda", "ldda"]
+    id: StrictStr
+
+
+BatchDataInstance: Type = cast(
+    Type,
+    Annotated[
+        Union[BatchDataHdcaInstance, BatchDataDceInstance, BatchDataNonCollectionInstance], Field(discriminator="src")
+    ],
+)
 
 
 def multi_data_discriminator(v: Any) -> str:
@@ -610,6 +630,9 @@ class DataInternalJson(StrictModel):
     # "secondaryFiles": List[Any],
     checksum: Optional[str] = None
     size: int
+    # When a gx_data param receives a DCE (subcollection mapping), preserve element_identifier
+    # for output naming and collection traceability
+    element_identifier: Optional[str] = None
 
 
 class DataCollectionElementInternalJson(DataInternalJson):
@@ -877,12 +900,44 @@ DataRequestInternalDereferenced: Type = cast(
     Type,
     Annotated[DataRequestInternalDereferencedT, Field(discriminator="src")],
 )
-DataJobInternal = DataRequestInternalDereferenced
 
 
-class BatchDataInstanceInternal(StrictModel):
-    src: MultiDataSrcT
+class DatasetCollectionElementReference(StrictModel):
+    src: Literal["dce"]
     id: StrictInt
+
+
+DataJobInternalT = Union[DataRequestInternalHda, DataRequestInternalLdda, DatasetCollectionElementReference]
+DataJobInternal: Type = cast(
+    Type,
+    Annotated[DataJobInternalT, Field(discriminator="src")],
+)
+
+
+class BatchDataHdcaInstanceInternal(StrictModel):
+    src: Literal["hdca"]
+    id: StrictInt
+    map_over_type: Optional[str] = None
+
+
+class BatchDataDceInstanceInternal(StrictModel):
+    src: Literal["dce"]
+    id: StrictInt
+    map_over_type: Optional[str] = None
+
+
+class BatchDataNonCollectionInstanceInternal(StrictModel):
+    src: Literal["hda", "ldda"]
+    id: StrictInt
+
+
+BatchDataInstanceInternal: Type = cast(
+    Type,
+    Annotated[
+        Union[BatchDataHdcaInstanceInternal, BatchDataDceInstanceInternal, BatchDataNonCollectionInstanceInternal],
+        Field(discriminator="src"),
+    ],
+)
 
 
 MultiDataInstanceInternal: Type = cast(
@@ -956,6 +1011,15 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
         return optional_if_needed(base_model, self.optional)
 
     @property
+    def py_type_job_internal(self) -> Type:
+        base_model: Type
+        if self.multiple:
+            base_model = MultiDataRequestInternalDereferenced
+        else:
+            base_model = DataJobInternal
+        return optional_if_needed(base_model, self.optional)
+
+    @property
     def py_type_test_case(self) -> Type:
         base_model: Type
         if self.multiple:
@@ -986,7 +1050,7 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
                 BatchDataInstanceInternal,
             )
         elif state_representation == "job_internal":
-            return dynamic_model_information_from_py_type(self, self.py_type_internal_dereferenced, requires_value=True)
+            return dynamic_model_information_from_py_type(self, self.py_type_job_internal, requires_value=True)
         elif state_representation == "job_runtime":
             return dynamic_model_information_from_py_type(self, self.py_type_internal_json, requires_value=True)
         elif state_representation == "test_case_xml":
@@ -1010,6 +1074,18 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
 class DataCollectionRequest(StrictModel):
     src: CollectionStrT
     id: StrictStr
+
+
+class BatchCollectionInstance(StrictModel):
+    src: CollectionStrT
+    id: StrictStr
+    map_over_type: Optional[str] = None
+
+
+class BatchCollectionInstanceInternal(StrictModel):
+    src: CollectionInternalSrcT
+    id: StrictInt
+    map_over_type: Optional[str] = None
 
 
 DataCollectionRequestOrCollectionUri: Type = union_type([DataCollectionRequest, DataRequestCollectionUri])
@@ -1064,11 +1140,6 @@ AdaptedDataCollectionRequest = Annotated[
 AdaptedDataCollectionRequestTypeAdapter = TypeAdapter(AdaptedDataCollectionRequest)  # type: ignore[var-annotated]
 
 
-class DatasetCollectionElementReference(StrictModel):
-    src: Literal["dce"]
-    id: StrictInt
-
-
 class AdaptedDataCollectionPromoteCollectionElementToCollectionRequestInternal(AdaptedDataCollectionRequestBase):
     adapter_type: Literal["PromoteCollectionElementToCollection"]
     adapting: DatasetCollectionElementReference
@@ -1102,6 +1173,8 @@ AdaptedDataCollectionRequestInternal = Annotated[
 AdaptedDataCollectionRequestInternalTypeAdapter = TypeAdapter(
     AdaptedDataCollectionRequestInternal
 )  # type: ignore[var-annotated]
+
+DataCollectionJobInternal: Type = Union[DataCollectionRequestInternal, AdaptedDataCollectionRequestInternal]  # type: ignore[assignment]
 
 
 class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
@@ -1177,19 +1250,31 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         if state_representation in ["request", "relaxed_request"]:
-            return allow_batching(dynamic_model_information_from_py_type(self, self.py_type))
+            return allow_batching(dynamic_model_information_from_py_type(self, self.py_type), BatchCollectionInstance)
         elif state_representation == "landing_request":
-            return allow_batching(dynamic_model_information_from_py_type(self, self.py_type, requires_value=False))
+            return allow_batching(
+                dynamic_model_information_from_py_type(self, self.py_type, requires_value=False),
+                BatchCollectionInstance,
+            )
         elif state_representation == "landing_request_internal":
             return allow_batching(
-                dynamic_model_information_from_py_type(self, self.py_type_internal, requires_value=False)
+                dynamic_model_information_from_py_type(self, self.py_type_internal, requires_value=False),
+                BatchCollectionInstanceInternal,
             )
         elif state_representation == "request_internal":
-            return allow_batching(dynamic_model_information_from_py_type(self, self.py_type_internal))
+            return allow_batching(
+                dynamic_model_information_from_py_type(self, self.py_type_internal),
+                BatchCollectionInstanceInternal,
+            )
         elif state_representation == "request_internal_dereferenced":
-            return allow_batching(dynamic_model_information_from_py_type(self, self.py_type_internal_dereferenced))
+            return allow_batching(
+                dynamic_model_information_from_py_type(self, self.py_type_internal_dereferenced),
+                BatchCollectionInstanceInternal,
+            )
         elif state_representation == "job_internal":
-            return dynamic_model_information_from_py_type(self, self.py_type_internal, requires_value=True)
+            return dynamic_model_information_from_py_type(
+                self, optional_if_needed(DataCollectionJobInternal, self.optional), requires_value=True
+            )
         elif state_representation == "job_runtime":
             return dynamic_model_information_from_py_type(self, self.py_type_internal_json, requires_value=True)
         elif state_representation == "workflow_step":

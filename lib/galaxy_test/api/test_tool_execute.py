@@ -13,6 +13,8 @@ import pytest
 
 from galaxy_test.base.decorators import requires_tool_id
 from galaxy_test.base.populators import (
+    DatasetCollectionPopulator,
+    DatasetPopulator,
     DescribeToolExecution,
     DescribeToolInputs,
     RequiredTool,
@@ -180,11 +182,17 @@ def test_map_over_with_output_format_actions(
 
 
 @requires_tool_id("output_action_change_format_paired")
-def test_map_over_with_nested_paired_output_format_actions(target_history: TargetHistory, required_tool: RequiredTool):
+def test_map_over_with_nested_paired_output_format_actions(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
     hdca = target_history.with_example_list_of_pairs()
-    execute = required_tool.execute().with_inputs(
-        {"input": {"batch": True, "values": [dict(map_over_type="paired", **hdca.src_dict)]}}
+    batch_val = dict(map_over_type="paired", **hdca.src_dict)
+    inputs = (
+        tool_input_format.when.flat({"input": {"batch": True, "values": [batch_val]}})
+        .when.nested({"input": {"batch": True, "values": [batch_val]}})
+        .when.request({"input": {"__class__": "Batch", "values": [batch_val]}})
     )
+    execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
     execute.assert_has_job(0).with_single_output.with_file_ext("txt")
     execute.assert_has_job(1).with_single_output.with_file_ext("txt")
@@ -502,11 +510,17 @@ def test_map_over_data_with_list_paired_or_unpaired(target_history: TargetHistor
 
 
 @requires_tool_id("collection_paired_or_unpaired")
-def test_map_over_paired_or_unpaired_with_list_paired(target_history: TargetHistory, required_tool: RequiredTool):
+def test_map_over_paired_or_unpaired_with_list_paired(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
     hdca = target_history.with_example_list_of_pairs()
-    execute = required_tool.execute().with_inputs(
-        {"f1": {"batch": True, "values": [{"map_over_type": "paired", **hdca.src_dict}]}}
+    batch_val = {"map_over_type": "paired", **hdca.src_dict}
+    inputs = (
+        tool_input_format.when.flat({"f1": {"batch": True, "values": [batch_val]}})
+        .when.nested({"f1": {"batch": True, "values": [batch_val]}})
+        .when.request({"f1": {"__class__": "Batch", "values": [batch_val]}})
     )
+    execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)
     output_collection.assert_has_dataset_element("test0").with_contents_stripped("123\n456")
@@ -514,12 +528,18 @@ def test_map_over_paired_or_unpaired_with_list_paired(target_history: TargetHist
 
 
 @requires_tool_id("collection_paired_or_unpaired")
-def test_map_over_paired_or_unpaired_with_list(target_history: TargetHistory, required_tool: RequiredTool):
+def test_map_over_paired_or_unpaired_with_list(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
     contents = [("foo", "text for foo element")]
     hdca = target_history.with_list(contents)
-    execute = required_tool.execute().with_inputs(
-        {"f1": {"batch": True, "values": [{"map_over_type": "single_datasets", **hdca.src_dict}]}}
+    batch_val = {"map_over_type": "single_datasets", **hdca.src_dict}
+    inputs = (
+        tool_input_format.when.flat({"f1": {"batch": True, "values": [batch_val]}})
+        .when.nested({"f1": {"batch": True, "values": [batch_val]}})
+        .when.request({"f1": {"__class__": "Batch", "values": [batch_val]}})
     )
+    execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_n_jobs(1).assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)
     output_collection.assert_has_dataset_element("foo").with_contents_stripped("text for foo element")
@@ -549,6 +569,24 @@ def test_map_over_paired_or_unpaired_with_list_of_lists(target_history: TargetHi
     assert output_collection.details["collection_type"] == "list:list"
     as_dict_0 = output_collection.with_element_dict(0)
     assert len(as_dict_0["object"]["elements"]) == 3
+
+
+@requires_tool_id("collection_paired_test")
+def test_simple_subcollection_mapping(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    hdca = target_history.with_example_list_of_pairs()
+    batch_val = {"map_over_type": "paired", **hdca.src_dict}
+    inputs = (
+        tool_input_format.when.flat({"f1": {"batch": True, "values": [batch_val]}})
+        .when.nested({"f1": {"batch": True, "values": [batch_val]}})
+        .when.request({"f1": {"__class__": "Batch", "values": [batch_val]}})
+    )
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_has_dataset_element("test0").with_contents_stripped("123\n456")
+    output_collection.assert_has_dataset_element("test1").with_contents_stripped("789\n0ab")
 
 
 @requires_tool_id("collection_paired_or_unpaired")
@@ -772,3 +810,55 @@ def test_deferred_multi_input(required_tool: RequiredTool, target_history: Targe
     output = required_tool.execute().with_inputs(inputs).assert_has_single_job.with_single_output
     output.assert_contains("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
     output.assert_contains("chr1    4225    19670")
+
+
+@requires_tool_id("collection_mixed_param")
+def test_combined_mapping_and_subcollection_mapping(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    hdca = target_history.with_example_list_of_pairs()
+    list_hdca = target_history.with_list(contents=["xxx\n", "yyy\n"])
+    f1_batch = {"map_over_type": "paired", **hdca.src_dict}
+    f2_batch = {**list_hdca.src_dict}
+    inputs = (
+        tool_input_format.when.flat(
+            {"f1": {"batch": True, "values": [f1_batch]}, "f2": {"batch": True, "values": [f2_batch]}}
+        )
+        .when.nested({"f1": {"batch": True, "values": [f1_batch]}, "f2": {"batch": True, "values": [f2_batch]}})
+        .when.request(
+            {
+                "f1": {"__class__": "Batch", "values": [f1_batch]},
+                "f2": {"__class__": "Batch", "values": [f2_batch]},
+            }
+        )
+    )
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_has_dataset_element("test0").with_contents_stripped("123\n456\nxxx")
+    output_collection.assert_has_dataset_element("test1").with_contents_stripped("789\n0ab\nyyy")
+
+
+@requires_tool_id("cat1")
+def test_map_over_dce_on_non_multiple_data_param(
+    target_history: TargetHistory,
+    required_tool: RequiredTool,
+    tool_input_format: DescribeToolInputs,
+    dataset_populator: DatasetPopulator,
+    dataset_collection_populator: DatasetCollectionPopulator,
+    history_id: str,
+):
+    hdca = target_history.with_example_list_of_pairs()
+    collection_details = dataset_populator.get_history_collection_details(history_id, content_id=hdca.id)
+    dce_id = collection_details["elements"][0]["id"]
+    dce_val = {"src": "dce", "id": dce_id}
+    inputs = (
+        tool_input_format.when.flat({"input1": {"batch": True, "values": [dce_val]}})
+        .when.nested({"input1": {"batch": True, "values": [dce_val]}})
+        .when.request({"input1": {"__class__": "Batch", "values": [dce_val]}})
+    )
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
+    output_collection = execute.assert_creates_implicit_collection(0)
+    output_collection.assert_has_dataset_element("test0").with_contents_stripped("123")
+    output_collection.assert_has_dataset_element("test1").with_contents_stripped("456")

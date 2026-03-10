@@ -21,13 +21,14 @@ from galaxy.tool_util_models.parameters import (
     DataCollectionRequestInternal,
     DataColumnParameterModel,
     DataInternalJson,
+    DataJobInternalT,
     DataParameterModel,
     DataRequestCollectionUri,
     DataRequestHda,
-    DataRequestInternalDereferencedT,
     DataRequestInternalHda,
     DataRequestInternalHdca,
     DataRequestUri,
+    DatasetCollectionElementReference,
     DiscriminatorType,
     DrillDownParameterModel,
     FloatParameterModel,
@@ -525,14 +526,14 @@ def _decode_callback_for(decode_id: DecodeFunctionT) -> Callback:
             if value is None:
                 return VISITOR_NO_REPLACEMENT
             assert isinstance(value, dict), str(value)
-            return decode_src_dict(value)
+            return decode_element(value)
         else:
             return VISITOR_NO_REPLACEMENT
 
     return decode_callback
 
 
-DatasetToRuntimeJson = Callable[[DataRequestInternalDereferencedT], DataInternalJson]
+DatasetToRuntimeJson = Callable[[DataJobInternalT], DataInternalJson]
 CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], Any]
 
 
@@ -545,10 +546,13 @@ def runtimeify(
 
     def adapt_dict(value: dict):
         assert isinstance(value, dict), str(value)
-        data_request_internal_hda = DataRequestInternalHda(**value)
-        as_json = adapt_dataset(data_request_internal_hda).model_dump()
-        # well this is wrong
-        as_json["class"] = as_json.pop("class_")
+        src = value.get("src")
+        if src == "dce":
+            dce_ref = DatasetCollectionElementReference(**value)
+            as_json = adapt_dataset(dce_ref).model_dump(by_alias=True)
+        else:
+            data_request_internal_hda = DataRequestInternalHda(**value)
+            as_json = adapt_dataset(data_request_internal_hda).model_dump(by_alias=True)
         return as_json
 
     def to_runtime_callback(parameter: ToolParameterT, value: Any):
