@@ -1072,8 +1072,10 @@ export default {
             this.onNavigate(`/workflows/run?id=${this.id}`, false, false, true);
         },
         async onNavigate(url, forceSave = false, ignoreChanges = false, appendVersion = false) {
+            let proceed = false;
             if (this.isNewTempWorkflow) {
                 await this.onCreate();
+                proceed = true;
             } else if (this.hasChanges && !forceSave && !ignoreChanges) {
                 // if there are changes, prompt user to save or discard or cancel
                 this.navUrl = url;
@@ -1081,7 +1083,13 @@ export default {
                 return;
             } else if (forceSave) {
                 // when forceSave is true, save the workflow before navigating
-                await this.onSave();
+                proceed = await this.onSave();
+            } else {
+                // no changes to save, proceed with navigation
+                proceed = true;
+            }
+            if (!proceed) {
+                return;
             }
 
             if (appendVersion && this.version !== undefined) {
