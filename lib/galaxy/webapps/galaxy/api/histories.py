@@ -813,7 +813,7 @@ class FastAPIHistories:
                 }
             )
 
-        def input_step_type(outputs: list) -> Literal["input_dataset", "input_collection"]:
+        def input_step_type(outputs: list[WorkflowExtractionOutput]) -> Literal["input_dataset", "input_collection"]:
             if outputs and outputs[0].history_content_type == "dataset_collection":
                 return "input_collection"
             return "input_dataset"
