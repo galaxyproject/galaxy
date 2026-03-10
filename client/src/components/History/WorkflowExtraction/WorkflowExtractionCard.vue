@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faExclamationTriangle, faPencilAlt, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faExclamationTriangle, faExternalLinkAlt, faPencilAlt, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { computed } from "vue";
 
 import type { WorkflowExtractionJob } from "@/api/histories";
@@ -32,6 +32,19 @@ const emit = defineEmits<{
 const badges = computed<CardBadge[]>(() => {
     const badges: CardBadge[] = [];
     if (props.job.step_type === "tool") {
+        if (props.job.id) {
+            badges.push({
+                id: "view-job-details",
+                label: "View Job",
+                icon: faExternalLinkAlt,
+                title: "View details for the job that ran this tool",
+                handler: () => {
+                    window.open(`/jobs/${props.job.id}/view`, "_blank");
+                },
+                variant: "info",
+            });
+        }
+
         if (props.job.tool_version_warning) {
             badges.push({
                 id: "tool-version-warning",
