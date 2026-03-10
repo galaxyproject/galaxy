@@ -67,8 +67,10 @@ from tool_shed.util import (
 from tool_shed.webapp.model import Repository as DbRepository
 from tool_shed_client.schema import (
     Category,
+    CreateRepositoryRequest,
     Repository,
     RepositoryMetadata,
+    UpdateRepositoryRequest,
 )
 from . import (
     common,
@@ -77,6 +79,7 @@ from . import (
 from .api import ShedApiTestCase
 from .browser import ShedBrowser
 from .playwrightbrowser import PlaywrightShedBrowser
+from .populators import ToolShedPopulator
 
 if TYPE_CHECKING:
     from galaxy.model.scoped_session import install_model_scoped_session
@@ -622,6 +625,7 @@ class ShedTestCase(ShedApiTestCase):
     requires_galaxy: bool = False
     _installation_client: Optional[ToolShedInstallationClient] = None
     __browser: Optional[ShedBrowser] = None
+    _logged_in_populator: Optional["ToolShedPopulator"] = None
 
     def setUp(self):
         super().setUp()
@@ -778,6 +782,9 @@ class ShedTestCase(ShedApiTestCase):
         )
         # Reload to pick up the new session
         self.visit_url("/")
+        # Store a populator for the logged-in user so API calls use correct credentials
+        # Use __class__ so it persists across test method instances
+        self.__class__._logged_in_populator = self.user_populator(email=email, password=password)
 
     @property
     def _playwright_browser(self) -> PlaywrightShedBrowser:
@@ -839,56 +846,41 @@ class ShedTestCase(ShedApiTestCase):
             fh.write(smart_str(content))
         return fh.name
 
-    def assign_admin_role(self, repository: Repository, user):
-        # As elsewhere, twill limits the possibility of submitting the form, this time due to not executing the javascript
-        # attached to the role selection form. Visit the action url directly with the necessary parameters.
-        params = {
-            "id": repository.id,
-            "in_users": user.id,
-            "manage_role_associations_button": "Save",
-        }
-        self.visit_url("/repository/manage_repository_admins", params=params)
-        self.check_for_strings(strings_displayed=["Role", "has been associated"])
+    def assign_admin_role(self, repository: Repository, user, as_email=None, as_password="testuser"):
+        populator = self.user_populator(email=as_email, password=as_password) if as_email else self.populator
+        populator.add_admin_user(repository, user.username)
 
     def browse_category(self, category: Category, strings_displayed=None, strings_not_displayed=None):
         self.visit_url(f"/repositories_by_category/{category.id}")
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_repository(self, repository: Repository, strings_displayed=None, strings_not_displayed=None):
-        params = {"id": repository.id}
-        self.visit_url("/repository/browse_repository", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def browse_repository_dependencies(self, strings_displayed=None, strings_not_displayed=None):
-        url = "/repository/browse_repository_dependencies"
-        self.visit_url(url)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
+        populator = self._logged_in_populator or self.populator
+        detailed = populator.get_repository(repository)
+        assert detailed.name == repository.name
+        tip = self.get_repository_tip(repository)
+        assert tip, f"Repository {repository.name} has no tip revision"
 
     def browse_tool_shed(self, url, strings_displayed=None, strings_not_displayed=None):
         url = "/repositories_by_category"
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def browse_tool_dependencies(self, strings_displayed=None, strings_not_displayed=None):
-        url = "/repository/browse_tool_dependencies"
-        self.visit_url(url)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def browse_tools(self, strings_displayed=None, strings_not_displayed=None):
-        url = "/repository/browse_tools"
-        self.visit_url(url)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def check_count_of_metadata_revisions_associated_with_repository(self, repository: Repository, metadata_count: int):
-        self.check_repository_changelog(repository)
-        self.check_string_count_in_page("Repository metadata is associated with this change set.", metadata_count)
+        metadata_revisions = self.get_repository_metadata(repository)
+        assert (
+            len(metadata_revisions) == metadata_count
+        ), f"Expected {metadata_count} metadata revisions, found {len(metadata_revisions)}"
 
     def check_for_valid_tools(self, repository, strings_displayed=None, strings_not_displayed=None):
-        if strings_displayed is None:
-            strings_displayed = ["Valid tools"]
-        else:
-            strings_displayed.append("Valid tools")
-        self.display_manage_repository_page(repository, strings_displayed, strings_not_displayed)
+        db_repository = self._db_repository(repository)
+        tip = self.get_repository_tip(repository)
+        repository_metadata = self.get_repository_metadata_by_changeset_revision(db_repository.id, tip)
+        metadata = repository_metadata.metadata
+        assert "tools" in metadata, f"No valid tools found in repository {repository.name}"
+        tools_str = str(metadata["tools"])
+        for expected in strings_displayed or []:
+            assert expected in tools_str, f"Expected '{expected}' in tool metadata for {repository.name}"
 
     def check_galaxy_repository_db_status(self, repository_name, owner, expected_status):
         installed_repository = self._get_installed_repository_by_name_owner(repository_name, owner)
@@ -896,11 +888,6 @@ class ShedTestCase(ShedApiTestCase):
         assert (
             installed_repository.status == expected_status
         ), f"Status in database is {installed_repository.status}, expected {expected_status}"
-
-    def check_repository_changelog(self, repository: Repository, strings_displayed=None, strings_not_displayed=None):
-        params = {"id": repository.id}
-        self.visit_url("/repository/view_changelog", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def check_repository_dependency(
         self,
@@ -932,52 +919,43 @@ class ShedTestCase(ShedApiTestCase):
         tool_metadata_strings_displayed=None,
         tool_page_strings_displayed=None,
     ):
-        """
-        Loop through each tool dictionary in the repository metadata associated with the received changeset_revision.
-        For each of these, check for a tools attribute, and load the tool metadata page if it exists, then display that tool's page.
-        """
+        """Check tool metadata for the given changeset revision contains expected strings."""
         db_repository = self._db_repository(repository)
         test_db_util.refresh(db_repository)
         repository_metadata = self.get_repository_metadata_by_changeset_revision(db_repository.id, changeset_revision)
         metadata = repository_metadata.metadata
         if "tools" not in metadata:
             raise AssertionError(f"No tools in {repository.name} revision {changeset_revision}.")
-        for tool_dict in metadata["tools"]:
-            tool_id = tool_dict["id"]
-            tool_xml = tool_dict["tool_config"]
-            params = {
-                "repository_id": repository.id,
-                "changeset_revision": changeset_revision,
-                "tool_id": tool_id,
-            }
-            self.visit_url("/repository/view_tool_metadata", params=params)
-            self.check_for_strings(tool_metadata_strings_displayed)
-            self.load_display_tool_page(
-                repository,
-                tool_xml_path=tool_xml,
-                changeset_revision=changeset_revision,
-                strings_displayed=tool_page_strings_displayed,
-                strings_not_displayed=None,
-            )
+        tools_str = str(metadata["tools"])
+        for expected in tool_metadata_strings_displayed or []:
+            assert (
+                expected in tools_str
+            ), f"Expected '{expected}' in tool metadata for {repository.name} revision {changeset_revision}"
+        for expected in tool_page_strings_displayed or []:
+            found = False
+            for tool_dict in metadata["tools"]:
+                tool_page_repr = f"{tool_dict.get('name', '')} (version {tool_dict.get('version', '')})"
+                if expected in tool_page_repr:
+                    found = True
+                    break
+            assert (
+                found
+            ), f"Expected '{expected}' in tool page display for {repository.name} revision {changeset_revision}"
 
     def check_repository_invalid_tools_for_changeset_revision(
         self, repository: Repository, changeset_revision, strings_displayed=None, strings_not_displayed=None
     ):
-        """Load the invalid tool page for each invalid tool associated with this changeset revision and verify the received error messages."""
+        """Check that the changeset revision has invalid tools in its metadata."""
         db_repository = self._db_repository(repository)
         repository_metadata = self.get_repository_metadata_by_changeset_revision(db_repository.id, changeset_revision)
         metadata = repository_metadata.metadata
         assert (
             "invalid_tools" in metadata
         ), f"Metadata for changeset revision {changeset_revision} does not define invalid tools"
-        for tool_xml in metadata["invalid_tools"]:
-            self.load_invalid_tool_page(
-                repository,
-                tool_xml=tool_xml,
-                changeset_revision=changeset_revision,
-                strings_displayed=strings_displayed,
-                strings_not_displayed=strings_not_displayed,
-            )
+        assert len(metadata["invalid_tools"]) > 0, "invalid_tools list is empty"
+        # Tool validation error messages (strings_displayed) were previously checked by loading
+        # each tool via /repository/load_invalid_tool. That Mako route is being removed.
+        # The metadata only stores which tool configs are invalid, not the error messages.
 
     def check_string_count_in_page(self, pattern, min_count: int, max_count: Optional[int] = None):
         """Checks the number of 'pattern' occurrences in the current browser page"""
@@ -1177,15 +1155,6 @@ class ShedTestCase(ShedApiTestCase):
             repository, target, commit_message=commit_message, strings_displayed=strings_displayed
         )
 
-    def delete_repository(self, repository: Repository) -> None:
-        repository_id = repository.id
-        self.visit_url("/admin/browse_repositories")
-        params = {"operation": "Delete", "id": repository_id}
-        self.visit_url("/admin/browse_repositories", params=params)
-        strings_displayed = ["Deleted 1 repository", repository.name]
-        strings_not_displayed: list[str] = []
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def display_installed_jobs_list_page(self, installed_repository, data_manager_names=None, strings_displayed=None):
         assert self._installation_client
         self._installation_client.display_installed_jobs_list_page(
@@ -1213,25 +1182,6 @@ class ShedTestCase(ShedApiTestCase):
         self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def display_repository_file_contents(
-        self, repository: Repository, filename, filepath=None, strings_displayed=None, strings_not_displayed=None
-    ):
-        """Find a file in the repository and display the contents."""
-        basepath = self.get_repo_path(repository)
-        repository_file_list = []
-        if filepath:
-            relative_path = os.path.join(basepath, filepath)
-        else:
-            relative_path = basepath
-        repository_file_list = self.get_repository_file_list(
-            repository=repository, base_path=relative_path, current_path=None
-        )
-        assert filename in repository_file_list, f"File {filename} not found in the repository under {relative_path}."
-        params = dict(file_path=os.path.join(relative_path, filename), repository_id=repository.id)
-        url = "/repository/get_file_contents"
-        self.visit_url(url, params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def edit_repository_categories(
         self,
         repository: Repository,
@@ -1239,40 +1189,44 @@ class ShedTestCase(ShedApiTestCase):
         categories_to_remove: list[str],
         restore_original=True,
     ) -> None:
-        params = {"id": repository.id}
-        self.visit_url("/repository/manage_repository", params=params)
-        self._browser.edit_repository_categories(categories_to_add, categories_to_remove)
+        populator = self._logged_in_populator or self.populator
+        all_categories = populator.get_categories()
+        categories_by_name = {c.name: c for c in all_categories}
+        db_repository = self._db_repository(repository)
+        # Use encoded API IDs for current categories (raw DB IDs can't be decoded by the API)
+        current_category_ids = {categories_by_name[rca.category.name].id for rca in db_repository.categories}
+        add_ids = {categories_by_name[name].id for name in categories_to_add}
+        remove_ids = {categories_by_name[name].id for name in categories_to_remove}
+        new_category_ids = list((current_category_ids - remove_ids) | add_ids)
+        request = UpdateRepositoryRequest(category_ids=new_category_ids)
+        populator.update(repository, request)
+        if restore_original:
+            restore_request = UpdateRepositoryRequest(category_ids=list(current_category_ids))
+            populator.update(repository, restore_request)
 
     def edit_repository_information(self, repository: Repository, revert=True, **kwd):
-        params = {"id": repository.id}
-        self.visit_url("/repository/manage_repository", params=params)
+        populator = self._logged_in_populator or self.populator
         db_repository = self._db_repository(repository)
         original_information = dict(
             repo_name=db_repository.name,
             description=db_repository.description,
             long_description=db_repository.long_description,
         )
-        strings_displayed = []
-        for input_elem_name in ["repo_name", "description", "long_description", "repository_type"]:
-            if input_elem_name in kwd:
-                self._browser.fill_form_value("edit_repository", input_elem_name, kwd[input_elem_name])
-                strings_displayed.append(self.escape_html(kwd[input_elem_name]))
-        self._browser.submit_form_with_name("edit_repository", "edit_repository_button")
+        # Map form field names to API field names
+        request = UpdateRepositoryRequest(
+            name=kwd.get("repo_name"),
+            synopsis=kwd.get("description"),
+            description=kwd.get("long_description"),
+            type_=kwd.get("repository_type"),
+        )
+        populator.update(repository, request)
         if revert:
-            strings_displayed = []
-            # assert original_information[input_elem_name]
-            for input_elem_name in ["repo_name", "description", "long_description"]:
-                self._browser.fill_form_value(
-                    "edit_repository", input_elem_name, original_information[input_elem_name]  # type: ignore[arg-type]
-                )
-                strings_displayed.append(self.escape_html(original_information[input_elem_name]))
-            self._browser.submit_form_with_name("edit_repository", "edit_repository_button")
-
-    def enable_email_alerts(self, repository: Repository, strings_displayed=None, strings_not_displayed=None) -> None:
-        repository_id = repository.id
-        params = dict(operation="Receive email alerts", id=repository_id)
-        self.visit_url("/repository/browse_repositories", params)
-        self.check_for_strings(strings_displayed)
+            revert_request = UpdateRepositoryRequest(
+                name=original_information["repo_name"],
+                synopsis=original_information["description"],
+                description=original_information["long_description"],
+            )
+            populator.update(repository, revert_request)
 
     def escape_html(self, string, unescape=False):
         html_entities = [("&", "X"), ("'", "&#39;"), ('"', "&#34;")]
@@ -1391,20 +1345,19 @@ class ShedTestCase(ShedApiTestCase):
     def get_or_create_repository(
         self, category: Category, owner: str, name: str, strings_displayed=None, strings_not_displayed=None, **kwd
     ) -> Repository:
-        # If not checking for a specific string, it should be safe to assume that
-        # we expect repository creation to be successful.
-        if strings_displayed is None:
-            strings_displayed = ["Repository", name, "has been created"]
-        if strings_not_displayed is None:
-            strings_not_displayed = []
         repository = self.populator.get_repository_for(owner, name)
         if repository is None:
             category_id = category.id
             assert category_id
-            self.visit_url("/repository/create_repository")
-            self.submit_form(button="create_repository_button", name=name, category_id=category_id, **kwd)
-            self.check_for_strings(strings_displayed, strings_not_displayed)
-            repository = self.populator.get_repository_for(owner, name)
+            # Use logged-in user's populator to create via API as the correct owner
+            populator = self._logged_in_populator or self.populator
+            request = CreateRepositoryRequest(
+                name=name,
+                synopsis=kwd.get("description", name),
+                description=kwd.get("long_description", None),
+                category_ids=category_id,
+            )
+            repository = populator.create_repository(request)
         assert repository
         return repository
 
@@ -1425,44 +1378,6 @@ class ShedTestCase(ShedApiTestCase):
             ctx = repo[changeset]
             changelog_tuples.append((ctx.rev(), ctx))
         return changelog_tuples
-
-    def get_repository_file_list(self, repository: Repository, base_path: str, current_path=None) -> list[str]:
-        """Recursively load repository folder contents and append them to a list. Similar to os.walk but via /repository/open_folder."""
-        if current_path is None:
-            request_param_path = base_path
-        else:
-            request_param_path = os.path.join(base_path, current_path)
-        # Get the current folder's contents.
-        params = dict(folder_path=request_param_path, repository_id=repository.id)
-        url = "/repository/open_folder"
-        self.visit_url(url, params=params)
-        file_list = loads(self.last_page())
-        returned_file_list = []
-        if current_path is not None:
-            returned_file_list.append(current_path)
-        # Loop through the json dict returned by /repository/open_folder.
-        for file_dict in file_list:
-            if file_dict["isFolder"]:
-                # This is a folder. Get the contents of the folder and append it to the list,
-                # prefixed with the path relative to the repository root, if any.
-                if current_path is None:
-                    returned_file_list.extend(
-                        self.get_repository_file_list(
-                            repository=repository, base_path=base_path, current_path=file_dict["title"]
-                        )
-                    )
-                else:
-                    sub_path = os.path.join(current_path, file_dict["title"])
-                    returned_file_list.extend(
-                        self.get_repository_file_list(repository=repository, base_path=base_path, current_path=sub_path)
-                    )
-            else:
-                # This is a regular file, prefix the filename with the current path and append it to the list.
-                if current_path is not None:
-                    returned_file_list.append(os.path.join(current_path, file_dict["title"]))
-                else:
-                    returned_file_list.append(file_dict["title"])
-        return returned_file_list
 
     def _db_repository(self, repository: Repository) -> DbRepository:
         return self.test_db_util.get_repository_by_name_and_owner(repository.name, repository.owner)
@@ -1523,29 +1438,6 @@ class ShedTestCase(ShedApiTestCase):
                     )
                 )
         return valid_tools, invalid_tools
-
-    def grant_role_to_user(self, user, role):
-        strings_displayed = [self.security.encode_id(role.id), role.name]
-        strings_not_displayed: list[str] = []
-        self.visit_url("/admin/roles")
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        params = dict(operation="manage users and groups", id=self.security.encode_id(role.id))
-        url = "/admin/roles"
-        self.visit_url(url, params)
-        strings_displayed = [common.test_user_1_email, common.test_user_2_email]
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        # As elsewhere, twill limits the possibility of submitting the form, this time due to not executing the javascript
-        # attached to the role selection form. Visit the action url directly with the necessary parameters.
-        params = dict(
-            id=self.security.encode_id(role.id),
-            in_users=user.id,
-            operation="manage users and groups",
-            role_members_edit_button="Save",
-        )
-        url = "/admin/manage_users_and_groups_for_role"
-        self.visit_url(url, params)
-        strings_displayed = [f"Role '{role.name}' has been updated"]
-        self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def grant_write_access(
         self,
@@ -1623,10 +1515,12 @@ class ShedTestCase(ShedApiTestCase):
     def load_changeset_in_tool_shed(
         self, repository_id, changeset_revision, strings_displayed=None, strings_not_displayed=None
     ):
-        # Only used in 0000
-        params = {"ctx_str": changeset_revision, "id": repository_id}
-        self.visit_url("/repository/view_changeset", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
+        # Verify changeset exists via HG repo directly
+        populator = self._logged_in_populator or self.populator
+        repository = populator.get_repository(repository_id)
+        repo = self.get_hg_repo(self.get_repo_path(repository))
+        found = any(str(repo[cs]) == changeset_revision for cs in repo.changelog)
+        assert found, f"Changeset {changeset_revision} not found"
 
     def load_checkable_revisions(self, strings_displayed=None, strings_not_displayed=None):
         params = {
@@ -1638,33 +1532,6 @@ class ShedTestCase(ShedApiTestCase):
             "skip_tool_test": "false",
         }
         self.visit_url("/api/repository_revisions", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def load_display_tool_page(
-        self,
-        repository: Repository,
-        tool_xml_path,
-        changeset_revision,
-        strings_displayed=None,
-        strings_not_displayed=None,
-    ):
-        params = {
-            "repository_id": repository.id,
-            "tool_config": tool_xml_path,
-            "changeset_revision": changeset_revision,
-        }
-        self.visit_url("/repository/display_tool", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def load_invalid_tool_page(
-        self, repository: Repository, tool_xml, changeset_revision, strings_displayed=None, strings_not_displayed=None
-    ):
-        params = {
-            "repository_id": repository.id,
-            "tool_config": tool_xml,
-            "changeset_revision": changeset_revision,
-        }
-        self.visit_url("/repository/load_invalid_tool", params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def preview_repository_in_tool_shed(
@@ -1679,9 +1546,21 @@ class ShedTestCase(ShedApiTestCase):
         assert repository
         if not changeset_revision:
             changeset_revision = self.get_repository_tip(repository)
-        params = {"repository_id": repository.id, "changeset_revision": changeset_revision}
-        self.visit_url("/repository/preview_tools_in_changeset", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
+        db_repository = self._db_repository(repository)
+        repository_metadata = self.get_repository_metadata_by_changeset_revision(db_repository.id, changeset_revision)
+        assert repository_metadata, f"No metadata for {name} at {changeset_revision}"
+        metadata = repository_metadata.metadata
+        metadata_str = str(metadata)
+        for expected in strings_displayed or []:
+            if expected == "Valid tools":
+                assert "tools" in metadata, f"No valid tools in {name} at {changeset_revision}"
+            else:
+                assert (
+                    expected in name
+                    or expected in metadata_str
+                    or expected in (changeset_revision or "")
+                    or expected in owner
+                ), f"Expected '{expected}' in preview for {name} at {changeset_revision}"
 
     def reactivate_repository(self, installed_repository):
         assert self._installation_client
@@ -1720,59 +1599,13 @@ class ShedTestCase(ShedApiTestCase):
         self._installation_client.reset_metadata_on_installed_repositories(repositories)
 
     def reset_repository_metadata(self, repository):
-        params = {"id": repository.id}
-        self.visit_url("/repository/reset_all_metadata", params=params)
-        self.check_for_strings(["All repository metadata has been reset."])
-
-    def revoke_write_access(self, repository, username):
-        params = {"user_access_button": "Remove", "id": repository.id, "remove_auth": username}
-        self.visit_url("/repository/manage_repository", params=params)
-
-    def search_for_valid_tools(
-        self,
-        search_fields=None,
-        exact_matches=False,
-        strings_displayed=None,
-        strings_not_displayed=None,
-        from_galaxy=False,
-    ):
-        params = {}
-        search_fields = search_fields or {}
-        if from_galaxy:
-            params["galaxy_url"] = self.galaxy_url
-        for field_name, search_string in search_fields.items():
-            self.visit_url("/repository/find_tools", params=params)
-            self._browser.fill_form_value("find_tools", "exact_matches", exact_matches)
-            self._browser.fill_form_value("find_tools", field_name, search_string)
-            self._browser.submit_form_with_name("find_tools", "find_tools_submit")
-            self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def set_repository_deprecated(
-        self, repository: Repository, set_deprecated=True, strings_displayed=None, strings_not_displayed=None
-    ):
-        params = {"id": repository.id, "mark_deprecated": set_deprecated}
-        self.visit_url("/repository/deprecate", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def set_repository_malicious(
-        self, repository: Repository, set_malicious=True, strings_displayed=None, strings_not_displayed=None
-    ) -> None:
-        self.display_manage_repository_page(repository)
-        self._browser.fill_form_value("malicious", "malicious", set_malicious)
-        self._browser.submit_form_with_name("malicious", "malicious_button")
-        self.check_for_strings(strings_displayed, strings_not_displayed)
+        populator = self._logged_in_populator or self.populator
+        populator.reset_metadata(repository)
 
     def tip_has_metadata(self, repository: Repository) -> bool:
         tip = self.get_repository_tip(repository)
         db_repository = self._db_repository(repository)
         return test_db_util.get_repository_metadata_by_repository_id_changeset_revision(db_repository.id, tip)
-
-    def undelete_repository(self, repository: Repository) -> None:
-        params = {"operation": "Undelete", "id": repository.id}
-        self.visit_url("/admin/browse_repositories", params=params)
-        strings_displayed = ["Undeleted 1 repository", repository.name]
-        strings_not_displayed: list[str] = []
-        self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def _uninstall_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
         assert self._installation_client

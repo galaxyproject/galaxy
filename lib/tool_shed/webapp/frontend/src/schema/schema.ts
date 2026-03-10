@@ -329,6 +329,41 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/api/repositories/{encoded_repository_id}/admins": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Show Admins */
+        get: operations["repositories__show_admins"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/api/repositories/{encoded_repository_id}/admins/{username}": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
+        /** Add Admin */
+        post: operations["repositories__add_admin"]
+        /** Remove Admin */
+        delete: operations["repositories__remove_admin"]
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/api/repositories/{encoded_repository_id}/allow_push": {
         parameters: {
             query?: never
@@ -4490,6 +4525,133 @@ export interface operations {
                 }
                 content: {
                     "application/json": components["schemas"]["DetailedRepository"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    repositories__show_admins: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description The encoded database identifier of the repository. */
+                encoded_repository_id: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": string[]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    repositories__add_admin: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description The encoded database identifier of the repository. */
+                encoded_repository_id: string
+                /** @description The target username. */
+                username: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": string[]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    repositories__remove_admin: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description The encoded database identifier of the repository. */
+                encoded_repository_id: string
+                /** @description The target username. */
+                username: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": string[]
                 }
             }
             /** @description Request Error */
