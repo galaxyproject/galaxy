@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { BButton, BFormCheckbox, BModal, BPagination, BTable } from "bootstrap-vue";
+import { BButton, BFormCheckbox, BModal, BPagination } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import type { TableField } from "@/components/Common/GTable.types";
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 
 import { type CleanableItem, type CleanupOperation, PaginationOptions, type SortableKey } from "./model";
 
+import GTable from "@/components/Common/GTable.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 interface ReviewCleanupDialogProps {
@@ -27,7 +29,7 @@ const emit = defineEmits<{
 const permanentlyDeleteText = localize("Permanently delete");
 const captionText = localize("To free up account space, review and select items to be permanently deleted here.");
 const agreementText = localize("I understand that once I delete the items, they cannot be recovered.");
-const fields = [
+const fields: TableField[] = [
     {
         key: "selected",
         label: "",
@@ -35,16 +37,18 @@ const fields = [
     },
     {
         key: "name",
+        label: localize("Name"),
         sortable: true,
     },
     {
         key: "size",
+        label: localize("Size"),
         sortable: true,
         formatter: toNiceSize,
     },
     {
-        label: "Updated",
         key: "update_time",
+        label: localize("Updated"),
         sortable: true,
     },
 ];
@@ -95,23 +99,28 @@ const confirmButtonVariant = computed(() => {
     return confirmChecked.value ? "danger" : "";
 });
 
-watch(props, (newVal) => {
-    currentPage.value = 1;
-    totalRows.value = newVal.totalItems;
-});
-
-watch(selectedItems, (newVal) => {
-    if (newVal.length === 0) {
-        indeterminate.value = false;
-        allSelected.value = false;
-    } else if (newVal.length === totalRows.value) {
-        indeterminate.value = false;
-        allSelected.value = true;
-    } else {
-        indeterminate.value = true;
-        allSelected.value = false;
+async function loadItems() {
+    if (!props.operation) {
+        items.value = [];
+        return;
     }
-});
+
+    try {
+        isBusy.value = true;
+        const page = currentPage.value > 0 ? currentPage.value - 1 : 0;
+        const offset = page * MAXIMUM_ITEMS_PER_PAGE;
+        const options = new PaginationOptions({
+            offset: offset,
+            limit: MAXIMUM_ITEMS_PER_PAGE,
+            sortBy: sortBy.value,
+            sortDesc: sortDesc.value,
+        });
+        const result = await props.operation.fetchItems(options);
+        items.value = result;
+    } finally {
+        isBusy.value = false;
+    }
+}
 
 function toNiceSize(sizeInBytes: number) {
     return bytesToString(sizeInBytes, true, undefined);
@@ -135,6 +144,7 @@ function hideModal() {
 
 function onShowModal() {
     resetModal();
+    loadItems();
 }
 
 function resetModal() {
@@ -150,9 +160,9 @@ function onConfirmCleanupSelectedItems() {
     hideModal();
 }
 
-function onSort(props: { sortBy: SortableKey; sortDesc: boolean }) {
-    sortBy.value = props.sortBy;
-    sortDesc.value = props.sortDesc;
+function onSort(sortByKey: string, sortDescending: boolean) {
+    sortBy.value = sortByKey as SortableKey;
+    sortDesc.value = sortDescending;
 }
 
 function isItemSelected(item: CleanableItem): boolean {
@@ -165,27 +175,6 @@ function toggleItemSelection(item: CleanableItem): void {
         selectedItems.value = [...selectedItems.value, item];
     } else {
         selectedItems.value = selectedItems.value.filter((selectedItem) => selectedItem.id !== item.id);
-    }
-}
-
-async function itemsProvider(ctx: { currentPage: number; perPage: number }) {
-    try {
-        const page = ctx.currentPage > 0 ? ctx.currentPage - 1 : 0;
-        const offset = page * ctx.perPage;
-        const options = new PaginationOptions({
-            offset: offset,
-            limit: ctx.perPage,
-            sortBy: sortBy.value,
-            sortDesc: sortDesc.value,
-        });
-        const operation = props.operation;
-        if (!operation) {
-            return [];
-        }
-        const result = await operation.fetchItems(options);
-        return result;
-    } catch (error) {
-        return [];
     }
 }
 
@@ -212,6 +201,38 @@ function unselectAllItems() {
     selectedItems.value = [];
 }
 
+watch(
+    () => props.totalItems,
+    (newVal) => {
+        currentPage.value = 1;
+        totalRows.value = newVal;
+    },
+);
+
+watch(
+    () => props.operation,
+    () => {
+        currentPage.value = 1;
+    },
+);
+
+watch([currentPage, sortBy, sortDesc], async () => {
+    await loadItems();
+});
+
+watch(selectedItems, (newVal) => {
+    if (newVal.length === 0) {
+        indeterminate.value = false;
+        allSelected.value = false;
+    } else if (newVal.length === totalRows.value) {
+        indeterminate.value = false;
+        allSelected.value = true;
+    } else {
+        indeterminate.value = true;
+        allSelected.value = false;
+    }
+});
+
 defineExpose({
     openModal,
     selectedItems,
@@ -227,18 +248,17 @@ defineExpose({
         <div>
             {{ captionText }}
         </div>
-        <BTable
+
+        <GTable
             v-if="operation"
-            v-model="items"
-            :fields="fields"
-            :items="itemsProvider"
-            :per-page="MAXIMUM_ITEMS_PER_PAGE"
-            :current-page="currentPage"
-            :busy="isBusy"
             hover
-            no-sort-reset
-            no-local-sorting
-            no-provider-filtering
+            :fields="fields"
+            :items="items"
+            :sort-by="sortBy"
+            :sort-desc="sortDesc"
+            :loading="isBusy"
+            :local-filtering="false"
+            :local-sorting="false"
             sticky-header="50vh"
             data-test-id="review-table"
             @sort-changed="onSort">
@@ -249,22 +269,26 @@ defineExpose({
                     data-test-id="select-all-checkbox"
                     @change="toggleSelectAll" />
             </template>
+
             <template v-slot:cell(selected)="data">
                 <BFormCheckbox
                     :key="data.index"
                     :checked="isItemSelected(data.item)"
                     @change="toggleItemSelection(data.item)" />
             </template>
+
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
-        </BTable>
+        </GTable>
+
         <template v-slot:modal-footer>
             <BPagination
                 v-if="hasPages"
                 v-model="currentPage"
                 :total-rows="totalRows"
                 :per-page="MAXIMUM_ITEMS_PER_PAGE" />
+
             <BButton
                 v-b-modal.confirmation-modal
                 :disabled="!hasItemsSelected"
