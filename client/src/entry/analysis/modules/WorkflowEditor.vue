@@ -44,7 +44,8 @@ export default {
                 this.skipNextReload = false;
             }
 
-            this.version = parseInt(Query.get("version"), 10);
+            const versionParam = Query.get("version");
+            this.version = versionParam !== undefined ? parseInt(versionParam, 10) : undefined;
             this.storedWorkflowId = Query.get("id");
             this.workflowId = Query.get("workflow_id");
             const workflowId = this.workflowId || this.storedWorkflowId;
