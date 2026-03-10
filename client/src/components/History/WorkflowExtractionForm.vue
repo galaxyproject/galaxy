@@ -65,7 +65,9 @@ const toRenameInput = computed(() => {
     return null;
 });
 
-const submissionDisabled = computed(() => hasUnnamedSelectedInputs.value || !workflowName.value.trim());
+const submissionDisabled = computed(
+    () => hasUnnamedSelectedInputs.value || !workflowName.value.trim() || hasNoSelectedSteps.value,
+);
 
 const submissionDisabledMsg = computed(() => {
     if (!workflowName.value.trim()) {
@@ -73,6 +75,9 @@ const submissionDisabledMsg = computed(() => {
     }
     if (hasUnnamedSelectedInputs.value) {
         return "All selected inputs must have a name";
+    }
+    if (hasNoSelectedSteps.value) {
+        return "At least one workflow step must be selected";
     }
     return "";
 });
@@ -117,6 +122,10 @@ const selectedInputs = computed<
     return retVal;
 });
 
+/** No workflow steps are selected: the workflow would have no steps */
+const hasNoSelectedSteps = computed(() => !jobsList.value?.some((job) => job.checked));
+
+/** For any inputs selected for inclusion as workflow steps, check if any are missing a name/label */
 const hasUnnamedSelectedInputs = computed(() => {
     return selectedInputs.value.some((input) => !input.newName);
 });
