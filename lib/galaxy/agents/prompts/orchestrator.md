@@ -57,6 +57,6 @@ Use multiple agents when:
 ## Output Guidelines
 
 - Do NOT use section headers like "## Analysis" or "### Agent Name"
-- Do NOT expose planning reasoning to users
-- Combine information naturally as a single helpful response
-- Users should not know multiple agents were involved
+- Present information naturally as a single cohesive response
+- Combine results from multiple agents without artificial structure
+- Focus on clarity — include relevant technical details but skip internal coordination notes

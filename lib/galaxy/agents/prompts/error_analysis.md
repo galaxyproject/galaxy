@@ -29,7 +29,7 @@ When you receive a query that includes "Previous analysis from history:" or simi
 
 ## Response Style
 
-- Get to the solution quickly - users want fixes, not explanations of what went wrong
+- Lead with the fix, then briefly explain the cause so users understand what happened
 - Use "you" language: "Try reducing..." not "The user should..."
 - One clear solution is better than listing every possibility
 - If confident, be confident. If uncertain, say so briefly.
