@@ -13,7 +13,6 @@ from paste import httpexceptions
 from routes.middleware import RoutesMiddleware
 
 import galaxy.webapps.base.webapp
-from galaxy import util
 from galaxy.structured_app import BasicSharedApp
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
@@ -141,25 +140,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     redirect_mapper = _map_redirects(redirect_mapper)
     # Load the Routes middleware which we use for redirecting
     app = wrap_if_allowed(app, stack, RoutesMiddleware, args=(redirect_mapper,))
-    # If we're using remote_user authentication, add middleware that
-    # protects Galaxy from improperly configured authentication in the
-    # upstream server
-    if asbool(conf.get("use_remote_user", False)):
-        from tool_shed.webapp.framework.middleware.remoteuser import RemoteUser
-
-        app = wrap_if_allowed(
-            app,
-            stack,
-            RemoteUser,
-            kwargs=dict(
-                maildomain=conf.get("remote_user_maildomain", None),
-                display_servers=util.listify(conf.get("display_servers", "")),
-                admin_users=conf.get("admin_users", "").split(","),
-                remote_user_header=conf.get("remote_user_header", "HTTP_REMOTE_USER"),
-                remote_user_secret_header=conf.get("remote_user_secret", None),
-                normalize_remote_user_email=conf.get("normalize_remote_user_email", False),
-            ),
-        )
+    assert not asbool(conf.get("use_remote_user", False))
 
     # Transaction logging (apache access.log style)
     if asbool(conf.get("use_translogger", True)):
