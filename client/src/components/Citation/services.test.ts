@@ -24,14 +24,35 @@ describe("Citation", () => {
                     return HttpResponse.json(mockCitationResponseJson);
                 }),
             );
-            const citations = await getCitations("tools", "random_lines1");
-            const formattedCitation = citations?.[0]?.cite.format("bibliography", {
+            const result = await getCitations("tools", "random_lines1");
+            expect(result.warnings).toHaveLength(0);
+            const formattedCitation = result.citations?.[0]?.cite.format("bibliography", {
                 format: "html",
                 template: "apa",
                 lang: "en-US",
             });
             expect(formattedCitation).toContain("Hourahine");
             // TODO: actually test formatting here, too.
+        });
+
+        it("Should separate error entries into warnings", async () => {
+            const mockResponseWithErrors = [
+                ...mockCitationResponseJson,
+                {
+                    format: "error",
+                    error: "Tool 'missing_tool' not found. Citations for this tool may be missing.",
+                    tool_id: "missing_tool",
+                },
+            ];
+            server.use(
+                http.untyped.get("/api/histories/test-history/citations", () => {
+                    return HttpResponse.json(mockResponseWithErrors);
+                }),
+            );
+            const result = await getCitations("histories", "test-history");
+            expect(result.citations).toHaveLength(1);
+            expect(result.warnings).toHaveLength(1);
+            expect(result.warnings[0]).toContain("missing_tool");
         });
     });
 });
