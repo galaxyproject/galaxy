@@ -96,6 +96,19 @@ class QueryRouterAgent(BaseGalaxyAgent):
             }
         )
 
+    async def _execute_handoff(
+        self, ctx: RunContext[GalaxyAgentDependencies], agent_class, input_text: str, target_agent: str
+    ) -> str:
+        """Execute a handoff to a specialist agent."""
+        log.info(f"Router handing off to {target_agent}: '{input_text[:100]}...'")
+        try:
+            agent = agent_class(ctx.deps)
+            response = await agent.process(input_text)
+            return self._serialize_handoff(response, target_agent)
+        except Exception as e:
+            log.error(f"{target_agent} handoff failed: {e}")
+            return "I encountered an issue. Please try again or contact support."
+
     def _create_error_analysis_handoff(self):
         async def hand_off_to_error_analysis(
             ctx: RunContext[GalaxyAgentDependencies],
@@ -114,17 +127,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             """
             from .error_analysis import ErrorAnalysisAgent
 
-            log.info(f"Router handing off to error_analysis: '{task[:100]}...'")
-
-            try:
-                agent = ErrorAnalysisAgent(ctx.deps)
-                response = await agent.process(task)
-                return self._serialize_handoff(response, "error_analysis")
-            except Exception as e:
-                log.error(f"Error analysis handoff failed: {e}")
-                return (
-                    f"I encountered an issue while analyzing the error. Please try again or contact support. Error: {e}"
-                )
+            return await self._execute_handoff(ctx, ErrorAnalysisAgent, task, "error_analysis")
 
         return hand_off_to_error_analysis
 
@@ -149,17 +152,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             """
             from .custom_tool import CustomToolAgent
 
-            log.info(f"Router handing off to custom_tool: '{request[:100]}...'")
-
-            try:
-                agent = CustomToolAgent(ctx.deps)
-                response = await agent.process(request)
-                return self._serialize_handoff(response, "custom_tool")
-            except Exception as e:
-                log.error(f"Custom tool handoff failed: {e}")
-                return (
-                    f"I encountered an issue while creating the tool. Please try again or contact support. Error: {e}"
-                )
+            return await self._execute_handoff(ctx, CustomToolAgent, request, "custom_tool")
 
         return hand_off_to_custom_tool
 
@@ -186,15 +179,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             """
             from .tools import ToolRecommendationAgent
 
-            log.info(f"Router handing off to tool_recommendation: '{query[:100]}...'")
-
-            try:
-                agent = ToolRecommendationAgent(ctx.deps)
-                response = await agent.process(query)
-                return self._serialize_handoff(response, "tool_recommendation")
-            except Exception as e:
-                log.error(f"Tool recommendation handoff failed: {e}")
-                return f"I encountered an issue while searching for tools. Please try again or browse the tool panel directly. Error: {e}"
+            return await self._execute_handoff(ctx, ToolRecommendationAgent, query, "tool_recommendation")
 
         return hand_off_to_tool_recommendation
 
@@ -231,15 +216,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             """
             from .history import HistoryAgent
 
-            log.info(f"Router handing off to history: '{request[:100]}...'")
-
-            try:
-                agent = HistoryAgent(ctx.deps)
-                response = await agent.process(request, context=None)
-                return self._serialize_handoff(response, "history")
-            except Exception as e:
-                log.error(f"History handoff failed: {e}")
-                return f"I encountered an issue while analyzing your history. Please try again or contact support. Error: {e}"
+            return await self._execute_handoff(ctx, HistoryAgent, request, "history")
 
         return hand_off_to_history_agent
 
@@ -262,16 +239,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             """
             from .orchestrator import WorkflowOrchestratorAgent
 
-            log.info(f"Router handing off to orchestrator for next-step advice: '{request[:100]}...'")
-
-            try:
-                orchestrator = WorkflowOrchestratorAgent(ctx.deps)
-                response = await orchestrator.process(request, context=None)
-                return self._serialize_handoff(response, "next_step_advisor")
-
-            except Exception as e:
-                log.error(f"Next-step advisor handoff failed: {e}")
-                return f"I encountered an issue while analyzing your history for suggestions. Please try again or contact support. Error: {e}"
+            return await self._execute_handoff(ctx, WorkflowOrchestratorAgent, request, "next_step_advisor")
 
         return hand_off_to_next_step_advisor
 
@@ -295,18 +263,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             """
             from .orchestrator import WorkflowOrchestratorAgent
 
-            log.info(f"Router handing off to orchestrator: '{request[:100]}...'")
-
-            try:
-                orchestrator = WorkflowOrchestratorAgent(ctx.deps)
-                response = await orchestrator.process(request, context=None)
-                return self._serialize_handoff(response, "orchestrator")
-
-            except Exception as e:
-                log.error(f"Orchestrator handoff failed: {e}")
-                return (
-                    f"I encountered an issue coordinating the response. Please try again or contact support. Error: {e}"
-                )
+            return await self._execute_handoff(ctx, WorkflowOrchestratorAgent, request, "orchestrator")
 
         return hand_off_to_orchestrator
 

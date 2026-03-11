@@ -54,9 +54,7 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         self.agent_ops = AgentOperationsManager(app=self.app, trans=self.trans)
 
     def test_create_history(self):
-        mock_history = mock.MagicMock()
-        mock_history.name = "Test History"
-        mock_history.id = "abc123"
+        mock_history = {"id": 123, "name": "Test History", "state": "new"}
 
         mock_service = mock.MagicMock()
         mock_service.create.return_value = mock_history
@@ -67,7 +65,8 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
             result = self.agent_ops.create_history("Test History")
 
         mock_service.create.assert_called_once()
-        assert result.name == "Test History"
+        assert result["name"] == "Test History"
+        assert isinstance(result["id"], str)  # ID should be encoded
 
     def test_list_histories(self):
         mock_histories = [
@@ -292,8 +291,12 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         ):
             result = self.agent_ops.run_tool("hist123", "cat1", {"input1": "data1"})
 
-        assert "jobs" in result
-        mock_service._create.assert_called_once()
+        assert result["jobs"] == [{"id": "job123"}]
+        assert result["outputs"] == [{"id": "dataset123"}]
+        call_args = mock_service._create.call_args
+        payload = call_args[0][1] if call_args[0] else call_args[1].get("payload")
+        assert payload["tool_id"] == "cat1"
+        assert payload["history_id"] == "hist123"
 
     def test_get_job_status(self):
         mock_job = mock.MagicMock()

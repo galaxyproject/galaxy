@@ -174,7 +174,9 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 log.info(f"Orchestrator: Agent '{agent_name}' completed. Response length: {len(response.content)}")
                 log.info(f"Orchestrator: Agent '{agent_name}' response preview: {response.content[:500]}...")
 
-                current_query = f"{query}\n\nPrevious analysis from {agent_name}: {response.content}"
+                # Cap previous response to avoid unbounded query growth
+                prev_content = response.content[:2000]
+                current_query = f"{query}\n\nPrevious analysis from {agent_name}: {prev_content}"
                 log.info(f"Orchestrator: Updated query for next agent, total length: {len(current_query)}")
 
             except asyncio.TimeoutError:

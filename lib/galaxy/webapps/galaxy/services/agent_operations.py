@@ -58,7 +58,6 @@ class AgentOperationsManager:
         self._invocations_service = None
         self._hda_manager = None
         self._dataset_collections_service = None
-        log.debug("AgentOperationsManager initialized")
 
     def _encode_id(self, value: int) -> str:
         return self.trans.security.encode_id(value)
@@ -183,8 +182,8 @@ class AgentOperationsManager:
                             "version": tool.version,
                         }
                     )
-            except Exception as e:
-                log.debug(f"Skipping tool {tool_id}: {str(e)}")
+            except (KeyError, AttributeError) as e:
+                log.debug(f"Skipping tool {tool_id}: {e}")
                 continue
 
         return {"query": query, "tools": tools, "count": len(tools)}

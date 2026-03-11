@@ -6,6 +6,7 @@ Uses Streamable HTTP transport with stateless mode for multi-worker compatibilit
 """
 
 import logging
+from contextlib import contextmanager
 from typing import Any
 
 from fastmcp import (
@@ -70,6 +71,18 @@ def get_mcp_url_builder(fallback_base_url: str):
     return MCPUrlBuilder(fallback_base_url)
 
 
+@contextmanager
+def _mcp_error_handler(operation: str):
+    """Standard error handling for MCP tool calls."""
+    try:
+        yield
+    except ValueError:
+        raise
+    except Exception as e:
+        logger.error(f"MCP {operation}: {e}")
+        raise ValueError(f"{operation} failed") from e
+
+
 def get_mcp_app(gx_app):
     """Create and configure the MCP server application."""
     fastmcp_settings.stateless_http = True
@@ -106,12 +119,9 @@ def get_mcp_app(gx_app):
         Checks that the API key is valid and returns basic info about
         the Galaxy server and current user.
         """
-        try:
+        with _mcp_error_handler("connect"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.connect()
-        except Exception as e:
-            logger.error(f"Failed to connect to Galaxy: {str(e)}")
-            raise ValueError(f"Failed to connect to Galaxy: {str(e)}") from e
 
     @mcp.tool()
     def search_tools(query: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
@@ -119,12 +129,9 @@ def get_mcp_app(gx_app):
 
         Matches against tool names, IDs, and descriptions.
         """
-        try:
+        with _mcp_error_handler("search_tools"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.search_tools(query)
-        except Exception as e:
-            logger.error(f"Failed to search tools: {str(e)}")
-            raise ValueError(f"Failed to search tools: {str(e)}") from e
 
     @mcp.tool()
     def get_tool_details(tool_id: str, api_key: str, ctx: MCPContext, io_details: bool = False) -> dict[str, Any]:
@@ -133,12 +140,9 @@ def get_mcp_app(gx_app):
         Set io_details=true to get full input/output specifications
         needed for running the tool.
         """
-        try:
+        with _mcp_error_handler("get_tool_details"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_tool_details(tool_id, io_details)
-        except Exception as e:
-            logger.error(f"Failed to get tool details for {tool_id}: {str(e)}")
-            raise ValueError(f"Failed to get tool details for '{tool_id}': {str(e)}") from e
 
     @mcp.tool()
     def list_histories(
@@ -149,12 +153,9 @@ def get_mcp_app(gx_app):
         Histories are containers for datasets and analysis results.
         Optionally filter by name (substring match).
         """
-        try:
+        with _mcp_error_handler("list_histories"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.list_histories(limit, offset, name)
-        except Exception as e:
-            logger.error(f"Failed to list histories: {str(e)}")
-            raise ValueError(f"Failed to list histories: {str(e)}") from e
 
     @mcp.tool()
     def run_tool(
@@ -165,12 +166,9 @@ def get_mcp_app(gx_app):
         Use get_tool_details() with io_details=true first to learn
         what inputs the tool requires.
         """
-        try:
+        with _mcp_error_handler("run_tool"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.run_tool(history_id, tool_id, inputs)
-        except Exception as e:
-            logger.error(f"Failed to run tool {tool_id}: {str(e)}")
-            raise ValueError(f"Failed to run tool '{tool_id}' in history '{history_id}': {str(e)}") from e
 
     @mcp.tool()
     def get_job_status(job_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
@@ -179,12 +177,9 @@ def get_mcp_app(gx_app):
         Use after run_tool() to check if the job finished and whether
         it succeeded or failed.
         """
-        try:
+        with _mcp_error_handler("get_job_status"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_job_status(job_id)
-        except Exception as e:
-            logger.error(f"Failed to get job status for {job_id}: {str(e)}")
-            raise ValueError(f"Failed to get status for job '{job_id}': {str(e)}") from e
 
     @mcp.tool()
     def create_history(name: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
@@ -193,12 +188,9 @@ def get_mcp_app(gx_app):
         Histories are containers for datasets and analysis results.
         Create one before uploading files or running analyses.
         """
-        try:
+        with _mcp_error_handler("create_history"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.create_history(name)
-        except Exception as e:
-            logger.error(f"Failed to create history: {str(e)}")
-            raise ValueError(f"Failed to create history '{name}': {str(e)}") from e
 
     @mcp.tool()
     def get_history_details(history_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
@@ -207,12 +199,9 @@ def get_mcp_app(gx_app):
         Returns metadata and summary stats. Use get_history_contents()
         to get the actual datasets.
         """
-        try:
+        with _mcp_error_handler("get_history_details"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_history_details(history_id)
-        except Exception as e:
-            logger.error(f"Failed to get history details for {history_id}: {str(e)}")
-            raise ValueError(f"Failed to get details for history '{history_id}': {str(e)}") from e
 
     @mcp.tool()
     def get_history_contents(
@@ -231,22 +220,16 @@ def get_mcp_app(gx_app):
         'update_time-dsc', 'name-asc'.
         Set deleted=true to include deleted items, visible=false to include hidden items.
         """
-        try:
+        with _mcp_error_handler("get_history_contents"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_history_contents(history_id, limit, offset, order, deleted, visible)
-        except Exception as e:
-            logger.error(f"Failed to get history contents for {history_id}: {str(e)}")
-            raise ValueError(f"Failed to get contents for history '{history_id}': {str(e)}") from e
 
     @mcp.tool()
     def get_dataset_details(dataset_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """Get detailed information about a specific dataset."""
-        try:
+        with _mcp_error_handler("get_dataset_details"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_dataset_details(dataset_id)
-        except Exception as e:
-            logger.error(f"Failed to get dataset details for {dataset_id}: {str(e)}")
-            raise ValueError(f"Failed to get details for dataset '{dataset_id}': {str(e)}") from e
 
     @mcp.tool()
     def get_collection_details(
@@ -257,12 +240,9 @@ def get_mcp_app(gx_app):
         Dataset collections group related datasets (e.g., paired-end reads, lists of samples).
         Use max_elements to limit the number of elements returned for large collections.
         """
-        try:
+        with _mcp_error_handler("get_collection_details"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_collection_details(collection_id, max_elements)
-        except Exception as e:
-            logger.error(f"Failed to get collection details for {collection_id}: {str(e)}")
-            raise ValueError(f"Failed to get details for collection '{collection_id}': {str(e)}") from e
 
     @mcp.tool()
     def upload_file_from_url(
@@ -279,12 +259,9 @@ def get_mcp_app(gx_app):
         Runs as an async job; use get_job_status() to monitor progress.
         Common file_types: 'fasta', 'fastq', 'bam', 'vcf', 'bed', 'tabular'.
         """
-        try:
+        with _mcp_error_handler("upload_file_from_url"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.upload_file_from_url(history_id, url, file_type, dbkey, file_name)
-        except Exception as e:
-            logger.error(f"Failed to upload file from URL {url}: {str(e)}")
-            raise ValueError(f"Failed to upload file from URL '{url}': {str(e)}") from e
 
     # ==================== Workflow Tools ====================
 
@@ -299,12 +276,9 @@ def get_mcp_app(gx_app):
         search: str | None = None,
     ) -> dict[str, Any]:
         """List user's workflows with optional filtering."""
-        try:
+        with _mcp_error_handler("list_workflows"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.list_workflows(limit, offset, show_published, show_shared, search)
-        except Exception as e:
-            logger.error(f"Failed to list workflows: {str(e)}")
-            raise ValueError(f"Failed to list workflows: {str(e)}") from e
 
     @mcp.tool()
     def get_workflow_details(
@@ -314,12 +288,9 @@ def get_mcp_app(gx_app):
 
         Optionally specify a version number to get a specific workflow version.
         """
-        try:
+        with _mcp_error_handler("get_workflow_details"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_workflow_details(workflow_id, version)
-        except Exception as e:
-            logger.error(f"Failed to get workflow details for {workflow_id}: {str(e)}")
-            raise ValueError(f"Failed to get details for workflow '{workflow_id}': {str(e)}") from e
 
     @mcp.tool()
     def invoke_workflow(
@@ -339,12 +310,9 @@ def get_mcp_app(gx_app):
         Provide history_id to run in an existing history, or history_name
         to create a new history for this invocation.
         """
-        try:
+        with _mcp_error_handler("invoke_workflow"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.invoke_workflow(workflow_id, history_id, inputs, parameters, history_name)
-        except Exception as e:
-            logger.error(f"Failed to invoke workflow {workflow_id}: {str(e)}")
-            raise ValueError(f"Failed to invoke workflow '{workflow_id}': {str(e)}") from e
 
     @mcp.tool()
     def get_invocations(
@@ -356,44 +324,32 @@ def get_mcp_app(gx_app):
         offset: int = 0,
     ) -> dict[str, Any]:
         """List workflow invocations, optionally filtered by workflow or history."""
-        try:
+        with _mcp_error_handler("get_invocations"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_invocations(workflow_id, history_id, limit, offset)
-        except Exception as e:
-            logger.error(f"Failed to get invocations: {str(e)}")
-            raise ValueError(f"Failed to get invocations: {str(e)}") from e
 
     @mcp.tool()
     def get_invocation_details(invocation_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """Get detailed information about a specific workflow invocation."""
-        try:
+        with _mcp_error_handler("get_invocation_details"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_invocation_details(invocation_id)
-        except Exception as e:
-            logger.error(f"Failed to get invocation details for {invocation_id}: {str(e)}")
-            raise ValueError(f"Failed to get details for invocation '{invocation_id}': {str(e)}") from e
 
     @mcp.tool()
     def cancel_workflow_invocation(invocation_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """Cancel a running workflow invocation."""
-        try:
+        with _mcp_error_handler("cancel_workflow_invocation"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.cancel_workflow_invocation(invocation_id)
-        except Exception as e:
-            logger.error(f"Failed to cancel invocation {invocation_id}: {str(e)}")
-            raise ValueError(f"Failed to cancel invocation '{invocation_id}': {str(e)}") from e
 
     # ==================== Tool Enhancement Tools ====================
 
     @mcp.tool()
     def get_tool_panel(api_key: str, ctx: MCPContext, view: str | None = None) -> dict[str, Any]:
         """Get the tool panel (toolbox) hierarchy of sections and tools."""
-        try:
+        with _mcp_error_handler("get_tool_panel"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_tool_panel(view)
-        except Exception as e:
-            logger.error(f"Failed to get tool panel: {str(e)}")
-            raise ValueError(f"Failed to get tool panel: {str(e)}") from e
 
     @mcp.tool()
     def get_tool_run_examples(
@@ -404,22 +360,16 @@ def get_mcp_app(gx_app):
         Useful for learning how to properly format tool inputs.
         Optionally specify tool_version to get examples for a specific version.
         """
-        try:
+        with _mcp_error_handler("get_tool_run_examples"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_tool_run_examples(tool_id, tool_version)
-        except Exception as e:
-            logger.error(f"Failed to get tool run examples for {tool_id}: {str(e)}")
-            raise ValueError(f"Failed to get run examples for tool '{tool_id}': {str(e)}") from e
 
     @mcp.tool()
     def get_tool_citations(tool_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """Get citation information (DOIs, BibTeX) for a tool."""
-        try:
+        with _mcp_error_handler("get_tool_citations"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_tool_citations(tool_id)
-        except Exception as e:
-            logger.error(f"Failed to get tool citations for {tool_id}: {str(e)}")
-            raise ValueError(f"Failed to get citations for tool '{tool_id}': {str(e)}") from e
 
     @mcp.tool()
     def search_tools_by_keywords(keywords: list[str], api_key: str, ctx: MCPContext) -> dict[str, Any]:
@@ -428,24 +378,18 @@ def get_mcp_app(gx_app):
         More flexible than search_tools: provide multiple keywords and get
         tools matching any of them.
         """
-        try:
+        with _mcp_error_handler("search_tools_by_keywords"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.search_tools_by_keywords(keywords)
-        except Exception as e:
-            logger.error(f"Failed to search tools by keywords: {str(e)}")
-            raise ValueError(f"Failed to search tools by keywords: {str(e)}") from e
 
     # ==================== Supplementary Tools ====================
 
     @mcp.tool()
     def list_history_ids(api_key: str, ctx: MCPContext, limit: int = 100) -> dict[str, Any]:
         """Get a simplified list of history IDs and names (lighter than list_histories)."""
-        try:
+        with _mcp_error_handler("list_history_ids"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.list_history_ids(limit)
-        except Exception as e:
-            logger.error(f"Failed to list history IDs: {str(e)}")
-            raise ValueError(f"Failed to list history IDs: {str(e)}") from e
 
     @mcp.tool()
     def get_job_details(
@@ -456,12 +400,9 @@ def get_mcp_app(gx_app):
         Useful for understanding how a dataset was generated and the
         job's execution status.
         """
-        try:
+        with _mcp_error_handler("get_job_details"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_job_details(dataset_id, history_id)
-        except Exception as e:
-            logger.error(f"Failed to get job details for dataset {dataset_id}: {str(e)}")
-            raise ValueError(f"Failed to get job details for dataset '{dataset_id}': {str(e)}") from e
 
     @mcp.tool()
     def download_dataset(dataset_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
@@ -469,32 +410,23 @@ def get_mcp_app(gx_app):
 
         The dataset must be in 'ok' state to be downloadable.
         """
-        try:
+        with _mcp_error_handler("download_dataset"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.download_dataset(dataset_id)
-        except Exception as e:
-            logger.error(f"Failed to get download info for dataset {dataset_id}: {str(e)}")
-            raise ValueError(f"Failed to get download info for dataset '{dataset_id}': {str(e)}") from e
 
     @mcp.tool()
     def get_server_info(api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """Get Galaxy server version, configuration, and capabilities."""
-        try:
+        with _mcp_error_handler("get_server_info"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_server_info()
-        except Exception as e:
-            logger.error(f"Failed to get server info: {str(e)}")
-            raise ValueError(f"Failed to get server info: {str(e)}") from e
 
     @mcp.tool()
     def get_user(api_key: str, ctx: MCPContext) -> dict[str, Any]:
         """Get current authenticated user information."""
-        try:
+        with _mcp_error_handler("get_user"):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.get_user()
-        except Exception as e:
-            logger.error(f"Failed to get user info: {str(e)}")
-            raise ValueError(f"Failed to get user info: {str(e)}") from e
 
     mcp_app = mcp.http_app()
 

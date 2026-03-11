@@ -234,6 +234,7 @@ def get_mcp_lifespan(gx_app):
         mcp_app = get_mcp_app(gx_app)
         return mcp_app, mcp_app.lifespan
     except ImportError:
+        log.info("MCP server dependencies not installed (fastmcp), skipping")
         return None, None
     except Exception:
         log.exception("Failed to initialize MCP server")
