@@ -852,66 +852,63 @@ class GalaxyInteractorApi:
 
             credentials_context = credentials_context_list
 
-        try:
-            for _ in range(DEFAULT_TOOL_TEST_WAIT):
-                submit_response = self.__submit_tool(
-                    history_id,
-                    tool_id=testdef.tool_id,
-                    tool_input=inputs_tree,
-                    tool_version=testdef.tool_version,
-                    use_legacy_api=submit_with_legacy_api,
-                    credentials_context=credentials_context,
-                )
-                if _are_tool_inputs_not_ready(submit_response):
-                    print("Tool inputs not ready yet")
-                    time.sleep(1)
-                    continue
-                else:
-                    break
-            submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
-            if not submit_with_legacy_api:
-                tool_request_id = submit_response_object["tool_request_id"]
-                successful = self.wait_on_tool_request(tool_request_id)
-                if not successful:
-                    request = self.get_tool_request(tool_request_id) or {}
-                    raise RunToolException(
-                        f"Tool request failure - state {request.get('state')}, message: {request.get('state_message')}",
-                        inputs_tree,
-                    )
-                job_refs = self.jobs_for_tool_request(tool_request_id)
-                outputs = OutputsDict()
-                output_collections = {}
-                if len(job_refs) != 1:
-                    raise Exception(
-                        f"Found incorrect number of jobs for tool request - was expecting a single job {job_refs}"
-                    )
-                assert len(job_refs) == 1, job_refs
-                job_id = job_refs[0]["id"]
-                # If credentials were created for this test, wait for job completion
-                # before the finally block cleans them up, so the job can read them.
-                if created_credentials:
-                    self.wait_for_job(job_id, history_id, testdef.maxseconds or DEFAULT_TOOL_TEST_WAIT)
-                jobs = [self.__get_job(job_id).json()]
-                job_outputs = self.job_outputs(job_id)
-                for job_output in job_outputs:
-                    if "dataset" in job_output:
-                        outputs[job_output["name"]] = job_output["dataset"]
-                    else:
-                        output_collections[job_output["name"]] = job_output["dataset_collection_instance"]
+        for _ in range(DEFAULT_TOOL_TEST_WAIT):
+            submit_response = self.__submit_tool(
+                history_id,
+                tool_id=testdef.tool_id,
+                tool_input=inputs_tree,
+                tool_version=testdef.tool_version,
+                use_legacy_api=submit_with_legacy_api,
+                credentials_context=credentials_context,
+            )
+            if _are_tool_inputs_not_ready(submit_response):
+                print("Tool inputs not ready yet")
+                time.sleep(1)
+                continue
             else:
-                outputs = self.__dictify_outputs(submit_response_object)
-                output_collections = self.__dictify_output_collections(submit_response_object)
-                jobs = submit_response_object["jobs"]
-            try:
-                return RunToolResponse(
-                    inputs=inputs_tree,
-                    outputs=outputs,
-                    output_collections=output_collections,
-                    jobs=jobs,
+                break
+        submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
+        if not submit_with_legacy_api:
+            tool_request_id = submit_response_object["tool_request_id"]
+            successful = self.wait_on_tool_request(tool_request_id)
+            if not successful:
+                request = self.get_tool_request(tool_request_id) or {}
+                raise RunToolException(
+                    f"Tool request failure - state {request.get('state')}, message: {request.get('state_message')}",
+                    inputs_tree,
                 )
-            except KeyError:
-                message = f"Error creating a job for these tool inputs - {submit_response_object.get('err_msg', 'unknown error')}"
-                raise RunToolException(message, inputs_tree)
+            job_refs = self.jobs_for_tool_request(tool_request_id)
+            outputs = OutputsDict()
+            output_collections = {}
+            if len(job_refs) != 1:
+                raise Exception(
+                    f"Found incorrect number of jobs for tool request - was expecting a single job {job_refs}"
+                )
+            assert len(job_refs) == 1, job_refs
+            job_id = job_refs[0]["id"]
+            if created_credentials:
+                self.wait_for_job(job_id, history_id, testdef.maxseconds or DEFAULT_TOOL_TEST_WAIT)
+            jobs = [self.__get_job(job_id).json()]
+            job_outputs = self.job_outputs(job_id)
+            for job_output in job_outputs:
+                if "dataset" in job_output:
+                    outputs[job_output["name"]] = job_output["dataset"]
+                else:
+                    output_collections[job_output["name"]] = job_output["dataset_collection_instance"]
+        else:
+            outputs = self.__dictify_outputs(submit_response_object)
+            output_collections = self.__dictify_output_collections(submit_response_object)
+            jobs = submit_response_object["jobs"]
+        try:
+            return RunToolResponse(
+                inputs=inputs_tree,
+                outputs=outputs,
+                output_collections=output_collections,
+                jobs=jobs,
+            )
+        except KeyError:
+            message = f"Error creating a job for these tool inputs - {submit_response_object.get('err_msg', 'unknown error')}"
+            raise RunToolException(message, inputs_tree)
         finally:
             # Clean up created credentials
             for cred_info in created_credentials:
@@ -921,7 +918,6 @@ class GalaxyInteractorApi:
                     )
                     raise_for_status(delete_response)
                 except Exception as e:
-                    # Log but don't fail the test if cleanup fails
                     print(f"Warning: Failed to delete test credentials: {e}")
 
     def _create_collection(self, history_id, collection_def):
