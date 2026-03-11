@@ -232,6 +232,13 @@ function toggleSidebar(toggle: string = "", to: string | null = null) {
     activityStore.toggleSideBar(toggle);
 }
 
+function onPanelClicked(activity: Activity) {
+    if (activity.id === "chatgxy") {
+        activityStore.toggleChatPanel();
+    }
+    toggleSidebar(activity.id, activity.to);
+}
+
 function onActivityClicked(activity: Activity) {
     if (activity.click) {
         emit("activityClicked", activity.id);
@@ -313,7 +320,7 @@ defineExpose({
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to || ''"
-                                @click="toggleSidebar(activity.id, activity.to)" />
+                                @click="onPanelClicked(activity)" />
                             <ActivityItem
                                 v-else
                                 :id="`${activity.id}`"

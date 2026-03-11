@@ -3,10 +3,9 @@ import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faClock, faColumns, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
-import { getGalaxyInstance } from "@/app";
+import { useActivityStore } from "@/stores/activityStore";
 import { useChatStore } from "@/stores/chatStore";
 import { useSidebarSelection } from "@/composables/useSidebarSelection";
 
@@ -17,7 +16,7 @@ import SidebarList from "@/components/Common/SidebarList.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-const router = useRouter();
+const activityStore = useActivityStore("default");
 
 const chatHistory = ref<ChatHistoryItem[]>([]);
 const loading = ref(false);
@@ -56,22 +55,16 @@ function handleItemClick(item: ChatHistoryItem, index: number, event: MouseEvent
     if (handleSelectionClick(item, index, event)) {
         return;
     }
-    const Galaxy = getGalaxyInstance();
-    if (Galaxy?.frame?.active) {
-        // @ts-ignore - monkeypatched router, second arg is RouterPushOptions
-        router.push(`/chatgxy/${item.id}?compact=true`, { title: "ChatGXY" });
-    } else {
-        router.push(`/chatgxy/${item.id}`);
+    activityStore.currentChatExchangeId = item.id;
+    if (!activityStore.chatPanelOpen) {
+        activityStore.chatPanelOpen = true;
     }
 }
 
 function startNewChat() {
-    const Galaxy = getGalaxyInstance();
-    if (Galaxy?.frame?.active) {
-        // @ts-ignore - monkeypatched router, second arg is RouterPushOptions
-        router.push("/chatgxy?compact=true", { title: "ChatGXY" });
-    } else {
-        router.push("/chatgxy");
+    activityStore.currentChatExchangeId = undefined;
+    if (!activityStore.chatPanelOpen) {
+        activityStore.chatPanelOpen = true;
     }
 }
 

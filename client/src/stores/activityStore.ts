@@ -26,6 +26,13 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     const activities: Ref<Array<Activity>> = useUserLocalStorage(`activity-store-activities-${scope}`, []);
     const activityMeta: Ref<Record<string, ActivityMeta>> = ref({});
 
+    const chatPanelOpen = useUserLocalStorage(`activity-store-chat-panel-open-${scope}`, false);
+    const currentChatExchangeId = ref<string | undefined>(undefined);
+
+    function toggleChatPanel() {
+        chatPanelOpen.value = !chatPanelOpen.value;
+    }
+
     const { hashedUserId } = useHashedUserId();
 
     const customDefaultActivities = ref<Activity[] | null>(null);
@@ -231,6 +238,9 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         setAll,
         restore,
         sync,
+        chatPanelOpen,
+        currentChatExchangeId,
+        toggleChatPanel,
         customDefaultActivities,
         currentDefaultActivities,
         overrideDefaultActivities,
