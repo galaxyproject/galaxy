@@ -522,6 +522,48 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         new_update_time = history["update_time"]
         assert original_update_time == new_update_time
 
+    def test_copy_history_does_not_duplicate_tags(self):
+        history_id = self.dataset_populator.new_history()
+        # Create a standalone dataset and tag it
+        new_hda = self.dataset_populator.new_dataset(history_id, content="tagged dataset")
+        hda_id = new_hda["id"]
+        self.dataset_populator.tag_dataset(history_id, hda_id, tags=["hda_tag"])
+        # Create a collection and tag it
+        fetch_response = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["Hello", "World"], direct_upload=True
+        )
+        collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response.json())
+        hdca_id = collection["id"]
+        self._put(
+            f"histories/{history_id}/contents/dataset_collections/{hdca_id}",
+            data={"tags": ["hdca_tag"]},
+            json=True,
+        ).raise_for_status()
+        # Also tag a dataset within the collection
+        element_hda_id = collection["elements"][0]["object"]["id"]
+        self.dataset_populator.tag_dataset(history_id, element_hda_id, tags=["element_tag"])
+
+        # Copy the history
+        copied_history_response = self.dataset_populator.copy_history(history_id)
+        copied_history_response.raise_for_status()
+        copied_history = copied_history_response.json()
+        copied_history_id = copied_history["id"]
+
+        # Verify standalone HDA tags are not duplicated
+        copied_contents = self._get(f"histories/{copied_history_id}/contents").json()
+        copied_hdas = [c for c in copied_contents if c["history_content_type"] == "dataset" and c["visible"]]
+        assert len(copied_hdas) == 1
+        copied_hda_details = self.dataset_populator.get_history_dataset_details(
+            history_id=copied_history_id, dataset_id=copied_hdas[0]["id"]
+        )
+        assert copied_hda_details["tags"] == ["hda_tag"], f"Expected ['hda_tag'] but got {copied_hda_details['tags']}"
+
+        # Verify HDCA tags are not duplicated
+        copied_collection = self.dataset_populator.get_history_collection_details(
+            history_id=copied_history_id, history_content_type="dataset_collection"
+        )
+        assert copied_collection["tags"] == ["hdca_tag"], f"Expected ['hdca_tag'] but got {copied_collection['tags']}"
+
     # TODO: (CE) test_create_from_copy
     def test_import_from_model_store_dict(self):
         response = self.dataset_populator.create_from_store(store_dict=history_model_store_dict())
