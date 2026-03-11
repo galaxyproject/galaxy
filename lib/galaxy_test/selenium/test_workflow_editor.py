@@ -4,7 +4,6 @@ from typing import (
     Optional,
 )
 
-import pytest
 import yaml
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
@@ -847,8 +846,6 @@ steps:
         self.workflow_editor_connect("nested_workflow#workflow_output", "metadata_bam#input_bam")
         self.assert_connected("nested_workflow#workflow_output", "metadata_bam#input_bam")
 
-    @pytest.mark.xfail
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_edit_subworkflow(self):
         self.open_in_workflow_editor("""
@@ -863,10 +860,13 @@ steps:
           - tool_id: create_2
             label: create_2
 """)
+        # Save after auto-layout so there are no unsaved changes
+        self.assert_workflow_has_changes_and_save()
         editor = self.components.workflow_editor
         node = editor.node._(label="nested_workflow")
         node.wait_for_and_click()
         editor.edit_subworkflow.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
         node = editor.node._(label="create_2")
         node.wait_for_and_click()
 

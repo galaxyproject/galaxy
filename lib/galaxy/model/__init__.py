@@ -1841,7 +1841,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 if obj.name not in out_data:
                     out_collections[obj.name] = obj.dataset_collection_instance
                 # else this is a mapped over output
-        out_collections.update([(obj.name, obj.dataset_collection) for obj in self.output_dataset_collections])
+        if not exclude_implicit_outputs:
+            out_collections.update([(obj.name, obj.dataset_collection) for obj in self.output_dataset_collections])
         return IoDicts(inp_data, out_data, out_collections)
 
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
@@ -3776,13 +3777,18 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         else:
             hdcas = self.active_dataset_collections
         for hdca in hdcas:
-            new_hdca = hdca.copy(flush=False, element_destination=new_history, set_hid=False, minimize_copies=True)
+            new_hdca = hdca.copy(
+                flush=False,
+                element_destination=new_history,
+                set_hid=False,
+                minimize_copies=True,
+                target_user=target_user,
+            )
             new_history.add_dataset_collection(new_hdca, set_hid=False)
             db_session.add(new_hdca)
 
             if target_user:
                 new_hdca.copy_item_annotation(db_session, self.user, hdca, target_user, new_hdca)
-                new_hdca.copy_tags_from(target_user, hdca)
 
         new_history.hid_counter = self.hid_counter
         db_session.commit()
@@ -7878,6 +7884,7 @@ class HistoryDatasetCollectionAssociation(
         flush: bool = True,
         set_hid: bool = True,
         minimize_copies: bool = False,
+        target_user: Optional[User] = None,
     ):
         """
         Create a copy of this history dataset collection association. Copy
@@ -7906,8 +7913,9 @@ class HistoryDatasetCollectionAssociation(
         hdca.collection = collection_copy
         session = required_object_session(self)
         session.add(hdca)
-        if self.history and self.history.user:
-            hdca.copy_tags_from(self.history.user, self)
+        copy_user = target_user or (self.history.user if self.history else None)
+        if copy_user:
+            hdca.copy_tags_from(copy_user, self)
         if element_destination and set_hid:
             element_destination.stage_addition(hdca)
             element_destination.add_pending_items()

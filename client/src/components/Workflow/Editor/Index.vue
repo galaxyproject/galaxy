@@ -1095,6 +1095,9 @@ export default {
             } else if (forceSave) {
                 // when forceSave is true, save the workflow before navigating
                 proceed = await this.onSave();
+            } else {
+                // no changes to save, proceed with navigation
+                proceed = true;
             }
             if (!proceed) {
                 return;

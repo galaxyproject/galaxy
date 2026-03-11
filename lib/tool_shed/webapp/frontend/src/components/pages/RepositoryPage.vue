@@ -276,8 +276,16 @@ const canPush = computed(() => repositoryPermissions.value?.can_push || false)
 
                     <q-list bordered class="rounded-borders q-mt-md" v-if="invalidTools && invalidTools.length > 0">
                         <q-item-label header>Invalid Tools</q-item-label>
-                        <q-item v-for="invalidTool in invalidTools" :key="invalidTool">
-                            <code>{{ invalidTool }}</code>
+                        <q-item v-for="invalidTool in invalidTools" :key="invalidTool.tool_config">
+                            <q-item-section>
+                                <q-item-label>
+                                    <q-icon name="error" color="negative" class="q-mr-xs" />
+                                    <code>{{ invalidTool.tool_config }}</code>
+                                </q-item-label>
+                                <q-item-label caption v-if="invalidTool.error_message">
+                                    {{ invalidTool.error_message }}
+                                </q-item-label>
+                            </q-item-section>
                         </q-item>
                     </q-list>
                 </div>

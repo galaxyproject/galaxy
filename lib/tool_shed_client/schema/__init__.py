@@ -168,12 +168,17 @@ class RepositoryTool(BaseModel):
     # version_string_cmd: Optional[str]
 
 
+class InvalidTool(BaseModel):
+    tool_config: str
+    error_message: str
+
+
 class RepositoryRevisionMetadata(BaseModel):
     id: str
     repository: Repository
     repository_dependencies: list["RepositoryDependency"]
     tools: Optional[list["RepositoryTool"]] = None
-    invalid_tools: list[str]  # added for rendering list of invalid tools in 2.0 frontend
+    invalid_tools: list[InvalidTool]
     repository_id: str
     numeric_revision: int
     changeset_revision: str
