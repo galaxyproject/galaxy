@@ -325,6 +325,13 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
             self.export_store.collection_datasets.add(collection_dataset.id)
 
     def add_output_dataset_association(self, name, dataset_instance):
+        from galaxy.model import JOB_IO_NAME_MAX_LENGTH
+
+        if name and len(name) > JOB_IO_NAME_MAX_LENGTH:
+            raise ValueError(
+                f"Tool produced an output name that exceeds the {JOB_IO_NAME_MAX_LENGTH} character name length limit "
+                f"(got {len(name)} characters), tool is likely broken"
+            )
         assert self.export_store
         self.export_store.add_job_output_dataset_associations(self.get_job_id(), name, dataset_instance)
 

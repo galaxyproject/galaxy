@@ -345,7 +345,7 @@ def set_metadata_portable(
                 input_ext=input_ext,
             )
             collect_dynamic_outputs(job_context, output_collections)
-        except MaxDiscoveredFilesExceededError as e:
+        except (MaxDiscoveredFilesExceededError, ValueError) as e:
             final_job_state = Job.states.ERROR
             job_messages.append(
                 {
