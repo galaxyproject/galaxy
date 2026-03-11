@@ -198,6 +198,19 @@ class MetadataCollection(Mapping):
             return False
         return meta_val != meta_spec.no_value
 
+    def get_if_set(self, name: str, default=None):
+        """Return the metadata value for *name* if it is set, otherwise *default*.
+
+        Unlike plain attribute access, this checks ``element_is_set``
+        **and** that the wrapped value is truthy, preventing the common
+        ``TypeError`` from subscripting ``None``.
+        """
+        if self.element_is_set(name):
+            value = getattr(self, name)
+            if value:
+                return value
+        return default
+
     def get_metadata_parameter(self, name, **kwd):
         if name in self.spec:
             field = self.spec[name].param.get_field(getattr(self, name), self, None, **kwd)

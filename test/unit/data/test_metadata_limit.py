@@ -42,3 +42,24 @@ def test_hda_below_limit(sa_session):
 def test_hda_above_limit(sa_session):
     hda = create_bed_data(sa_session=sa_session, string_size=1000)
     assert not hda.metadata.column_names
+
+
+def test_get_if_set_returns_value_when_set(sa_session):
+    hda = create_bed_data(sa_session=sa_session, string_size=1)
+    assert hda.metadata.get_if_set("column_names") == ["0"]
+
+
+def test_get_if_set_returns_default_when_unset(sa_session):
+    hda = HistoryDatasetAssociation(extension="bed")
+    sa_session.add(hda)
+    sa_session.commit()
+    assert hda.metadata.get_if_set("column_names") is None
+    assert hda.metadata.get_if_set("column_names", []) == []
+
+
+def test_get_if_set_returns_default_for_nonexistent_key(sa_session):
+    hda = HistoryDatasetAssociation(extension="bed")
+    sa_session.add(hda)
+    sa_session.commit()
+    assert hda.metadata.get_if_set("nonexistent_key") is None
+    assert hda.metadata.get_if_set("nonexistent_key", "fallback") == "fallback"
