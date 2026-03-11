@@ -13,14 +13,14 @@ from typing import Optional
 
 from fastapi import Form
 from starlette.requests import Request
-from galaxy.exceptions import ObjectNotFound
-from galaxy.tool_shed.util.repository_util import get_absolute_path_to_file_in_repository
 from starlette.responses import (
     FileResponse,
     RedirectResponse,
     Response,
 )
 
+from galaxy.exceptions import ObjectNotFound
+from galaxy.tool_shed.util.repository_util import get_absolute_path_to_file_in_repository
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.repositories import (
     get_changeset_revision_and_ctx_rev_str,
@@ -33,8 +33,8 @@ from tool_shed.managers.repositories import (
     previous_changeset_revisions_str,
     updated_changeset_revisions_str,
 )
-from tool_shed.util.repository_util import get_repository_in_tool_shed
 from tool_shed.structured_app import ToolShedApp
+from tool_shed.util.repository_util import get_repository_in_tool_shed
 from . import (
     depends,
     DependsOnTrans,
@@ -53,7 +53,6 @@ router = Router(tags=["legacy_install"])
 @router.cbv
 class FastAPILegacyInstall:
     app: ToolShedApp = depends(ToolShedApp)
-
 
     @router.get(
         "/repository/get_ctx_rev",
@@ -146,7 +145,6 @@ class FastAPILegacyInstall:
         result = get_tool_dependencies_for_changeset(self.app, name, owner, changeset_revision)
         return Response(content=result, media_type="text/plain")
 
-
     @router.get(
         "/repository/get_repository_dependencies",
         operation_id="legacy_install__get_repository_dependencies",
@@ -181,7 +179,6 @@ class FastAPILegacyInstall:
         encoded_str: Optional[str] = Form(default=None),
     ) -> dict:
         return get_required_repo_info_dict_from_encoded(trans, encoded_str)
-
 
     @router.get(
         "/repository/status_for_installed_repository",

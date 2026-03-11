@@ -121,5 +121,3 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # Error middleware
     app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))
     return app
-
-
