@@ -1454,6 +1454,28 @@ job_details:
       selector: '//td[@id="galaxy-tool-id"][normalize-space(text()) = "${tool_id}"]'
     tool_exit_code: '#exit-code'
 
+chatgxy:
+  selectors:
+    activity: '#activity-chatgxy'
+    _: '.chatgxy-container'
+    header: '.chatgxy-header'
+    new_chat_button: '.chatgxy-header .btn-outline-primary'
+    delete_chat_button: '.chatgxy-header .btn-outline-danger'
+    messages: '.chat-messages'
+    input: '#chat-input'
+    send_button: '.send-button'
+    welcome_message: '.system-notice'
+    query_cell: '.entry-query .query-text'
+    response_cell: '.entry-response'
+    response_content: '.entry-response .response-content'
+    agent_indicator: '.entry-response .agent-indicator'
+    loading: '.loading-entry'
+    feedback_up: '.entry-response .feedback-btn[title="Helpful"]'
+    feedback_down: '.entry-response .feedback-btn[title="Not helpful"]'
+    feedback_ack: '.entry-response .feedback-ack'
+    meta_tag: '.entry-response .meta-tag'
+
+
 zip_import_wizard:
   selectors:
     _: '.zip-import-wizard'
