@@ -37,10 +37,10 @@ function cleanToolState(): ToolState {
 const emit = defineEmits(["onChange"]);
 
 const modeOptions = [
-    { value: "first_non_null", label: "First non-null (error if all null)" },
-    { value: "first_or_skip", label: "First non-null (skip if all null)" },
-    { value: "the_only_non_null", label: "The only non-null (error if != 1)" },
-    { value: "all_non_null", label: "All non-null (as collection)" },
+    ["First non-null (error if all null)", "first_non_null"],
+    ["First non-null (skip if all null)", "first_or_skip"],
+    ["The only non-null (error if != 1)", "the_only_non_null"],
+    ["All non-null (as collection)", "all_non_null"],
 ];
 
 function onMode(newMode: string) {
