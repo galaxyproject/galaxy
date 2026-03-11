@@ -1,4 +1,5 @@
 import MockDate from "timezone-mock";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { formatGalaxyPrettyDateString, galaxyTimeToDate, localizeUTCPretty } from "./dates";
 
@@ -28,7 +29,7 @@ describe("dates.ts", () => {
         it("should throw an error for invalid galaxyTime string", () => {
             const invalidGalaxyTime = "invalid-date-string";
             expect(() => galaxyTimeToDate(invalidGalaxyTime)).toThrow(
-                `Invalid galaxyTime string: ${invalidGalaxyTime}`
+                `Invalid galaxyTime string: ${invalidGalaxyTime}`,
             );
         });
     });
