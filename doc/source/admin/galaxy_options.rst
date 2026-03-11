@@ -4000,19 +4000,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_workflow_modules``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable beta workflow modules that should not yet be considered
-    part of Galaxy's stable API. (The module state definitions may
-    change and workflows built using these modules may not function in
-    the future.)
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~
 ``edam_panel_views``
 ~~~~~~~~~~~~~~~~~~~~
