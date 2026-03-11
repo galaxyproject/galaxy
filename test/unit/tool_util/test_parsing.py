@@ -948,8 +948,8 @@ class TestExpectations(FunctionalTestToolTestCase):
         tests = tests_dict["tests"]
         assert len(tests) == 10
         test_0 = tests[0]
-        assert len(test_0["stderr"]) == 1
-        assert len(test_0["stdout"]) == 2
+        assert len(test_0["stderr"]) == 2
+        assert len(test_0["stdout"]) == 1
 
 
 class TestExpectationsCommandVersion(FunctionalTestToolTestCase):

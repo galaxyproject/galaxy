@@ -1634,6 +1634,21 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         assert len(chatgxy.query_cell.all()) == 0
         assert len(chatgxy.response_content.all()) == 0
 
+    def navigate_to_dataset_error(self, hid):
+        """Display a dataset and click the error tab."""
+        self.display_dataset(hid)
+        error_tab = self.wait_for_selector_clickable(
+            ".nav-item[title='View error information for this dataset'] > a.nav-link"
+        )
+        error_tab.click()
+
+    def galaxy_wizard_analyze(self):
+        """Click the wizard analyze button and wait for the response."""
+        wizard = self.components.galaxy_wizard
+        wizard.analyze_button.wait_for_and_click()
+        # Button disappears once queryResponse is set (v-if="!queryResponse")
+        wizard.analyze_button.wait_for_absent_or_hidden()
+
     def navigate_to_pages(self):
         self.home()
         self.components.pages.activity.wait_for_and_click()
