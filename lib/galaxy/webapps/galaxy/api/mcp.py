@@ -80,7 +80,7 @@ def _mcp_error_handler(operation: str):
         raise
     except Exception as e:
         logger.error(f"MCP {operation}: {e}")
-        raise ValueError(f"{operation} failed") from e
+        raise ValueError(f"{operation} failed: {e}") from e
 
 
 def get_mcp_app(gx_app):

@@ -97,7 +97,11 @@ class QueryRouterAgent(BaseGalaxyAgent):
         )
 
     async def _execute_handoff(
-        self, ctx: RunContext[GalaxyAgentDependencies], agent_class, input_text: str, target_agent: str
+        self,
+        ctx: RunContext[GalaxyAgentDependencies],
+        agent_class: type[BaseGalaxyAgent],
+        input_text: str,
+        target_agent: str,
     ) -> str:
         """Execute a handoff to a specialist agent."""
         log.info(f"Router handing off to {target_agent}: '{input_text[:100]}...'")
@@ -105,9 +109,9 @@ class QueryRouterAgent(BaseGalaxyAgent):
             agent = agent_class(ctx.deps)
             response = await agent.process(input_text)
             return self._serialize_handoff(response, target_agent)
-        except Exception as e:
+        except (OSError, ValueError, ConnectionError, TimeoutError) as e:
             log.error(f"{target_agent} handoff failed: {e}")
-            return "I encountered an issue. Please try again or contact support."
+            return f"I encountered an issue ({type(e).__name__}). Please try again or contact support."
 
     def _create_error_analysis_handoff(self):
         async def hand_off_to_error_analysis(
