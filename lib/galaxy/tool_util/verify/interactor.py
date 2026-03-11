@@ -881,7 +881,7 @@ class GalaxyInteractorApi:
         cleanup: Optional[Callable[[], None]] = None
         if created_credentials:
 
-            def cleanup():
+            def _cleanup_credentials():
                 for cred_info in created_credentials:
                     try:
                         delete_response = self._delete(
@@ -890,6 +890,8 @@ class GalaxyInteractorApi:
                         raise_for_status(delete_response)
                     except Exception as e:
                         print(f"Warning: Failed to delete test credentials: {e}")
+
+            cleanup = _cleanup_credentials
 
         return ToolSubmissionResponse(
             inputs=inputs_tree,
@@ -1813,10 +1815,9 @@ def verify_tool(
             except Exception as e:
                 job_output_exceptions = [e]
                 raise e
-            finally:
-                if credential_cleanup:
-                    credential_cleanup()
     finally:
+        if credential_cleanup:
+            credential_cleanup()
         if register_job_data is not None:
             end_time = time.time()
             job_data["time_seconds"] = end_time - begin_time
