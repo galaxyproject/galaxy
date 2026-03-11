@@ -73,3 +73,48 @@ class TestChatGXY(SeleniumTestCase):
         # New chat resets
         chatgxy.new_chat_button.wait_for_and_click()
         self._chatgxy_assert_chat_empty()
+
+    @skip_without_agents
+    @selenium_test
+    def test_delete_chats_via_selection(self):
+        """Create two chats, select both in history panel, bulk delete."""
+        # Clear any existing chat history so test is deterministic
+        self.api_delete("chat/history")
+
+        self.navigate_to_chatgxy()
+        chatgxy = self.components.chatgxy
+        history = chatgxy.history_panel
+
+        # Create first chat
+        self.chatgxy_ensure_new_chat()
+        self.chatgxy_send_message("Hello!")
+
+        # Create second chat
+        self.chatgxy_ensure_new_chat()
+        self.chatgxy_send_message("How do I analyze RNA-seq data?")
+
+        # Switch sidebar away from chatgxy then back to force ChatHistoryPanel remount
+        self.components.tools.activity.wait_for_and_click()
+        chatgxy.activity.wait_for_and_click()
+        history._.wait_for_visible()
+
+        # Wait for history items to appear
+        @retry_assertion_during_transitions
+        def assert_history_has_items():
+            assert len(history.history_item.all()) >= 2
+
+        assert_history_has_items()
+
+        # Enter selection mode
+        history.toggle_selection_mode.wait_for_and_click()
+
+        # Click first two history items to select them
+        items = history.history_item.all()
+        items[0].click()
+        items[1].click()
+
+        # Delete selected
+        history.delete_selected_button.wait_for_and_click()
+
+        # Verify all items were removed (panel should be empty)
+        history.empty_message.wait_for_visible()

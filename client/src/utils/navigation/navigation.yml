@@ -1482,6 +1482,17 @@ chatgxy:
     feedback_ack: '.entry-response .feedback-ack'
     meta_tag: '.entry-response .meta-tag'
 
+  history_panel:
+    selectors:
+      _: '.activity-panel[data-description="ChatGXY"]'
+      toggle_selection_mode: 'button[title="Select chats to delete"]'
+      cancel_selection: 'button[title="Cancel selection"]'
+      history_item: '[data-description="sidebar item"]'
+      history_checkbox: '[data-description="sidebar item"] .history-checkbox'
+      delete_selected_button: '.selection-toolbar .btn-danger'
+      select_all_toggle: '.select-all-toggle'
+      empty_message: '[data-description="sidebar list empty"]'
+
 galaxy_wizard:
   selectors:
     _:
