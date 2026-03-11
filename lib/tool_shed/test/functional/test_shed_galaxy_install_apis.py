@@ -16,6 +16,7 @@ Endpoints tested:
   GET  /repository/get_repository_type
   GET  /repository/get_tool_dependencies
   GET  /repository/static/images/{repository_id}/{image_file}
+  GET  /repository/status_for_installed_repository (301 → /api/repositories/updates/)
 """
 
 import json
@@ -622,6 +623,28 @@ class TestGalaxyInstallApis(ShedApiTestCase):
         response = requests.get(url)
         assert response.status_code >= 400, \
             f"Expected rejection of non-image file, got {response.status_code}"
+
+    # ---- status_for_installed_repository (redirect) ----------------------
+
+    def test_status_for_installed_repository_redirects(self):
+        """Legacy endpoint should 301 redirect to /api/repositories/updates/ with query string preserved."""
+        params = dict(name="test_repo", owner="test_owner", changeset_revision="abc123")
+        url = f"{self.url}/repository/status_for_installed_repository"
+        response = requests.get(url, params=params, allow_redirects=False)
+        assert response.status_code == 301, f"Expected 301, got {response.status_code}"
+        location = response.headers.get("location", "")
+        assert "/api/repositories/updates/" in location
+        assert "name=test_repo" in location
+        assert "owner=test_owner" in location
+        assert "changeset_revision=abc123" in location
+
+    def test_status_for_installed_repository_follows_redirect(self):
+        """Following the redirect should reach the updates endpoint."""
+        repository, changeset = self._setup_single_revision_repo()
+        params = dict(name=repository.name, owner=repository.owner, changeset_revision=changeset)
+        url = f"{self.url}/repository/status_for_installed_repository"
+        response = requests.get(url, params=params)
+        api_asserts.assert_status_code_is_ok(response)
 
     def test_all_endpoints_reject_nonexistent_repo(self):
         """All endpoints should fail gracefully for a nonexistent repository."""
