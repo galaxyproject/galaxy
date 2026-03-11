@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+    faAngleDoubleDown,
     faColumns,
     faExpand,
     faExternalLinkAlt,
@@ -21,6 +22,7 @@ import { getGalaxyInstance } from "@/app";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
 import { useActiveContext } from "@/composables/useActiveContext";
+import { useActivityStore } from "@/stores/activityStore";
 import { useChatStore } from "@/stores/chatStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -37,11 +39,13 @@ const props = withDefaults(
         exchangeId?: string;
         compact?: boolean;
         docked?: boolean;
+        panel?: boolean;
     }>(),
     {
         exchangeId: undefined,
         compact: false,
         docked: false,
+        panel: false,
     },
 );
 
@@ -51,6 +55,7 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
+const activityStore = useActivityStore("default");
 
 const { activeContext, contextLabel } = useActiveContext();
 const contextDismissed = ref(false);
@@ -60,7 +65,7 @@ watch(activeContext, () => {
 });
 
 const effectiveContext = computed(() => {
-    if (contextDismissed.value || !props.docked) {
+    if (contextDismissed.value || (!props.docked && !props.panel)) {
         return null;
     }
     return activeContext.value;
@@ -384,6 +389,14 @@ function dockToSide() {
     router.push("/");
 }
 
+function dockToBottomPanel() {
+    if (currentChatId.value) {
+        activityStore.currentChatExchangeId = currentChatId.value;
+    }
+    activityStore.chatPanelOpen = true;
+    router.push("/");
+}
+
 // Keep chatStore in sync when new conversations are created in docked mode
 watch(currentChatId, (newId) => {
     if (props.docked && newId) {
@@ -393,8 +406,10 @@ watch(currentChatId, (newId) => {
 </script>
 
 <template>
-    <div class="chatgxy-container" :class="{ 'chatgxy-compact': compact, 'chatgxy-docked': docked }">
-        <!-- Docked panel header -->
+    <div
+        class="chatgxy-container"
+        :class="{ 'chatgxy-compact': compact, 'chatgxy-docked': docked, 'chatgxy-panel': panel }">
+        <!-- Docked side panel header -->
         <div v-if="docked" class="chatgxy-header chatgxy-header-docked">
             <span class="docked-title">
                 <FontAwesomeIcon :icon="faMagic" fixed-width />
@@ -413,7 +428,7 @@ watch(currentChatId, (newId) => {
             </div>
         </div>
         <!-- Center view header -->
-        <div v-else-if="!compact" class="chatgxy-header">
+        <div v-else-if="!compact && !panel" class="chatgxy-header">
             <Heading h2 :icon="faMagic" size="lg">
                 <span>ChatGXY</span>
             </Heading>
@@ -432,6 +447,9 @@ watch(currentChatId, (newId) => {
                 <button class="btn btn-sm btn-outline-primary" title="Dock to side panel" @click="dockToSide">
                     <FontAwesomeIcon :icon="faColumns" fixed-width />
                 </button>
+                <button class="btn btn-sm btn-outline-primary" title="Dock to bottom panel" @click="dockToBottomPanel">
+                    <FontAwesomeIcon :icon="faAngleDoubleDown" fixed-width />
+                </button>
                 <button
                     class="btn btn-sm btn-outline-primary"
                     title="Open in floating window"
@@ -441,7 +459,7 @@ watch(currentChatId, (newId) => {
             </div>
         </div>
 
-        <div v-if="docked && effectiveContext" class="context-indicator">
+        <div v-if="(docked || panel) && effectiveContext" class="context-indicator">
             <span class="context-badge">
                 <FontAwesomeIcon :icon="contextIcon" fixed-width />
                 {{ contextLabel }}
@@ -506,7 +524,8 @@ watch(currentChatId, (newId) => {
     }
 }
 
-.chatgxy-docked {
+.chatgxy-docked,
+.chatgxy-panel {
     height: 100%;
     border-radius: 0;
 }
