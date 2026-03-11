@@ -174,7 +174,7 @@ class DatasetInheritanceChainEntry(Model):
     dep: str = Field(
         description="Name of the source of the referenced dataset at this point of the inheritance chain.",
     )
-    user_id: EncodedDatabaseIdField = Field(
+    user_id: Optional[EncodedDatabaseIdField] = Field(
         description="ID of the user who owns the referenced dataset.",
     )
 
@@ -503,7 +503,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                     id=dep[0].id,
                     name=dep[0].name,
                     dep=dep[1],
-                    user_id=dep[0].user.id,
+                    user_id=dep[0].user.id if dep[0].user else None,
                 )
             )
 
