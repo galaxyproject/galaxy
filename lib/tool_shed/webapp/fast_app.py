@@ -52,6 +52,7 @@ api_tags_metadata = [
         "description": "User-related endpoints.",
     },
     {"name": "undocumented", "description": "API routes that have not yet been ported to FastAPI."},
+    {"name": "legacy_install", "description": "Legacy Galaxy install protocol endpoints."},
 ]
 
 # Set this if asset handling should be sent to vite.
