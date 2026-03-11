@@ -54,6 +54,8 @@ const { jobsToHistories, invocationsToHistories, historyDatasetCollectionsToHist
 type ErrorString = string;
 type AccessibleState = boolean | null | ErrorString;
 type AccessibleMapRef = Ref<Record<string, AccessibleState>>;
+type PermissionObjectTypeValue = "history" | "historyDataset" | "workflow";
+
 const historyAccessible: AccessibleMapRef = ref({});
 const workflowAccessible: AccessibleMapRef = ref({});
 const historyDatasetAccessible: AccessibleMapRef = ref({});
@@ -140,7 +142,7 @@ interface ItemInterface {
     id: string;
     accessible: AccessibleState;
     name: string;
-    type: string;
+    type: PermissionObjectTypeValue;
 }
 
 const histories = computed<ItemInterface[]>(() => {
@@ -149,8 +151,8 @@ const histories = computed<ItemInterface[]>(() => {
             id: historyId,
             type: "history",
             name: getHistoryNameById(historyId),
-            accessible: historyAccessible.value[historyId],
-        } as ItemInterface;
+            accessible: historyAccessible.value[historyId] ?? null,
+        };
     });
 });
 
@@ -160,8 +162,8 @@ const workflows = computed<ItemInterface[]>(() => {
             id: workflowId,
             type: "workflow",
             name: getStoredWorkflowNameByInstanceId(workflowId),
-            accessible: workflowAccessible.value[workflowId],
-        } as ItemInterface;
+            accessible: workflowAccessible.value[workflowId] ?? null,
+        };
     });
 });
 
@@ -171,8 +173,8 @@ const datasets = computed<ItemInterface[]>(() => {
             id: historyDatasetId,
             type: "historyDataset",
             name: getDataset(historyDatasetId)?.name || "Fetching dataset name...",
-            accessible: historyDatasetAccessible.value[historyDatasetId],
-        } as ItemInterface;
+            accessible: historyDatasetAccessible.value[historyDatasetId] ?? null,
+        };
     });
 });
 
