@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 
-from galaxy.managers.agent_operations import AgentOperationsManager
+from galaxy.webapps.galaxy.services.agent_operations import AgentOperationsManager
 from .base import BaseTestCase
 
 

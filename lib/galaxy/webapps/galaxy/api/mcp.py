@@ -14,8 +14,8 @@ from fastmcp import (
     settings as fastmcp_settings,
 )
 
-from galaxy.managers.agent_operations import AgentOperationsManager
 from galaxy.managers.users import UserManager
+from galaxy.webapps.galaxy.services.agent_operations import AgentOperationsManager
 from galaxy.work.context import WorkRequestContext
 
 logger = logging.getLogger(__name__)
