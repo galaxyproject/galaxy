@@ -1582,6 +1582,10 @@ class IoDicts(NamedTuple):
 JOB_IO_NAME_MAX_LENGTH = 255
 
 
+class JobOutputNameTooLongError(ValueError):
+    pass
+
+
 class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     """
     A job represents a request to run a tool given input datasets, tool
@@ -2023,13 +2027,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     @staticmethod
     def _check_name_length(name: str) -> None:
         if name and len(name) > JOB_IO_NAME_MAX_LENGTH:
-            raise ValueError(
+            raise JobOutputNameTooLongError(
                 f"Tool produced an output name that exceeds the {JOB_IO_NAME_MAX_LENGTH} character name length limit "
                 f"(got {len(name)} characters), tool is likely broken"
             )
 
     def add_input_dataset(self, name, dataset=None, dataset_id=None, adapter_json=None):
-        self._check_name_length(name)
         assoc = JobToInputDatasetAssociation(name, dataset, adapter_json)
         if dataset is None and dataset_id is not None:
             assoc.dataset_id = dataset_id
@@ -2047,13 +2050,11 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         self.output_datasets.append(joda)
 
     def add_input_dataset_collection(self, name, dataset_collection, adapter_json=None):
-        self._check_name_length(name)
         self.input_dataset_collections.append(
             JobToInputDatasetCollectionAssociation(name, dataset_collection, adapter_json)
         )
 
     def add_input_dataset_collection_element(self, name, dataset_collection_element, adapter_json=None):
-        self._check_name_length(name)
         self.input_dataset_collection_elements.append(
             JobToInputDatasetCollectionElementAssociation(name, dataset_collection_element, adapter_json)
         )
@@ -2071,7 +2072,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         )
 
     def add_input_library_dataset(self, name, dataset):
-        self._check_name_length(name)
         self.input_library_datasets.append(JobToInputLibraryDatasetAssociation(name, dataset))
 
     def add_output_library_dataset(self, name, dataset):
