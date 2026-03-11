@@ -591,8 +591,7 @@ class TestGalaxyInstallApis(ShedApiTestCase):
         api_asserts.assert_status_code_is_ok(response)
         assert len(response.content) > 0, "Expected non-empty image content"
         content_type = response.headers.get("content-type", "")
-        assert "image/png" in content_type, \
-            f"Expected image/png content-type, got {content_type}"
+        assert "image/png" in content_type, f"Expected image/png content-type, got {content_type}"
 
     def test_display_image_nonexistent_file(self):
         """Requesting a nonexistent image should return empty/error."""
@@ -621,8 +620,7 @@ class TestGalaxyInstallApis(ShedApiTestCase):
         # htseq_count.tar contains htseq-count.xml — a non-image file
         url = f"{self.url}/repository/static/images/{repository.id}/htseq-count.xml"
         response = requests.get(url)
-        assert response.status_code >= 400, \
-            f"Expected rejection of non-image file, got {response.status_code}"
+        assert response.status_code >= 400, f"Expected rejection of non-image file, got {response.status_code}"
 
     # ---- status_for_installed_repository (redirect) ----------------------
 
