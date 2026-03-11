@@ -128,7 +128,7 @@
                             <span
                                 class="shrinked-description"
                                 :title="getMessage(row.item)"
-                                v-html="linkify(DOMPurify.sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))">
+                                v-html="linkify(sanitize(getMessage(row.item).substring(0, maxDescriptionLength)))">
                             </span>
                             <!-- eslint-enable vue/no-v-html -->
                             <span :title="getMessage(row.item)"> ...</span>
@@ -137,7 +137,7 @@
                             </a>
                         </div>
                         <!-- eslint-disable-next-line vue/no-v-html -->
-                        <div v-else v-html="linkify(DOMPurify.sanitize(getMessage(row.item)))"></div>
+                        <div v-else v-html="linkify(sanitize(getMessage(row.item)))"></div>
                     </div>
                 </div>
             </template>
@@ -200,7 +200,7 @@
                         Edit
                     </b-button>
                     <b-button
-                        v-if="currentUser.is_admin"
+                        v-if="currentUser && currentUser.is_admin"
                         size="sm"
                         class="lib-btn permission_lib_btn"
                         :title="`Permissions of ${row.item.name}`"
@@ -270,7 +270,7 @@ import UtcDate from "components/UtcDate";
 import { usePersistentRef } from "composables/persistentRef";
 import { Toast } from "composables/toast";
 import DOMPurify from 'dompurify';
-const { sanitize } = DOMPurify;
+const sanitize = DOMPurify.sanitize;
 import linkifyHtml from "linkify-html";
 import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";

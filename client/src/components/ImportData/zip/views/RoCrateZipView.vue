@@ -3,7 +3,7 @@ import { faUniversity, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
 import DOMPurify from 'dompurify';
-const { sanitize } = DOMPurify;
+const sanitize = DOMPurify.sanitize;
 import { onMounted, ref } from "vue";
 
 import type { CardBadge } from "@/components/Common/GCard.types";
@@ -81,7 +81,7 @@ onMounted(async () => {
         </template>
 
         <template v-slot:description>
-            <div v-html="DOMPurify.sanitize(crateSummary.description)"></div>
+            <div v-html="sanitize(crateSummary.description)"></div>
 
             <div><strong>License:</strong> {{ crateSummary.license }}</div>
 

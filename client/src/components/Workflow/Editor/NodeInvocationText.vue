@@ -3,7 +3,7 @@ import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormInput } from "bootstrap-vue";
 import DOMPurify from 'dompurify';
-const { sanitize } = DOMPurify;
+const sanitize = DOMPurify.sanitize;
 
 import type { JobState } from "@/api/jobs";
 import { isWorkflowInput } from "@/components/Workflow/constants";
@@ -20,7 +20,7 @@ function isColor(value?: string): boolean {
 }
 
 function textHtml(value: string): string {
-    return DOMPurify.sanitize(value, { ALLOWED_TAGS: ["b"] });
+    return sanitize(value, { ALLOWED_TAGS: ["b"] });
 }
 
 // Helper function to convert the key to JobState type

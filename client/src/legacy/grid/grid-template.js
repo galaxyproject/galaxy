@@ -1,6 +1,6 @@
 // dependencies
 import DOMPurify from 'dompurify';
-const { sanitize } = DOMPurify;
+const sanitize = DOMPurify.sanitize;
 
 // grid view templates
 export default {
