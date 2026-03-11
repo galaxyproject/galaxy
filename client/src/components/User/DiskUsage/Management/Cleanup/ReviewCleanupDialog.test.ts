@@ -44,7 +44,7 @@ const FAKE_OPERATION: CleanupOperation = {
 
 async function mountReviewCleanupDialogWith(operation: CleanupOperation, totalItems = EXPECTED_TOTAL_ITEMS) {
     const wrapper = mount(ReviewCleanupDialog as object, {
-        propsData: { operation, totalItems, show: true, modalStatic: true },
+        propsData: { operation, totalItems, modalStatic: true },
         localVue,
     });
     await flushPromises();
@@ -59,6 +59,9 @@ async function setAllItemsChecked(wrapper: Wrapper<any>) {
 describe("ReviewCleanupDialog.vue", () => {
     it("should display a table with items to review", async () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
+
+        (wrapper.vm as any).openModal();
+        await flushPromises();
 
         expect(wrapper.find(REVIEW_TABLE).exists()).toBe(true);
         expect(wrapper.findAll("tbody > tr").length).toBe(EXPECTED_TOTAL_ITEMS);
