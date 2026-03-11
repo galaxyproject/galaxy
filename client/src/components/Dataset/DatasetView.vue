@@ -68,6 +68,11 @@ const isImageDataset = computed(() => {
     if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
         return false;
     }
+    // SVG is not an image subclass, but should use DatasetAsImage for better
+    // user experience
+    if (dataset.value.file_ext === "svg") {
+        return true;
+    }
     return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, [
         "galaxy.datatypes.images.Image",
     ]);
