@@ -1482,6 +1482,35 @@ chatgxy:
     feedback_ack: '.entry-response .feedback-ack'
     meta_tag: '.entry-response .meta-tag'
 
+galaxy_wizard:
+  selectors:
+    _:
+      selector: 'galaxy wizard'
+      type: data-description
+    analyze_button:
+      selector: 'galaxy wizard analyze button'
+      type: data-description
+    loading:
+      selector: 'galaxy wizard loading'
+      type: data-description
+    response:
+      selector: 'galaxy wizard response'
+      type: data-description
+    feedback_section:
+      selector: 'galaxy wizard feedback'
+      type: data-description
+    feedback_up:
+      selector: 'galaxy wizard feedback up'
+      type: data-description
+    feedback_down:
+      selector: 'galaxy wizard feedback down'
+      type: data-description
+    feedback_ack:
+      selector: 'galaxy wizard feedback ack'
+      type: data-description
+    wizard_card:
+      selector: 'galaxy wizard card'
+      type: data-description
 
 zip_import_wizard:
   selectors:
