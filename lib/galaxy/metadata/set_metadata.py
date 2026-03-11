@@ -318,6 +318,7 @@ def set_metadata_portable(
         tool_job_working_directory / "working",
         final_job_state=final_job_state,
         max_discovered_files=max_discovered_files,
+        job=job,
     )
 
     if extended_metadata_collection:

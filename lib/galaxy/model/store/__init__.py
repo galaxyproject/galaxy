@@ -1661,6 +1661,8 @@ class BaseDirectoryImportModelStore(ModelImportStore):
             "job_stdout",
             "job_stderr",
             "galaxy_version",
+            "object_store_id",
+            "object_store_id_overrides",
         )
         for attribute in ATTRIBUTES:
             value = job_attrs.get(attribute)
