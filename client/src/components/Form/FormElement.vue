@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import { faArrowsAltH, faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { sanitize } from "dompurify";
+import DOMPurify from 'dompurify';
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
 
@@ -184,7 +184,7 @@ const helpText = computed(() => {
 });
 const nonMdHelp = computed(() =>
     Boolean(helpText.value) && props.helpFormat != "markdown" && (!props.workflowRun || helpText.value !== props.title)
-        ? sanitize(helpText.value!)
+        ? DOMPurify.sanitize(helpText.value!)
         : "",
 );
 const showNonMdHelp = computed(() => Boolean(nonMdHelp.value) && (!props.workflowRun || props.type !== "boolean"));
@@ -251,7 +251,7 @@ const formAlert = ref<string>();
 const alerts = computed(() => {
     return [formAlert.value, props.error, props.warning]
         .filter((v) => v !== undefined && v !== null)
-        .map((v) => linkify(sanitize(v!, { USE_PROFILES: { html: true } })));
+        .map((v) => linkify(DOMPurify.sanitize(v!, { USE_PROFILES: { html: true } })));
 });
 
 /** Adds a temporary 2 sec focus to the element. */

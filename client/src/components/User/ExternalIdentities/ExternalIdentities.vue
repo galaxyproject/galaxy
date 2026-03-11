@@ -96,7 +96,8 @@
 import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
 import { Toast } from "composables/toast";
-import { sanitize } from "dompurify";
+import DOMPurify from 'dompurify';
+const { sanitize } = DOMPurify;
 import { userLogout } from "utils/logout";
 import Vue from "vue";
 
@@ -156,7 +157,7 @@ export default {
     },
     mounted() {
         const params = new URLSearchParams(window.location.search);
-        const notificationMessage = sanitize(params.get("notification"));
+        const notificationMessage = DOMPurify.sanitize(params.get("notification"));
         Toast.success(notificationMessage);
     },
     methods: {
