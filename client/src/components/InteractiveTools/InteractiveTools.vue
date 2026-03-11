@@ -9,7 +9,7 @@ import { useRouter } from "vue-router/composables";
 import type { TableField } from "@/components/Common/GTable.types";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 
-import GLink from "../BaseComponents/GLink.vue";
+import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import Heading from "@/components/Common/Heading.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -106,6 +106,7 @@ onMounted(() => {
     filter.value = "";
 });
 </script>
+
 <template>
     <div aria-labelledby="interactive-tools-heading">
         <BAlert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">
@@ -123,66 +124,64 @@ onMounted(() => {
             autocomplete="off"
             type="text" />
 
-        <div id="interactive-tool-table">
-            <GTable id="interactive-tool-table" show-empty striped :fields="fields" :items="filteredTools">
-                <template v-slot:empty>
-                    <BAlert variant="info" show class="mb-0">
-                        <div v-if="isActiveToolsListEmpty">You do not have active interactive tools yet</div>
-                        <div v-else-if="showNotFound">
-                            No matching entries found for:
-                            <span class="font-weight-bold"> {{ filter }} </span>.
-                        </div>
-                    </BAlert>
-                </template>
+        <GTable id="interactive-tool-table" show-empty striped :fields="fields" :items="filteredTools">
+            <template v-slot:empty>
+                <BAlert variant="info" show class="mb-0">
+                    <div v-if="isActiveToolsListEmpty">You do not have active interactive tools yet</div>
+                    <div v-else-if="showNotFound">
+                        No matching entries found for:
+                        <span class="font-weight-bold"> {{ filter }} </span>.
+                    </div>
+                </BAlert>
+            </template>
 
-                <template v-slot:cell(actions)="{ item }">
-                    <BButton
-                        :id="createId('stop', item.id)"
-                        v-b-tooltip.hover
-                        variant="link"
-                        class="p-0"
-                        title="Stop this interactive tool"
-                        @click.stop="stopInteractiveTool(item.id, item.name)">
-                        <FontAwesomeIcon :icon="faStop" />
-                    </BButton>
-                </template>
+            <template v-slot:cell(actions)="{ item }">
+                <BButton
+                    :id="createId('stop', item.id)"
+                    v-b-tooltip.hover
+                    variant="link"
+                    class="p-0"
+                    title="Stop this interactive tool"
+                    @click.stop="stopInteractiveTool(item.id, item.name)">
+                    <FontAwesomeIcon :icon="faStop" />
+                </BButton>
+            </template>
 
-                <template v-slot:cell(name)="{ item, index }">
-                    <GLink
-                        :id="createId('link', item.id)"
-                        tooltip
-                        title="Open Interactive Tool"
-                        :index="index"
-                        :name="item.name"
-                        @click.prevent="openInteractiveTool(item.id)">
-                        {{ item.name }}
-                    </GLink>
+            <template v-slot:cell(name)="{ item, index }">
+                <GLink
+                    :id="createId('link', item.id)"
+                    tooltip
+                    title="Open Interactive Tool"
+                    :index="index"
+                    :name="item.name"
+                    @click.prevent="openInteractiveTool(item.id)">
+                    {{ item.name }}
+                </GLink>
 
-                    <GLink
-                        v-if="item.target"
-                        :id="createId('external-link', item.id)"
-                        tooltip
-                        class="ml-2"
-                        target="_blank"
-                        title="Open in new tab"
-                        :href="item.target">
-                        <FontAwesomeIcon :icon="faExternalLinkAlt" />
-                    </GLink>
-                </template>
+                <GLink
+                    v-if="item.target"
+                    :id="createId('external-link', item.id)"
+                    tooltip
+                    class="ml-2"
+                    target="_blank"
+                    title="Open in new tab"
+                    :href="item.target">
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" />
+                </GLink>
+            </template>
 
-                <template v-slot:cell(job_info)="{ item }">
-                    <span v-if="item.active"> Running </span>
-                    <span v-else> Starting </span>
-                </template>
+            <template v-slot:cell(job_info)="{ item }">
+                <span v-if="item.active"> Running </span>
+                <span v-else> Starting </span>
+            </template>
 
-                <template v-slot:cell(created_time)="{ item }">
-                    <UtcDate :date="item.created_time" mode="elapsed" />
-                </template>
+            <template v-slot:cell(created_time)="{ item }">
+                <UtcDate :date="item.created_time" mode="elapsed" />
+            </template>
 
-                <template v-slot:cell(modified_time)="{ item }">
-                    <UtcDate :date="item.modified_time" mode="elapsed" />
-                </template>
-            </GTable>
-        </div>
+            <template v-slot:cell(modified_time)="{ item }">
+                <UtcDate :date="item.modified_time" mode="elapsed" />
+            </template>
+        </GTable>
     </div>
 </template>
