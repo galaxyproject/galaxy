@@ -145,8 +145,8 @@ export default {
         loadCitations() {
             if (this.hasCitations) {
                 getCitations("tools", this.id)
-                    .then((citations) => {
-                        this.citations = citations;
+                    .then((result) => {
+                        this.citations = result.citations;
                     })
                     .catch((e) => {
                         console.error(e);
