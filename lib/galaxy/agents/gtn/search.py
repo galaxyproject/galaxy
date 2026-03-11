@@ -90,6 +90,7 @@ class SearchResult:
         Returns only the fields the LLM needs to pick tutorials and
         construct get_tutorial_content calls, keeping token usage low.
         """
+        snippet = self.snippet.replace("<mark>", "").replace("</mark>", "")
         return {
             "title": self.title,
             "topic": self.topic,
@@ -97,7 +98,7 @@ class SearchResult:
             "url": self.url,
             "difficulty": self.difficulty,
             "time_estimation": self.time_estimation,
-            "snippet": self.snippet,
+            "snippet": snippet,
         }
 
 

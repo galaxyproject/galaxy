@@ -33,16 +33,6 @@ from .gtn import GTNSearchDB
 log = logging.getLogger(__name__)
 
 
-class GTNSearchRequest(BaseModel):
-    """Model for GTN search requests."""
-
-    query: str = Field(..., description="Search query for tutorials")
-    topic: Optional[str] = Field(None, description="Filter by specific topic")
-    difficulty: Optional[str] = Field(None, description="Filter by difficulty level")
-    hands_on_only: bool = Field(False, description="Only return hands-on tutorials")
-    limit: int = Field(5, description="Maximum number of results")
-
-
 class GTNSearchResponse(BaseModel):
     """Structured response from GTN training agent."""
 
