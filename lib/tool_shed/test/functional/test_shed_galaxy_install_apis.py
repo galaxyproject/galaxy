@@ -622,8 +622,6 @@ class TestGalaxyInstallApis(ShedApiTestCase):
         response = requests.get(url)
         assert response.status_code >= 400, f"Expected rejection of non-image file, got {response.status_code}"
 
-    # ---- status_for_installed_repository (redirect) ----------------------
-
     def test_status_for_installed_repository_redirects(self):
         """Legacy endpoint should 301 redirect to /api/repositories/updates/ with query string preserved."""
         params = dict(name="test_repo", owner="test_owner", changeset_revision="abc123")
