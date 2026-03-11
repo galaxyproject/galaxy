@@ -12,10 +12,12 @@ import os
 from typing import Optional
 
 from fastapi import Form
+from starlette.requests import Request
 from galaxy.exceptions import ObjectNotFound
 from galaxy.tool_shed.util.repository_util import get_absolute_path_to_file_in_repository
 from starlette.responses import (
     FileResponse,
+    RedirectResponse,
     Response,
 )
 
@@ -180,6 +182,21 @@ class FastAPILegacyInstall:
     ) -> dict:
         return get_required_repo_info_dict_from_encoded(trans, encoded_str)
 
+
+    @router.get(
+        "/repository/status_for_installed_repository",
+        operation_id="legacy_install__status_for_installed_repository",
+        response_class=RedirectResponse,
+        status_code=301,
+    )
+    def status_for_installed_repository(
+        self,
+        request: Request,
+    ) -> RedirectResponse:
+        url = "/api/repositories/updates/"
+        if request.url.query:
+            url = f"{url}?{request.url.query}"
+        return RedirectResponse(url=url, status_code=301)
 
     @router.get(
         "/repository/static/images/{repository_id}/{image_file:path}",
