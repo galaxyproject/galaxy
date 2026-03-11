@@ -115,10 +115,6 @@ def app_pair(global_conf, load_app_kwds=None, **kwargs):
         repository_id=None,
         image_file=None,
     )
-    # Catch-all route for /repository/* endpoints used by Galaxy's install client
-    # (e.g. get_ctx_rev, get_required_repo_info_dict, etc.)
-    webapp.add_route("/{controller}/{action}", action="index")
-    webapp.add_route("/{action}", controller="repository", action="index")
     # Enable 'hg clone' functionality on repos by letting hgwebapp handle the request
     webapp.add_route("/repos/*path_info", controller="hg", action="handle_request", path_info="/")
     webapp.finalize_config()

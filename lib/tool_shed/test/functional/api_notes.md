@@ -53,14 +53,15 @@ Added in:
 ## Legacy /repository/* endpoints required by Galaxy install client
 
 Galaxy's install code (`lib/galaxy/tool_shed/galaxy_install/`) makes server-to-server HTTP
-calls to the Tool Shed using legacy WSGI `/repository/{action}` endpoints. These are **not**
-part of the `/api/` surface but are critical for repository installation, update checking, and
-dependency resolution. They must remain available for backward compatibility with older Galaxy
-instances.
+calls to the Tool Shed using `/repository/{action}` endpoints. These are **not** part of
+the `/api/` surface but are critical for repository installation, update checking, and
+dependency resolution.
 
-These endpoints are served by `RepositoryController` in
-`lib/tool_shed/webapp/controllers/repository.py` via the catch-all `/{controller}/{action}`
-route in `buildapp.py`.
+These endpoints have been migrated from the WSGI `RepositoryController` to FastAPI in
+`lib/tool_shed/webapp/api2/repository.py`, with business logic in
+`lib/tool_shed/managers/repositories.py`. The URLs are unchanged so existing Galaxy
+clients continue to work. Tests are in
+`lib/tool_shed/test/functional/test_shed_galaxy_install_apis.py`.
 
 | Endpoint                                        | Galaxy caller                                                  | Purpose                                              |
 | ----------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------- |
@@ -73,7 +74,3 @@ route in `buildapp.py`.
 | `/repository/updated_changeset_revisions`        | `lib/galaxy/tool_shed/util/metadata_util.py`                   | List revisions an installed repo can update to        |
 | `/repository/get_repository_type`                | (not currently called but was available)                        | Return repository type string                        |
 | `/repository/get_tool_dependencies`              | (not currently called but was available)                        | Return tool dependencies for a changeset             |
-
-**Do not delete these endpoints** without first migrating Galaxy's install client code to use
-`/api/` equivalents. The Galaxy-side callers are in `lib/galaxy/tool_shed/` and use
-`galaxy.util.url_get()` or `urllib` directly with `pathspec=["repository", "<action>"]`.
