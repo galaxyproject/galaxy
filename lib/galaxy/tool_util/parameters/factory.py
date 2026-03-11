@@ -8,6 +8,8 @@ from typing import (
     Union,
 )
 
+from typing_extensions import TypedDict
+
 from galaxy.tool_util.parser.interface import (
     InputSource,
     PageSource,
@@ -76,6 +78,23 @@ def get_color_value(input_source: InputSource) -> str:
     return input_source.get("value", "#000000")
 
 
+class _CommonParamKwargs(TypedDict, total=False):
+    label: str
+    help: str
+
+
+def _common_param_kwargs(input_source: InputSource) -> _CommonParamKwargs:
+    """Extract common metadata (label, help) from InputSource for parameter models."""
+    kwargs = _CommonParamKwargs()
+    label = input_source.parse_label()
+    if label:
+        kwargs["label"] = label
+    help_text = input_source.parse_help()
+    if help_text:
+        kwargs["help"] = help_text
+    return kwargs
+
+
 def _from_input_source_galaxy(input_source: InputSource, profile: float) -> ToolParameterT:
     input_type = input_source.parse_input_type()
     if input_type == "param":
@@ -110,6 +129,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 min=min_int,
                 max=max_int,
                 validators=int_validators,
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "boolean":
             nullable = input_source.parse_optional()
@@ -119,6 +139,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 name=input_source.parse_name(),
                 optional=nullable,
                 value=value,
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "text":
             optional, optionality_inferred = text_input_is_optional(input_source)
@@ -131,6 +152,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 optional=optional,
                 validators=text_validators,
                 value=default_value,
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "float":
             optional = input_source.parse_optional()
@@ -162,6 +184,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 min=min_float,
                 max=max_float,
                 validators=float_validators,
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "hidden":
             optional = input_source.parse_optional()
@@ -173,6 +196,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 optional=optional,
                 value=value,
                 validators=hidden_validators,
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "color":
             optional = input_source.parse_optional()
@@ -181,11 +205,13 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 name=input_source.parse_name(),
                 optional=optional,
                 value=get_color_value(input_source),
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "rules":
             return RulesParameterModel(
                 type="rules",
                 name=input_source.parse_name(),
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "data":
             optional = input_source.parse_optional()
@@ -195,6 +221,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 name=input_source.parse_name(),
                 optional=optional,
                 multiple=multiple,
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "data_collection":
             optional = input_source.parse_optional()
@@ -205,6 +232,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 name=input_source.parse_name(),
                 optional=optional,
                 value=default_value,
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "select":
             # Function... example in devteam cummeRbund.
@@ -232,6 +260,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 options=options,
                 multiple=multiple,
                 validators=select_validators,
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "drill_down":
             multiple = input_source.get_bool("multiple", False)
@@ -246,6 +275,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 multiple=multiple,
                 hierarchy=hierarchy,
                 options=static_options,
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "data_column":
             multiple = input_source.get_bool("multiple", False)
@@ -269,6 +299,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 multiple=multiple,
                 optional=optional,
                 value=value,
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "group_tag":
             multiple = input_source.get_bool("multiple", False)
@@ -278,11 +309,13 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 name=input_source.parse_name(),
                 optional=optional,
                 multiple=multiple,
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "baseurl":
             return BaseUrlParameterModel(
                 type="baseurl",
                 name=input_source.parse_name(),
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "genomebuild":
             optional = input_source.parse_optional()
@@ -292,6 +325,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 name=input_source.parse_name(),
                 optional=optional,
                 multiple=multiple,
+                **_common_param_kwargs(input_source),
             )
         elif param_type == "directory_uri":
             directory_uri_validators: List[TextCompatiableValidators] = _text_validators(input_source)
@@ -299,6 +333,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 type="directory",
                 name=input_source.parse_name(),
                 validators=directory_uri_validators,
+                **_common_param_kwargs(input_source),
             )
         else:
             raise UnknownParameterTypeError(f"Unknown Galaxy parameter type {param_type}")
@@ -336,6 +371,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             name=input_source.parse_name(),
             test_parameter=test_parameter,
             whens=whens,
+            **_common_param_kwargs(input_source),
         )
     elif input_type == "repeat":
         name = input_source.get("name")
@@ -353,6 +389,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             parameters=instance_tool_parameter_models,
             min=min,
             max=max,
+            **_common_param_kwargs(input_source),
         )
     elif input_type == "section":
         name = input_source.get("name")
@@ -362,6 +399,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             type="section",
             name=name,
             parameters=instance_tool_parameter_models,
+            **_common_param_kwargs(input_source),
         )
     else:
         raise Exception(

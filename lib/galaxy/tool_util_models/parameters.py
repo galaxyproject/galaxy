@@ -158,11 +158,19 @@ class ParamModel(Protocol):
         # input value MUST be specified.
         ...
 
+    def field_kwargs(self) -> Dict[str, Any]:
+        """Return kwargs for pydantic Field() including json_schema_extra metadata."""
+        ...
+
 
 def safe_field_name(name: str) -> str:
     if name.startswith("_"):
         return f"X{name}"
     return name
+
+
+def _label_value_dicts(options: List[Any]) -> List[Dict[str, Any]]:
+    return [{"label": o.label, "value": o.value, "selected": o.selected} for o in options]
 
 
 def dynamic_model_information_from_py_type(
@@ -177,9 +185,10 @@ def dynamic_model_information_from_py_type(
     if not py_type_is_optional and not requires_value:
         validators["not_null"] = field_validator(name)(Validators.validate_not_none)
 
+    field_kwargs = param_model.field_kwargs()
     return DynamicModelInformation(
         name,
-        (py_type, Field(initialize, alias=param_model.name if param_model.name != name else None)),
+        (py_type, Field(initialize, alias=param_model.name if param_model.name != name else None, **field_kwargs)),
         validators,
     )
 
@@ -197,6 +206,10 @@ class BaseToolParameterModelDefinition(ToolSourceBaseModel):
     @abstractmethod
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         """Return info needed to build Pydantic model at runtime for validation."""
+
+    def field_kwargs(self) -> Dict[str, Any]:
+        """Return kwargs for pydantic Field() including json_schema_extra metadata."""
+        return {"json_schema_extra": {"gx_type": self.parameter_type}}
 
 
 class BaseGalaxyToolParameterModelDefinition(BaseToolParameterModelDefinition):
@@ -218,6 +231,20 @@ class BaseGalaxyToolParameterModelDefinition(BaseToolParameterModelDefinition):
     ] = None
     is_dynamic: bool = False
     optional: Annotated[bool, Field(description="If `false`, parameter must have a value.")] = False
+
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs: Dict[str, Any] = {}
+        if self.label:
+            kwargs["title"] = self.label
+        description_parts = []
+        if self.help:
+            description_parts.append(self.help)
+        if self.argument:
+            description_parts.append(f"({self.argument})")
+        if description_parts:
+            kwargs["description"] = " ".join(description_parts)
+        kwargs["json_schema_extra"] = {"gx_type": self.parameter_type}
+        return kwargs
 
 
 class LabelValue(BaseModel):
@@ -279,6 +306,14 @@ class TextParameterModel(BaseGalaxyToolParameterModelDefinition):
     default_options: List[LabelValue] = []
     validators: List[TextCompatiableValidators] = []
 
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        extra = kwargs["json_schema_extra"]
+        extra["gx_area"] = self.area
+        if self.default_options:
+            extra["gx_default_options"] = _label_value_dicts(self.default_options)
+        return kwargs
+
     @property
     def py_type(self) -> Type:
         return optional_if_needed(StrictStr, self.optional)
@@ -318,6 +353,15 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
     max: Optional[int] = None
     validators: List[NumberCompatiableValidators] = []
 
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        extra = kwargs["json_schema_extra"]
+        if self.min is not None:
+            extra["gx_min"] = self.min
+        if self.max is not None:
+            extra["gx_max"] = self.max
+        return kwargs
+
     @property
     def py_type(self) -> Type:
         return optional_if_needed(StrictInt, self.optional)
@@ -349,6 +393,15 @@ class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
     min: Optional[float] = None
     max: Optional[float] = None
     validators: List[NumberCompatiableValidators] = []
+
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        extra = kwargs["json_schema_extra"]
+        if self.min is not None:
+            extra["gx_min"] = self.min
+        if self.max is not None:
+            extra["gx_max"] = self.max
+        return kwargs
 
     @property
     def py_type(self) -> Type:
@@ -974,6 +1027,17 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
     min: Optional[int] = None
     max: Optional[int] = None
 
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        extra = kwargs["json_schema_extra"]
+        extra["gx_extensions"] = self.extensions
+        extra["gx_multiple"] = self.multiple
+        if self.min is not None:
+            extra["gx_min"] = self.min
+        if self.max is not None:
+            extra["gx_max"] = self.max
+        return kwargs
+
     @property
     def py_type(self) -> Type:
         base_model: Type
@@ -1184,6 +1248,11 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
     extensions: List[str] = ["data"]
     value: Optional[Dict[str, Any]]
 
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        kwargs["json_schema_extra"]["gx_extensions"] = self.extensions
+        return kwargs
+
     @property
     def py_type(self) -> Type:
         return optional_if_needed(DataCollectionRequestOrCollectionUri, self.optional)
@@ -1379,9 +1448,10 @@ class ColorParameterModel(BaseGalaxyToolParameterModelDefinition):
             validators = {"color_format": field_validator(self.name)(ColorParameterModel.validate_color_str_if_value)}
         else:
             validators = {"color_format": field_validator(self.name)(ColorParameterModel.validate_color_str)}
+        field_kwargs = self.field_kwargs()
         return DynamicModelInformation(
             self.name,
-            (py_type, initialize),
+            (py_type, Field(initialize, **field_kwargs)),
             validators,
         )
 
@@ -1476,6 +1546,14 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
     options: Optional[List[LabelValue]] = None
     multiple: bool = False
     validators: List[SelectCompatiableValidators] = []
+
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        extra = kwargs["json_schema_extra"]
+        if self.options is not None and self.options:
+            extra["gx_options"] = _label_value_dicts(self.options)
+        extra["gx_multiple"] = self.multiple
+        return kwargs
 
     @staticmethod
     def split_str(cls, data: Any) -> Any:
@@ -1583,6 +1661,11 @@ class GenomeBuildParameterModel(BaseGalaxyToolParameterModelDefinition):
     type: Literal["genomebuild"]
     multiple: bool
 
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        kwargs["json_schema_extra"]["gx_multiple"] = self.multiple
+        return kwargs
+
     @property
     def py_type(self) -> Type:
         py_type: Type = StrictStr
@@ -1636,6 +1719,11 @@ class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
     options: Optional[List[DrillDownOptionsDict]] = None
     multiple: bool
     hierarchy: DrillDownHierarchyT
+
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        kwargs["json_schema_extra"]["gx_multiple"] = self.multiple
+        return kwargs
 
     @property
     def py_type(self) -> Type:
@@ -1730,6 +1818,11 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
     multiple: bool
     value: Optional[Union[int, List[int]]] = None
 
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        kwargs["json_schema_extra"]["gx_multiple"] = self.multiple
+        return kwargs
+
     @staticmethod
     def split_str(cls, data: Any) -> Any:
         if isinstance(data, str):
@@ -1779,6 +1872,11 @@ class GroupTagParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_group_tag"] = "gx_group_tag"
     type: Literal["group_tag"]
     multiple: bool
+
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        kwargs["json_schema_extra"]["gx_multiple"] = self.multiple
+        return kwargs
 
     @property
     def py_type(self) -> Type:
@@ -1841,6 +1939,18 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
     type: Literal["conditional"]
     test_parameter: Union[BooleanParameterModel, SelectParameterModel]
     whens: List[ConditionalWhen]
+
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        extra = kwargs["json_schema_extra"]
+        test_param = self.test_parameter
+        if isinstance(test_param, SelectParameterModel) and test_param.options:
+            extra["gx_options"] = _label_value_dicts(test_param.options)
+        if test_param.label:
+            extra["gx_test_label"] = test_param.label
+        if test_param.help:
+            extra["gx_test_help"] = test_param.help
+        return kwargs
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         is_boolean = isinstance(self.test_parameter, BooleanParameterModel)
@@ -1931,9 +2041,10 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
             else:
                 initialize_cond = None
 
+        field_kwargs = self.field_kwargs()
         return DynamicModelInformation(
             self.name,
-            (py_type, initialize_cond),
+            (py_type, Field(initialize_cond, **field_kwargs)),
             {},
         )
 
@@ -1948,6 +2059,15 @@ class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameters: List["ToolParameterT"]
     min: Optional[int] = None
     max: Optional[int] = None
+
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        extra = kwargs["json_schema_extra"]
+        if self.min is not None:
+            extra["gx_min"] = self.min
+        if self.max is not None:
+            extra["gx_max"] = self.max
+        return kwargs
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         # Maybe validators for min and max...
@@ -1972,9 +2092,10 @@ class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
         class RepeatType(RootModel):
             root: List[instance_class] = Field(initialize_repeat, min_length=min_length, max_length=max_length)  # type: ignore[valid-type]
 
+        field_kwargs = self.field_kwargs()
         return DynamicModelInformation(
             self.name,
-            (RepeatType, initialize_repeat),
+            (RepeatType, Field(initialize_repeat, **field_kwargs)),
             {},
         )
 
@@ -2006,9 +2127,10 @@ class SectionParameterModel(BaseGalaxyToolParameterModelDefinition):
             initialize_section = ...
         else:
             initialize_section = None
+        field_kwargs = self.field_kwargs()
         return DynamicModelInformation(
             self.name,
-            (instance_class, initialize_section),
+            (instance_class, Field(initialize_section, **field_kwargs)),
             {},
         )
 
