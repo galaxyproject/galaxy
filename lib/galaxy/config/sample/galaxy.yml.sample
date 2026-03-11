@@ -2236,11 +2236,6 @@ galaxy:
   # admin documentation.
   #enable_beta_gdpr: false
 
-  # Enable beta workflow modules that should not yet be considered part
-  # of Galaxy's stable API. (The module state definitions may change and
-  # workflows built using these modules may not function in the future.)
-  #enable_beta_workflow_modules: false
-
   # Comma-separated list of the EDAM panel views to load - choose from
   # merged, operations, topics. Set to empty string to disable EDAM all
   # together. Set default_panel_view to 'ontology:edam_topics' to

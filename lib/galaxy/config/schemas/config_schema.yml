@@ -2957,15 +2957,6 @@ mapping:
           Please read the GDPR section under the special topics area of the
           admin documentation.
 
-      enable_beta_workflow_modules:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable beta workflow modules that should not yet be considered part of Galaxy's
-          stable API. (The module state definitions may change and workflows built using
-          these modules may not function in the future.)
-
       edam_panel_views:
         type: str
         default: 'operations,topics'
