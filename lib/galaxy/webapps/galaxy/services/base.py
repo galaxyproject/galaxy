@@ -37,16 +37,16 @@ from galaxy.schema.schema import (
     ToolRequestModel,
 )
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageTarget,
+)
 from galaxy.tool_util.parameters import (
     encode as encode_request,
     input_models_for_tool_source,
 )
 from galaxy.tool_util.parameters.state import RequestInternalToolState
 from galaxy.tool_util.parser import get_tool_source
-from galaxy.short_term_storage import (
-    ShortTermStorageAllocator,
-    ShortTermStorageTarget,
-)
 from galaxy.util import ready_name_for_url
 
 

@@ -478,7 +478,9 @@ def test_map_over_collection(
 
 
 @requires_tool_id("cat|cat1")
-def test_dce_as_input(target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+def test_dce_as_input(
+    target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
     """Test using a dataset collection element (dce) as a direct input to a tool.
 
     This corresponds to drag-and-dropping an individual element from a collection
