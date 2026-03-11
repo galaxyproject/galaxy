@@ -7,10 +7,17 @@ migrated here so the legacy WSGI controller can be deleted.
 """
 
 import logging
+import mimetypes
+import os
 from typing import Optional
 
 from fastapi import Form
-from starlette.responses import Response
+from galaxy.exceptions import ObjectNotFound
+from galaxy.tool_shed.util.repository_util import get_absolute_path_to_file_in_repository
+from starlette.responses import (
+    FileResponse,
+    Response,
+)
 
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.repositories import (
@@ -24,6 +31,7 @@ from tool_shed.managers.repositories import (
     previous_changeset_revisions_str,
     updated_changeset_revisions_str,
 )
+from tool_shed.util.repository_util import get_repository_in_tool_shed
 from tool_shed.structured_app import ToolShedApp
 from . import (
     depends,
@@ -44,7 +52,6 @@ router = Router(tags=["legacy_install"])
 class FastAPILegacyInstall:
     app: ToolShedApp = depends(ToolShedApp)
 
-    # -- plain-text GET endpoints (Galaxy reads response.text) ---------
 
     @router.get(
         "/repository/get_ctx_rev",
@@ -137,7 +144,6 @@ class FastAPILegacyInstall:
         result = get_tool_dependencies_for_changeset(self.app, name, owner, changeset_revision)
         return Response(content=result, media_type="text/plain")
 
-    # -- JSON endpoints (Galaxy reads json.loads(response.text)) -------
 
     @router.get(
         "/repository/get_repository_dependencies",
@@ -173,3 +179,43 @@ class FastAPILegacyInstall:
         encoded_str: Optional[str] = Form(default=None),
     ) -> dict:
         return get_required_repo_info_dict_from_encoded(trans, encoded_str)
+
+
+    @router.get(
+        "/repository/static/images/{repository_id}/{image_file:path}",
+        operation_id="legacy_install__display_image",
+        tags=["legacy_install"],
+    )
+    def display_image_in_repository(
+        self,
+        repository_id: str,
+        image_file: str,
+    ) -> FileResponse:
+        repository = get_repository_in_tool_shed(self.app, repository_id)
+        if not repository:
+            raise ObjectNotFound("Repository not found.")
+        repo_files_dir = repository.repo_path(self.app)
+        path_to_file = get_absolute_path_to_file_in_repository(repo_files_dir, image_file)
+        if not path_to_file or not os.path.exists(path_to_file):
+            raise ObjectNotFound("Image file not found.")
+        # Validate resolved path stays within repository directory (symlink protection)
+        resolved = os.path.realpath(path_to_file)
+        repo_dir_resolved = os.path.realpath(repo_files_dir)
+        if resolved != repo_dir_resolved and not resolved.startswith(repo_dir_resolved + os.sep):
+            raise ObjectNotFound("Image file not found.")
+        # Determine MIME type - try datatypes registry first, fall back to stdlib
+        media_type = None
+        file_name = os.path.basename(image_file)
+        try:
+            extension = file_name.rsplit(".", 1)[-1]
+            media_type = self.app.datatypes_registry.get_mimetype_by_extension(extension)
+        except Exception:
+            pass
+        if not media_type or media_type == "application/octet-stream":
+            guessed, _ = mimetypes.guess_type(file_name)
+            if guessed:
+                media_type = guessed
+        # Only serve known image types
+        if not media_type or not media_type.startswith("image/"):
+            raise ObjectNotFound("Image file not found.")
+        return FileResponse(path=resolved, media_type=media_type)
