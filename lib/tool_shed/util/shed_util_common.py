@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import socket
 import string
 from typing import (
@@ -218,29 +217,6 @@ def handle_email_alerts(
                 log.exception("An error occurred sending a tool shed repository update alert by email.")
 
 
-def is_path_within_dependency_dir(app: "ToolShedApp", path: str) -> bool:
-    """
-    Detect whether the given path is within the tool_dependency_dir folder on the disk.
-    (Specified by the config option). Use to filter malicious symlinks targeting outside paths.
-    """
-    allowed = False
-    resolved_path = os.path.realpath(path)
-    if tool_dependency_dir := app.config.get("tool_dependency_dir", None):
-        dependency_path = os.path.abspath(tool_dependency_dir)
-        allowed = os.path.commonprefix([dependency_path, resolved_path]) == dependency_path
-    return allowed
-
-
-def is_path_within_repo(app: "ToolShedApp", path: str, repository_id: str) -> bool:
-    """
-    Detect whether the given path is within the repository folder on the disk.
-    Use to filter malicious symlinks targeting outside paths.
-    """
-    repo_path = os.path.abspath(repository_util.get_repository_by_id(app, repository_id).repo_path(app))
-    resolved_path = os.path.realpath(path)
-    return os.path.commonprefix([repo_path, resolved_path]) == repo_path
-
-
 def tool_shed_is_this_tool_shed(toolshed_base_url, trans=None):
     """Determine if a tool shed is the current tool shed."""
     cleaned_toolshed_base_url = common_util.remove_protocol_from_tool_shed_url(toolshed_base_url)
@@ -261,7 +237,5 @@ __all__ = (
     "get_category_by_name",
     "get_user",
     "handle_email_alerts",
-    "is_path_within_dependency_dir",
-    "is_path_within_repo",
     "tool_shed_is_this_tool_shed",
 )
