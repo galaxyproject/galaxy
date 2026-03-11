@@ -18,6 +18,8 @@ from galaxy.model import (
     DatasetInstance,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    JOB_IO_NAME_MAX_LENGTH,
+    JobOutputNameTooLongError,
 )
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.structure import UninitializedTree
@@ -325,10 +327,8 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
             self.export_store.collection_datasets.add(collection_dataset.id)
 
     def add_output_dataset_association(self, name, dataset_instance):
-        from galaxy.model import JOB_IO_NAME_MAX_LENGTH
-
         if name and len(name) > JOB_IO_NAME_MAX_LENGTH:
-            raise ValueError(
+            raise JobOutputNameTooLongError(
                 f"Tool produced an output name that exceeds the {JOB_IO_NAME_MAX_LENGTH} character name length limit "
                 f"(got {len(name)} characters), tool is likely broken"
             )

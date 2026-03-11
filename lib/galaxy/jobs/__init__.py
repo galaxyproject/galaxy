@@ -81,6 +81,7 @@ from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
     Dataset,
     Job,
+    JobOutputNameTooLongError,
     store,
     Task,
 )
@@ -2157,7 +2158,7 @@ class MinimalJobWrapper(HasResourceParameters):
             # importing metadata will discover outputs if extended metadata
             try:
                 self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
-            except (MaxDiscoveredFilesExceededError, ValueError) as e:
+            except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError) as e:
                 final_job_state = job.states.ERROR
                 job.job_messages = [
                     {

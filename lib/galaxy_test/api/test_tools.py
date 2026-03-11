@@ -2378,6 +2378,21 @@ class TestToolsApi(ApiTestCase, TestsTools):
         hdca = self._get(f"histories/{history_id}/contents/dataset_collections/{implicit_collections[0]['id']}").json()
         assert hdca["elements"][0]["object"]["elements"][0]["object"]["elements"][0]["element_identifier"] == "forward"
 
+    @skip_without_tool("discover_long_name")
+    def test_long_output_name_fails_gracefully(self, history_id):
+        # Short name succeeds
+        response = self._run("discover_long_name", history_id, {"output_name": "normal_name"})
+        self._assert_status_code_is(response, 200)
+        self.dataset_populator.wait_for_job(response.json()["jobs"][0]["id"], assert_ok=True)
+        # Long name fails with clear error
+        response = self._run("discover_long_name", history_id, {"output_name": "a" * 240})
+        self._assert_status_code_is(response, 200)
+        job_id = response.json()["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=False)
+        job_details = self.dataset_populator.get_job_details(job_id, full=True).json()
+        assert job_details["state"] == "error"
+        assert "255 character" in job_details["job_messages"][0]["desc"]
+
     def _bed_list(self, history_id):
         bed1_contents = open(self.get_filename("1.bed")).read()
         bed2_contents = open(self.get_filename("2.bed")).read()
