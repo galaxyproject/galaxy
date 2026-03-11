@@ -1,5 +1,5 @@
 import { faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faPencilAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCodeBranch, faPencilAlt } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "font-awesome-6";
 
 export interface WorkflowInput {
@@ -95,6 +95,12 @@ export function getWorkflowInputs(): WorkflowInput[] {
             stateOverwrites: {
                 parameter_type: "directory_uri",
             },
+        },
+        {
+            moduleId: "pick_value",
+            title: "Pick Value",
+            description: "Select among conditional branch outputs",
+            icon: faCodeBranch,
         },
     ];
 }
