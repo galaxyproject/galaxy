@@ -11030,9 +11030,8 @@ export interface components {
             /**
              * User Id
              * @description ID of the user who owns the referenced dataset.
-             * @example 0123456789ABCDEF
              */
-            user_id: string;
+            user_id: string | null;
         };
         /**
          * DatasetPermissionAction
