@@ -359,9 +359,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.fa-trash-o {
-    color: initial;
-}
-</style>
