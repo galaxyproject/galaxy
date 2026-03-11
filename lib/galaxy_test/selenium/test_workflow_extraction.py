@@ -167,7 +167,7 @@ test_data:
     def extract_workflow_toggle_job(self, job_id: str):
         """Toggle the selection checkbox for a specific job card by job_id."""
         checkbox = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_id)
-        element = checkbox.wait_for_visible()
+        element = checkbox.wait_for_present()
         self.execute_script_click(element)
 
     def find_workflow_by_name(self, name: str) -> str:
