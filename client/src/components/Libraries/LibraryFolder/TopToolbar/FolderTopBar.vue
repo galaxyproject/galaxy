@@ -336,7 +336,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
 
                     <BDropdown
                         v-if="props.canAddLibraryItem"
-                        v-b-tooltip.top.noninteractive
+                        v-g-tooltip.top.noninteractive
                         right
                         no-caret
                         class="add-library-items-datasets mr-1">
@@ -365,7 +365,7 @@ function onAddDatasetsDirectory(selectedDatasets: Record<string, string | boolea
                         </BDropdownGroup>
                     </BDropdown>
 
-                    <BDropdown v-b-tooltip.top.noninteractive right no-caret class="add-to-history mr-1">
+                    <BDropdown v-g-tooltip.top.noninteractive right no-caret class="add-to-history mr-1">
                         <template v-slot:button-content>
                             <FontAwesomeIcon :icon="faBook" />
                             Add to History

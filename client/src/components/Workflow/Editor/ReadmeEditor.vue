@@ -65,7 +65,7 @@ watch(
                 </BButton>
             </BButtonGroup>
             <BButton
-                v-b-tooltip.hover.noninteractive
+                v-g-tooltip.hover.noninteractive
                 size="sm"
                 variant="outline-danger"
                 title="Return to Workflow"

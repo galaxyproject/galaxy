@@ -16,7 +16,7 @@
             </DebouncedInput>
             <BInputGroupAppend>
                 <BButton
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     aria-haspopup="true"
                     title="Advanced Filtering Help"
                     :size="size"
@@ -24,7 +24,7 @@
                     <FontAwesomeIcon :icon="faQuestion" />
                 </BButton>
                 <BButton
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     aria-haspopup="true"
                     title="Clear Filters (esc)"
                     :size="size"

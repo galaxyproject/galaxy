@@ -285,7 +285,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                         <template v-slot:cell(actions)="{ index }">
                             <button
-                                v-b-tooltip.hover.noninteractive
+                                v-g-tooltip.hover.noninteractive
                                 class="btn btn-link text-danger remove-btn"
                                 title="Remove file from list"
                                 @click="removeFile(index)">

@@ -41,7 +41,7 @@ function onItemSelection(item: ExtensionDetails) {
     <div class="column-header-vertical">
         <span class="column-title">Type</span>
         <SingleItemSelector
-            v-b-tooltip.hover.noninteractive
+            v-g-tooltip.hover.noninteractive
             collection-name="Data Types"
             :title="tooltip"
             :items="optionsWithDefault"
@@ -50,7 +50,7 @@ function onItemSelection(item: ExtensionDetails) {
             @update:selected-item="onItemSelection" />
         <FontAwesomeIcon
             v-if="warning"
-            v-b-tooltip.hover.noninteractive
+            v-g-tooltip.hover.noninteractive
             class="text-warning warning-icon"
             :icon="faExclamationTriangle"
             :title="warning" />

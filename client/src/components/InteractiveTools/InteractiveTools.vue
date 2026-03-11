@@ -107,7 +107,7 @@ onMounted(() => {
             <template v-slot:cell(actions)="row">
                 <b-button
                     :id="createId('stop', row.item.id)"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     variant="link"
                     class="p-0"
                     title="Stop this interactive tool"
@@ -118,7 +118,7 @@ onMounted(() => {
             <template v-slot:cell(name)="row">
                 <a
                     :id="createId('link', row.item.id)"
-                    v-b-tooltip
+                    v-g-tooltip
                     title="Open Interactive Tool"
                     :index="row.index"
                     href="#"
@@ -129,7 +129,7 @@ onMounted(() => {
                 <a
                     v-if="row.item.target"
                     :id="createId('external-link', row.item.id)"
-                    v-b-tooltip
+                    v-g-tooltip
                     class="ml-2"
                     title="Open in new tab"
                     :href="row.item.target"

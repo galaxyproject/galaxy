@@ -154,7 +154,7 @@ function getStepText(steps: number) {
     <div class="workflow-indicators">
         <BButton
             v-if="workflow.published && !publishedView"
-            v-b-tooltip.noninteractive.hover
+            v-g-tooltip.noninteractive.hover
             size="sm"
             class="workflow-published-icon inline-icon-button"
             :title="publishedTitle"
@@ -163,7 +163,7 @@ function getStepText(steps: number) {
         </BButton>
         <FontAwesomeIcon
             v-else-if="workflow.published"
-            v-b-tooltip.noninteractive.hover
+            v-g-tooltip.noninteractive.hover
             title="Published workflow"
             :icon="faGlobe"
             fixed-width
@@ -171,7 +171,7 @@ function getStepText(steps: number) {
 
         <BButton
             v-if="sourceType.includes('trs')"
-            v-b-tooltip.noninteractive.hover
+            v-g-tooltip.noninteractive.hover
             size="sm"
             class="workflow-trs-icon inline-icon-button"
             :title="sourceTitle">
@@ -180,7 +180,7 @@ function getStepText(steps: number) {
 
         <BButton
             v-if="sourceType == 'url'"
-            v-b-tooltip.noninteractive.hover
+            v-g-tooltip.noninteractive.hover
             size="sm"
             class="workflow-external-link inline-icon-button"
             :title="sourceTitle">
@@ -200,7 +200,7 @@ function getStepText(steps: number) {
 
         <BBadge
             v-if="shared && !publishedView"
-            v-b-tooltip.noninteractive.hover
+            v-g-tooltip.noninteractive.hover
             class="outline-badge cursor-pointer mx-1"
             :title="`'${workflow.owner}' shared this workflow with you. Click to view all workflows shared with you by '${workflow.owner}'`"
             @click="onViewMySharedByUser">
@@ -210,7 +210,7 @@ function getStepText(steps: number) {
 
         <BBadge
             v-if="publishedView && workflow.published"
-            v-b-tooltip.noninteractive.hover
+            v-g-tooltip.noninteractive.hover
             data-description="published owner badge"
             class="outline-badge cursor-pointer mx-1"
             :title="publishedTitle"
@@ -223,7 +223,7 @@ function getStepText(steps: number) {
             <BBadge
                 v-for="creator in creatorBadges"
                 :key="creator.name"
-                v-b-tooltip.noninteractive.hover
+                v-g-tooltip.noninteractive.hover
                 data-description="external creator badge"
                 class="mx-1"
                 :class="creator.class"

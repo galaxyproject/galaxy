@@ -12,7 +12,7 @@
                 :markdown-content="markdownText" />
             <b-button
                 id="permissions-button"
-                v-b-tooltip.hover.bottom
+                v-g-tooltip.hover.bottom
                 v-b-modal:object-permissions-modal
                 title="Permissions"
                 variant="link"
@@ -22,7 +22,7 @@
             </b-button>
             <b-button
                 id="save-button"
-                v-b-tooltip.hover.bottom
+                v-g-tooltip.hover.bottom
                 title="Save"
                 variant="link"
                 role="button"
@@ -31,7 +31,7 @@
             </b-button>
             <b-button
                 id="view-button"
-                v-b-tooltip.hover.bottom
+                v-g-tooltip.hover.bottom
                 title="Save & View"
                 variant="link"
                 role="button"

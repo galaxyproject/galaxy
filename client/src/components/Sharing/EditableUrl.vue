@@ -70,21 +70,21 @@ function onCopyOut() {
 
         <BButton
             v-if="!editing"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             class="inline-icon-button"
             title="Edit URL"
             size="md"
             @click="onEdit">
             <FontAwesomeIcon :icon="faEdit" fixed-width />
         </BButton>
-        <BButton v-else v-b-tooltip.hover class="inline-icon-button" title="Done" size="md" @click="onSubmit">
+        <BButton v-else v-g-tooltip.hover class="inline-icon-button" title="Done" size="md" @click="onSubmit">
             <FontAwesomeIcon :icon="faCheck" fixed-width />
         </BButton>
 
         <BButton
             v-if="!editing"
             id="tooltip-clipboard"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             :disabled="editing"
             size="md"
             class="inline-icon-button"

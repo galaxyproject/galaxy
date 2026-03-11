@@ -2,7 +2,7 @@
     <ClickToEdit
         ref="annotationInput"
         v-slot="{ toggleEdit, placeholder, stateValidator }"
-        v-b-tooltip.hover="{ boundary: 'viewport', placement: tooltipPlacement }"
+        v-g-tooltip.hover="{ boundary: 'viewport', placement: tooltipPlacement }"
         class="annotation"
         tag-name="p"
         :value="annotation"

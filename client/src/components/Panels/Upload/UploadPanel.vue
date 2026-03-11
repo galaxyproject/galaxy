@@ -25,7 +25,7 @@ function showProgressDetails() {
             <h2 id="activity-panel-heading" class="activity-panel-heading h-sm d-inline-flex align-items-center">
                 <span>Import Data</span>
                 <span
-                    v-b-tooltip.hover.noninteractive
+                    v-g-tooltip.hover.noninteractive
                     class="badge badge-warning ml-2"
                     title="This upload experience is in Beta and is intended to gather user feedback.">
                     Beta
@@ -35,7 +35,7 @@ function showProgressDetails() {
         <template v-slot:header-buttons>
             <BFormCheckbox
                 v-model="advancedMode"
-                v-b-tooltip.hover.noninteractive
+                v-g-tooltip.hover.noninteractive
                 size="sm"
                 switch
                 class="mx-2"

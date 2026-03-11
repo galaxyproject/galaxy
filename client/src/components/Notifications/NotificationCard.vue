@@ -164,7 +164,7 @@ function markNotificationAsSeen() {
                 <span>The user</span>{{ " " }}<b>{{ props.notification.content.owner_name }}</b
                 >{{ " " }}<span>shared </span>
                 <BLink
-                    v-b-tooltip.bottom
+                    v-g-tooltip.bottom
                     :title="`View ${props.notification.content.item_type} in new tab`"
                     class="text-primary"
                     :href="absPath(props.notification.content.slug)"

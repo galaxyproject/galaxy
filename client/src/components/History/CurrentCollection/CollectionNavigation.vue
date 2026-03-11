@@ -39,7 +39,7 @@ function close() {
 <template>
     <div class="mx-1 mt-1">
         <BButton
-            v-b-tooltip:hover="historyName"
+            v-g-tooltip:hover="historyName"
             size="sm"
             class="text-left text-decoration-none overflow-hidden text-nowrap w-100"
             style="text-overflow: ellipsis"

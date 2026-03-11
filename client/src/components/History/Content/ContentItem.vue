@@ -344,7 +344,7 @@ function unexpandedClick(event: Event) {
                     </BButton>
                     <BButton
                         v-if="highlight == 'input'"
-                        v-b-tooltip.hover
+                        v-g-tooltip.hover
                         variant="link"
                         class="p-0"
                         title="Input"
@@ -353,7 +353,7 @@ function unexpandedClick(event: Event) {
                     </BButton>
                     <BButton
                         v-else-if="highlight == 'active'"
-                        v-b-tooltip.hover
+                        v-g-tooltip.hover
                         variant="link"
                         class="p-0"
                         title="Inputs/Outputs highlighted for this item"
@@ -363,7 +363,7 @@ function unexpandedClick(event: Event) {
                     </BButton>
                     <BButton
                         v-else-if="highlight == 'output'"
-                        v-b-tooltip.hover
+                        v-g-tooltip.hover
                         variant="link"
                         class="p-0"
                         title="Output"
@@ -388,7 +388,7 @@ function unexpandedClick(event: Event) {
                 <span class="align-self-start btn-group">
                     <BButton
                         v-if="item.sub_items?.length && !isSubItem"
-                        v-b-tooltip.hover
+                        v-g-tooltip.hover
                         title="Show converted items"
                         tabindex="0"
                         class="display-btn px-1 align-items-center"

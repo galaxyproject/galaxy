@@ -49,7 +49,7 @@ const hasHashes = computed(() => !!fileEntry.value?.hashes && fileEntry.value.ha
         <span v-if="ctime" class="metadata-item">
             <UtcDate :date="ctime" mode="pretty" />
         </span>
-        <span v-if="hasHashes" v-b-tooltip.hover class="metadata-hash" :title="hashTooltip">
+        <span v-if="hasHashes" v-g-tooltip.hover class="metadata-hash" :title="hashTooltip">
             <FontAwesomeIcon :icon="faFingerprint" />
         </span>
     </div>
