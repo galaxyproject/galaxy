@@ -33,6 +33,10 @@ const fields: TableField[] = [
     },
 ];
 
+function optionalString(value: string | null | undefined): string | undefined {
+    return value ?? undefined;
+}
+
 const edamLink = (edamIRI: string) => `https://edamontology.github.io/edam-browser/#${edamIRI}`;
 </script>
 
@@ -52,25 +56,37 @@ const edamLink = (edamIRI: string) => `https://edamontology.github.io/edam-brows
                     v-if="item.descriptionUrl"
                     tooltip
                     target="_blank"
-                    :title="item.description"
+                    :title="optionalString(item.description)"
                     :href="item.descriptionUrl">
                     {{ item.extension }}
                 </GLink>
-                <span v-else v-b-tooltip.hover :title="item.description">
+                <span v-else v-b-tooltip.hover :title="optionalString(item.description)">
                     {{ item.extension }}
                 </span>
             </template>
 
             <template v-slot:cell(edamFormatLabel)="{ item }">
-                <GLink tooltip target="_blank" :href="edamLink(item.edamFormat)" :title="item.edamFormatDefinition">
+                <GLink
+                    v-if="item.edamFormat"
+                    tooltip
+                    target="_blank"
+                    :href="edamLink(item.edamFormat)"
+                    :title="optionalString(item.edamFormatDefinition)">
                     {{ item.edamFormatLabel }}
                 </GLink>
+                <span v-else>{{ item.edamFormatLabel }}</span>
             </template>
 
             <template v-slot:cell(edamDataLabel)="{ item }">
-                <GLink tooltip target="_blank" :href="edamLink(item.edamData)" :title="item.edamDataDefinition">
+                <GLink
+                    v-if="item.edamData"
+                    tooltip
+                    target="_blank"
+                    :href="edamLink(item.edamData)"
+                    :title="optionalString(item.edamDataDefinition)">
                     {{ item.edamDataLabel }}
                 </GLink>
+                <span v-else>{{ item.edamDataLabel }}</span>
             </template>
         </GTable>
     </div>
