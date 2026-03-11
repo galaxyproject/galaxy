@@ -109,6 +109,9 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert repository_metadata
         for _, value in repository_metadata.root.items():
             assert value.invalid_tools
+            for invalid_tool in value.invalid_tools:
+                assert invalid_tool.tool_config
+                assert invalid_tool.error_message
 
     def test_index_simple(self):
         # Logic and typing is pretty different if given a tool id to search for - this should

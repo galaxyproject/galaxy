@@ -52,7 +52,7 @@ class ToolValidator:
                         else:
                             correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  "
                             correction_msg += "Upload a file named tool_data_table_conf.xml.sample to the repository "
-                            correction_msg += "that includes the required entry to correct this error.<br/>"
+                            correction_msg += "that includes the required entry to correct this error."
                             invalid_tup = (tool_config_name, correction_msg)
                             if invalid_tup not in invalid_files_and_errors_tups:
                                 invalid_files_and_errors_tups.append(invalid_tup)
@@ -71,8 +71,8 @@ class ToolValidator:
                                 break
                         if not sample_found:
                             correction_msg = (
-                                f"This file refers to a file named <b>{index_file_name}</b>.  "
-                                f"Upload a file named <b>{index_file_name}.sample</b> to the repository to correct this error."
+                                f"This file refers to a file named {index_file_name}.  "
+                                f"Upload a file named {index_file_name}.sample to the repository to correct this error."
                             )
                             invalid_files_and_errors_tups.append((tool_config_name, correction_msg))
         return invalid_files_and_errors_tups

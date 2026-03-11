@@ -27,6 +27,24 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+def build_invalid_tools(metadata: dict) -> list:
+    """Transform raw invalid_tools metadata into a list of dicts with tool_config and error_message."""
+    raw_invalid_tools = metadata.get("invalid_tools", [])
+    invalid_tool_errors = metadata.get("invalid_tool_errors", {})
+    invalid_tools = []
+    for item in raw_invalid_tools:
+        if isinstance(item, str):
+            invalid_tools.append(
+                {
+                    "tool_config": item,
+                    "error_message": invalid_tool_errors.get(item, ""),
+                }
+            )
+        elif isinstance(item, dict):
+            invalid_tools.append(item)
+    return invalid_tools
+
+
 def get_all_dependencies(app: "ToolShedApp", metadata_entry, processed_dependency_links=None):
     processed_dependency_links = processed_dependency_links or []
     encoder = app.security.encode_id
@@ -47,7 +65,7 @@ def get_all_dependencies(app: "ToolShedApp", metadata_entry, processed_dependenc
         dependency_dict["repository"] = repository.to_dict(value_mapper=value_mapper)
         if dependency_metadata.includes_tools:
             dependency_dict["tools"] = dependency_metadata.metadata["tools"]
-        dependency_dict["invalid_tools"] = dependency_metadata.metadata.get("invalid_tools", [])
+        dependency_dict["invalid_tools"] = build_invalid_tools(dependency_metadata.metadata)
         dependency_dict["repository_dependencies"] = []
         if dependency_dict["includes_tool_dependencies"]:
             dependency_dict["tool_dependencies"] = repository.get_tool_dependencies(
