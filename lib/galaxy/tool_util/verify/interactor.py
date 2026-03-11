@@ -209,6 +209,14 @@ class RunToolResponse(NamedTuple):
     jobs: List[Dict[str, Any]]
 
 
+class ToolSubmissionResponse(NamedTuple):
+    inputs: Dict[str, Any]
+    tool_request_id: Optional[str]  # None for legacy submissions
+    submit_response_object: Dict[str, Any]  # raw validated response
+    is_legacy: bool
+    cleanup: Optional[Callable[[], None]] = None
+
+
 class InteractorStagingInterface(StagingInterface):
 
     def __init__(self, galaxy_interactor: "GalaxyInteractorApi", maxseconds: Optional[int], upload_async: bool) -> None:
@@ -709,7 +717,7 @@ class GalaxyInteractorApi:
         history_id: str,
         resource_parameters: Optional[Dict[str, Any]] = None,
         use_legacy_api: UseLegacyApiT = DEFAULT_USE_LEGACY_API,
-    ) -> RunToolResponse:
+    ) -> "ToolSubmissionResponse":
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
@@ -868,8 +876,35 @@ class GalaxyInteractorApi:
             else:
                 break
         submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
-        if not submit_with_legacy_api:
-            tool_request_id = submit_response_object["tool_request_id"]
+        tool_request_id = None if submit_with_legacy_api else submit_response_object.get("tool_request_id")
+
+        cleanup: Optional[Callable[[], None]] = None
+        if created_credentials:
+
+            def cleanup():
+                for cred_info in created_credentials:
+                    try:
+                        delete_response = self._delete(
+                            f"users/{cred_info['user_id']}/credentials/{cred_info['user_credentials_id']}"
+                        )
+                        raise_for_status(delete_response)
+                    except Exception as e:
+                        print(f"Warning: Failed to delete test credentials: {e}")
+
+        return ToolSubmissionResponse(
+            inputs=inputs_tree,
+            tool_request_id=tool_request_id,
+            submit_response_object=submit_response_object,
+            is_legacy=submit_with_legacy_api,
+            cleanup=cleanup,
+        )
+
+    def resolve_tool_submission(self, submission: "ToolSubmissionResponse") -> RunToolResponse:
+        inputs_tree = submission.inputs
+        submit_response_object = submission.submit_response_object
+        if not submission.is_legacy:
+            tool_request_id = submission.tool_request_id
+            assert tool_request_id is not None
             successful = self.wait_on_tool_request(tool_request_id)
             if not successful:
                 request = self.get_tool_request(tool_request_id) or {}
@@ -878,19 +913,15 @@ class GalaxyInteractorApi:
                     inputs_tree,
                 )
             job_refs = self.jobs_for_tool_request(tool_request_id)
-            outputs = OutputsDict()
-            output_collections = {}
             if len(job_refs) != 1:
                 raise Exception(
                     f"Found incorrect number of jobs for tool request - was expecting a single job {job_refs}"
                 )
-            assert len(job_refs) == 1, job_refs
             job_id = job_refs[0]["id"]
-            if created_credentials:
-                self.wait_for_job(job_id, history_id, testdef.maxseconds or DEFAULT_TOOL_TEST_WAIT)
             jobs = [self.__get_job(job_id).json()]
-            job_outputs = self.job_outputs(job_id)
-            for job_output in job_outputs:
+            outputs = OutputsDict()
+            output_collections: Dict[str, Any] = {}
+            for job_output in self.job_outputs(job_id):
                 if "dataset" in job_output:
                     outputs[job_output["name"]] = job_output["dataset"]
                 else:
@@ -907,18 +938,10 @@ class GalaxyInteractorApi:
                 jobs=jobs,
             )
         except KeyError:
-            message = f"Error creating a job for these tool inputs - {submit_response_object.get('err_msg', 'unknown error')}"
+            message = (
+                f"Error creating a job for these tool inputs - {submit_response_object.get('err_msg', 'unknown error')}"
+            )
             raise RunToolException(message, inputs_tree)
-        finally:
-            # Clean up created credentials
-            for cred_info in created_credentials:
-                try:
-                    delete_response = self._delete(
-                        f"users/{cred_info['user_id']}/credentials/{cred_info['user_credentials_id']}"
-                    )
-                    raise_for_status(delete_response)
-                except Exception as e:
-                    print(f"Warning: Failed to delete test credentials: {e}")
 
     def _create_collection(self, history_id, collection_def):
         create_payload = dict(
@@ -1741,6 +1764,7 @@ def verify_tool(
     tool_execution_exception: Optional[Exception] = None
     input_staging_exc_info = None
     expected_failure_occurred = False
+    credential_cleanup: Optional[Callable[[], None]] = None
     begin_time = time.time()
     try:
         try:
@@ -1758,10 +1782,13 @@ def verify_tool(
             input_staging_exc_info = sys.exc_info()
             raise
         try:
-            tool_response = galaxy_interactor.run_tool(
+            submission = galaxy_interactor.run_tool(
                 testdef, test_history, resource_parameters=resource_parameters, use_legacy_api=use_legacy_api
             )
-            data_list, jobs, tool_inputs = tool_response.outputs, tool_response.jobs, tool_response.inputs
+            tool_inputs = submission.inputs
+            credential_cleanup = submission.cleanup
+            tool_response = galaxy_interactor.resolve_tool_submission(submission)
+            data_list, jobs = tool_response.outputs, tool_response.jobs
             data_collection_list = tool_response.output_collections
         except RunToolException as e:
             tool_inputs = e.inputs
@@ -1786,6 +1813,9 @@ def verify_tool(
             except Exception as e:
                 job_output_exceptions = [e]
                 raise e
+            finally:
+                if credential_cleanup:
+                    credential_cleanup()
     finally:
         if register_job_data is not None:
             end_time = time.time()
