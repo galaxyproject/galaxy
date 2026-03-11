@@ -85,20 +85,19 @@ class SearchResult:
     result_type: str = "tutorial"  # "tutorial" or "faq"
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for JSON serialization."""
+        """Convert to dictionary for JSON serialization.
+
+        Returns only the fields the LLM needs to pick tutorials and
+        construct get_tutorial_content calls, keeping token usage low.
+        """
         return {
-            "id": self.id,
+            "title": self.title,
             "topic": self.topic,
             "tutorial": self.tutorial,
-            "title": self.title,
             "url": self.url,
-            "snippet": self.snippet,
-            "score": self.score,
             "difficulty": self.difficulty,
-            "hands_on": self.hands_on,
             "time_estimation": self.time_estimation,
-            "description": self.description,
-            "result_type": self.result_type,
+            "snippet": self.snippet,
         }
 
 

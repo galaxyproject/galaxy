@@ -93,7 +93,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 topic: Optional[str] = None,
                 difficulty: Optional[str] = None,
                 hands_on_only: bool = False,
-                limit: int = 10,
+                limit: int = 5,
             ) -> str:
                 """Search GTN tutorials using full-text search over titles, descriptions, and content."""
                 if not self.gtn_db:
@@ -123,7 +123,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 ctx: RunContext[GalaxyAgentDependencies],
                 topic: str,
                 tutorial: str,
-                max_length: int = 2000,
+                max_length: int = 1500,
             ) -> str:
                 """Get the full content of a specific tutorial by topic and name."""
                 if not self.gtn_db:
@@ -284,11 +284,11 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 difficulty = tutorial.get("difficulty", "Unknown")
                 time_estimation = tutorial.get("time_estimation", "Unknown")
                 url = tutorial.get("url", "#")
-                description = tutorial.get("description", "")
+                snippet = tutorial.get("snippet", "")
 
                 parts.append(f"\n{i}. **{title}**")
-                if description:
-                    parts.append(f"   {description}")
+                if snippet:
+                    parts.append(f"   {snippet}")
 
                 # Only show topic if it's meaningful
                 if topic and topic != "Unknown":
