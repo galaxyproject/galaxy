@@ -2085,13 +2085,8 @@ class PickValueModule(WorkflowModule):
             output = non_null[0]
 
         elif mode == "all_non_null":
-            if not non_null:
-                raise FailWorkflowEvaluation(
-                    why=InvocationFailureExpressionEvaluationFailed(
-                        reason=FailureReason.expression_evaluation_failed,
-                        workflow_step_id=step.id,
-                    )
-                )
+            # CWL spec: all_non_null returns list of non-null values,
+            # which may be empty if all inputs are null.
             output = self._create_collection_from_list(trans, invocation_step, non_null)
 
         else:
