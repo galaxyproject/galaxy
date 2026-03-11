@@ -15,6 +15,7 @@ Endpoints tested:
   GET  /repository/updated_changeset_revisions
   GET  /repository/get_repository_type
   GET  /repository/get_tool_dependencies
+  GET  /repository/static/images/{repository_id}/{image_file}
 """
 
 import json
@@ -28,6 +29,7 @@ from galaxy.util.tool_shed.encoding_util import (
 )
 from galaxy_test.base import api_asserts
 from ..base.api import ShedApiTestCase
+from ..base.populators import TEST_DATA_REPO_FILES
 
 
 class TestGalaxyInstallApis(ShedApiTestCase):
@@ -568,6 +570,58 @@ class TestGalaxyInstallApis(ShedApiTestCase):
             updated_revisions = updated_text.split(",")
             # The next installable should be reachable from the update path
             assert next_rev in updated_revisions
+
+    # ---- display_image_in_repository (static images) ----------------------
+
+    def _setup_htseq_count_repo(self):
+        """Setup htseq_count repo which contains static/images/count_modes.png."""
+        populator = self.populator
+        category_id = populator.new_category(prefix="imagetest").id
+        repository = populator.new_repository(category_id, prefix="imagetest")
+        htseq_tar = TEST_DATA_REPO_FILES.joinpath("htseq_count/htseq_count.tar")
+        populator.upload_revision(repository, htseq_tar)
+        return repository
+
+    def test_display_image_in_repository(self):
+        """Image endpoint should serve a PNG with correct MIME type."""
+        repository = self._setup_htseq_count_repo()
+        url = f"{self.url}/repository/static/images/{repository.id}/count_modes.png"
+        response = requests.get(url)
+        api_asserts.assert_status_code_is_ok(response)
+        assert len(response.content) > 0, "Expected non-empty image content"
+        content_type = response.headers.get("content-type", "")
+        assert "image/png" in content_type, \
+            f"Expected image/png content-type, got {content_type}"
+
+    def test_display_image_nonexistent_file(self):
+        """Requesting a nonexistent image should return empty/error."""
+        repository = self._setup_htseq_count_repo()
+        url = f"{self.url}/repository/static/images/{repository.id}/nonexistent.png"
+        response = requests.get(url)
+        # Should either 404 or return empty
+        assert response.status_code >= 400 or len(response.content) == 0
+
+    def test_display_image_nonexistent_repo(self):
+        """Requesting an image from a nonexistent repo should fail."""
+        url = f"{self.url}/repository/static/images/invalid_id_xyz/count_modes.png"
+        response = requests.get(url)
+        assert response.status_code >= 400
+
+    def test_display_image_path_traversal_rejected(self):
+        """Path traversal attempts should not serve files outside the repo."""
+        repository = self._setup_htseq_count_repo()
+        url = f"{self.url}/repository/static/images/{repository.id}/..%2F..%2F..%2Fetc%2Fpasswd"
+        response = requests.get(url)
+        assert response.status_code >= 400 or len(response.content) == 0
+
+    def test_display_image_rejects_non_image_files(self):
+        """Endpoint only serves image MIME types, rejects .xml etc."""
+        repository = self._setup_htseq_count_repo()
+        # htseq_count.tar contains htseq-count.xml — a non-image file
+        url = f"{self.url}/repository/static/images/{repository.id}/htseq-count.xml"
+        response = requests.get(url)
+        assert response.status_code >= 400, \
+            f"Expected rejection of non-image file, got {response.status_code}"
 
     def test_all_endpoints_reject_nonexistent_repo(self):
         """All endpoints should fail gracefully for a nonexistent repository."""

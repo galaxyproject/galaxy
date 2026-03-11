@@ -106,14 +106,6 @@ def app_pair(global_conf, load_app_kwds=None, **kwargs):
     # Create the universe WSGI application
     webapp = CommunityWebApplication(app, session_cookie="galaxycommunitysession", name="tool_shed")
     add_ui_controllers(webapp, app)
-    # Handle displaying tool help images and README file images for tools contained in repositories.
-    webapp.add_route(
-        "/repository/static/images/{repository_id}/{image_file:.+?}",
-        controller="repository",
-        action="display_image_in_repository",
-        repository_id=None,
-        image_file=None,
-    )
     # Enable 'hg clone' functionality on repos by letting hgwebapp handle the request
     webapp.add_route("/repos/*path_info", controller="hg", action="handle_request", path_info="/")
     webapp.finalize_config()
