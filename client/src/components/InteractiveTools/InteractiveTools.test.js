@@ -67,9 +67,10 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
     });
 
     it("renders table with interactive tools", async () => {
-        expect(wrapper.get("#interactive-tool-table").exists()).toBeTruthy();
-        // Each entry has 2 links: one to open inline and one to open in new tab
-        expect(wrapper.findAll("td > a").length).toBe(4);
+        expect(wrapper.find("#g-table-interactive-tool-table").exists()).toBeTruthy();
+        // Each entry has 2 links: one to open inline (rendered as button) and one to open in new tab (rendered as anchor)
+        expect(wrapper.findAll("td > button.g-link").length).toBe(2);
+        expect(wrapper.findAll("td > a").length).toBe(2);
     });
 
     it("displays interactive tool information correctly", async () => {
