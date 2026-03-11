@@ -1,29 +1,11 @@
-from playwright.sync_api import (
-    expect,
-    Page,
-)
+from playwright.sync_api import expect
 
-from ..base.api import skip_if_api_v1
-from ..base.playwrightbrowser import PlaywrightShedBrowser
-from ..base.twilltestcase import ShedTwillTestCase
-
-
-class PlaywrightTestCase(ShedTwillTestCase):
-    @property
-    def _playwright_browser(self) -> PlaywrightShedBrowser:
-        browser = self._browser
-        assert isinstance(browser, PlaywrightShedBrowser)
-        return browser
-
-    @property
-    def _page(self) -> Page:
-        return self._playwright_browser._page
+from ..base.playwrighttestcase import PlaywrightTestCase
 
 
 class TestFrontendInvalidTools(PlaywrightTestCase):
     """Test that the Tool Shed frontend displays invalid tool error messages."""
 
-    @skip_if_api_v1
     def test_invalid_tools_display_error_message(self):
         """Navigate to a repository with invalid tools and verify the error reason is shown."""
         populator = self.populator

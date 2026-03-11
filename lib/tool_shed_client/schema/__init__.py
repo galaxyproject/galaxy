@@ -231,7 +231,7 @@ class RepositoryRevisionMetadataPreview(BaseModel):
     repository: Repository
     repository_dependencies: list["RepositoryDependency"]
     tools: Optional[list["RepositoryTool"]] = None
-    invalid_tools: list[str] = []
+    invalid_tools: list[InvalidTool] = []
     repository_id: Optional[str] = None
     numeric_revision: Optional[int] = None
     changeset_revision: str

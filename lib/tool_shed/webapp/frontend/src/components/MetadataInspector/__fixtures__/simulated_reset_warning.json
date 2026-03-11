@@ -136,7 +136,7 @@
                     "version_string_cmd": null
                 }
             ],
-            "invalid_tools": ["broken_tool.xml"]
+            "invalid_tools": [{"tool_config": "broken_tool.xml", "error_message": "Tool XML parsing error"}]
         },
         "1:w1w1w1w1w1w1": {
             "id": "simwarn0000001",
