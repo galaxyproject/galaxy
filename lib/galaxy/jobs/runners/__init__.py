@@ -467,6 +467,7 @@ class BaseJobRunner:
                 self._verify_celery_config()
                 from galaxy.celery.tasks import set_job_metadata
 
+                job_wrapper.change_state(model.Job.states.FINISHING)
                 # We're synchronously waiting for a task here. This means we have to have a result backend.
                 # That is bad practice and also means this can never become part of another task.
                 try:
