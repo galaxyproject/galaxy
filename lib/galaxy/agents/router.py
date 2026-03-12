@@ -263,22 +263,27 @@ class QueryRouterAgent(BaseGalaxyAgent):
             return self._handle_fallback(query, context, str(e))
 
     def _build_query_with_context(self, query: str, context: Optional[dict[str, Any]]) -> str:
-        """Build full query including conversation history if available."""
-        if not context or "conversation_history" not in context:
-            return query
+        """Build full query including interface context and conversation history."""
+        parts: list[str] = []
 
-        history = context["conversation_history"]
-        if not history:
-            return query
+        if context:
+            interface_ctx = context.get("interface_context")
+            if interface_ctx and isinstance(interface_ctx, dict):
+                description = self._format_interface_context(interface_ctx)
+                if description:
+                    parts.append(f"[Active interface context: {description}]")
 
-        history_text = "Previous conversation:\n"
-        for msg in history[-6:]:  # Last 6 messages for context
-            role = msg.get("role", "unknown")
-            content = msg.get("content", "")
-            history_text += f"{role}: {content}\n"
-        history_text += f"\nCurrent query: {query}"
+            history = context.get("conversation_history")
+            if history:
+                history_text = "Previous conversation:\n"
+                for msg in history[-6:]:
+                    role = msg.get("role", "unknown")
+                    content = msg.get("content", "")
+                    history_text += f"{role}: {content}\n"
+                parts.append(history_text)
 
-        return history_text
+        parts.append(f"Current query: {query}" if parts else query)
+        return "\n".join(parts)
 
     def _handle_fallback(self, query: str, context: Optional[dict[str, Any]], error_msg: str) -> AgentResponse:
         """Handle fallback when the main agent fails."""
