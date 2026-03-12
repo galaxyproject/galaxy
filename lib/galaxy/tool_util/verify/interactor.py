@@ -727,6 +727,9 @@ class GalaxyInteractorApi:
         if testdef.value_state_representation == "test_case_json":
             # Don't submit user / YAML tools to the old endpoint.
             submit_with_legacy_api = False
+        if testdef.credentials:
+            # Force legacy API for credential-bearing tests since /api/tools already supports credentials_context.
+            submit_with_legacy_api = True
         if submit_with_legacy_api:
             inputs_tree = testdef.inputs.copy()
             for key, value in inputs_tree.items():

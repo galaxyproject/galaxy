@@ -171,19 +171,6 @@ class TaskResult(Model):
     )
 
 
-class ServiceCredentialTask(Model):
-    """Flat representation of a service credential for Celery task payloads.
-
-    Uses plain int IDs to follow Galaxy's standard Celery task pattern.
-    """
-
-    user_credentials_id: int
-    name: str
-    version: str
-    selected_group_id: int
-    selected_group_name: str
-
-
 TOOL_SOURCE_CLASS = Literal["XmlToolSource", "YamlToolSource", "CwlToolSource"]
 
 
@@ -199,6 +186,3 @@ class QueueJobs(Model):
     user: RequestUser  # TODO: test anonymous users through this submission path
     use_cached_jobs: bool
     rerun_remap_job_id: Optional[int]  # link to a job to rerun & remap
-    credentials_context: Optional[list[ServiceCredentialTask]] = (
-        None  # credential context for vault-based credential injection
-    )

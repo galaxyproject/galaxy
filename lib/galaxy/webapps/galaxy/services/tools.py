@@ -258,8 +258,6 @@ class ToolsService(ServiceBase):
         tool_ref: ToolRunReference,
     ) -> list[ToolParameterT]:
         tool = get_tool(trans, tool_ref)
-        if tool.parameters is None:
-            raise exceptions.RequestParameterInvalidException("Tool input parameter schema could not be retrieved.")
         return tool.parameters
 
     def create_fetch(
@@ -350,7 +348,7 @@ class ToolsService(ServiceBase):
             inputs.get("use_cached_job", "false")
         )
         preferred_object_store_id = payload.get("preferred_object_store_id")
-        credentials_context_raw = payload.get("credentials_context")
+        credentials_context = payload.get("credentials_context")
         input_format = str(payload.get("input_format", "legacy"))
         if input_format not in get_args(InputFormatT):
             raise exceptions.RequestParameterInvalidException(f"input_format invalid {input_format}")
@@ -358,12 +356,6 @@ class ToolsService(ServiceBase):
         if "data_manager_mode" in payload:
             incoming["__data_manager_mode"] = payload["data_manager_mode"]
         tags = payload.get("__tags")
-
-        # Handle credentials_context
-        credentials_context: Optional[CredentialsContext] = None
-        if credentials_context_raw:
-            credentials_context = CredentialsContext(root=credentials_context_raw)
-
         vars = tool.handle_input(
             trans,
             incoming,
@@ -371,7 +363,7 @@ class ToolsService(ServiceBase):
             use_cached_job=use_cached_job,
             input_format=input_format,
             preferred_object_store_id=preferred_object_store_id,
-            credentials_context=credentials_context,
+            credentials_context=CredentialsContext(root=credentials_context) if credentials_context else None,
             tags=tags,
         )
 

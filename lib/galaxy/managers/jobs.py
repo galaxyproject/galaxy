@@ -79,11 +79,6 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.credentials import (
-    CredentialsContext,
-    SelectedGroup,
-    ServiceCredentialsContext,
-)
 from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
@@ -105,7 +100,6 @@ from galaxy.tool_util.parameters import (
     dereference,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
-    ToolParameterBundleModel,
 )
 from galaxy.tools import Tool
 from galaxy.tools._types import (
@@ -2175,13 +2169,7 @@ class JobSubmitter:
             return DataRequestInternalHda(id=hda.id, src="hda")
 
         tool_state = RequestInternalToolState(tool_request.request)
-        if tool.parameters is None:
-            raise RequestParameterInvalidException(f"Tool {tool.id} has no parameters defined")
-        parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
-        return (
-            dereference(tool_state, parameter_bundle, dereference_callback, dereference_collection_callback),
-            new_hdas,
-        )
+        return dereference(tool_state, tool, dereference_callback, dereference_collection_callback), new_hdas
 
     def queue_jobs(self, tool: Tool, request: QueueJobs) -> None:
         tool_request: ToolRequest = self._tool_request(request.tool_request_id)
@@ -2191,22 +2179,6 @@ class JobSubmitter:
             target_history = request_context.history
             use_cached_jobs = request.use_cached_jobs
             rerun_remap_job_id = request.rerun_remap_job_id
-            credentials_context: Optional[CredentialsContext] = None
-            if request.credentials_context:
-                credentials_context = CredentialsContext(
-                    root=[
-                        ServiceCredentialsContext.model_construct(
-                            user_credentials_id=task.user_credentials_id,
-                            name=task.name,
-                            version=task.version,
-                            selected_group=SelectedGroup.model_construct(
-                                id=task.selected_group_id,
-                                name=task.selected_group_name,
-                            ),
-                        )
-                        for task in request.credentials_context
-                    ]
-                )
             tool_state, new_hdas = self.dereference(request_context, tool, request, tool_request)
             to_materialize_list = [p for p in new_hdas if not p.request.deferred]
             for to_materialize in to_materialize_list:
@@ -2222,7 +2194,6 @@ class JobSubmitter:
                 history=target_history,
                 use_cached_job=use_cached_jobs,
                 rerun_remap_job_id=rerun_remap_job_id,
-                credentials_context=credentials_context,
             )
             tool_request.state = ToolRequest.states.SUBMITTED
             sa_session.add(tool_request)

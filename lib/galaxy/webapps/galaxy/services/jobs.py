@@ -35,7 +35,6 @@ from galaxy.model import (
     ToolRequest,
     ToolSource as ToolSourceModel,
 )
-from galaxy.schema.credentials import ServiceCredentialsContext
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
@@ -50,7 +49,6 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.tasks import (
     QueueJobs,
-    ServiceCredentialTask,
     ToolSource,
 )
 from galaxy.security.idencoding import IdEncodingHelper
@@ -59,7 +57,6 @@ from galaxy.tool_util.parameters import (
     RelaxedRequestToolState,
     RequestToolState,
     strictify,
-    ToolParameterBundleModel,
 )
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
@@ -92,9 +89,6 @@ class JobRequest(BaseModel):
         default=None, title="rerun_remap_job_id", description="TODO"
     )
     send_email_notification: bool = Field(default=False, title="Send Email Notification", description="TODO")
-    credentials_context: Optional[list[ServiceCredentialsContext]] = Field(
-        default=None, title="credentials_context", description="Credential context for tool execution."
-    )
 
 
 class JobCreateResponse(BaseModel):
@@ -252,17 +246,14 @@ class JobsService(ServiceBase):
             target_history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
         inputs = job_request.inputs
         strict = job_request.strict
-        if tool.parameters is None:
-            raise exceptions.RequestParameterInvalidException(f"Tool {tool.id} has no parameters defined")
-        parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
         if not strict:
             relaxed_request_state = RelaxedRequestToolState(inputs or {})
-            relaxed_request_state.validate(parameter_bundle, f"{tool.id} (relaxed request model)")
-            request_state = strictify(relaxed_request_state, parameter_bundle)
+            relaxed_request_state.validate(tool, f"{tool.id} (relaxed request model)")
+            request_state = strictify(relaxed_request_state, tool)
         else:
             request_state = RequestToolState(inputs or {})
-        request_state.validate(parameter_bundle, f"{tool.id} (request model)")
-        request_internal_state = decode(request_state, parameter_bundle, trans.security.decode_id)
+        request_state.validate(tool, f"{tool.id} (request model)")
+        request_internal_state = decode(request_state, tool, trans.security.decode_id)
         tool_request = ToolRequest()
         # TODO: hash and such...
         tool_source_model = ToolSourceModel(
@@ -284,18 +275,6 @@ class JobsService(ServiceBase):
             tool_dir=tool.tool_dir,
             tool_source_class=tool_source_model.source_class,
         )
-        credentials_context_tasks = None
-        if job_request.credentials_context:
-            credentials_context_tasks = [
-                ServiceCredentialTask(
-                    user_credentials_id=sc.user_credentials_id,
-                    name=sc.name,
-                    version=sc.version,
-                    selected_group_id=sc.selected_group.id,
-                    selected_group_name=sc.selected_group.name,
-                )
-                for sc in job_request.credentials_context
-            ]
         task_request = QueueJobs(
             user=trans.async_request_user,
             history_id=target_history and target_history.id,
@@ -303,7 +282,6 @@ class JobsService(ServiceBase):
             tool_request_id=tool_request_id,
             use_cached_jobs=job_request.use_cached_jobs or False,
             rerun_remap_job_id=job_request.rerun_remap_job_id,
-            credentials_context=credentials_context_tasks,
         )
         result = queue_jobs.delay(request=task_request)
         return JobCreateResponse(
