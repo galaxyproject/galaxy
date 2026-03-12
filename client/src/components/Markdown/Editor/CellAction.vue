@@ -29,7 +29,7 @@
                     title="Delete"
                     description="Delete this cell"
                     :icon="faTrash"
-                    @click="confirmDelete = true" />
+                    @click="onDeleteCell" />
                 <CellOption
                     v-if="cellIndex > 0"
                     role="menuitem"
@@ -46,17 +46,15 @@
                     @click="$emit('move', 'down')" />
             </nav>
         </Popper>
-        <BModal v-model="confirmDelete" title="Delete Cell" title-tag="h2" @ok="$emit('delete')">
-            <p v-localize>Are you sure you want to delete this cell?</p>
-        </BModal>
     </div>
 </template>
 
 <script setup lang="ts">
 import { faClone, faEllipsisV } from "@fortawesome/free-solid-svg-icons";
-import { BModal } from "bootstrap-vue";
 import { faArrowDown, faArrowUp, faTrash } from "font-awesome-6";
 import { computed, ref } from "vue";
+
+import { useConfirmDialog } from "@/composables/confirmDialog";
 
 import type { CellType } from "./types";
 
@@ -78,7 +76,7 @@ const props = withDefaults(
     },
 );
 
-defineEmits<{
+const emit = defineEmits<{
     (e: "click", cell: CellType): void;
     (e: "clone"): void;
     (e: "configure"): void;
@@ -86,9 +84,17 @@ defineEmits<{
     (e: "move", direction: string): void;
 }>();
 
+const { confirm } = useConfirmDialog();
+
 const buttonRef = ref();
-const confirmDelete = ref(false);
 const popperRef = ref();
 
 const title = computed(() => `${props.name.charAt(0).toUpperCase()}${props.name.slice(1)}`);
+
+async function onDeleteCell() {
+    const confirmed = await confirm("Are you sure you want to delete this cell?", "Delete Cell");
+    if (confirmed) {
+        emit("delete");
+    }
+}
 </script>
