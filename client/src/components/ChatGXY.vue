@@ -3,20 +3,24 @@ import {
     faColumns,
     faExpand,
     faExternalLinkAlt,
+    faFile,
     faMagic,
     faPlus,
+    faSitemap,
     faTimes,
     faTrash,
+    faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
-import { nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 import { getGalaxyInstance } from "@/app";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
+import { useActiveContext } from "@/composables/useActiveContext";
 import { useChatStore } from "@/stores/chatStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -47,6 +51,34 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
+
+const { activeContext, contextLabel } = useActiveContext();
+const contextDismissed = ref(false);
+
+watch(activeContext, () => {
+    contextDismissed.value = false;
+});
+
+const effectiveContext = computed(() => {
+    if (contextDismissed.value || !props.docked) {
+        return null;
+    }
+    return activeContext.value;
+});
+
+const contextIcon = computed(() => {
+    switch (effectiveContext.value?.contextType) {
+        case "tool":
+            return faWrench;
+        case "dataset":
+            return faFile;
+        case "workflow_editor":
+        case "workflow_run":
+            return faSitemap;
+        default:
+            return faMagic;
+    }
+});
 
 const query = ref("");
 const messages = ref<ChatMessage[]>([]);
@@ -131,7 +163,7 @@ async function submitQuery() {
             },
             body: {
                 query: currentQuery,
-                context: null,
+                context: effectiveContext.value ? JSON.stringify(effectiveContext.value) : null,
                 exchange_id: currentChatId.value,
             },
         });
@@ -409,6 +441,16 @@ watch(currentChatId, (newId) => {
             </div>
         </div>
 
+        <div v-if="docked && effectiveContext" class="context-indicator">
+            <span class="context-badge">
+                <FontAwesomeIcon :icon="contextIcon" fixed-width />
+                {{ contextLabel }}
+            </span>
+            <button class="context-dismiss" title="Dismiss context" @click="contextDismissed = true">
+                <FontAwesomeIcon :icon="faTimes" />
+            </button>
+        </div>
+
         <div ref="chatContainer" class="chat-messages">
             <ChatMessageCell
                 v-for="message in messages"
@@ -478,6 +520,37 @@ watch(currentChatId, (newId) => {
         display: flex;
         align-items: center;
         gap: 0.375rem;
+    }
+}
+
+.context-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0.75rem;
+    background: rgba($brand-primary, 0.06);
+    border-bottom: 1px solid rgba($brand-primary, 0.12);
+    font-size: 0.8rem;
+    color: $brand-primary;
+
+    .context-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-weight: 500;
+    }
+
+    .context-dismiss {
+        background: none;
+        border: none;
+        color: inherit;
+        opacity: 0.6;
+        cursor: pointer;
+        padding: 0.125rem;
+
+        &:hover {
+            opacity: 1;
+        }
     }
 }
 

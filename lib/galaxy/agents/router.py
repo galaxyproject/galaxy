@@ -312,25 +312,26 @@ class QueryRouterAgent(BaseGalaxyAgent):
             return self._handle_fallback(query, context, str(e))
 
     def _build_query_with_context(self, query: str, context: Optional[dict[str, Any]]) -> str:
-        if not context or "conversation_history" not in context:
-            return query
+        parts: list[str] = []
 
-        history = context["conversation_history"]
-        if not history:
-            return query
+        if context:
+            interface_ctx = context.get("interface_context")
+            if interface_ctx and isinstance(interface_ctx, dict):
+                description = self._format_interface_context(interface_ctx)
+                if description:
+                    parts.append(f"[Active interface context: {description}]")
 
-        max_history = 6
-        if len(history) > max_history:
-            log.debug(f"Router: Truncating conversation history from {len(history)} to {max_history} messages")
+            history = context.get("conversation_history")
+            if history:
+                history_text = "Previous conversation:\n"
+                for msg in history[-6:]:
+                    role = msg.get("role", "unknown")
+                    content = msg.get("content", "")
+                    history_text += f"{role}: {content}\n"
+                parts.append(history_text)
 
-        history_text = "Previous conversation:\n"
-        for msg in history[-max_history:]:
-            role = msg.get("role", "unknown")
-            content = msg.get("content", "")
-            history_text += f"{role}: {content}\n"
-        history_text += f"\nCurrent query: {query}"
-
-        return history_text
+        parts.append(f"Current query: {query}" if parts else query)
+        return "\n".join(parts)
 
     def _handle_fallback(self, query: str, context: Optional[dict[str, Any]], error_msg: str) -> AgentResponse:
         query_lower = query.lower()

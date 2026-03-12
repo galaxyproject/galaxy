@@ -315,12 +315,59 @@ class BaseGalaxyAgent(ABC):
 
         raise last_exception or Exception("Max retries exhausted")
 
+    def _format_interface_context(self, ctx: dict[str, Any]) -> str:
+        """Format active interface context as a natural-language description for the agent."""
+        ctx_type = ctx.get("contextType")
+        if not ctx_type:
+            return ""
+
+        if ctx_type == "tool":
+            name = ctx.get("toolName", ctx.get("toolId", "unknown"))
+            tool_id = ctx.get("toolId", "")
+            version = ctx.get("toolVersion")
+            version_str = f", version {version}" if version else ""
+            return f'The user is viewing the tool form for "{name}" ({tool_id}{version_str}).'
+
+        if ctx_type == "dataset":
+            dataset_id = ctx.get("datasetId", "unknown")
+            name = ctx.get("datasetName", dataset_id)
+            ext = ctx.get("extension")
+            ext_str = f" ({ext} format)" if ext else ""
+            return f'The user is viewing dataset "{name}"{ext_str}.'
+
+        if ctx_type == "workflow_editor":
+            wf_id = ctx.get("workflowId", "unknown")
+            name = ctx.get("workflowName", wf_id)
+            return f'The user is editing workflow "{name}".'
+
+        if ctx_type == "workflow_run":
+            wf_id = ctx.get("workflowId", "unknown")
+            name = ctx.get("workflowName", wf_id)
+            return f'The user is running workflow "{name}".'
+
+        if ctx_type == "job":
+            job_id = ctx.get("jobId", "unknown")
+            tool_id = ctx.get("toolId")
+            tool_str = f" (tool: {tool_id})" if tool_id else ""
+            return f"The user is viewing job {job_id}{tool_str}."
+
+        return f"The user is viewing: {ctx_type}"
+
     def _prepare_prompt(self, query: str, context: dict[str, Any]) -> str:
         prompt_parts = [query]
 
         if context:
-            context_str = "\n".join([f"{k}: {v}" for k, v in context.items() if v])
-            if context_str:
+            interface_ctx = context.get("interface_context")
+            if interface_ctx and isinstance(interface_ctx, dict):
+                description = self._format_interface_context(interface_ctx)
+                if description:
+                    prompt_parts.insert(0, f"[Active interface context: {description}]\n")
+
+            other_context = {
+                k: v for k, v in context.items() if v and k not in ("interface_context", "conversation_history")
+            }
+            if other_context:
+                context_str = "\n".join([f"{k}: {v}" for k, v in other_context.items()])
                 prompt_parts.insert(0, f"Context:\n{context_str}\n")
 
         return "\n".join(prompt_parts)
