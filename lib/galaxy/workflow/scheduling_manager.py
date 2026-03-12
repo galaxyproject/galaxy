@@ -16,6 +16,7 @@ import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.jobs.handler import InvocationGrabber
+from galaxy.model.base import check_database_connection
 from galaxy.schema.invocation import (
     FailureReason,
     InvocationFailureDatasetFailed,
@@ -431,6 +432,7 @@ class WorkflowRequestMonitor(Monitors):
 
     def __attempt_schedule(self, invocation_id, workflow_scheduler):
         with self.app.model.context() as session:
+            check_database_connection(session)
             workflow_invocation = session.get(model.WorkflowInvocation, invocation_id)
             if workflow_invocation.state == workflow_invocation.states.REQUIRES_MATERIALIZATION:
                 if not self.__attempt_materialize(workflow_invocation, session):
