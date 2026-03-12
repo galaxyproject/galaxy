@@ -195,7 +195,9 @@ export default {
         if (!this.embedded) {
             this.Galaxy = getGalaxyInstance();
             this.Galaxy.frame = this.windowManager;
-            this.windowManager.restore();
+            if (this.showMasthead) {
+                this.windowManager.restore();
+            }
             if (this.Galaxy.config.interactivetools_enable) {
                 this.startWatchingEntryPoints();
             }
