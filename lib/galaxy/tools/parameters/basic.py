@@ -2711,6 +2711,14 @@ class HiddenDataToolParameter(HiddenToolParameter, DataToolParameter):
         self.value = "None"
         self.type = "hidden_data"
         self.hidden = True
+        # hidden_data params are broken without optional="true" - the job runner's
+        # parameter validation rejects them when no dataset is provided. The only
+        # known tool using hidden_data (cufflinks) sets optional="true".
+        if not self.optional:
+            raise ParameterValueError(
+                'hidden_data parameters must declare optional="true" to function correctly',
+                self.name,
+            )
 
 
 class BaseJsonToolParameter(ToolParameter):

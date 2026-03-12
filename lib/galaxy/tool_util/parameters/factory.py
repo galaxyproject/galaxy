@@ -184,8 +184,10 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 type="rules",
                 name=input_source.parse_name(),
             )
-        elif param_type == "data":
-            optional = input_source.parse_optional()
+        elif param_type in ("data", "hidden_data"):
+            # hidden_data is broken without optional="true" (job runner rejects
+            # missing datasets); only known user is cufflinks which sets it.
+            optional = input_source.parse_optional() if param_type == "data" else True
             multiple = input_source.get_bool("multiple", False)
             return DataParameterModel(
                 type="data",
