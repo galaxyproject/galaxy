@@ -24,7 +24,11 @@ from typing import (
 import galaxy.model
 from galaxy import util
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.model import LibraryFolder
+from galaxy.model import (
+    Dataset,
+    JobOutputNameTooLongError,
+    LibraryFolder,
+)
 from galaxy.model.dataset_collections.builder import BoundCollectionBuilder
 from galaxy.model.tags import GalaxySessionlessTagHandler
 from galaxy.objectstore import (
@@ -435,20 +439,27 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             element_datasets["rows"].append(discovered_file.match.row)
 
         self.add_tags_to_datasets(datasets=element_datasets["datasets"], tag_lists=element_datasets["tag_lists"])
-        for element_identifiers, dataset, row in zip(
-            element_datasets["element_identifiers"], element_datasets["datasets"], element_datasets["rows"]
-        ):
-            current_builder: CollectionBuilder = root_collection_builder
-            for element_identifier in element_identifiers[:-1]:
-                current_builder = current_builder.get_level(element_identifier, row=row)
-                if row:
-                    row = None
-            current_builder.add_dataset(element_identifiers[-1], dataset, row=row)
+        try:
+            for element_identifiers, dataset, row in zip(
+                element_datasets["element_identifiers"], element_datasets["datasets"], element_datasets["rows"]
+            ):
+                current_builder: CollectionBuilder = root_collection_builder
+                for element_identifier in element_identifiers[:-1]:
+                    current_builder = current_builder.get_level(element_identifier, row=row)
+                    if row:
+                        row = None
+                current_builder.add_dataset(element_identifiers[-1], dataset, row=row)
 
-            # Associate new dataset with job
-            element_identifier_str = ":".join(element_identifiers)
-            association_name = f"__new_primary_file_{name}|{element_identifier_str}__"
-            self.add_output_dataset_association(association_name, dataset)
+                # Associate new dataset with job
+                element_identifier_str = ":".join(element_identifiers)
+                association_name = f"__new_primary_file_{name}|{element_identifier_str}__"
+                self.add_output_dataset_association(association_name, dataset)
+        except JobOutputNameTooLongError:
+            for dataset in element_datasets["datasets"]:
+                dataset.dataset.state = Dataset.states.DISCARDED
+                dataset.dataset.file_size = 0
+            self.add_datasets_to_history(element_datasets["datasets"])
+            raise
 
         add_datasets_timer = ExecutionTimer()
         self.add_datasets_to_history(element_datasets["datasets"])
