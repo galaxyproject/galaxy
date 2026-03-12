@@ -2171,7 +2171,7 @@ class JobSubmitter:
 
         tool_state = RequestInternalToolState(tool_request.request)
         if tool.parameters is None:
-            raise InconsistentDatabase(f"Tool {tool.id} has no parameters defined")
+            raise RequestParameterInvalidException(f"Tool {tool.id} has no parameters defined")
         parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
         return (
             dereference(tool_state, parameter_bundle, dereference_callback, dereference_collection_callback),
