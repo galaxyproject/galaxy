@@ -3,7 +3,7 @@ import { faPen, faSave, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BFormInput, BFormTextarea } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
 import l from "@/utils/localization";
@@ -40,6 +40,8 @@ const userStore = useUserStore();
 const { isAnonymous } = storeToRefs(userStore);
 
 const nameRef = ref<HTMLInputElement | null>(null);
+const nameDisplayRef = ref<InstanceType<typeof ClickToEdit> | HTMLElement | null>(null);
+const nameClamped = ref(false);
 
 const editing = ref(false);
 const textSelected = ref(false);
@@ -104,6 +106,19 @@ function onToggle() {
     }
 }
 
+function checkNameClamped() {
+    const el = nameDisplayRef.value instanceof HTMLElement ? nameDisplayRef.value : nameDisplayRef.value?.$el;
+    if (el) {
+        nameClamped.value = el.scrollHeight > el.clientHeight;
+    }
+}
+
+onMounted(checkNameClamped);
+watch(
+    () => props.name,
+    () => nextTick(checkNameClamped),
+);
+
 function selectText() {
     if (!textSelected.value) {
         nameRef.value?.select();
@@ -121,13 +136,20 @@ function selectText() {
             <template v-if="!summarized && !editing">
                 <ClickToEdit
                     v-if="renameable"
+                    ref="nameDisplayRef"
                     v-model="clickToEditName"
+                    v-b-tooltip.hover="nameClamped ? name : undefined"
                     component="h3"
                     title="..."
                     data-description="name display"
                     no-save-on-blur
-                    class="my-2 w-100" />
-                <h3 v-else class="my-2 w-100">
+                    class="name-display my-2 w-100" />
+                <h3
+                    v-else
+                    ref="nameDisplayRef"
+                    v-b-tooltip.hover
+                    :title="nameClamped ? name : undefined"
+                    class="name-display my-2 w-100">
                     {{ props.name || "..." }}
                 </h3>
             </template>
@@ -233,6 +255,14 @@ function selectText() {
 </template>
 
 <style lang="scss" scoped>
+.name-display :deep(h3),
+h3.name-display {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
 .summarized-details {
     margin-left: 0.5rem;
     max-width: 15rem;
