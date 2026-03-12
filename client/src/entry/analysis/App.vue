@@ -42,7 +42,9 @@
             <UploadModal ref="uploadModal" />
             <BroadcastsOverlay />
             <DragGhost />
-            <ScratchbookWindow v-for="win in windowManagerStore.windows" :key="win.id" :window="win" />
+            <template v-if="showMasthead">
+                <ScratchbookWindow v-for="win in windowManagerStore.windows" :key="win.id" :window="win" />
+            </template>
             <TourRunner v-if="currentTour?.id" :key="currentTour.id" :tour-id="currentTour.id" />
         </template>
     </div>
@@ -198,8 +200,8 @@ export default {
     mounted() {
         if (!this.embedded) {
             this.Galaxy = getGalaxyInstance();
-            this.Galaxy.frame = this.windowManagerStore;
             if (this.showMasthead) {
+                this.Galaxy.frame = this.windowManagerStore;
                 this.windowManagerStore.restore();
             }
             if (this.Galaxy.config.interactivetools_enable) {
