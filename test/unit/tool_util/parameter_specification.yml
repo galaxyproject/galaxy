@@ -1399,11 +1399,11 @@ gx_data_optional:
    - parameter: {src: hda, id: 5}
   job_internal_invalid: &data_optional_job_internal_invalid
    - {}
-  job_runtime_valid:
+  job_runtime_valid: &data_optional_job_runtime_valid
    - parameter: {class: File, basename: "f.txt", location: "step_input://0",
       path: "/tmp/f.txt", nameroot: "f", nameext: ".txt", format: "txt", size: 100}
    - parameter: null
-  job_runtime_invalid:
+  job_runtime_invalid: &data_optional_job_runtime_invalid
    - parameter: {src: hda, id: 7}
    - parameter: {class: File}
    - {}
@@ -1435,6 +1435,8 @@ gx_hidden_data:
   request_internal_invalid: *data_optional_request_internal_invalid
   job_internal_valid: *data_optional_job_internal_valid
   job_internal_invalid: *data_optional_job_internal_invalid
+  job_runtime_valid: *data_optional_job_runtime_valid
+  job_runtime_invalid: *data_optional_job_runtime_invalid
   workflow_step_valid: *data_optional_workflow_step_valid
   workflow_step_invalid: *data_optional_workflow_step_invalid
   workflow_step_linked_valid: *data_optional_workflow_step_linked_valid
