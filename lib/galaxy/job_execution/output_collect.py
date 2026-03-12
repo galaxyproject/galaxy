@@ -15,6 +15,7 @@ from typing import (
 )
 
 from galaxy.model import (
+    Dataset,
     DatasetInstance,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
@@ -434,8 +435,14 @@ def collect_primary_datasets(job_context: BaseJobContext, output: dict[str, Data
                 storage_callbacks=storage_callbacks,
                 purged=outdata.dataset.purged,
             )
-            # Associate new dataset with job
-            job_context.add_output_dataset_association(f"__new_primary_file_{name}|{designation}__", primary_data)
+            try:
+                # Associate new dataset with job
+                job_context.add_output_dataset_association(f"__new_primary_file_{name}|{designation}__", primary_data)
+            except JobOutputNameTooLongError:
+                primary_data.dataset.state = Dataset.states.DISCARDED
+                primary_data.dataset.file_size = 0
+                job_context.add_datasets_to_history([primary_data], for_output_dataset=outdata)
+                raise
             job_context.add_datasets_to_history([primary_data], for_output_dataset=outdata)
             # Add dataset to return dict
             primary_datasets[name][designation] = primary_data
