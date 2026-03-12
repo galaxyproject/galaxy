@@ -773,7 +773,10 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def _hover(self, element: ElementHandle) -> None:
         """Internal implementation of hover."""
-        element.hover()
+        # force=True bypasses actionability checks that fail when overlapping
+        # UI elements (e.g. delete-terminal-button) intercept pointer events.
+        # Hover is non-destructive so this is safe.
+        element.hover(force=True)
 
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """

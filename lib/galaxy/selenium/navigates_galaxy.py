@@ -1415,14 +1415,74 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         source_element = self.find_element_by_selector(f"#{source_id}")
         sink_element = self.find_element_by_selector(f"#{sink_id}")
-        ac = self.action_chains()
-        ac = ac.move_to_element(source_element).click_and_hold()
-        if screenshot_partial:
-            ac = ac.move_by_offset(10, 10)
-            ac.perform()
-            self.sleep_for(self.wait_types.UX_RENDER)
-            self.screenshot(screenshot_partial)
-        self.drag_and_drop(source_element, sink_element)
+
+        if self._driver_impl.backend_type == "playwright":
+            page = self._driver_impl.page
+            if screenshot_partial:
+                source_handle = self._driver_impl._unwrap_element(source_element)
+                source_box = source_handle.bounding_box()
+                page.mouse.move(
+                    source_box["x"] + source_box["width"] / 2,
+                    source_box["y"] + source_box["height"] / 2,
+                )
+                page.mouse.down()
+                page.mouse.move(
+                    source_box["x"] + source_box["width"] / 2 + 10,
+                    source_box["y"] + source_box["height"] / 2 + 10,
+                )
+                self.sleep_for(self.wait_types.UX_RENDER)
+                self.screenshot(screenshot_partial)
+                page.mouse.up()
+            # Dispatch synthetic HTML5 drag events with a mock DataTransfer.
+            # Playwright's drag_to API performs real drag with DataTransfer but
+            # fails actionability checks when toolbar/buttons overlap terminals.
+            # Chrome restricts DataTransfer.getData() on synthetic DragEvents,
+            # so we use a mock DataTransfer object that the Vue drag handlers
+            # (Draggable.vue setData, NodeInput.vue getData) interact with.
+            # TODO: IDs with pipe chars (e.g. "how|filter_source") are
+            # CSS-escaped (\|) by workflow_editor_source_sink_terminal_ids;
+            # getElementById needs raw IDs. Unescape when a test needs it.
+            page.evaluate(
+                """([sourceId, sinkId]) => {
+                    const source = document.getElementById(sourceId);
+                    const sink = document.getElementById(sinkId);
+                    const dt = {
+                        data: {},
+                        dropEffect: 'none',
+                        effectAllowed: 'all',
+                        files: [],
+                        items: [],
+                        types: [],
+                        setData(format, data) { this.data[format] = data; this.types.push(format); },
+                        getData(format) { return this.data[format] || ''; },
+                        clearData() { this.data = {}; this.types = []; },
+                        setDragImage() {},
+                    };
+                    function fire(el, type, extra = {}) {
+                        const evt = new DragEvent(type, { bubbles: true, cancelable: true, ...extra });
+                        Object.defineProperty(evt, 'dataTransfer', { value: dt });
+                        el.dispatchEvent(evt);
+                    }
+                    // Pointer events for useDraggable composable
+                    source.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+                    fire(source, 'dragstart');
+                    fire(sink, 'dragenter');
+                    fire(sink, 'dragover');
+                    fire(sink, 'drop');
+                    fire(source, 'dragend');
+                    source.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+                }""",
+                [source_id, sink_id],
+            )
+        else:
+            ac = self.action_chains()
+            ac = ac.move_to_element(source_element).click_and_hold()
+            if screenshot_partial:
+                ac = ac.move_by_offset(10, 10)
+                ac.perform()
+                self.sleep_for(self.wait_types.UX_RENDER)
+                self.screenshot(screenshot_partial)
+            self.drag_and_drop(source_element, sink_element)
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
         editor = self.components.workflow_editor

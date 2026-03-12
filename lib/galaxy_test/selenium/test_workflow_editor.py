@@ -374,7 +374,6 @@ steps:
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_parameter_input_deleted")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_non_data_connections(self):
         self.open_in_workflow_editor("""
@@ -428,7 +427,6 @@ steps:
         )
         self.assert_connected("input_int#output", "tool_exec#inttest")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_non_data_map_over_carried_through(self):
         # Use auto_layout=false, which prevents placing any
@@ -458,7 +456,6 @@ steps:
         self.workflow_editor_connect("text_input_step#out_file1", "collection_input#input1")
         self.assert_connected("text_input_step#out_file1", "collection_input#input1")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_connecting_display_in_upload_false_connections(self):
         self.open_in_workflow_editor("""
@@ -473,7 +470,6 @@ steps:
         self.workflow_editor_connect("step1#qname_input_sorted_bam_output", "step2#input5")
         self.assert_connected("step1#qname_input_sorted_bam_output", "step2#input5")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_existing_connections(self):
         self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -496,7 +492,6 @@ steps:
         )
         self.assert_connected("input1#output", "first_cat#input1")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_reconnecting_nodes(self):
         name = self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -516,7 +511,6 @@ steps:
         self.workflow_editor_maximize_center_pane()
         self.screenshot("workflow_editor_output_collections")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_simple_mapping_connections(self):
         self.open_in_workflow_editor(WORKFLOW_SIMPLE_MAPPING)
@@ -586,7 +580,6 @@ steps:
         self.assert_connected(rule_output, random_lines_input)
         self.assert_input_mapped(random_lines_input)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rendering_rules_workflow_2(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_RULES_2)
@@ -742,7 +735,6 @@ steps:
         element.wait_for_and_send_keys(Keys.BACKSPACE)
         element.wait_for_and_send_keys(value)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_change_datatype(self):
         self.open_in_workflow_editor("""
@@ -778,7 +770,6 @@ steps:
         # Assert connection is valid
         self.assert_connected("create_2#out_file1", "checksum#input")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_change_datatype_post_job_action_lost_regression(self):
         self.open_in_workflow_editor("""
@@ -801,7 +792,6 @@ steps:
         node.wait_for_and_click()
         self.assert_connected("create_2#out_file1", "metadata_bam#input_bam")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_change_datatype_in_subworkflow(self):
         self.open_in_workflow_editor("""
@@ -1565,7 +1555,14 @@ steps:
 
     def assert_connected(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_visible()
+        # SVG <g> elements are considered "hidden" by Playwright even when
+        # rendered, so use wait_for_present instead of wait_for_visible
+        # with the Playwright backend.
+        connector = self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id)
+        if self._driver_impl.backend_type == "playwright":
+            connector.wait_for_present()
+        else:
+            connector.wait_for_visible()
 
     def assert_connection_invalid(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
@@ -1621,7 +1618,17 @@ steps:
 
     def move_center_of_canvas(self, xoffset=0, yoffset=0):
         _canvas = self.find_element_by_id("canvas-container")
-        assert self.backend_type == "selenium"
-        canvas = cast(WebElement, _canvas)
-        chains = ActionChains(self.driver)
-        chains.click_and_hold(canvas).move_by_offset(xoffset=xoffset, yoffset=yoffset).release().perform()
+        if self.backend_type == "playwright":
+            page = self._driver_impl.page
+            handle = self._driver_impl._unwrap_element(_canvas)
+            box = handle.bounding_box()
+            cx = box["x"] + box["width"] / 2
+            cy = box["y"] + box["height"] / 2
+            page.mouse.move(cx, cy)
+            page.mouse.down()
+            page.mouse.move(cx + xoffset, cy + yoffset)
+            page.mouse.up()
+        else:
+            canvas = cast(WebElement, _canvas)
+            chains = ActionChains(self.driver)
+            chains.click_and_hold(canvas).move_by_offset(xoffset=xoffset, yoffset=yoffset).release().perform()
