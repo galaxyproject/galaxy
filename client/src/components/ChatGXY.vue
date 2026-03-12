@@ -173,7 +173,6 @@ async function submitQuery() {
                 query: currentQuery,
                 context: null,
                 exchange_id: currentChatId.value,
-                agent_type: selectedAgentType.value,
                 dataset_ids: usingDataAnalysisAgent.value ? selectedDatasets.value : undefined,
             },
         });

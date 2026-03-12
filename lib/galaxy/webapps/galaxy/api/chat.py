@@ -213,11 +213,6 @@ class ChatAPI:
         }
 
         dataset_ids: list[DecodedDatabaseIdField] = []
-        # The UI posts `agent_type` in the request body; keep the query parameter for
-        # backwards compatibility but prefer the body value when present.
-        effective_agent_type = (
-            (payload.agent_type.strip() if payload and isinstance(payload.agent_type, str) else "") or agent_type
-        )
 
         # Determine query source - either from payload (job-based) or query param (general)
         regenerate = False
@@ -262,7 +257,7 @@ class ChatAPI:
             if HAS_AGENTS:
                 log.info(
                     "Chat query received agent=%s datasets=%s exchange_id=%s",
-                    effective_agent_type,
+                    agent_type,
                     dataset_ids,
                     exchange_id,
                 )
@@ -285,7 +280,7 @@ class ChatAPI:
 
                 # Get full agent response with metadata
                 agent_response = await self._get_agent_response_full(
-                    query_text, effective_agent_type, trans, user, job, full_context
+                    query_text, agent_type, trans, user, job, full_context
                 )
                 result["response"] = agent_response.content
                 result["agent_response"] = agent_response
@@ -311,7 +306,7 @@ class ChatAPI:
                     conversation_data = {
                         "query": query_text,
                         "response": result.get("response", ""),
-                        "agent_type": effective_agent_type,
+                        "agent_type": agent_type,
                         "agent_response": agent_resp.model_dump() if agent_resp else None,
                         "dataset_ids": [encode_id(d) for d in dataset_ids],
                     }
@@ -326,7 +321,7 @@ class ChatAPI:
                         "response": result.get("response", ""),
                         "agent_response": agent_resp.model_dump() if agent_resp else None,
                     }
-                    exchange = self.chat_manager.create_general_chat(trans, query_text, storable_result, effective_agent_type)
+                    exchange = self.chat_manager.create_general_chat(trans, query_text, storable_result, agent_type)
                     result["exchange_id"] = exchange.id
 
             result["processing_time"] = time.time() - start_time
