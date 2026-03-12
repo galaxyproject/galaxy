@@ -1,13 +1,23 @@
 <script setup lang="ts">
-import { faExternalLinkAlt, faMagic, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import {
+    faColumns,
+    faExpand,
+    faExternalLinkAlt,
+    faMagic,
+    faPlus,
+    faTimes,
+    faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
 import { nextTick, onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 import { getGalaxyInstance } from "@/app";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
+import { useChatStore } from "@/stores/chatStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getAgentIcon } from "./ChatGXY/agentTypes";
@@ -22,12 +32,21 @@ const props = withDefaults(
     defineProps<{
         exchangeId?: string;
         compact?: boolean;
+        docked?: boolean;
     }>(),
     {
         exchangeId: undefined,
         compact: false,
+        docked: false,
     },
 );
+
+const emit = defineEmits<{
+    (e: "close"): void;
+    (e: "undock"): void;
+}>();
+
+const router = useRouter();
 
 const query = ref("");
 const messages = ref<ChatMessage[]>([]);
@@ -326,11 +345,43 @@ function popOutToScratchbook() {
     const url = `${path}?compact=true`;
     Galaxy.frame.add({ title: "ChatGXY", url });
 }
+
+function dockToSide() {
+    const chatStore = useChatStore();
+    chatStore.openDockedPanel(currentChatId.value);
+    router.push("/");
+}
+
+// Keep chatStore in sync when new conversations are created in docked mode
+watch(currentChatId, (newId) => {
+    if (props.docked && newId) {
+        useChatStore().setDockedChatId(newId);
+    }
+});
 </script>
 
 <template>
-    <div class="chatgxy-container" :class="{ 'chatgxy-compact': compact }">
-        <div v-if="!compact" class="chatgxy-header">
+    <div class="chatgxy-container" :class="{ 'chatgxy-compact': compact, 'chatgxy-docked': docked }">
+        <!-- Docked panel header -->
+        <div v-if="docked" class="chatgxy-header chatgxy-header-docked">
+            <span class="docked-title">
+                <FontAwesomeIcon :icon="faMagic" fixed-width />
+                ChatGXY
+            </span>
+            <div class="header-actions">
+                <button class="btn btn-sm btn-outline-primary" title="Start New Chat" @click="startNewChat">
+                    <FontAwesomeIcon :icon="faPlus" fixed-width />
+                </button>
+                <button class="btn btn-sm btn-outline-primary" title="Open in center view" @click="emit('undock')">
+                    <FontAwesomeIcon :icon="faExpand" fixed-width />
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" title="Close panel" @click="emit('close')">
+                    <FontAwesomeIcon :icon="faTimes" fixed-width />
+                </button>
+            </div>
+        </div>
+        <!-- Center view header -->
+        <div v-else-if="!compact" class="chatgxy-header">
             <Heading h2 :icon="faMagic" size="lg">
                 <span>ChatGXY</span>
             </Heading>
@@ -345,6 +396,9 @@ function popOutToScratchbook() {
                     title="Delete this conversation"
                     @click="deleteCurrentChat">
                     <FontAwesomeIcon :icon="faTrash" fixed-width />
+                </button>
+                <button class="btn btn-sm btn-outline-primary" title="Dock to side panel" @click="dockToSide">
+                    <FontAwesomeIcon :icon="faColumns" fixed-width />
                 </button>
                 <button
                     class="btn btn-sm btn-outline-primary"
@@ -407,6 +461,23 @@ function popOutToScratchbook() {
 
     .chatgxy-footer {
         padding: 0.5rem 0.75rem;
+    }
+}
+
+.chatgxy-docked {
+    height: 100%;
+    border-radius: 0;
+}
+
+.chatgxy-header-docked {
+    padding: 0.5rem 0.75rem;
+
+    .docked-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
     }
 }
 
