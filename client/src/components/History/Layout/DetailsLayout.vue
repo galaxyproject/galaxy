@@ -122,12 +122,13 @@ function selectText() {
                 <ClickToEdit
                     v-if="renameable"
                     v-model="clickToEditName"
+                    v-b-tooltip.hover="name"
                     component="h3"
                     title="..."
                     data-description="name display"
                     no-save-on-blur
-                    class="my-2 w-100" />
-                <h3 v-else class="my-2 w-100">
+                    class="name-display my-2 w-100" />
+                <h3 v-else v-b-tooltip.hover :title="name" class="name-display my-2 w-100">
                     {{ props.name || "..." }}
                 </h3>
             </template>
@@ -233,6 +234,14 @@ function selectText() {
 </template>
 
 <style lang="scss" scoped>
+.name-display :deep(h3),
+h3.name-display {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
 .summarized-details {
     margin-left: 0.5rem;
     max-width: 15rem;
