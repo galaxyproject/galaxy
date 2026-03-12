@@ -21,6 +21,7 @@ from galaxy.tool_util.linters import (
     help,
     inputs,
     output,
+    required_files,
     stdio,
     tests,
     xml_order,
@@ -2424,7 +2425,7 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 142
+    assert len(linter_names) == 143
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
@@ -2500,3 +2501,84 @@ def test_linter_module_list():
             elif inspect.isclass(value) and issubclass(value, Linter) and not inspect.isabstract(value):
                 linter_cnt += 1
         assert linter_cnt >= old_linters[module_name]
+
+
+REQUIRED_FILES_LITERAL = """
+<tool id="id" name="name">
+    <required_files>
+        <include path="my_script.R"/>
+    </required_files>
+</tool>
+"""
+
+REQUIRED_FILES_LITERAL_MISSING = """
+<tool id="id" name="name">
+    <required_files>
+        <include path="nonexistent.py"/>
+    </required_files>
+</tool>
+"""
+
+REQUIRED_FILES_GLOB = """
+<tool id="id" name="name">
+    <required_files>
+        <include path="*.R" type="glob"/>
+    </required_files>
+</tool>
+"""
+
+REQUIRED_FILES_GLOB_NO_MATCH = """
+<tool id="id" name="name">
+    <required_files>
+        <include path="*.py" type="glob"/>
+    </required_files>
+</tool>
+"""
+
+
+def _write_file(directory, filename, content):
+    """Write content to a file in directory, return full path."""
+    path = os.path.join(directory, filename)
+    with open(path, "w") as f:
+        f.write(content)
+    return path
+
+
+def _load_and_run_lint(lint_ctx, tool_path, lint_module):
+    """Load a tool XML from disk and run a lint module on it."""
+    tool_xml, _ = load_with_references(tool_path)
+    tool_source = XmlToolSource(tool_xml, source_path=tool_path)
+    run_lint_module(lint_ctx, lint_module, tool_source)
+
+
+def test_required_files_literal_exist(lint_ctx):
+    with tempfile.TemporaryDirectory() as tool_dir:
+        tool_path = _write_file(tool_dir, "tool.xml", REQUIRED_FILES_LITERAL)
+        _write_file(tool_dir, "my_script.R", "# R script")
+        _load_and_run_lint(lint_ctx, tool_path, required_files)
+    assert not lint_ctx.error_messages
+
+
+def test_required_files_literal_missing(lint_ctx):
+    with tempfile.TemporaryDirectory() as tool_dir:
+        tool_path = _write_file(tool_dir, "tool.xml", REQUIRED_FILES_LITERAL_MISSING)
+        _load_and_run_lint(lint_ctx, tool_path, required_files)
+    assert "Required file [nonexistent.py] does not exist" in lint_ctx.error_messages
+    assert len(lint_ctx.error_messages) == 1
+
+
+def test_required_files_glob_match(lint_ctx):
+    with tempfile.TemporaryDirectory() as tool_dir:
+        tool_path = _write_file(tool_dir, "tool.xml", REQUIRED_FILES_GLOB)
+        _write_file(tool_dir, "my_script.R", "# R script")
+        _load_and_run_lint(lint_ctx, tool_path, required_files)
+    assert not lint_ctx.error_messages
+
+
+def test_required_files_glob_no_match(lint_ctx):
+    with tempfile.TemporaryDirectory() as tool_dir:
+        tool_path = _write_file(tool_dir, "tool.xml", REQUIRED_FILES_GLOB_NO_MATCH)
+        _write_file(tool_dir, "my_script.R", "# R script")
+        _load_and_run_lint(lint_ctx, tool_path, required_files)
+    assert "Required files pattern [*.py] (type glob) does not match any files" in lint_ctx.error_messages
+    assert len(lint_ctx.error_messages) == 1
