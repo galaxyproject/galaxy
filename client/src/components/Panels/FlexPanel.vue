@@ -120,18 +120,27 @@ defineExpose({
 
         <div v-if="isDragging" class="interaction-overlay" />
     </div>
-    <div v-else>
-        <button
-            class="collapse-button closed"
-            :class="{ ...sideClasses, show: true }"
-            title="Open panel"
-            @click="
-                show = true;
-                hoverToggle = false;
+    <div v-else class="flex-panel-closed" :class="{ ...sideClasses }">
+        <slot
+            name="closed-button"
+            :open="
+                () => {
+                    show = true;
+                    hoverToggle = false;
+                }
             ">
-            <FontAwesomeIcon v-if="side === 'right'" fixed-width :icon="faChevronLeft" />
-            <FontAwesomeIcon v-else :icon="faChevronRight" fixed-width />
-        </button>
+            <button
+                class="collapse-button closed"
+                :class="{ ...sideClasses, show: true }"
+                title="Open panel"
+                @click="
+                    show = true;
+                    hoverToggle = false;
+                ">
+                <FontAwesomeIcon v-if="side === 'right'" fixed-width :icon="faChevronLeft" />
+                <FontAwesomeIcon v-else :icon="faChevronRight" fixed-width />
+            </button>
+        </slot>
     </div>
 </template>
 
@@ -243,6 +252,10 @@ $border-width: 6px;
             left: 0;
         }
     }
+}
+
+.flex-panel-closed {
+    position: relative;
 }
 
 .interaction-overlay {
