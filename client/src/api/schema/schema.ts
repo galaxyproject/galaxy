@@ -17585,11 +17585,6 @@ export interface components {
         /** JobRequest */
         JobRequest: {
             /**
-             * credentials_context
-             * @description Credential context for tool execution.
-             */
-            credentials_context?: components["schemas"]["ServiceCredentialsContext"][] | null;
-            /**
              * history_id
              * @description TODO
              */
@@ -21715,20 +21710,6 @@ export interface components {
              */
             source_version: string;
         };
-        /** SelectedGroup */
-        SelectedGroup: {
-            /**
-             * Id
-             * @description The ID of the selected credential group.
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Name
-             * @description The name of the selected credential group.
-             */
-            name: string;
-        };
         /** ServerDirElement */
         ServerDirElement: {
             /**
@@ -21895,27 +21876,6 @@ export interface components {
              * @description The name of the service requiring credentials.
              */
             name: string;
-            /**
-             * Version
-             * @description The version of the service.
-             */
-            version: string;
-        };
-        /** ServiceCredentialsContext */
-        ServiceCredentialsContext: {
-            /**
-             * Name
-             * @description The name of the service.
-             */
-            name: string;
-            /** @description The currently selected credential group. */
-            selected_group: components["schemas"]["SelectedGroup"];
-            /**
-             * User Credentials Id
-             * @description The ID of the user credentials.
-             * @example 0123456789ABCDEF
-             */
-            user_credentials_id: string;
             /**
              * Version
              * @description The version of the service.
