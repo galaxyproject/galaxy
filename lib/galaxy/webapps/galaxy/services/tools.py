@@ -258,6 +258,8 @@ class ToolsService(ServiceBase):
         tool_ref: ToolRunReference,
     ) -> list[ToolParameterT]:
         tool = get_tool(trans, tool_ref)
+        if tool.parameters is None:
+            raise exceptions.RequestParameterInvalidException("Tool input parameter schema could not be retrieved.")
         return tool.parameters
 
     def create_fetch(
