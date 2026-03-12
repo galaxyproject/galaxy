@@ -85,8 +85,8 @@ watch(
                     <q-card-section v-if="rev.data.invalid_tools?.length > 0">
                         <div class="text-subtitle2 text-negative">Invalid Tools:</div>
                         <ul class="q-my-none">
-                            <li v-for="path in rev.data.invalid_tools" :key="path">
-                                <code>{{ path }}</code>
+                            <li v-for="tool in rev.data.invalid_tools" :key="tool.tool_config">
+                                <code>{{ tool.tool_config }}</code>: {{ tool.error_message }}
                             </li>
                         </ul>
                     </q-card-section>

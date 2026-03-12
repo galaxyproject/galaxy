@@ -2675,7 +2675,7 @@ export interface components {
              * Invalid Tools
              * @default []
              */
-            invalid_tools: string[]
+            invalid_tools: components["schemas"]["InvalidTool"][]
             /** Malicious */
             malicious: boolean
             /** Missing Test Components */
