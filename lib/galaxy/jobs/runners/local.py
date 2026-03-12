@@ -19,6 +19,7 @@ from galaxy.util import asbool
 from galaxy.util.commands import new_clean_env
 from . import (
     BaseJobRunner,
+    CeleryMetadataMonitorItem,
     JobState,
 )
 from .util.process_groups import (
@@ -148,7 +149,21 @@ class LocalJobRunner(BaseJobRunner):
             self._fail_job_local(job_wrapper, "failure running job")
             return
 
-        self._handle_metadata_if_needed(job_wrapper)
+        async_result = self._handle_metadata_if_needed(job_wrapper)
+        if async_result is not None:
+            job_destination = job_wrapper.job_destination
+            job_state = JobState(job_wrapper, job_destination)
+            job_state.stop_job = False
+            self._celery_metadata_queue.put(
+                CeleryMetadataMonitorItem(
+                    job_id=job_wrapper.job_id,
+                    async_result=async_result,
+                    on_complete=lambda: self.work_queue.put(
+                        (lambda js: self._finish_or_resubmit_job(js, stdout, stderr, job_id=job_id), job_state)
+                    ),
+                )
+            )
+            return
 
         job_destination = job_wrapper.job_destination
         job_state = JobState(job_wrapper, job_destination)
@@ -199,8 +214,10 @@ class LocalJobRunner(BaseJobRunner):
         self.fail_job(job_state, exception=True)
 
     def _handle_metadata_if_needed(self, job_wrapper):
+        """Returns an AsyncResult if celery metadata was dispatched, None otherwise."""
         if not self._embed_metadata(job_wrapper):
-            self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
+            return self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
+        return None
 
     def _embed_metadata(self, job_wrapper):
         job_destination = job_wrapper.job_destination

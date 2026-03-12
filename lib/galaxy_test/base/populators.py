@@ -4195,6 +4195,7 @@ def wait_on_state(
             "stop",
             "stopped",
             "setting_metadata",
+            "finishing",
             "waiting",
             "cancelling",
             "deleting",

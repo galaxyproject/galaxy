@@ -9,7 +9,10 @@ from galaxy.jobs import (
     JobWrapper,
     TaskWrapper,
 )
-from galaxy.jobs.runners import BaseJobRunner
+from galaxy.jobs.runners import (
+    BaseJobRunner,
+    CeleryMetadataMonitorItem,
+)
 
 if TYPE_CHECKING:
     from galaxy.app import GalaxyManagerApplication
@@ -131,8 +134,21 @@ class TaskedJobRunner(BaseJobRunner):
         # run the metadata setting script here
         # this is terminate-able when output dataset/job is deleted
         # so that long running set_meta()s can be canceled without having to reboot the server
-        self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
-        # Finish the job
+        async_result = self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
+        if async_result is not None:
+            self._celery_metadata_queue.put(
+                CeleryMetadataMonitorItem(
+                    job_id=job_wrapper.job_id,
+                    async_result=async_result,
+                    on_complete=lambda: self.work_queue.put(
+                        (lambda jw: self._finish_job_after_metadata(jw, stdout, stderr, job_exit_code), job_wrapper)
+                    ),
+                )
+            )
+            return
+        self._finish_job_after_metadata(job_wrapper, stdout, stderr, job_exit_code)
+
+    def _finish_job_after_metadata(self, job_wrapper, stdout, stderr, job_exit_code):
         try:
             job_wrapper.finish(stdout, stderr, job_exit_code)
         except Exception:

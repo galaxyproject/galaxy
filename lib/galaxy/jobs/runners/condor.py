@@ -234,11 +234,6 @@ class CondorJobRunner(AsynchronousJobRunner[CondorJobState]):
             job_state = cjs.job_wrapper.get_state()
             if job_complete or job_state == model.Job.states.STOPPED:
                 if job_state != model.Job.states.DELETED:
-                    external_metadata = not asbool(
-                        cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True)
-                    )
-                    if external_metadata:
-                        self._handle_metadata_externally(cjs.job_wrapper, resolve_requirements=True)
                     log.debug(f"({galaxy_id_tag}/{job_id}) job has completed")
                     self.work_queue.put((self.finish_job, cjs))
                 continue
@@ -272,11 +267,6 @@ class CondorJobRunner(AsynchronousJobRunner[CondorJobState]):
                 self._stop_container(job_wrapper)
                 # self.watched.append(cjs)
                 if cjs.job_wrapper.get_state() != model.Job.states.DELETED:
-                    external_metadata = not asbool(
-                        cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True)
-                    )
-                    if external_metadata:
-                        self._handle_metadata_externally(cjs.job_wrapper, resolve_requirements=True)
                     log.debug(f"({galaxy_id_tag}/{external_id}) job has completed")
                     self.work_queue.put((self.finish_job, cjs))
             except Exception as e:

@@ -11,6 +11,8 @@ import threading
 import time
 import traceback
 import uuid
+from collections.abc import Callable
+from dataclasses import dataclass
 from queue import (
     Empty,
     Queue,
@@ -96,10 +98,17 @@ class RunnerParams(ParamsWithSpecs):
         raise Exception(JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE % name)
 
 
+@dataclass
+class CeleryMetadataMonitorItem:
+    job_id: int
+    async_result: Any  # celery AsyncResult
+    on_complete: Callable[[], None]
+
+
 class BaseJobRunner:
     runner_name = "BaseJobRunner"
 
-    start_methods = ["_init_monitor_thread", "_init_worker_threads"]
+    start_methods = ["_init_monitor_thread", "_init_worker_threads", "_init_celery_metadata_monitor"]
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app: "GalaxyManagerApplication", nworkers: int, **kwargs) -> None:
@@ -441,10 +450,66 @@ class BaseJobRunner:
                 "Celery backend not set. Please set `result_backend` on the `celery_conf` config option."
             )
 
-    def _handle_metadata_externally(self, job_wrapper: "MinimalJobWrapper", resolve_requirements: bool = False):
+    def _init_celery_metadata_monitor(self):
+        """Start a daemon thread that monitors async celery metadata tasks."""
+        self._celery_metadata_queue: Queue = Queue()
+        self._celery_metadata_watched: list[CeleryMetadataMonitorItem] = []
+        if not self.app.config.enable_celery_tasks:
+            return
+        thread = threading.Thread(
+            name=f"{self.runner_name}.celery_metadata_monitor",
+            target=self._celery_metadata_monitor,
+            daemon=True,
+        )
+        thread.start()
+
+    def _celery_metadata_monitor(self):
+        """Monitor loop for async celery metadata tasks."""
+        while not self._should_stop:
+            # Drain queue into watched list
+            try:
+                while True:
+                    item = self._celery_metadata_queue.get_nowait()
+                    self._celery_metadata_watched.append(item)
+            except Empty:
+                pass
+            # Check each watched item
+            self._celery_metadata_watched = [
+                item for item in self._celery_metadata_watched if self._check_celery_metadata_item(item)
+            ]
+            time.sleep(self.app.config.job_runner_monitor_sleep)
+
+    def _check_celery_metadata_item(self, item: CeleryMetadataMonitorItem) -> bool:
+        """Check a celery metadata item. Returns True if still pending."""
+        if not item.async_result.ready():
+            return True
+        try:
+            if item.async_result.failed():
+                log.error("Celery metadata task failed for job %d: %s", item.job_id, item.async_result.result)
+            else:
+                log.debug("Celery metadata task completed for job %d", item.job_id)
+            item.on_complete()
+        except Exception:
+            log.exception("Error in celery metadata on_complete callback for job %d", item.job_id)
+        return False
+
+    def _make_work_queue_callback(self, method: Callable, arg: Any) -> Callable[[], None]:
+        """Create a callback that puts (method, arg) on the work queue."""
+
+        def on_complete() -> None:
+            self.work_queue.put((method, arg))
+
+        return on_complete
+
+    def _handle_metadata_externally(
+        self, job_wrapper: "MinimalJobWrapper", resolve_requirements: bool = False
+    ) -> Optional[Any]:
         """
         Set metadata externally. Used by the Pulsar job runner where this
         shouldn't be attached to command line to execute.
+
+        Returns a celery AsyncResult if metadata is dispatched asynchronously,
+        or None if handled synchronously or skipped.
         """
         # run the metadata setting script here
         # this is terminate-able when output dataset/job is deleted
@@ -462,17 +527,14 @@ class BaseJobRunner:
                 self._verify_celery_config()
                 from galaxy.celery.tasks import set_job_metadata
 
-                # We're synchronously waiting for a task here. This means we have to have a result backend.
-                # That is bad practice and also means this can never become part of another task.
-                try:
-                    set_job_metadata.delay(
-                        tool_job_working_directory=job_wrapper.working_directory,
-                        job_id=job_wrapper.job_id,
-                        extended_metadata_collection="extended" in metadata_strategy,
-                    ).get()
-                except Exception:
-                    log.exception("Metadata task failed")
-                    return
+                job_wrapper.change_state(model.Job.states.FINISHING)
+                log.debug("Dispatching external metadata execution to celery for job: %d", job_wrapper.job_id)
+                async_result = set_job_metadata.delay(
+                    tool_job_working_directory=job_wrapper.working_directory,
+                    job_id=job_wrapper.job_id,
+                    extended_metadata_collection="extended" in metadata_strategy,
+                )
+                return async_result
             else:
                 lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
                 venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
@@ -498,6 +560,7 @@ class BaseJobRunner:
                     preexec_fn=os.setpgrp,
                 )
             log.debug("execution of external set_meta for job %d finished", job_wrapper.job_id)
+        return None
 
     def get_job_file(self, job_wrapper: "MinimalJobWrapper", **kwds) -> str:
         job_metrics = job_wrapper.app.job_metrics
@@ -965,9 +1028,26 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors, Generic[T]):
         return collect_output_success, stdout, stderr
 
     def finish_job(self, job_state: T) -> None:
+        """Handle external metadata (if needed), then call _finish_job."""
+        external_metadata = not asbool(job_state.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
+        if external_metadata:
+            async_result = self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
+            if async_result is not None:
+                self._celery_metadata_queue.put(
+                    CeleryMetadataMonitorItem(
+                        job_id=job_state.job_wrapper.job_id,
+                        async_result=async_result,
+                        on_complete=self._make_work_queue_callback(self._finish_job, job_state),
+                    )
+                )
+                return
+        self._finish_job(job_state)
+
+    def _finish_job(self, job_state: T) -> None:
         """
         Get the output/error for a finished job, pass to `job_wrapper.finish`
         and cleanup all the job's temporary files.
+        Subclasses override this for post-metadata work.
         """
         galaxy_id_tag = job_state.job_wrapper.get_id_tag()
         external_job_id = job_state.job_id

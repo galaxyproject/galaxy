@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import subprocess
+from dataclasses import dataclass
 from time import sleep
 from typing import (
     Any,
@@ -51,6 +52,7 @@ from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
+    CeleryMetadataMonitorItem,
     JobState,
 )
 from galaxy.model.base import check_database_connection
@@ -221,6 +223,17 @@ PULSAR_PARAM_SPECS = dict(
 
 PARAMETER_SPECIFICATION_REQUIRED = object()
 PARAMETER_SPECIFICATION_IGNORED = object()
+
+
+@dataclass
+class PulsarFinishJobResult:
+    tool_stdout: Optional[str]
+    tool_stderr: Optional[str]
+    exit_code: Optional[int]
+    job_stdout: Optional[str]
+    job_stderr: Optional[str]
+    remote_metadata_directory: Optional[str]
+    job_metrics_directory: str
 
 
 class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
@@ -748,28 +761,52 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             self.fail_job(job_state, message=GENERIC_REMOTE_ERROR, exception=True)
             log.exception("failure finishing job %d", job_wrapper.job_id)
             return
+        result = PulsarFinishJobResult(
+            tool_stdout=tool_stdout,
+            tool_stderr=tool_stderr,
+            exit_code=exit_code,
+            job_stdout=job_stdout,
+            job_stderr=job_stderr,
+            remote_metadata_directory=remote_metadata_directory,
+            job_metrics_directory=os.path.join(job_wrapper.working_directory, "metadata"),
+        )
         if not PulsarJobRunner.__remote_metadata(client):
             # we need an actual exit code file in the job working directory to detect job errors in the metadata script
             with open(
                 os.path.join(job_wrapper.working_directory, f"galaxy_{job_wrapper.job_id}.ec"), "w"
             ) as exit_code_file:
                 exit_code_file.write(str(exit_code))
-            self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
-        job_metrics_directory = os.path.join(job_wrapper.working_directory, "metadata")
-        # Finish the job
+            async_result = self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
+            if async_result is not None:
+                self._celery_metadata_queue.put(
+                    CeleryMetadataMonitorItem(
+                        job_id=job_wrapper.job_id,
+                        async_result=async_result,
+                        on_complete=lambda: self.work_queue.put(
+                            (
+                                lambda _jw: self._finish_pulsar_job(_jw, result),
+                                job_wrapper,
+                            )
+                        ),
+                    )
+                )
+                return
+        self._finish_pulsar_job(job_wrapper, result)
+
+    def _finish_pulsar_job(self, job_wrapper, result: PulsarFinishJobResult):
         try:
             job_wrapper.finish(
-                tool_stdout,
-                tool_stderr,
-                exit_code,
-                job_stdout=job_stdout,
-                job_stderr=job_stderr,
-                remote_metadata_directory=remote_metadata_directory,
-                job_metrics_directory=job_metrics_directory,
+                result.tool_stdout,
+                result.tool_stderr,
+                result.exit_code,
+                job_stdout=result.job_stdout,
+                job_stderr=result.job_stderr,
+                remote_metadata_directory=result.remote_metadata_directory,
+                job_metrics_directory=result.job_metrics_directory,
             )
         except Exception:
             log.exception("Job wrapper finish method failed")
-            job_wrapper.fail("Unable to finish job", exception=True, job_metrics_directory=job_metrics_directory)
+            job_wrapper.fail("Unable to finish job", exception=True, job_metrics_directory=result.job_metrics_directory)
 
     def check_pid(self, pid):
         try:
@@ -833,11 +870,14 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             client.kill()
 
     def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
-        """Recover jobs stuck in the queued/running state when Galaxy started."""
+        """Recover jobs stuck in the queued/running/finishing state when Galaxy started."""
         job_state = self._job_state(job, job_wrapper)
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
-        if state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:
+        if state == model.Job.states.FINISHING:
+            log.debug(f"(Pulsar/{job.id}) is in FINISHING state, re-running finish_job for recovery")
+            self.mark_as_finished(job_state)
+        elif state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:
             log.debug(f"(Pulsar/{job.id}) is still in {state} state, adding to the Pulsar queue")
             job_state.old_state = state if state != model.Job.states.STOPPED else model.Job.states.RUNNING
             job_state.running = state != model.Job.states.QUEUED
@@ -1099,6 +1139,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 galaxy_job_id = remote_job_id
             assert isinstance(self.app.job_manager.job_handler.job_queue, JobHandlerQueue)
             job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id(galaxy_job_id)
+            if full_status["status"] in ("complete", "cancelled"):
+                job.handler = self.app.config.server_name
             job_state = self._job_state(job, job_wrapper)
             self._update_job_state_for_status(job_state, full_status["status"], full_status=full_status)
         except Exception:
