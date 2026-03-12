@@ -270,10 +270,6 @@ class DRMAAJobRunner(AsynchronousJobRunner[DRMAAJobState]):
                 ajs.fail_message = "The cluster DRM system terminated this job"
                 self.work_queue.put((self.fail_job, ajs))
         elif drmaa_state == drmaa.JobState.DONE or job_state == model.Job.states.STOPPED:
-            # External metadata processing for external runjobs
-            external_metadata = not asbool(ajs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
-            if external_metadata:
-                self._handle_metadata_externally(ajs.job_wrapper, resolve_requirements=True)
             if job_state != model.Job.states.DELETED:
                 self.work_queue.put((self.finish_job, ajs))
         return None
