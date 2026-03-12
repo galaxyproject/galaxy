@@ -11154,6 +11154,37 @@ export interface components {
          * @enum {string}
          */
         DatasetContentType: "meta" | "attr" | "stats" | "data";
+        /**
+         * DatasetDescriptor
+         * @description Description of a dataset available in the Pyodide execution environment.
+         */
+        DatasetDescriptor: {
+            /**
+             * Aliases
+             * @description Alternative names for this dataset
+             */
+            aliases?: string[];
+            /**
+             * Id
+             * @description Encoded dataset ID
+             */
+            id: string;
+            /**
+             * Name
+             * @description Human-readable dataset name
+             */
+            name?: string | null;
+            /**
+             * Path
+             * @description Server-side file path (not exposed to client)
+             */
+            path?: string | null;
+            /**
+             * Size
+             * @description Dataset size in bytes
+             */
+            size?: number | null;
+        };
         /** DatasetErrorMessage */
         DatasetErrorMessage: {
             /** @description The encoded ID of the dataset and its source. */
@@ -12462,43 +12493,48 @@ export interface components {
             success: boolean;
             /**
              * Task Id
-             * @description Identifier correlating to ExecutionTask
+             * @description Identifier of the task that produced this result
              */
             task_id?: string | null;
         };
         /**
          * ExecutionTask
-         * @description Code execution request emitted by an agent.
+         * @description Previously executed Pyodide task, stored in response metadata for refinement on subsequent turns.
          */
         ExecutionTask: {
             /**
+             * Alias Map
+             * @description Dataset alias map used during execution
+             */
+            alias_map?: {
+                [key: string]: string;
+            };
+            /**
              * Code
-             * @description Python code to execute
+             * @description Python code that was executed
+             * @default
              */
             code: string;
             /**
-             * Inputs
-             * @description Additional inputs for the execution environment
+             * Datasets
+             * @description Datasets used during execution
              */
-            inputs?: {
-                [key: string]: unknown;
-            };
+            datasets?: components["schemas"]["DatasetDescriptor"][];
             /**
              * Requirements
-             * @description List of packages required
+             * @description Packages used during execution
              */
             requirements?: string[];
             /**
              * Task Id
-             * @description Optional task identifier provided by agent
+             * @description Identifier of the executed task
              */
             task_id?: string | null;
             /**
              * Timeout Seconds
-             * @description Max execution time in seconds
-             * @default 120
+             * @description Execution timeout in seconds
              */
-            timeout_seconds: number;
+            timeout_seconds?: number | null;
         };
         /** ExitCodeJobMessage */
         ExitCodeJobMessage: {
@@ -20724,6 +20760,29 @@ export interface components {
             model_store_format: components["schemas"]["ModelStoreFormat"];
         };
         /**
+         * PyodideContext
+         * @description Context stored alongside a pending Pyodide task, used to process the execution result.
+         */
+        PyodideContext: {
+            /**
+             * Alias Map
+             * @description Mapping of dataset IDs to aliases
+             */
+            alias_map?: {
+                [key: string]: string;
+            };
+            /**
+             * Datasets
+             * @description Datasets available for execution
+             */
+            datasets?: components["schemas"]["DatasetDescriptor"][];
+            /**
+             * Requirements
+             * @description Python packages required for execution
+             */
+            requirements?: string[];
+        };
+        /**
          * PyodideFile
          * @description Representation of a file to be provided in the Pyodide environment.
          */
@@ -20851,6 +20910,11 @@ export interface components {
              * @description List of Pyodide files to be made available during execution
              */
             files?: components["schemas"]["PyodideFile"][];
+            /**
+             * Original Code
+             * @description Original (unsanitized) Python code
+             */
+            original_code?: string | null;
             /**
              * Packages
              * @description List of Python packages required for execution
@@ -21593,6 +21657,11 @@ export interface components {
              */
             artifacts?: components["schemas"]["UploadedArtifact"][] | null;
             /**
+             * Completion State
+             * @description Completion state of the response: 'complete', 'pending', or 'error'
+             */
+            completion_state?: string | null;
+            /**
              * Datasets Used
              * @description List of dataset IDs used in the agent's response
              */
@@ -21602,37 +21671,84 @@ export interface components {
              * @description Error message if any error occurred during processing
              */
             error?: string | null;
-            /** @description Details of any executed task */
+            /** @description Record of the previously executed Pyodide task, used for refinement */
             executed_task?: components["schemas"]["ExecutionTask"] | null;
-            /** @description Result of any executed task */
+            /** @description Result of the Pyodide execution */
             execution?: components["schemas"]["ExecutionResult"] | null;
             /**
+             * Expected Files
+             * @description File outputs expected by the analysis plan
+             */
+            expected_files?: string[] | null;
+            /**
+             * Expected Plots
+             * @description Plot outputs expected by the analysis plan
+             */
+            expected_plots?: string[] | null;
+            /**
+             * Fallback
+             * @description Whether this is a fallback response
+             */
+            fallback?: boolean | null;
+            /**
              * Files
-             * @description List of file paths relevant to the response
+             * @description List of file names generated by the agent
              */
             files?: string[] | null;
             /** @description Information about handoff between agents */
             handoff_info?: components["schemas"]["HandoffInfo"] | null;
+            /**
+             * Input Tokens
+             * @description Input token count for this response
+             */
+            input_tokens?: number | null;
             /**
              * Is Complete
              * @description Whether the agent considers its response complete or if further interaction is expected
              */
             is_complete?: boolean | null;
             /**
+             * Method
+             * @description Internal method used to generate this response
+             */
+            method?: string | null;
+            /**
              * Model
              * @description LLM model used to generate the response
              */
             model?: string | null;
             /**
+             * Output Tokens
+             * @description Output token count for this response
+             */
+            output_tokens?: number | null;
+            /**
+             * Planner
+             * @description Planner used to generate the analysis plan
+             */
+            planner?: string | null;
+            /**
+             * Planning Error
+             * @description Error message from the planning phase
+             */
+            planning_error?: string | null;
+            /**
              * Plots
              * @description List of plot URLs generated by the agent
              */
             plots?: string[] | null;
+            /** @description Context required to process the Pyodide execution result on the next turn */
+            pyodide_context?: components["schemas"]["PyodideContext"] | null;
             /**
              * Pyodide Retry Count
              * @description Number of retries attempted for Pyodide execution
              */
             pyodide_retry_count?: number | null;
+            /**
+             * Pyodide Started At
+             * @description ISO 8601 timestamp of when the Pyodide task was dispatched
+             */
+            pyodide_started_at?: string | null;
             /** @description Status of any Pyodide code execution */
             pyodide_status?: components["schemas"]["PyodideStatus"] | null;
             /** @description Details of any Pyodide task */
@@ -21647,6 +21763,16 @@ export interface components {
              * @description Seconds until Pyodide timeout
              */
             pyodide_timeout_seconds?: number | null;
+            /**
+             * Routed By
+             * @description Agent that routed this request
+             */
+            routed_by?: string | null;
+            /**
+             * Router Method
+             * @description Routing method used to select the agent
+             */
+            router_method?: string | null;
             /**
              * Stderr
              * @description Captured standard error from any code execution

@@ -35,6 +35,13 @@ from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     encode_id,
 )
+from galaxy.schema.agents import (
+    DatasetDescriptor,
+    ExecutionTask,
+    PyodideContext,
+    PyodideStatus,
+    ResponseMetadata,
+)
 from .base import (
     ActionSuggestion,
     ActionType,
@@ -126,11 +133,6 @@ class DataAnalysisAgent(BaseGalaxyAgent):
         except Exception as exc:  # pragma: no cover - defensive path
             log.exception("Data analysis planner failed")
             error_message = f"Planning failed: {exc}" if exc else "Planning failed"
-            metadata: Dict[str, Any] = {
-                "datasets_used": [encode_id(d) for d in datasets],
-                "planner": "dspy",
-                "planning_error": str(exc),
-            }
             suggestions = [
                 ActionSuggestion(
                     action_type=ActionType.REFINE_QUERY,
@@ -145,7 +147,11 @@ class DataAnalysisAgent(BaseGalaxyAgent):
                 confidence=ConfidenceLevel.LOW,
                 agent_type=self.agent_type,
                 suggestions=suggestions,
-                metadata=metadata,
+                metadata=ResponseMetadata(
+                    datasets_used=[encode_id(d) for d in datasets],
+                    planner="dspy",
+                    planning_error=str(exc),
+                ),
             )
 
         return self._response_from_plan(
@@ -244,14 +250,6 @@ class DataAnalysisAgent(BaseGalaxyAgent):
         should_execute = self._should_enqueue_execution(code, normalized_requirements, last_executed_task)
         if should_execute and code:
             if dataset_descriptors and self._dataset_token_signer is None:
-                metadata: Dict[str, Any] = {
-                    "datasets_used": [str(entry.get("id")) for entry in dataset_descriptors if entry.get("id")]
-                    or [encode_id(d) for d in datasets],
-                    "planner": "dspy",
-                    "pyodide_status": "error",
-                    "is_complete": False,
-                    "error": "Pyodide dataset download tokens are not configured.",
-                }
                 suggestions = [
                     ActionSuggestion(
                         action_type=ActionType.REFINE_QUERY,
@@ -266,7 +264,14 @@ class DataAnalysisAgent(BaseGalaxyAgent):
                     confidence=ConfidenceLevel.LOW,
                     agent_type=self.agent_type,
                     suggestions=suggestions,
-                    metadata=metadata,
+                    metadata=ResponseMetadata(
+                        datasets_used=[str(entry.get("id")) for entry in dataset_descriptors if entry.get("id")]
+                        or [encode_id(d) for d in datasets],
+                        planner="dspy",
+                        pyodide_status=PyodideStatus.ERROR,
+                        is_complete=False,
+                        error="Pyodide dataset download tokens are not configured.",
+                    ),
                 )
             pyodide_task = self._build_pyodide_task(code, normalized_requirements, dataset_descriptors, alias_map)
             log.info(
@@ -339,7 +344,13 @@ class DataAnalysisAgent(BaseGalaxyAgent):
         dataset_ids_used = [str(entry.get("id")) for entry in dataset_descriptors if entry.get("id")] or [
             encode_id(d) for d in datasets
         ]
-        metadata: Dict[str, Any] = {
+        pyodide_context = PyodideContext(
+            alias_map=alias_map,
+            datasets=[DatasetDescriptor(**d) for d in dataset_descriptors],
+            requirements=normalized_requirements,
+        )
+
+        metadata_kwargs: Dict[str, Any] = {
             "datasets_used": dataset_ids_used,
             "summary": summary_text,
             "analysis_steps": analysis_steps,
@@ -348,26 +359,17 @@ class DataAnalysisAgent(BaseGalaxyAgent):
             "expected_plots": active_plan.plots,
             "expected_files": active_plan.files,
             "artifacts": artifact_records,
-            "examples_used": bool(self._example_snippets),
             "planner": "dspy",
             "completion_state": self._determine_completion_state(active_plan, execution_result),
-            "raw_answer": active_plan.raw_answer,
-            "requirements": normalized_requirements,
-            "dataset_descriptors": dataset_descriptors,
         }
 
         if pyodide_task:
-            metadata["pyodide_task"] = pyodide_task
-            metadata["pyodide_status"] = "pending"
-            metadata["pyodide_started_at"] = datetime.now(timezone.utc).isoformat()
-            metadata["pyodide_context"] = {
-                "alias_map": alias_map,
-                "datasets": dataset_descriptors,
-                "requirements": normalized_requirements,
-            }
-            metadata["is_complete"] = False
+            metadata_kwargs["pyodide_task"] = pyodide_task
+            metadata_kwargs["pyodide_status"] = PyodideStatus.PENDING
+            metadata_kwargs["pyodide_started_at"] = datetime.now(timezone.utc).isoformat()
+            metadata_kwargs["pyodide_context"] = pyodide_context
+            metadata_kwargs["is_complete"] = False
         elif execution_result is not None:
-            metadata["execution"] = execution_result
             normalized_code = self._normalize_code(code) if code else ""
             metadata_code = normalized_code or (last_executed_task.get("code") if last_executed_task else "") or ""
             metadata_requirements = (
@@ -375,25 +377,28 @@ class DataAnalysisAgent(BaseGalaxyAgent):
                 if normalized_code
                 else (last_executed_task.get("requirements", []) if last_executed_task else normalized_requirements)
             )
-            metadata["executed_task"] = {
-                "task_id": last_executed_task.get("task_id") if last_executed_task else None,
-                "code": metadata_code,
-                "requirements": metadata_requirements,
-                "datasets": dataset_descriptors,
-                "alias_map": alias_map,
-            }
-            metadata["stdout"] = execution_result.get("stdout", "")
-            metadata["stderr"] = execution_result.get("stderr", "")
-            metadata["pyodide_status"] = "completed" if execution_result.get("success") else "error"
-            metadata["is_complete"] = execution_result.get("success")
-            metadata["pyodide_context"] = {
-                "alias_map": alias_map,
-                "datasets": dataset_descriptors,
-                "requirements": normalized_requirements,
-            }
+            metadata_kwargs["execution"] = execution_result
+            metadata_kwargs["executed_task"] = ExecutionTask(
+                task_id=last_executed_task.get("task_id") if last_executed_task else None,
+                code=metadata_code,
+                requirements=metadata_requirements,
+                datasets=[DatasetDescriptor(**d) for d in dataset_descriptors],
+                alias_map=alias_map,
+            )
+            metadata_kwargs["stdout"] = execution_result.get("stdout", "")
+            metadata_kwargs["stderr"] = execution_result.get("stderr", "")
+            metadata_kwargs["pyodide_status"] = (
+                PyodideStatus.COMPLETED if execution_result.get("success") else PyodideStatus.ERROR
+            )
+            metadata_kwargs["is_complete"] = execution_result.get("success")
+            metadata_kwargs["pyodide_context"] = pyodide_context
         else:
-            metadata["pyodide_status"] = "completed" if active_plan.is_complete else "pending"
-            metadata["is_complete"] = active_plan.is_complete
+            metadata_kwargs["pyodide_status"] = (
+                PyodideStatus.COMPLETED if active_plan.is_complete else PyodideStatus.PENDING
+            )
+            metadata_kwargs["is_complete"] = active_plan.is_complete
+
+        metadata = ResponseMetadata(**metadata_kwargs)
 
         suggestions: List[ActionSuggestion] = []
         if execution_result and not execution_result.get("success", False):

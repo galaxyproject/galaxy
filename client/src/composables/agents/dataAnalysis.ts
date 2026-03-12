@@ -174,7 +174,10 @@ export function useDataAnalysisAgent(
         if (metadata.pyodide_task && execResult.task_id) {
             metadata.executed_task = {
                 code: metadata.executed_task?.code || "",
-                timeout_seconds: metadata.executed_task?.timeout_seconds || 30,
+                timeout_seconds:
+                    metadata.executed_task && "timeout_seconds" in metadata.executed_task
+                        ? metadata.executed_task.timeout_seconds
+                        : 30,
                 task_id: execResult.task_id,
             };
             pyodideTaskToMessage.set(String(execResult.task_id), message);
