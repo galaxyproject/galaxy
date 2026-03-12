@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { BTable } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { UserConcreteObjectStore } from "@/api/objectStores";
+import type { TableField } from "@/components/Common/GTable.types";
 import { DESCRIPTION_FIELD, NAME_FIELD, TEMPLATE_FIELD, TYPE_FIELD } from "@/components/ConfigTemplates/fields";
 import { useInstanceTesting } from "@/components/ConfigTemplates/useConfigurationTesting";
 import { useFiltering } from "@/components/ConfigTemplates/useInstanceFiltering";
@@ -10,6 +11,7 @@ import { useObjectStoreInstancesStore } from "@/stores/objectStoreInstancesStore
 import _l from "@/utils/localization";
 
 import InstanceDropdown from "./InstanceDropdown.vue";
+import GTable from "@/components/Common/GTable.vue";
 import ManageIndexHeader from "@/components/ConfigTemplates/ManageIndexHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
@@ -24,13 +26,13 @@ interface Props {
 
 defineProps<Props>();
 
-const BADGE_FIELD = {
+const BADGE_FIELD: TableField = {
     key: "badges",
     label: _l(" "),
     sortable: false,
 };
 
-const fields = [NAME_FIELD, DESCRIPTION_FIELD, TYPE_FIELD, TEMPLATE_FIELD, BADGE_FIELD];
+const fields: TableField[] = [NAME_FIELD, DESCRIPTION_FIELD, TYPE_FIELD, TEMPLATE_FIELD, BADGE_FIELD];
 
 const allItems = computed<UserConcreteObjectStore[]>(() => objectStoreInstancesStore.getInstances);
 const { activeInstances } = useFiltering(allItems);
@@ -49,39 +51,41 @@ const { ConfigurationTestSummaryModal, showTestResults, testResults, test, testi
 
 <template>
     <div>
-        <ManageIndexHeader header="Galaxy Storage" :message="message" create-route="/object_store_instances/create">
-        </ManageIndexHeader>
         <ConfigurationTestSummaryModal v-model="showTestResults" :error="testingError" :test-results="testResults" />
-        <BTable
+
+        <ManageIndexHeader header="Galaxy Storage" :message="message" create-route="/object_store_instances/create" />
+
+        <GTable
             id="user-object-stores-index"
-            no-sort-reset
+            caption-top
+            fixed
+            hover
+            show-empty
+            striped
             :fields="fields"
-            :items="activeInstances"
-            :hover="true"
-            :striped="true"
-            :caption-top="true"
-            :fixed="true"
-            :show-empty="true">
+            :items="activeInstances">
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading Galaxy storage instances" />
-                <b-alert v-else id="no-object-store-instances" variant="info" show>
-                    <div>No Galaxy storage instances found, click the create button to configure a new one.</div>
-                </b-alert>
+                <BAlert v-else id="no-object-store-instances" variant="info" show>
+                    No Galaxy storage instances found, click the create button to configure a new one.
+                </BAlert>
             </template>
-            <template v-slot:cell(badges)="row">
-                <ObjectStoreBadges size="1x" :badges="row.item.badges" />
+
+            <template v-slot:cell(badges)="{ item }">
+                <ObjectStoreBadges size="1x" :badges="item.badges" />
             </template>
-            <template v-slot:cell(name)="row">
-                <InstanceDropdown :object-store="row.item" @entryRemoved="reload" @test="test(row.item)" />
+
+            <template v-slot:cell(name)="{ item }">
+                <InstanceDropdown :object-store="item" @entryRemoved="reload" @test="test(item)" />
             </template>
-            <template v-slot:cell(type)="row">
-                <ObjectStoreTypeSpan :type="row.item.type" />
+
+            <template v-slot:cell(type)="{ item }">
+                <ObjectStoreTypeSpan :type="item.type" />
             </template>
-            <template v-slot:cell(template)="row">
-                <TemplateSummarySpan
-                    :template-version="row.item.template_version ?? 0"
-                    :template-id="row.item.template_id" />
+
+            <template v-slot:cell(template)="{ item }">
+                <TemplateSummarySpan :template-version="item.template_version ?? 0" :template-id="item.template_id" />
             </template>
-        </BTable>
+        </GTable>
     </div>
 </template>

@@ -96,7 +96,7 @@ object_store_instances:
   index:
     selectors:
       create_button: '#create-button-galaxy-storage'
-      _: '#user-object-stores-index'
+      _: '#g-table-user-object-stores-index'
 
   create:
     selectors:
@@ -108,7 +108,7 @@ file_source_instances:
   index:
     selectors:
       create_button: '#create-button-my-repositories'
-      _: '#user-file-sources-index'
+      _: '#g-table-user-file-sources-index'
 
   create:
     selectors:

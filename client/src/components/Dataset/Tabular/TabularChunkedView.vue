@@ -5,7 +5,10 @@ import { parse } from "csv-parse/sync";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import type { HDADetailed } from "@/api";
+import type { TableField } from "@/components/Common/GTable.types";
 import { getAppRoot } from "@/onload/loadConfig";
+
+import GTable from "@/components/Common/GTable.vue";
 
 interface TabularChunk {
     ck_data: string;
@@ -49,10 +52,31 @@ const columnStyle = computed(() => {
     const columnStyle = Array(props.options.metadata_columns);
     if (props.options.metadata_column_types && props.options.metadata_column_types?.length > 0) {
         props.options.metadata_column_types.forEach((column_type, index) => {
-            columnStyle[index] = column_type === "str" || column_type === "list" ? "string-align" : "number-align";
+            columnStyle[index] = column_type === "str" || column_type === "list" ? "text-left" : "text-right";
         });
     }
     return columnStyle;
+});
+
+const fieldKeys = computed(() => {
+    return Array.from({ length: columns.value.length }, (_, index) => `column_${index}`);
+});
+
+const fields = computed<TableField[]>(() => {
+    return fieldKeys.value.map((key, index) => ({
+        key,
+        label: columns.value[index] || `Column ${index + 1}`,
+        cellClass: columnStyle.value[index],
+    }));
+});
+
+const tableRows = computed(() => {
+    return tabularData.rows.map((row) => {
+        const paddedRow =
+            row.length < columns.value.length ? row.concat(Array(columns.value.length - row.length).fill("")) : row;
+
+        return Object.fromEntries(fieldKeys.value.map((key, index) => [key, paddedRow[index] ?? ""]));
+    });
 });
 
 const delimiter = computed(() => {
@@ -65,6 +89,7 @@ const chunkUrl = computed(() => {
 
 // Loading more data on user scroll to (near) bottom.
 const { y } = useWindowScroll();
+
 watch(y, (newY) => {
     if (
         atEOF.value !== true &&
@@ -169,34 +194,13 @@ onMounted(() => {
 <template>
     <div>
         <!-- TODO loading spinner locked to top right -->
-        <b-table-simple hover small striped>
-            <b-thead head-variant="dark">
-                <b-tr>
-                    <b-th v-for="(column, index) in columns" :key="column">{{ column || `Column ${index + 1}` }}</b-th>
-                </b-tr>
-            </b-thead>
-            <b-tbody>
-                <b-tr v-for="(row, index) in tabularData.rows" :key="index">
-                    <b-td
-                        v-for="(element, elementIndex) in row.slice(0, -1)"
-                        :key="elementIndex"
-                        :class="columnStyle[elementIndex]">
-                        {{ element }}
-                    </b-td>
-                    <b-td :class="columnStyle[row.length - 1]" :colspan="1 + columns.length - row.length">
-                        {{ row.slice(-1)[0] }}
-                    </b-td>
-                </b-tr>
-            </b-tbody>
-        </b-table-simple>
+        <GTable
+            compact
+            hover
+            striped
+            head-variant="dark"
+            :fields="fields"
+            :items="tableRows"
+            :load-more-loading="loading" />
     </div>
 </template>
-
-<style lang="scss" scoped>
-.string-align {
-    text-align: left;
-}
-.number-align {
-    text-align: right;
-}
-</style>

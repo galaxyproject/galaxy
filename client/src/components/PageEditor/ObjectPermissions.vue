@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import axios from "axios";
+import { BAlert } from "bootstrap-vue";
 import Vue, { computed, type Ref, ref, watch } from "vue";
 
 import { GalaxyApi, type MessageException } from "@/api";
 import { fetchCollectionSummary } from "@/api/datasetCollections";
+import type { TableField } from "@/components/Common/GTable.types";
 import { useToast } from "@/composables/toast";
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -20,6 +22,7 @@ import {
 
 import PermissionObjectType from "./PermissionObjectType.vue";
 import SharingIndicator from "./SharingIndicator.vue";
+import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const { getHistoryNameById, loadHistoryById } = useHistoryStore();
@@ -49,8 +52,10 @@ const { jobsToHistories, invocationsToHistories, historyDatasetCollectionsToHist
     initializeObjectToHistoryRefs(referencedObjects);
 
 type ErrorString = string;
-type AccessibleState = Boolean | null | ErrorString;
-type AccessibleMapRef = Ref<{ [key: string]: AccessibleState }>;
+type AccessibleState = boolean | null | ErrorString;
+type AccessibleMapRef = Ref<Record<string, AccessibleState>>;
+type PermissionObjectTypeValue = "history" | "historyDataset" | "workflow";
+
 const historyAccessible: AccessibleMapRef = ref({});
 const workflowAccessible: AccessibleMapRef = ref({});
 const historyDatasetAccessible: AccessibleMapRef = ref({});
@@ -135,9 +140,9 @@ watch(referencedHistoryDatasetCollectionIds, async () => {
 
 interface ItemInterface {
     id: string;
-    accessible: Boolean | null;
+    accessible: AccessibleState;
     name: string;
-    type: string;
+    type: PermissionObjectTypeValue;
 }
 
 const histories = computed<ItemInterface[]>(() => {
@@ -146,8 +151,8 @@ const histories = computed<ItemInterface[]>(() => {
             id: historyId,
             type: "history",
             name: getHistoryNameById(historyId),
-            accessible: historyAccessible.value[historyId],
-        } as ItemInterface;
+            accessible: historyAccessible.value[historyId] ?? null,
+        };
     });
 });
 
@@ -157,8 +162,8 @@ const workflows = computed<ItemInterface[]>(() => {
             id: workflowId,
             type: "workflow",
             name: getStoredWorkflowNameByInstanceId(workflowId),
-            accessible: workflowAccessible.value[workflowId],
-        } as ItemInterface;
+            accessible: workflowAccessible.value[workflowId] ?? null,
+        };
     });
 });
 
@@ -168,18 +173,32 @@ const datasets = computed<ItemInterface[]>(() => {
             id: historyDatasetId,
             type: "historyDataset",
             name: getDataset(historyDatasetId)?.name || "Fetching dataset name...",
-            accessible: historyDatasetAccessible.value[historyDatasetId],
-        } as ItemInterface;
+            accessible: historyDatasetAccessible.value[historyDatasetId] ?? null,
+        };
     });
 });
 
 const loading = ref(false);
 
-const SHARING_FIELD = { key: "accessible", label: _l("Accessible"), sortable: false, thStyle: { width: "10%" } };
-const NAME_FIELD = { key: "name", label: _l("Name"), sortable: true };
-const TYPE_FIELD = { key: "type", label: _l("Type"), sortable: true, thStyle: { width: "10%" } };
-
-const tableFields = [SHARING_FIELD, TYPE_FIELD, NAME_FIELD];
+const tableFields: TableField[] = [
+    {
+        key: "accessible",
+        label: _l("Accessible"),
+        sortable: false,
+        width: "10%",
+    },
+    {
+        key: "type",
+        label: _l("Type"),
+        sortable: true,
+        width: "10%",
+    },
+    {
+        key: "name",
+        label: _l("Name"),
+        sortable: true,
+    },
+];
 
 watch(
     props,
@@ -322,22 +341,23 @@ async function makeAccessible(item: ItemInterface) {
 
 <template>
     <div>
-        <b-table :items="tableItems" show-empty :fields="tableFields">
+        <GTable show-empty :items="tableItems" :fields="tableFields">
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading objects" />
-                <b-alert v-else variant="info" show>
-                    <div>No objects found in referenced Galaxy markdown content.</div>
-                </b-alert>
+                <BAlert v-else show variant="info"> No objects found in referenced Galaxy markdown content. </BAlert>
             </template>
-            <template v-slot:cell(name)="row">
-                {{ row.item.name }}
+
+            <template v-slot:cell(name)="{ item }">
+                {{ item.name }}
             </template>
-            <template v-slot:cell(accessible)="row">
-                <SharingIndicator :accessible="row.item.accessible" @makeAccessible="makeAccessible(row.item)" />
+
+            <template v-slot:cell(accessible)="{ item }">
+                <SharingIndicator :accessible="item.accessible" @makeAccessible="makeAccessible(item)" />
             </template>
-            <template v-slot:cell(type)="row">
-                <PermissionObjectType :type="row.item.type" />
+
+            <template v-slot:cell(type)="{ item }">
+                <PermissionObjectType :type="item.type" />
             </template>
-        </b-table>
+        </GTable>
     </div>
 </template>
