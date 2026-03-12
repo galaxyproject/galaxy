@@ -34,6 +34,8 @@ from selenium.webdriver.common.keys import Keys
 if TYPE_CHECKING:
     from selenium.webdriver.remote.webdriver import WebDriver
 
+    from .has_playwright_driver import HasPlaywrightDriver
+
 from galaxy.navigation.components import (
     Component,
     HasText,
@@ -281,7 +283,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             NotImplementedError: If using Selenium backend
         """
         if self._driver_impl.backend_type == "playwright":
-            return self._driver_impl.page  # type: ignore[attr-defined]
+            return cast("HasPlaywrightDriver", self._driver_impl).page
         else:
             raise NotImplementedError("Functionality cannot be run with Selenium yet.")
 
@@ -1415,13 +1417,33 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         source_element = self.find_element_by_selector(f"#{source_id}")
         sink_element = self.find_element_by_selector(f"#{sink_id}")
-        ac = self.action_chains()
-        ac = ac.move_to_element(source_element).click_and_hold()
+
         if screenshot_partial:
-            ac = ac.move_by_offset(10, 10)
-            ac.perform()
-            self.sleep_for(self.wait_types.UX_RENDER)
-            self.screenshot(screenshot_partial)
+            if self._driver_impl.backend_type == "playwright":
+                pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+                page = pw_driver.page
+                source_handle = pw_driver._unwrap_element(source_element)
+                source_box = source_handle.bounding_box()
+                assert source_box is not None
+                page.mouse.move(
+                    source_box["x"] + source_box["width"] / 2,
+                    source_box["y"] + source_box["height"] / 2,
+                )
+                page.mouse.down()
+                page.mouse.move(
+                    source_box["x"] + source_box["width"] / 2 + 10,
+                    source_box["y"] + source_box["height"] / 2 + 10,
+                )
+                self.sleep_for(self.wait_types.UX_RENDER)
+                self.screenshot(screenshot_partial)
+                page.mouse.up()
+            else:
+                ac = self.action_chains()
+                ac = ac.move_to_element(source_element).click_and_hold()
+                ac = ac.move_by_offset(10, 10)
+                ac.perform()
+                self.sleep_for(self.wait_types.UX_RENDER)
+                self.screenshot(screenshot_partial)
         self.drag_and_drop(source_element, sink_element)
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):

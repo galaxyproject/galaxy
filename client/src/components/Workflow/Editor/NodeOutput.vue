@@ -406,7 +406,7 @@ const removeTagsAction = computed(() => {
         <DraggableWrapper
             :id="id"
             ref="terminalComponent"
-            v-b-tooltip.hover="!props.blank ? outputDetails : ''"
+            v-b-tooltip.hover.noninteractive="!props.blank ? outputDetails : ''"
             class="output-terminal prevent-zoom"
             :class="{ 'mapped-over': isMultiple, 'blank-output': props.blank }"
             :output-name="output.name"
