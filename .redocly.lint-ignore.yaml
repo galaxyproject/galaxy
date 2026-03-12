@@ -37,6 +37,8 @@ _schema.yaml:
 _shed_schema.yaml:
   no-empty-servers:
     - '#/openapi'
+  operation-2xx-response:
+    - '#/paths/~1repository~1status_for_installed_repository/get'
   security-defined:
     - '#/paths/~1api~1authenticate~1baseauth/get'
     - '#/paths/~1api~1categories~1{encoded_category_id}/get'
@@ -52,3 +54,13 @@ _shed_schema.yaml:
     - '#/paths/~1api~1version/get'
     - >-
       #/paths/~1api_internal~1repositories~1{encoded_repository_id}~1metadata/get
+    - '#/paths/~1repository~1get_changeset_revision_and_ctx_rev/get'
+    - '#/paths/~1repository~1get_ctx_rev/get'
+    - '#/paths/~1repository~1get_repository_type/get'
+    - '#/paths/~1repository~1get_required_repo_info_dict/get'
+    - '#/paths/~1repository~1get_tool_dependencies/get'
+    - '#/paths/~1repository~1next_installable_changeset_revision/get'
+    - '#/paths/~1repository~1previous_changeset_revisions/get'
+    - '#/paths/~1repository~1static~1images~1{repository_id}~1{image_file}/get'
+    - '#/paths/~1repository~1status_for_installed_repository/get'
+    - '#/paths/~1repository~1updated_changeset_revisions/get'
