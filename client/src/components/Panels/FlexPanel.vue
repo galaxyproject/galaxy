@@ -10,6 +10,7 @@ const DEFAULT_WIDTH = 300;
 interface Props {
     collapsible?: boolean;
     side?: "left" | "right";
+    panelId?: string;
     minWidth?: number;
     maxWidth?: number;
     reactiveWidth?: number;
@@ -17,6 +18,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     collapsible: true,
     side: "right",
+    panelId: undefined,
     minWidth: 200,
     maxWidth: 800,
     reactiveWidth: undefined,
@@ -89,7 +91,7 @@ defineExpose({
 <template>
     <div
         v-if="show"
-        :id="side"
+        :id="panelId ?? side"
         ref="root"
         class="flex-panel"
         :class="{ ...sideClasses }"

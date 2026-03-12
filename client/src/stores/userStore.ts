@@ -43,6 +43,8 @@ export const useUserStore = defineStore("userStore", () => {
 
     const historyPanelWidth = useUserLocalStorageFromHashId("user-store-history-panel-width", 300, hashedUserId);
 
+    const chatPanelWidth = useUserLocalStorageFromHashId("user-store-chat-panel-width", 400, hashedUserId);
+
     const recentTools = useUserLocalStorageFromHashId<string[]>("user-store-recent-tools", [], hashedUserId);
 
     let loadPromise: Promise<void> | null = null;
@@ -188,6 +190,7 @@ export const useUserStore = defineStore("userStore", () => {
         currentListViewPreferences,
         hasSeenUploadHelp,
         historyPanelWidth,
+        chatPanelWidth,
         recentTools,
         loadUser,
         matchesCurrentUsername,

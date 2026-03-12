@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faClock, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faClock, faColumns, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 import { getGalaxyInstance } from "@/app";
+import { useChatStore } from "@/stores/chatStore";
 
 import { getAgentIcon } from "./agentTypes";
 import type { ChatHistoryItem } from "./chatTypes";
@@ -110,6 +111,12 @@ function startNewChat() {
     }
 }
 
+function openDockedChat() {
+    const chatStore = useChatStore();
+    const latestId = chatHistory.value.length > 0 ? chatHistory.value[0]!.id : null;
+    chatStore.openDockedPanel(latestId);
+}
+
 async function deleteSelected() {
     if (selectedIds.value.size === 0) {
         return;
@@ -137,6 +144,9 @@ async function deleteSelected() {
         <template v-slot:header-buttons>
             <button class="btn btn-sm btn-outline-primary" title="New Chat" @click="startNewChat">
                 <FontAwesomeIcon :icon="faPlus" fixed-width />
+            </button>
+            <button class="btn btn-sm btn-outline-primary" title="Open docked chat panel" @click="openDockedChat">
+                <FontAwesomeIcon :icon="faColumns" fixed-width />
             </button>
             <button
                 class="btn btn-sm"
