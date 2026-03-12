@@ -16,7 +16,7 @@ from typing import (
     Optional,
 )
 
-GTN_DATABASE_URL = "https://depot.galaxyproject.org/gtn/gtn_search.db"
+GTN_DATABASE_URL = "https://depot.galaxyproject.org/chatgxy/gtn_search.db"
 
 log = logging.getLogger(__name__)
 
