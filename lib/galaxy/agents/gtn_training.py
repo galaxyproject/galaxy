@@ -55,7 +55,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         try:
             self.gtn_db = GTNSearchDB()
             log.info("GTN database initialized successfully")
-        except OSError as e:
+        except (OSError, RuntimeError) as e:
             log.warning(f"GTN database not available: {e}")
             self.gtn_db = None
 
