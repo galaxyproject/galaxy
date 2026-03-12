@@ -29,6 +29,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from requests import Session
 import yaml
 from typing_extensions import Literal
 
@@ -57,6 +58,7 @@ from .util import (
     get_files_from_conda_package,
     PrintProgress,
     quay_repository,
+    quay_tag_exists,
     v1_image_name,
     v2_image_name,
 )
@@ -232,6 +234,7 @@ def mull_targets(
     determine_base_image: bool = True,
     invfile: str = INVFILE,
     strict_channel_priority: bool = True,
+    session: Optional[Session] = None,
 ) -> int:
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -250,18 +253,24 @@ def mull_targets(
 
     if not rebuild or "push" in command:
         repo_name = repo_template_kwds["image"].split(":", 1)[0]
-        repo_data = quay_repository(repo_template_kwds["namespace"], repo_name)
+        repo_data = None
+        target_tag = None
+        if ":" in repo_template_kwds["image"]:
+            image_name_parts = repo_template_kwds["image"].split(":")
+            assert len(image_name_parts) == 2, f": not allowed in image name [{repo_template_kwds['image']}]"
+            target_tag = image_name_parts[1]
+
         if not rebuild:
-            tags = repo_data.get("tags", [])
-
-            target_tag = None
-            if ":" in repo_template_kwds["image"]:
-                image_name_parts = repo_template_kwds["image"].split(":")
-                assert len(image_name_parts) == 2, f": not allowed in image name [{repo_template_kwds['image']}]"
-                target_tag = image_name_parts[1]
-
-            if tags and (target_tag is None or target_tag in tags):
-                raise BuildExistsException()
+            if target_tag is not None:
+                if quay_tag_exists(repo_template_kwds["namespace"], repo_name, target_tag, session=session):
+                    raise BuildExistsException()
+            else:
+                repo_data = quay_repository(repo_template_kwds["namespace"], repo_name, session=session)
+                tags = repo_data.get("tags", [])
+                if tags:
+                    raise BuildExistsException()
+        if "push" in command and repo_data is None:
+            repo_data = quay_repository(repo_template_kwds["namespace"], repo_name, session=session)
         if "push" in command and "error_type" in repo_data and oauth_token:
             # Explicitly create the repository so it can be built as public.
             create_repository(repo_template_kwds["namespace"], repo_name, oauth_token)

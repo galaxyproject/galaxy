@@ -23,6 +23,8 @@ from conda_package_streaming.package_streaming import stream_conda_info
 from conda_package_streaming.url import stream_conda_info as stream_conda_info_from_url
 from packaging.version import Version
 from requests import Session
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from galaxy.tool_util.deps.conda_util import (
     CondaContext,
@@ -41,12 +43,27 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 QUAY_REPOSITORY_API_ENDPOINT = "https://quay.io/api/v1/repository"
+QUAY_REGISTRY_API_ENDPOINT = "https://quay.io/v2"
 BUILD_NUMBER_REGEX = re.compile(r"\d+$")
 MULLED_SOCKET_TIMEOUT = 12
 QUAY_VERSIONS_CACHE_EXPIRY = 300
+QUAY_REQUEST_RETRY_STATUS_CODES = (408, 425, 429, 500, 502, 503, 504)
+QUAY_REQUEST_MAX_RETRIES = 5
+QUAY_REQUEST_BACKOFF_FACTOR = 1
+QUAY_MANIFEST_ACCEPT = ",".join(
+    [
+        "application/vnd.docker.distribution.manifest.v2+json",
+        "application/vnd.docker.distribution.manifest.list.v2+json",
+        "application/vnd.oci.image.manifest.v1+json",
+        "application/vnd.oci.image.index.v1+json",
+        "application/vnd.docker.distribution.manifest.v1+json",
+    ]
+)
 NAMESPACE_HAS_REPO_NAME_KEY = "galaxy.tool_util.deps.container_resolvers.mulled.util:namespace_repo_names"
 TAG_CACHE_KEY = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
 CONDA_IMAGE = os.environ.get("CONDA_IMAGE", "quay.io/condaforge/miniforge3:latest")
+_quay_session_lock = threading.Lock()
+_shared_quay_session: Optional[Session] = None
 
 
 class PARSED_TAG(NamedTuple):
@@ -54,6 +71,10 @@ class PARSED_TAG(NamedTuple):
     version: Union[LegacyVersion, Version]
     build_string: Union[LegacyVersion, Version]
     build_number: int
+
+
+class QuayApiException(Exception):
+    """Raised when quay.io returns an unexpected response."""
 
 
 def default_mulled_conda_channels_from_env() -> Optional[List[str]]:
@@ -105,15 +126,68 @@ def create_repository(namespace: str, repo_name: str, oauth_token: str) -> None:
     requests.post("https://quay.io/api/v1/repository", json=data, headers=headers, timeout=MULLED_SOCKET_TIMEOUT)
 
 
+def _build_quay_session() -> Session:
+    retry_strategy = Retry(
+        total=QUAY_REQUEST_MAX_RETRIES,
+        connect=QUAY_REQUEST_MAX_RETRIES,
+        read=QUAY_REQUEST_MAX_RETRIES,
+        status=QUAY_REQUEST_MAX_RETRIES,
+        backoff_factor=QUAY_REQUEST_BACKOFF_FACTOR,
+        status_forcelist=QUAY_REQUEST_RETRY_STATUS_CODES,
+        allowed_methods=frozenset({"GET", "HEAD"}),
+        respect_retry_after_header=True,
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session = requests.session()
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+
+def _get_quay_session(session: Optional[Session] = None) -> Session:
+    if session is not None:
+        return session
+
+    global _shared_quay_session
+    if _shared_quay_session is None:
+        with _quay_session_lock:
+            if _shared_quay_session is None:
+                _shared_quay_session = _build_quay_session()
+    return _shared_quay_session
+
+
+def _quay_api_error(response, url: str) -> QuayApiException:
+    try:
+        detail = response.json()
+    except ValueError:
+        detail = response.text[:200]
+    return QuayApiException(f"Unexpected quay.io response for {url} [{response.status_code}]: {detail!r}")
+
+
+def _quay_json_dict(response, url: str) -> Dict[str, Any]:
+    try:
+        data = response.json()
+    except ValueError as exc:
+        raise QuayApiException(
+            f"Failed to decode quay.io JSON for {url} [{response.status_code}]: {response.text[:200]!r}"
+        ) from exc
+
+    if not isinstance(data, dict):
+        raise QuayApiException(f"Unexpected quay.io payload type for {url}: {type(data).__name__}")
+
+    return data
+
+
 def quay_versions(namespace: str, pkg_name: str, session: Optional[Session] = None) -> List[str]:
     """Get all version tags for a Docker image stored on quay.io for supplied package name."""
     data = quay_repository(namespace, pkg_name, session=session)
 
-    if "error_type" in data and data["error_type"] == "invalid_token":
+    if "error_type" in data and data["error_type"] in {"invalid_token", "not_found"}:
         return []
 
     if "tags" not in data:
-        raise Exception(f"Unexpected response from quay.io - no tags description found [{data}]")
+        raise QuayApiException(f"Unexpected response from quay.io - no tags description found [{data}]")
 
     return [tag for tag in data["tags"].keys() if tag != "latest"]
 
@@ -122,11 +196,64 @@ def quay_repository(namespace: str, pkg_name: str, session: Optional[Session] = 
     assert namespace is not None
     assert pkg_name is not None
     url = f"https://quay.io/api/v1/repository/{namespace}/{pkg_name}"
-    if not session:
-        session = requests.session()
-    response = session.get(url, timeout=MULLED_SOCKET_TIMEOUT)
-    data = response.json()
-    return data
+    response = _get_quay_session(session).get(url, timeout=MULLED_SOCKET_TIMEOUT)
+    if response.status_code in {401, 404}:
+        try:
+            data = _quay_json_dict(response, url)
+        except QuayApiException:
+            if response.status_code == 404:
+                # Some missing-repo responses are non-JSON; normalize them to not_found.
+                return {"error_type": "not_found"}
+            raise
+        if response.status_code == 401 and data.get("error_type") != "invalid_token":
+            raise _quay_api_error(response, url)
+        # Quay uses 401 invalid_token for some public repo/tag misses.
+        return data
+    if response.status_code >= 400:
+        raise _quay_api_error(response, url)
+    return _quay_json_dict(response, url)
+
+
+def quay_tag_exists(namespace: str, pkg_name: str, tag: str, session: Optional[Session] = None) -> bool:
+    assert namespace is not None
+    assert pkg_name is not None
+    assert tag is not None
+
+    url = (
+        f"{QUAY_REGISTRY_API_ENDPOINT}/{namespace}/{pkg_name}/manifests/"
+        f"{tag}"
+    )
+    response = _get_quay_session(session).head(
+        url,
+        headers={"Accept": QUAY_MANIFEST_ACCEPT},
+        timeout=MULLED_SOCKET_TIMEOUT,
+    )
+    if response.status_code == 404:
+        # A manifest HEAD 404 is the normal "tag does not exist" case.
+        return False
+    if response.status_code == 200:
+        return True
+    # Quay can return 401 invalid_token here for public repos, so treat it like a fallback case.
+    if response.status_code != 401 and response.status_code not in QUAY_REQUEST_RETRY_STATUS_CODES:
+        raise _quay_api_error(response, url)
+
+    log.warning(
+        "Falling back to quay repository metadata for %s/%s:%s after registry manifest probe failed with %s",
+        namespace,
+        pkg_name,
+        tag,
+        response.status_code,
+    )
+    repo_data = quay_repository(namespace, pkg_name, session=session)
+    if "error_type" in repo_data and repo_data["error_type"] in {"invalid_token", "not_found"}:
+        return False
+
+    tags = repo_data.get("tags", {})
+    if isinstance(tags, dict):
+        return tag in tags
+    if isinstance(tags, list):
+        return tag in tags
+    raise _quay_api_error(response, url)
 
 
 def _get_namespace(namespace: str) -> List[str]:
@@ -136,10 +263,12 @@ def _get_namespace(namespace: str) -> List[str]:
     repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
     while True:
         repos_parameters = {"public": "true", "namespace": namespace, "next_page": next_page}
-        repos_response = requests.get(
+        repos_response = _get_quay_session().get(
             QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=MULLED_SOCKET_TIMEOUT
         )
-        repos_response_json = repos_response.json()
+        if repos_response.status_code >= 400:
+            raise _quay_api_error(repos_response, QUAY_REPOSITORY_API_ENDPOINT)
+        repos_response_json = _quay_json_dict(repos_response, QUAY_REPOSITORY_API_ENDPOINT)
         repos = repos_response_json["repositories"]
         repo_names += [r["name"] for r in repos]
         next_page = repos_response_json.get("next_page")
@@ -483,6 +612,7 @@ __all__ = (
     "get_files_from_conda_package",
     "image_name",
     "mulled_tags_for",
+    "quay_tag_exists",
     "quay_versions",
     "split_container_name",
     "split_tag",
