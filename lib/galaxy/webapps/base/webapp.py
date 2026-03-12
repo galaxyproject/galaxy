@@ -277,6 +277,10 @@ class WebApplication(base.WebApplication):
         return controller
 
 
+def _is_embed_request(path: str, query_string: str) -> bool:
+    return path.startswith("/published/") and "embed=true" in query_string
+
+
 def config_allows_origin(origin_raw, config):
     # boil origin header down to hostname
     origin = urlparse(origin_raw).hostname
@@ -323,7 +327,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         config = self.app.config
         self.debug = asbool(config.get("debug", False))
         if x_frame_options := getattr(config, "x_frame_options", None):
-            self.response.headers["X-Frame-Options"] = x_frame_options
+            if not _is_embed_request(self.request.path_info, self.environ.get("QUERY_STRING", "")):
+                self.response.headers["X-Frame-Options"] = x_frame_options
         # Flag indicating whether we are in workflow building mode (means
         # that the current history should not be used for parameter values
         # and such).
