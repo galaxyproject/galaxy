@@ -3882,14 +3882,6 @@ class ChatPayload(Model):
         title="Query",
         description="The query to be sent to the chatbot.",
     )
-    agent_type: Optional[str] = Field(
-        default=None,
-        title="Agent Type",
-        description=(
-            "Optional agent type to use for this query. "
-            "When omitted, the server will default to automatic routing."
-        ),
-    )
     context: Optional[str] = Field(
         default="",
         title="Context",

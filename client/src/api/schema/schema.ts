@@ -8435,11 +8435,6 @@ export interface components {
         /** ChatPayload */
         ChatPayload: {
             /**
-             * Agent Type
-             * @description Optional agent type to use for this query. When omitted, the server will default to automatic routing.
-             */
-            agent_type?: string | null;
-            /**
              * Context
              * @description The context for the chatbot.
              * @default
