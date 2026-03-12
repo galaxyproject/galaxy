@@ -2015,10 +2015,10 @@ class BaseDataToolParameter(ToolParameter):
 
         if self.min is not None:
             if self.min > dataset_count:
-                raise ValueError(f"At least {self.min} datasets are required for {self.name}")
+                raise ParameterValueError(f"at least {self.min} datasets are required", self.name)
         if self.max is not None:
             if self.max < dataset_count:
-                raise ValueError(f"At most {self.max} datasets are required for {self.name}")
+                raise ParameterValueError(f"at most {self.max} datasets are required", self.name)
 
 
 ItemFromSrcAny = Union[

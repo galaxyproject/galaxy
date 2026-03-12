@@ -48,6 +48,7 @@ from galaxy.tool_util.deps.dependencies import (
     ToolInfo,
 )
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
+from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.util import (
     asbool,
     DATABASE_MAX_STRING_SIZE,
@@ -308,6 +309,10 @@ class BaseJobRunner:
                 modify_command_for_container=modify_command_for_container,
                 stream_stdout_stderr=stream_stdout_stderr,
             )
+        except ParameterValueError as e:
+            log.info("(%s) parameter validation error preparing job: %s", job_id, unicodify(e))
+            job_wrapper.fail(unicodify(e), exception=False)
+            return False
         except Exception as e:
             log.exception("(%s) Failure preparing job", job_id)
             job_wrapper.fail(unicodify(e), exception=True)
