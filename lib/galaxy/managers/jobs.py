@@ -100,6 +100,7 @@ from galaxy.tool_util.parameters import (
     dereference,
     RequestInternalDereferencedToolState,
     RequestInternalToolState,
+    ToolParameterBundleModel,
 )
 from galaxy.tools import Tool
 from galaxy.tools._types import (
@@ -2169,7 +2170,13 @@ class JobSubmitter:
             return DataRequestInternalHda(id=hda.id, src="hda")
 
         tool_state = RequestInternalToolState(tool_request.request)
-        return dereference(tool_state, tool, dereference_callback, dereference_collection_callback), new_hdas
+        if tool.parameters is None:
+            raise InconsistentDatabase(f"Tool {tool.id} has no parameters defined")
+        parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
+        return (
+            dereference(tool_state, parameter_bundle, dereference_callback, dereference_collection_callback),
+            new_hdas,
+        )
 
     def queue_jobs(self, tool: Tool, request: QueueJobs) -> None:
         tool_request: ToolRequest = self._tool_request(request.tool_request_id)
