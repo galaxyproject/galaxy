@@ -2,16 +2,17 @@
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faClock, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 import { getGalaxyInstance } from "@/app";
+import { useSidebarSelection } from "@/composables/useSidebarSelection";
 
 import { getAgentIcon } from "./agentTypes";
 import type { ChatHistoryItem } from "./chatTypes";
 
-import LoadingSpan from "@/components/LoadingSpan.vue";
+import SidebarList from "@/components/Common/SidebarList.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
@@ -19,10 +20,16 @@ const router = useRouter();
 
 const chatHistory = ref<ChatHistoryItem[]>([]);
 const loading = ref(false);
-const selectionMode = ref(false);
-const selectedIds = ref(new Set<string>());
 
-const allSelected = computed(() => chatHistory.value.length > 0 && selectedIds.value.size === chatHistory.value.length);
+const {
+    selectionMode,
+    selectedIds,
+    allSelected,
+    toggleSelectionMode,
+    toggleSelectAll,
+    handleSelectionClick,
+    pruneAfterDelete,
+} = useSidebarSelection(chatHistory, (item) => item.id);
 
 onMounted(() => {
     loadHistory();
@@ -44,59 +51,16 @@ async function loadHistory() {
     }
 }
 
-const lastClickedIndex = ref<number | null>(null);
-
-function handleItemClick(item: ChatHistoryItem, event: MouseEvent) {
-    if (selectionMode.value) {
-        const currentIndex = chatHistory.value.findIndex((i) => i.id === item.id);
-        if (event.shiftKey && lastClickedIndex.value !== null) {
-            const start = Math.min(lastClickedIndex.value, currentIndex);
-            const end = Math.max(lastClickedIndex.value, currentIndex);
-            const next = new Set(selectedIds.value);
-            for (let i = start; i <= end; i++) {
-                const id = chatHistory.value[i]?.id;
-                if (id) {
-                    next.add(id);
-                }
-            }
-            selectedIds.value = next;
-        } else {
-            toggleSelection(item.id);
-        }
-        lastClickedIndex.value = currentIndex;
-    } else {
-        const Galaxy = getGalaxyInstance();
-        if (Galaxy?.frame?.active) {
-            // @ts-ignore - monkeypatched router, second arg is RouterPushOptions
-            router.push(`/chatgxy/${item.id}?compact=true`, { title: "ChatGXY" });
-        } else {
-            router.push(`/chatgxy/${item.id}`);
-        }
+function handleItemClick(item: ChatHistoryItem, index: number, event: MouseEvent) {
+    if (handleSelectionClick(item, index, event)) {
+        return;
     }
-}
-
-function toggleSelectionMode() {
-    selectionMode.value = !selectionMode.value;
-    if (!selectionMode.value) {
-        selectedIds.value.clear();
-    }
-}
-
-function toggleSelection(id: string) {
-    const next = new Set(selectedIds.value);
-    if (next.has(id)) {
-        next.delete(id);
+    const Galaxy = getGalaxyInstance();
+    if (Galaxy?.frame?.active) {
+        // @ts-ignore - monkeypatched router, second arg is RouterPushOptions
+        router.push(`/chatgxy/${item.id}?compact=true`, { title: "ChatGXY" });
     } else {
-        next.add(id);
-    }
-    selectedIds.value = next;
-}
-
-function toggleSelectAll() {
-    if (allSelected.value) {
-        selectedIds.value = new Set();
-    } else {
-        selectedIds.value = new Set(chatHistory.value.map((item) => item.id));
+        router.push(`/chatgxy/${item.id}`);
     }
 }
 
@@ -121,10 +85,7 @@ async function deleteSelected() {
         });
         if (!error) {
             chatHistory.value = chatHistory.value.filter((item) => !selectedIds.value.has(item.id));
-            selectedIds.value = new Set();
-            if (chatHistory.value.length === 0) {
-                selectionMode.value = false;
-            }
+            pruneAfterDelete();
         }
     } catch (e) {
         console.error("Failed to delete exchanges:", e);
@@ -147,52 +108,43 @@ async function deleteSelected() {
             </button>
         </template>
 
-        <div v-if="loading" class="text-center p-3">
-            <LoadingSpan message="Loading history..." />
+        <div v-if="selectionMode && chatHistory.length > 0" class="selection-toolbar">
+            <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events vuejs-accessibility/no-static-element-interactions -->
+            <span class="select-all-toggle" @click="toggleSelectAll">
+                <FontAwesomeIcon :icon="allSelected ? faCheckSquare : faSquare" fixed-width />
+                {{ allSelected ? "Deselect all" : "Select all" }}
+            </span>
+            <button class="btn btn-sm btn-danger" :disabled="selectedIds.size === 0" @click="deleteSelected">
+                Delete {{ selectedIds.size > 0 ? selectedIds.size : "" }}
+            </button>
         </div>
 
-        <div v-else-if="chatHistory.length === 0" class="text-muted p-3 text-center small">No chat history yet</div>
-
-        <template v-else>
-            <div v-if="selectionMode" class="selection-toolbar">
-                <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events vuejs-accessibility/no-static-element-interactions -->
-                <span class="select-all-toggle" @click="toggleSelectAll">
-                    <FontAwesomeIcon :icon="allSelected ? faCheckSquare : faSquare" fixed-width />
-                    {{ allSelected ? "Deselect all" : "Select all" }}
+        <SidebarList
+            :items="chatHistory"
+            :is-loading="loading"
+            :item-key="(item) => item.id"
+            :item-class="(item) => ({ selected: selectedIds.has(item.id) })"
+            loading-message="Loading history..."
+            empty-message="No chat history yet"
+            @select="handleItemClick">
+            <template v-slot:item="{ item }">
+                <span v-if="selectionMode" class="history-checkbox">
+                    <FontAwesomeIcon :icon="selectedIds.has(item.id) ? faCheckSquare : faSquare" fixed-width />
                 </span>
-                <button class="btn btn-sm btn-danger" :disabled="selectedIds.size === 0" @click="deleteSelected">
-                    Delete {{ selectedIds.size > 0 ? selectedIds.size : "" }}
-                </button>
-            </div>
-
-            <div class="history-list">
-                <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events vuejs-accessibility/no-static-element-interactions -->
-                <div
-                    v-for="item in chatHistory"
-                    :key="item.id"
-                    class="history-item"
-                    :class="{ selected: selectedIds.has(item.id) }"
-                    @click="handleItemClick(item, $event)">
-                    <div class="history-row">
-                        <span v-if="selectionMode" class="history-checkbox">
-                            <FontAwesomeIcon :icon="selectedIds.has(item.id) ? faCheckSquare : faSquare" fixed-width />
+                <div class="history-content">
+                    <div class="history-query">{{ item.query }}</div>
+                    <div class="history-meta">
+                        <span class="history-agent">
+                            <FontAwesomeIcon :icon="getAgentIcon(item.agent_type)" fixed-width />
                         </span>
-                        <div class="history-content">
-                            <div class="history-query">{{ item.query }}</div>
-                            <div class="history-meta">
-                                <span class="history-agent">
-                                    <FontAwesomeIcon :icon="getAgentIcon(item.agent_type)" fixed-width />
-                                </span>
-                                <span class="history-time">
-                                    <FontAwesomeIcon :icon="faClock" class="mr-1" />
-                                    <UtcDate :date="item.timestamp" mode="elapsed" />
-                                </span>
-                            </div>
-                        </div>
+                        <span class="history-time">
+                            <FontAwesomeIcon :icon="faClock" class="mr-1" />
+                            <UtcDate :date="item.timestamp" mode="elapsed" />
+                        </span>
                     </div>
                 </div>
-            </div>
-        </template>
+            </template>
+        </SidebarList>
     </ActivityPanel>
 </template>
 
@@ -220,68 +172,48 @@ async function deleteSelected() {
     }
 }
 
-.history-list {
-    flex: 1;
-    overflow-y: auto;
+// SidebarList provides base item hover/cursor styles.
+// .selected is applied via itemClass prop on the sidebar-item element,
+// which lives inside SidebarList's scoped styles, so we use :deep.
+:deep(.sidebar-item.selected) {
+    background: rgba($brand-primary, 0.06);
 }
 
-.history-item {
-    padding: 0.5rem 0.25rem;
-    border-bottom: 1px solid darken($panel-bg-color, 5%);
-    cursor: pointer;
-    transition: background-color 0.15s;
-    border-radius: $border-radius-base;
+.history-checkbox {
+    flex-shrink: 0;
+    color: $text-muted;
+    padding-top: 0.1rem;
+}
 
-    &:hover {
-        background: darken($panel-bg-color, 3%);
+.history-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.history-query {
+    font-size: 0.8rem;
+    color: $text-color;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-bottom: 0.2rem;
+}
+
+.history-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.7rem;
+    color: $text-light;
+
+    .history-agent {
+        color: $brand-primary;
     }
 
-    &.selected {
-        background: rgba($brand-primary, 0.06);
-    }
-
-    .history-row {
+    .history-time {
         display: flex;
-        align-items: flex-start;
-        gap: 0.375rem;
-    }
-
-    .history-checkbox {
-        flex-shrink: 0;
-        color: $text-muted;
-        padding-top: 0.1rem;
-    }
-
-    .history-content {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .history-query {
-        font-size: 0.8rem;
-        color: $text-color;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        margin-bottom: 0.2rem;
-    }
-
-    .history-meta {
-        display: flex;
-        justify-content: space-between;
         align-items: center;
-        font-size: 0.7rem;
-        color: $text-light;
-
-        .history-agent {
-            color: $brand-primary;
-        }
-
-        .history-time {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
+        gap: 0.25rem;
     }
 }
 </style>
