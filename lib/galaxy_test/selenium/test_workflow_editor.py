@@ -58,7 +58,6 @@ CHIPSEQ_COLUMNS = [
 class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions):
     ensure_registered = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_basics(self):
         editor = self.components.workflow_editor
@@ -81,7 +80,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
 
         self.screenshot("workflow_editor_center_pane_maximized")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_edit_annotation(self):
         editor = self.components.workflow_editor
@@ -98,7 +96,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.workflow_index_open_with_name(name)
         self.assert_wf_annotation_is(new_annotation)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_edit_name(self):
         name = self.create_and_wait_for_new_workflow_in_editor()
@@ -110,7 +107,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.workflow_index_open_with_name(new_name)
         self.assert_wf_name_is(name)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_edit_license(self):
         editor = self.components.workflow_editor
@@ -206,7 +202,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         # friendly.
         assert "Value ('3.2') must fulfill (-infinity <= value <= 3.14)" in element.text, element.text
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_optional_select_data_field(self):
         editor = self.components.workflow_editor
@@ -235,7 +230,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         tool_state = json.loads(workflow["steps"]["0"]["tool_state"])
         assert tool_state["select_single"] == ""
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_data_input(self):
         editor = self.components.workflow_editor
@@ -260,7 +254,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         data_input_node.wait_for_absent()
         self.screenshot("workflow_editor_data_input_deleted")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_collection_input(self):
         editor = self.components.workflow_editor
@@ -356,7 +349,6 @@ steps:
         textarea_columns = columns.wait_for_visible()
         assert textarea_columns.get_attribute("value") == "4\n5\n6"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_integer_input(self):
         editor = self.components.workflow_editor
@@ -518,7 +510,6 @@ steps:
         self.workflow_index_open_with_name(name)
         self.assert_connected("input1#output", "first_cat#input1")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rendering_output_collection_connections(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_OUTPUT_COLLECTION)
@@ -546,7 +537,6 @@ steps:
         self.workflow_editor_maximize_center_pane()
         self.screenshot("workflow_editor_simple_nested")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_best_practices_input_label(self):
         editor = self.components.workflow_editor
@@ -645,7 +635,6 @@ steps:
         # to a list:list, so there should be no mapping anymore even after connected.
         self.assert_input_not_mapped(copy_list_input)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_save_as(self):
         name = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -707,7 +696,6 @@ steps:
         version = node.get_attribute("data-version")
         assert version == "0.2"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_tool_upgrade_message(self):
         workflow_populator = self.workflow_populator
@@ -719,7 +707,6 @@ steps:
         self.components.workflow_editor.modal_button_continue.wait_for_and_click()
         self.assert_workflow_has_changes_and_save()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_subworkflow_tool_upgrade_message(self):
         workflow_populator = self.workflow_populator
@@ -1061,7 +1048,6 @@ steps:
             Keys.ENTER
         ).perform()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_invalid_tool_state(self):
         workflow_populator = self.workflow_populator
@@ -1072,7 +1058,6 @@ steps:
         self.assert_modal_has_text("Using default: '1'")
         self.screenshot("workflow_editor_invalid_state")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_missing_tools(self):
         workflow_populator = self.workflow_populator
@@ -1146,7 +1131,6 @@ steps:
         output_connector.send_keys(Keys.SPACE)
         assert self.driver.switch_to.active_element.text == "No compatible input found in workflow"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_insert_input_handling(self):
         self.open_in_workflow_editor("""class: GalaxyWorkflow
