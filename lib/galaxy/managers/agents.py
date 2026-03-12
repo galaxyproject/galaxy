@@ -144,15 +144,12 @@ class AgentService:
             # Fallback to router for unknown agents - it handles general queries
             router = QueryRouterAgent(deps)
             response = await router.process(query, context)
-            metadata = response.metadata.copy()
-            metadata["fallback"] = True
-            metadata["original_agent_type"] = agent_type
             return AgentResponse(
                 content=response.content,
                 agent_type=response.agent_type,
                 confidence=response.confidence,
                 suggestions=response.suggestions,
-                metadata=metadata,
+                metadata=response.metadata.model_copy(update={"fallback": True}),
                 reasoning=response.reasoning,
             )
         except OSError as e:

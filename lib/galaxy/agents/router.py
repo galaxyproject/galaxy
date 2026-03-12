@@ -22,7 +22,10 @@ from pydantic_ai import (
     RunContext,
 )
 
-from galaxy.schema.agents import ConfidenceLevel
+from galaxy.schema.agents import (
+    ConfidenceLevel,
+    ResponseMetadata,
+)
 from .base import (
     AgentResponse,
     AgentType,
@@ -95,7 +98,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 "confidence": (
                     response.confidence.value if hasattr(response.confidence, "value") else response.confidence
                 ),
-                "metadata": response.metadata,
+                "metadata": response.metadata.model_dump(exclude_none=True),
                 "suggestions": [
                     s.model_dump() if hasattr(s, "model_dump") else s for s in (response.suggestions or [])
                 ],
@@ -281,24 +284,28 @@ class QueryRouterAgent(BaseGalaxyAgent):
                     agent = DataAnalysisAgent(self.deps)
                     response = await agent.process(task, context or {})
                     # Annotate routing for debugging/telemetry; don't leak full prompt.
-                    response.metadata = dict(response.metadata or {})
-                    response.metadata.setdefault("routed_by", "router")
-                    response.metadata.setdefault("router_method", "output_function")
+                    response.metadata = response.metadata.model_copy(
+                        update={
+                            "routed_by": response.metadata.routed_by or "router",
+                            "router_method": response.metadata.router_method or "output_function",
+                        }
+                    )
                     return response
 
                 handoff_data = json.loads(content)
                 if handoff_data.get("__handoff__"):
                     # This was a handoff - use the delegated agent's response
                     # Preserve handoff_info in metadata if present
-                    metadata = handoff_data.get("metadata", {})
-                    if handoff_data.get("handoff_info"):
-                        metadata["handoff_info"] = handoff_data["handoff_info"]
+                    metadata_dict: dict = handoff_data.get("metadata") or {}
+                    handoff_info_data = handoff_data.get("handoff_info")
+                    if handoff_info_data:
+                        metadata_dict = {**metadata_dict, "handoff_info": handoff_info_data}
                     return AgentResponse(
                         content=handoff_data["content"],
                         confidence=ConfidenceLevel(handoff_data.get("confidence", "medium")),
                         agent_type=handoff_data.get("agent_type", self.agent_type),
                         suggestions=handoff_data.get("suggestions", []),
-                        metadata=metadata,
+                        metadata=ResponseMetadata.model_validate(metadata_dict),
                     )
             except (json.JSONDecodeError, TypeError, KeyError, ValidationError):
                 pass  # Not a handoff response or malformed suggestions, continue normally

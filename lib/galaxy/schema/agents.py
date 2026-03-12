@@ -13,13 +13,16 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    BeforeValidator,
     Field,
     model_validator,
+    WithJsonSchema,
 )
 
-from galaxy.schema.fields import EncodedDatabaseIdField, ensure_valid_id
-from pydantic import BeforeValidator, WithJsonSchema
-
+from galaxy.schema.fields import (
+    EncodedDatabaseIdField,
+    ensure_valid_id,
+)
 
 AlreadyEncodedDatabaseIdField = Annotated[
     str,
@@ -140,20 +143,10 @@ class Artifact(BaseModel):
     temp_path: Optional[str] = Field(default=None, description="Temporary server-side path for larger artifacts")
 
 
-class ExecutionTask(BaseModel):
-    """Code execution request emitted by an agent."""
-
-    code: str = Field(description="Python code to execute")
-    requirements: List[str] = Field(default_factory=list, description="List of packages required")
-    inputs: Dict[str, Any] = Field(default_factory=dict, description="Additional inputs for the execution environment")
-    timeout_seconds: int = Field(default=120, description="Max execution time in seconds")
-    task_id: Optional[str] = Field(default=None, description="Optional task identifier provided by agent")
-
-
 class ExecutionResult(BaseModel):
     """Result returned after executing a task."""
 
-    task_id: Optional[str] = Field(default=None, description="Identifier correlating to ExecutionTask")
+    task_id: Optional[str] = Field(default=None, description="Identifier of the task that produced this result")
     stdout: str = Field(default="", description="Captured standard output")
     stderr: str = Field(default="", description="Captured standard error")
     artifacts: List[Artifact] = Field(default_factory=list, description="Artifacts generated during execution")
@@ -200,6 +193,7 @@ class PyodideTask(BaseModel):
     task_id: str = Field(description="Unique identifier for the task")
     action: str = Field(description="Action to perform, e.g. 'ExecutePythonInBrowser'")
     code: str = Field(description="Python code to execute in the browser")
+    original_code: Optional[str] = Field(default=None, description="Original (unsanitized) Python code")
     packages: List[str] = Field(default_factory=list, description="List of Python packages required for execution")
     files: List[PyodideFile] = Field(
         default_factory=list, description="List of Pyodide files to be made available during execution"
@@ -213,6 +207,35 @@ class PyodideTask(BaseModel):
     )
 
 
+class DatasetDescriptor(BaseModel):
+    """Description of a dataset available in the Pyodide execution environment."""
+
+    id: str = Field(description="Encoded dataset ID")
+    name: Optional[str] = Field(default=None, description="Human-readable dataset name")
+    size: Optional[int] = Field(default=None, description="Dataset size in bytes")
+    aliases: List[str] = Field(default_factory=list, description="Alternative names for this dataset")
+    path: Optional[str] = Field(default=None, description="Server-side file path (not exposed to client)")
+
+
+class PyodideContext(BaseModel):
+    """Context stored alongside a pending Pyodide task, used to process the execution result."""
+
+    alias_map: Dict[str, str] = Field(default_factory=dict, description="Mapping of dataset IDs to aliases")
+    datasets: List[DatasetDescriptor] = Field(default_factory=list, description="Datasets available for execution")
+    requirements: List[str] = Field(default_factory=list, description="Python packages required for execution")
+
+
+class ExecutionTask(BaseModel):
+    """Previously executed Pyodide task, stored in response metadata for refinement on subsequent turns."""
+
+    task_id: Optional[str] = Field(default=None, description="Identifier of the executed task")
+    code: str = Field(default="", description="Python code that was executed")
+    requirements: List[str] = Field(default_factory=list, description="Packages used during execution")
+    datasets: List[DatasetDescriptor] = Field(default_factory=list, description="Datasets used during execution")
+    alias_map: Dict[str, str] = Field(default_factory=dict, description="Dataset alias map used during execution")
+    timeout_seconds: Optional[int] = Field(default=None, description="Execution timeout in seconds")
+
+
 class ResponseMetadata(BaseModel):
     """Additional metadata for agent responses."""
 
@@ -222,20 +245,39 @@ class ResponseMetadata(BaseModel):
     artifacts: Optional[List[UploadedArtifact]] = Field(
         default=None, description="Artifacts generated during the agent's processing"
     )
+    completion_state: Optional[str] = Field(
+        default=None, description="Completion state of the response: 'complete', 'pending', or 'error'"
+    )
     datasets_used: Optional[List[EncodedDatabaseIdField]] = Field(
         default=None, description="List of dataset IDs used in the agent's response"
     )
-    executed_task: Optional[ExecutionTask] = Field(default=None, description="Details of any executed task")
-    execution: Optional[ExecutionResult] = Field(default=None, description="Result of any executed task")
     error: Optional[str] = Field(default=None, description="Error message if any error occurred during processing")
-    files: Optional[List[str]] = Field(default=None, description="List of file paths relevant to the response")
+    executed_task: Optional[ExecutionTask] = Field(
+        default=None, description="Record of the previously executed Pyodide task, used for refinement"
+    )
+    execution: Optional[ExecutionResult] = Field(default=None, description="Result of the Pyodide execution")
+    expected_files: Optional[List[str]] = Field(default=None, description="File outputs expected by the analysis plan")
+    expected_plots: Optional[List[str]] = Field(default=None, description="Plot outputs expected by the analysis plan")
+    fallback: Optional[bool] = Field(default=None, description="Whether this is a fallback response")
+    files: Optional[List[str]] = Field(default=None, description="List of file names generated by the agent")
     handoff_info: Optional[HandoffInfo] = Field(default=None, description="Information about handoff between agents")
+    input_tokens: Optional[int] = Field(default=None, description="Input token count for this response")
     is_complete: Optional[bool] = Field(
         default=None,
         description="Whether the agent considers its response complete or if further interaction is expected",
     )
+    method: Optional[str] = Field(default=None, description="Internal method used to generate this response")
     model: Optional[str] = Field(default=None, description="LLM model used to generate the response")
+    output_tokens: Optional[int] = Field(default=None, description="Output token count for this response")
+    planner: Optional[str] = Field(default=None, description="Planner used to generate the analysis plan")
+    planning_error: Optional[str] = Field(default=None, description="Error message from the planning phase")
     plots: Optional[List[str]] = Field(default=None, description="List of plot URLs generated by the agent")
+    pyodide_context: Optional[PyodideContext] = Field(
+        default=None, description="Context required to process the Pyodide execution result on the next turn"
+    )
+    pyodide_started_at: Optional[str] = Field(
+        default=None, description="ISO 8601 timestamp of when the Pyodide task was dispatched"
+    )
     pyodide_status: Optional[PyodideStatus] = Field(default=None, description="Status of any Pyodide code execution")
     pyodide_task: Optional[PyodideTask] = Field(default=None, description="Details of any Pyodide task")
     pyodide_timeout_reason: Optional[str] = Field(default=None, description="Reason for Pyodide timeout if applicable")
@@ -243,6 +285,8 @@ class ResponseMetadata(BaseModel):
     pyodide_retry_count: Optional[int] = Field(
         default=None, description="Number of retries attempted for Pyodide execution"
     )
+    routed_by: Optional[str] = Field(default=None, description="Agent that routed this request")
+    router_method: Optional[str] = Field(default=None, description="Routing method used to select the agent")
     stderr: Optional[str] = Field(default=None, description="Captured standard error from any code execution")
     stdout: Optional[str] = Field(default=None, description="Captured standard output from any code execution")
     summary: Optional[str] = Field(default=None, description="Summary of the agent's response or reasoning")
