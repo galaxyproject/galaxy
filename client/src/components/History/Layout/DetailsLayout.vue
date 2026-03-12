@@ -131,7 +131,7 @@ function selectText() {
                     {{ props.name || "..." }}
                 </h3>
             </template>
-            <div v-else style="max-width: 80%">
+            <div v-else class="overflow-hidden" style="max-width: 80%">
                 <TextSummary
                     :description="name"
                     data-description="name display"
