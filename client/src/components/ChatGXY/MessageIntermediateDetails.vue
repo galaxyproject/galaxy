@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 import type { ChatMessage, ExecutionState } from "./types";
 import { hasCollapsedHistory, isDataAnalysisMessage } from "./utilities";
@@ -8,6 +8,7 @@ import AnalysisSteps from "./AnalysisSteps.vue";
 import CollapsedHistoryMessages from "./CollapsedHistoryMessages.vue";
 import ExecutedCode from "./ExecutedCode.vue";
 import PyodideStatus from "./PyodideStatus.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 const props = defineProps<{
     message: ChatMessage;
@@ -36,12 +37,18 @@ const hasIntermediateDetails = computed(() => {
     }
     return false;
 });
+
+const toggled = ref(false);
 </script>
 
 <template>
-    <details v-if="hasIntermediateDetails" class="intermediate-panel card mt-2">
-        <summary class="text-muted">Intermediate steps</summary>
-        <div class="card-body">
+    <div v-if="hasIntermediateDetails" class="intermediate-panel card mt-2">
+        <div class="card-header p-3">
+            <Heading h3 size="sm" separator :collapse="toggled ? 'closed' : 'open'" @click="toggled = !toggled">
+                Intermediate steps
+            </Heading>
+        </div>
+        <div v-if="!toggled" class="card-body">
             <ExecutedCode
                 v-if="props.message.agentResponse?.metadata?.executed_task?.code"
                 :metadata="props.message.agentResponse?.metadata"
@@ -61,14 +68,14 @@ const hasIntermediateDetails = computed(() => {
                 :message="props.message"
                 collapsible />
         </div>
-    </details>
+    </div>
 </template>
 
 <style scoped lang="scss">
 .intermediate-panel {
-    summary {
-        cursor: pointer;
-        font-weight: 600;
+    .card-header {
+        background-color: #f7f8fa;
+        border-bottom: 1px solid #dfe3e6;
     }
 }
 </style>

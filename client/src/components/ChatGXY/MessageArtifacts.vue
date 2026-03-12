@@ -1,19 +1,27 @@
 <script setup lang="ts">
+import { ref } from "vue";
+
 import type { ChatMessage } from "./types";
 import { downloadArtifact, formatSize } from "./utilities";
+
+import Heading from "@/components/Common/Heading.vue";
 
 const props = defineProps<{
     message: ChatMessage & {
         artifacts: NonNullable<ChatMessage["artifacts"]>;
     };
 }>();
+
+const toggled = ref(false);
 </script>
 
 <template>
     <div class="mt-2">
-        <details open class="artifacts-panel">
-            <summary class="text-muted">Saved Artifacts ({{ props.message.artifacts.length }})</summary>
-            <div class="artifact-grid">
+        <div class="artifacts-panel">
+            <Heading h4 size="sm" separator :collapse="toggled ? 'closed' : 'open'" @click="toggled = !toggled">
+                Saved Artifacts ({{ props.message.artifacts.length }})
+            </Heading>
+            <div v-if="!toggled" class="artifact-grid mt-2">
                 <div
                     v-for="artifact in props.message.artifacts"
                     :key="artifact.dataset_id || artifact.name"
@@ -39,17 +47,12 @@ const props = defineProps<{
                     </div>
                 </div>
             </div>
-        </details>
+        </div>
     </div>
 </template>
 
 <style scoped lang="scss">
 @import "@/style/scss/chat-gxy-artifacts.scss";
-
-.artifacts-panel summary {
-    cursor: pointer;
-    font-weight: 600;
-}
 
 .artifact-preview img {
     max-height: 180px;

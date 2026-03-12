@@ -15,15 +15,6 @@ export function applyCollapseState(message: ChatMessage) {
     }
 }
 
-export function collapsedSummary(message: ChatMessage): string {
-    const metadata = message.agentResponse?.metadata;
-    if (metadata?.summary && typeof metadata.summary === "string") {
-        return metadata.summary;
-    }
-    const content = (message.content || "").trim();
-    return content.split("\n")[0] || "Previous step";
-}
-
 export function downloadArtifact(artifact: UploadedArtifact) {
     const Toast = useToast();
 
