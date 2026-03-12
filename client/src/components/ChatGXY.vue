@@ -546,11 +546,13 @@ function popOutToScratchbook() {
                 @feedback="sendFeedback"
                 @handle-action="handleAction">
                 <template v-slot:after-content>
-                    <BAlert v-if="isAwaitingExecution(message)" variant="warning" show>
-                        ⚙️ Analysis still running… please keep this tab open; refreshing will restart the execution.
+                    <BAlert v-if="isAwaitingExecution(message)" class="mt-2" variant="warning" show>
+                        <LoadingSpan message="Analysis still running" />
+                        please keep this tab open; refreshing will restart the execution.
                     </BAlert>
                     <BAlert
                         v-else-if="message.agentResponse?.metadata?.pyodide_status === 'timeout'"
+                        class="mt-2"
                         variant="warning"
                         show>
                         ⚠️ Previous run timed out before the result was sent. Please ask again if you still need this
