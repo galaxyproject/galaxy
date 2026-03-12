@@ -2307,55 +2307,54 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return self.components.masthead.window_manager.has_class("toggle")
 
     def window_manager_window_count(self) -> int:
-        """Return number of open WinBox windows."""
-        return len(self.find_elements_by_selector(".winbox"))
+        """Return number of open scratchbook windows."""
+        return len(self.find_elements_by_selector(".scratchbook-window"))
 
     def window_manager_wait_for_window_count(self, expected_count: int):
-        """Wait until the expected number of .winbox elements exist."""
+        """Wait until the expected number of scratchbook windows exist."""
 
         def check_count(driver=None):
-            count = len(self.find_elements_by_selector(".winbox"))
+            count = len(self.find_elements_by_selector(".scratchbook-window"))
             return count == expected_count
 
         self._wait_on(check_count, f"window count to be {expected_count}")
 
     @contextlib.contextmanager
-    def winbox_frame(self, index=0):
-        """Context manager to switch into a WinBox iframe by index.
+    def scratchbook_frame(self, index=0):
+        """Context manager to switch into a scratchbook window iframe by index.
 
         Usage:
-            with self.winbox_frame(0):
+            with self.scratchbook_frame(0):
                 self.wait_for_selector_visible(".dataset-view")
         """
-        iframes = self.find_elements_by_selector(".winbox iframe")
-        assert len(iframes) > index, f"Expected at least {index + 1} WinBox iframes, found {len(iframes)}"
+        iframes = self.find_elements_by_selector(".scratchbook-window iframe")
+        assert len(iframes) > index, f"Expected at least {index + 1} scratchbook iframes, found {len(iframes)}"
         try:
             self.switch_to_frame(iframes[index])
             yield
         finally:
             self.switch_to_default_content()
 
+    # backward compat alias
+    winbox_frame = scratchbook_frame
+
     def window_manager_get_titles(self) -> list:
-        """Return list of window titles from all open WinBox windows."""
+        """Return list of window titles from all open scratchbook windows."""
         elements = self.components.window_manager.title.all()
         return [el.text for el in elements]
 
     def window_manager_close_window(self, index=0):
-        """Close a specific WinBox window by index.
-
-        Uses JS click because the .wb-close button is obscured by WinBox's
-        .wb-n resize handle overlay.
-        """
+        """Close a specific scratchbook window by index."""
         close_buttons = self.components.window_manager.close_button.all()
         assert len(close_buttons) > index, f"Expected at least {index + 1} close buttons, found {len(close_buttons)}"
-        self.execute_script_click(close_buttons[index])
+        close_buttons[index].click()
 
     def window_manager_get_focused_title(self) -> str:
-        """Return the title text of the currently focused WinBox window."""
+        """Return the title text of the currently focused scratchbook window."""
         return self.components.window_manager.focused_title.wait_for_text()
 
     def window_manager_click_focus_overlay(self, index=0):
-        """Click the focus overlay of a WinBox window to switch focus.
+        """Click the focus overlay of a scratchbook window to switch focus.
 
         Uses fire_mousedown to match the event the overlay actually listens for.
         """
@@ -2364,13 +2363,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.fire_mousedown(overlays[index])
 
     def window_manager_get_iframe_src(self, index=0) -> str:
-        """Return the src attribute of a WinBox iframe by index."""
+        """Return the src attribute of a scratchbook window iframe by index."""
         iframes = self.components.window_manager.iframe.all()
         assert len(iframes) > index, f"Expected at least {index + 1} iframes, found {len(iframes)}"
         return iframes[index].get_attribute("src") or ""
 
     def window_manager_focused_count(self) -> int:
-        """Return the number of WinBox windows with focus class."""
+        """Return the number of focused scratchbook windows."""
         return len(self.components.window_manager.focused.all())
 
     # avoids problematic ID and classes on markup
