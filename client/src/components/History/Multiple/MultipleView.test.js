@@ -55,6 +55,7 @@ describe("MultipleView", () => {
             stubs: {
                 HistoryPanel: true,
                 icon: { template: "<div></div>" },
+                "router-link": { template: "<a><slot /></a>", props: ["to"] },
             },
             localVue: getLocalVue(),
         });

@@ -1,6 +1,6 @@
 <template>
     <section v-if="hasSelection && !isMultiViewItem">
-        <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
+        <GDropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
             <template v-slot:button-content>
                 <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
                     {{ localize("All") }} <b>{{ totalItemsInQuery }}</b> {{ localize("selected") }}
@@ -9,64 +9,58 @@
                     <b>{{ selectionSize }}</b> {{ localize("of") }} {{ totalItemsInQuery }} {{ localize("selected") }}
                 </span>
             </template>
-            <b-dropdown-text>
+            <GDropdownText>
                 <span data-description="selected count"
                     >{{ localize("With") }} {{ numSelected }} {{ localize("selected...") }}</span
                 >
-            </b-dropdown-text>
-            <b-dropdown-item v-if="canUnhideSelection" v-b-modal:show-selected-content data-description="unhide option">
+            </GDropdownText>
+            <GDropdownItem v-if="canUnhideSelection" v-b-modal:show-selected-content data-description="unhide option">
                 <span v-localize>Unhide</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="canHideSelection" v-b-modal:hide-selected-content data-description="hide option">
+            </GDropdownItem>
+            <GDropdownItem v-if="canHideSelection" v-b-modal:hide-selected-content data-description="hide option">
                 <span v-localize>Hide</span>
-            </b-dropdown-item>
-            <b-dropdown-item
+            </GDropdownItem>
+            <GDropdownItem
                 v-if="canUndeleteSelection"
                 v-b-modal:restore-selected-content
                 data-description="undelete option">
                 <span v-localize>Undelete</span>
-            </b-dropdown-item>
-            <b-dropdown-item
-                v-if="canDeleteSelection"
-                v-b-modal:delete-selected-content
-                data-description="delete option">
+            </GDropdownItem>
+            <GDropdownItem v-if="canDeleteSelection" v-b-modal:delete-selected-content data-description="delete option">
                 <span v-localize>Delete</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-b-modal:purge-selected-content data-description="purge option">
+            </GDropdownItem>
+            <GDropdownItem v-b-modal:purge-selected-content data-description="purge option">
                 <span v-localize>Delete (permanently)</span>
-            </b-dropdown-item>
-            <b-dropdown-divider v-if="showBuildOptions" />
-            <b-dropdown-divider v-if="showBuildOptionForAll" />
-            <b-dropdown-item
-                v-if="showBuildOptionForAll"
-                data-description="build list all"
-                @click="buildDatasetListAll">
+            </GDropdownItem>
+            <GDropdownDivider v-if="showBuildOptions" />
+            <GDropdownDivider v-if="showBuildOptionForAll" />
+            <GDropdownItem v-if="showBuildOptionForAll" data-description="build list all" @click="buildDatasetListAll">
                 <span v-localize>Build Dataset List</span>
-            </b-dropdown-item>
-            <b-dropdown-divider />
-            <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change database build">
+            </GDropdownItem>
+            <GDropdownDivider />
+            <GDropdownItem v-b-modal:change-dbkey-of-selected-content data-description="change database build">
                 <span v-localize>Change Database/Build</span>
-            </b-dropdown-item>
-            <b-dropdown-item
+            </GDropdownItem>
+            <GDropdownItem
                 v-if="isConfigLoaded && config.enable_celery_tasks"
                 v-b-modal:change-datatype-of-selected-content
                 data-description="change data type">
                 <span v-localize>Change data type</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-b-modal:add-tags-to-selected-content data-description="add tags">
+            </GDropdownItem>
+            <GDropdownItem v-b-modal:add-tags-to-selected-content data-description="add tags">
                 <span v-localize>Add tags</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-b-modal:remove-tags-from-selected-content data-description="remove tags">
+            </GDropdownItem>
+            <GDropdownItem v-b-modal:remove-tags-from-selected-content data-description="remove tags">
                 <span v-localize>Remove tags</span>
-            </b-dropdown-item>
-            <b-dropdown-divider v-if="showBuildOptions" />
-            <b-dropdown-item v-if="showBuildOptions" data-description="auto build list" @click="listWizard(false)">
+            </GDropdownItem>
+            <GDropdownDivider v-if="showBuildOptions" />
+            <GDropdownItem v-if="showBuildOptions" data-description="auto build list" @click="listWizard(false)">
                 <span v-localize>Auto Build List</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="showBuildOptions" data-description="advanced build list" @click="listWizard(true)">
+            </GDropdownItem>
+            <GDropdownItem v-if="showBuildOptions" data-description="advanced build list" @click="listWizard(true)">
                 <span v-localize>Advanced Build List</span>
-            </b-dropdown-item>
-        </b-dropdown>
+            </GDropdownItem>
+        </GDropdown>
 
         <b-modal
             id="hide-selected-content"
@@ -187,6 +181,10 @@ import { StatelessTags } from "@/components/Tags";
 import { useConfig } from "@/composables/config";
 import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
 
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownDivider from "@/components/BaseComponents/GDropdownDivider.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
+import GDropdownText from "@/components/BaseComponents/GDropdownText.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
@@ -195,6 +193,10 @@ export default {
         CollectionCreatorIndex,
         DbKeyProvider,
         DatatypesProvider,
+        GDropdown,
+        GDropdownDivider,
+        GDropdownItem,
+        GDropdownText,
         SingleItemSelector,
         StatelessTags,
     },

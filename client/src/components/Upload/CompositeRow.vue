@@ -9,7 +9,6 @@ import {
     faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { filesDialog } from "@/utils/dataModals";
@@ -18,6 +17,8 @@ import { bytesToString } from "@/utils/utils";
 import { DEFAULT_FILE_NAME } from "./utils";
 
 import UploadSettings from "./UploadSettings.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 const props = defineProps({
     fileContent: {
@@ -157,25 +158,25 @@ function onDrop(evt) {
         @drop.prevent="onDrop">
         <div class="d-flex justify-content-around">
             <div>
-                <BDropdown
+                <GDropdown
                     :id="`upload-type-${index}`"
                     class="upload-source"
                     :disabled="isDisabled"
                     text="Select"
                     :variant="fileSize > 0 ? 'secondary' : 'primary'">
-                    <BDropdownItem @click="uploadFile.click()">
+                    <GDropdownItem @click="uploadFile.click()">
                         <FontAwesomeIcon :icon="faLaptop" />
                         <span v-localize>Choose local file</span>
-                    </BDropdownItem>
-                    <BDropdownItem v-if="hasRemoteFiles" @click="inputRemoteFiles">
+                    </GDropdownItem>
+                    <GDropdownItem v-if="hasRemoteFiles" @click="inputRemoteFiles">
                         <FontAwesomeIcon :icon="faFolderOpen" />
                         <span v-localize>Choose from repository</span>
-                    </BDropdownItem>
-                    <BDropdownItem @click="inputPaste">
+                    </GDropdownItem>
+                    <GDropdownItem @click="inputPaste">
                         <FontAwesomeIcon :icon="faEdit" />
                         <span v-localize>Paste/Fetch data</span>
-                    </BDropdownItem>
-                </BDropdown>
+                    </GDropdownItem>
+                </GDropdown>
             </div>
             <div class="upload-title">
                 {{ fileDescription }}
