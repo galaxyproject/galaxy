@@ -2,7 +2,11 @@ import json
 from typing import (
     cast,
     Optional,
+    TYPE_CHECKING,
 )
+
+if TYPE_CHECKING:
+    from galaxy.selenium.has_playwright_driver import HasPlaywrightDriver
 
 import yaml
 from selenium.webdriver.common.action_chains import ActionChains
@@ -1619,9 +1623,11 @@ steps:
     def move_center_of_canvas(self, xoffset=0, yoffset=0):
         _canvas = self.find_element_by_id("canvas-container")
         if self.backend_type == "playwright":
-            page = self._driver_impl.page
-            handle = self._driver_impl._unwrap_element(_canvas)
+            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+            page = pw_driver.page
+            handle = pw_driver._unwrap_element(_canvas)
             box = handle.bounding_box()
+            assert box is not None
             cx = box["x"] + box["width"] / 2
             cy = box["y"] + box["height"] / 2
             page.mouse.move(cx, cy)

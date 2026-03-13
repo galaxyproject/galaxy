@@ -34,6 +34,8 @@ from selenium.webdriver.common.keys import Keys
 if TYPE_CHECKING:
     from selenium.webdriver.remote.webdriver import WebDriver
 
+    from .has_playwright_driver import HasPlaywrightDriver
+
 from galaxy.navigation.components import (
     Component,
     HasText,
@@ -281,7 +283,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             NotImplementedError: If using Selenium backend
         """
         if self._driver_impl.backend_type == "playwright":
-            return self._driver_impl.page  # type: ignore[attr-defined]
+            return cast("HasPlaywrightDriver", self._driver_impl).page
         else:
             raise NotImplementedError("Functionality cannot be run with Selenium yet.")
 
@@ -1417,10 +1419,12 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         sink_element = self.find_element_by_selector(f"#{sink_id}")
 
         if self._driver_impl.backend_type == "playwright":
-            page = self._driver_impl.page
+            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+            page = pw_driver.page
             if screenshot_partial:
-                source_handle = self._driver_impl._unwrap_element(source_element)
+                source_handle = pw_driver._unwrap_element(source_element)
                 source_box = source_handle.bounding_box()
+                assert source_box is not None
                 page.mouse.move(
                     source_box["x"] + source_box["width"] / 2,
                     source_box["y"] + source_box["height"] / 2,
