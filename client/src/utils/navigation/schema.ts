@@ -468,8 +468,8 @@ interface Rootworkflow_editor extends Component {
     connector_invalid_for: SelectorTemplate;
     connector_destroy_callout: SelectorTemplate;
     save_button: SelectorTemplate;
-    state_modal_body: SelectorTemplate;
-    modal_button_continue: SelectorTemplate;
+    state_upgrade_modal: SelectorTemplate;
+    modal_button_close: SelectorTemplate;
 }
 interface Rootworkflow_show extends Component {
     title: SelectorTemplate;

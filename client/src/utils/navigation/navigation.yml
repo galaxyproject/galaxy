@@ -1044,8 +1044,8 @@ workflow_editor:
     connector_for: "#connection-${sink_id}-${source_id}"
     connector_invalid_for: "#connection-${sink_id}-${source_id} .connection.invalid"
     save_button: '#workflow-save-button'
-    state_modal_body: '.state-upgrade-modal'
-    modal_button_continue: '.modal-footer .btn'
+    state_upgrade_modal: '[data-description="workflow state upgrade modal"]'
+    state_upgrade_modal_close: '[data-description="workflow state upgrade modal"] .g-modal-close-button'
     workflow_activity: '#activity-workflow-editor-workflows'
     save_as_activity: "#activity-save-workflow-as"
     column_definitions: '[data-description="edit column definitions"]'

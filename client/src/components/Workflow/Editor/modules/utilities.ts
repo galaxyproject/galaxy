@@ -1,7 +1,25 @@
 import WorkflowIcons from "@/components/Workflow/icons";
 
-export function getStateUpgradeMessages(data) {
-    const messages = [];
+export interface UpgradeMessage {
+    stepIndex: string;
+    name: string;
+    details: any[];
+    iconType: string;
+    label: string;
+}
+
+export function getStateUpgradeMessages(data: {
+    steps: {
+        [step_id: string]: {
+            name: string;
+            type: string;
+            label: string;
+            errors?: string;
+        };
+    };
+    upgrade_messages: { [step_id: string]: any };
+}): UpgradeMessage[] {
+    const messages: UpgradeMessage[] = [];
     for (const [step_id, step] of Object.entries(data.steps)) {
         const details = [];
         if (step.errors) {
@@ -11,8 +29,8 @@ export function getStateUpgradeMessages(data) {
             details.push(m);
         }
         if (details.length) {
-            const iconType = WorkflowIcons[step.type];
-            const message = {
+            const iconType = WorkflowIcons[step.type as keyof typeof WorkflowIcons];
+            const message: UpgradeMessage = {
                 stepIndex: step_id,
                 name: step.name,
                 details: details,
@@ -25,7 +43,7 @@ export function getStateUpgradeMessages(data) {
     return messages;
 }
 
-export function getCompatibleRecommendations(predChild, outputDatatypes, datatypesMapper) {
+export function getCompatibleRecommendations(predChild: any, outputDatatypes: any, datatypesMapper: any) {
     const cTools = [];
     const toolMap = new Map();
     for (const nameObj of predChild.entries()) {

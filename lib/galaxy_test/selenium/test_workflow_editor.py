@@ -694,7 +694,7 @@ steps:
         self.components.workflows.edit_button.wait_for_and_click()
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
         self.screenshot("workflow_editor_tool_upgrade")
-        self.components.workflow_editor.modal_button_continue.wait_for_and_click()
+        self.components.workflow_editor.state_upgrade_modal_close.wait_for_and_click()
         self.assert_workflow_has_changes_and_save()
 
     @selenium_test
@@ -721,7 +721,7 @@ steps:
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
         self.assert_modal_has_text("Parameter 'inttest': an integer or workflow parameter is required")
         self.screenshot("workflow_editor_subworkflow_tool_upgrade")
-        self.components.workflow_editor.modal_button_continue.wait_for_and_click()
+        self.components.workflow_editor.state_upgrade_modal_close.wait_for_and_click()
         self.assert_workflow_has_changes_and_save()
 
     @staticmethod
@@ -1915,9 +1915,9 @@ steps:
         """
         editor = self.components.workflow_editor
         self.sleep_for(self.wait_types.UX_RENDER)
-        if not editor.state_modal_body.is_absent:
+        if not editor.state_upgrade_modal.is_absent:
             editor.modal_button_continue.wait_for_and_click()
-            editor.state_modal_body.wait_for_absent()
+            editor.state_upgrade_modal.wait_for_absent()
 
     def workflow_editor_destroy_connection(self, sink):
         editor = self.components.workflow_editor
@@ -1950,7 +1950,7 @@ steps:
 
     @retry_assertion_during_transitions
     def assert_modal_has_text(self, expected_text):
-        modal_element = self.components.workflow_editor.state_modal_body.wait_for_visible()
+        modal_element = self.components.workflow_editor.state_upgrade_modal.wait_for_visible()
         text = modal_element.text
         assert expected_text in text, f"Failed to find expected text [{expected_text}] in modal text [{text}]"
 
