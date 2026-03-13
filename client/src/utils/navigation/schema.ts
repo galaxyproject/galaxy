@@ -301,6 +301,7 @@ interface Rootfiles_dialog extends Component {
     ftp_details: SelectorTemplate;
     row: SelectorTemplate;
     back_btn: SelectorTemplate;
+    options_ready: SelectorTemplate;
 }
 interface Roothistory_export extends Component {
     export_link: SelectorTemplate;
