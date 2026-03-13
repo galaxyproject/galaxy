@@ -254,13 +254,12 @@ def mull_targets(
     if not rebuild or "push" in command:
         repo_name = repo_template_kwds["image"].split(":", 1)[0]
         repo_data = None
-        target_tag = None
-        if ":" in repo_template_kwds["image"]:
-            image_name_parts = repo_template_kwds["image"].split(":")
-            assert len(image_name_parts) == 2, f": not allowed in image name [{repo_template_kwds['image']}]"
-            target_tag = image_name_parts[1]
-
         if not rebuild:
+            target_tag = None
+            if ":" in repo_template_kwds["image"]:
+                image_name_parts = repo_template_kwds["image"].split(":")
+                assert len(image_name_parts) == 2, f": not allowed in image name [{repo_template_kwds['image']}]"
+                target_tag = image_name_parts[1]
             if target_tag is not None:
                 if quay_tag_exists(repo_template_kwds["namespace"], repo_name, target_tag, session=session):
                     raise BuildExistsException()
@@ -272,7 +271,6 @@ def mull_targets(
         if "push" in command:
             if repo_data is None:
                 repo_data = quay_repository(repo_template_kwds["namespace"], repo_name, session=session)
-                assert repo_data is not None
             if "error_type" in repo_data and oauth_token:
                 # Explicitly create the repository so it can be built as public.
                 create_repository(repo_template_kwds["namespace"], repo_name, oauth_token)

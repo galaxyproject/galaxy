@@ -170,11 +170,11 @@ def _quay_json_dict(response, url: str) -> Dict[str, Any]:
         data = response.json()
     except ValueError as exc:
         raise QuayApiException(
-            f"Failed to decode quay.io JSON for {url} [{response.status_code}]: {response.text[:200]!r}"
+            f"Failed to decode quay.io JSON response for {url} [{response.status_code}]: {response.text[:200]!r}"
         ) from exc
 
     if not isinstance(data, dict):
-        raise QuayApiException(f"Unexpected quay.io payload type for {url}: {type(data).__name__}")
+        raise QuayApiException(f"Unexpected quay.io response type for {url}: {type(data).__name__}")
 
     return data
 
@@ -219,10 +219,7 @@ def quay_tag_exists(namespace: str, pkg_name: str, tag: str, session: Optional[S
     assert pkg_name is not None
     assert tag is not None
 
-    url = (
-        f"{QUAY_REGISTRY_API_ENDPOINT}/{namespace}/{pkg_name}/manifests/"
-        f"{tag}"
-    )
+    url = f"{QUAY_REGISTRY_API_ENDPOINT}/{namespace}/{pkg_name}/manifests/{tag}"
     response = _get_quay_session(session).head(
         url,
         headers={"Accept": QUAY_MANIFEST_ACCEPT},
