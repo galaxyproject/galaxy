@@ -561,7 +561,7 @@ history_export:
     copy_export_link: '.copy-export-link'
     show_job_link: '.show-job-link'
     job_table: '.info_data_table'
-    job_table_ok: '.job-information-modal .btn-primary'
+    job_table_ok: '.job-information-modal .g-modal-close-button'
     tab_export_to_file: '.tab-export-to-file'
     directory_input: '.directory-form-input'
     name_input: '.export-to-remote-file #name'
