@@ -171,7 +171,12 @@ class MockHttpServer:
         path = f"/mock/{self._counter}/{filename}" if filename else f"/mock/{self._counter}"
 
         if file_path is not None:
-            encoded_body = Path(file_path).read_bytes()
+            file_path_obj = Path(file_path)
+            if not file_path_obj.is_absolute():
+                # Resolve relative paths from the Galaxy project root
+                galaxy_root = Path(__file__).resolve().parents[3]
+                file_path_obj = galaxy_root / file_path_obj
+            encoded_body = file_path_obj.read_bytes()
         elif isinstance(body, str):
             encoded_body = body.encode()
         else:
