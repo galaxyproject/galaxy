@@ -492,7 +492,7 @@ class Repository(Base, Dictifiable):
         type_class = self.get_type_class(app)
         return type_class.get_changesets_for_setting_metadata(app, self)
 
-    def get_repository_dependencies(self, app, changeset, toolshed_url):
+    def get_repository_dependencies(self, app, changeset, toolshed_url, trans=None):
         # We aren't concerned with repositories of type tool_dependency_definition here if a
         # repository_metadata record is not returned because repositories of this type will never
         # have repository dependencies. However, if a readme file is uploaded, or some other change
@@ -505,7 +505,7 @@ class Repository(Base, Dictifiable):
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
-                rb = RelationBuilder(app, self, repository_metadata, toolshed_url)
+                rb = RelationBuilder(app, self, repository_metadata, toolshed_url, trans=trans)
                 repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
                 if repository_dependencies:
                     return repository_dependencies
