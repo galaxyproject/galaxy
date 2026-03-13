@@ -233,9 +233,6 @@ function toggleSidebar(toggle: string = "", to: string | null = null) {
 }
 
 function onPanelClicked(activity: Activity) {
-    if (activity.id === "chatgxy") {
-        activityStore.toggleChatPanel();
-    }
     toggleSidebar(activity.id, activity.to);
 }
 
