@@ -1016,3 +1016,128 @@ class VtpAscii(Vtp, data.Text):
 
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
+
+
+@build_sniff_from_prefix
+class GocadSGrid(data.Text):
+    """Format for defining Gocad SGrid (.sg)"""
+
+    file_ext = "gocad.sg"
+
+    MetadataElement(name="gocad_version", default=None, desc="Gocad version", readonly=True, optional=True, visible=True)
+    MetadataElement(name="name", default=None, desc="Grid name", readonly=True, optional=True, visible=True)
+
+    def extract_version(self, line: str) -> str:
+        match = re.search(r'GOCAD SGrid\s+([\d.]+)', line)
+        if match:
+            return match.group(1)
+        return "?"
+
+    def extract_name(self, line: str) -> str:
+        match = re.search(r'name:\s*(.*)', line)
+        if match:
+            return match.group(1).strip()
+        return "?"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        with open(dataset.get_file_name(), errors="ignore") as file:
+            first_line = file.readline()
+            dataset.metadata.gocad_version = self.extract_version(first_line)
+
+            for _ in range(20):
+                line = file.readline()
+                if "name:" in line:
+                    dataset.metadata.name = self.extract_name(line)
+                    break
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        """Set the peek and blurb text for Gocad SGrid files."""
+        if not dataset.dataset.purged:
+            dataset.peek = "Gocad SGrid file"
+            dataset.blurb = f"name {dataset.metadata.name} version {dataset.metadata.gocad_version}"
+        else:
+            dataset.peek = "File does not exist"
+            dataset.blurb = "File purged from disk"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """Check for the key string 'GOCAD SGrid' at the start of the file."""
+        return file_prefix.text_io(errors="ignore").readline().startswith("GOCAD SGrid")
+
+
+@build_sniff_from_prefix
+class FeflowFem(data.Text):
+    """Format for FEFLOW Model files (.fem)"""
+
+    file_ext = "feflow.fem"
+
+    MetadataElement(name="feflow_version", default=None, desc="Feflow version", readonly=True, optional=True, visible=True)
+    MetadataElement(name="problem_type", default=None, desc="Problem type", readonly=True, optional=True, visible=True)
+
+    def extract_version(self, line: str) -> str:
+        match = re.search(r'\(V\s*([^)]+)\)', line)
+        if match:
+            return match.group(1)
+        return "?"
+
+    def extract_type(self, line: str) -> str:
+        match = re.search(r'CLASS\s*\(([^V][^)]*)\)', line)
+        if match:
+            return match.group(1).strip()
+        return "?"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        with open(dataset.get_file_name(), errors="ignore") as file:
+            for _ in range(5):
+                line = file.readline()
+                if "CLASS" in line:
+                    dataset.metadata.feflow_version = self.extract_version(line)
+                    dataset.metadata.problem_type = self.extract_type(line)
+                    break
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        """Set the peek and blurb text for FEFLOW files."""
+        if not dataset.dataset.purged:
+            dataset.peek = "FEFLOW Model file"
+            dataset.blurb = f"type {dataset.metadata.problem_type} version {dataset.metadata.feflow_version}"
+        else:
+            dataset.peek = "File does not exist"
+            dataset.blurb = "File purged from disk"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """Check for the key string 'PROBLEM:' at the start of the file."""
+        return file_prefix.text_io(errors="ignore").readline().startswith("PROBLEM:")
+    
+
+@build_sniff_from_prefix
+class AsciiRaster(data.Text):
+    """Esri ASCII Raster file format (.asc)"""
+
+    file_ext = "raster.asc"
+
+    MetadataElement(name="ncols", default=0, desc="Number of columns", readonly=True, visible=True)
+    MetadataElement(name="nrows", default=0, desc="Number of rows", readonly=True, visible=True)
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        if dataset.has_data():
+            with open(dataset.get_file_name(), errors="ignore") as fh:
+                for line in fh:
+                    line = line.strip().lower()
+                    if not line: continue
+                    if line.startswith("ncols"):
+                        dataset.metadata.ncols = int(line.split()[1])
+                    elif line.startswith("nrows"):
+                        dataset.metadata.nrows = int(line.split()[1])
+                    if dataset.metadata.nrows > 0 and dataset.metadata.ncols > 0:
+                        break
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.get_file_name())
+            dataset.blurb = f"Raster: {str(dataset.metadata.ncols)} cols, {str(dataset.metadata.nrows)} rows"
+        else:
+            dataset.peek = "File does not exist"
+            dataset.blurb = "File purged from disk"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """Checks for 'ncols' at the beginning of the file."""
+        return file_prefix.text_io(errors="ignore").readline().lower().startswith("ncols")
