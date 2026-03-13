@@ -20,6 +20,7 @@ from galaxy.exceptions.utils import (
 )
 from galaxy.util import (
     parse_non_hex_float,
+    smart_str,
     unicodify,
 )
 from galaxy.util.json import safe_dumps
@@ -154,7 +155,7 @@ def legacy_expose_api(func, to_json=True, user_required=True):
     def decorator(self, trans, *args, **kwargs):
         def error(environ, start_response):
             start_response(error_status, [("Content-type", "text/plain")])
-            return error_message
+            return [smart_str(error_message)]
 
         error_status = "403 Forbidden"
         if trans.error_message:
