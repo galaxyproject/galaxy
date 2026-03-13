@@ -1576,6 +1576,13 @@ class IoDicts(NamedTuple):
     out_collections: OutCollectionsDictT
 
 
+JOB_IO_NAME_MAX_LENGTH = 255
+
+
+class JobOutputNameTooLongError(ValueError):
+    pass
+
+
 class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     """
     A job represents a request to run a tool given input datasets, tool
@@ -2001,6 +2008,14 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def add_parameter(self, name, value):
         self.parameters.append(JobParameter(name, value))
 
+    @staticmethod
+    def _check_name_length(name: str) -> None:
+        if name and len(name) > JOB_IO_NAME_MAX_LENGTH:
+            raise JobOutputNameTooLongError(
+                f"Tool produced an output name that exceeds the {JOB_IO_NAME_MAX_LENGTH} character name length limit "
+                f"(got {len(name)} characters), tool is likely broken"
+            )
+
     def add_input_dataset(self, name, dataset=None, dataset_id=None, adapter_json=None):
         assoc = JobToInputDatasetAssociation(name, dataset, adapter_json)
         if dataset is None and dataset_id is not None:
@@ -2009,6 +2024,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         self.input_datasets.append(assoc)
 
     def add_output_dataset(self, name: str, dataset: "HistoryDatasetAssociation"):
+        self._check_name_length(name)
         joda = JobToOutputDatasetAssociation(name, dataset)
         if dataset.dataset.job is None:
             # Only set job if dataset doesn't already have associated job.
@@ -2028,11 +2044,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         )
 
     def add_output_dataset_collection(self, name, dataset_collection_instance):
+        self._check_name_length(name)
         self.output_dataset_collection_instances.append(
             JobToOutputDatasetCollectionAssociation(name, dataset_collection_instance)
         )
 
     def add_implicit_output_dataset_collection(self, name, dataset_collection):
+        self._check_name_length(name)
         self.output_dataset_collections.append(
             JobToImplicitOutputDatasetCollectionAssociation(name, dataset_collection)
         )
@@ -2041,6 +2059,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         self.input_library_datasets.append(JobToInputLibraryDatasetAssociation(name, dataset))
 
     def add_output_library_dataset(self, name, dataset):
+        self._check_name_length(name)
         self.output_library_datasets.append(JobToOutputLibraryDatasetAssociation(name, dataset))
 
     def add_post_job_action(self, pja):
