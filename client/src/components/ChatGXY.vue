@@ -56,6 +56,7 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const activityStore = useActivityStore("default");
+const chatStore = useChatStore();
 
 const { activeContext, contextLabel } = useActiveContext();
 const contextDismissed = ref(false);
@@ -384,7 +385,6 @@ function popOutToScratchbook() {
 }
 
 function dockToSide() {
-    const chatStore = useChatStore();
     chatStore.openDockedPanel(currentChatId.value);
     router.push("/");
 }
@@ -400,7 +400,7 @@ function dockToBottomPanel() {
 // Keep chatStore in sync when new conversations are created in docked mode
 watch(currentChatId, (newId) => {
     if (props.docked && newId) {
-        useChatStore().setDockedChatId(newId);
+        chatStore.setDockedChatId(newId);
     }
 });
 </script>
