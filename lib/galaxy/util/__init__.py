@@ -120,6 +120,21 @@ try:
     def XML(text: Union[str, bytes]) -> Element:
         return cast(Element, etree.XML(text))
 
+    class LocalOnlyResolver(etree.Resolver):
+        def __init__(self, base_dir: Path):
+            super().__init__()
+            self.base_dir = base_dir.resolve()
+
+        def resolve(self, system_url, public_id, context):
+            requested_path = Path(system_url).resolve()
+
+            try:
+                requested_path.relative_to(self.base_dir)
+            except ValueError:
+                raise OSError(f"Blocked external entity: {requested_path} is outside {self.base_dir}")
+
+            return self.resolve_filename(str(requested_path), context)
+
 except ImportError:
     LXML_AVAILABLE = False
     import xml.etree.ElementTree as etree  # type: ignore[no-redef]
@@ -376,15 +391,14 @@ def parse_xml(
     """Returns a parsed xml tree"""
     parser = None
     schema = None
-    if remove_comments and LXML_AVAILABLE:
-        # If using stdlib etree comments are always removed,
-        # but lxml doesn't do this by default
-        parser = etree.XMLParser(remove_comments=remove_comments)
-
-    if LXML_AVAILABLE and schemafname:
-        with open(str(schemafname), "rb") as schema_file:
-            schema_root = etree.XML(schema_file.read())
-            schema = etree.XMLSchema(schema_root)
+    if LXML_AVAILABLE:
+        parser = etree.XMLParser(resolve_entities=True, remove_comments=remove_comments)
+        base_dir = Path(str(fname)).resolve().parent
+        parser.resolvers.add(LocalOnlyResolver(base_dir))
+        if schemafname:
+            with open(str(schemafname), "rb") as schema_file:
+                schema_root = etree.XML(schema_file.read())
+                schema = etree.XMLSchema(schema_root)
 
     source = Path(fname) if isinstance(fname, (str, os.PathLike)) else fname
     try:
