@@ -196,7 +196,7 @@ defineExpose({
             {{ errorMessage }}
         </BAlert>
         <div v-else>
-            <div v-if="optionsShow">
+            <div v-if="optionsShow" data-description="selection dialog options">
                 <BTable
                     small
                     hover
