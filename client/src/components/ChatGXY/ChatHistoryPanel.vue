@@ -3,9 +3,9 @@ import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faClock, faColumns, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
-import { useActivityStore } from "@/stores/activityStore";
 import { useChatStore } from "@/stores/chatStore";
 
 import { getAgentIcon } from "./agentTypes";
@@ -15,7 +15,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-const activityStore = useActivityStore("default");
+const router = useRouter();
 
 const chatHistory = ref<ChatHistoryItem[]>([]);
 const loading = ref(false);
@@ -65,10 +65,7 @@ function handleItemClick(item: ChatHistoryItem, event: MouseEvent) {
         }
         lastClickedIndex.value = currentIndex;
     } else {
-        activityStore.currentChatExchangeId = item.id;
-        if (!activityStore.chatPanelOpen) {
-            activityStore.chatPanelOpen = true;
-        }
+        router.push(`/chatgxy/${item.id}`);
     }
 }
 
@@ -98,10 +95,7 @@ function toggleSelectAll() {
 }
 
 function startNewChat() {
-    activityStore.currentChatExchangeId = undefined;
-    if (!activityStore.chatPanelOpen) {
-        activityStore.chatPanelOpen = true;
-    }
+    router.push("/chatgxy");
 }
 
 function openDockedChat() {
