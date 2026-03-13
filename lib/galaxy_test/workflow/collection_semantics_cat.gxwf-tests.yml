@@ -1,0 +1,141 @@
+- doc: |
+    BASIC_MAPPING_PAIRED: A paired collection mapped over a data input produces
+    a paired output collection.
+  job:
+    input1:
+      class: Collection
+      collection_type: paired
+      elements:
+        - identifier: forward
+          class: File
+          contents: "forward content"
+        - identifier: reverse
+          class: File
+          contents: "reverse content"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: paired
+      elements:
+        forward:
+          asserts:
+            - that: has_text
+              text: "forward content"
+        reverse:
+          asserts:
+            - that: has_text
+              text: "reverse content"
+
+- doc: |
+    BASIC_MAPPING_PAIRED_OR_UNPAIRED_PAIRED: A paired_or_unpaired collection (paired variant)
+    mapped over a data input produces a paired_or_unpaired output collection with 2 elements.
+  job:
+    input1:
+      class: Collection
+      collection_type: paired_or_unpaired
+      elements:
+        - identifier: forward
+          class: File
+          contents: "forward content"
+        - identifier: reverse
+          class: File
+          contents: "reverse content"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: paired_or_unpaired
+      elements:
+        forward:
+          asserts:
+            - that: has_text
+              text: "forward content"
+        reverse:
+          asserts:
+            - that: has_text
+              text: "reverse content"
+
+- doc: |
+    BASIC_MAPPING_PAIRED_OR_UNPAIRED_UNPAIRED: A paired_or_unpaired collection (unpaired variant)
+    mapped over a data input produces a paired_or_unpaired output collection with 1 element.
+  job:
+    input1:
+      class: Collection
+      collection_type: paired_or_unpaired
+      elements:
+        - identifier: unpaired
+          class: File
+          contents: "unpaired content"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: paired_or_unpaired
+      elements:
+        unpaired:
+          asserts:
+            - that: has_text
+              text: "unpaired content"
+
+- doc: |
+    BASIC_MAPPING_LIST_PAIRED_OR_UNPAIRED: A list:paired_or_unpaired collection mapped over
+    a data input produces a list:paired_or_unpaired output collection.
+  job:
+    input1:
+      class: Collection
+      collection_type: list:paired_or_unpaired
+      elements:
+        - identifier: el1
+          class: Collection
+          type: paired_or_unpaired
+          elements:
+            - identifier: forward
+              class: File
+              contents: "forward content"
+            - identifier: reverse
+              class: File
+              contents: "reverse content"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: list:paired_or_unpaired
+      elements:
+        el1:
+          elements:
+            forward:
+              asserts:
+                - that: has_text
+                  text: "forward content"
+            reverse:
+              asserts:
+                - that: has_text
+                  text: "reverse content"
+
+- doc: |
+    SAMPLE_SHEET_MAPPING: A sample_sheet mapped over a data input produces
+    a sample_sheet output collection.
+  job:
+    input1:
+      class: Collection
+      collection_type: sample_sheet
+      rows:
+        el1: []
+        el2: []
+      elements:
+        - identifier: el1
+          class: File
+          contents: "element 1"
+        - identifier: el2
+          class: File
+          contents: "element 2"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: sample_sheet
+      elements:
+        el1:
+          asserts:
+            - that: has_text
+              text: "element 1"
+        el2:
+          asserts:
+            - that: has_text
+              text: "element 2"

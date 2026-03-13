@@ -71,6 +71,12 @@ class CollectionTypeDescription:
         if subcollection_type == "single_datasets":
             return self.collection_type
 
+        # When the subcollection type is paired_or_unpaired but the collection
+        # actually ends with :paired (a subtype match), strip the actual suffix
+        # rather than the longer paired_or_unpaired string.
+        if subcollection_type == "paired_or_unpaired" and self.collection_type.endswith(":paired"):
+            return self.collection_type[: -len(":paired")]
+
         return self.collection_type[: -(len(subcollection_type) + 1)]
 
     def has_subcollections_of_type(self, other_collection_type) -> bool:
