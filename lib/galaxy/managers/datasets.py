@@ -18,6 +18,7 @@ from galaxy import (
     model,
 )
 from galaxy.datatypes import sniff
+from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import (
     base,
     deletable,
@@ -164,11 +165,18 @@ class DatasetManager(
             return
         # For files in extra_files_path
         extra_files_path = request.extra_files_path
-        if extra_files_path:
-            extra_dir = dataset.extra_files_path_name
-            file_path = self.app.object_store.get_filename(dataset, extra_dir=extra_dir, alt_name=extra_files_path)
-        else:
-            file_path = dataset.get_file_name()
+        try:
+            if extra_files_path:
+                extra_dir = dataset.extra_files_path_name
+                file_path = self.app.object_store.get_filename(dataset, extra_dir=extra_dir, alt_name=extra_files_path)
+            else:
+                file_path = dataset.get_file_name()
+        except ObjectInvalid:
+            log.warning(
+                "Unable to calculate hash for dataset [%s]: object is invalid (dataset may have failed or been purged).",
+                dataset.id,
+            )
+            return
         hash_function = request.hash_function
         calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
         dataset_hash = model.DatasetHash(
