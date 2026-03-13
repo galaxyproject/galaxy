@@ -66,7 +66,7 @@ class S3FsFilesSource(FsspecFilesSource[S3FSFileSourceTemplateConfiguration, S3F
 
         config = context.config
         client_kwargs = {"endpoint_url": config.endpoint_url} if config.endpoint_url else None
-        config_kwargs={'request_checksum_calculation': config.request_checksum_calculation} if config.request_checksum_calculation else None
+        config_kwargs = {'request_checksum_calculation': config.request_checksum_calculation} if config.request_checksum_calculation else None
         fs = S3FileSystem(
             anon=config.anon,
             key=config.key,
