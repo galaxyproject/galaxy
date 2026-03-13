@@ -1,7 +1,7 @@
 <tool id="__CROSS_PRODUCT_NESTED__"
       name="Nested Cross Product"
       version="1.0.0">
-    <description></description>
+    <description>of two collections into nested lists for all-vs-all comparison</description>
     <type class="CrossProductNestedCollectionTool" module="galaxy.tools" />
     <macros>
         <import>model_operation_macros.xml</import>
@@ -76,75 +76,89 @@
 Synopsis
 ========
 
-@CROSS_PRODUCT_INTRO@
+Creates two nested lists (``list:list``) that, when processed element-wise by a downstream tool, produce every pairwise combination (all-vs-all) of the two input collections, organized by the first input.
 
-====================
-How to use this tool
-====================
+===========
+Description
+===========
 
-@GALAXY_DOT_PRODUCT_SEMANTICS@
+This tool takes two flat list collections and produces two ``list:list`` output collections that encode the **Cartesian product** (cross product) of the inputs. The outer list has one element per element of Input A, and each inner list has one element per element of Input B.
 
-Running input lists through this tool produces new list structures (described in detail below) that when using
-the same natural element-wise matching "map over" semantics described above produce every combination of the
-elements of the two lists compared against each other. Running a tool with these two outputs instead of the initial
-two inputs produces a nested list structure where the jth element of the inner list of the ith element of the outer
-list is a comparison of the ith element of the first list to the jth element of the second list. 
-Put more simply, the result is a nested list where the identifiers of an element describe which inputs were
-matched to produce the comparison output found at that element. 
+When you feed these two outputs into a tool that takes two inputs, Galaxy matches elements at each nesting level. The result is a nested list where the outer identifier tells you which element from Input A was used, and the inner identifier tells you which element from Input B was used.
 
-.. image:: ${static_path}/images/tools/collection_ops/nested_crossproduct_output.png
-  :alt: The Cartesian Product of Two Collections
+This is similar to **Flat Cross Product**, but the output preserves structure: results are grouped by the first input, making it easier to see all comparisons for a given element of Input A.
+
+========
+Examples
+========
+
+**All-vs-all comparison with nested output**
+
+Given::
+
+ Input A:  [a1]  [a2]
+ Input B:  [b1]  [b2]
+
+The tool produces two ``list:list`` collections::
+
+ Output A (list:list):
+
+   a1/
+     b1  →  a1
+     b2  →  a1
+   a2/
+     b1  →  a2
+     b2  →  a2
+
+ Output B (list:list):
+
+   a1/
+     b1  →  b1
+     b2  →  b2
+   a2/
+     b1  →  b1
+     b2  →  b2
+
+Feeding both outputs to a comparison tool produces::
+
+ Result (list:list):
+
+   a1/
+     b1  →  compare(a1, b1)
+     b2  →  compare(a1, b2)
+   a2/
+     b1  →  compare(a2, b1)
+     b2  →  compare(a2, b2)
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/cross_product_nested.svg
+  :alt: Nested cross product of two collections
+  :width: 620
+
+-------
+
+==================================
+How element-wise matching works
+==================================
+
+Normally, when you connect two lists to a tool, Galaxy matches them element-wise (dot product). This tool rearranges the inputs so that the same matching mechanism produces every combination instead, with results grouped into a nested structure.
+
+.. image:: ${static_path}/images/tools/collection_ops/dot_product.png
+  :alt: Element-wise (dot product) matching
   :width: 500
 
-============================================
-What this tool does (technical details)
-============================================
+-------
 
-This tool consumes two flat lists. We will call the input collections ``input_a`` and ``input_b``. If ``input_a``
-has length ``n`` and dataset elements identified as ``a1``, ``a2``, ... ``an`` and ``input_b``
-has length ``m`` and dataset elements identified as ``b1``, ``b2``, ... ``bm``, then this tool
-produces a pair of output nested lists (specifically of the ``list:list`` collection type) where
-the outer list is of length ``n`` and each inner list has a length of ``m`` (a ``n X m`` nested list). The jth element
-inside the outer list's ith element is a pseudo copy of the ith dataset of ``input_a``. One
-way to think about the output nested lists is as matrices. Here is a diagram of the first output
-showing the element identifiers of the outer and inner lists along with dataset identifiers being
-"copied" into this new collection.
+.. class:: infomark
 
-.. image:: ${static_path}/images/tools/collection_ops/nested_cross_product_out_1.png
-  :alt: Nested Cross Product First Output
-  :width: 500
+For a flat output list instead of nested, use **Flat Cross Product**.
 
-The second output is a nested list of pseudo copies of the elements of ``input_b`` instead of 
-``input_a``. In particular the outer list is again of length ``n`` and each inner list is again
-of length ``m`` but this time the jth element inside the outer list's ith element is a pseudo copy
-of the jth dataset of ``input_b``. Here is the matrix of these outputs.
-
-.. image:: ${static_path}/images/tools/collection_ops/nested_cross_product_out_2.png
-  :alt: Nested Cross Product Second Output
-  :width: 500
-
-These nested list structures might appear to be a little odd, but they have the very useful property
-that if you match up corresponding elements of the nested lists the result is each combination of
-elements in ``input_a`` and ``input_b`` are matched up once. The following diagram describes these matching
-datasets.
-
-.. image:: ${static_path}/images/tools/collection_ops/nested_cross_product_matching.png
-  :alt: Matching Inputs
-  :width: 500
-
-Running a tool that compares two datasets with these two nested lists produces a new nested list
-as described above. The following diagram shows the structure of this output and how the element
-identifiers are preserved and indicate what comparison was performed.
-
-.. image:: ${static_path}/images/tools/collection_ops/nested_cross_product_output.png
-  :alt: Matching Inputs
-  :width: 500
-
-----
+-------
 
 .. class:: infomark
 
 @QUOTA_USAGE_NOTE@
 
-     ]]></help>
+    ]]></help>
 </tool>

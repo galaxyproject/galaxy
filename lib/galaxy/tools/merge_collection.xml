@@ -2,7 +2,7 @@
       name="Merge collections"
       version="1.0.0"
       tool_type="merge_collection">
-  <description></description>
+  <description>into a single collection</description>
   <type class="MergeCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
@@ -10,8 +10,9 @@
     <edam_operation>operation_2409</edam_operation>
   </edam_operations>
   <macros>
+      <import>model_operation_macros.xml</import>
       <xml name="suffix_param">
-          <param name="suffix_pattern" label="Use the follow suffix pattern:" help="Describe the suffix pattern to use when joing element name and data copy number. For instance, the default is '_#', which will produce _1 as the first suffix used." value="_#" type="text">
+          <param name="suffix_pattern" label="Use the following suffix pattern:" help="Describe the suffix pattern to use when joining element name and data copy number. For instance, the default is '_#', which will produce _1 as the first suffix used." value="_#" type="text">
               <sanitizer invalid_char="">
                   <valid initial="string.ascii_letters,string.digits">
                       <add value="_" />
@@ -60,9 +61,9 @@
         <conditional name="conflict">
           <param name="duplicate_options" type="select" label="How should conflicts (or potential conflicts) be handled?"
                  help="Collection elements must have unique element identifiers, when appending how should unique identifiers be assured. See Help section below for examples.">
-            <option value="suffix_conflict">Append suffix to conflicted element identifers</option>
-            <option value="suffix_conflict_rest">Append suffix to conflicted element identifers after first one encountered</option>
-            <option value="suffix_every">Append suffix to every element identifer</option>
+            <option value="suffix_conflict">Append suffix to conflicted element identifiers</option>
+            <option value="suffix_conflict_rest">Append suffix to conflicted element identifiers after first one encountered</option>
+            <option value="suffix_every">Append suffix to every element identifier</option>
             <option value="keep_first" selected="true">Keep first instance</option>
             <option value="keep_last">Keep last instance</option>
             <option value="fail">Fail collection creation</option>
@@ -279,148 +280,104 @@
 Synopsis
 ========
 
-Takes two or more collections and creates a single collection from them. 
+Concatenates two or more collections into a single collection.
 
 ===========
 Description
 ===========
 
-By default the tool assumes that collections that are being merged have unique dataset names. If it not the case only one (the first) of the datasets with a repeated name will be included in the merged collection. For example, suppose you have two collections. Each has two datasets named "A" and "B"::
+This tool takes two or more collections and combines their elements into one output collection. The elements from the first collection appear first, followed by the elements from the second, and so on.
 
- Collection 1: [Dataset A] 
-               [Dataset B] 
-               [Dataset X]
- Collection 2: [Dataset A] 
-               [Dataset B] 
-               [Dataset Y]
+When the input collections contain elements with the same identifier (name), the tool must decide how to handle the duplicates. The default behavior (``keep first``) retains only the first occurrence and silently drops later duplicates. You can change this under **Advanced Options**.
 
-Merging them will produce a single collection with only two datasets::
+========
+Examples
+========
 
- Merged Collection: [Dataset A] 
-                    [Dataset B] 
-                    [Dataset X] 
-                    [Dataset Y]
+**Basic merge (no duplicates)**
 
-This behavior can be changed by clicking on "*Advanced Options*" link. The following options are available:
+Two collections with unique identifiers::
 
-**Keep first instance (Default behavior)**
-
-Input::
-
- Collection 1: [Dataset A] 
-               [Dataset B] 
-               [Dataset X]
- Collection 2: [Dataset A] 
-               [Dataset B] 
-               [Dataset Y]
+ Collection 1:  sampleA, sampleB
+ Collection 2:  sampleC, sampleD
 
 Output::
 
- Merged Collection: [Dataset A] 
-                    [Dataset B] 
-                    [Dataset X] 
-                    [Dataset Y]
+ Merged:  sampleA, sampleB, sampleC, sampleD
 
-Here if two collection have identical dataset names, a dataset is chosen from the *first* collection.
+-------
 
------
+.. image:: ${static_path}/images/tools/collection_ops/merge.svg
+  :alt: Merge two collections into one
+  :width: 620
 
-**Keep first instance**
+-------
 
-Input::
+==================================
+Handling duplicate identifiers
+==================================
 
- Collection 1: [Dataset A] 
-               [Dataset B] 
+When two collections share element identifiers, the **Advanced Options** control what happens. All examples below use::
+
+ Collection 1: [Dataset A]
+               [Dataset B]
                [Dataset X]
- Collection 2: [Dataset A] 
-               [Dataset B] 
+ Collection 2: [Dataset A]
+               [Dataset B]
                [Dataset Y]
-Output::
 
- Merged Collection: [Dataset A] 
-                    [Dataset B] 
-                    [Dataset X] 
-                    [Dataset Y]
+**Keep first instance** (default)
 
-Here if two collection have identical dataset names, a dataset is chosen from the *last* collection.
+Duplicates are silently dropped — only the copy from the first collection is kept::
 
------
+ Merged: [Dataset A]  [Dataset B]  [Dataset X]  [Dataset Y]
+
+-------
+
+**Keep last instance**
+
+The opposite — the copy from the last collection wins::
+
+ Merged: [Dataset A]  [Dataset B]  [Dataset X]  [Dataset Y]
+
+-------
 
 **Append suffix to conflicted element identifiers**
 
-Input::
+All copies of a duplicated name get a numbered suffix (``_1``, ``_2``, …). Unique names are left unchanged::
 
- Collection 1: [Dataset A] 
-               [Dataset B] 
-               [Dataset X]
- Collection 2: [Dataset A] 
-               [Dataset B] 
-               [Dataset Y]
+ Merged: [Dataset A_1]  [Dataset B_1]  [Dataset X]
+         [Dataset A_2]  [Dataset B_2]  [Dataset Y]
 
-Output::
+-------
 
- Merged Collection: [Dataset A_1] 
-                    [Dataset B_1]
-                    [Dataset A_2] 
-                    [Dataset B_2]  
-                    [Dataset X] 
-                    [Dataset Y]
+**Append suffix to conflicted identifiers after first one encountered**
 
-----
+The first copy keeps its original name; later copies get a suffix::
 
-**Append suffix to conflicted element identifiers after first on encountered**
+ Merged: [Dataset A]  [Dataset B]  [Dataset X]
+         [Dataset A_2]  [Dataset B_2]  [Dataset Y]
 
-Input::
-
- Collection 1: [Dataset A] 
-               [Dataset B] 
-               [Dataset X]
- Collection 2: [Dataset A] 
-               [Dataset B] 
-               [Dataset Y]
-
-Output::
-
- Merged Collection: [Dataset A] 
-                    [Dataset B]
-                    [Dataset A_2] 
-                    [Dataset B_2]  
-                    [Dataset X] 
-                    [Dataset Y]
-
-------
+-------
 
 **Append suffix to every element identifier**
 
-Input::
+Every element — even unique ones — gets a suffix indicating which input collection it came from::
 
- Collection 1: [Dataset A] 
-               [Dataset B] 
-               [Dataset X]
- Collection 2: [Dataset A] 
-               [Dataset B] 
-               [Dataset Y]
+ Merged: [Dataset A_1]  [Dataset B_1]  [Dataset X_1]
+         [Dataset A_2]  [Dataset B_2]  [Dataset Y_2]
 
-Output::
-
- Merged Collection: [Dataset A_1] 
-                    [Dataset B_2]
-                    [Dataset A_2] 
-                    [Dataset B_2]  
-                    [Dataset X_1] 
-                    [Dataset Y_2]
-
------
+-------
 
 **Fail collection creation**
 
-This option will simply trigger an error.
+The tool raises an error if any duplicate identifiers are found.
 
-------
+-------
 
 .. class:: infomark
 
-This tool will create new history datasets for your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
   ]]></help>
 </tool>
