@@ -17,6 +17,7 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 const router = useRouter();
+const chatStore = useChatStore();
 
 const chatHistory = ref<ChatHistoryItem[]>([]);
 const loading = ref(false);
@@ -63,7 +64,6 @@ function startNewChat() {
 }
 
 function openDockedChat() {
-    const chatStore = useChatStore();
     const latestId = chatHistory.value.length > 0 ? chatHistory.value[0]!.id : null;
     chatStore.openDockedPanel(latestId);
 }

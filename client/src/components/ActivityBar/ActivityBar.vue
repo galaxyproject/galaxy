@@ -232,10 +232,6 @@ function toggleSidebar(toggle: string = "", to: string | null = null) {
     activityStore.toggleSideBar(toggle);
 }
 
-function onPanelClicked(activity: Activity) {
-    toggleSidebar(activity.id, activity.to);
-}
-
 function onActivityClicked(activity: Activity) {
     if (activity.click) {
         emit("activityClicked", activity.id);
@@ -317,7 +313,7 @@ defineExpose({
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to || ''"
-                                @click="onPanelClicked(activity)" />
+                                @click="toggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
                                 v-else
                                 :id="`${activity.id}`"

@@ -22,14 +22,19 @@ import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 const activityStore = useActivityStore("default");
 const { chatPanelOpen } = storeToRefs(activityStore);
 
+const chatStore = useChatStore();
+const { isDockedPanelOpen, dockedChatId } = storeToRefs(chatStore);
+const { historyPanelWidth, chatPanelWidth } = storeToRefs(useUserStore());
+
 const route = useRoute();
 const router = useRouter();
 
 watch(
     () => route.path,
     (newPath) => {
-        if (newPath.startsWith("/chatgxy") && chatPanelOpen.value) {
+        if (newPath.startsWith("/chatgxy")) {
             chatPanelOpen.value = false;
+            chatStore.closeDockedPanel();
         }
     },
 );
@@ -38,10 +43,6 @@ const showCenter = ref(false);
 const { showPanels } = usePanels();
 
 const historyPanel = ref(null);
-
-const chatStore = useChatStore();
-const { isDockedPanelOpen, dockedChatId } = storeToRefs(chatStore);
-const { historyPanelWidth, chatPanelWidth } = storeToRefs(useUserStore());
 
 // methods
 function hideCenter() {
@@ -63,16 +64,6 @@ function handleUndock() {
     chatStore.closeDockedPanel();
     router.push(chatId ? `/chatgxy/${chatId}` : "/chatgxy");
 }
-
-// Close docked panel when navigating to /chatgxy center view
-watch(
-    () => router.currentRoute.path,
-    (path) => {
-        if (path.startsWith("/chatgxy")) {
-            chatStore.closeDockedPanel();
-        }
-    },
-);
 
 // life cycle
 onMounted(() => {
