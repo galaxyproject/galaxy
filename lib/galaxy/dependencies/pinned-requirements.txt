@@ -276,7 +276,7 @@ tiktoken==0.12.0
 tinydb==4.8.2
 tokenizers==0.22.2 ; sys_platform != 'emscripten'
 tomli==2.4.0 ; python_full_version < '3.11'
-tornado==6.5.4
+tornado==6.5.5
 tqdm==4.67.3
 tuspy==1.1.0
 tuspyserver==4.2.3
