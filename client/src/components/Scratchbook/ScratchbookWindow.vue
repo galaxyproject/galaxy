@@ -75,12 +75,22 @@ function onDragStart(e: MouseEvent) {
     document.addEventListener("mouseup", onDragEnd);
 }
 
+function clampPosition(rawX: number, rawY: number): { x: number; y: number } {
+    const w = props.window.width;
+    const h = props.window.height;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    return {
+        x: Math.max(0, Math.min(rawX, vw - w)),
+        y: Math.max(0, Math.min(rawY, vh - h)),
+    };
+}
+
 function onDragMove(e: MouseEvent) {
-    store.updatePosition(
-        props.window.id,
-        dragStartX + (e.clientX - dragStartMouseX),
-        dragStartY + (e.clientY - dragStartMouseY),
-    );
+    const rawX = dragStartX + (e.clientX - dragStartMouseX);
+    const rawY = dragStartY + (e.clientY - dragStartMouseY);
+    const { x, y } = clampPosition(rawX, rawY);
+    store.updatePosition(props.window.id, x, y);
 }
 
 function onDragEnd() {
@@ -112,10 +122,12 @@ function onResizeStart(e: MouseEvent) {
 }
 
 function onResizeMove(e: MouseEvent) {
+    const maxW = window.innerWidth - props.window.x;
+    const maxH = window.innerHeight - props.window.y;
     store.updateSize(
         props.window.id,
-        Math.max(MIN_WIDTH, resizeStartW + (e.clientX - resizeStartMouseX)),
-        Math.max(MIN_HEIGHT, resizeStartH + (e.clientY - resizeStartMouseY)),
+        Math.max(MIN_WIDTH, Math.min(resizeStartW + (e.clientX - resizeStartMouseX), maxW)),
+        Math.max(MIN_HEIGHT, Math.min(resizeStartH + (e.clientY - resizeStartMouseY), maxH)),
     );
 }
 
