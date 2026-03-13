@@ -10,7 +10,6 @@ from galaxy.model.unittest_utils.store_fixtures import (
     TEST_SOURCE_URI,
 )
 from galaxy.tool_util.verify.test_data import TestDataResolver
-from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.decorators import (
     requires_admin,
@@ -879,11 +878,14 @@ class TestDatasetsApi(ApiTestCase):
         assert len(sources) == 1
         assert sources[0]["source_uri"] == TEST_SOURCE_URI
 
-    @skip_if_github_down
-    def test_display_application_link(self, history_id):
+    def test_display_application_link(self, history_id, mock_http_server):
+        url = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            file_path="test-data/1.bam",
+        )
         item = {
             "src": "url",
-            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            "url": url,
             "ext": "bam",
         }
         output = self.dataset_populator.fetch_hda(history_id, item)

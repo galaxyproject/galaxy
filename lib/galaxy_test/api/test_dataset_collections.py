@@ -6,7 +6,6 @@ from urllib.parse import quote
 
 from galaxy.tool_util_models.sample_sheet import SampleSheetColumnDefinitions
 from galaxy.util import galaxy_root_path
-from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.api_asserts import (
     assert_has_key,
     assert_object_id_error,
@@ -917,16 +916,19 @@ class TestDatasetCollectionsApi(ApiTestCase):
             object0 = element0["object"]
             assert object0["state"] == "deferred"
 
-    @skip_if_github_down
-    def test_upload_collection_failed_expansion_url(self):
+    def test_upload_collection_failed_expansion_url(self, mock_http_server):
         with self.dataset_populator.test_history(require_new=False) as history_id:
+            url = mock_http_server.get_url(
+                remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                file_path="test-data/4.bed",
+            )
             targets = [
                 {
                     "destination": {"type": "hdca"},
                     "elements_from": "bagit",
                     "collection_type": "list",
                     "src": "url",
-                    "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                    "url": url,
                 }
             ]
             payload = {
