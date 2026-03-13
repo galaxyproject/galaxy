@@ -13,7 +13,7 @@ const page = computed(() => props.mode == "page");
 </script>
 
 <template>
-    <div>
+    <div class="p-2">
         <h3>Overview</h3>
         <p>
             <span v-if="page"> This Markdown document will be used to generate your Galaxy Page. </span>
