@@ -29,8 +29,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from requests import Session
 import yaml
+from requests import Session
 from typing_extensions import Literal
 
 from galaxy.tool_util.deps import installable
@@ -269,10 +269,10 @@ def mull_targets(
                 tags = repo_data.get("tags", [])
                 if tags:
                     raise BuildExistsException()
-        if "push" in command and repo_data is None:
-            repo_data = quay_repository(repo_template_kwds["namespace"], repo_name, session=session)
         if "push" in command:
-            assert repo_data is not None
+            if repo_data is None:
+                repo_data = quay_repository(repo_template_kwds["namespace"], repo_name, session=session)
+                assert repo_data is not None
             if "error_type" in repo_data and oauth_token:
                 # Explicitly create the repository so it can be built as public.
                 create_repository(repo_template_kwds["namespace"], repo_name, oauth_token)
