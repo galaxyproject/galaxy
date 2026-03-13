@@ -84,7 +84,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         # Delete the history
         self.select_history_card_operation(self.history2_name, '[id^="g-card-action-delete-history-"]', True)
-        self.components.histories.delete_history_confirm.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
 
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_histories_in_list([self.history2_name], False)
@@ -111,7 +111,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.assert_histories_in_list([self.history4_name])
 
         self.select_history_card_operation(self.history4_name, '[id^="g-card-action-purge-history-"]', True)
-        self.components.histories.delete_history_confirm.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
 
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_histories_in_list([self.history4_name], False)
@@ -133,7 +133,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         # Delete multiple histories
         self.components.histories.bulk_delete_button.wait_for_and_click()
-        self.components.histories.bulk_delete_confirm.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
 
         # Display deleted histories
         self.components.histories.advanced_search_toggle.wait_for_and_click()
@@ -145,7 +145,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         # Restore multiple histories
         self.components.histories.bulk_restore_button.wait_for_and_click()
-        self.components.histories.bulk_restore_confirm.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
 
         # Verify deleted histories have been restored
         self.components.histories.reset_input.wait_for_and_click()
@@ -199,7 +199,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Verify the confirmation dialog is displayed
-        confirm_dialog = self.wait_for_selector("#bulk-open-multiview-histories")
+        confirm_dialog = self.components.confirm_dialog
         assert confirm_dialog.is_displayed()
 
         # Verify the dialog contains information about the limit
@@ -208,7 +208,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         assert "11" in dialog_text  # The number of histories selected
 
         # Click confirm to proceed despite the limit
-        self.wait_for_and_click(self.components.histories.bulk_open_multiview_limit_confirm_button)
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
 
         # Wait for dialog to close
         self.sleep_for(self.wait_types.UX_RENDER)

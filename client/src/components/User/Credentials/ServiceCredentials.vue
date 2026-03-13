@@ -406,10 +406,9 @@ async function updateGroup(groupId: string): Promise<void> {
 async function deleteGroup(groupToDelete: ServiceCredentialGroupResponse): Promise<void> {
     const confirmed = await confirm(`Are you sure you want to delete the credentials group "${groupToDelete.name}"?`, {
         title: "Delete credentials group",
-        okTitle: "Delete group",
-        okVariant: "danger",
-        cancelVariant: "outline-primary",
-        centered: true,
+        okText: "Delete group",
+        okColor: "red",
+        okIcon: faTrash,
     });
 
     if (confirmed && groupToDelete) {

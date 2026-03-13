@@ -106,8 +106,8 @@ async function saveChanges(canProceed = true) {
           "and there will be an attempt to automatically fix the issues. Do you want to save your changes and apply fixes now?"
         : confirmationMessageHead + "to enable automatic fixing of this issue. Do you want to save your changes now?";
     const confirmationOptions: ConfirmDialogOptions = canProceed
-        ? { title: "Unsaved Changes", okTitle: "Save Changes and Fix Issues" }
-        : { title: "Save Workflow and Check Issues Again", okTitle: "Save Changes" };
+        ? { title: "Unsaved Changes", okText: "Save Changes and Fix Issues" }
+        : { title: "Save Workflow and Check Issues Again", okText: "Save Changes" };
 
     const proceed = await confirm(confirmationMessage, confirmationOptions);
     if (proceed && props.onSave) {

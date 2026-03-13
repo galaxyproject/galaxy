@@ -104,10 +104,8 @@ async function makeDataPrivate() {
         ),
         {
             title: "Do you want to make all data private?",
-            okTitle: "Yes, make all data private",
-            cancelTitle: "No, do not make data private",
-            cancelVariant: "outline-primary",
-            centered: true,
+            okText: "Yes, make all data private",
+            cancelText: "No, do not make data private",
         },
     );
     if (confirmed) {
@@ -120,14 +118,9 @@ async function makeDataPrivate() {
 async function signOut() {
     const confirmed = await confirm(localize("Do you want to continue and sign out of all active sessions?"), {
         title: "Sign out of all sessions",
-        okTitle: "Yes, sign out",
-        okVariant: "danger",
-        cancelTitle: "Cancel",
-        cancelVariant: "outline-primary",
-        // data-description cannot be set for this so falling back to
-        // setting a class for DOM inspection.
-        modalClass: "sign-out-modal",
-        centered: true,
+        okText: "Yes, sign out",
+        okColor: "red",
+        okIcon: faSignOut,
     });
 
     if (confirmed) {

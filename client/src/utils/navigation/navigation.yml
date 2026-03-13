@@ -137,11 +137,6 @@ change_user_address:
       type: xpath
       selector: '//span[contains(text(), "Insert Address")]'
 
-sign_out:
-  selectors:
-    cancel_button: '.sign-out-modal .modal-footer .btn-outline-primary'
-    sign_out_button: '.sign-out-modal .modal-footer .btn-danger'
-
 dataset_details:
   selectors:
     _: 'table#dataset-details'
@@ -157,6 +152,12 @@ object_store_details:
     usage_bytes: '.quota-usage'
     usage_percent: '.quota-percent-text'
     usage_progress: '.quota-usage-bar .progress'
+
+confirm_dialog:
+  selectors:
+    _: '#galaxy-confirm-dialog'
+    ok_button: '[data-description="confirm dialog ok"]'
+    cancel_button: '[data-description="confirm dialog cancel"]' 
 
 dataset_view:
   selectors:
@@ -365,7 +366,6 @@ history_storage:
     top_datasets_by_size: "[data-description='chart history top datasets by size']"
     dataset_by_size: "[data-description='chart history top datasets by size'] [aria-roledescription='bar'][aria-label*='${name}']"
     dataset_by_size_delete: '#g-card-action-delete-selected-item-actions-dataset'
-    confirm_delete: '.modal.show .confirm-delete-dataset-dialog .btn-danger'
 
 storage_dashboard:
   selectors:
@@ -520,13 +520,9 @@ histories:
     import_button: '[data-description="header action import new history"]'
     reset_input: '#history-list-filter [data-description="reset query"]'
     search_input: '#history-list-filter input.search-query[data-description="filter text input"]'
-    delete_history_confirm: '#delete-history .btn.btn-danger'
     bulk_delete_button: 'button[id="history-list-footer-bulk-delete-button"]'
-    bulk_delete_confirm: '#bulk-delete-histories .btn.btn-danger'
     bulk_restore_button: 'button[id="history-list-footer-bulk-restore-button"]'
-    bulk_restore_confirm: '#bulk-restore-histories .btn.btn-primary'
     bulk_open_multiview_button: 'button[id="history-list-footer-bulk-open-multiview-button"]'
-    bulk_open_multiview_limit_confirm_button: '#bulk-open-multiview-histories .btn.btn-primary'
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'
@@ -1038,7 +1034,6 @@ workflow_editor:
     connector_for: "#connection-${sink_id}-${source_id}"
     connector_invalid_for: "#connection-${sink_id}-${source_id} .connection.invalid"
     save_button: '#workflow-save-button'
-    save_workflow_confirmation_button: '#save-workflow-confirmation .btn-primary'
     state_modal_body: '.state-upgrade-modal'
     modal_button_continue: '.modal-footer .btn'
     workflow_activity: '#activity-workflow-editor-workflows'
@@ -1096,7 +1091,6 @@ invocations:
     progress_steps_note: '[data-description="workflow invocation state"] .steps-progress .progress-note'
     progress_jobs_note: '[data-description="workflow invocation state"] .jobs-progress .progress-note'
     workflow_rerun_button: '[data-button-rerun][data-title="Rerun Workflow with same inputs"]'
-    change_history_rerun_confirm: '#change-history-rerun-workflow .btn-primary'
     invocation_tab: '.nav-item[title="${label}"] > a.nav-link'
     invocation_details_tab:
       type: xpath

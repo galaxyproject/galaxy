@@ -961,8 +961,8 @@ export default {
                 const confirmed = await this.confirm(
                     `${this.errorText}. You can save the workflow, but it may not run correctly.`,
                     {
-                        id: "save-workflow-confirmation",
-                        okTitle: "Save Workflow",
+                        title: "Workflow has errors",
+                        okText: "Save Workflow",
                     },
                 );
 

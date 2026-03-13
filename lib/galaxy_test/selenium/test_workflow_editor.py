@@ -783,7 +783,7 @@ steps:
         save_button = self.components.workflow_editor.save_button
         save_button.wait_for_and_click()
         # Will trigger confirmation modal
-        self.components.workflow_editor.save_workflow_confirmation_button.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
         # Make connection valid again
         editor.change_datatype.wait_for_and_click()
         editor.select_datatype_text_search.wait_for_and_send_keys("tabular")
