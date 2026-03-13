@@ -271,9 +271,11 @@ def mull_targets(
                     raise BuildExistsException()
         if "push" in command and repo_data is None:
             repo_data = quay_repository(repo_template_kwds["namespace"], repo_name, session=session)
-        if "push" in command and "error_type" in repo_data and oauth_token:
-            # Explicitly create the repository so it can be built as public.
-            create_repository(repo_template_kwds["namespace"], repo_name, oauth_token)
+        if "push" in command:
+            assert repo_data is not None
+            if "error_type" in repo_data and oauth_token:
+                # Explicitly create the repository so it can be built as public.
+                create_repository(repo_template_kwds["namespace"], repo_name, oauth_token)
 
     for channel in channels:
         if channel.startswith("file://"):
