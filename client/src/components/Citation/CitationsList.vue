@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCopy, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCard, BCollapse, BNav, BNavItem, BSpinner } from "bootstrap-vue";
+import { BButton, BCard, BNav, BNavItem, BSpinner } from "bootstrap-vue";
 import { computed, onMounted, onUpdated, ref, toRef } from "vue";
 
 import { getCitations } from "@/components/Citation/services";
@@ -12,6 +12,7 @@ import { copy } from "@/utils/clipboard";
 import type { Citation } from ".";
 import { Cite } from "./cite";
 
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import CitationItem from "@/components/Citation/CitationItem.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
@@ -38,6 +39,7 @@ const emit = defineEmits(["rendered", "show", "shown", "hide", "hidden"]);
 const outputFormat = ref<string>(outputFormats.CITATION);
 const fetchedCitations = ref<Citation[]>([]);
 const isLoading = ref<boolean>(false);
+const citationsOpen = ref(false);
 
 onUpdated(() => {
     emit("rendered");
@@ -192,10 +194,10 @@ function citationsToBibtexAsText() {
                 </div>
             </BCard>
             <div v-else-if="citations.length">
-                <BButton v-b-toggle="id" variant="primary">References</BButton>
+                <BButton variant="primary" @click="citationsOpen = !citationsOpen">References</BButton>
 
-                <BCollapse
-                    :id="id.replace(/ /g, '_')"
+                <GCollapse
+                    v-model="citationsOpen"
                     class="mt-2"
                     @show="$emit('show')"
                     @shown="$emit('shown')"
@@ -209,7 +211,7 @@ function citationsToBibtexAsText() {
                             :citation="citation"
                             :output-format="outputFormat" />
                     </BCard>
-                </BCollapse>
+                </GCollapse>
             </div>
         </div>
     </div>

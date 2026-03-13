@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCollapse } from "bootstrap-vue";
-import slugify from "slugify";
-import { computed } from "vue";
+import { BButton } from "bootstrap-vue";
+import { computed, reactive, ref } from "vue";
 
 import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
-import { useUid } from "@/composables/utils/uid";
 
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 
@@ -21,11 +20,8 @@ const props = defineProps<{
 const { trainingAvailable, trainingCategories, tutorialDetails, allTutorialsUrl, versionAvailable } =
     useToolTrainingMaterial(props.id, props.name, props.version, props.owner);
 
-const collapseId = useUid("collapse-");
-
-function idForCategory(category: string) {
-    return `${collapseId.value}-${slugify(category)}`;
-}
+const mainOpen = ref(false);
+const categoryOpen = reactive<Record<string, boolean>>({});
 
 function tutorialsInCategory(category: string) {
     return tutorialDetails.value.filter((tut) => tut.category === category);
@@ -53,20 +49,20 @@ const tutorialText = computed(() => {
             </ExternalLink>
         </p>
 
-        <BButton v-b-toggle="collapseId" class="ui-link">
+        <BButton class="ui-link" @click="mainOpen = !mainOpen">
             <b>
                 Tutorials available in {{ trainingCategories.length }}
                 {{ trainingCategories.length > 1 ? "categories" : "category" }}
             </b>
             <FontAwesomeIcon :icon="faCaretDown" />
         </BButton>
-        <BCollapse :id="collapseId">
+        <GCollapse v-model="mainOpen">
             <div v-for="category in trainingCategories" :key="category">
-                <BButton v-b-toggle="idForCategory(category)" class="ui-link ml-3">
+                <BButton class="ui-link ml-3" @click="categoryOpen[category] = !categoryOpen[category]">
                     {{ category }} ({{ tutorialsInCategory(category).length }})
                     <FontAwesomeIcon :icon="faCaretDown" />
                 </BButton>
-                <BCollapse :id="idForCategory(category)">
+                <GCollapse :visible="!!categoryOpen[category]">
                     <ul class="d-flex flex-column my-1">
                         <li v-for="tutorial in tutorialsInCategory(category)" :key="tutorial.title">
                             <ExternalLink :href="tutorial.url.toString()" class="ml-2">
@@ -74,8 +70,8 @@ const tutorialText = computed(() => {
                             </ExternalLink>
                         </li>
                     </ul>
-                </BCollapse>
+                </GCollapse>
             </div>
-        </BCollapse>
+        </GCollapse>
     </div>
 </template>
