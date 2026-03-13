@@ -6,32 +6,33 @@ import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
-import { useActivityStore } from "@/stores/activityStore";
+import { useChatStore } from "@/stores/chatStore";
 
 import ChatGXY from "@/components/ChatGXY.vue";
 
 const router = useRouter();
-const activityStore = useActivityStore("default");
-const { currentChatExchangeId } = storeToRefs(activityStore);
+const chatStore = useChatStore();
+const { activeChatId } = storeToRefs(chatStore);
 
 const collapsed = ref(false);
 
 function maximize() {
-    const path = activityStore.currentChatExchangeId ? `/chatgxy/${activityStore.currentChatExchangeId}` : "/chatgxy";
-    activityStore.chatPanelOpen = false;
+    const path = activeChatId.value ? `/chatgxy/${activeChatId.value}` : "/chatgxy";
+    chatStore.setLocation("center");
+    chatStore.hideChat();
     router.push(path);
 }
 
 function popOut() {
     const Galaxy = getGalaxyInstance();
-    const id = activityStore.currentChatExchangeId;
+    const id = activeChatId.value;
     const path = id ? `/chatgxy/${id}` : "/chatgxy";
     Galaxy.frame.add({ title: "ChatGXY", url: `${path}?compact=true` });
-    activityStore.chatPanelOpen = false;
+    chatStore.hideChat();
 }
 
 function close() {
-    activityStore.chatPanelOpen = false;
+    chatStore.hideChat();
 }
 </script>
 
@@ -55,7 +56,7 @@ function close() {
             </div>
         </div>
         <div v-show="!collapsed" class="chat-panel-body">
-            <ChatGXY :exchange-id="currentChatExchangeId" panel />
+            <ChatGXY :exchange-id="activeChatId || undefined" panel />
         </div>
     </div>
 </template>

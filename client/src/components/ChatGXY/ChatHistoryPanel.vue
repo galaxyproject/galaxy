@@ -66,7 +66,12 @@ function handleItemClick(item: ChatHistoryItem, event: MouseEvent) {
         }
         lastClickedIndex.value = currentIndex;
     } else {
-        router.push(`/chatgxy/${item.id}`);
+        if (chatStore.isCenterMode) {
+            router.push(`/chatgxy/${item.id}`);
+        } else {
+            chatStore.setActiveChatId(item.id);
+            chatStore.showChat();
+        }
     }
 }
 
@@ -96,12 +101,17 @@ function toggleSelectAll() {
 }
 
 function startNewChat() {
-    router.push("/chatgxy");
+    if (chatStore.isCenterMode) {
+        router.push("/chatgxy");
+    } else {
+        chatStore.setActiveChatId(null);
+        chatStore.showChat();
+    }
 }
 
 function openDockedChat() {
     const latestId = chatHistory.value.length > 0 ? chatHistory.value[0]!.id : null;
-    chatStore.openDockedPanel(latestId);
+    chatStore.showChat(latestId);
 }
 
 async function deleteSelected() {

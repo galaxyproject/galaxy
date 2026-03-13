@@ -1,29 +1,53 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
+
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
+
+export type ChatLocation = "center" | "right" | "bottom";
 
 export const useChatStore = defineStore("chatStore", () => {
-    const isDockedPanelOpen = ref(false);
-    const dockedChatId = ref<string | null>(null);
+    const chatLocation = useUserLocalStorage<ChatLocation>("chat-location", "center");
+    const chatVisible = useUserLocalStorage("chat-visible", false);
+    const activeChatId = ref<string | null>(null);
 
-    function openDockedPanel(chatId: string | null = null) {
-        isDockedPanelOpen.value = true;
-        dockedChatId.value = chatId;
+    const isRightPanelOpen = computed(() => chatLocation.value === "right" && chatVisible.value);
+    const isBottomPanelOpen = computed(() => chatLocation.value === "bottom" && chatVisible.value);
+    const isCenterMode = computed(() => chatLocation.value === "center");
+
+    function showChat(chatId?: string | null) {
+        if (chatId !== undefined) {
+            activeChatId.value = chatId;
+        }
+        chatVisible.value = true;
     }
 
-    function closeDockedPanel() {
-        isDockedPanelOpen.value = false;
-        dockedChatId.value = null;
+    function hideChat() {
+        chatVisible.value = false;
     }
 
-    function setDockedChatId(chatId: string | null) {
-        dockedChatId.value = chatId;
+    function toggleChat() {
+        chatVisible.value = !chatVisible.value;
+    }
+
+    function setLocation(loc: ChatLocation) {
+        chatLocation.value = loc;
+    }
+
+    function setActiveChatId(id: string | null) {
+        activeChatId.value = id;
     }
 
     return {
-        isDockedPanelOpen,
-        dockedChatId,
-        openDockedPanel,
-        closeDockedPanel,
-        setDockedChatId,
+        chatLocation,
+        chatVisible,
+        activeChatId,
+        isRightPanelOpen,
+        isBottomPanelOpen,
+        isCenterMode,
+        showChat,
+        hideChat,
+        toggleChat,
+        setLocation,
+        setActiveChatId,
     };
 });
