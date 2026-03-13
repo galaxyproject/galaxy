@@ -4,6 +4,9 @@ import string
 import subprocess
 import time
 
+import boto3
+from botocore.client import Config
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from galaxy_test.driver.integration_util import (
@@ -14,9 +17,9 @@ from galaxy_test.driver.integration_util import (
 )
 
 OBJECT_STORE_HOST = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_HOST", "127.0.0.1")
-OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_PORT", 9000))
-OBJECT_STORE_ACCESS_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_ACCESS_KEY", "minioadmin")
-OBJECT_STORE_SECRET_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_SECRET_KEY", "minioadmin")
+OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_PORT", 8333))
+OBJECT_STORE_ACCESS_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_ACCESS_KEY", "admin")
+OBJECT_STORE_SECRET_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_SECRET_KEY", "admin")
 OBJECT_STORE_RUCIO_ACCOUNT = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_ACCOUNT", "root")
 OBJECT_STORE_RUCIO_USERNAME = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_USERNAME", "rucio")
 OBJECT_STORE_RUCIO_RSE_NAME = "TEST"
@@ -25,10 +28,10 @@ OBJECT_STORE_RUCIO_ACCESS = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCI
 OBJECT_STORE_CONFIG = string.Template("""
 <object_store type="hierarchical" id="primary">
     <backends>
-        <object_store id="swifty" type="generic_s3" weight="1" order="0">
+        <object_store id="swifty" type="boto3" weight="1" order="0">
             <auth access_key="${access_key}" secret_key="${secret_key}" />
-            <bucket name="galaxy" use_reduced_redundancy="False" max_chunk_size="250"/>
-            <connection host="${host}" port="${port}" is_secure="False" conn_path="" multipart="True"/>
+            <bucket name="galaxy" />
+            <connection endpoint_url="http://${host}:${port}" region="us-east-1" />
             <cache path="${temp_directory}/object_store_cache" size="1000" cache_updated_data="${cache_updated_data}" />
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_swift"/>
             <extra_dir type="temp" path="${temp_directory}/tmp_swift"/>
@@ -160,7 +163,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
     @classmethod
     def setUpClass(cls):
         cls.container_name = f"{cls.__name__}_container"
-        start_minio(cls.container_name)
+        start_seaweedfs(cls.container_name)
         super().setUpClass()
 
     @classmethod
@@ -356,9 +359,32 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
         return True
 
 
-def start_minio(container_name):
-    ports = [(OBJECT_STORE_PORT, 9000)]
-    docker_run("minio/minio:latest", container_name, "server", "/data", ports=ports)
+def start_seaweedfs(container_name):
+    ports = [(OBJECT_STORE_PORT, 8333)]
+    docker_run("chrislusf/seaweedfs:latest", container_name, "server", "-s3", ports=ports)
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=f"http://127.0.0.1:{OBJECT_STORE_PORT}",
+        aws_access_key_id=OBJECT_STORE_ACCESS_KEY,
+        aws_secret_access_key=OBJECT_STORE_SECRET_KEY,
+        region_name="us-east-1",
+        config=Config(signature_version="s3v4"),
+    )
+
+    # Retry bucket creation with exponential backoff
+    for attempt in range(5):
+        try:
+            s3.head_bucket(Bucket="galaxy")
+            break  # Bucket exists
+        except Exception:
+            try:
+                s3.create_bucket(Bucket="galaxy")
+                break  # Bucket created
+            except Exception as e:
+                if attempt < 4:
+                    time.sleep(2**attempt)  # Exponential backoff: 1, 2, 4, 8 seconds
+                else:
+                    raise TimeoutError(f"Failed to create SeaweedFS bucket after {attempt + 1} attempts: {e}")
 
 
 def start_onezone(oz_container_name):
