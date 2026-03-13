@@ -15,11 +15,21 @@ const currentOptions = ref<ConfirmDialogOptions>({ ...DEFAULT_CONFIRM_OPTIONS })
 let resolveCallback: ((value: boolean) => void) | null = null;
 
 function confirm(msg: string, options: ConfirmDialogOptions = {}): Promise<boolean> {
+    // Resolve any pending dialog as false before showing a new one
+    resolveCallback?.(false);
+    resolveCallback = null;
+
     message.value = msg;
     currentOptions.value = { ...DEFAULT_CONFIRM_OPTIONS, ...options };
-    show.value = true;
+
+    if (!show.value) {
+        show.value = true;
+    }
+
     return new Promise((resolve) => {
         resolveCallback = resolve;
+
+        options.signal?.addEventListener("abort", () => handleResponse(false), { once: true });
     });
 }
 

@@ -1,5 +1,5 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { type Ref, ref } from "vue";
+import { onUnmounted, type Ref, ref } from "vue";
 
 import type { ComponentColor, ComponentSize } from "@/components/BaseComponents/componentVariants";
 import type ConfirmDialogComponent from "@/components/ConfirmDialog.vue";
@@ -44,6 +44,11 @@ export interface ConfirmDialogOptions {
      * @default undefined (medium)
      */
     buttonSize?: ComponentSize;
+    /**
+     * An AbortSignal that cancels the dialog when aborted.
+     * Injected automatically by `useConfirmDialog` on caller unmount.
+     */
+    signal?: AbortSignal;
 }
 
 /**
@@ -128,5 +133,13 @@ export const ConfirmDialog = {
  * @returns Object containing confirm dialog methods
  */
 export function useConfirmDialog() {
-    return { ...ConfirmDialog };
+    const controller = new AbortController();
+    onUnmounted(() => controller.abort());
+
+    return {
+        confirm: (message: string, options: ConfirmDialogOptions | string = {}) => {
+            const normalizedOptions = typeof options === "string" ? { title: options } : options;
+            return ConfirmDialog.confirm(message, { ...normalizedOptions, signal: controller.signal });
+        },
+    };
 }
