@@ -30,15 +30,6 @@ from galaxy.webapps.galaxy.api import (
     Router,
 )
 
-# Import agent system
-try:
-    from galaxy.agents import agent_registry
-
-    HAS_AGENTS = True
-except ImportError:
-    HAS_AGENTS = False
-    agent_registry = None  # type: ignore[assignment,unused-ignore]
-
 log = logging.getLogger(__name__)
 
 router = Router(tags=["ai"])
@@ -62,26 +53,37 @@ class AgentAPI:
         user: User = DependsOnUser,
     ) -> AgentListResponse:
         """List available AI agents."""
-        if not HAS_AGENTS:
-            raise ConfigurationError("Agent system is not available")
-
         config = trans.app.config
+        inference_config = getattr(config, "inference_services", {}) or {}
 
         agents = []
-        for agent_type in agent_registry.list_agents():
-            agent_info = agent_registry.get_agent_info(agent_type)
+        for agent_type in self.agent_service.list_agents():
+            agent_info = self.agent_service.get_agent_info(agent_type)
 
-            # Check if agent is enabled in config
-            agent_config = getattr(config, "agents", {}).get(agent_type, {})
-            enabled = agent_config.get("enabled", True)
+            # Disabled agents are already excluded from the registry,
+            # but double-check inference_services config here
+            agent_config = inference_config.get(agent_type, {})
+            if isinstance(agent_config, dict) and not agent_config.get("enabled", True):
+                continue
+
+            # Resolve model: agent-specific -> default -> global
+            model = None
+            if isinstance(agent_config, dict):
+                model = agent_config.get("model")
+            if model is None:
+                default_config = inference_config.get("default", {})
+                if isinstance(default_config, dict):
+                    model = default_config.get("model")
+            if model is None:
+                model = getattr(config, "ai_model", None)
 
             agents.append(
                 AvailableAgent(
                     agent_type=agent_type,
                     name=agent_info["class_name"].replace("Agent", "").replace("_", " ").title(),
                     description=agent_info.get("description", "No description available"),
-                    enabled=enabled,
-                    model=agent_config.get("model"),
+                    enabled=True,
+                    model=model,
                     specialties=self._get_agent_specialties(agent_type),
                 )
             )
@@ -101,9 +103,6 @@ class AgentAPI:
         removed in a future release.
         """
         log.warning("DEPRECATED: /api/ai/agents/query is deprecated. Use /api/chat instead.")
-
-        if not HAS_AGENTS:
-            raise ConfigurationError("Agent system is not available")
 
         start_time = time.time()
 

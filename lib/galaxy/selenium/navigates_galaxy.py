@@ -1608,6 +1608,47 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.invocations.activity.wait_for_and_click()
         self.components.invocations.activity_expand.wait_for_and_click()
 
+    def navigate_to_chatgxy(self):
+        self.home()
+        self.components.chatgxy.activity.wait_for_and_click()
+
+    def chatgxy_ensure_new_chat(self):
+        """Ensure ChatGXY center panel shows an empty conversation."""
+        chatgxy = self.components.chatgxy
+        chatgxy._.wait_for_visible()
+        if len(chatgxy.query_cell.all()) > 0 or len(chatgxy.response_content.all()) > 0:
+            chatgxy.new_chat_button.wait_for_and_click()
+        self._chatgxy_assert_chat_empty()
+
+    def chatgxy_send_message(self, text):
+        """Type a message, click send, and wait for the response to appear."""
+        chatgxy = self.components.chatgxy
+        chatgxy.input.wait_for_and_send_keys(text)
+        chatgxy.send_button.wait_for_and_click()
+        chatgxy.loading.wait_for_absent_or_hidden()
+        chatgxy.response_content.wait_for_visible()
+
+    @retry_during_transitions
+    def _chatgxy_assert_chat_empty(self):
+        chatgxy = self.components.chatgxy
+        assert len(chatgxy.query_cell.all()) == 0
+        assert len(chatgxy.response_content.all()) == 0
+
+    def navigate_to_dataset_error(self, hid):
+        """Display a dataset and click the error tab."""
+        self.display_dataset(hid)
+        error_tab = self.wait_for_selector_clickable(
+            ".nav-item[title='View error information for this dataset'] > a.nav-link"
+        )
+        error_tab.click()
+
+    def galaxy_wizard_analyze(self):
+        """Click the wizard analyze button and wait for the response."""
+        wizard = self.components.galaxy_wizard
+        wizard.analyze_button.wait_for_and_click()
+        # Button disappears once queryResponse is set (v-if="!queryResponse")
+        wizard.analyze_button.wait_for_absent_or_hidden()
+
     def navigate_to_pages(self):
         self.home()
         self.components.pages.activity.wait_for_and_click()

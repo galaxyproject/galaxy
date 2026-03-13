@@ -191,15 +191,13 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         self, agents: list[str], query: str, context: Optional[dict[str, Any]] = None
     ) -> dict[str, AgentResponse]:
         """Execute agents sequentially with timeout protection."""
-        from galaxy.agents import agent_registry
-
         responses = {}
         current_query = query
         timeout = self._get_agent_timeout()
 
         for agent_name in agents:
             try:
-                agent = agent_registry.get_agent(agent_name, self.deps)
+                agent = self.deps.get_agent(agent_name, self.deps)
                 # Execute with timeout protection
                 response = await asyncio.wait_for(agent.process(current_query, context or {}), timeout=timeout)
                 responses[agent_name] = response
@@ -225,13 +223,11 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         self, agents: list[str], query: str, context: Optional[dict[str, Any]] = None
     ) -> dict[str, AgentResponse]:
         """Execute agents in parallel with timeout protection."""
-        from galaxy.agents import agent_registry
-
         timeout = self._get_agent_timeout()
 
         async def call_agent(agent_name: str):
             try:
-                agent = agent_registry.get_agent(agent_name, self.deps)
+                agent = self.deps.get_agent(agent_name, self.deps)
                 # Execute with timeout protection
                 response = await asyncio.wait_for(agent.process(query, context or {}), timeout=timeout)
                 return agent_name, response

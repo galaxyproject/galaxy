@@ -15,7 +15,7 @@
     echo '$stdoutmsg' &&
 #end if
 #if str($stderrmsg) != ""
-    >2& echo '$stderrmsg' && 
+    >&2 echo '$stderrmsg' &&
 #end if
 sh -c 'exit $exit_code'
     ]]>
@@ -37,10 +37,10 @@ sh -c 'exit $exit_code'
             <param name="exit_code" value="3" />
             <assert_stdout>
                 <has_line line="Log: some program message of interest"/>
-                <has_line line="Warning: Low space on device"/>
             </assert_stdout>
             <assert_stderr>
                 <has_line line="Warning: Exit code 3 (Low disk space)"/>
+                <has_line line="Warning: Low space on device"/>
             </assert_stderr>
         </test>
         <!-- unccessful run (fatal exit code + warning in output messages are detected) -->

@@ -1461,6 +1461,68 @@ job_details:
       selector: '//td[@id="galaxy-tool-id"][normalize-space(text()) = "${tool_id}"]'
     tool_exit_code: '#exit-code'
 
+chatgxy:
+  selectors:
+    activity: '#activity-chatgxy'
+    _: '.chatgxy-container'
+    header: '.chatgxy-header'
+    new_chat_button: '.chatgxy-header .btn-outline-primary'
+    delete_chat_button: '.chatgxy-header .btn-outline-danger'
+    messages: '.chat-messages'
+    input: '#chat-input'
+    send_button: '.send-button'
+    welcome_message: '.system-notice'
+    query_cell: '.entry-query .query-text'
+    response_cell: '.entry-response'
+    response_content: '.entry-response .response-content'
+    agent_indicator: '.entry-response .agent-indicator'
+    loading: '.loading-entry'
+    feedback_up: '.entry-response .feedback-btn[title="Helpful"]'
+    feedback_down: '.entry-response .feedback-btn[title="Not helpful"]'
+    feedback_ack: '.entry-response .feedback-ack'
+    meta_tag: '.entry-response .meta-tag'
+
+  history_panel:
+    selectors:
+      _: '.activity-panel[data-description="ChatGXY"]'
+      toggle_selection_mode: 'button[title="Select chats to delete"]'
+      cancel_selection: 'button[title="Cancel selection"]'
+      history_item: '[data-description="sidebar item"]'
+      history_checkbox: '[data-description="sidebar item"] .history-checkbox'
+      delete_selected_button: '.selection-toolbar .btn-danger'
+      select_all_toggle: '.select-all-toggle'
+      empty_message: '[data-description="sidebar list empty"]'
+
+galaxy_wizard:
+  selectors:
+    _:
+      selector: 'galaxy wizard'
+      type: data-description
+    analyze_button:
+      selector: 'galaxy wizard analyze button'
+      type: data-description
+    loading:
+      selector: 'galaxy wizard loading'
+      type: data-description
+    response:
+      selector: 'galaxy wizard response'
+      type: data-description
+    feedback_section:
+      selector: 'galaxy wizard feedback'
+      type: data-description
+    feedback_up:
+      selector: 'galaxy wizard feedback up'
+      type: data-description
+    feedback_down:
+      selector: 'galaxy wizard feedback down'
+      type: data-description
+    feedback_ack:
+      selector: 'galaxy wizard feedback ack'
+      type: data-description
+    wizard_card:
+      selector: 'galaxy wizard card'
+      type: data-description
+
 zip_import_wizard:
   selectors:
     _: '.zip-import-wizard'

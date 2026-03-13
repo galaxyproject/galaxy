@@ -1,45 +1,19 @@
-"""Test Galaxy AI agents API and functionality.
+"""Test Galaxy AI agents API with live LLM.
 
-This module contains two test suites:
-1. Mocked tests - Deterministic tests with mocked LLM responses (always run)
-2. Live LLM tests - Integration tests requiring configured LLM (optional, marked with @pytest.mark.requires_llm)
+Requires a configured LLM — skipped unless GALAXY_TEST_ENABLE_LIVE_LLM=1.
+For deterministic tests without LLM, see test_agents_static.py.
 
-## Running the tests:
-
-### API tests (Galaxy test instance auto-configured):
-    # Run mocked API tests (Galaxy test framework handles setup):
-    pytest test/integration/test_agents.py::TestAgentsApiMocked -v
-
-    # Run live LLM API tests:
-    GALAXY_TEST_ENABLE_LIVE_LLM=1 pytest test/integration/test_agents.py::TestAgentsApiLiveLLM -v
-
-### Configuration for live API tests (TestAgentsApiLiveLLM):
+## Running:
     export GALAXY_TEST_AI_API_KEY="your-api-key"
     export GALAXY_TEST_AI_MODEL="llama-4-scout"
     export GALAXY_TEST_AI_API_BASE_URL="http://localhost:4000/v1/"
     export GALAXY_TEST_ENABLE_LIVE_LLM=1
-
-### Configuration for live unit tests (TestAgentUnitLiveLLM):
-    export GALAXY_AI_API_KEY="your-api-key"
-    export GALAXY_AI_MODEL="llama-4-scout"
-    export GALAXY_AI_API_BASE_URL="http://localhost:4000/v1/"
-    export GALAXY_TEST_ENABLE_LIVE_LLM=1
+    pytest test/integration/test_agents.py -v
 """
 
 import logging
 import os
-from unittest.mock import (
-    AsyncMock,
-    MagicMock,
-    patch,
-)
 
-from galaxy.agents import (
-    agent_registry,
-    GalaxyAgentDependencies,
-)
-from galaxy.agents.error_analysis import ErrorAnalysisResult
-from galaxy.tool_util_models import UserToolSource
 from galaxy.util.unittest_utils import pytestmark_live_llm
 from galaxy_test.base.populators import (
     DatasetPopulator,
@@ -70,200 +44,6 @@ class AgentIntegrationTestCase(IntegrationTestCase):
             config["ai_api_base_url"] = ai_api_base_url
         if ai_model := os.environ.get("GALAXY_TEST_AI_MODEL"):
             config["ai_model"] = ai_model
-
-
-def _create_deps_with_mock_model(self, trans, user):
-    """Replacement for AgentService.create_dependencies that injects a mock model_factory."""
-    toolbox = trans.app.toolbox if hasattr(trans, "app") and hasattr(trans.app, "toolbox") else None
-    return GalaxyAgentDependencies(
-        trans=trans,
-        user=user,
-        config=self.config,
-        job_manager=self.job_manager,
-        toolbox=toolbox,
-        get_agent=agent_registry.get_agent,
-        model_factory=lambda: MagicMock(),
-    )
-
-
-class TestAgentsApiMocked(AgentIntegrationTestCase):
-    """Test the Galaxy AI agents API with mocked LLM responses.
-
-    These tests use mocked LLM responses for deterministic testing.
-    They always run in CI and don't require any LLM configuration.
-    """
-
-    def setUp(self):
-        super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
-
-    def test_list_agents(self):
-        """Test listing available agents (no LLM needed)."""
-        response = self._get("ai/agents")
-        self._assert_status_code_is_ok(response)
-        data = response.json()
-        assert "agents" in data
-        agents = data["agents"]
-        assert len(agents) > 0
-        # Check that core agents are registered
-        agent_types = [a["agent_type"] for a in agents]
-        assert "router" in agent_types
-        assert "custom_tool" in agent_types
-        assert "error_analysis" in agent_types
-
-    @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
-    @patch("galaxy.agents.router.Agent")
-    def test_query_agent_auto_routing_mocked(self, mock_router_agent_class):
-        """Test automatic agent routing with mocked LLM.
-
-        With the new router architecture, the router uses output functions
-        and returns the final response directly (either answering or handing
-        off to specialists internally).
-        """
-        # Set up mock router agent
-        mock_router_agent = AsyncMock()
-        mock_router_agent_class.return_value = mock_router_agent
-
-        # Mock router response - now returns string directly
-        async def mock_router_run(query, *args, **kwargs):
-            result = MagicMock()
-            if "BWA" in query or "tool" in query.lower():
-                # Simulate what custom_tool handoff would return
-                result.output = "I've created a BWA-MEM tool for paired-end reads. The tool definition includes inputs for reference and read files."
-            else:
-                # Direct response from router
-                result.output = "I'm Galaxy's AI assistant. How can I help you today?"
-            return result
-
-        mock_router_agent.run = mock_router_run
-
-        response = self._post(
-            "ai/agents/query",
-            data={
-                "query": "Create a BWA-MEM tool for paired-end reads",
-                "agent_type": "auto",
-            },
-            json=True,
-        )
-        self._assert_status_code_is_ok(response)
-        data = response.json()
-        # Router now returns content in the response object
-        assert "response" in data
-        assert "content" in data["response"]
-        assert "BWA" in data["response"]["content"] or len(data["response"]["content"]) > 0
-
-    @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
-    @patch("galaxy.agents.custom_tool.Agent")
-    def test_query_custom_tool_agent_mocked(self, mock_agent_class):
-        """Test the custom tool agent with mocked LLM."""
-        mock_agent = AsyncMock()
-        mock_agent_class.return_value = mock_agent
-
-        # Mock tool creation with UserToolSource
-        mock_tool = UserToolSource(
-            **{
-                "class": "GalaxyUserTool",
-                "id": "line-counter",
-                "name": "Line Counter",
-                "version": "1.0.0",
-                "description": "Counts lines in a file",
-                "container": "ubuntu:latest",
-                "shell_command": "wc -l < $(inputs.input_file.path) > output.txt",
-                "inputs": [],
-                "outputs": [],
-            }
-        )
-
-        async def mock_run(*args, **kwargs):
-            result = MagicMock()
-            result.output = mock_tool
-            return result
-
-        mock_agent.run = mock_run
-
-        response = self._post(
-            "ai/agents/query",
-            data={
-                "query": "Create a simple tool that counts lines in a file",
-                "agent_type": "custom_tool",
-            },
-            json=True,
-        )
-        self._assert_status_code_is_ok(response)
-        data = response.json()
-        # Response structure is {'response': {..., 'metadata': {...}}, 'routing_info': ..., ...}
-        assert "response" in data
-        assert "metadata" in data["response"]
-        assert data["response"]["metadata"]["tool_id"] == "line-counter"
-        assert "wc -l" in data["response"]["metadata"]["tool_yaml"]
-
-        # Verify suggestions are present and valid
-        suggestions = data["response"].get("suggestions", [])
-        assert len(suggestions) >= 1, "Custom tool should return at least one suggestion"
-        # Should have a SAVE_TOOL suggestion with required parameters
-        save_suggestions = [s for s in suggestions if s["action_type"] == "save_tool"]
-        assert len(save_suggestions) == 1, "Should have exactly one SAVE_TOOL suggestion"
-        assert save_suggestions[0]["parameters"].get("tool_yaml"), "SAVE_TOOL must have tool_yaml"
-        assert save_suggestions[0]["parameters"].get("tool_id"), "SAVE_TOOL must have tool_id"
-
-    @patch("galaxy.managers.agents.AgentService.create_dependencies", _create_deps_with_mock_model)
-    @patch("galaxy.agents.error_analysis.Agent")
-    def test_query_error_analysis_agent_mocked(self, mock_agent_class):
-        """Test the error analysis agent with mocked LLM."""
-        mock_agent = AsyncMock()
-        mock_agent_class.return_value = mock_agent
-
-        # Mock error analysis
-        async def mock_run(*args, **kwargs):
-            result = MagicMock()
-            mock_analysis = ErrorAnalysisResult(
-                error_category="tool_configuration",
-                error_severity="medium",
-                likely_cause="The command 'samtools' was not found in PATH",
-                solution_steps=[
-                    "Install samtools using conda",
-                    "Check tool dependencies",
-                    "Verify container configuration",
-                ],
-                confidence="high",
-            )
-            result.output = mock_analysis
-            return result
-
-        mock_agent.run = mock_run
-
-        # Don't pass a job_id - the agent handles missing job context gracefully
-        # and we're testing the mocked LLM response, not job lookup
-        response = self._post(
-            "ai/agents/query",
-            data={
-                "query": "Why did my job fail? stderr shows: command not found: samtools",
-                "agent_type": "error_analysis",
-            },
-            json=True,
-        )
-        self._assert_status_code_is_ok(response)
-        data = response.json()
-        # Response structure is {'response': {..., 'content': ...}, ...}
-        assert "response" in data
-        assert "content" in data["response"]
-        # Should mention the error type or solution
-        content = data["response"]["content"].lower()
-        assert "command" in content or "samtools" in content or "not found" in content
-
-        # Suggestions are optional - only returned for actionable items like CONTACT_SUPPORT
-        # In this mock, requires_admin=False, so no suggestions expected
-        suggestions = data["response"].get("suggestions", [])
-        for suggestion in suggestions:
-            assert "action_type" in suggestion
-            assert "description" in suggestion
-            assert "confidence" in suggestion
-
-
-# ============================================================================
-# LIVE LLM TEST SUITE - Requires configured LLM
-# ============================================================================
 
 
 @pytestmark_live_llm

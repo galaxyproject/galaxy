@@ -1,0 +1,67 @@
+defaults:
+  confidence: medium
+
+rules:
+  - match:
+      agent_type: router
+      query: "(?i)hello|hi|hey"
+    response:
+      content: "Hello! I'm Galaxy's AI assistant. How can I help?"
+      confidence: high
+      agent_type: router
+
+  - match:
+      agent_type: router
+      query: "(?i)rna.?seq"
+    response:
+      content: "Galaxy has several RNA-seq tools including HISAT2 and STAR."
+      confidence: high
+      agent_type: router
+
+  - match:
+      agent_type: custom_tool
+    response:
+      content: "I've created a Line Counter tool that counts lines in a file."
+      confidence: high
+      agent_type: custom_tool
+      metadata:
+        tool_id: line-counter
+        tool_yaml: |
+          class: GalaxyUserTool
+          id: line-counter
+          name: Line Counter
+          version: "1.0.0"
+          description: Counts lines in a file
+          container: ubuntu:latest
+          shell_command: "wc -l < $(inputs.input_file.path) > output.txt"
+      suggestions:
+        - action_type: save_tool
+          description: "Save the Line Counter tool to your Galaxy instance"
+          parameters:
+            tool_id: line-counter
+            tool_yaml: |
+              class: GalaxyUserTool
+              id: line-counter
+              name: Line Counter
+              version: "1.0.0"
+          confidence: high
+          priority: 1
+
+  - match:
+      agent_type: error_analysis
+    response:
+      content: "This error appears to be a tool configuration issue."
+      confidence: high
+      agent_type: error_analysis
+
+  - match:
+      agent_type: router
+    response:
+      content: "I can help with Galaxy workflows, tools, and data analysis."
+      confidence: medium
+      agent_type: router
+
+fallback:
+  content: "Static backend: no matching rule."
+  confidence: low
+  agent_type: unknown

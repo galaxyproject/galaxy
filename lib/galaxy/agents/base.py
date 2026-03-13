@@ -222,13 +222,13 @@ class GalaxyAgentDependencies:
     trans: ProvidesUserContext
     user: User
     config: "GalaxyAppConfiguration"
+    # Callable to get agent instances, avoids circular import in base.py
+    get_agent: Callable[[str, "GalaxyAgentDependencies"], "BaseGalaxyAgent"]
     job_manager: Optional["JobManager"] = None
     dataset_manager: Optional["DatasetManager"] = None
     workflow_manager: Optional["WorkflowsManager"] = None
     tool_cache: Optional["ToolCache"] = None
     toolbox: Optional["ToolBox"] = None
-    # Callable to get agent instances, avoids circular import in base.py
-    get_agent: Optional[Callable[[str, "GalaxyAgentDependencies"], "BaseGalaxyAgent"]] = None
     # Optional factory for creating model instances (useful for testing)
     model_factory: Optional[Callable[[], Any]] = None
 
@@ -720,10 +720,6 @@ class BaseGalaxyAgent(ABC):
             )
         """
         try:
-            if ctx.deps.get_agent is None:
-                raise RuntimeError("get_agent not configured in dependencies")
-
-            # Get the target agent using the injected callable
             target_agent = ctx.deps.get_agent(agent_type, ctx.deps)
 
             # Prepare query with context if available
