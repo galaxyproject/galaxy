@@ -174,13 +174,15 @@
 
                         <b-button
                             :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
-                            :variant="undoRedoStore.hasUndo ? 'secondary' : 'muted'"
+                            variant="secondary"
+                            :disabled="!undoRedoStore.hasUndo"
                             @click="undoRedoStore.undo()">
                             <FontAwesomeIcon :icon="faArrowLeft" />
                         </b-button>
                         <b-button
                             :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
-                            :variant="undoRedoStore.hasRedo ? 'secondary' : 'muted'"
+                            variant="secondary"
+                            :disabled="!undoRedoStore.hasRedo"
                             @click="undoRedoStore.redo()">
                             <FontAwesomeIcon :icon="faArrowRight" />
                         </b-button>
