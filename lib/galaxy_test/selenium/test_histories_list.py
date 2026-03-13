@@ -200,10 +200,10 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         # Verify the confirmation dialog is displayed
         confirm_dialog = self.components.confirm_dialog
-        assert confirm_dialog.is_displayed()
+        confirm_dialog.message.wait_for_visible()
 
         # Verify the dialog contains information about the limit
-        dialog_text = confirm_dialog.text
+        dialog_text = confirm_dialog.message.wait_for_text()
         assert "10" in dialog_text  # The maximum number of histories
         assert "11" in dialog_text  # The number of histories selected
 
