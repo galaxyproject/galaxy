@@ -107,10 +107,27 @@ export const useWindowManagerStore = defineStore("windowManager", () => {
         }
     }
 
+    function toggleMinimize(id: string) {
+        const win = windows.value.find((w) => w.id === id);
+        if (win) {
+            win.minimized = !win.minimized;
+            if (win.minimized && focusedId.value === id) {
+                const next = windows.value.find((w) => w.id !== id && !w.minimized);
+                focusedId.value = next?.id ?? null;
+            }
+            if (!win.minimized) {
+                focus(id);
+            }
+        }
+    }
+
     function toggleMaximize(id: string) {
         const win = windows.value.find((w) => w.id === id);
         if (win) {
             win.maximized = !win.maximized;
+            if (win.maximized) {
+                win.minimized = false;
+            }
         }
     }
 
@@ -178,6 +195,7 @@ export const useWindowManagerStore = defineStore("windowManager", () => {
         focus,
         updatePosition,
         updateSize,
+        toggleMinimize,
         toggleMaximize,
         beforeUnload,
         restore,
