@@ -156,6 +156,7 @@ object_store_details:
 confirm_dialog:
   selectors:
     _: '#galaxy-confirm-dialog'
+    message: '[data-description="confirm dialog message"]'
     ok_button: '[data-description="confirm dialog ok"]'
     cancel_button: '[data-description="confirm dialog cancel"]' 
 

@@ -50,7 +50,7 @@ defineExpose({ confirm });
         size="small"
         :title="currentOptions.title"
         @close="handleResponse(false)">
-        <BAlert class="mb-0" variant="info" show>
+        <BAlert class="mb-0" data-description="confirm dialog message" variant="info" show>
             {{ message }}
         </BAlert>
         <template v-slot:footer>
