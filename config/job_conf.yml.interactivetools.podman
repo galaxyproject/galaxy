@@ -29,7 +29,7 @@ execution:
       #docker_run_extra_arguments:  --userns=keep-id --security-opt label=disable --network slirp4netns:allow_host_loopback=true
 
       # Change to home directory of the galaxy user, not the directory of the galaxy installation
-      docker_cmd: HOME="/home/galaxy"; podman
+      docker_cmd: HOME="/home/galaxy" podman
 
     docker_dispatch:
       runner: dynamic
