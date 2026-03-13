@@ -77,9 +77,8 @@ async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: bo
             const confirmed = await confirm(
                 "Your history is set to create sharable datasets, but the target storage location is private. Change the history configuration so new datasets are private by default?",
                 {
-                    okTitle: "Private new datasets",
-                    cancelTitle: "Keep datasets public",
-                    cancelVariant: "outline-primary",
+                    okText: "Private new datasets",
+                    cancelText: "Keep datasets public",
                 },
             );
 

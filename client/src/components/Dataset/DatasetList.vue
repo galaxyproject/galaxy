@@ -190,12 +190,10 @@ async function onBulkDelete() {
     const totalSelected = selectedItemIds.value.length;
 
     const confirmed = await confirm(`Are you sure you want to delete ${totalSelected} datasets?`, {
-        id: "bulk-delete-datasets-confirmation",
         title: "Delete datasets",
-        okTitle: "Delete datasets",
-        okVariant: "danger",
-        cancelVariant: "outline-primary",
-        centered: true,
+        okText: "Delete datasets",
+        okColor: "red",
+        okIcon: faTrash,
     });
 
     if (confirmed) {
