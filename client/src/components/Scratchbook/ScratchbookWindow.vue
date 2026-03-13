@@ -11,7 +11,30 @@ const store = useWindowManagerStore();
 
 const isFocused = computed(() => store.focusedId === props.window.id);
 
+const HEADER_HEIGHT = 36; // 2.25rem
+const MIN_TASKBAR_WIDTH = 250;
+
+const minimizedIndex = computed(() => {
+    if (!props.window.minimized) {
+        return -1;
+    }
+    const minimized = store.windows.filter((w) => w.minimized);
+    return minimized.findIndex((w) => w.id === props.window.id);
+});
+
 const windowStyle = computed(() => {
+    if (props.window.minimized) {
+        const count = store.windows.filter((w) => w.minimized).length;
+        const slotWidth = Math.min(Math.floor(window.innerWidth / count), MIN_TASKBAR_WIDTH);
+        return {
+            bottom: "0px",
+            left: `${minimizedIndex.value * slotWidth}px`,
+            width: `${slotWidth}px`,
+            height: `${HEADER_HEIGHT}px`,
+            top: "auto",
+            zIndex: props.window.zIndex,
+        };
+    }
     if (props.window.maximized) {
         return {
             top: "0",
@@ -39,7 +62,7 @@ let dragStartX = 0;
 let dragStartY = 0;
 
 function onDragStart(e: MouseEvent) {
-    if (props.window.maximized) {
+    if (props.window.maximized || props.window.minimized) {
         return;
     }
     e.preventDefault();
@@ -110,6 +133,10 @@ function onClose() {
     store.remove(props.window.id);
 }
 
+function onMinimize() {
+    store.toggleMinimize(props.window.id);
+}
+
 function onMaximize() {
     store.toggleMaximize(props.window.id);
 }
@@ -125,14 +152,15 @@ onBeforeUnmount(() => {
 <template>
     <div
         class="scratchbook-window"
-        :class="{ focused: isFocused, maximized: window.maximized }"
+        :class="{ focused: isFocused, maximized: window.maximized, minimized: window.minimized }"
         :style="windowStyle"
         @mousedown="onFocus">
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-        <div class="scratchbook-window-header" @mousedown.left="onDragStart">
+        <div class="scratchbook-window-header" @mousedown.left="window.minimized ? onMinimize() : onDragStart($event)">
             <span class="scratchbook-window-title">{{ window.title }}</span>
             <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
             <div class="scratchbook-window-controls" @mousedown.stop>
+                <button class="scratchbook-window-btn" aria-label="Minimize" @click="onMinimize">&#8722;</button>
                 <button class="scratchbook-window-btn" aria-label="Maximize" @click="onMaximize">
                     <span v-if="window.maximized">&#9724;</span>
                     <span v-else>&#9723;</span>
@@ -142,12 +170,14 @@ onBeforeUnmount(() => {
                 </button>
             </div>
         </div>
-        <div class="scratchbook-window-body">
-            <iframe :src="iframeSrc" :title="window.title" />
-            <div v-if="!isFocused" class="iframe-focus-overlay" @mousedown="onFocus" />
-        </div>
-        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-        <div v-if="!window.maximized" class="scratchbook-resize-handle" @mousedown.left="onResizeStart" />
+        <template v-if="!window.minimized">
+            <div class="scratchbook-window-body">
+                <iframe :src="iframeSrc" :title="window.title" />
+                <div v-if="!isFocused" class="iframe-focus-overlay" @mousedown="onFocus" />
+            </div>
+            <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+            <div v-if="!window.maximized" class="scratchbook-resize-handle" @mousedown.left="onResizeStart" />
+        </template>
     </div>
 </template>
 
@@ -166,6 +196,15 @@ onBeforeUnmount(() => {
     &.maximized {
         border-radius: 0;
         box-shadow: none;
+    }
+
+    &.minimized {
+        border-radius: 0.25rem 0.25rem 0 0;
+
+        .scratchbook-window-header {
+            cursor: pointer;
+            border-bottom: none;
+        }
     }
 }
 
