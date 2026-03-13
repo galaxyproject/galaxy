@@ -52,3 +52,4 @@ _shed_schema.yaml:
     - '#/paths/~1api~1version/get'
     - >-
       #/paths/~1api_internal~1repositories~1{encoded_repository_id}~1metadata/get
+    - '#/paths/~1repository/get'
