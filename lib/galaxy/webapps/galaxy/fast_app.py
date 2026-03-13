@@ -28,7 +28,10 @@ from galaxy.webapps.base.api import (
     GalaxyFileResponse,
     include_all_package_routers,
 )
-from galaxy.webapps.base.webapp import config_allows_origin
+from galaxy.webapps.base.webapp import (
+    _is_embed_request,
+    config_allows_origin,
+)
 from galaxy.webapps.openapi._compat.v2 import GenerateJsonSchema
 from galaxy.webapps.openapi.utils import get_openapi
 
@@ -129,7 +132,8 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
         @app.middleware("http")
         async def add_x_frame_options(request: Request, call_next):
             response = await call_next(request)
-            response.headers["X-Frame-Options"] = x_frame_options
+            if not _is_embed_request(request.url.path, str(request.url.query)):
+                response.headers["X-Frame-Options"] = x_frame_options
             return response
 
     GalaxyFileResponse.nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
