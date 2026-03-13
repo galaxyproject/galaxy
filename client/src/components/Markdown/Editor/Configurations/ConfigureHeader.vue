@@ -13,32 +13,13 @@
                 @click="$emit('ok')" />
             <CellButton title="Cancel" tooltip-placement="bottom" :icon="faTimes" @click="onCancel" />
         </div>
-        <BModal :visible="showModal">
-            <template v-slot:modal-header>
-                <Heading size="md">You have pending changes</Heading>
-            </template>
-            <span v-localize>
-                If you proceed without applying these changes, your modifications will be lost. Would you like to apply
-                the changes now, or discard them and keep the previous configuration?
-            </span>
-            <template v-slot:modal-footer>
-                <BButton variant="secondary" @click="$emit('cancel')">
-                    <FontAwesomeIcon :icon="faTimes" />
-                    <span v-localize>Discard Changes</span>
-                </BButton>
-                <BButton variant="danger" @click="$emit('ok')">
-                    <FontAwesomeIcon :icon="faCheck" />
-                    <span v-localize>Apply Changes</span>
-                </BButton>
-            </template>
-        </BModal>
     </div>
 </template>
 
 <script setup lang="ts">
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
-import { BModal } from "bootstrap-vue";
-import { ref } from "vue";
+
+import { useConfirmDialog } from "@/composables/confirmDialog";
 
 import Heading from "@/components/Common/Heading.vue";
 import CellButton from "@/components/Markdown/Editor/CellButton.vue";
@@ -57,15 +38,28 @@ const emit = defineEmits<{
     (e: "cancel"): void;
 }>();
 
-const showModal = ref(false);
+const { confirm } = useConfirmDialog();
 
-function onCancel() {
+async function onCancel() {
     if (props.hasChanged) {
-        showModal.value = true;
+        const confirmed = await confirm(
+            "If you proceed without applying these changes, your modifications will be lost. Would you like to apply the changes now, or discard them and keep the previous configuration?",
+            {
+                title: "You have pending changes",
+                okText: "Apply Changes",
+                okColor: "red",
+                okIcon: faCheck,
+                cancelText: "Discard Changes",
+            },
+        );
+
+        if (confirmed) {
+            emit("ok");
+        } else if (confirmed === false) {
+            emit("cancel");
+        }
     } else {
         emit("cancel");
     }
 }
-
-defineExpose({ showModal });
 </script>

@@ -1,9 +1,16 @@
 import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ConfigureHeader from "./ConfigureHeader.vue";
 import CellButton from "@/components/Markdown/Editor/CellButton.vue";
+
+const mockConfirm = vi.fn();
+vi.mock("@/composables/confirmDialog", () => ({
+    useConfirmDialog: () => ({
+        confirm: mockConfirm,
+    }),
+}));
 
 const localVue = getLocalVue();
 
@@ -12,10 +19,6 @@ function mountComponent(props = {}) {
         localVue,
         propsData: { hasChanged: undefined, ...props },
         stubs: {
-            BModal: {
-                template: "<div><slot></slot><slot name='modal-header'></slot><slot name='modal-footer'></slot></div>",
-                props: ["visible"],
-            },
             BButton: {
                 template: "<button @click=\"$emit('click')\"><slot /></button>",
             },
@@ -28,6 +31,10 @@ function mountComponent(props = {}) {
 }
 
 describe("ConfigureHeader.vue", () => {
+    beforeEach(() => {
+        mockConfirm.mockReset();
+    });
+
     it("renders headings and instructions", () => {
         const wrapper = mountComponent({ hasChanged: false });
         expect(wrapper.text()).toContain("Attach Data");
@@ -64,30 +71,46 @@ describe("ConfigureHeader.vue", () => {
         expect(wrapper.emitted("cancel")).toBeTruthy();
     });
 
-    it("shows modal if hasChanged is true and Cancel is clicked", async () => {
+    it("shows confirmDialog if hasChanged is true and Cancel is clicked", async () => {
         const wrapper = mountComponent({ hasChanged: true });
         const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
         await cancelBtn.trigger("click");
-        expect(wrapper.vm.showModal).toBe(true);
+        expect(mockConfirm).toHaveBeenCalled();
     });
 
-    it("emits cancel from modal Discard Changes button", async () => {
-        const wrapper = mountComponent({ hasChanged: true });
-        wrapper.vm.showModal = true;
-        await wrapper.vm.$nextTick();
-        const buttons = wrapper.findAll("button").wrappers;
-        const discardBtn = buttons.find((b) => b.text().includes("Discard Changes"));
-        await discardBtn.trigger("click");
-        expect(wrapper.emitted("cancel")).toBeTruthy();
-    });
+    it("emits ok when confirmDialog returns true (user chose Apply Changes)", async () => {
+        // Simulate user choosing "Apply Changes" in the confirm dialog
+        mockConfirm.mockResolvedValue(true);
 
-    it("emits ok from modal Apply Changes button", async () => {
         const wrapper = mountComponent({ hasChanged: true });
-        wrapper.vm.showModal = true;
+        const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
+        await cancelBtn.trigger("click");
         await wrapper.vm.$nextTick();
-        const buttons = wrapper.findAll("button").wrappers;
-        const applyBtn = buttons.find((b) => b.text().includes("Apply Changes"));
-        await applyBtn.trigger("click");
         expect(wrapper.emitted("ok")).toBeTruthy();
+        expect(wrapper.emitted("cancel")).toBeFalsy();
+    });
+
+    it("emits cancel when confirmDialog returns false (user chose Discard Changes)", async () => {
+        // Simulate user choosing "Discard Changes" in the confirm dialog
+        mockConfirm.mockResolvedValue(false);
+
+        const wrapper = mountComponent({ hasChanged: true });
+        const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
+        await cancelBtn.trigger("click");
+        await wrapper.vm.$nextTick();
+        expect(wrapper.emitted("cancel")).toBeTruthy();
+        expect(wrapper.emitted("ok")).toBeFalsy();
+    });
+
+    it("emits nothing when confirmDialog returns null (user dismissed without choosing)", async () => {
+        // Simulate user dismissing the confirm dialog without making a choice
+        mockConfirm.mockResolvedValue(null);
+
+        const wrapper = mountComponent({ hasChanged: true });
+        const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
+        await cancelBtn.trigger("click");
+        await wrapper.vm.$nextTick();
+        expect(wrapper.emitted("ok")).toBeFalsy();
+        expect(wrapper.emitted("cancel")).toBeFalsy();
     });
 });

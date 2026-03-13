@@ -99,10 +99,10 @@ export const ConfirmDialog = {
      * Shows a confirmation dialog to the user.
      * @param message - The confirmation message to display
      * @param options - Dialog options object or title string (for backward compatibility)
-     * @returns Promise resolving to `true` if confirmed, `false` if cancelled/closed
+     * @returns Promise resolving to `true` if confirmed, `false` if cancelled, or `null` if dismissed without a response
      * @throws {Error} When confirm dialog component reference is not set
      */
-    async confirm(message: string, options: ConfirmDialogOptions | string = {}): Promise<boolean> {
+    async confirm(message: string, options: ConfirmDialogOptions | string = {}): Promise<boolean | null> {
         if (!confirmDialogRef.value) {
             throw new Error(
                 "Confirm dialog component reference not set. " +
@@ -120,8 +120,7 @@ export const ConfirmDialog = {
             return await confirmDialogRef.value.confirm(message, normalizedOptions);
         } catch (error) {
             console.error("Confirm dialog error:", error);
-            // Gracefully handle component errors by returning false (cancelled)
-            return false;
+            return null;
         }
     },
 };

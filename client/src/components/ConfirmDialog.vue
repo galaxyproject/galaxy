@@ -12,9 +12,9 @@ const show = ref(false);
 const message = ref("");
 const currentOptions = ref<ConfirmDialogOptions>({ ...DEFAULT_CONFIRM_OPTIONS });
 
-let resolveCallback: ((value: boolean) => void) | null = null;
+let resolveCallback: ((value: boolean | null) => void) | null = null;
 
-function confirm(msg: string, options: ConfirmDialogOptions = {}): Promise<boolean> {
+function confirm(msg: string, options: ConfirmDialogOptions = {}): Promise<boolean | null> {
     // Resolve any pending dialog as false before showing a new one
     resolveCallback?.(false);
     resolveCallback = null;
@@ -33,7 +33,7 @@ function confirm(msg: string, options: ConfirmDialogOptions = {}): Promise<boole
     });
 }
 
-function handleResponse(isOk: boolean) {
+function handleResponse(isOk: boolean | null) {
     resolveCallback?.(isOk);
     resolveCallback = null;
     show.value = false;
@@ -49,18 +49,15 @@ defineExpose({ confirm });
         :show="show"
         size="small"
         :title="currentOptions.title"
-        @close="handleResponse(false)">
+        @close="handleResponse(null)">
         <BAlert class="mb-0" data-description="confirm dialog message" variant="info" show>
             {{ message }}
         </BAlert>
         <template v-slot:footer>
             <div class="button-container">
-                <GButton
-                    class="confirm-button"
-                    data-description="confirm dialog cancel"
-                    @click="handleResponse(false)"
-                    >{{ currentOptions.cancelText }}</GButton
-                >
+                <GButton class="confirm-button" data-description="confirm dialog cancel" @click="handleResponse(false)">
+                    {{ currentOptions.cancelText }}
+                </GButton>
                 <GButton
                     class="confirm-button"
                     :color="currentOptions.okColor"

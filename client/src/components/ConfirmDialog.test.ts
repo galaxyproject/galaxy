@@ -36,12 +36,12 @@ describe("ConfirmDialog", () => {
         expect(await promise).toBe(false);
     });
 
-    it("resolves false when dialog is closed externally", async () => {
+    it("resolves null when dialog is dismissed (closed without choosing)", async () => {
         const promise = vm.confirm("Are you sure?");
         await localVue.nextTick();
         wrapper.find("dialog").element.dispatchEvent(new Event("close"));
         await localVue.nextTick();
-        expect(await promise).toBe(false);
+        expect(await promise).toBe(null);
     });
 
     it("renders message and respects custom options", async () => {
