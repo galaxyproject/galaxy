@@ -492,3 +492,35 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
             select(Dataset).order_by(Dataset.table.c.id.desc()).limit(1)
         ).first()
         return latest_dataset
+
+
+class TestObjectStoreSelectionWithExtendedMetadataIntegration(
+    TestObjectStoreSelectionWithPreferredObjectStoresIntegration
+):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["metadata_strategy"] = "extended"
+        config["retry_metadata_internally"] = False
+
+    def test_objectstore_selection_dynamic_output_tools(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._set_user_preferred_object_store_id("static")
+            response = self.dataset_populator.run_tool(
+                "collection_creates_dynamic_list_of_pairs",
+                {"foo": "bar"},
+                history_id,
+            )
+            self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+            output_collections = response["output_collections"]
+            assert len(output_collections) == 1
+            hdca = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=output_collections[0]["id"]
+            )
+            # Check all leaf datasets in the collection use the preferred store
+            for outer_element in hdca["elements"]:
+                for inner_element in outer_element["object"]["elements"]:
+                    dataset = inner_element["object"]
+                    storage_dict = self._storage_info(dataset)
+                    assert_storage_name_is(storage_dict, "Static Storage")
+            self._reset_user_preferred_object_store_id()

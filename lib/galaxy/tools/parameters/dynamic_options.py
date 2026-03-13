@@ -234,7 +234,9 @@ class DataMetaFilter(Filter):
         for r in ref:
             if not r.metadata.element_is_set(self.key):
                 continue
-            _add_meta(meta_value, r.metadata.get(self.key))
+            meta_val = r.metadata.get(self.key)
+            if meta_val is not None:
+                _add_meta(meta_value, meta_val)
 
         # if no meta data value could be determined just return a copy
         # of the original options

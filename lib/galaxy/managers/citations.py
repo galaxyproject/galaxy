@@ -8,6 +8,10 @@ from typing import (
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
+from galaxy.schema.citations import (
+    BibtexCitationResponse,
+    CitationErrorResponse,
+)
 from galaxy.structured_app import BasicSharedApp
 from galaxy.tool_util_models.tool_source import Citation
 from galaxy.util import (
@@ -31,11 +35,21 @@ class CitationsManager:
 
     def citations_for_tool_ids(self, tool_ids):
         citation_collection = CitationCollection()
+        errors: list[CitationErrorResponse] = []
         for tool_id in tool_ids:
             tool = self._get_tool(tool_id)
+            if not tool:
+                log.warning("Tool '%s' not found, citations may be missing.", tool_id)
+                errors.append(
+                    CitationErrorResponse(
+                        error=f"Tool '{tool_id}' not found. Citations for this tool may be missing.",
+                        tool_id=tool_id,
+                    )
+                )
+                continue
             for citation in self.citations_for_tool(tool):
                 citation_collection.add(citation)
-        return citation_collection.citations
+        return citation_collection.citations, errors
 
     def parse_citation(self, citation_model: Citation) -> OptionalCitationT:
         return parse_citation(citation_model, self)
@@ -115,10 +129,7 @@ class CitationCollection:
 class BaseCitation:
     def to_dict(self, citation_format):
         if citation_format == "bibtex":
-            return dict(
-                format="bibtex",
-                content=self.to_bibtex(),
-            )
+            return BibtexCitationResponse(content=self.to_bibtex())
         else:
             raise Exception(f"Unknown citation format {citation_format}")
 

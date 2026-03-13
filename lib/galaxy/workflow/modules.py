@@ -183,6 +183,12 @@ def to_cwl(
                         reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
                     )
                 )
+            if value.dataset.purged:
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureDatasetFailed(
+                        reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
+                    )
+                )
         if value.ext == "expression.json":
             with open(value.get_file_name()) as f:
                 # OUR safe_loads won't work, will not load numbers, etc...

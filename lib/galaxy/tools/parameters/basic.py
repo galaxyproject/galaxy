@@ -1500,17 +1500,13 @@ class ColumnListParameter(SelectToolParameter):
                     else:
                         dataset = converted_dataset
             # Columns can only be identified if the dataset is ready and metadata is available
-            if (
-                not hasattr(dataset, "metadata")
-                or not hasattr(dataset.metadata, "columns")
-                or not dataset.metadata.columns
-            ):
+            if not hasattr(dataset, "metadata") or not dataset.metadata.get_if_set("columns"):
                 return []
             # Build up possible columns for this dataset
             this_column_list = []
             if self.numerical:
                 # If numerical was requested, filter columns based on metadata
-                for i, col in enumerate(dataset.metadata.column_types):
+                for i, col in enumerate(dataset.metadata.get_if_set("column_types", [])):
                     if col == "int" or col == "float":
                         this_column_list.append(str(i + 1))
             else:
@@ -1537,16 +1533,10 @@ class ColumnListParameter(SelectToolParameter):
         # otherwise read first row - assume is a header with tab separated names
         if self.usecolnames:
             dataset = other_values.get(self.data_ref, None)
-            if (
-                hasattr(dataset, "metadata")
-                and hasattr(dataset.metadata, "column_names")
-                and dataset.metadata.element_is_set("column_names")
-            ):
+            column_names = getattr(dataset, "metadata", None) and dataset.metadata.get_if_set("column_names")
+            if column_names:
                 try:
-                    options = [
-                        ParameterOption(f"c{c}: {dataset.metadata.column_names[int(c) - 1]}", c, False)
-                        for c in column_list
-                    ]
+                    options = [ParameterOption(f"c{c}: {column_names[int(c) - 1]}", c, False) for c in column_list]
                 except IndexError:
                     # ignore and rely on fallback
                     pass
@@ -2024,10 +2014,10 @@ class BaseDataToolParameter(ToolParameter):
 
         if self.min is not None:
             if self.min > dataset_count:
-                raise ValueError(f"At least {self.min} datasets are required for {self.name}")
+                raise ParameterValueError(f"at least {self.min} datasets are required", self.name)
         if self.max is not None:
             if self.max < dataset_count:
-                raise ValueError(f"At most {self.max} datasets are required for {self.name}")
+                raise ParameterValueError(f"at most {self.max} datasets are required", self.name)
 
 
 ItemFromSrcAny = Union[

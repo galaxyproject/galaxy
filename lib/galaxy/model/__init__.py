@@ -2210,6 +2210,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         job_attrs["update_time"] = self.update_time.isoformat()
         job_attrs["job_messages"] = self.job_messages
         job_attrs["tool_state"] = self.tool_state
+        job_attrs["object_store_id"] = self.object_store_id
+        if self.object_store_id_overrides:
+            job_attrs["object_store_id_overrides"] = self.object_store_id_overrides
 
         # Get the job's parameters
         param_dict = self.raw_param_dict()
