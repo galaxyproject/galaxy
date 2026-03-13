@@ -12,10 +12,7 @@ from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import UNKNOWN
 from galaxy.util.compression_utils import decompress_bytes_to_directory
 from galaxy.util.hash_util import md5_hash_file
-from galaxy.util.unittest_utils import (
-    skip_if_github_down,
-    skip_if_site_down,
-)
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
@@ -409,12 +406,18 @@ class TestToolsUpload(ApiTestCase):
         assert dataset["state"] == "error"
         assert dataset["name"] == "html_file.txt"
 
-    def test_abort_fetch_job(self, history_id):
+    def test_abort_fetch_job(self, history_id, mock_http_server):
         # This should probably be an integration test that also verifies
         # that the celery chord is properly canceled.
+        url = mock_http_server.get_url(
+            remote_url="https://httpstat.us/200?sleep=10000",
+            status=200,
+            body="OK",
+            sleep_ms=10000,
+        )
         item = {
             "src": "url",
-            "url": "https://httpstat.us/200?sleep=10000",
+            "url": url,
             "ext": "txt",
         }
         destination = {"type": "hdas"}
@@ -973,9 +976,13 @@ class TestToolsUpload(ApiTestCase):
         with pytest.raises(AssertionError):
             self._upload("https://foo.invalid", assert_ok=False)
 
-    @skip_if_site_down("https://usegalaxy.org")
-    def test_upload_from_404_url(self):
-        history_id, new_dataset = self._upload("https://usegalaxy.org/bla123", assert_ok=False)
+    def test_upload_from_404_url(self, mock_http_server):
+        url = mock_http_server.get_url(
+            remote_url="https://usegalaxy.org/bla123",
+            status=404,
+            body="Not Found",
+        )
+        history_id, new_dataset = self._upload(url, assert_ok=False)
         dataset_details = self.dataset_populator.get_history_dataset_details(
             history_id, dataset_id=new_dataset["id"], assert_ok=False
         )
@@ -983,14 +990,24 @@ class TestToolsUpload(ApiTestCase):
             dataset_details["state"] == "error"
         ), f"expected dataset state to be 'error', but got '{dataset_details['state']}'"
 
-    @skip_if_site_down("https://usegalaxy.org")
-    def test_upload_from_valid_url(self):
-        history_id, new_dataset = self._upload("https://usegalaxy.org/api/version")
+    def test_upload_from_valid_url(self, mock_http_server):
+        url = mock_http_server.get_url(
+            remote_url="https://usegalaxy.org/api/version",
+            status=200,
+            body='{"version_major": "mock"}',
+            content_type="application/json",
+        )
+        history_id, new_dataset = self._upload(url)
         self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
 
-    @skip_if_site_down("https://usegalaxy.org")
-    def test_upload_from_valid_url_spaces(self):
-        history_id, new_dataset = self._upload("  https://usegalaxy.org/api/version  ")
+    def test_upload_from_valid_url_spaces(self, mock_http_server):
+        url = mock_http_server.get_url(
+            remote_url="https://usegalaxy.org/api/version",
+            status=200,
+            body='{"version_major": "mock"}',
+            content_type="application/json",
+        )
+        history_id, new_dataset = self._upload(f"  {url}  ")
         self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
 
     def test_upload_and_validate_invalid(self):
