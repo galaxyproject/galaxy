@@ -15,7 +15,7 @@
   # for accessing passwords stored in a vault:
   # password: ${user.user_vault.read_secret('preferences/owncloud/password')}
 
-  # By default, the plugin will use temp files to avoid loading entire files into memory. 
+  # By default, the plugin will use temp files to avoid loading entire files into memory.
   # You can change the directory here or omit to use the default temp directory.
   temp_path: /your/temp/path
   # Set writable to true if you have write access to this source
@@ -84,8 +84,8 @@
   enable_resume: true  # Enable resume for interrupted transfers
   # SSH private key for authentication (download ENA key from: https://www.ebi.ac.uk/ena/browser/about/ascp)
   # Embed the key content directly in the configuration (required - not file paths)
-  # Note: SSH key content is required because Galaxy jobs often run on clusters that don't 
-  # mount Galaxy's root or configuration directories. The configuration block is copied 
+  # Note: SSH key content is required because Galaxy jobs often run on clusters that don't
+  # mount Galaxy's root or configuration directories. The configuration block is copied
   # to the job's directory, but referenced key paths wouldn't be accessible.
   ssh_key_content: |
     -----BEGIN RSA PRIVATE KEY-----
@@ -93,6 +93,12 @@
     -----END RSA PRIVATE KEY-----
   # SSH key passphrase. https://embl.service-now.com/kb?id=kb_article_view&sys_kb_id=4cc60cf8c398a610bf313dfc0501314c#mcetoc_1idpn4k0to
   ssh_key_passphrase: sample_passphrase
+  # Fallback to FTP if ascp fails (optional)
+  # When ascp exhausts all retries, the URL is rewritten using fallback_scheme and fallback_host
+  # and downloaded via Galaxy's standard file source machinery (e.g., the FTP plugin).
+  # For ENA: fasp://era-fasp@fasp.sra.ebi.ac.uk/vol1/... → ftp://ftp.sra.ebi.ac.uk/vol1/...
+  fallback_scheme: "ftp"
+  fallback_host: "ftp.sra.ebi.ac.uk"
   # Note: This plugin is download-only (writable: false, browsable: false)
 
 # Example: Custom Aspera endpoint with encryption enabled
