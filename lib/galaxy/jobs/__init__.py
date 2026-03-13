@@ -2231,9 +2231,12 @@ class MinimalJobWrapper(HasResourceParameters):
                 dataset.full_delete()
                 collected_bytes = 0
 
-        # Calculate dataset hash
+        # Calculate dataset hash - only if the job completed successfully,
+        # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).
         for dataset_assoc in output_dataset_associations:
             dataset = dataset_assoc.dataset.dataset
+            if final_job_state == job.states.ERROR:
+                continue
             if not dataset.purged and dataset.state == Dataset.states.OK and not dataset.hashes:
                 if self.app.config.calculate_dataset_hash == "always" or (
                     self.app.config.calculate_dataset_hash == "upload" and job.tool_id in ("upload1", "__DATA_FETCH__")
