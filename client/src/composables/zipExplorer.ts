@@ -39,12 +39,23 @@ export function useZipExplorer() {
         zipExplorerError.value = undefined;
         isLoading.value = true;
         try {
+            console.debug("[openZip] Starting zip open...");
             const basicExplorer = new ZipExplorer(zipSource);
             await basicExplorer.open();
+            console.debug("[openZip] Basic explorer opened");
             const explorer = selectZipExplorerByContent(basicExplorer);
+            console.debug("[openZip] Explorer type selected, now calling extractMetadata...", {
+                explorerType: explorer.constructor.name,
+                hasExtractMetadata: typeof explorer.extractMetadata === 'function',
+            });
             await explorer.extractMetadata();
+            console.debug("[openZip] extractMetadata completed successfully");
             zipExplorer.value = explorer;
+            console.debug("[openZip] zipExplorer.value set", {
+                type: zipExplorer.value.constructor.name,
+            });
         } catch (e) {
+            console.error("[openZip] Error during zip opening:", e);
             zipExplorerError.value = errorMessageAsString(e);
         } finally {
             isLoading.value = false;
@@ -253,6 +264,11 @@ export function useZipExplorer() {
 }
 
 export function getImportableFiles(explorer: IZipExplorer): ImportableFile[] {
+    console.debug("[getImportableFiles] Starting with explorer:", {
+        type: explorer.constructor.name,
+        isROCrateZipExplorer: explorer.constructor.name === "ROCrateZipExplorer",
+    });
+
     const files: ImportableFile[] = [];
     for (const entry of explorer.entries.values()) {
         if (!isFileEntry(entry)) {
@@ -264,12 +280,25 @@ export function getImportableFiles(explorer: IZipExplorer): ImportableFile[] {
         }
 
         const baseFile = explorer.getFileEntryMetadata(entry);
-        files.push({
+        console.debug(`[getImportableFiles] Raw metadata from getFileEntryMetadata for ${entry.path}:`, baseFile);
+        const file = {
             ...baseFile,
             type: isGalaxyWorkflow(entry) ? "workflow" : "file",
+        };
+        console.debug(`[getImportableFiles] File metadata for ${entry.path}:`, {
+            name: file.name,
+            alternateName: file.alternateName,
+            description: file.description,
+            ...file, // Include all properties
         });
+        files.push(file);
     }
     files.sort(orderByPath);
+    console.debug("[getImportableFiles] Total files with metadata:", files.map(f => ({
+        path: f.path,
+        name: f.name,
+        alternateName: f.alternateName,
+    })));
     return files;
 }
 
@@ -494,12 +523,23 @@ function hasGalaxyHistoryExportMetadata(zipExplorer: IZipExplorer): boolean {
 }
 
 function selectZipExplorerByContent(zipExplorer: IZipExplorer): IZipExplorer {
-    if (hasRoCrateMetadata(zipExplorer)) {
+    const hasRoCrate = hasRoCrateMetadata(zipExplorer);
+    const hasGalaxy = hasGalaxyExportMetadata(zipExplorer);
+    console.debug("[selectZipExplorerByContent]", {
+        hasRoCrate,
+        hasGalaxy,
+    });
+    
+    if (hasRoCrate) {
+        console.debug("[selectZipExplorerByContent] Creating ROCrateZipExplorer");
         return new ROCrateZipExplorer(zipExplorer);
     }
 
-    if (hasGalaxyExportMetadata(zipExplorer)) {
+    if (hasGalaxy) {
+        console.debug("[selectZipExplorerByContent] Creating GalaxyZipExplorer");
         return new GalaxyZipExplorer(zipExplorer);
     }
+    
+    console.debug("[selectZipExplorerByContent] Using basic ZipExplorer");
     return zipExplorer;
 }
