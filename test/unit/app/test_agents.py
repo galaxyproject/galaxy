@@ -33,12 +33,15 @@ from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
 
 from galaxy.agents import (
-    agent_registry,
     CustomToolAgent,
     ErrorAnalysisAgent,
     GalaxyAgentDependencies,
     QueryRouterAgent,
 )
+from galaxy.agents.registry import build_default_registry
+from galaxy.managers.agents import AgentService
+
+agent_registry = build_default_registry()
 from galaxy.agents.error_analysis import ErrorAnalysisResult
 from galaxy.agents.orchestrator import (
     AgentPlan,
@@ -71,6 +74,7 @@ class TestAgentUnitMocked:
             trans=self.mock_trans,
             user=self.mock_user,
             config=self.mock_config,
+            get_agent=agent_registry.get_agent,
             job_manager=None,
         )
 
@@ -159,6 +163,61 @@ class TestAgentUnitMocked:
         assert response.metadata.get("requires") == "structured_output"
         assert "structured output" in response.content.lower()
         assert response.confidence.value == "low"
+
+    def test_build_default_registry(self):
+        """Test that build_default_registry creates a fully populated registry."""
+        registry = build_default_registry()
+        assert registry.is_registered("router")
+        assert registry.is_registered("error_analysis")
+        assert registry.is_registered("custom_tool")
+        assert registry.is_registered("orchestrator")
+        assert registry.is_registered("tool_recommendation")
+        assert len(registry.list_agents()) == 5
+
+    def test_disabled_agent_not_registered(self):
+        """Disabled agent should not be in registry."""
+        config = mock.Mock()
+        config.inference_services = {
+            "custom_tool": {"enabled": False},
+            "error_analysis": {"enabled": True},
+        }
+        registry = build_default_registry(config)
+        assert not registry.is_registered("custom_tool")
+        assert registry.is_registered("error_analysis")
+        # Router always registered even if disabled in config
+        assert registry.is_registered("router")
+
+    def test_router_always_registered(self):
+        """Router should always be registered even if config says disabled."""
+        config = mock.Mock()
+        config.inference_services = {"router": {"enabled": False}}
+        registry = build_default_registry(config)
+        assert registry.is_registered("router")
+
+    def test_build_registry_no_config_registers_all(self):
+        """Without config, all agents registered (backwards compat)."""
+        registry = build_default_registry()
+        assert len(registry.list_agents()) == 5
+
+    @pytest.mark.asyncio
+    async def test_disabled_agent_execution_raises(self):
+        """Executing a disabled agent should raise ConfigurationError."""
+        from galaxy.exceptions import ConfigurationError
+
+        config = mock.Mock()
+        config.inference_services = {"custom_tool": {"enabled": False}}
+        registry = build_default_registry(config)
+        service = AgentService(config, mock.Mock(), registry)
+        with pytest.raises(ConfigurationError, match="disabled"):
+            await service.execute_agent("custom_tool", "test", self.mock_trans, self.mock_user)
+
+    def test_disabled_agent_registry_get_agent_raises(self):
+        """Registry.get_agent for a disabled agent gives a clear 'disabled' error."""
+        config = mock.Mock()
+        config.inference_services = {"custom_tool": {"enabled": False}}
+        registry = build_default_registry(config)
+        with pytest.raises(ValueError, match="disabled"):
+            registry.get_agent("custom_tool", self.deps)
 
     def test_agent_registry(self):
         """Test that all required agents are registered."""
@@ -277,21 +336,20 @@ class TestAgentUnitMocked:
                 reasoning="Single error analysis needed",
             )
 
-            # Mock the actual agent call to avoid running it
-            with patch("galaxy.agents.agent_registry.get_agent") as mock_get_agent:
-                mock_error_agent = AsyncMock()
-                mock_error_agent.process.return_value = MagicMock(
-                    content="The job failed due to memory limits.",
-                    agent_type="error_analysis",
-                )
-                mock_get_agent.return_value = mock_error_agent
+            # Mock the deps.get_agent callback to avoid running real agents
+            mock_error_agent = AsyncMock()
+            mock_error_agent.process.return_value = MagicMock(
+                content="The job failed due to memory limits.",
+                agent_type="error_analysis",
+            )
+            self.deps.get_agent = MagicMock(return_value=mock_error_agent)
 
-                response = await agent.process("Why did my job fail?")
+            response = await agent.process("Why did my job fail?")
 
-                # Should not orchestrate, just return single agent response
-                assert response.agent_type == "orchestrator"
-                assert response.metadata.get("agents_used") == ["error_analysis"]
-                assert "memory limits" in response.content
+            # Should not orchestrate, just return single agent response
+            assert response.agent_type == "orchestrator"
+            assert response.metadata.get("agents_used") == ["error_analysis"]
+            assert "memory limits" in response.content
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_sequential_execution(self):
@@ -306,10 +364,7 @@ class TestAgentUnitMocked:
         )
 
         # Mock each agent call in the sequential workflow
-        with (
-            patch.object(agent, "_get_agent_plan") as mock_get_plan,
-            patch("galaxy.agents.agent_registry.get_agent") as mock_get_agent,
-        ):
+        with patch.object(agent, "_get_agent_plan") as mock_get_plan:
             mock_get_plan.return_value = complex_plan
 
             # Mock individual agent responses
@@ -332,7 +387,7 @@ class TestAgentUnitMocked:
                 else:
                     raise ValueError(f"Unexpected agent type: {agent_type}")
 
-            mock_get_agent.side_effect = get_agent_side_effect
+            self.deps.get_agent = MagicMock(side_effect=get_agent_side_effect)
 
             response = await agent.process("My tool failed with memory error, help me create a fixed version")
 
@@ -358,10 +413,7 @@ class TestAgentUnitMocked:
             reasoning="Independent tasks can run in parallel",
         )
 
-        with (
-            patch.object(agent, "_get_agent_plan") as mock_get_plan,
-            patch("galaxy.agents.agent_registry.get_agent") as mock_get_agent,
-        ):
+        with patch.object(agent, "_get_agent_plan") as mock_get_plan:
             mock_get_plan.return_value = parallel_plan
 
             # Mock agent responses
@@ -383,7 +435,7 @@ class TestAgentUnitMocked:
                 else:
                     raise ValueError(f"Unexpected agent type: {agent_type}")
 
-            mock_get_agent.side_effect = get_agent_side_effect
+            self.deps.get_agent = MagicMock(side_effect=get_agent_side_effect)
 
             response = await agent.process("Help with my error and create a custom tool")
 
@@ -438,6 +490,7 @@ class TestAgentUnitLiveLLM:
             trans=self.mock_trans,
             user=self.mock_user,
             config=self.mock_config,
+            get_agent=agent_registry.get_agent,
             job_manager=None,
         )
 
@@ -534,6 +587,7 @@ class TestAgentConsistencyLiveLLM:
             trans=mock_trans,
             user=mock_user,
             config=mock_config,
+            get_agent=agent_registry.get_agent,
             job_manager=None,
         )
 

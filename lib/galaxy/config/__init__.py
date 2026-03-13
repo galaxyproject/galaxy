@@ -1141,7 +1141,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # load in the chat_prompts if AI is configured (old key & base URL, or inference_services)
         if self.ai_api_key or self.ai_api_base_url or getattr(self, "inference_services", None):
             self._load_chat_prompts()
-            self._load_agent_config()
 
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
@@ -1330,50 +1329,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 log.error(f"An error occurred while reading chat prompts file: {e}")
         else:
             log.warning(f"Chat prompts file not found at {chat_prompts_path}")
-
-    def _load_agent_config(self):
-        """Load agent configuration with defaults."""
-        # Set default agent configuration if not present
-        if not hasattr(self, "agents"):
-            self.agents: dict = {}
-
-        # Default agent configurations
-        default_agents = {
-            "router": {
-                "enabled": True,
-                "model": "openai:gpt-4",
-                "temperature": 0.3,
-                "max_tokens": 1000,
-            },
-            "error_analysis": {
-                "enabled": True,
-                "model": "openai:gpt-4",
-                "temperature": 0.2,
-                "max_tokens": 2000,
-            },
-            "dataset_analyzer": {
-                "enabled": False,  # Beta feature
-                "model": "openai:gpt-4",
-                "temperature": 0.3,
-                "max_tokens": 1500,
-            },
-            "custom_tool": {
-                "enabled": True,
-                "model": "openai:gpt-4",
-                "temperature": 0.4,
-                "max_tokens": 2000,
-            },
-        }
-
-        # Merge with any existing config
-        for agent_type, default_config in default_agents.items():
-            if agent_type not in self.agents:
-                self.agents[agent_type] = default_config
-            else:
-                # Fill in missing keys with defaults
-                for key, value in default_config.items():
-                    if key not in self.agents[agent_type]:
-                        self.agents[agent_type][key] = value
 
     def _process_celery_config(self):
         if self.celery_conf and self.celery_conf.get("result_backend") is None:

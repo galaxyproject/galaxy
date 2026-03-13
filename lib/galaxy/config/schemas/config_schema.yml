@@ -4086,10 +4086,11 @@ mapping:
         required: false
         desc: |
           Configuration for AI inference services used by agents and visualization plugins.
-          Supports per-agent or per-plugin model, temperature, and token settings.
+          Supports per-agent or per-plugin model, temperature, max_tokens, api_key, api_base_url, and enabled settings.
           Valid keys include agent types (e.g. router, error_analysis) and plugin names (e.g. jupyterlite).
           Agents and plugins inherit from 'default' configuration, which itself falls back to global ai_model/ai_api_key settings.
-          Example: inference_services: { default: { model: gpt-4o-mini }, jupyterlite: { model: gpt-4o } }
+          All agents are enabled by default.
+          Example: inference_services: { default: { model: gpt-4o-mini, temperature: 0.7 }, custom_tool: { enabled: false }, jupyterlite: { model: gpt-4o } }
 
       enable_tool_recommendations:
         type: bool

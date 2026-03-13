@@ -22,6 +22,7 @@ class AgentRegistry:
         """Initialize empty registry."""
         self._agents: dict[str, type[BaseGalaxyAgent]] = {}
         self._agent_metadata: dict[str, dict] = {}
+        self._disabled: set[str] = set()
 
     def register(
         self,
@@ -67,6 +68,8 @@ class AgentRegistry:
         Raises:
             ValueError: If agent type is not registered
         """
+        if agent_type in self._disabled:
+            raise ValueError(f"Agent '{agent_type}' is disabled in configuration")
         if agent_type not in self._agents:
             available = list(self._agents.keys())
             raise ValueError(f"Unknown agent type: {agent_type}. Available: {available}")
@@ -121,20 +124,47 @@ class AgentRegistry:
         return [self.get_agent_info(agent_type) for agent_type in self._agents.keys()]
 
 
-# Global registry instance
-_global_registry = AgentRegistry()
+def build_default_registry(config=None) -> AgentRegistry:
+    """Create an AgentRegistry with all default Galaxy agents.
 
+    Args:
+        config: Optional app config. When provided, agents with
+            ``enabled: false`` in ``inference_services`` are skipped.
+            The router agent is always registered regardless of config.
+    """
+    from .base import AgentType
+    from .custom_tool import CustomToolAgent
+    from .error_analysis import ErrorAnalysisAgent
+    from .orchestrator import WorkflowOrchestratorAgent
+    from .router import QueryRouterAgent
+    from .tools import ToolRecommendationAgent
 
-def get_global_registry() -> AgentRegistry:
-    """Get the global agent registry instance."""
-    return _global_registry
+    inference_config: dict = {}
+    if config is not None:
+        inference_config = getattr(config, "inference_services", {}) or {}
 
+    def _is_enabled(agent_type: str) -> bool:
+        agent_cfg = inference_config.get(agent_type, {})
+        if isinstance(agent_cfg, dict):
+            return agent_cfg.get("enabled", True)
+        return True
 
-def register_agent(agent_type: str, agent_class: type[BaseGalaxyAgent], metadata: Optional[dict] = None):
-    """Register an agent in the global registry."""
-    _global_registry.register(agent_type, agent_class, metadata)
+    def _register_or_disable(registry: AgentRegistry, agent_type: str, agent_class: type[BaseGalaxyAgent]):
+        if _is_enabled(agent_type):
+            registry.register(agent_type, agent_class)
+        else:
+            registry._disabled.add(agent_type)
+            log.info(f"Agent '{agent_type}' disabled by configuration, skipping registration")
 
+    registry = AgentRegistry()
 
-def get_agent(agent_type: str, deps: GalaxyAgentDependencies) -> BaseGalaxyAgent:
-    """Create an agent from the global registry."""
-    return _global_registry.get_agent(agent_type, deps)
+    # Router is always registered
+    if not _is_enabled(AgentType.ROUTER):
+        log.warning("Router agent cannot be disabled — ignoring enabled: false")
+    registry.register(AgentType.ROUTER, QueryRouterAgent)
+
+    _register_or_disable(registry, AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent)
+    _register_or_disable(registry, AgentType.CUSTOM_TOOL, CustomToolAgent)
+    _register_or_disable(registry, AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
+    _register_or_disable(registry, AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)
+    return registry
