@@ -2,3 +2,17 @@ include *.rst *.txt LICENSE */py.typed
 include galaxy/util/docutils_template.txt
 include galaxy/util/rules_dsl_spec.yml
 include galaxy/exceptions/error_codes.json
+include test-data/1.bam
+include test-data/1.tiff
+include test-data/4.bed.bz2
+include test-data/4.bed.gz
+include test-data/4.bed.zip
+include test-data/454Score.png
+include test-data/testdir.tar
+include test-data/testdir1.tar.gz
+include test-data/safetar_with_symlink.tar
+include test-data/safe_relative_symlink.tar
+include test-data/unsafe.tar
+include test-data/unsafe.zip
+include test-data/unsafe_relative_symlink.tar
+recursive-include tests *.py
