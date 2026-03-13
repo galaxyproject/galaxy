@@ -13,119 +13,79 @@ class TestWindowManagerPersistence(SeleniumTestCase):
 
     def setUp(self):
         super().setUp()
-        # Clear persisted scratchbook state so tests don't leak into each other.
-        # Must happen before managed_history's home() call triggers restore().
         self.execute_script("localStorage.removeItem('galaxy-scratchbook-windows');")
 
     @selenium_test
     @managed_history
-    def test_windows_persist_across_reload(self):
-        """Open a dataset in a scratchbook window, reload, and verify it's restored."""
+    def test_scratchbook_window_persistence(self):
+        """Progressive test: open, reload, multi-window, close, verify persistence at each step."""
         self.perform_upload(self.get_filename("1.fasta"))
-        self.history_panel_wait_for_hid_ok(1)
+        self.perform_upload(self.get_filename("1.bed"))
+        self.history_panel_wait_for_hid_ok(2)
 
         self.window_manager_enable()
-        item = self.history_panel_item_component(hid=1)
-        item.display_button.wait_for_and_click()
+
+        # Open dataset 1 in a window
+        item1 = self.history_panel_item_component(hid=1)
+        item1.display_button.wait_for_and_click()
         self.components.window_manager._.wait_for_visible()
         assert self.window_manager_window_count() == 1
-        self.screenshot("persistence_before_reload")
 
+        # Reload and verify 1 window restored with correct title
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.home()
-
         self.components.window_manager._.wait_for_visible()
 
         @retry_assertion_during_transitions
-        def assert_window_restored():
+        def assert_one_window():
             assert self.window_manager_window_count() == 1
 
-        assert_window_restored()
-
+        assert_one_window()
         titles = self.window_manager_get_titles()
         assert len(titles) == 1
         assert "1:" in titles[0]
-        self.screenshot("persistence_after_reload")
+        self.screenshot("persistence_single_restored")
 
-    @selenium_test
-    @managed_history
-    def test_multiple_windows_persist(self):
-        """Multiple scratchbook windows should all restore after reload."""
-        self.perform_upload(self.get_filename("1.fasta"))
-        self.perform_upload(self.get_filename("1.bed"))
-        self.history_panel_wait_for_hid_ok(2)
-
-        self.window_manager_enable()
-        for hid in [1, 2]:
-            item = self.history_panel_item_component(hid=hid)
-            self.clear_tooltips()
-            item.display_button.wait_for_and_click()
-
+        # Open dataset 2 so we have 2 windows
+        item2 = self.history_panel_item_component(hid=2)
+        self.clear_tooltips()
+        item2.display_button.wait_for_and_click()
         self.window_manager_wait_for_window_count(2)
-        self.screenshot("persistence_multi_before_reload")
 
+        # Reload and verify both windows restored
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.home()
-
         self.window_manager_wait_for_window_count(2)
-
         titles = self.window_manager_get_titles()
         assert len(titles) == 2
-        self.screenshot("persistence_multi_after_reload")
+        self.screenshot("persistence_multi_restored")
 
-    @selenium_test
-    @managed_history
-    def test_closed_windows_not_restored(self):
-        """Windows that were closed before reload should not come back."""
-        self.perform_upload(self.get_filename("1.fasta"))
-        self.history_panel_wait_for_hid_ok(1)
-
-        self.window_manager_enable()
-        item = self.history_panel_item_component(hid=1)
-        item.display_button.wait_for_and_click()
-        self.components.window_manager._.wait_for_visible()
-        assert self.window_manager_window_count() == 1
-
-        self.window_manager_close_window(0)
-        self.window_manager_wait_for_window_count(0)
-
-        self.home()
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-        assert self.window_manager_window_count() == 0
-        self.screenshot("persistence_closed_not_restored")
-
-    @selenium_test
-    @managed_history
-    def test_close_one_of_many_persists_rest(self):
-        """Close one of two windows, reload, verify only the survivor restores."""
-        self.perform_upload(self.get_filename("1.fasta"))
-        self.perform_upload(self.get_filename("1.bed"))
-        self.history_panel_wait_for_hid_ok(2)
-
-        self.window_manager_enable()
-        for hid in [1, 2]:
-            item = self.history_panel_item_component(hid=hid)
-            self.clear_tooltips()
-            item.display_button.wait_for_and_click()
-
-        self.window_manager_wait_for_window_count(2)
-
+        # Close 1 of 2 windows, note the survivor
         self.window_manager_close_window(0)
         self.window_manager_wait_for_window_count(1)
-
         surviving_title = self.window_manager_get_titles()[0]
-        # Wait for the debounced save (200ms) to flush to localStorage
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.screenshot("persistence_partial_close_before_reload")
 
+        # Reload and verify only the survivor restored
         self.home()
 
         @retry_assertion_during_transitions
-        def assert_one_restored():
+        def assert_survivor_restored():
             assert self.window_manager_window_count() == 1
 
-        assert_one_restored()
-
+        assert_survivor_restored()
         titles = self.window_manager_get_titles()
         assert len(titles) == 1
         assert titles[0] == surviving_title
-        self.screenshot("persistence_partial_close_after_reload")
+        self.screenshot("persistence_partial_close_restored")
+
+        # Close remaining window
+        self.window_manager_close_window(0)
+        self.window_manager_wait_for_window_count(0)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        # Reload and verify no windows restored
+        self.home()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        assert self.window_manager_window_count() == 0
+        self.screenshot("persistence_all_closed")
