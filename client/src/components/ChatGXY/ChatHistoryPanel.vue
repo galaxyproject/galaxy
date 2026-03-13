@@ -6,8 +6,8 @@ import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
-import { useChatStore } from "@/stores/chatStore";
 import { useSidebarSelection } from "@/composables/useSidebarSelection";
+import { useChatStore } from "@/stores/chatStore";
 
 import { getAgentIcon } from "./agentTypes";
 import type { ChatHistoryItem } from "./chatTypes";
@@ -56,16 +56,26 @@ function handleItemClick(item: ChatHistoryItem, index: number, event: MouseEvent
     if (handleSelectionClick(item, index, event)) {
         return;
     }
-    router.push(`/chatgxy/${item.id}`);
+    if (chatStore.isCenterMode) {
+        router.push(`/chatgxy/${item.id}`);
+    } else {
+        chatStore.setActiveChatId(item.id);
+        chatStore.showChat();
+    }
 }
 
 function startNewChat() {
-    router.push("/chatgxy");
+    if (chatStore.isCenterMode) {
+        router.push("/chatgxy");
+    } else {
+        chatStore.setActiveChatId(null);
+        chatStore.showChat();
+    }
 }
 
 function openDockedChat() {
     const latestId = chatHistory.value.length > 0 ? chatHistory.value[0]!.id : null;
-    chatStore.openDockedPanel(latestId);
+    chatStore.showChat(latestId);
 }
 
 async function deleteSelected() {

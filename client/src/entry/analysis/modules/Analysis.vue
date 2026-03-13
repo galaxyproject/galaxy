@@ -6,7 +6,6 @@ import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import { usePanels } from "@/composables/usePanels";
-import { useActivityStore } from "@/stores/activityStore";
 import { useChatStore } from "@/stores/chatStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -19,11 +18,8 @@ import HistoryIndex from "@/components/History/Index.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 
-const activityStore = useActivityStore("default");
-const { chatPanelOpen } = storeToRefs(activityStore);
-
 const chatStore = useChatStore();
-const { isDockedPanelOpen, dockedChatId } = storeToRefs(chatStore);
+const { isRightPanelOpen, isBottomPanelOpen, activeChatId } = storeToRefs(chatStore);
 const { historyPanelWidth, chatPanelWidth } = storeToRefs(useUserStore());
 
 const route = useRoute();
@@ -33,8 +29,7 @@ watch(
     () => route.path,
     (newPath) => {
         if (newPath.startsWith("/chatgxy")) {
-            chatPanelOpen.value = false;
-            chatStore.closeDockedPanel();
+            chatStore.hideChat();
         }
     },
 );
@@ -60,8 +55,9 @@ function onLoad() {
 }
 
 function handleUndock() {
-    const chatId = dockedChatId.value;
-    chatStore.closeDockedPanel();
+    const chatId = activeChatId.value;
+    chatStore.setLocation("center");
+    chatStore.hideChat();
     router.push(chatId ? `/chatgxy/${chatId}` : "/chatgxy");
 }
 
@@ -87,7 +83,7 @@ onUnmounted(() => {
                     <router-view :key="$route.fullPath" class="h-100" />
                 </div>
             </div>
-            <ChatPanel v-if="chatPanelOpen" />
+            <ChatPanel v-if="isBottomPanelOpen" />
         </div>
         <FlexPanel v-if="showPanels" ref="historyPanel" side="right" :reactive-width.sync="historyPanelWidth">
             <template v-slot:closed-button="{ open }">
@@ -101,14 +97,14 @@ onUnmounted(() => {
             <HistoryIndex @show="onShow" />
         </FlexPanel>
         <FlexPanel
-            v-if="showPanels && isDockedPanelOpen"
+            v-if="showPanels && isRightPanelOpen"
             panel-id="chat-panel"
             side="right"
             :reactive-width.sync="chatPanelWidth">
             <ChatGXY
-                :exchange-id="dockedChatId || undefined"
+                :exchange-id="activeChatId || undefined"
                 docked
-                @close="chatStore.closeDockedPanel()"
+                @close="chatStore.hideChat()"
                 @undock="handleUndock" />
         </FlexPanel>
         <DragAndDropModal />

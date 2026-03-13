@@ -22,7 +22,6 @@ import { getGalaxyInstance } from "@/app";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
 import { useActiveContext } from "@/composables/useActiveContext";
-import { useActivityStore } from "@/stores/activityStore";
 import { useChatStore } from "@/stores/chatStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -55,7 +54,6 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
-const activityStore = useActivityStore("default");
 const chatStore = useChatStore();
 
 const { activeContext, contextLabel } = useActiveContext();
@@ -385,22 +383,22 @@ function popOutToScratchbook() {
 }
 
 function dockToSide() {
-    chatStore.openDockedPanel(currentChatId.value);
+    chatStore.setActiveChatId(currentChatId.value);
+    chatStore.setLocation("right");
+    chatStore.showChat();
     router.push("/");
 }
 
 function dockToBottomPanel() {
-    if (currentChatId.value) {
-        activityStore.currentChatExchangeId = currentChatId.value;
-    }
-    activityStore.chatPanelOpen = true;
+    chatStore.setActiveChatId(currentChatId.value);
+    chatStore.setLocation("bottom");
+    chatStore.showChat();
     router.push("/");
 }
 
-// Keep chatStore in sync when new conversations are created in docked mode
 watch(currentChatId, (newId) => {
-    if (props.docked && newId) {
-        chatStore.setDockedChatId(newId);
+    if ((props.docked || props.panel) && newId) {
+        chatStore.setActiveChatId(newId);
     }
 });
 </script>
