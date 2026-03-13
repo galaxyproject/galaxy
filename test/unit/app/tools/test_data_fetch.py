@@ -10,7 +10,6 @@ from typing import Optional
 import pytest
 
 from galaxy.tools.data_fetch import main
-from galaxy.util.unittest_utils import skip_if_github_down
 
 B64_FOR_1_2_3 = b64encode(b"1 2 3").decode("utf-8")
 URI_FOR_1_2_3 = f"base64://{B64_FOR_1_2_3}"
@@ -63,9 +62,12 @@ def test_simple_path_get(hash_value: str, error_message: Optional[str]):
             assert "error_message" not in hda_result
 
 
-@skip_if_github_down
-def test_simple_uri_get():
-    with _execute_context() as execute_context:
+def test_simple_uri_get(mock_http_server):
+    url = mock_http_server.get_url(
+        remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+        file_path="test-data/1.bed",
+    )
+    with _execute_context(allow_localhost=True) as execute_context:
         request = {
             "targets": [
                 {
@@ -75,7 +77,7 @@ def test_simple_uri_get():
                     "elements": [
                         {
                             "src": "url",
-                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                            "url": url,
                         }
                     ],
                 }
@@ -212,9 +214,13 @@ def test_incorrect_sha1():
         )
 
 
-@skip_if_github_down
-def test_deferred_uri_get():
-    with _execute_context() as execute_context:
+def test_deferred_uri_get(mock_http_server):
+    url = mock_http_server.get_url(
+        remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+        status=404,
+        body="Not Found",
+    )
+    with _execute_context(allow_localhost=True) as execute_context:
         request = {
             "targets": [
                 {
@@ -224,7 +230,7 @@ def test_deferred_uri_get():
                     "elements": [
                         {
                             "src": "url",
-                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+                            "url": url,
                             "deferred": True,
                         }
                     ],
@@ -262,9 +268,13 @@ def test_simple_list_path_get():
         assert destination["object_id"] == 76
 
 
-@skip_if_github_down
-def test_hdas_single_url_error():
-    with _execute_context() as execute_context:
+def test_hdas_single_url_error(mock_http_server):
+    url_12_bed = mock_http_server.get_url(
+        remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+        status=404,
+        body="Not Found",
+    )
+    with _execute_context(allow_localhost=True) as execute_context:
         job_directory = execute_context.job_directory
         example_path = os.path.join(job_directory, "example_file")
         with open(example_path, "w") as f:
@@ -279,7 +289,7 @@ def test_hdas_single_url_error():
                         {"src": "path", "path": example_path},
                         {
                             "src": "url",
-                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+                            "url": url_12_bed,
                         },
                     ],
                 }
@@ -293,14 +303,16 @@ def test_hdas_single_url_error():
         assert "error_message" not in elements[0]
         assert "error_message" in elements[1]
         error = elements[1]["error_message"]
-        assert (
-            "Failed to fetch url https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed" in error
-        )
+        assert f"Failed to fetch url {url_12_bed}" in error
 
 
-@skip_if_github_down
-def test_hdca_collection_element_failed():
-    with _execute_context() as execute_context:
+def test_hdca_collection_element_failed(mock_http_server):
+    url_12_bed = mock_http_server.get_url(
+        remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+        status=404,
+        body="Not Found",
+    )
+    with _execute_context(allow_localhost=True) as execute_context:
         job_directory = execute_context.job_directory
         example_path = os.path.join(job_directory, "example_file")
         with open(example_path, "w") as f:
@@ -315,7 +327,7 @@ def test_hdca_collection_element_failed():
                         {"src": "path", "path": example_path},
                         {
                             "src": "url",
-                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+                            "url": url_12_bed,
                         },
                     ],
                 }
@@ -325,14 +337,16 @@ def test_hdca_collection_element_failed():
         output = _unnamed_output(execute_context)
         assert "error_message" in output
         error = output["error_message"]
-        assert (
-            "Failed to fetch url https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed" in error
-        )
+        assert f"Failed to fetch url {url_12_bed}" in error
 
 
-@skip_if_github_down
-def test_hdca_allow_failed_collections():
-    with _execute_context() as execute_context:
+def test_hdca_allow_failed_collections(mock_http_server):
+    url_12_bed = mock_http_server.get_url(
+        remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+        status=404,
+        body="Not Found",
+    )
+    with _execute_context(allow_localhost=True) as execute_context:
         job_directory = execute_context.job_directory
         example_path = os.path.join(job_directory, "example_file")
         with open(example_path, "w") as f:
@@ -348,7 +362,7 @@ def test_hdca_allow_failed_collections():
                         {"src": "path", "path": example_path},
                         {
                             "src": "url",
-                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+                            "url": url_12_bed,
                         },
                     ],
                 }
@@ -363,9 +377,7 @@ def test_hdca_allow_failed_collections():
         assert "error_message" not in elements[0]
         assert "error_message" in elements[1]
         error = elements[1]["error_message"]
-        assert (
-            "Failed to fetch url https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed" in error
-        )
+        assert f"Failed to fetch url {url_12_bed}" in error
 
 
 def test_hdca_failed_expansion():
@@ -397,9 +409,32 @@ def test_hdca_failed_expansion():
 
 
 @contextmanager
-def _execute_context():
+def _execute_context(allow_localhost=False):
     job_directory = mkdtemp()
     try:
+        if allow_localhost:
+            file_sources_path = os.path.join(job_directory, "file_sources.json")
+            with open(file_sources_path, "w") as f:
+                json.dump(
+                    {
+                        "file_sources": [
+                            {"type": "http", "id": "stock_http"},
+                            {"type": "base64", "id": "stock_base64"},
+                        ],
+                        "config": {
+                            "symlink_allowlist": [],
+                            "fetch_url_allowlist": ["127.0.0.0/24"],
+                            "library_import_dir": None,
+                            "user_library_import_dir": None,
+                            "ftp_upload_dir": None,
+                            "ftp_upload_purge": True,
+                            "tmp_dir": None,
+                            "webdav_use_temp_files": None,
+                            "listings_expiry_time": None,
+                        },
+                    },
+                    f,
+                )
         # temporarily set tempdir to non-existing location
         # to make sure all intermediate files are created in the working
         # directory

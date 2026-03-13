@@ -12,7 +12,6 @@ from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import UNKNOWN
 from galaxy.util.compression_utils import decompress_bytes_to_directory
 from galaxy.util.hash_util import md5_hash_file
-from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
@@ -338,18 +337,23 @@ class TestToolsUpload(ApiTestCase):
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         assert not content.startswith(">hg17")
 
-    @skip_if_github_down
-    def test_upload_multiple_mixed_success(self, history_id):
+    def test_upload_multiple_mixed_success(self, history_id, mock_http_server):
+        url_ok = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+            file_path="test-data/1.bed",
+        )
+        url_error = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+            status=404,
+            body="Not Found",
+        )
         destination = {"type": "hdas"}
         targets = [
             {
                 "destination": destination,
                 "items": [
-                    {"src": "url", "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"},
-                    {
-                        "src": "url",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
-                    },
+                    {"src": "url", "url": url_ok},
+                    {"src": "url", "url": url_error},
                 ],
             }
         ]
@@ -368,18 +372,24 @@ class TestToolsUpload(ApiTestCase):
         assert output0["state"] == "ok"
         assert output1["state"] == "error"
 
-    @skip_if_github_down
-    def test_fetch_bam_file_from_url_with_extension_set(self, history_id):
+    def test_fetch_bam_file_from_url_with_extension_set(self, history_id, mock_http_server):
+        url = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            file_path="test-data/1.bam",
+        )
         item = {
             "src": "url",
-            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            "url": url,
             "ext": "bam",
         }
         output = self.dataset_populator.fetch_hda(history_id, item)
         self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=True)
 
-    @skip_if_github_down
-    def test_fetch_html_from_url(self, history_id):
+    def test_fetch_html_from_url(self, history_id, mock_http_server):
+        url = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/html_file.txt",
+            file_path="test-data/html_file.txt",
+        )
         destination = {"type": "hdas"}
         targets = [
             {
@@ -387,7 +397,7 @@ class TestToolsUpload(ApiTestCase):
                 "items": [
                     {
                         "src": "url",
-                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/html_file.txt",
+                        "url": url,
                     },
                 ],
             }

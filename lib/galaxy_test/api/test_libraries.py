@@ -4,7 +4,6 @@ from galaxy.model.unittest_utils.store_fixtures import (
     one_ld_library_model_store_dict,
     TEST_LIBRARY_NAME,
 )
-from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import api_asserts
 from galaxy_test.base.decorators import requires_new_library
 from galaxy_test.base.populators import (
@@ -317,16 +316,19 @@ class TestLibrariesApi(ApiTestCase):
         self._assert_status_code_is(create_response, 400)
         assert create_response.json()["err_msg"] == "Requested extension 'xxx' unknown, cannot upload dataset."
 
-    @skip_if_github_down
     @requires_new_library
-    def test_fetch_failed_validation(self):
+    def test_fetch_failed_validation(self, mock_http_server):
         # Exception handling is really rough here - we should be creating a dataset in error instead
         # of just failing the job like this.
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
+        url = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+            file_path="test-data/4.bed",
+        )
         items = [
             {
                 "src": "url",
-                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                "url": url,
                 "MD5": "37b59762b59fff860460522d271bc112",
                 "name": "4.bed",
             }
@@ -352,16 +354,19 @@ class TestLibrariesApi(ApiTestCase):
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["state"] == "error", dataset
 
-    @skip_if_github_down
     @requires_new_library
-    def test_fetch_url_archive_to_folder(self):
+    def test_fetch_url_archive_to_folder(self, mock_http_server):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
+        url = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed.zip",
+            file_path="test-data/4.bed.zip",
+        )
         targets = [
             {
                 "destination": destination,
                 "items_from": "archive",
                 "src": "url",
-                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed.zip",
+                "url": url,
             }
         ]
         payload = {
