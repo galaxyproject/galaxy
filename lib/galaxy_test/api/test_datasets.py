@@ -789,10 +789,12 @@ class TestDatasetsApi(ApiTestCase):
         hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=hda)
         self.assert_hash_value(hda_details, "940cbe15c94d7e339dc15550f6bdcf4d", "MD5")
 
-    def test_compute_sha1_on_composite_dataset(self, history_id):
+    def test_compute_sha256_on_composite_dataset_by_default(self, history_id):
         output = self.dataset_populator.fetch_hda(history_id, COMPOSITE_DATA_FETCH_REQUEST_1, wait=True)
-        self.dataset_populator.compute_hash(output["id"], hash_function="SHA-256", extra_files_path="Roadmaps")
         hda_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output)
+        self.assert_hash_value(
+            hda_details, "94e09ae129f1ec32d1736af833160e8bdaa3a75cef2982712076c7bcd7d155d3", "SHA-256"
+        )
         self.assert_hash_value(
             hda_details,
             "3cbd311889963528954fe03b28b68a09685ea7a75660bd2268d5b44cafbe0d22",
