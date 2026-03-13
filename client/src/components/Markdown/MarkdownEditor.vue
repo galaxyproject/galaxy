@@ -34,13 +34,13 @@
                 <CellEditor v-else :markdown-text="markdownText" :labels="labels" @update="$emit('update', $event)" />
             </div>
         </div>
-        <b-modal v-model="showHelpModal" hide-footer>
-            <template v-slot:modal-title>
-                <h2 v-if="mode === 'page'" class="mb-0">Markdown Help for Pages</h2>
-                <h2 v-else class="mb-0">Markdown Help for Invocation Reports</h2>
-            </template>
+        <GModal
+            :show.sync="showHelpModal"
+            size="medium"
+            fixed-height
+            :title="mode === 'page' ? 'Markdown Help for Pages' : 'Markdown Help for Invocation Reports'">
             <MarkdownHelp :mode="mode" />
-        </b-modal>
+        </GModal>
     </div>
 </template>
 
@@ -51,6 +51,7 @@ import { computed, ref } from "vue";
 
 import type { WorkflowLabel } from "./Editor/types";
 
+import GModal from "../BaseComponents/GModal.vue";
 import CellEditor from "./Editor/CellEditor.vue";
 import TextEditor from "./Editor/TextEditor.vue";
 import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
