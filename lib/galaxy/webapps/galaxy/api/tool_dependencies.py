@@ -194,30 +194,37 @@ class ToolDependenciesAPIController(BaseGalaxyAPIController):
         """
         GET /api/dependency_resolvers/toolbox
 
-        Summarize requirements across toolbox (for Tool Management grid). This is an experiemental
-        API particularly tied to the GUI - expect breaking changes until this notice is removed.
+        Summarize requirements and their dependencies across toolbox (for Tool Management grid).
+        This is an experimental API particularly tied to the GUI - expect
+        breaking changes until this notice is removed.
 
         Container resolution via this API is especially experimental and the container resolution
         API should be used to summarize this information instead in most cases.
 
+        Note that for container resolution by default resolvers are skipped that require online access
+        or may build/cache a container, i.e. only resolvers whose name starts with `"cached"`,`"explicit"`,
+          or `"fallback"` are used
+
         :type   index:    int
         :param  index:    index of the dependency resolver
         :type   tool_ids: str
-        :param  tool_ids: tool_id to install dependency for
+        :param  tool_ids: comma separated tool_ids to summarize dependencies for
         :type   resolver_type:  str
-        :param  resolver_type:  restrict to uninstall to specified resolver type
+        :param  resolver_type:  restrict to specified resolver type
         :type   include_containers: bool
         :param  include_containers: include container resolvers in resolution
         :type   container_type: str
-        :param  container_type: restrict to uninstall to specified container type
+        :param  container_type: restrict to specified container type
         :type   index_by: str
         :param  index_by: By default consider only context of requirements, group tools by requirements.
                           Set this to 'tools' to summarize across all tools though. Tools may provide additional
                           context for container resolution for instance.
 
         :rtype:     list
-        :returns:   dictified descriptions of the dependencies, with attribute
-                    ``dependency_type: None`` if no match was found.
+        :returns:   list of dicts with keys "requirements", "status", "tool_ids"
+                    - requirements: list of dictified ToolRequirement(s)
+                    - status: list of dictified descriptions of the dependencies, with attribute ``dependency_type: None`` if no match was found
+                    - tool_ids: list of tool_ids
         """
         kwds["for_json"] = True
         index_by = kwds.get("index_by", "requirements")
@@ -233,7 +240,7 @@ class ToolDependenciesAPIController(BaseGalaxyAPIController):
         POST /api/dependency_resolvers/{index}/toolbox/install
         POST /api/dependency_resolvers/toolbox/install
 
-        Install described requirement against specified dependency resolver(s). This is an experiemental
+        Install described requirement against specified dependency resolver(s). This is an experimental
         API particularly tied to the GUI - expect breaking changes until this notice is removed.
 
         :type   index:          int
@@ -267,7 +274,7 @@ class ToolDependenciesAPIController(BaseGalaxyAPIController):
         POST /api/dependency_resolvers/{index}/toolbox/uninstall
         POST /api/dependency_resolvers/toolbox/uninstall
 
-        Uninstall described requirement against specified dependency resolver(s). This is an experiemental
+        Uninstall described requirement against specified dependency resolver(s). This is an experimental
         API particularly tied to the GUI - expect breaking changes until this notice is removed.
 
         :type   index:          int
