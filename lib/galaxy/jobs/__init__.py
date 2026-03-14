@@ -1702,7 +1702,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 )
                 conditions.append(destination_job_count < destination_user_limit)
 
-        elif anonymous_user_concurrent_jobs and job.galaxy_session and job.galaxy_session.id:
+        elif anonymous_user_concurrent_jobs is not None and job.galaxy_session and job.galaxy_session.id:
             anon_job_count = (
                 select(func.count(Job.id))
                 .where(

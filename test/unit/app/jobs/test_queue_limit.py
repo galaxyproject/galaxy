@@ -91,6 +91,11 @@ def test_anonymous_user_limit():
 
     create_mock_job(app, session_id=1, state="running")
 
+    # Test no jobs
+    app.job_config.limits.anonymous_user_concurrent_jobs = 0
+    result = job_wrapper.queue_with_limit(job, job_destination_mock)
+    assert result is False
+
     # Test below limit
     app.job_config.limits.anonymous_user_concurrent_jobs = 2
     result = job_wrapper.queue_with_limit(job, job_destination_mock)

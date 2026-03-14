@@ -971,7 +971,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                             return JOB_WAIT
         elif job.galaxy_session:
             # Anonymous users only get the hard limit
-            if self.app.job_config.limits.anonymous_user_concurrent_jobs:
+            if self.app.job_config.limits.anonymous_user_concurrent_jobs is not None:
                 count = (
                     self.sa_session.query(model.Job)
                     .enable_eagerloads(False)
