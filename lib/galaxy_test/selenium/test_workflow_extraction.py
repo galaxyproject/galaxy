@@ -1,9 +1,7 @@
 """Selenium tests for workflow extraction UI.
 
-Tests the user-facing workflow extraction UI (Mako-based build_from_current_history page)
-while reusing test setup infrastructure from API tests.
-
-TODO: Add test for disabled/non-workflow tools shown as disabled (toolFormDisabled class).
+Tests the user-facing workflow extraction form at /histories/:historyId/extract_workflow,
+reusing test setup infrastructure from API tests.
 """
 
 from typing import (
@@ -167,9 +165,10 @@ test_data:
         self.sleep_for(self.wait_types.UX_TRANSITION)
 
     def extract_workflow_toggle_job(self, job_id: str):
-        """Toggle a specific job checkbox by job_id."""
-        checkbox = self.components.workflow_extract.job_checkbox(job_id=job_id)
-        checkbox.wait_for_and_click()
+        """Toggle the selection checkbox for a specific job card by job_id."""
+        checkbox = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_id)
+        element = checkbox.wait_for_present()
+        self.execute_script_click(element)
 
     def find_workflow_by_name(self, name: str) -> str:
         """Find workflow ID by name via API. Returns most recently created if multiple match."""
@@ -194,78 +193,84 @@ test_data:
             self.screenshot(screenshot_name)
         self.extract_workflow_set_name(name)
         self.extract_workflow_submit()
-        self.switch_to_default_content()
         return self.get_workflow_by_name(name)
 
     def count_job_checkboxes(self) -> int:
-        """Count the number of job checkboxes visible."""
-        checkboxes = self.find_elements_by_selector('input[name="job_ids"]')
-        return len(checkboxes)
+        """Count the number of tool-step cards in the extraction form."""
+        return len(self.find_elements_by_selector(self.components.workflow_extract.tool_card_checkbox.selector))
 
     def count_checked_job_checkboxes(self) -> int:
-        """Count number of checked job checkboxes."""
-        return len(self.find_elements_by_selector('input[name="job_ids"]:checked'))
+        """Count the number of checked tool-step cards."""
+        return len(self.find_elements_by_selector(self.components.workflow_extract.tool_card_checkbox_checked.selector))
 
     def get_job_checkbox_values(self) -> list:
-        """Get all job checkbox values (job IDs) from the rendered UI."""
-        checkboxes = self.find_elements_by_selector('input[name="job_ids"]')
-        return [cb.get_attribute("value") for cb in checkboxes]
+        """Get job IDs from all tool-step cards."""
+        cards = self.find_elements_by_selector(self.components.workflow_extract.tool_card.selector + "[data-job-id]")
+        return [card.get_attribute("data-job-id") for card in cards]
 
     @selenium_test
     @managed_history
     def test_extract_form_loads(self):
-        """Verify extraction form displays for empty history."""
+        """Verify extraction form displays for empty history with appropriate message."""
         self.navigate_to_workflow_extraction()
 
-        # Form should be visible
-        self.components.workflow_extract.workflow_name_input.wait_for_visible()
-        self.components.workflow_extract.create_button.wait_for_visible()
+        # For an empty history the form shows an info message, not the name/submit controls
+        self.components.workflow_extract.no_workflow_message.wait_for_visible()
 
-        # No jobs should be listed for empty history
+        # No tool-step cards for empty history
         job_count = self.count_job_checkboxes()
-        assert job_count == 0, f"Expected 0 job checkboxes for empty history, found {job_count}"
+        assert job_count == 0, f"Expected 0 job cards for empty history, found {job_count}"
 
         self.screenshot("workflow_extract_empty_history")
-
-        # Switch back to default content
-        self.switch_to_default_content()
 
     @skip_without_tool("random_lines1")
     @selenium_test
     @managed_history
     def test_extract_form_validation(self):
-        """Test form validation: no jobs selected creates workflow with only inputs."""
+        """Test form validation: submit is blocked when no steps are selected."""
         history_id = self.current_history_id()
         self.setup_mapped_collection_history(history_id)
 
         self.navigate_to_workflow_extraction()
 
-        # Verify initial state: 2 jobs (1 per batch run over collection)
-        assert self.count_job_checkboxes() == 2, "Expected exactly 2 job checkboxes"
-        assert self.count_checked_job_checkboxes() == 2, "Expected both jobs checked initially"
+        # Verify initial state: 2 tool-step cards, both checked
+        assert self.count_job_checkboxes() == 2, "Expected exactly 2 tool-step cards"
+        assert self.count_checked_job_checkboxes() == 2, "Expected both tool steps checked initially"
 
-        # Uncheck ALL jobs using IDs from rendered checkboxes
+        # Set a workflow name first
+        self.extract_workflow_set_name("Selenium Validation Test")
+
+        # Uncheck ALL cards (tool steps + input cards) so the workflow would have no steps
         rendered_job_ids = self.get_job_checkbox_values()
+        for job_id in rendered_job_ids:
+            self.extract_workflow_toggle_job(job_id)
+        # Also uncheck any remaining checked cards (e.g. input_collection / input_dataset)
+        for element in self.find_elements_by_selector(
+            self.components.workflow_extract.all_card_checkboxes_checked.selector
+        ):
+            self.execute_script_click(element)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        assert self.count_checked_job_checkboxes() == 0, "Expected 0 tool steps checked after unchecking all"
+
+        self.screenshot("workflow_extract_no_steps_selected")
+
+        # Create button should be disabled when no steps are selected
+        create_button = self.components.workflow_extract.create_button.wait_for_visible()
+        assert (
+            create_button.get_attribute("aria-disabled") == "true"
+        ), "Expected create button to be disabled with no steps selected"
+
+        # Re-check tool steps — submit should now work
         for job_id in rendered_job_ids:
             self.extract_workflow_toggle_job(job_id)
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        assert self.count_checked_job_checkboxes() == 0, "Expected 0 jobs checked after unchecking all"
-
-        self.screenshot("workflow_extract_no_jobs_selected")
-
-        # Submit with no jobs - should still work (creates workflow with only input step)
-        workflow_name = "Selenium Empty Selection"
-        self.extract_workflow_set_name(workflow_name)
+        assert self.count_checked_job_checkboxes() == 2, "Expected tool steps checked again"
         self.extract_workflow_submit()
-        self.switch_to_default_content()
 
-        # Verify workflow was created with only input step (no tool steps)
-        workflow = self.get_workflow_by_name(workflow_name)
-        assert workflow is not None, "Expected workflow to be created even with no jobs selected"
-        self.assert_steps_of_type(workflow, "tool", expected_len=0)
-        # Should have 1 collection input step from the paired collection
-        self.assert_steps_of_type(workflow, "data_collection_input", expected_len=1)
+        workflow = self.get_workflow_by_name("Selenium Validation Test")
+        assert workflow is not None
 
     @skip_without_tool("cat1")
     @selenium_test
@@ -283,19 +288,18 @@ test_data:
         self.screenshot("workflow_extract_with_jobs")
 
         # Verify checkbox starts checked
-        initial_checked = self.find_elements_by_selector('input[name="job_ids"]:checked')
-        assert len(initial_checked) == 1, f"Expected 1 checked job checkbox, found {len(initial_checked)}"
+        assert self.count_checked_job_checkboxes() == 1, "Expected 1 tool-step card checked initially"
 
         # Toggle checkbox off
         self.extract_workflow_toggle_job(cat1_job_id)
         self.sleep_for(self.wait_types.UX_RENDER)
-        cat1_checkbox = self.find_element_by_selector(f'input[name="job_ids"][value="{cat1_job_id}"]')
+        cat1_checkbox = self.find_element_by_selector(f'[data-job-id="{cat1_job_id}"] input[id^="g-card-select-"]')
         assert not cat1_checkbox.is_selected(), "Expected checkbox unchecked after toggle"
 
         # Toggle back on
         self.extract_workflow_toggle_job(cat1_job_id)
         self.sleep_for(self.wait_types.UX_RENDER)
-        cat1_checkbox = self.find_element_by_selector(f'input[name="job_ids"][value="{cat1_job_id}"]')
+        cat1_checkbox = self.find_element_by_selector(f'[data-job-id="{cat1_job_id}"] input[id^="g-card-select-"]')
         assert cat1_checkbox.is_selected(), "Expected checkbox checked after second toggle"
         self.screenshot("workflow_extract_toggle_checkbox")
 
@@ -303,7 +307,6 @@ test_data:
         workflow_name = "Selenium Extracted Cat1"
         self.extract_workflow_set_name(workflow_name)
         self.extract_workflow_submit()
-        self.switch_to_default_content()
 
         workflow = self.get_workflow_by_name(workflow_name)
         self.assert_cat1_workflow_structure(workflow)
@@ -330,8 +333,8 @@ test_data:
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Verify first job unchecked, second job still checked
-        checkbox1 = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id_first}"]')
-        checkbox2 = self.find_element_by_selector(f'input[name="job_ids"][value="{job_id_second}"]')
+        checkbox1 = self.find_element_by_selector(f'[data-job-id="{job_id_first}"] input[id^="g-card-select-"]')
+        checkbox2 = self.find_element_by_selector(f'[data-job-id="{job_id_second}"] input[id^="g-card-select-"]')
         assert not checkbox1.is_selected(), f"Expected job {job_id_first} unchecked"
         assert checkbox2.is_selected(), f"Expected job {job_id_second} still checked"
 
@@ -341,7 +344,6 @@ test_data:
         workflow_name = "Selenium Job Subset"
         self.extract_workflow_set_name(workflow_name)
         self.extract_workflow_submit()
-        self.switch_to_default_content()
 
         # Verify extracted workflow has 2 steps (1 input + 1 tool from second run only)
         workflow = self.get_workflow_by_name(workflow_name)
@@ -370,7 +372,6 @@ test_data:
         workflow_name = "Selenium Copied Inputs"
         self.extract_workflow_set_name(workflow_name)
         self.extract_workflow_submit()
-        self.switch_to_default_content()
 
         workflow = self.get_workflow_by_name(workflow_name)
         self.assert_cat1_workflow_structure(workflow)
@@ -413,7 +414,6 @@ test_data:
         workflow_name = "Selenium Reduce Collection"
         self.extract_workflow_set_name(workflow_name)
         self.extract_workflow_submit()
-        self.switch_to_default_content()
 
         workflow = self.get_workflow_by_name(workflow_name)
         # Should have 3 steps (1 collection input + 2 tools)
@@ -444,7 +444,6 @@ test_data:
         workflow_name = "Selenium Output Collections"
         self.extract_workflow_set_name(workflow_name)
         self.extract_workflow_submit()
-        self.switch_to_default_content()
 
         workflow = self.get_workflow_by_name(workflow_name)
         # Should have 5 steps (2 data inputs + 3 tools)
@@ -470,7 +469,6 @@ test_data:
         workflow_name = "Selenium Nested Collection"
         self.extract_workflow_set_name(workflow_name)
         self.extract_workflow_submit()
-        self.switch_to_default_content()
 
         workflow = self.get_workflow_by_name(workflow_name)
         # Should have 2 steps (1 collection input + 1 tool)

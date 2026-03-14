@@ -22,7 +22,6 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { canMutateHistory, type HistorySummary } from "@/api";
-import { iframeRedirect } from "@/components/plugins/legacyNavigation";
 import { useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -208,11 +207,10 @@ function onDelete() {
             </BDropdownItem>
 
             <BDropdownItem
-                v-if="historyStore.currentHistoryId === history.id"
                 :disabled="isAnonymous"
                 data-description="extract workflow"
                 :title="userTitle('Convert History to Workflow')"
-                @click="iframeRedirect(`/workflow/build_from_current_history?history_id=${history.id}`)">
+                :to="`/histories/${history.id}/extract_workflow`">
                 <FontAwesomeIcon fixed-width :icon="faFileExport" />
                 <span v-localize>Extract Workflow</span>
             </BDropdownItem>

@@ -2,6 +2,7 @@ import json
 from typing import (
     Annotated,
     Any,
+    Literal,
     Optional,
     Union,
 )
@@ -13,9 +14,15 @@ from pydantic import (
     UUID4,
 )
 
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.schema.schema import (
     AnnotationField,
     CreatorOrganization,
+    DatasetState,
+    HistoryContentType,
     InputDataCollectionStep,
     InputDataStep,
     InputParameterStep,
@@ -294,4 +301,139 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         ...,
         title="Source Metadata",
         description="The source metadata of the workflow.",
+    )
+
+
+class WorkflowExtractionOutput(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the history content item.",
+    )
+    hid: int = Field(
+        ...,
+        title="HID",
+        description="The history item ID (position in history).",
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the dataset or collection.",
+    )
+    state: DatasetState = Field(
+        ...,
+        title="State",
+        description="The state of the dataset or collection.",
+    )
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="Whether this item has been deleted.",
+    )
+    history_content_type: HistoryContentType = Field(
+        ...,
+        title="History Content Type",
+        description="Whether this is a dataset or dataset_collection.",
+    )
+
+
+class WorkflowExtractionJob(Model):
+    id: Optional[EncodedDatabaseIdField] = Field(
+        ...,
+        title="ID",
+        description="Encoded job ID, or null for fake input dataset entries.",
+    )
+    step_type: Literal["tool", "input_dataset", "input_collection"] = Field(
+        ...,
+        title="Step Type",
+        description="The role this job plays in the extracted workflow.",
+    )
+    tool_id: Optional[str] = Field(
+        None,
+        title="Tool ID",
+        description="The tool ID that created this job.",
+    )
+    tool_name: Optional[str] = Field(
+        None,
+        title="Tool Name",
+        description="Human-readable name of the tool.",
+    )
+    tool_version: Optional[str] = Field(
+        None,
+        title="Tool Version",
+        description="The tool version used by this job.",
+    )
+    checked: bool = Field(
+        ...,
+        title="Checked",
+        description="Whether this job should be pre-selected for extraction (True if any outputs are not deleted).",
+    )
+    tool_version_warning: Optional[str] = Field(
+        None,
+        title="Tool Version Warning",
+        description="Warning when the current tool version differs from the version used by this job.",
+    )
+    outputs: list[WorkflowExtractionOutput] = Field(
+        default_factory=list,
+        title="Outputs",
+        description="The history items produced by this job.",
+    )
+
+
+class WorkflowExtractionSummary(Model):
+    history_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="History ID",
+        description="The encoded ID of the history being extracted from.",
+    )
+    warnings: list[str] = Field(
+        default_factory=list,
+        title="Warnings",
+        description="Any warnings generated during summarization (e.g. datasets still running).",
+    )
+    jobs: list[WorkflowExtractionJob] = Field(
+        default_factory=list,
+        title="Jobs",
+        description="Ordered list of jobs (and fake input entries) found in the history.",
+    )
+
+
+class WorkflowExtractionPayload(Model):
+    workflow_name: str = Field(
+        ...,
+        title="Workflow Name",
+        description="The name for the extracted workflow.",
+    )
+    job_ids: list[DecodedDatabaseIdField] = Field(
+        default_factory=list,
+        title="Job IDs",
+        description="Encoded IDs of compatible tool jobs to include as workflow steps.",
+    )
+    dataset_hids: list[int] = Field(
+        default_factory=list,
+        title="Dataset HIDs",
+        description="History item IDs (HIDs) of datasets to treat as workflow inputs.",
+    )
+    dataset_collection_hids: list[int] = Field(
+        default_factory=list,
+        title="Dataset Collection HIDs",
+        description="History item IDs (HIDs) of dataset collections to treat as workflow inputs.",
+    )
+    dataset_names: list[str] = Field(
+        default_factory=list,
+        title="Dataset Names",
+        description="Names for the input datasets, parallel to dataset_hids.",
+    )
+    dataset_collection_names: list[str] = Field(
+        default_factory=list,
+        title="Dataset Collection Names",
+        description="Names for the input dataset collections, parallel to dataset_collection_hids.",
+    )
+
+
+class WorkflowExtractionResult(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Workflow ID",
+        description="The encoded ID of the newly created workflow.",
     )

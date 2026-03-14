@@ -1,0 +1,126 @@
+<script setup lang="ts">
+import { faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
+import { faExclamationTriangle, faExternalLinkAlt, faPencilAlt, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { computed } from "vue";
+
+import type { WorkflowExtractionJob } from "@/api/histories";
+import type { CardBadge, TitleIcon } from "@/components/Common/GCard.types";
+
+import { isWorkflowExtractionInput, type WorkflowExtractionInput } from "./types";
+
+import GCard from "@/components/Common/GCard.vue";
+import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
+
+/** Badge for renamable workflow inputs. Only applied to workflow inputs, never tool steps. */
+const INPUT_IS_RENAMABLE_BADGE: CardBadge = {
+    id: "is-renamable-input",
+    label: "Renamable",
+    icon: faPencilAlt,
+    title: "Click the pencil icon next to the step title to rename this workflow input",
+    class: "unselectable",
+};
+
+/** Metadata for each step type, used for displaying the step type badge and title icon */
+const STEP_TYPE_META: Record<
+    "tool" | "input_dataset" | "input_collection",
+    { icon: typeof faWrench | typeof faFile | typeof faFolder; label: string; title: string }
+> = {
+    tool: { icon: faWrench, label: "Workflow Step", title: "This will be a tool step in the workflow" },
+    input_dataset: { icon: faFile, label: "Input Dataset", title: "This will be a dataset workflow input" },
+    input_collection: {
+        icon: faFolder,
+        label: "Input Dataset Collection",
+        title: "This will be a dataset collection workflow input",
+    },
+};
+
+const props = defineProps<{
+    job: WorkflowExtractionInput | WorkflowExtractionJob;
+}>();
+
+const emit = defineEmits<{
+    (e: "rename"): void;
+    (e: "select"): void;
+}>();
+
+const badges = computed<CardBadge[]>(() => {
+    const badges: CardBadge[] = [];
+    const meta = STEP_TYPE_META[props.job.step_type];
+    if (props.job.step_type === "tool") {
+        if (props.job.id) {
+            badges.push({
+                id: "view-job-details",
+                label: "View Job",
+                icon: faExternalLinkAlt,
+                title: "View details for the job that ran this tool",
+                handler: () => {
+                    window.open(`/jobs/${props.job.id}/view`, "_blank");
+                },
+                variant: "info",
+            });
+        }
+        if (props.job.tool_version_warning) {
+            badges.push({
+                id: "tool-version-warning",
+                label: "Different Tool Version",
+                icon: faExclamationTriangle,
+                title: props.job.tool_version_warning,
+                class: "unselectable",
+                variant: "warning",
+            });
+        }
+    } else {
+        badges.push(INPUT_IS_RENAMABLE_BADGE);
+    }
+    badges.push({
+        id: "step-type",
+        label: meta.label,
+        icon: meta.icon,
+        title: meta.title,
+        class: "node-header unselectable",
+    });
+    return badges;
+});
+
+const titleIcon = computed<TitleIcon>(() => {
+    const { icon, label } = STEP_TYPE_META[props.job.step_type];
+    return { icon, title: label };
+});
+</script>
+
+<template>
+    <GCard
+        :badges="badges"
+        :title="isWorkflowExtractionInput(props.job) ? props.job.newName : props.job.tool_name || 'Unnamed Step'"
+        :title-icon="titleIcon"
+        :can-rename-title="props.job.step_type !== 'tool' && props.job.checked"
+        selectable
+        :selected="props.job.checked"
+        select-title="Include as a step in the workflow"
+        dim-when-unselected
+        @rename="emit('rename')"
+        @select="emit('select')">
+        <template v-if="props.job.outputs?.length" v-slot:description>
+            <div v-for="(output, outputIndex) in props.job.outputs" :key="outputIndex">
+                <GenericHistoryItem
+                    :item-id="output.id"
+                    :item-src="output.history_content_type === 'dataset' ? 'hda' : 'hdca'" />
+            </div>
+        </template>
+    </GCard>
+</template>
+
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
+.g-card {
+    :deep(.node-header) {
+        background: $brand-primary;
+        color: $white;
+        font-weight: normal;
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem 0.25rem 0 0;
+    }
+}
+</style>
