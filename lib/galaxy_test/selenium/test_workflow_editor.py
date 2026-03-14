@@ -124,7 +124,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.workflow_index_open_with_name(name)
         assert "MIT" in self.workflow_editor_license_text()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_parameter_regex_validation(self):
         editor = self.components.workflow_editor
@@ -154,7 +153,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         element = workflow_run.run_error.wait_for_present()
         assert "input must start with moocow" in element.text
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_int_parameter_minimum_validation(self):
         editor = self.components.workflow_editor
@@ -181,7 +179,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         # in parameter validators
         assert "Value ('3') must fulfill (4 <= value <= +infinity)" in element.text, element.text
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_float_parameter_maximum_validation(self):
         editor = self.components.workflow_editor
@@ -323,7 +320,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert control["type"] == "element_identifier"
         assert control["optional"] is True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_data_column_input_editing(self):
         self.open_in_workflow_editor("""
@@ -348,7 +344,10 @@ steps:
         self.set_text_element(columns, "4\n5\n6")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
-        self.driver.refresh()
+        if self.backend_type == "playwright":
+            cast("HasPlaywrightDriver", self._driver_impl).page.reload()
+        else:
+            self.driver.refresh()
         node.title.wait_for_and_click()
         textarea_columns = columns.wait_for_visible()
         assert textarea_columns.get_attribute("value") == "4\n5\n6"
@@ -642,7 +641,6 @@ steps:
 
         self.components.workflow_editor.save_as_activity.wait_for_and_click()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_tool_upgrade(self):
         workflow_populator = self.workflow_populator
@@ -676,7 +674,6 @@ steps:
         workflow = self.workflow_populator.download_workflow(workflow_id)
         assert workflow["steps"]["0"]["tool_version"] == "0.1+galaxy6"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_tool_upgrade_all_tools(self):
         editor = self.components.workflow_editor
@@ -851,7 +848,6 @@ steps:
         node = editor.node._(label="create_2")
         node.wait_for_and_click()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_duplicate_node(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -894,7 +890,6 @@ steps:
         assert len(source_step["post_job_actions"]) == len(cloned_step["post_job_actions"]) == 4
         assert source_step["post_job_actions"] == cloned_step["post_job_actions"]
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_embed_workflow(self):
         self.setup_subworkflow()
@@ -935,7 +930,6 @@ steps:
         assert subworkflow_step["input_connections"]["input1"]["input_subworkflow_step_id"] == 0
         return child_workflow_name
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_insert_steps(self):
         steps_to_insert = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -952,7 +946,11 @@ steps:
 
     def _download_current_workflow(self):
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
-        workflow_id = self.driver.current_url.split("id=")[1]
+        if self.backend_type == "playwright":
+            current_url = cast("HasPlaywrightDriver", self._driver_impl).page.url
+        else:
+            current_url = self.driver.current_url
+        workflow_id = current_url.split("id=")[1]
         workflow = self.workflow_populator.download_workflow(workflow_id)
         return workflow
 
@@ -1143,7 +1141,6 @@ steps:
         node.input_terminal(name="datasets_1|input").wait_for_present()
         self.assert_workflow_has_changes_and_save()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_workflow_output_handling(self):
         self.open_in_workflow_editor(

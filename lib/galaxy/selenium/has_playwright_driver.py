@@ -791,8 +791,8 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def _move_to_and_click(self, element: ElementHandle) -> None:
         """Internal implementation of move_to_and_click."""
-        element.hover()
-        element.click()
+        element.hover(force=True)
+        element.click(force=True)
 
     def drag_and_drop(self, source: WebElementProtocol, target: WebElementProtocol) -> None:
         """
