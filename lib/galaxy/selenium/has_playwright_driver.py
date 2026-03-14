@@ -315,6 +315,10 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         self.page.goto(url)
 
+    def refresh(self) -> None:
+        """Reload the current page."""
+        self.page.reload()
+
     def re_get_with_query_params(self, params_str: str):
         """Add query parameters to current URL and reload."""
         current_url = self.page.url
@@ -773,7 +777,10 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def _hover(self, element: ElementHandle) -> None:
         """Internal implementation of hover."""
-        element.hover()
+        # force=True bypasses actionability checks that fail when overlapping
+        # UI elements (e.g. delete-terminal-button) intercept pointer events.
+        # Hover is non-destructive so this is safe.
+        element.hover(force=True)
 
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """
@@ -788,8 +795,8 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def _move_to_and_click(self, element: ElementHandle) -> None:
         """Internal implementation of move_to_and_click."""
-        element.hover()
-        element.click()
+        element.hover(force=True)
+        element.click(force=True)
 
     def drag_and_drop(self, source: WebElementProtocol, target: WebElementProtocol) -> None:
         """

@@ -288,6 +288,7 @@
   <tool file="for_workflows/count_multi_file.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
   <tool file="for_workflows/randomlines.xml" />
+  <tool file="for_workflows/catWrapper.xml" />
   <tool file="create_directory_index.xml" />
   <tool file="use_directory_index.xml" />
 

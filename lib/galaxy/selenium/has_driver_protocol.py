@@ -118,6 +118,11 @@ class HasDriverProtocol(Protocol, Generic[WaitTypeT]):
         ...
 
     @abstractmethod
+    def refresh(self) -> None:
+        """Reload the current page."""
+        ...
+
+    @abstractmethod
     def re_get_with_query_params(self, params_str: str):
         """Navigate to current URL with additional query parameters."""
         ...
