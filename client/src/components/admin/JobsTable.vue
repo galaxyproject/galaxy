@@ -36,7 +36,10 @@
             </template>
 
             <template v-slot:cell(user_email)="data">
-                <GLink class="job-filter-link-user" :data-user="data.value" @click="$emit('user-clicked', data.value)">
+                <GLink
+                    class="job-filter-link-user"
+                    :data-user="data.value"
+                    @click.stop.prevent="$emit('user-clicked', data.value)">
                     {{ data.value }}
                 </GLink>
             </template>
@@ -45,7 +48,7 @@
                 <GLink
                     class="job-filter-link-tool-id"
                     :data-tool-id="data.value"
-                    @click="$emit('tool-clicked', data.value)">
+                    @click.stop.prevent="$emit('tool-clicked', data.value)">
                     {{ data.value }}
                 </GLink>
             </template>
@@ -54,7 +57,7 @@
                 <GLink
                     class="job-filter-link-handler"
                     :data-handler="data.handler"
-                    @click="$emit('handler-clicked', data.value)">
+                    @click.stop.prevent="$emit('handler-clicked', data.value)">
                     {{ data.value }}
                 </GLink>
             </template>
@@ -63,7 +66,7 @@
                 <GLink
                     class="job-filter-link-runner"
                     :data-runner="data.value"
-                    @click="$emit('runner-clicked', data.value)">
+                    @click.stop.prevent="$emit('runner-clicked', data.value)">
                     {{ data.value }}
                 </GLink>
             </template>

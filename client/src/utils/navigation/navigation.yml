@@ -561,7 +561,7 @@ history_export:
     copy_export_link: '.copy-export-link'
     show_job_link: '.show-job-link'
     job_table: '.info_data_table'
-    job_table_ok: '.job-information-modal .btn-primary'
+    job_table_ok: '.job-information-modal .g-modal-close-button'
     tab_export_to_file: '.tab-export-to-file'
     directory_input: '.directory-form-input'
     name_input: '.export-to-remote-file #name'
@@ -1040,7 +1040,7 @@ workflow_editor:
     save_button: '#workflow-save-button'
     save_workflow_confirmation_button: '#save-workflow-confirmation .btn-primary'
     state_modal_body: '.state-upgrade-modal'
-    modal_button_continue: '.modal-footer .btn'
+    modal_button_close: '.g-modal-close-button'
     workflow_activity: '#activity-workflow-editor-workflows'
     save_as_activity: "#activity-save-workflow-as"
     column_definitions: '[data-description="edit column definitions"]'

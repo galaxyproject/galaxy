@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { faSave, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BModal } from "bootstrap-vue";
 import { ref } from "vue";
 
 import localize from "@/utils/localization";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 
 interface Props {
     /** Show the save changes modal */
@@ -57,38 +59,37 @@ function saveChanges() {
 </script>
 
 <template>
-    <BModal :title="title" :visible="props.showModal" @close="closeModal" @hide="closeModal">
+    <GModal footer :title="title" size="small" :show="props.showModal" @close="closeModal">
         <div>
             {{ body }}
         </div>
-        <template v-slot:modal-footer>
-            <BButton
-                v-b-tooltip.noninteractive.hover
-                :title="buttonTitles['cancel']"
-                variant="secondary"
-                :disabled="busy"
-                @click="closeModal">
-                <FontAwesomeIcon :icon="faTimes" />
-                {{ localize("Cancel") }}
-            </BButton>
-            <BButton
-                v-b-tooltip.noninteractive.hover
-                :title="buttonTitles['dontSave']"
-                variant="danger"
-                :disabled="busy"
-                @click="dontSave">
-                <FontAwesomeIcon :icon="faTrash" />
-                {{ localize("Don't Save") }}
-            </BButton>
-            <BButton
-                v-b-tooltip.noninteractive.hover
-                :title="buttonTitles['save']"
-                variant="primary"
-                :disabled="busy"
-                @click="saveChanges">
-                <FontAwesomeIcon :icon="faSave" />
-                {{ localize("Save") }}
-            </BButton>
+        <template v-slot:footer>
+            <div class="button-container">
+                <GButton tooltip :title="buttonTitles['cancel']" :disabled="busy" @click="closeModal">
+                    <FontAwesomeIcon :icon="faTimes" />
+                    {{ localize("Cancel") }}
+                </GButton>
+                <GButton tooltip :title="buttonTitles['dontSave']" color="red" :disabled="busy" @click="dontSave">
+                    <FontAwesomeIcon :icon="faTrash" />
+                    {{ localize("Don't Save") }}
+                </GButton>
+                <GButton tooltip :title="buttonTitles['save']" color="blue" :disabled="busy" @click="saveChanges">
+                    <FontAwesomeIcon :icon="faSave" />
+                    {{ localize("Save") }}
+                </GButton>
+            </div>
         </template>
-    </BModal>
+    </GModal>
 </template>
+
+<style scoped lang="scss">
+.button-container {
+    display: flex;
+    width: 100%;
+    gap: 0.5rem;
+}
+
+button {
+    flex: 1;
+}
+</style>
