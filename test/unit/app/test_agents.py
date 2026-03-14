@@ -50,10 +50,7 @@ from galaxy.util.unittest_utils import pytestmark_live_llm
 
 
 class TestAgentUnitMocked:
-    """Unit tests for agent implementations."""
-
     def setup_method(self):
-        """Set up mock dependencies for each test."""
         self.mock_config = mock.Mock()
         self.mock_config.ai_api_key = "test-key"
         self.mock_config.ai_model = "llama-4-scout"
@@ -75,7 +72,6 @@ class TestAgentUnitMocked:
         )
 
     def test_agent_config_fallback_chain(self):
-        """Test per-agent configuration with fallback logic."""
         # Set up mock config with inference_services
         self.mock_config.inference_services = {
             "default": {
@@ -114,7 +110,6 @@ class TestAgentUnitMocked:
 
     @pytest.mark.asyncio
     async def test_custom_tool_agent_structured_output(self):
-        """Test custom tool agent with structured output support."""
         # Test with a model that supports structured output (gpt-4o)
         self.mock_config.ai_model = "gpt-4o"
         agent = CustomToolAgent(self.deps)
@@ -161,7 +156,6 @@ class TestAgentUnitMocked:
         assert response.confidence.value == "low"
 
     def test_agent_registry(self):
-        """Test that all required agents are registered."""
         required_agents = [
             "router",
             "custom_tool",
@@ -217,7 +211,6 @@ class TestAgentUnitMocked:
     @pytest.mark.skip(reason="TestModel API changed in pydantic-ai, needs update for new version")
     @pytest.mark.asyncio
     async def test_router_with_test_model(self):
-        """Test router using pydantic-ai TestModel for deterministic output."""
         # TODO: Update this test for newer pydantic-ai TestModel API
         # The router now uses output functions and returns AgentResponse directly
         # rather than RoutingDecision objects
@@ -265,7 +258,6 @@ class TestAgentUnitMocked:
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_agent_mocked(self):
-        """Test WorkflowOrchestratorAgent with mocked responses."""
         agent = WorkflowOrchestratorAgent(self.deps)
 
         # Test 1: Query that should NOT trigger orchestration (single agent)
@@ -295,7 +287,6 @@ class TestAgentUnitMocked:
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_sequential_execution(self):
-        """Test orchestrator sequential workflow execution."""
         agent = WorkflowOrchestratorAgent(self.deps)
 
         # Mock a complex plan requiring sequential orchestration
@@ -348,7 +339,6 @@ class TestAgentUnitMocked:
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_parallel_execution(self):
-        """Test orchestrator parallel workflow execution."""
         agent = WorkflowOrchestratorAgent(self.deps)
 
         # Mock parallel plan
@@ -395,7 +385,6 @@ class TestAgentUnitMocked:
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_generic_fallback_behavior(self):
-        """Test orchestrator fallback when planning fails."""
         agent = self._orchestrator_agent()
 
         # Mock planning failure
@@ -410,17 +399,13 @@ class TestAgentUnitMocked:
             assert "having trouble" in response.content
 
     def _orchestrator_agent(self):
-        """Helper to create a patched orchestrator agent with mocked dependencies."""
         agent = WorkflowOrchestratorAgent(self.deps)
         return agent
 
 
 @pytestmark_live_llm
 class TestAgentUnitLiveLLM:
-    """Unit tests with real LLM connections."""
-
     def setup_method(self):
-        """Set up real dependencies for live LLM testing."""
         self.mock_config = mock.Mock()
         self.mock_config.ai_api_key = os.environ.get("GALAXY_TEST_AI_API_KEY", "test-key")
         self.mock_config.ai_model = os.environ.get("GALAXY_TEST_AI_MODEL", "llama-4-scout")
@@ -443,7 +428,6 @@ class TestAgentUnitLiveLLM:
 
     @pytest.mark.asyncio
     async def test_router_agent_responses_live(self):
-        """Test router with real LLM - verify it returns appropriate responses."""
         router = QueryRouterAgent(self.deps)
 
         # Test general question - should get a helpful response
@@ -464,7 +448,6 @@ class TestAgentUnitLiveLLM:
 
     @pytest.mark.asyncio
     async def test_custom_tool_agent_with_scout(self):
-        """Test custom tool agent with Scout model."""
         self.mock_config.ai_model = "llama-4-scout"
         agent = CustomToolAgent(self.deps)
 
@@ -477,7 +460,6 @@ class TestAgentUnitLiveLLM:
 
     @pytest.mark.asyncio
     async def test_custom_tool_agent_with_deepseek(self):
-        """Test custom tool agent with DeepSeek model."""
         self.mock_config.ai_model = "deepseek-r1"
         agent = CustomToolAgent(self.deps)
 
@@ -516,7 +498,6 @@ class TestAgentConsistencyLiveLLM:
 
     @pytest.fixture
     def live_deps(self):
-        """Create dependencies for live LLM testing."""
         mock_config = mock.Mock()
         mock_config.ai_api_key = os.environ.get("GALAXY_AI_API_KEY", "test-key")
         mock_config.ai_model = os.environ.get("GALAXY_AI_MODEL", "llama-4-scout")
@@ -539,7 +520,6 @@ class TestAgentConsistencyLiveLLM:
 
     @pytest.mark.asyncio
     async def test_response_consistency_live(self, live_deps):
-        """Test that responses are appropriate for known query types with live LLM."""
         router = QueryRouterAgent(live_deps)
 
         for query, _query_type in self.TEST_QUERIES:
@@ -553,7 +533,6 @@ class TestAgentConsistencyLiveLLM:
     @pytest.mark.asyncio
     @pytest.mark.parametrize("query,query_type", TEST_QUERIES)
     async def test_individual_query_response_live(self, live_deps, query, query_type):
-        """Test each query individually with live LLM."""
         router = QueryRouterAgent(live_deps)
         response = await router.process(query)
 
