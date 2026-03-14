@@ -7338,14 +7338,55 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             if ":" not in self.collection_type:
                 _populated_optimized = self.populated_state == DatasetCollection.populated_states.OK
             else:
-                stmt = self._build_nested_collection_attributes_stmt(
-                    collection_attributes=("populated_state",),
-                )
                 session = required_object_session(self)
-                for row in session.execute(stmt):
-                    if any(state not in (DatasetCollection.populated_states.OK, None) for state in row):
-                        _populated_optimized = False
-                        break
+                is_postgres = session.bind and session.bind.dialect.name == "postgresql"
+                if is_postgres:
+                    # Query intermediate collection IDs directly using the
+                    # ARRAY walk pattern, then check their populated_state.
+                    # Unlike the leaf-DCE ARRAY walk in
+                    # _build_nested_collection_attributes_stmt, this
+                    # correctly handles empty sub-collections (which have
+                    # no leaf DCEs but may still have non-OK state, e.g.
+                    # from skipped conditional workflow steps).
+                    dce_table = DatasetCollectionElement.__table__
+                    dc_table = DatasetCollection.__table__
+                    n_intermediates = self.collection_type.count(":")
+
+                    inner_dce = alias(dce_table)
+                    child_ids_array = func.array(
+                        select(inner_dce.c.child_collection_id)
+                        .where(inner_dce.c.dataset_collection_id == self.id)
+                        .scalar_subquery()
+                    )
+                    level_conditions = [dc_table.c.id == any_(child_ids_array)]
+
+                    for _ in range(n_intermediates - 1):
+                        next_dce = alias(dce_table)
+                        child_ids_array = func.array(
+                            select(next_dce.c.child_collection_id)
+                            .where(next_dce.c.dataset_collection_id == any_(child_ids_array))
+                            .scalar_subquery()
+                        )
+                        level_conditions.append(dc_table.c.id == any_(child_ids_array))
+
+                    stmt = (
+                        select(literal(1))
+                        .select_from(dc_table)
+                        .where(
+                            or_(*level_conditions),
+                            dc_table.c.populated_state != DatasetCollection.populated_states.OK,
+                        )
+                        .limit(1)
+                    )
+                    _populated_optimized = session.execute(stmt).first() is None
+                else:
+                    stmt = self._build_nested_collection_attributes_stmt(
+                        collection_attributes=("populated_state",),
+                    )
+                    for row in session.execute(stmt):
+                        if any(state not in (DatasetCollection.populated_states.OK, None) for state in row):
+                            _populated_optimized = False
+                            break
             self._populated_optimized = _populated_optimized
 
         return self._populated_optimized
