@@ -40,7 +40,7 @@ boto3==1.42.61
 botocore==1.42.61
 bx-python==0.14.0
 cachecontrol==0.14.4
-cachetools==7.0.3
+cachetools==7.0.5
 caio==0.9.25
 celery==5.6.2
 certifi==2026.2.25
@@ -62,7 +62,7 @@ ct3==3.4.0.post5
 cwl-upgrader==1.2.14
 cwl-utils==0.40
 cwltool==3.1.20260108082145
-cyclopts==4.7.0
+cyclopts==4.9.0
 defusedxml==0.7.1
 deprecated==1.3.1
 deprecation==2.1.0
@@ -83,7 +83,7 @@ executing==2.2.1
 fastapi==0.135.1
 fastavro==1.12.1 ; sys_platform != 'emscripten'
 fastmcp==3.1.0
-filelock==3.25.0
+filelock==3.25.2
 fissix==24.4.24
 frozenlist==1.8.0
 fs==2.4.16
@@ -91,14 +91,14 @@ fsspec==2026.2.0
 future==1.0.0
 genai-prices==0.0.55
 google-api-core==2.30.0
-google-auth==2.49.0
+google-auth==2.49.1
 google-cloud-batch==0.20.0
-google-genai==1.66.0
+google-genai==1.67.0
 googleapis-common-protos==1.73.0
 gravity==1.2.0
 greenlet==3.3.2 ; platform_machine == 'AMD64' or platform_machine == 'WIN32' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'ppc64le' or platform_machine == 'win32' or platform_machine == 'x86_64'
 griffelib==2.0.0
-groq==1.0.0
+groq==1.1.1
 grpcio==1.78.0
 grpcio-status==1.78.0
 gunicorn==25.0.3
@@ -106,11 +106,11 @@ gxformat2==0.22.0
 h11==0.16.0
 h5grove==3.0.0
 h5py==3.16.0
-hf-xet==1.3.2 ; platform_machine == 'AMD64' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'arm64' or platform_machine == 'x86_64'
+hf-xet==1.4.2 ; platform_machine == 'AMD64' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'arm64' or platform_machine == 'x86_64'
 httpcore==1.0.9
 httpx==0.28.1
 httpx-sse==0.4.3
-huggingface-hub==1.6.0
+huggingface-hub==1.7.1
 humanfriendly==10.0
 idna==3.11
 ijson==3.5.0
@@ -121,7 +121,7 @@ isa-rwval==0.10.11
 isal==1.8.0
 isodate==0.7.2 ; python_full_version < '3.11'
 jaraco-classes==3.4.0
-jaraco-context==6.1.0
+jaraco-context==6.1.1
 jaraco-functools==4.4.0
 jeepney==0.9.0 ; sys_platform == 'linux'
 jinja2==3.1.6
@@ -136,8 +136,8 @@ kombu==5.6.2
 lagom==2.7.7
 legacy-cgi==2.6.4 ; python_full_version >= '3.13'
 limits==5.8.0
-logfire==4.27.0
-logfire-api==4.27.0
+logfire==4.29.0
+logfire-api==4.29.0
 lxml==6.0.2
 mako==1.3.10
 markdown==3.10.2
@@ -147,7 +147,7 @@ markupsafe==3.0.3
 mcp==1.26.0
 mdurl==0.1.2
 mercurial==7.2
-mistralai==1.12.4
+mistralai==2.0.2
 mistune==3.1.4
 more-itertools==10.8.0
 mrcfile==1.5.4
@@ -161,9 +161,9 @@ nexus-rpc==1.2.0
 nodejs-wheel==22.20.0
 nodejs-wheel-binaries==22.20.0
 numpy==2.2.6 ; python_full_version < '3.11'
-numpy==2.4.2 ; python_full_version >= '3.11'
+numpy==2.4.3 ; python_full_version >= '3.11'
 oauthlib==3.3.1
-openai==2.26.0
+openai==2.28.0
 openapi-pydantic==0.5.1
 openpyxl==3.1.5
 opentelemetry-api==1.39.1
@@ -198,11 +198,11 @@ pyasn1-modules==0.4.2
 pycparser==3.0 ; (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy') or (implementation_name == 'pypy' and platform_python_implementation == 'PyPy')
 pycryptodome==3.23.0
 pydantic==2.12.5
-pydantic-ai==1.67.0
-pydantic-ai-slim==1.67.0
+pydantic-ai==1.68.0
+pydantic-ai-slim==1.68.0
 pydantic-core==2.41.5
-pydantic-evals==1.67.0
-pydantic-graph==1.67.0
+pydantic-evals==1.68.0
+pydantic-graph==1.68.0
 pydantic-settings==2.13.1
 pydantic-tes==0.3.0
 pydicom==3.0.1
@@ -210,7 +210,7 @@ pydot==4.0.1
 pyeventsystem==0.1.0
 pyfaidx==0.9.0.3
 pygments==2.19.2
-pyjwt==2.11.0
+pyjwt==2.12.1
 pykwalify==1.8.0
 pylibmagic==0.5.0
 pynacl==1.6.2
@@ -245,7 +245,6 @@ rich-rst==1.3.2
 rocrate==0.14.2
 routes==2.5.1
 rpds-py==0.30.0
-rsa==4.9.1
 ruamel-yaml==0.18.17
 ruamel-yaml-clib==0.2.15 ; python_full_version < '3.15' and platform_python_implementation == 'CPython'
 s3fs==2026.2.0
@@ -276,7 +275,7 @@ tiktoken==0.12.0
 tinydb==4.8.2
 tokenizers==0.22.2 ; sys_platform != 'emscripten'
 tomli==2.4.0 ; python_full_version < '3.11'
-tornado==6.5.4
+tornado==6.5.5
 tqdm==4.67.3
 tuspy==1.1.0
 tuspyserver==4.2.3
@@ -300,7 +299,7 @@ webob==1.8.9
 websockets==16.0
 whoosh==2.7.4
 wrapt==1.17.3
-xai-sdk==1.8.0
+xai-sdk==1.8.1
 yacman==1.0.0
 yarl==1.23.0
 zipp==3.23.0
