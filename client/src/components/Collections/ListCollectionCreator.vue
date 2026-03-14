@@ -251,8 +251,7 @@ async function attemptCreate() {
     if (!atLeastOneElement.value) {
         confirmed = await confirm("Are you sure you want to create a list with no datasets?", {
             title: "Create an empty list",
-            okTitle: "Create",
-            okVariant: "primary",
+            okText: "Create",
         });
     }
 

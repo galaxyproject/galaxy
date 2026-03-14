@@ -76,7 +76,7 @@ class TestHistoryStorage(SeleniumTestCase):
         # Delete the dataset
         self.components.history_storage.dataset_by_size_delete.wait_for_and_click()
         self.screenshot("history_storage_confirm_delete")
-        self.components.history_storage.confirm_delete.wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
 
         # Verify dataset is removed from storage view
         self.components.history_storage.dataset_by_size(name="big").wait_for_absent()

@@ -69,8 +69,8 @@ async function dryRun() {
             `This workflow is not the latest version. A refactor will be attempted on the specified "Version ${props.version! + 1}". Do you wish to continue?`,
             {
                 title: "Confirm Refactor on Older Version",
-                okTitle: `Yes, refactor "Version ${props.version! + 1}"`,
-                cancelTitle: "No, cancel refactor",
+                okText: `Yes, refactor "Version ${props.version! + 1}"`,
+                cancelText: "No, cancel refactor",
             },
         );
         if (!contDryRun) {
