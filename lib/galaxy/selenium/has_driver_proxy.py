@@ -108,6 +108,10 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Navigate to the specified URL."""
         self._driver_impl.navigate_to(url)
 
+    def refresh(self) -> None:
+        """Reload the current page."""
+        self._driver_impl.refresh()
+
     def re_get_with_query_params(self, params_str: str):
         """Navigate to current URL with additional query parameters."""
         return self._driver_impl.re_get_with_query_params(params_str)

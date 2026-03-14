@@ -315,6 +315,10 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         self.page.goto(url)
 
+    def refresh(self) -> None:
+        """Reload the current page."""
+        self.page.reload()
+
     def re_get_with_query_params(self, params_str: str):
         """Add query parameters to current URL and reload."""
         current_url = self.page.url

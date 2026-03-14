@@ -344,10 +344,7 @@ steps:
         self.set_text_element(columns, "4\n5\n6")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
-        if self.backend_type == "playwright":
-            cast("HasPlaywrightDriver", self._driver_impl).page.reload()
-        else:
-            self.driver.refresh()
+        self.refresh()
         node.title.wait_for_and_click()
         textarea_columns = columns.wait_for_visible()
         assert textarea_columns.get_attribute("value") == "4\n5\n6"
@@ -946,11 +943,7 @@ steps:
 
     def _download_current_workflow(self):
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
-        if self.backend_type == "playwright":
-            current_url = cast("HasPlaywrightDriver", self._driver_impl).page.url
-        else:
-            current_url = self.driver.current_url
-        workflow_id = current_url.split("id=")[1]
+        workflow_id = self.current_url.split("id=")[1]
         workflow = self.workflow_populator.download_workflow(workflow_id)
         return workflow
 
