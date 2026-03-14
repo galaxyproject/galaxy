@@ -7127,6 +7127,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                     select(nav.c.dataset_collection_id)
                     .where(nav.c.child_collection_id == coll_ids[-1])
                     .correlate(leaf_dce)
+                    .limit(1)
                     .scalar_subquery()
                 )
 
@@ -7145,6 +7146,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                             select(getattr(nav.c, attr))
                             .where(nav.c.child_collection_id == coll_ids[steps_up - 1])
                             .correlate(leaf_dce)
+                            .limit(1)
                             .scalar_subquery()
                             .label(f"{attr}_{level}")
                         )
@@ -7164,6 +7166,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                         select(nav.c.element_index)
                         .where(nav.c.child_collection_id == coll_ids[steps_up - 1])
                         .correlate(leaf_dce)
+                        .limit(1)
                         .scalar_subquery()
                     )
         elif ":" not in depth_collection_type:

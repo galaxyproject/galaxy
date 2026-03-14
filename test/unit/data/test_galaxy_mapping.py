@@ -218,6 +218,61 @@ class TestMappings(BaseModelTestCase):
         ]
         assert c4.dataset_elements == [dce1, dce2]
 
+    def test_nested_collection_attributes_duplicate_child_collection_id(self):
+        """Regression test for CardinalityViolation when multiple parent elements
+        reference the same child collection (duplicate child_collection_id).
+
+        On PostgreSQL the ARRAY walk optimisation uses correlated scalar
+        subqueries to navigate from leaf elements back to their ancestors via
+        child_collection_id.  When two parent DatasetCollectionElements share
+        the same child_collection_id those subqueries return more than one row,
+        causing 'more than one row returned by a subquery used as an expression'.
+        """
+        u = model.User(email=random_email(), password="password")
+        h1 = model.History(name="History 1", user=u)
+
+        # Build a paired collection with two datasets.
+        pair = model.DatasetCollection(collection_type="paired")
+        forward = model.HistoryDatasetAssociation(
+            extension="txt", history=h1, create_dataset=True, sa_session=self.model.session
+        )
+        reverse = model.HistoryDatasetAssociation(
+            extension="bam", history=h1, create_dataset=True, sa_session=self.model.session
+        )
+        model.DatasetCollectionElement(collection=pair, element=forward, element_identifier="forward", element_index=0)
+        model.DatasetCollectionElement(collection=pair, element=reverse, element_identifier="reverse", element_index=1)
+
+        # Create a list:paired collection where the *same* paired collection
+        # is referenced by two parent elements (duplicate child_collection_id).
+        list_pair = model.DatasetCollection(collection_type="list:paired")
+        model.DatasetCollectionElement(
+            collection=list_pair, element=pair, element_identifier="sample1", element_index=0
+        )
+        model.DatasetCollectionElement(
+            collection=list_pair, element=pair, element_identifier="sample2", element_index=1
+        )
+
+        self.persist(u, h1, forward, reverse, pair, list_pair, commit=True, expunge=False)
+        self.model.session.flush()
+
+        # All query paths that use _build_nested_collection_attributes_stmt
+        # must tolerate the duplicate without raising CardinalityViolation.
+        stmt = list_pair._build_nested_collection_attributes_stmt(
+            element_attributes=("element_identifier",),
+            hda_attributes=("extension",),
+            dataset_attributes=("state",),
+        )
+        result = self.model.session.execute(stmt).all()
+        # The two leaf datasets should appear (potentially duplicated because
+        # the same child collection is reachable via two parents).
+        extensions_in_result = {r.extension for r in result}
+        assert extensions_in_result == {"txt", "bam"}
+
+        # dataset_states_and_extensions_summary must not raise either.
+        summary = list_pair.dataset_states_and_extensions_summary
+        assert "txt" in summary.extensions
+        assert "bam" in summary.extensions
+
     def test_history_audit(self):
         u = model.User(email=random_email(), password="password")
         h1 = model.History(name="HistoryAuditHistory", user=u)
