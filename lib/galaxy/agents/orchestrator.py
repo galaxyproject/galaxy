@@ -14,7 +14,10 @@ from typing import (
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
-from galaxy.schema.agents import ConfidenceLevel
+from galaxy.schema.agents import (
+    ConfidenceLevel,
+    ResponseMetadata,
+)
 from .base import (
     AgentResponse,
     AgentType,
@@ -33,7 +36,7 @@ def _create_error_response(agent_name: str, error_msg: str, is_timeout: bool = F
         confidence=ConfidenceLevel.LOW,
         agent_type=agent_name,
         suggestions=[],
-        metadata={"error": True, "timeout": is_timeout},
+        metadata=ResponseMetadata(error=error_msg, fallback=is_timeout),
     )
 
 
@@ -276,7 +279,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return """
         You coordinate multiple Galaxy agents. Determine which agents to call and in what order.
 
-        Available agents: error_analysis, custom_tool
+        Available agents: error_analysis, custom_tool, data_analysis
 
         Respond in this format:
         AGENTS: [agent1, agent2]
@@ -284,7 +287,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         REASONING: explanation
 
         Example:
-        AGENTS: [error_analysis, custom_tool]
+        AGENTS: [error_analysis, custom_tool, data_analysis]
         SEQUENTIAL: true
         REASONING: Analyze error first, then suggest creating a tool
         """

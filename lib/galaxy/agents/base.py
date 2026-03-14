@@ -14,7 +14,6 @@ from typing import (
     Any,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from galaxy.managers.context import ProvidesUserContext
@@ -22,7 +21,9 @@ from galaxy.model import User
 from galaxy.schema.agents import (
     ActionSuggestion,
     ActionType,
+    AgentResponse,
     ConfidenceLevel,
+    ResponseMetadata,
 )
 
 if TYPE_CHECKING:
@@ -77,6 +78,7 @@ __all__ = [
     "extract_usage_info",
     "GalaxyAgentDependencies",
     "normalize_llm_text",
+    "ResponseMetadata",
     "SimpleGalaxyAgent",
 ]
 
@@ -187,32 +189,7 @@ class AgentType:
     CUSTOM_TOOL = "custom_tool"
     ORCHESTRATOR = "orchestrator"
     TOOL_RECOMMENDATION = "tool_recommendation"
-
-
-# Internal agent response model (simplified for internal use)
-# For API responses, use galaxy.schema.agents.AgentResponse
-class AgentResponse:
-    """Internal agent response structure."""
-
-    def __init__(
-        self,
-        content: str,
-        confidence: Union[str, ConfidenceLevel],
-        agent_type: str,
-        suggestions: Optional[list[ActionSuggestion]] = None,
-        metadata: Optional[dict[str, Any]] = None,
-        reasoning: Optional[str] = None,
-    ):
-        self.content = content
-        # Normalize confidence to ConfidenceLevel enum
-        if isinstance(confidence, ConfidenceLevel):
-            self.confidence = confidence
-        else:
-            self.confidence = ConfidenceLevel(confidence.lower())
-        self.agent_type = agent_type
-        self.suggestions = suggestions or []
-        self.metadata = metadata or {}
-        self.reasoning = reasoning
+    DATA_ANALYSIS = "data_analysis"
 
 
 @dataclass
@@ -238,7 +215,7 @@ class BaseGalaxyAgent(ABC):
 
     # Subclasses must define their agent type explicitly
     agent_type: str
-    agent: Agent[GalaxyAgentDependencies, Any]
+    agent: Optional[Agent[GalaxyAgentDependencies, Any]]
 
     def __init__(self, deps: GalaxyAgentDependencies):
         """Initialize the agent with dependencies."""
@@ -247,7 +224,13 @@ class BaseGalaxyAgent(ABC):
         if not hasattr(self, "agent_type") or not self.agent_type:
             raise NotImplementedError(f"{self.__class__.__name__} must define 'agent_type' class attribute")
 
-        self.agent = self._create_agent()
+        # Some agents (e.g. DSPy-based agents) don't use pydantic-ai at runtime.
+        # They implement their own `process()` and only inherit from BaseGalaxyAgent
+        # for consistency and shared config/deps wiring.
+        if getattr(self, "USE_PYDANTIC_AGENT", True):
+            self.agent = self._create_agent()
+        else:
+            self.agent = None
 
     @abstractmethod
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
@@ -313,7 +296,7 @@ class BaseGalaxyAgent(ABC):
                 confidence=ConfidenceLevel.LOW,
                 agent_type=self.agent_type,
                 suggestions=[],
-                metadata={"validation_error": True},
+                metadata=ResponseMetadata(error=validation_error),
             )
 
         try:
@@ -470,16 +453,15 @@ class BaseGalaxyAgent(ABC):
         agent_data: Optional[dict[str, Any]] = None,
         fallback: bool = False,
         error: Optional[str] = None,
-    ) -> dict[str, Any]:
+    ) -> ResponseMetadata:
         """
-        Build metadata dict for agent responses.
+        Build typed ResponseMetadata for agent responses.
 
-        All agents should include model name, method, and token usage in their
-        responses. This helper keeps that consistent.
-
-        agent_data gets added both flat (backwards compat) and under 'agent_data' key.
+        All agents include model name, method, and token usage. Known keys from
+        agent_data (e.g. tool_yaml) are mapped to their typed fields; the rest
+        are silently dropped since they are internal debug information.
         """
-        metadata: dict[str, Any] = {
+        kwargs: dict[str, Any] = {
             "model": self._get_model_name(),
             "method": method,
         }
@@ -488,25 +470,21 @@ class BaseGalaxyAgent(ABC):
         if result:
             usage = extract_usage_info(result)
             if usage:
-                metadata.update(usage)  # input_tokens, output_tokens, total_tokens
+                kwargs["input_tokens"] = usage.get("input_tokens")
+                kwargs["output_tokens"] = usage.get("output_tokens")
+                kwargs["total_tokens"] = usage.get("total_tokens")
 
-        # Query context
-        if query is not None:
-            metadata["query_length"] = len(query)
-
-        # Fallback/error info
         if fallback:
-            metadata["fallback"] = True
+            kwargs["fallback"] = True
         if error:
-            metadata["error"] = error
+            kwargs["error"] = error
 
-        # Agent-specific data: add at top level for backwards compatibility
-        # and also namespace under 'agent_data' for structured access
+        # Map known agent_data keys to typed ResponseMetadata fields
         if agent_data:
-            metadata.update(agent_data)  # Flat for backwards compatibility
-            metadata["agent_data"] = agent_data  # Namespaced for future use
+            if "tool_yaml" in agent_data:
+                kwargs["tool_yaml"] = agent_data["tool_yaml"]
 
-        return metadata
+        return ResponseMetadata(**kwargs)
 
     def _build_response(
         self,

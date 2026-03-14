@@ -304,12 +304,37 @@ class ConditionalDependencies:
         return asbool(self.config["enable_tool_recommendations"])
 
     def check_openai(self):
-        return self.config.get("openai_api_key", None) is not None
+        # The OpenAI Python SDK is needed when Galaxy is configured to use OpenAI
+        # via pydantic-ai (ai_api_key) or legacy OpenAI config.
+        return self.config.get("openai_api_key", None) is not None or self.check_pydantic_ai()
 
     def check_pydantic_ai(self):
         return (
             self.config.get("ai_api_key", None) is not None or self.config.get("inference_services", None) is not None
         )
+
+    def check_dspy_ai(self):
+        # Install DSPy support when any AI backend is configured.
+        return self.check_pydantic_ai()
+
+    def check_itsdangerous(self):
+        # Used to sign dataset download tokens for browser (Pyodide) execution.
+        return self.check_dspy_ai()
+
+    def check_backoff(self):
+        return self.check_dspy_ai()
+
+    def check_joblib(self):
+        return self.check_dspy_ai()
+
+    def check_datasets(self):
+        return self.check_dspy_ai()
+
+    def check_ujson(self):
+        return self.check_dspy_ai()
+
+    def check_magicattr(self):
+        return self.check_dspy_ai()
 
     def check_weasyprint(self):
         # See notes in ./conditional-requirements.txt for more information.

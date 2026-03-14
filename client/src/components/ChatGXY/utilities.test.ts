@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { generateId, scrollToBottom } from "./chatUtils";
+import { generateId, scrollToBottom } from "./utilities";
 
-describe("chatUtils", () => {
+describe("ChatGXY utilities", () => {
     describe("generateId", () => {
         it("generates unique ids", () => {
             const ids = new Set(Array.from({ length: 100 }, () => generateId()));

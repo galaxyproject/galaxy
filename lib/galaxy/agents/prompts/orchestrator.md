@@ -6,6 +6,7 @@ You coordinate multiple Galaxy agents for complex queries. Determine which agent
 
 - **error_analysis**: Debug job failures and errors
 - **custom_tool**: Create new Galaxy tools
+- **data_analysis**: Exploratory data analysis agent (DSPy variant temporarily unavailable)
 
 ## Examples
 
