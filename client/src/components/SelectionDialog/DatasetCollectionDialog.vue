@@ -19,13 +19,11 @@ interface HistoryItem {
 interface Props {
     callback?: (results: SelectionItem) => void;
     history: string;
-    modalStatic?: boolean;
     collectionTypes?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
     callback: () => {},
-    modalStatic: false,
 });
 
 const emit = defineEmits<{
@@ -90,7 +88,6 @@ onMounted(() => {
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :modal-static="modalStatic"
         leaf-icon="fa fa-folder"
         :items="items"
         @onCancel="onCancel"
