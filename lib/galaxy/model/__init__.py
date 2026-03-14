@@ -59,6 +59,7 @@ from social_core.storage import (
 from sqlalchemy import (
     alias,
     and_,
+    any_,
     asc,
     BigInteger,
     bindparam,
@@ -7062,49 +7063,116 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         dc = alias(DatasetCollection.__table__)
         dce = alias(DatasetCollectionElement.__table__)
         depth_collection_type = dataset_collection.collection_type
-        order_by_columns = [dce.c.element_index]
         nesting_level = 0
 
         def attribute_columns(column_collection, attributes, nesting_level=None):
             label_fragment = f"_{nesting_level}" if nesting_level is not None else ""
             return [getattr(column_collection, a).label(f"{a}{label_fragment}") for a in attributes]
 
-        q = (
-            select(
-                *attribute_columns(dce.c, element_attributes, nesting_level),
-                *attribute_columns(dc.c, collection_attributes, nesting_level),
-            )
-            .select_from(dce, dc)
-            .join(dce, dce.c.dataset_collection_id == dc.c.id)
-            .filter(dc.c.id == dataset_collection.id)
+        # On PostgreSQL, joining dataset_collection_element to itself causes
+        # the planner to choose catastrophically slow hash/merge joins: it
+        # overestimates cardinality and scans the entire table at each level.
+        # The ARRAY(subquery) pattern avoids all DCE-to-DCE joins by
+        # evaluating each nesting level into a concrete array before the next
+        # lookup, forcing index scans throughout.
+        #
+        # This optimisation applies only when per-level element/collection
+        # attributes are not needed (the common hot-path callers).  Callers
+        # that need per-level data fall back to the original outerjoin
+        # approach, which is fine for the less frequent access patterns.
+        try:
+            session = object_session(self)
+        except Exception:
+            session = None
+        is_postgres = session is not None and session.bind and session.bind.dialect.name == "postgresql"
+        use_array_walk = (
+            is_postgres
+            and ":" in depth_collection_type
+            and not element_attributes
+            and not collection_attributes
+            and not return_entities
         )
 
-        while ":" in depth_collection_type:
-            nesting_level += 1
-            inner_dce = alias(DatasetCollectionElement.__table__)
-            inner_dc = alias(DatasetCollection.__table__)
-            order_by_columns.append(inner_dce.c.element_index)
-            q = q.outerjoin(inner_dce, inner_dce.c.dataset_collection_id == dce.c.child_collection_id)
-            if collection_attributes:
-                q = q.outerjoin(inner_dc, inner_dc.c.id == dce.c.child_collection_id)
-                q = q.add_columns(
-                    *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
+        if use_array_walk:
+            # Build nested ARRAY(subquery) expressions to walk the tree
+            # without any DCE-to-DCE joins.
+            dce_table = DatasetCollectionElement.__table__
+            inner_dce = alias(dce_table)
+            child_ids_subq = select(inner_dce.c.child_collection_id).where(
+                inner_dce.c.dataset_collection_id == dataset_collection.id
+            )
+            n_intermediates = depth_collection_type.count(":")
+            for _ in range(n_intermediates - 1):
+                next_dce = alias(dce_table)
+                child_ids_subq = select(next_dce.c.child_collection_id).where(
+                    next_dce.c.dataset_collection_id == any_(func.array(child_ids_subq.scalar_subquery()))
                 )
-            q = q.add_columns(*attribute_columns(inner_dce.c, element_attributes, nesting_level))
-            dce = inner_dce
-            dc = inner_dc
-            depth_collection_type = depth_collection_type.split(":", 1)[1]
+            leaf_dce = alias(dce_table)
+            q = (
+                select()
+                .select_from(leaf_dce)
+                .where(leaf_dce.c.dataset_collection_id == any_(func.array(child_ids_subq.scalar_subquery())))
+            )
+            hda_join_col = leaf_dce.c.hda_id
+            dce_id_col = leaf_dce.c.id
+            order_by_columns = [leaf_dce.c.element_index]
+        elif ":" not in depth_collection_type:
+            # Single-level collection: simple join, no nesting issues.
+            q = (
+                select(
+                    *attribute_columns(dce.c, element_attributes, nesting_level),
+                    *attribute_columns(dc.c, collection_attributes, nesting_level),
+                )
+                .select_from(dce, dc)
+                .join(dce, dce.c.dataset_collection_id == dc.c.id)
+                .filter(dc.c.id == dataset_collection.id)
+            )
+            hda_join_col = dce.c.hda_id
+            dce_id_col = dce.c.id
+            order_by_columns = [dce.c.element_index]
+        else:
+            # Nested collection with per-level attrs or on SQLite:
+            # use the original outerjoin approach.
+            order_by_columns = [dce.c.element_index]
+            q = (
+                select(
+                    *attribute_columns(dce.c, element_attributes, nesting_level),
+                    *attribute_columns(dc.c, collection_attributes, nesting_level),
+                )
+                .select_from(dce, dc)
+                .join(dce, dce.c.dataset_collection_id == dc.c.id)
+                .filter(dc.c.id == dataset_collection.id)
+            )
+            while ":" in depth_collection_type:
+                nesting_level += 1
+                inner_dce = alias(DatasetCollectionElement.__table__)
+                inner_dc = alias(DatasetCollection.__table__)
+                order_by_columns.append(inner_dce.c.element_index)
+                q = q.outerjoin(inner_dce, inner_dce.c.dataset_collection_id == dce.c.child_collection_id)
+                if collection_attributes:
+                    q = q.outerjoin(inner_dc, inner_dc.c.id == dce.c.child_collection_id)
+                    q = q.add_columns(
+                        *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
+                    )
+                q = q.add_columns(*attribute_columns(inner_dce.c, element_attributes, nesting_level))
+                dce = inner_dce
+                dc = inner_dc
+                depth_collection_type = depth_collection_type.split(":", 1)[1]
+            hda_join_col = dce.c.hda_id
+            dce_id_col = dce.c.id
 
-        if (
+        needs_hda_join = bool(
             hda_attributes
             or dataset_attributes
             or dataset_permission_attributes
-            or return_entities
-            and not return_entities == (DatasetCollectionElement,)
-        ):
-            q = q.join(HistoryDatasetAssociation).join(Dataset)
+            or (return_entities and return_entities != (DatasetCollectionElement,))
+        )
+
+        if needs_hda_join:
+            q = q.join(HistoryDatasetAssociation, HistoryDatasetAssociation.id == hda_join_col)
+            q = q.join(Dataset, Dataset.id == HistoryDatasetAssociation.dataset_id)
         if dataset_permission_attributes:
-            q = q.join(DatasetPermissions)
+            q = q.join(DatasetPermissions, DatasetPermissions.dataset_id == Dataset.id)
         q = (
             q.add_columns(*attribute_columns(HistoryDatasetAssociation, hda_attributes))
             .add_columns(*attribute_columns(Dataset, dataset_attributes))
@@ -7113,7 +7181,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         for entity in return_entities:
             q = q.add_columns(entity)
             if entity == DatasetCollectionElement:
-                q = q.filter(entity.id == dce.c.id)
+                q = q.filter(entity.id == dce_id_col)
 
         q = q.order_by(*order_by_columns)
         return q
