@@ -79,7 +79,7 @@ onMounted(async () => {
     await nextTick();
 
     // @ts-ignore: TS2339 component method not exposed in template ref type
-    workflowGraph.value?.fitWorkflow(0.25, 1.5, 20.0);
+    workflowGraph.value?.fitWorkflow(0.25, 1.0, 20.0);
 });
 
 // Equivalent to onMounted; this is where the graph is initialized, and the polling is started
