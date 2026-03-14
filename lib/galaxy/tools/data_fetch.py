@@ -193,7 +193,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 for composite_file in datatype.composite_files.values()
                 if composite_file.substitute_name_with_metadata
             }
-            name = metadata.get("base_name") or item.get("name") or "Composite Dataset"
+            name = item.get("name") or metadata.get("base_name") or "Composite Dataset"
             metadata["base_name"] = name
             dataset = Bunch(
                 name=name,

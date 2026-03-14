@@ -9,7 +9,8 @@ import type { BaseUploadItem } from "@/components/Panels/Upload/types/uploadItem
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 
 export function useUploadDefaults() {
-    const { configOptions, effectiveExtensions, listDbKeys, ready } = useUploadConfigurations(undefined);
+    const { configOptions, effectiveExtensions, compositeExtensions, listDbKeys, ready } =
+        useUploadConfigurations(undefined);
 
     const defaultExtension = computed(() => configOptions.value?.defaultExtension || "auto");
     const defaultDbKey = computed(() => configOptions.value?.defaultDbKey || "?");
@@ -29,6 +30,7 @@ export function useUploadDefaults() {
     return {
         configOptions,
         effectiveExtensions,
+        compositeExtensions,
         listDbKeys,
         configurationsReady: ready,
         defaultExtension,

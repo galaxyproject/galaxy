@@ -68,6 +68,71 @@ export interface RemoteFileItem extends PasteUrlItem {
     hashes?: FetchDatasetHash[];
 }
 
+/** Shared fields present in every composite slot variant */
+interface CompositeSlotBase {
+    /** Machine name of the slot (e.g. "bim", "affymetrix_cel") */
+    slotName: string;
+    /** Human-readable description shown to the user */
+    description: string;
+    /** Whether this slot must be filled before upload */
+    optional: boolean;
+}
+
+/** Slot sourced from a local file chosen by the user */
+export interface CompositeSlotLocal extends CompositeSlotBase {
+    mode: "local";
+    file?: File;
+    /** File size in bytes, derived from the selected File object */
+    fileSize: number;
+}
+
+/** Slot sourced from a remote URL entered by the user */
+export interface CompositeSlotUrl extends CompositeSlotBase {
+    mode: "url";
+    url: string;
+}
+
+/** Slot sourced from text pasted directly into the upload form */
+export interface CompositeSlotPaste extends CompositeSlotBase {
+    mode: "paste";
+    content: string;
+}
+
+/** Slot sourced from a remote file source (e.g. FTP, S3) chosen via the file browser */
+export interface CompositeSlotRemote extends CompositeSlotBase {
+    mode: "remote";
+    /** Fully-qualified remote URI (e.g. gxftp://host/path/file.vcf) */
+    remoteUri: string;
+    /** Human-readable file name shown in the UI */
+    remoteName: string;
+    /** File size in bytes reported by the remote file source */
+    fileSize: number;
+}
+
+/**
+ * Represents a single component file slot in a composite upload.
+ * Each composite datatype defines a fixed set of named slots (e.g. `.bim`, `.bed`, `.fam` for plink).
+ * The discriminated union ensures only fields relevant to the active mode are present.
+ */
+export type CompositeSlot = CompositeSlotLocal | CompositeSlotUrl | CompositeSlotPaste | CompositeSlotRemote;
+
+export type CompositeSlotMode = CompositeSlot["mode"];
+
+/**
+ * Composite dataset upload item (used in CompositeFileUpload.vue).
+ * Represents all component slots that together form one composite HDA.
+ */
+export interface CompositeFileItem {
+    /** Display name for the resulting dataset in history */
+    name: string;
+    /** Galaxy datatype extension (e.g. "plink", "affybatch") */
+    extension: string;
+    /** Genome build / database key */
+    dbkey: string;
+    /** Ordered list of component file slots */
+    slots: CompositeSlot[];
+}
+
 /**
  * Library dataset upload item (used in DataLibraryUpload.vue)
  * Note: Library datasets are already on the server, so no upload options are needed

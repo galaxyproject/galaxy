@@ -183,6 +183,11 @@ export interface UploadDataPayload extends UploadPayload {
 export interface BuildPayloadOptions {
     /** Whether this is a composite upload (multiple files as one dataset) */
     composite?: boolean;
+    /**
+     * User-defined name for a composite dataset. When set, forwarded to the API so Galaxy
+     * names the dataset accordingly. When absent, Galaxy auto-generates the name.
+     */
+    compositeName?: string;
 }
 
 // ============================================================================
@@ -608,7 +613,7 @@ function validateItemContent(item: ApiUploadItem): void {
  * @throws Error if no valid items are provided or validation fails
  */
 export function buildUploadPayload(items: ApiUploadItem[], options: BuildPayloadOptions = {}): UploadPayload {
-    const { composite = false } = options;
+    const { composite = false, compositeName } = options;
 
     if (items.length === 0) {
         throw new Error("No upload items provided.");
@@ -639,6 +644,7 @@ export function buildUploadPayload(items: ApiUploadItem[], options: BuildPayload
         const firstItem = items[0]!;
         const compositeElement: CompositeDataElement = {
             src: "composite",
+            name: compositeName ?? undefined,
             dbkey: firstItem.dbkey,
             ext: firstItem.ext,
             auto_decompress: false,
@@ -970,11 +976,11 @@ export async function submitUpload(config: UploadSubmitConfig): Promise<void> {
  * ```
  */
 export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatasetsConfig = {}): Promise<void> {
-    const { composite = false, chunkSize, success, error, warning, progress } = config;
+    const { composite = false, compositeName, chunkSize, success, error, warning, progress } = config;
 
     try {
         // Build the API-ready payload from upload items
-        const payload = buildUploadPayload(items, { composite });
+        const payload = buildUploadPayload(items, { composite, compositeName });
 
         // Prepare the data for submission
         const data: UploadDataPayload = {
