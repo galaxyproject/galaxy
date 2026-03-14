@@ -57,6 +57,7 @@ from .util import (
     DEFAULT_CHANNELS,
     get_files_from_conda_package,
     PrintProgress,
+    QuayApiException,
     quay_repository,
     quay_tag_exists,
     v1_image_name,
@@ -208,6 +209,18 @@ class BuildExistsException(Exception):
     """
 
 
+def _repo_data_contains_tag(repo_data: Dict[str, Any], target_tag: str) -> bool:
+    if "error_type" in repo_data and repo_data["error_type"] in {"invalid_token", "not_found"}:
+        return False
+
+    tags = repo_data.get("tags", {})
+    if isinstance(tags, dict):
+        return target_tag in tags
+    if isinstance(tags, list):
+        return target_tag in tags
+    raise QuayApiException(f"Unexpected response from quay.io - no tags description found [{repo_data}]")
+
+
 def mull_targets(
     targets: List[CondaTarget],
     involucro_context: Optional["InvolucroContext"] = None,
@@ -261,7 +274,17 @@ def mull_targets(
                 assert len(image_name_parts) == 2, f": not allowed in image name [{repo_template_kwds['image']}]"
                 target_tag = image_name_parts[1]
             if target_tag is not None:
-                if quay_tag_exists(repo_template_kwds["namespace"], repo_name, target_tag, session=session):
+                tag_exists = quay_tag_exists(repo_template_kwds["namespace"], repo_name, target_tag, session=session)
+                if tag_exists is None:
+                    log.warning(
+                        "Falling back to quay repository metadata for %s/%s:%s after registry manifest probe was inconclusive",
+                        repo_template_kwds["namespace"],
+                        repo_name,
+                        target_tag,
+                    )
+                    repo_data = quay_repository(repo_template_kwds["namespace"], repo_name, session=session)
+                    tag_exists = _repo_data_contains_tag(repo_data, target_tag)
+                if tag_exists:
                     raise BuildExistsException()
             else:
                 repo_data = quay_repository(repo_template_kwds["namespace"], repo_name, session=session)

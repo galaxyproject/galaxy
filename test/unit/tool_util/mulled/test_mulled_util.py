@@ -49,13 +49,13 @@ def test_quay_tag_exists_returns_false_for_missing_tag():
 
 
 @responses.activate
-def test_quay_tag_exists_falls_back_to_repository_metadata():
+def test_quay_tag_exists_returns_none_for_transient_failures():
     session = requests.Session()
     responses.add(responses.HEAD, MANIFEST_URL, status=502)
-    responses.add(responses.GET, REPOSITORY_URL, json={"tags": {"1.17--0": {}}}, status=200)
 
-    assert quay_tag_exists("biocontainers", "samtools", "1.17--0", session=session) is True
-    assert [call.request.method for call in responses.calls] == ["HEAD", "GET"]
+    assert quay_tag_exists("biocontainers", "samtools", "1.17--0", session=session) is None
+    assert len(responses.calls) == 1
+    assert responses.calls[0].request.method == "HEAD"
 
 
 @responses.activate

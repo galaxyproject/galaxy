@@ -214,7 +214,13 @@ def quay_repository(namespace: str, pkg_name: str, session: Optional[Session] = 
     return _quay_json_dict(response, url)
 
 
-def quay_tag_exists(namespace: str, pkg_name: str, tag: str, session: Optional[Session] = None) -> bool:
+def quay_tag_exists(namespace: str, pkg_name: str, tag: str, session: Optional[Session] = None) -> Optional[bool]:
+    """Probe the quay registry manifest endpoint for a single tag.
+
+    Returns ``True`` or ``False`` when the manifest ``HEAD`` probe yields a
+    definitive answer. Returns ``None`` when callers should fall back to
+    repository metadata.
+    """
     assert namespace is not None
     assert pkg_name is not None
     assert tag is not None
@@ -230,26 +236,10 @@ def quay_tag_exists(namespace: str, pkg_name: str, tag: str, session: Optional[S
         return False
     if response.status_code == 200:
         return True
-    # Quay can return 401 invalid_token here for public repos, so treat it like a fallback case.
-    if response.status_code != 401 and response.status_code not in QUAY_REQUEST_RETRY_STATUS_CODES:
-        raise _quay_api_error(response, url)
-
-    log.warning(
-        "Falling back to quay repository metadata for %s/%s:%s after registry manifest probe failed with %s",
-        namespace,
-        pkg_name,
-        tag,
-        response.status_code,
-    )
-    repo_data = quay_repository(namespace, pkg_name, session=session)
-    if "error_type" in repo_data and repo_data["error_type"] in {"invalid_token", "not_found"}:
-        return False
-
-    tags = repo_data.get("tags", {})
-    if isinstance(tags, dict):
-        return tag in tags
-    if isinstance(tags, list):
-        return tag in tags
+    # Quay can return 401 invalid_token here for public repos, so callers may
+    # need to fall back to repository metadata to disambiguate the result.
+    if response.status_code == 401 or response.status_code in QUAY_REQUEST_RETRY_STATUS_CODES:
+        return None
     raise _quay_api_error(response, url)
 
 
