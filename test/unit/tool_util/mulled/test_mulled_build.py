@@ -1,6 +1,7 @@
 import os.path
 
 import pytest
+
 from galaxy.tool_util.deps.mulled.mulled_build import (
     base_image_for_targets,
     build_target,

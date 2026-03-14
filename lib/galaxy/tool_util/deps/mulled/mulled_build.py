@@ -57,9 +57,9 @@ from .util import (
     DEFAULT_CHANNELS,
     get_files_from_conda_package,
     PrintProgress,
-    QuayApiException,
     quay_repository,
     quay_tag_exists,
+    QuayApiException,
     v1_image_name,
     v2_image_name,
 )
