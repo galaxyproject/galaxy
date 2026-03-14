@@ -59,12 +59,12 @@ class TestCustomBuilds(SharedStateSeleniumTestCase):
 
     def delete_custom_build(self, build_name):
         delete_button = None
-        grid = self.wait_for_selector("table.grid > tbody")
-        for row in grid.find_elements(By.TAG_NAME, "tr"):
+        custom_builds_table = self.wait_for_selector(".g-table > tbody")
+        for row in custom_builds_table.find_elements(By.TAG_NAME, "tr"):
             td = row.find_elements(By.TAG_NAME, "td")
             name = td[0].text
             if name == build_name:
-                delete_button = td[3].find_element(By.CSS_SELECTOR, ".fa-trash-o")
+                delete_button = td[3].find_element(By.CSS_SELECTOR, "button[data-title='Delete build']")
                 break
 
         if delete_button is None:
@@ -75,8 +75,8 @@ class TestCustomBuilds(SharedStateSeleniumTestCase):
     def get_custom_builds(self):
         self.sleep_for(self.wait_types.UX_RENDER)
         builds = []
-        grid = self.wait_for_selector("table.grid > tbody")
-        for row in grid.find_elements(By.TAG_NAME, "tr"):
+        custom_builds_table = self.wait_for_selector(".g-table > tbody")
+        for row in custom_builds_table.find_elements(By.TAG_NAME, "tr"):
             name = row.find_elements(By.TAG_NAME, "td")[0].text
             builds.append(name)
         return builds
