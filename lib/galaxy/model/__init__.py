@@ -7076,16 +7076,22 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         # evaluating each nesting level into a concrete array before the next
         # lookup, forcing index scans throughout.
         #
-        # Per-level element/collection attributes and hierarchical ordering
-        # are provided via correlated scalar subqueries that walk UP from
-        # each leaf DCE to its ancestors via the indexed child_collection_id
+        # Per-level element attributes and hierarchical ordering are
+        # provided via correlated scalar subqueries that walk UP from each
+        # leaf DCE to its ancestors via the indexed child_collection_id
         # column.  Each subquery returns exactly one row via an index lookup.
+        #
+        # collection_attributes (e.g. populated_state) must stay on the
+        # outerjoin path: the ARRAY walk only visits branches that contain
+        # leaf DCEs, so empty sub-collections — common when conditional
+        # workflow steps are skipped — would be invisible and their
+        # populated_state never checked.
         try:
             session = object_session(self)
         except Exception:
             session = None
         is_postgres = session is not None and session.bind and session.bind.dialect.name == "postgresql"
-        use_array_walk = is_postgres and ":" in depth_collection_type
+        use_array_walk = is_postgres and ":" in depth_collection_type and not collection_attributes
 
         if use_array_walk:
             # Build nested ARRAY(subquery) expressions to walk the tree
@@ -7143,21 +7149,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                             .label(f"{attr}_{level}")
                         )
 
-            # Add collection attribute columns for each level.
-            if collection_attributes:
-                dc_table = DatasetCollection.__table__
-                for level in range(n_levels):
-                    steps_up = n_levels - 1 - level
-                    for attr in collection_attributes:
-                        dc_alias = alias(dc_table)
-                        q = q.add_columns(
-                            select(getattr(dc_alias.c, attr))
-                            .where(dc_alias.c.id == coll_ids[steps_up])
-                            .correlate(leaf_dce)
-                            .scalar_subquery()
-                            .label(f"{attr}_{level}")
-                        )
-
             hda_join_col = leaf_dce.c.hda_id
             dce_id_col = leaf_dce.c.id
 
@@ -7190,8 +7181,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             dce_id_col = dce.c.id
             order_by_columns = [dce.c.element_index]
         else:
-            # Nested collection on SQLite: use the original outerjoin
-            # approach (PostgreSQL uses the ARRAY walk above).
+            # Nested collection on SQLite, or collection_attributes on
+            # PostgreSQL: use the original outerjoin approach.
             order_by_columns = [dce.c.element_index]
             q = (
                 select(
