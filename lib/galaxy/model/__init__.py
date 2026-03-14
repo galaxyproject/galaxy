@@ -7076,22 +7076,16 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         # evaluating each nesting level into a concrete array before the next
         # lookup, forcing index scans throughout.
         #
-        # This optimisation applies only when per-level element/collection
-        # attributes are not needed (the common hot-path callers).  Callers
-        # that need per-level data fall back to the original outerjoin
-        # approach, which is fine for the less frequent access patterns.
+        # Per-level element/collection attributes and hierarchical ordering
+        # are provided via correlated scalar subqueries that walk UP from
+        # each leaf DCE to its ancestors via the indexed child_collection_id
+        # column.  Each subquery returns exactly one row via an index lookup.
         try:
             session = object_session(self)
         except Exception:
             session = None
         is_postgres = session is not None and session.bind and session.bind.dialect.name == "postgresql"
-        use_array_walk = (
-            is_postgres
-            and ":" in depth_collection_type
-            and not element_attributes
-            and not collection_attributes
-            and not return_entities
-        )
+        use_array_walk = is_postgres and ":" in depth_collection_type
 
         if use_array_walk:
             # Build nested ARRAY(subquery) expressions to walk the tree
@@ -7113,9 +7107,74 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 .select_from(leaf_dce)
                 .where(leaf_dce.c.dataset_collection_id == any_(func.array(child_ids_subq.scalar_subquery())))
             )
+            n_levels = n_intermediates + 1
+
+            # Build navigation chain of collection ID expressions from leaf
+            # to root.  coll_ids[0] = leaf's collection, coll_ids[k] = k
+            # steps up from the leaf.  Each entry after the first is a
+            # correlated scalar subquery that walks one level up via the
+            # indexed child_collection_id column.
+            coll_ids: list = [leaf_dce.c.dataset_collection_id]
+            for _i in range(n_intermediates):
+                nav = alias(dce_table)
+                coll_ids.append(
+                    select(nav.c.dataset_collection_id)
+                    .where(nav.c.child_collection_id == coll_ids[-1])
+                    .correlate(leaf_dce)
+                    .scalar_subquery()
+                )
+
+            # Add element attribute columns for each level (root first,
+            # leaf last) to match the column ordering of the outerjoin path.
+            for level in range(n_levels):
+                steps_up = n_levels - 1 - level
+                if steps_up == 0:
+                    # Leaf level: direct column access
+                    q = q.add_columns(*[getattr(leaf_dce.c, a).label(f"{a}_{level}") for a in element_attributes])
+                else:
+                    # Ancestor level: correlated subquery
+                    for attr in element_attributes:
+                        nav = alias(dce_table)
+                        q = q.add_columns(
+                            select(getattr(nav.c, attr))
+                            .where(nav.c.child_collection_id == coll_ids[steps_up - 1])
+                            .correlate(leaf_dce)
+                            .scalar_subquery()
+                            .label(f"{attr}_{level}")
+                        )
+
+            # Add collection attribute columns for each level.
+            if collection_attributes:
+                dc_table = DatasetCollection.__table__
+                for level in range(n_levels):
+                    steps_up = n_levels - 1 - level
+                    for attr in collection_attributes:
+                        dc_alias = alias(dc_table)
+                        q = q.add_columns(
+                            select(getattr(dc_alias.c, attr))
+                            .where(dc_alias.c.id == coll_ids[steps_up])
+                            .correlate(leaf_dce)
+                            .scalar_subquery()
+                            .label(f"{attr}_{level}")
+                        )
+
             hda_join_col = leaf_dce.c.hda_id
             dce_id_col = leaf_dce.c.id
-            order_by_columns = [leaf_dce.c.element_index]
+
+            # Build hierarchical ORDER BY from root level to leaf level.
+            order_by_columns: list[ColumnElement] = []
+            for level in range(n_levels):
+                steps_up = n_levels - 1 - level
+                if steps_up == 0:
+                    order_by_columns.append(leaf_dce.c.element_index)
+                else:
+                    nav = alias(dce_table)
+                    order_by_columns.append(
+                        select(nav.c.element_index)
+                        .where(nav.c.child_collection_id == coll_ids[steps_up - 1])
+                        .correlate(leaf_dce)
+                        .scalar_subquery()
+                    )
         elif ":" not in depth_collection_type:
             # Single-level collection: simple join, no nesting issues.
             q = (
@@ -7131,8 +7190,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             dce_id_col = dce.c.id
             order_by_columns = [dce.c.element_index]
         else:
-            # Nested collection with per-level attrs or on SQLite:
-            # use the original outerjoin approach.
+            # Nested collection on SQLite: use the original outerjoin
+            # approach (PostgreSQL uses the ARRAY walk above).
             order_by_columns = [dce.c.element_index]
             q = (
                 select(
