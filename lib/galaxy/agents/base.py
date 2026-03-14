@@ -187,6 +187,7 @@ class AgentType:
     CUSTOM_TOOL = "custom_tool"
     ORCHESTRATOR = "orchestrator"
     TOOL_RECOMMENDATION = "tool_recommendation"
+    GTN_TRAINING = "gtn_training"
 
 
 # Internal agent response model (simplified for internal use)
