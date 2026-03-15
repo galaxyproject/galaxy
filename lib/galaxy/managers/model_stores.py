@@ -191,6 +191,7 @@ class ModelStoreManager:
         model_store_format = request.model_store_format
         export_files = "symlink" if request.include_files else None
         target_uri = request.target_uri
+        assert request.user.user_id
         user_context = self._build_user_context(request.user.user_id)
         export_metadata = self.set_invocation_export_request_metadata(request)
 
@@ -239,6 +240,7 @@ class ModelStoreManager:
         model_store_format = request.model_store_format
         export_files = "symlink" if request.include_files else None
         target_uri = request.target_uri
+        assert request.user.user_id
         user_context = self._build_user_context(request.user.user_id)
         with model.store.get_export_store_factory(
             self._app, model_store_format, export_files=export_files, user_context=user_context
@@ -257,6 +259,7 @@ class ModelStoreManager:
     def write_history_to(self, request: WriteHistoryTo):
         model_store_format = request.model_store_format
         export_files = "symlink" if request.include_files else None
+        assert request.user.user_id
         user_context = self._build_user_context(request.user.user_id)
         export_metadata = self.set_history_export_request_metadata(request)
 
@@ -360,6 +363,7 @@ class ModelStoreManager:
             history = self._sa_session.get(model.History, history_id)
         else:
             history = None
+        assert request.user.user_id
         user_context = self._build_user_context(request.user.user_id)
         model_import_store = source_to_import_store(
             request.source_uri,

@@ -1,11 +1,13 @@
 import logging
 import time
+from unittest.mock import MagicMock
 
 import pytest
 import routes
 
 from galaxy import model
 from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
+from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.tool_util.unittest_utils import mock_trans
 from galaxy.tool_util.unittest_utils.sample_data import (
     SIMPLE_MACRO,
@@ -155,6 +157,44 @@ class TestToolBox(BaseToolBoxTestCase):
         self.toolbox.get_tool("test_tool").allow_user_access = allow_user_access
         as_dict = self.toolbox.to_dict(mock_trans(), in_panel=False)
         assert len(as_dict) == 0, as_dict
+
+    def test_allow_user_access_non_public_dynamic_tool(self):
+        self._init_tool()
+        self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
+        tool = self.toolbox.get_tool("test_tool")
+
+        # Regular tool allows access without a user
+        assert tool.allow_user_access(None) is True
+
+        # Simulate a non-public dynamic tool
+        dynamic_tool = MagicMock()
+        dynamic_tool.public = False
+        tool.dynamic_tool = dynamic_tool
+
+        # Mock the dynamic tool manager to reject the user
+        mock_manager = MagicMock()
+        mock_manager.ensure_can_use_unprivileged_tool.side_effect = InsufficientPermissionsException(
+            "User is not allowed to run unprivileged tools"
+        )
+        tool.app.dynamic_tool_manager = mock_manager
+
+        # Non-public dynamic tool denies access without a user
+        assert tool.allow_user_access(None) is False
+
+        # Non-public dynamic tool denies access for user without execute role
+        mock_user = MagicMock()
+        assert tool.allow_user_access(mock_user) is False
+        mock_manager.ensure_can_use_unprivileged_tool.assert_called_with(mock_user)
+
+        # Non-public dynamic tool allows access for user with execute role
+        mock_manager.ensure_can_use_unprivileged_tool.side_effect = None
+        assert tool.allow_user_access(mock_user) is True
+
+        # Detached dynamic tool allows access (validated at load time)
+        detached_dynamic_tool = MagicMock()
+        type(detached_dynamic_tool).public = property(lambda self: (_ for _ in ()).throw(Exception("not bound")))
+        tool.dynamic_tool = detached_dynamic_tool
+        assert tool.allow_user_access(None) is True
 
     def _find_section(self, as_dict, section_id):
         for elem in as_dict:

@@ -17584,6 +17584,14 @@ export interface components {
         };
         /** JobRequest */
         JobRequest: {
+            /** Credentials Context */
+            credentials_context?:
+                | {
+                      [key: string]: unknown;
+                  }[]
+                | null;
+            /** Data Manager Mode */
+            data_manager_mode?: string | null;
             /**
              * history_id
              * @description TODO
@@ -17596,6 +17604,8 @@ export interface components {
             inputs?: {
                 [key: string]: unknown;
             } | null;
+            /** Preferred Object Store ID */
+            preferred_object_store_id?: string | null;
             /**
              * rerun_remap_job_id
              * @description TODO
@@ -17613,6 +17623,8 @@ export interface components {
              * @default true
              */
             strict: boolean;
+            /** Tags */
+            tags?: string[] | null;
             /**
              * tool_id
              * @description TODO
@@ -23469,8 +23481,7 @@ export interface components {
                 [key: string]: unknown;
             };
             state: components["schemas"]["ToolRequestState"];
-            /** State Message */
-            state_message: string | null;
+            state_message?: components["schemas"]["ToolRequestStateMessage"] | null;
         };
         /** ToolRequestImplicitCollectionReference */
         ToolRequestImplicitCollectionReference: {
@@ -23513,14 +23524,22 @@ export interface components {
                 [key: string]: unknown;
             };
             state: components["schemas"]["ToolRequestState"];
-            /** State Message */
-            state_message: string | null;
+            state_message?: components["schemas"]["ToolRequestStateMessage"] | null;
         };
         /**
          * ToolRequestState
          * @enum {string}
          */
         ToolRequestState: "new" | "submitted" | "failed";
+        /** ToolRequestStateMessage */
+        ToolRequestStateMessage: {
+            /** Err Data */
+            err_data?: {
+                [key: string]: unknown;
+            } | null;
+            /** Err Msg */
+            err_msg: string;
+        };
         /** ToolStep */
         ToolStep: {
             /**
