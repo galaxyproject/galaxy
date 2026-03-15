@@ -972,6 +972,7 @@ class DefaultToolAction(ToolAction):
         if credentials_context is None:
             return
 
+        # Create database associations for vault-based credentials
         for service_context in credentials_context.root:
             association = JobCredentialsContextAssociation(
                 job=job,

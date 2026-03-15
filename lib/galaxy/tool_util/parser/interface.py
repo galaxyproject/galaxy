@@ -117,6 +117,25 @@ class ToolSourceTestInput(TypedDict):
     attributes: ToolSourceTestInputAttributes
 
 
+class DirectCredentialValue(TypedDict):
+    """Represents a credential value (variable or secret) provided directly."""
+
+    name: str
+    value: str
+
+
+class _DirectCredentialRequired(TypedDict):
+    name: str  # Name of the credentials group
+    variables: List[DirectCredentialValue]
+    secrets: List[DirectCredentialValue]
+
+
+class DirectCredential(_DirectCredentialRequired, total=False):
+    """Represents a credential group with variables and secrets provided directly."""
+
+    version: str  # Version of the credential definition (defaults to "1.0")
+
+
 ToolSourceTestInputs = List[ToolSourceTestInput]
 ToolSourceTestOutputs = List[ToolSourceTestOutput]
 TestSourceTestOutputColllection = Any
@@ -136,6 +155,7 @@ class ToolSourceTest(TypedDict):
     command: AssertionList
     command_version: AssertionList
     value_state_representation: Literal["test_case_xml", "test_case_json"]
+    credentials: Optional[List[DirectCredential]]
 
 
 class ToolSourceTests(TypedDict):
