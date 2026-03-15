@@ -45,7 +45,7 @@ clean-tests:
 # Removing .venv instead of $(VENV) is intentional, because we can't guarantee we created $(VENV)
 clean-web-client:
 	rm -rf .venv
-	rm -rf galaxy/web_client/dist galaxy/web_client/client_build_hash.txt
+	rm -rf src/galaxy/web_client/dist src/galaxy/web_client/client_build_hash.txt
 
 setup-venv:
 	if [ ! -d $(VENV) ]; then python -m venv $(VENV); exit; fi;
@@ -60,8 +60,8 @@ dist: clean setup-venv galaxy/web_client/client_build_hash.txt
 
 galaxy/web_client/client_build_hash.txt:
 	$(IN_VENV) cd ../..; make client-production
-	mv ../../client/dist galaxy/web_client
-	git rev-parse HEAD > galaxy/web_client/client_build_hash.txt
+	mv ../../client/dist src/galaxy/web_client
+	git rev-parse HEAD > src/galaxy/web_client/client_build_hash.txt
 
 _twine-exists: ; @which twine > /dev/null
 

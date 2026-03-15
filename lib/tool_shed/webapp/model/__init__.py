@@ -3,7 +3,7 @@ import os
 import random
 import string
 import weakref
-from collections.abc import Mapping
+from collections.abc import MutableMapping
 from datetime import (
     datetime,
     timedelta,
@@ -59,7 +59,7 @@ from tool_shed.util.hgweb_config import hgweb_config_manager
 
 log = logging.getLogger(__name__)
 
-WEAK_HG_REPO_CACHE: Mapping["Repository", Any] = weakref.WeakKeyDictionary()
+WEAK_HG_REPO_CACHE: MutableMapping["Repository", Any] = weakref.WeakKeyDictionary()
 
 if TYPE_CHECKING:
     # Workaround for https://github.com/python/mypy/issues/14182
@@ -534,6 +534,7 @@ class Repository(Base, Dictifiable):
 
     def repo_path(self, app=None):
         # Keep app argument for compatibility with tool_shed_install Repository model
+        assert self.name
         return hgweb_config_manager.get_entry(
             os.path.join(hgweb_config_manager.hgweb_repo_prefix, self.user.username, self.name)
         )

@@ -196,7 +196,7 @@ class NicerConfigParser(ConfigParser):
 
 
 def _running_from_source():
-    paths = ["run.sh", "lib/galaxy/__init__.py", "scripts/common_startup.sh"]
+    paths = ["run.sh", "scripts/common_startup.sh"]
     return all(map(os.path.exists, paths))
 
 

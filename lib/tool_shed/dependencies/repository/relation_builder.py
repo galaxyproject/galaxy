@@ -488,7 +488,7 @@ class RelationBuilder:
         combination of tool shed, name , owner, changeset_revision is used and a repository_metadata
         record is not found.
         """
-        valid_repository_dependencies = {}
+        valid_repository_dependencies: dict[str, str] = {}
         description = repository_dependencies.get("description", None)
         root_key = repository_dependencies.get("root_key", None)
         if root_key is None:

@@ -1,6 +1,7 @@
 """Module for searching the toolshed repositories"""
 
 import logging
+from typing import Any
 
 import whoosh.index
 from whoosh import scoring
@@ -137,7 +138,7 @@ class RepoSearch:
                     log.debug(f"scored hits: {str(hits.scored_length())}")
                 except ValueError:
                     raise ObjectNotFound("The requested page does not exist.")
-                results = {}
+                results: dict[str, Any] = {}
                 results["total_results"] = str(len(hits))
                 results["page"] = str(page)
                 results["page_size"] = str(page_size)

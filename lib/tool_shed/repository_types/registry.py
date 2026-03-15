@@ -5,13 +5,14 @@ from . import (
     tool_dependency_definition,
     unrestricted,
 )
+from tool_shed.repository_types.metadata import Metadata
 
 log = logging.getLogger(__name__)
 
 
 class Registry:
     def __init__(self):
-        self.repository_types_by_label = {}
+        self.repository_types_by_label: dict[str, Metadata] = {}
         self.repository_types_by_label["unrestricted"] = unrestricted.Unrestricted()
         self.repository_types_by_label["repository_suite_definition"] = (
             repository_suite_definition.RepositorySuiteDefinition()

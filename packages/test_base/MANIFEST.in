@@ -1,3 +1,0 @@
-include *.rst *.txt LICENSE */py.typed
-graft galaxy_test/base/data/
-include galaxy_test/base/tool_sheds_conf.xml

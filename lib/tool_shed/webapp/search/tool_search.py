@@ -2,6 +2,7 @@
 
 import logging
 import os
+from typing import Any
 
 import whoosh.index
 from whoosh import scoring
@@ -71,7 +72,7 @@ class ToolSearch:
                 log.debug(f"searching tools for: #{str(search_term)}")
                 log.debug(f"total hits: {str(len(hits))}")
                 log.debug(f"scored hits: {str(hits.scored_length())}")
-                results = {}
+                results: dict[str, Any] = {}
                 results["total_results"] = str(len(hits))
                 results["page"] = str(page)
                 results["page_size"] = str(page_size)

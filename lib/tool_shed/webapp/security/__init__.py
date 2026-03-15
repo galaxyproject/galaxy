@@ -276,7 +276,9 @@ def get_permitted_actions(filter=None):
     if filter is None:
         return RBACAgent.permitted_actions
     tmp_bunch = Bunch()
-    [tmp_bunch.__dict__.__setitem__(k, v) for k, v in RBACAgent.permitted_actions.items() if k.startswith(filter)]
+    for k, v in RBACAgent.permitted_actions.items():
+        if k.startswith(filter):
+            tmp_bunch.__dict__.__setitem__(k, v)
     return tmp_bunch
 
 

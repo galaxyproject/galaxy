@@ -1,6 +1,6 @@
 [project]
 name = "galaxy"
-version = "0.1.0"  # Not the real version, which is instead defined in lib/galaxy/version.py
+version = "0.1.0"  # Not the real version, which is instead defined in lib/galaxy/version/__init__.py
 description = "Galaxy is an open, web-based platform for accessible, reproducible, and transparent computational research."
 authors = [
     {name = "Galaxy Contributors"},

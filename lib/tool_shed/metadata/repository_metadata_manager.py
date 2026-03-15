@@ -62,7 +62,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on ToolShed's app and repository constructs."""
 
     app: ToolShedApp
-    repository: Optional[Repository]  # type: ignore[assignment]
+    repository: Optional[Repository]
 
     # why is mypy making me re-annotate these things from the base class, it didn't
     # when they were in the same file
@@ -1228,7 +1228,7 @@ def get_repository_metadata(session, repository_id):
     stmt = (
         select(RepositoryMetadata)
         .where(RepositoryMetadata.repository_id == repository_id)
-        .order_by(RepositoryMetadata.changeset_revision, RepositoryMetadata.update_time.desc())  # type: ignore[attr-defined]  # mapped attribute
+        .order_by(RepositoryMetadata.changeset_revision, RepositoryMetadata.update_time.desc())  # mapped attribute
     )
     return session.scalars(stmt)
 
