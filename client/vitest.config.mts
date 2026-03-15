@@ -14,7 +14,7 @@ const modulesToTransform = [
     "bootstrap-vue",
     "rxjs",
     "@hirez_io",
-    "winbox",
+
     "pretty-bytes",
     "@fortawesome",
     "ro-crate-zip-explorer",

@@ -42,6 +42,9 @@
             <UploadModal ref="uploadModal" />
             <BroadcastsOverlay />
             <DragGhost />
+            <template v-if="showMasthead">
+                <ScratchbookWindow v-for="win in windowManagerStore.windows" :key="win.id" :window="win" />
+            </template>
             <TourRunner v-if="currentTour?.id" :key="currentTour.id" :tour-id="currentTour.id" />
         </template>
     </div>
@@ -65,13 +68,13 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
-
-import { WindowManager } from "./window-manager";
+import { useWindowManagerStore } from "@/stores/windowManagerStore";
 
 import Alert from "@/components/Alert.vue";
 import DragGhost from "@/components/DragGhost.vue";
 import Masthead from "@/components/Masthead/Masthead.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
+import ScratchbookWindow from "@/components/Scratchbook/ScratchbookWindow.vue";
 import TourRunner from "@/components/Tour/TourRunner.vue";
 import UploadModal from "@/components/Upload/UploadModal.vue";
 
@@ -80,6 +83,7 @@ export default {
         Alert,
         DragGhost,
         Masthead,
+        ScratchbookWindow,
         Toast,
         ConfirmDialog,
         UploadModal,
@@ -104,6 +108,8 @@ export default {
 
         const uploadModal = ref(null);
         setGlobalUploadModal(uploadModal);
+
+        const windowManagerStore = useWindowManagerStore();
 
         const embedded = useRouteQueryBool("embed");
         const historyStore = useHistoryStore();
@@ -148,13 +154,13 @@ export default {
             currentTheme,
             embedded,
             currentTour,
+            windowManagerStore,
         };
     },
     data() {
         return {
             config: getGalaxyInstance().config,
             resendUrl: `${getAppRoot()}user/resend_verification`,
-            windowManager: null,
         };
     },
     computed: {
@@ -182,7 +188,7 @@ export default {
             return null;
         },
         windowTab() {
-            return this.windowManager.getTab();
+            return this.windowManagerStore.getTab();
         },
     },
     watch: {
@@ -194,9 +200,9 @@ export default {
     mounted() {
         if (!this.embedded) {
             this.Galaxy = getGalaxyInstance();
-            this.Galaxy.frame = this.windowManager;
             if (this.showMasthead) {
-                this.windowManager.restore();
+                this.Galaxy.frame = this.windowManagerStore;
+                this.windowManagerStore.restore();
             }
             if (this.Galaxy.config.interactivetools_enable) {
                 this.startWatchingEntryPoints();
@@ -208,10 +214,8 @@ export default {
     },
     created() {
         if (!this.embedded) {
-            this.windowManager = new WindowManager();
-
             window.onbeforeunload = () => {
-                if (this.confirmation || this.windowManager.beforeUnload()) {
+                if (this.confirmation || this.windowManagerStore.beforeUnload()) {
                     return "Are you sure you want to leave the page?";
                 }
             };

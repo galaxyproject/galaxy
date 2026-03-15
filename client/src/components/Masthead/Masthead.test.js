@@ -1,3 +1,4 @@
+import { faTh } from "@fortawesome/free-solid-svg-icons";
 import { createTestingPinia } from "@pinia/testing";
 import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
@@ -7,7 +8,6 @@ import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { WindowManager } from "@/entry/analysis/window-manager";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadMastheadWebhooks } from "./_webhooks";
@@ -28,7 +28,7 @@ setupMockConfig({});
 describe("Masthead.vue", () => {
     let wrapper;
     let localVue;
-    let windowManager;
+    let windowTab;
     let testPinia;
 
     function stubLoadWebhooks(items) {
@@ -46,8 +46,16 @@ describe("Masthead.vue", () => {
         localVue.use(PiniaVuePlugin);
         testPinia = createTestingPinia({ createSpy: vi.fn });
 
-        windowManager = new WindowManager({});
-        const windowTab = windowManager.getTab();
+        windowTab = {
+            id: "enable-window-manager",
+            icon: faTh,
+            tooltip: "Enable/Disable Window Manager",
+            visible: true,
+            _active: false,
+            onclick: function () {
+                this._active = !this._active;
+            },
+        };
 
         const userStore = useUserStore();
         userStore.currentUser = currentUser;
@@ -71,9 +79,9 @@ describe("Masthead.vue", () => {
 
     it("should display window manager button", async () => {
         expect(wrapper.find("#enable-window-manager a svg").exists()).toBe(true);
-        expect(windowManager.active).toBe(false);
+        expect(windowTab._active).toBe(false);
         await wrapper.find("#enable-window-manager a").trigger("click");
-        expect(windowManager.active).toBe(true);
+        expect(windowTab._active).toBe(true);
     });
 
     it("should load webhooks on creation", async () => {
