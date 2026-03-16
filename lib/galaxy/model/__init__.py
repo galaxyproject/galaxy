@@ -159,6 +159,7 @@ from galaxy.model.custom_types import (
     UUIDType,
 )
 from galaxy.model.database_object_names import NAMING_CONVENTION
+from galaxy.model.database_utils import supports_skip_locked as _check_supports_skip_locked
 from galaxy.model.item_attrs import (
     get_item_annotation_str,
     UsesAnnotations,
@@ -4798,6 +4799,8 @@ class Dataset(Base, StorableObject, Serializable):
         dialect_name = session.bind.dialect.name
 
         if dialect_name in ("postgresql", "sqlite"):
+            if dialect_name == "postgresql" and supports_skip_locked is None:
+                supports_skip_locked = _check_supports_skip_locked(session.get_bind())
             self._touch_collection_update_time_cte(session, supports_skip_locked)
         else:
             # Fallback for other databases
