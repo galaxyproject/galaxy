@@ -1236,7 +1236,6 @@ steps:
         self.workflow_editor_destroy_connection("filter#how|filter_source")
         self.assert_node_output_is("filter#output_filtered", "list")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_place_comments(self):
         editor = self.components.workflow_editor
@@ -1252,12 +1251,12 @@ steps:
         editor.tool_bar.toggle_italic.wait_for_and_click()
         editor.tool_bar.color(color="pink").wait_for_and_click()
         editor.tool_bar.font_size.wait_for_and_click()
-        self.action_chains().send_keys(Keys.LEFT * 5).send_keys(Keys.RIGHT).perform()
+        self.send_keys_to_page(Keys.LEFT * 5 + Keys.RIGHT)
 
         # place text comment
         self.mouse_drag(from_element=canvas, from_offset=(-200, -200), to_offset=(400, 110))
 
-        self.action_chains().send_keys("Hello World").perform()
+        self.send_keys_to_page("Hello World")
 
         # check if all options were applied
         comment_content: WebElementProtocol = editor.comment.text_inner.wait_for_visible()
@@ -1281,7 +1280,7 @@ steps:
         editor.tool_bar.tool(tool="markdown_comment").wait_for_and_click()
         editor.tool_bar.color(color="lime").wait_for_and_click()
         self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 220))
-        self.action_chains().send_keys("# Hello World").perform()
+        self.send_keys_to_page("# Hello World")
 
         editor.tool_bar.tool(tool="pointer").wait_for_and_click()
 
@@ -1302,7 +1301,7 @@ steps:
         editor.tool_bar.tool(tool="frame_comment").wait_for_and_click()
         editor.tool_bar.color(color="blue").wait_for_and_click()
         self.mouse_drag(from_element=canvas, from_offset=(-200, -150), to_offset=(400, 300))
-        self.action_chains().send_keys("My Frame").perform()
+        self.send_keys_to_page("My Frame")
 
         title: WebElementProtocol = editor.comment.frame_title.wait_for_visible()
         assert title.text == "My Frame"
@@ -1320,10 +1319,10 @@ steps:
         editor.tool_bar.tool(tool="freehand_pen").wait_for_and_click()
         editor.tool_bar.color(color="green").wait_for_and_click()
         editor.tool_bar.line_thickness.wait_for_and_click()
-        self.action_chains().send_keys(Keys.RIGHT * 20).perform()
+        self.send_keys_to_page(Keys.RIGHT * 20)
 
         editor.tool_bar.smoothing.wait_for_and_click()
-        self.action_chains().send_keys(Keys.RIGHT * 10).perform()
+        self.send_keys_to_page(Keys.RIGHT * 10)
 
         self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 200))
 
@@ -1331,7 +1330,7 @@ steps:
 
         editor.tool_bar.color(color="black").wait_for_and_click()
         editor.tool_bar.line_thickness.wait_for_and_click()
-        self.action_chains().send_keys(Keys.LEFT * 20).perform()
+        self.send_keys_to_page(Keys.LEFT * 20)
         self.mouse_drag(from_element=canvas, from_offset=(-100, -100), via_offsets=[(100, 200)], to_offset=(-200, 30))
 
         # test bulk remove freehand
@@ -1340,7 +1339,7 @@ steps:
 
         # place another freehand comment and test eraser
         editor.tool_bar.line_thickness.wait_for_and_click()
-        self.action_chains().send_keys(Keys.RIGHT * 20).perform()
+        self.send_keys_to_page(Keys.RIGHT * 20)
         editor.tool_bar.color(color="orange").wait_for_and_click()
 
         self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 200))
@@ -1349,7 +1348,7 @@ steps:
 
         # delete by clicking
         editor.tool_bar.tool(tool="freehand_eraser").wait_for_and_click()
-        self.action_chains().move_to_element(freehand_comment_a).click().perform()
+        self.move_to_and_click(freehand_comment_a)
 
         editor.comment.freehand_comment.wait_for_absent()
 
@@ -1368,7 +1367,6 @@ steps:
 
         editor.comment.freehand_comment.wait_for_absent()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_snapping(self):
         editor = self.components.workflow_editor
@@ -1382,11 +1380,11 @@ steps:
         # activate snapping and set it to max (200)
         editor.tool_bar.tool(tool="toggle_snap").wait_for_and_click()
         editor.tool_bar.snapping_distance.wait_for_and_click()
-        self.action_chains().send_keys(Keys.RIGHT * 10).perform()
+        self.send_keys_to_page(Keys.RIGHT * 10)
 
         # move the node a bit
         tool_node = editor.node._(label="tool_node").wait_for_present()
-        self.action_chains().move_to_element(tool_node).click_and_hold().move_by_offset(12, 3).release().perform()
+        self.mouse_drag(from_element=tool_node, to_offset=(12, 3))
 
         # check if editor position is snapped
         top, left = self.get_node_position("tool_node")
@@ -1396,7 +1394,7 @@ steps:
 
         # move the node a bit more
         tool_node = editor.node._(label="tool_node").wait_for_present()
-        self.action_chains().move_to_element(tool_node).click_and_hold().move_by_offset(207, -181).release().perform()
+        self.mouse_drag(from_element=tool_node, to_offset=(207, -181))
 
         # check if editor position is snapped
         top, left = self.get_node_position("tool_node")
@@ -1404,7 +1402,6 @@ steps:
         assert top % 200 == 0
         assert left % 200 == 0
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_selection(self):
         editor = self.components.workflow_editor
@@ -1422,7 +1419,7 @@ steps:
 
         # select the node
         editor.node_inspector_close.wait_for_and_click()
-        self.action_chains().move_to_element(tool_node).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+        self.shift_click(tool_node)
         self.sleep_for(self.wait_types.UX_RENDER)
 
         assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 step") != -1

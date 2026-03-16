@@ -3042,6 +3042,49 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.wait_for_and_click_selector(search_selector)
         self.wait_for_selector_visible("#gtn-screen")
 
+    def shift_click(self, element: WebElementProtocol) -> None:
+        """Shift-click an element. Works with both Selenium and Playwright."""
+        if self._driver_impl.backend_type == "playwright":
+            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+            pw_driver._unwrap_element(element).click(modifiers=["Shift"])
+        else:
+            self.action_chains().move_to_element(element).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+
+    def send_keys_to_page(self, *value: str) -> None:
+        """Send keys to the currently focused element / page.
+
+        Replaces action_chains().send_keys(...).perform() with a backend-agnostic impl.
+        Accepts Selenium Keys constants and plain text, matching PlaywrightElement.send_keys semantics.
+        """
+        if self._driver_impl.backend_type == "playwright":
+            from galaxy.selenium.playwright_element import _SELENIUM_KEY_TO_PLAYWRIGHT, _SELENIUM_MODIFIERS
+
+            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+            page = pw_driver.page
+            all_chars = "".join(str(v) for v in value)
+            has_special = any(c in _SELENIUM_KEY_TO_PLAYWRIGHT for c in all_chars)
+            if not has_special:
+                page.keyboard.type(all_chars)
+            else:
+                modifiers: list[str] = []
+                for char in all_chars:
+                    pw_key = _SELENIUM_KEY_TO_PLAYWRIGHT.get(char)
+                    if pw_key and char in _SELENIUM_MODIFIERS:
+                        modifiers.append(pw_key)
+                    elif pw_key:
+                        combo = "+".join(modifiers + [pw_key])
+                        page.keyboard.press(combo)
+                        modifiers.clear()
+                    else:
+                        if modifiers:
+                            combo = "+".join(modifiers + [char])
+                            page.keyboard.press(combo)
+                            modifiers.clear()
+                        else:
+                            page.keyboard.type(char)
+        else:
+            self.action_chains().send_keys(*value).perform()
+
     def mouse_drag(
         self,
         from_element: WebElementProtocol,
@@ -3050,18 +3093,51 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         to_offset=(0, 0),
         via_offsets: Optional[list[tuple[int, int]]] = None,
     ):
-        chain = self.action_chains().move_to_element(from_element).move_by_offset(*from_offset)
-        chain = chain.click_and_hold().pause(self.wait_length(self.wait_types.UX_RENDER))
+        if self._driver_impl.backend_type == "playwright":
+            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+            page = pw_driver.page
+            pause_ms = int(self.wait_length(self.wait_types.UX_RENDER) * 1000)
 
-        if via_offsets is not None:
-            for offset in via_offsets:
-                chain = chain.move_by_offset(*offset).pause(self.wait_length(self.wait_types.UX_RENDER))
+            from_box = pw_driver._unwrap_element(from_element).bounding_box()
+            assert from_box is not None
+            cx = from_box["x"] + from_box["width"] / 2 + from_offset[0]
+            cy = from_box["y"] + from_box["height"] / 2 + from_offset[1]
 
-        if to_element is not None:
-            chain = chain.move_to_element(to_element)
+            page.mouse.move(cx, cy)
+            page.mouse.down()
+            page.wait_for_timeout(pause_ms)
 
-        chain = chain.move_by_offset(*to_offset).pause(self.wait_length(self.wait_types.UX_RENDER)).release()
-        chain.perform()
+            if via_offsets is not None:
+                for offset in via_offsets:
+                    cx += offset[0]
+                    cy += offset[1]
+                    page.mouse.move(cx, cy)
+                    page.wait_for_timeout(pause_ms)
+
+            if to_element is not None:
+                to_box = pw_driver._unwrap_element(to_element).bounding_box()
+                assert to_box is not None
+                cx = to_box["x"] + to_box["width"] / 2
+                cy = to_box["y"] + to_box["height"] / 2
+
+            cx += to_offset[0]
+            cy += to_offset[1]
+            page.mouse.move(cx, cy)
+            page.wait_for_timeout(pause_ms)
+            page.mouse.up()
+        else:
+            chain = self.action_chains().move_to_element(from_element).move_by_offset(*from_offset)
+            chain = chain.click_and_hold().pause(self.wait_length(self.wait_types.UX_RENDER))
+
+            if via_offsets is not None:
+                for offset in via_offsets:
+                    chain = chain.move_by_offset(*offset).pause(self.wait_length(self.wait_types.UX_RENDER))
+
+            if to_element is not None:
+                chain = chain.move_to_element(to_element)
+
+            chain = chain.move_by_offset(*to_offset).pause(self.wait_length(self.wait_types.UX_RENDER)).release()
+            chain.perform()
 
 
 class NotLoggedInException(SeleniumTimeoutException):
