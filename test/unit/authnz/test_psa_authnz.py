@@ -8,7 +8,10 @@ from datetime import (
     timedelta,
 )
 from types import SimpleNamespace
-from typing import Optional
+from typing import (
+    cast,
+    Optional,
+)
 from unittest.mock import (
     MagicMock,
     patch,
@@ -42,6 +45,7 @@ from galaxy.authnz.psa_authnz import (
     PSAAuthnz,
     sync_user_profile,
 )
+from galaxy.config import GalaxyAppConfiguration
 
 
 @pytest.fixture(scope="module")
@@ -319,7 +323,7 @@ def test_oidc_config_custom_auth_pipeline(mock_oidc_config_file, mock_oidc_backe
         provider="oidc",
         oidc_config=manager.oidc_config,
         oidc_backend_config=manager.oidc_backends_config,
-        app_config=mock_app.config,
+        app_config=cast(GalaxyAppConfiguration, mock_app.config),
     )
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline
 
@@ -343,7 +347,7 @@ def test_oidc_config_auth_pipeline_extra(mock_oidc_config_file, mock_oidc_backen
         provider="oidc",
         oidc_config=manager.oidc_config,
         oidc_backend_config=manager.oidc_backends_config,
-        app_config=mock_app.config,
+        app_config=cast(GalaxyAppConfiguration, mock_app.config),
     )
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == AUTH_PIPELINE + tuple(custom_auth_pipeline_extra)
 
@@ -369,7 +373,7 @@ def test_oidc_config_custom_auth_pipeline_and_extra(mock_oidc_config_file, mock_
         provider="oidc",
         oidc_config=manager.oidc_config,
         oidc_backend_config=manager.oidc_backends_config,
-        app_config=mock_app.config,
+        app_config=cast(GalaxyAppConfiguration, mock_app.config),
     )
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline + tuple(custom_auth_pipeline_extra)
 
@@ -388,7 +392,7 @@ def test_logout_uses_id_token_hint_and_post_logout_redirect_uri():
             "client_secret": "dummyclientsecret",
             "redirect_uri": "http://localhost/authnz/keycloak/callback",
         },
-        app_config=app_config,
+        app_config=cast(GalaxyAppConfiguration, app_config),
     )
     backend = MagicMock()
     backend.oidc_config.return_value = {"end_session_endpoint": "https://keycloak.example.com/logout"}
