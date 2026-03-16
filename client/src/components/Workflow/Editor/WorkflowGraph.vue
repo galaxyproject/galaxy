@@ -214,7 +214,8 @@ defineExpose({
                 <WorkflowEdges
                     :transform="transform"
                     :dragging-terminal="draggingTerminal"
-                    :dragging-connection="draggingPosition" />
+                    :dragging-connection="draggingPosition"
+                    :focused-node-ids="focusedNodeIds" />
                 <WorkflowNode
                     v-for="(step, key) in steps"
                     :id="step.id"

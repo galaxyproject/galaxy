@@ -17,6 +17,10 @@ const props = defineProps({
         type: Object as PropType<TerminalPosition | null>,
         default: null,
     },
+    focusedNodeIds: {
+        type: Object as PropType<Set<number> | null>,
+        default: null,
+    },
 });
 
 const ribbonMargin = 4;
@@ -172,6 +176,27 @@ const lineWidth = computed(() => {
     }
 });
 
+/**
+ * The connection is considered out of focus if either the input or output node is not focused.
+ * The connection will never be considered out of focus if there are no focused nodes
+ * (i.e. in non-focus mode).
+ */
+const isOutOfFocus = computed(() => {
+    const ids = props.focusedNodeIds;
+    if (!ids) {
+        return false;
+    }
+
+    // make sure dragging connections are never dimmed (though we aren't passing the `focusedNodeIds`
+    // prop to dragging connections for now, we add this check just in case)
+    if (props.terminalPosition) {
+        return false;
+    }
+
+    const { output, input } = props.connection;
+    return !ids.has(output.stepId) || !ids.has(input.stepId);
+});
+
 const connectionClass = computed(() => {
     const classList = ["connection"];
 
@@ -181,6 +206,10 @@ const connectionClass = computed(() => {
 
     if (!connectionIsValid.value) {
         classList.push("invalid");
+    }
+
+    if (isOutOfFocus.value) {
+        classList.push("out-of-focus");
     }
 
     return classList.join(" ");
@@ -246,6 +275,10 @@ function keyForIndex(index: number) {
 
         &.invalid {
             stroke: #{$brand-warning};
+        }
+
+        &.out-of-focus {
+            opacity: 0.2;
         }
     }
 }
