@@ -449,6 +449,8 @@ function toggleSelected() {
 
     $multi-selected: lighten($brand-info, 20%);
 
+    transition: opacity 0.2s ease;
+
     &.node-not-in-focus {
         opacity: 0.4;
     }

@@ -268,6 +268,7 @@ function keyForIndex(index: number) {
 .workflow-editor-drawable-connection {
     .connection {
         stroke: #{$brand-primary};
+        transition: opacity 0.2s ease;
 
         &.optional {
             stroke-dasharray: 5 3;
