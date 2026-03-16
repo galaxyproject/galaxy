@@ -287,6 +287,8 @@ defineExpose({
                                 :key="activity.id"
                                 :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
+                                :indicator="activity.indicator"
+                                :indicator-variant="activity.indicatorVariant"
                                 :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
