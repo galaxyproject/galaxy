@@ -2,7 +2,10 @@ import json
 import logging
 import time
 from typing import TYPE_CHECKING
-from urllib.parse import quote
+from urllib.parse import (
+    quote,
+    urlencode,
+)
 
 import jwt
 from jwt import InvalidTokenError
@@ -412,11 +415,24 @@ class PSAAuthnz(IdentityProvider):
                 end_session_endpoint = oidc_config.get("end_session_endpoint")
 
                 if end_session_endpoint:
-                    # Construct logout URL with optional redirect_uri
+                    logout_params = {}
+
+                    # Provide the current ID token so providers such as Keycloak
+                    # can complete RP-initiated logout without showing a confirmation page.
+                    if trans.user is not None:
+                        for social_auth in trans.user.social_auth:
+                            if social_auth.provider == BACKENDS_NAME[self.config["provider"]]:
+                                id_token = social_auth.extra_data.get("id_token")
+                                if id_token:
+                                    logout_params["id_token_hint"] = id_token
+                                break
+
                     if post_user_logout_href:
-                        logout_url = f"{end_session_endpoint}?redirect_uri={quote(post_user_logout_href)}"
-                    else:
-                        logout_url = end_session_endpoint
+                        logout_params["post_logout_redirect_uri"] = post_user_logout_href
+
+                    logout_url = end_session_endpoint
+                    if logout_params:
+                        logout_url = f"{logout_url}?{urlencode(logout_params)}"
 
                     return logout_url
                 else:
