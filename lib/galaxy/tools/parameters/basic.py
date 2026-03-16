@@ -1534,6 +1534,10 @@ class ColumnListParameter(SelectToolParameter):
         # otherwise read first row - assume is a header with tab separated names
         if self.usecolnames:
             dataset = other_values.get(self.data_ref, None)
+            if isinstance(dataset, HistoryDatasetCollectionAssociation):
+                dataset = dataset.to_hda_representative()
+            if isinstance(dataset, DatasetCollectionElement):
+                dataset = dataset.first_dataset_instance()
             column_names = getattr(dataset, "metadata", None) and dataset.metadata.get_if_set("column_names")
             if column_names:
                 try:
