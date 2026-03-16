@@ -2231,24 +2231,27 @@ class MinimalJobWrapper(HasResourceParameters):
                 dataset.full_delete()
                 collected_bytes = 0
 
-        # Calculate dataset hash
-        for dataset_assoc in output_dataset_associations:
-            dataset = dataset_assoc.dataset.dataset
-            if not dataset.purged and dataset.state == Dataset.states.OK and not dataset.hashes:
-                if self.app.config.calculate_dataset_hash == "always" or (
-                    self.app.config.calculate_dataset_hash == "upload" and job.tool_id in ("upload1", "__DATA_FETCH__")
-                ):
-                    # Calculate dataset hash via a celery task
-                    if self.app.config.enable_celery_tasks:
-                        from galaxy.celery.tasks import compute_dataset_hash
+        # Calculate dataset hash - only if the job completed successfully,
+        # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).
+        if final_job_state == job.states.OK:
+            for dataset_assoc in output_dataset_associations:
+                dataset = dataset_assoc.dataset.dataset
+                if not dataset.purged and dataset.state == Dataset.states.OK and not dataset.hashes:
+                    if self.app.config.calculate_dataset_hash == "always" or (
+                        self.app.config.calculate_dataset_hash == "upload"
+                        and job.tool_id in ("upload1", "__DATA_FETCH__")
+                    ):
+                        # Calculate dataset hash via a celery task
+                        if self.app.config.enable_celery_tasks:
+                            from galaxy.celery.tasks import compute_dataset_hash
 
-                        extra_files_path = dataset.extra_files_path if dataset.extra_files_path_exists() else None
-                        request = ComputeDatasetHashTaskRequest(
-                            dataset_id=dataset.id,
-                            extra_files_path=extra_files_path,
-                            hash_function=self.app.config.hash_function,
-                        )
-                        compute_dataset_hash.delay(request=request)
+                            extra_files_path = dataset.extra_files_path if dataset.extra_files_path_exists() else None
+                            request = ComputeDatasetHashTaskRequest(
+                                dataset_id=dataset.id,
+                                extra_files_path=extra_files_path,
+                                hash_function=self.app.config.hash_function,
+                            )
+                            compute_dataset_hash.delay(request=request)
 
         user = job.user
         if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:

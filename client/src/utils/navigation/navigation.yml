@@ -552,6 +552,7 @@ files_dialog:
     ftp_details: 'span[title="details-gxftp://"]'
     row: 'span[title="label-${uri}"]'
     back_btn: '#back-btn'
+    options_ready: '[data-description="selection dialog options"] .selection-dialog-table[aria-busy="false"]'
 
 history_export:
   selectors:
@@ -1159,18 +1160,10 @@ custom_tools:
 admin:
   allowlist:
     selectors:
-      toolshed:
-        type: xpath
-        selector: '//a[contains(text(), "Toolshed Tools")]'
-      local:
-        type: xpath
-        selector: '//a[contains(text(), "Local Tools")]'
-      sanitized:
-        type: xpath
-        selector: '//a[contains(text(), "HTML Sanitized")]'
-      rendered_active:
-        type: xpath
-        selector: '//div[contains(@class, "active")]//a[contains(text(), "HTML Rendered")]'
+      toolshed: 'a[data-tab-title="Toolshed Tools"]'
+      local: 'a[data-tab-title="Local Tools"]'
+      sanitized: 'a[data-tab-title="HTML Sanitized"]'
+      rendered_active: '.tab-pane.active a[data-tab-title="HTML Rendered"]'
 
   manage_dependencies:
     selectors:

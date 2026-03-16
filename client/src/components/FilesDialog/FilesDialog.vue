@@ -265,6 +265,7 @@ function load() {
     if (urlTracker.isAtRoot.value || errorMessage.value) {
         itemsProvider.value = undefined;
         errorMessage.value = undefined;
+        isBusy.value = true;
         fetchFileSources(props.filterOptions)
             .then((results) => {
                 const convertedItems = results
@@ -274,13 +275,15 @@ function load() {
                 const sortedItems = convertedItems.sort(sortPrivateFileSourcesFirst);
                 items.value = sortedItems;
                 formatRows();
-                optionsShow.value = true;
                 showTime.value = false;
                 showDetails.value = true;
                 totalItems.value = convertedItems.length;
+                isBusy.value = false;
+                optionsShow.value = true;
             })
             .catch((error) => {
                 errorMessage.value = errorMessageAsString(error);
+                isBusy.value = false;
             });
     } else {
         if (!urlTracker.current.value) {
@@ -303,17 +306,20 @@ function load() {
             return;
         }
 
+        isBusy.value = true;
         browseRemoteFiles(urlTracker.current.value?.url, false, props.requireWritable)
             .then((result) => {
                 items.value = filterByMode(result.entries).map(entryToRecord);
                 totalItems.value = result.totalMatches;
                 formatRows();
-                optionsShow.value = true;
                 showTime.value = true;
                 showDetails.value = false;
+                isBusy.value = false;
+                optionsShow.value = true;
             })
             .catch((error) => {
                 errorMessage.value = errorMessageAsString(error);
+                isBusy.value = false;
             });
     }
 }
