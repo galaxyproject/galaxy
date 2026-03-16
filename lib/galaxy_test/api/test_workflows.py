@@ -1239,6 +1239,119 @@ steps:
         refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
         refactor_response.raise_for_status()
 
+    @skip_without_tool("boolean_conditional")
+    def test_wrong_current_case_ignored_on_execution(self):
+        """Prove __current_case__ is redundant: set it wrong, assert output follows test param."""
+        # boolean_conditional tool: boolfalse branch (case 1) outputs "p1notused",
+        # booltrue branch (case 0) outputs "p1used". We set test param to boolfalse
+        # but __current_case__ to 0 (booltrue) — output must be "p1notused".
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+outputs:
+  out:
+    outputSource: step/out_file1
+steps:
+  step:
+    tool_id: boolean_conditional
+    state:
+      p1:
+        p1use: false
+        p1val: "p1notused"
+""",
+        )
+        native = self._download_workflow(workflow_id)
+        step = list(native["steps"].values())[0]
+        tool_state = json.loads(step["tool_state"])
+        # p1use=boolfalse selects case 1 — deliberately set to 0 (wrong)
+        tool_state["p1"]["__current_case__"] = 0
+        step["tool_state"] = json.dumps(tool_state)
+        native["name"] = "Wrong __current_case__ test"
+        tampered_id = self.workflow_populator.create_workflow(native)
+        # Galaxy recomputes __current_case__ from test param on import — verify correction
+        reimported = self._download_workflow(tampered_id)
+        reimported_state = json.loads(list(reimported["steps"].values())[0]["tool_state"])
+        assert (
+            reimported_state["p1"]["__current_case__"] == 1
+        ), "Galaxy should correct __current_case__ to match test param on import"
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.invoke_workflow_and_wait(tampered_id, history_id=history_id)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            # If Galaxy used __current_case__=0, output would be "p1used".
+            # Correct behavior: follow test param (boolfalse) → "p1notused".
+            assert content.strip() == "p1notused", f"Expected 'p1notused' but got: {content!r}"
+        # Same thing in the other direction to verify tool parameter defaults
+        # are not involved in the recomputation.
+        # p1use=true (case 0) but __current_case__=1 (wrong) — must output "p1used"
+        workflow_id_inv = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+outputs:
+  out:
+    outputSource: step/out_file1
+steps:
+  step:
+    tool_id: boolean_conditional
+    state:
+      p1:
+        p1use: true
+        p1val: "p1used"
+""",
+        )
+        native_inv = self._download_workflow(workflow_id_inv)
+        step_inv = list(native_inv["steps"].values())[0]
+        tool_state_inv = json.loads(step_inv["tool_state"])
+        tool_state_inv["p1"]["__current_case__"] = 1
+        step_inv["tool_state"] = json.dumps(tool_state_inv)
+        native_inv["name"] = "Wrong __current_case__ test (inverse)"
+        tampered_inv_id = self.workflow_populator.create_workflow(native_inv)
+        reimported_inv = self._download_workflow(tampered_inv_id)
+        reimported_inv_state = json.loads(list(reimported_inv["steps"].values())[0]["tool_state"])
+        assert reimported_inv_state["p1"]["__current_case__"] == 0, "Galaxy should correct inverse case too"
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.invoke_workflow_and_wait(tampered_inv_id, history_id=history_id)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert content.strip() == "p1used", f"Expected 'p1used' but got: {content!r}"
+
+    @skip_without_tool("boolean_conditional")
+    def test_missing_current_case_recomputed_on_execution(self):
+        """Prove __current_case__ can be absent — Galaxy recomputes it from the test param."""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+outputs:
+  out:
+    outputSource: step/out_file1
+steps:
+  step:
+    tool_id: boolean_conditional
+    state:
+      p1:
+        p1use: true
+        p1val: "p1used"
+""",
+        )
+        native = self._download_workflow(workflow_id)
+        step = list(native["steps"].values())[0]
+        tool_state = json.loads(step["tool_state"])
+        del tool_state["p1"]["__current_case__"]
+        step["tool_state"] = json.dumps(tool_state)
+        native["name"] = "Missing __current_case__ test"
+        tampered_id = self.workflow_populator.create_workflow(native)
+        # Galaxy recomputes __current_case__ from test param on import — verify it's restored
+        reimported = self._download_workflow(tampered_id)
+        reimported_state = json.loads(list(reimported["steps"].values())[0]["tool_state"])
+        assert (
+            reimported_state["p1"]["__current_case__"] == 0
+        ), "Galaxy should recompute __current_case__ from test param"
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.invoke_workflow_and_wait(tampered_id, history_id=history_id)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert content.strip() == "p1used", f"Expected 'p1used' but got: {content!r}"
+
     def test_update_no_tool_id(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")
         upload_response = self.__test_upload(workflow=workflow_object)
