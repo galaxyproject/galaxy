@@ -242,6 +242,19 @@ class PSAAuthnz(IdentityProvider):
         backend = get_backend(backends, BACKENDS_NAME[self.config["provider"]])
         return backend(strategy, redirect_uri)
 
+    def _get_user_id_token(self, user):
+        if user is None:
+            return None
+
+        provider_name = BACKENDS_NAME[self.config["provider"]]
+        for social_auth in user.social_auth:
+            if social_auth.provider != provider_name:
+                continue
+            extra_data = social_auth.extra_data or {}
+            return extra_data.get("id_token")
+
+        return None
+
     def _login_user(self, backend, user, social_user):
         self.config["user"] = user
 
@@ -419,13 +432,8 @@ class PSAAuthnz(IdentityProvider):
 
                     # Provide the current ID token so providers such as Keycloak
                     # can complete RP-initiated logout without showing a confirmation page.
-                    if trans.user is not None:
-                        for social_auth in trans.user.social_auth:
-                            if social_auth.provider == BACKENDS_NAME[self.config["provider"]]:
-                                id_token = social_auth.extra_data.get("id_token")
-                                if id_token:
-                                    logout_params["id_token_hint"] = id_token
-                                break
+                    if id_token := self._get_user_id_token(trans.user):
+                        logout_params["id_token_hint"] = id_token
 
                     if post_user_logout_href:
                         logout_params["post_logout_redirect_uri"] = post_user_logout_href
