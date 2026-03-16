@@ -946,7 +946,6 @@ steps:
         workflow = self.workflow_populator.download_workflow(workflow_id)
         return workflow
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_create_conditional_step(self):
         editor = self.components.workflow_editor
@@ -997,6 +996,7 @@ steps:
         param_type_element = editor.param_type_form.wait_for_present()
         self.switch_param_type(param_type_element, "Text")
         self.assert_connection_invalid("param_input#output", "conditional_step#when")
+        editor.node_inspector_close.wait_for_and_click()
         self.workflow_editor_destroy_connection("conditional_step#when")
         # Make sure the when input is still shown
         conditional_node.input_terminal(name="when").wait_for_present()
