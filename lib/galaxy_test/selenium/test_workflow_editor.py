@@ -1212,7 +1212,6 @@ steps:
         # should not show error
         editor.duplicate_label_error(output="out_file1").wait_for_absent()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_map_over_output_indicator(self):
         self.open_in_workflow_editor("""
