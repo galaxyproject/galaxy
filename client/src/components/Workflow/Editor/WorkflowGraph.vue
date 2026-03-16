@@ -10,6 +10,7 @@ import type { Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { useD3Zoom } from "./composables/d3Zoom";
+import { useFocusedNodes } from "./composables/useFocusedNodes";
 import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
 import type { Rectangle, Vector } from "./modules/geometry";
@@ -44,8 +45,10 @@ const props = defineProps({
     detailedView: { type: Boolean, default: false },
 });
 
-const { stateStore, stepStore } = useWorkflowStores();
+const { stateStore, stepStore, connectionStore } = useWorkflowStores();
 const { scale, activeNodeId, draggingPosition, draggingTerminal } = storeToRefs(stateStore);
+
+const { focusedNodeIds } = useFocusedNodes(activeNodeId, connectionStore);
 const canvas: Ref<HTMLElement | null> = ref(null);
 
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
@@ -227,6 +230,7 @@ defineExpose({
                     :readonly="readonly"
                     :is-invocation="props.isInvocation && (!props.detailedView || activeNodeId !== step.id)"
                     :populated-inputs="props.populatedInputs"
+                    :is-out-of-focus="focusedNodeIds !== null && !focusedNodeIds.has(step.id)"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"
