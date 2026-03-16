@@ -6082,6 +6082,10 @@ steps:
                 },
                 inputs_by="name",
             )
+            # Wait for the scheduler to hit the pause step (invocation state "new" → "ready")
+            # before deleting, otherwise the scheduler may detect the deleted dataset
+            # on step 2 during scheduling and fail the invocation before we can resume.
+            self._wait_for_invocation_state(workflow_id, invocation_id, "ready")
             # Invocation is paused — delete the dataset before resuming.
             self.dataset_populator.delete_dataset(history_id=history_id, content_id=to_delete_id, purge=False)
             # Resume the pause step. The cat step will now run and
