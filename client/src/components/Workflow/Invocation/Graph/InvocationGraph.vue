@@ -241,7 +241,7 @@ function toggleDetailedView() {
             </div>
             <BCard v-if="activeNodeId !== null && activeStep" ref="stepCard" class="invocation-step-card mt-2" no-body>
                 <BCardHeader
-                    class="d-flex justify-content-between align-items-center px-3 py-1"
+                    class="invocation-step-header"
                     :class="activeNodeId !== null ? steps[activeNodeId]?.headerClass : ''">
                     <WorkflowInvocationStepHeader
                         class="w-100 pr-2"
@@ -339,5 +339,15 @@ function toggleDetailedView() {
     right: 1rem;
     z-index: 150;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.invocation-step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing) var(--spacing-4);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 </style>
