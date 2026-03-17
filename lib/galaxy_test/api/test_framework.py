@@ -1,5 +1,9 @@
 # This file doesn't test any API in particular but is meant to functionally
 # test the API framework itself.
+from urllib.parse import urljoin
+
+import requests
+
 from galaxy_test.base.decorators import requires_admin
 from ._framework import ApiTestCase
 
@@ -9,9 +13,13 @@ class TestApiFramework(ApiTestCase):
         get_response = self._get("licenses")
         assert get_response.headers["x-frame-options"] == "SAMEORIGIN"
 
+    def test_xframe_options_on_non_embed_published(self):
+        response = requests.get(urljoin(self.url, "/published/page"))
+        assert response.headers.get("x-frame-options") == "SAMEORIGIN"
+
     def test_xframe_options_skipped_for_embed(self):
-        get_response = self._get("/published/page", data={"embed": "true"})
-        assert "x-frame-options" not in get_response.headers
+        response = requests.get(urljoin(self.url, "/published/page?embed=true"))
+        assert "x-frame-options" not in response.headers
 
     # Next several tests test the API's run_as functionality.
     def test_user_cannont_run_as(self):
