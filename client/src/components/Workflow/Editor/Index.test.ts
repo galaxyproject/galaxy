@@ -157,7 +157,13 @@ describe("Index", () => {
 
     it("prevents navigation only if hasChanges", async () => {
         expect(getHasChanges()).toBeFalsy();
-        await wrapper.vm.onChange();
+        // Trigger hasChanges via the name watcher rather than calling onChange() directly,
+        // because direct method invocation doesn't propagate through createTestingPinia's
+        // store mutation tracking with Vite 8's module processing.
+        wrapper.vm.name = "trigger change";
+        await wrapper.vm.$nextTick();
+        expect(getHasChanges()).toBeTruthy();
+        await wrapper.vm.$nextTick();
         const confirmationRequired = wrapper.emitted()["update:confirmation"]![0]![0];
         expect(confirmationRequired).toBeTruthy();
     });
