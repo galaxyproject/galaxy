@@ -1,0 +1,38 @@
+- doc: |
+    Test that PJAs work on all_non_null HDCA output. Both branches run,
+    pick collects both into a list, rename PJA sets collection name.
+  job:
+    input_data:
+      type: File
+      value: 1.bed
+      file_type: bed
+    when_a:
+      type: raw
+      value: true
+    when_b:
+      type: raw
+      value: true
+  outputs:
+    picked:
+      class: Collection
+      collection_type: list
+      element_count: 2
+- doc: |
+    Test that all_non_null with one null branch collects only the
+    non-null output and applies the rename PJA.
+  job:
+    input_data:
+      type: File
+      value: 1.bed
+      file_type: bed
+    when_a:
+      type: raw
+      value: true
+    when_b:
+      type: raw
+      value: false
+  outputs:
+    picked:
+      class: Collection
+      collection_type: list
+      element_count: 1

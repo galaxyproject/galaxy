@@ -2178,10 +2178,14 @@ class PickValueModule(WorkflowModule):
     def _to_pja(key, value, step):
         if isinstance(value, PostJobAction):
             return value
-        output_name = value.get("output_name") if isinstance(value, dict) else None
-        action_arguments = value.get("action_arguments") if isinstance(value, dict) else None
-        action_type = value.get("action_type", key) if isinstance(value, dict) else key
-        return PostJobAction(action_type, step, output_name, action_arguments)
+        if not isinstance(value, dict):
+            raise TypeError(f"Expected PostJobAction or dict for PJA '{key}', got {type(value)}")
+        return PostJobAction(
+            value["action_type"],
+            step,
+            value.get("output_name"),
+            value.get("action_arguments"),
+        )
 
 
 class ToolModule(WorkflowModule):
