@@ -407,13 +407,12 @@ class FileSourceInstancesManager:
         payload: CanTestPluginStatus,
         template: FileSourceTemplate,
     ) -> tuple[Optional[TemplateParameters], Optional[PluginAspectStatus]]:
-        template_server_configuration = TemplateServerConfiguration()
+        template_server_configuration = self._resolver.template_server_configuration(
+            trans.user, template.id, template.version
+        )
         template_parameters = None
         exception = None
         try:
-            template_server_configuration = self._resolver.template_server_configuration(
-                trans.user, template.id, template.version
-            )
             template_parameters = prepare_template_parameters_for_testing(
                 trans, template, template_server_configuration, payload, self._app_vault, self._app_config
             )
@@ -643,18 +642,24 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         template = catalog.find_template_by(template_id, template_version)
         oauth2_configuration = get_oauth2_config_or_none(template)
         oauth2_scope = None
+        oauth2_client_pair_obj = None
         if oauth2_configuration is not None:
             environment = prepare_environment_from_root(template.environment, self._app_vault, self._app_config)
             user_details = user.config_template_details()
-            oauth2_client_pair_obj, oauth2_scope = read_oauth2_info_from_configuration(
-                template.configuration, user_details, environment
-            )
+            try:
+                oauth2_client_pair_obj, oauth2_scope = read_oauth2_info_from_configuration(
+                    template.configuration, user_details, environment
+                )
+            except Exception:
+                log.warning(
+                    "Failed to resolve OAuth2 client credentials for template %s - "
+                    "required environment variables may not be set",
+                    template_id,
+                )
             # most configuration definitions won't include this, the default for the
             # plugin type is the fallback and the typical case here
             if oauth2_scope is None:
                 oauth2_scope = oauth2_configuration.scope
-        else:
-            oauth2_client_pair_obj = None
         return TemplateServerConfiguration(
             oauth2_client_pair=oauth2_client_pair_obj,
             oauth2_configuration=oauth2_configuration,
