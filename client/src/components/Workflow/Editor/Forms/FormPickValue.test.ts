@@ -3,13 +3,12 @@ import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount, type Wrapper } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import Vue from "vue";
+import type Vue from "vue";
 
 import type { Step } from "@/stores/workflowStepStore";
 
-import FormElement from "@/components/Form/FormElement.vue";
-
 import FormPickValue from "./FormPickValue.vue";
+import FormElement from "@/components/Form/FormElement.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
@@ -147,7 +146,7 @@ describe("FormPickValue", () => {
                         mode: JSON.stringify("the_only_non_null"),
                         num_inputs: JSON.stringify(4),
                     },
-                })
+                }),
             );
             const state = getLastEmittedState(wrapper);
             expect(state.mode).toBe("the_only_non_null");

@@ -6,9 +6,9 @@ import type { InputTerminalSource, PostJobActions, Step } from "@/stores/workflo
 
 import { useToolState } from "../composables/useToolState";
 
+import Heading from "@/components/Common/Heading.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import FormSection from "@/components/Workflow/Editor/Forms/FormSection.vue";
-import Heading from "@/components/Common/Heading.vue";
 
 interface ToolState {
     mode: string;
@@ -26,7 +26,7 @@ const props = withDefaults(
         datatypes: undefined,
         nodeInputs: () => [],
         postJobActions: () => ({}),
-    }
+    },
 );
 
 const stepRef = toRef(props, "step");
@@ -77,7 +77,7 @@ watch(
             emit("onChange", state);
         }
     },
-    { deep: true }
+    { deep: true },
 );
 
 // Dummy initial emit (same pattern as FormInputCollection — resets initialChange guard)

@@ -5,7 +5,14 @@ import { computed } from "vue";
 import WorkflowIcons from "@/components/Workflow/icons";
 
 interface WorkflowStepIconProps {
-    stepType: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause" | "pick_value";
+    stepType:
+        | "tool"
+        | "data_input"
+        | "data_collection_input"
+        | "subworkflow"
+        | "parameter_input"
+        | "pause"
+        | "pick_value";
 }
 
 const props = defineProps<WorkflowStepIconProps>();
