@@ -19,6 +19,8 @@ export type WorkflowExtractionSummary = components["schemas"]["WorkflowExtractio
 
 export type HistoryCounts = Pick<CustomHistoryView, "nice_size" | "contents_active" | "contents_states">;
 
+export type BeaconHistory = Required<Pick<CustomHistoryView, "id" | "contents_active" | "create_time">>;
+
 export function hasImportable(entry?: AnyHistory): entry is HistoryDetailed {
     return entry !== undefined && "importable" in entry;
 }
@@ -104,6 +106,44 @@ export function isPublishedHistory(history: AnyHistoryEntry): history is Publish
  */
 export function isArchivedHistory(history: AnyHistoryEntry): history is ArchivedHistorySummary {
     return "archived" in history && history.archived;
+}
+
+// TODO: Need to polish this and also use this in the history store
+//       (why are the `all_datasets` and `archive_type` parameters required?)
+export async function createNewHistory(name?: string): Promise<HistoryDetailed> {
+    const { data, error } = await GalaxyApi().POST("/api/histories", {
+        body: { all_datasets: true, archive_type: "url", name },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    // TODO: Is it really returning a HistoryDetailed?
+    return data as HistoryDetailed;
+}
+
+/**
+ * Fetches the beacon histories for the current user.
+ * @param beaconHistoryName The beacon history name filter to apply when fetching.
+ * @returns A promise that resolves to the beacon histories
+ */
+export async function getBeaconHistories(beaconHistoryName: string): Promise<BeaconHistory[]> {
+    const { data, error } = await GalaxyApi().GET("/api/histories", {
+        params: {
+            query: {
+                keys: "id,contents_active,create_time",
+                q: ["name"],
+                qv: [beaconHistoryName],
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data as BeaconHistory[];
 }
 
 /**
