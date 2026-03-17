@@ -1799,6 +1799,8 @@ class MinimalJobWrapper(HasResourceParameters):
         # Now that we have the object store id, check if we are over the limit
         self._pause_job_if_over_quota(job)
         self.sa_session.commit()
+        if job.state == model.Job.states.PAUSED:
+            return False
         return True
 
     def _pause_job_if_over_quota(self, job):
