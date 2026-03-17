@@ -3,6 +3,7 @@ reusing tool test definitions (XML <tests> blocks) for inputs and output
 verification.
 """
 
+from galaxy.util.unittest_utils import skip_unless_environ
 from .framework import (
     managed_history,
     RunsToolTests,
@@ -11,6 +12,7 @@ from .framework import (
 )
 
 
+@skip_unless_environ("GALAXY_TEST_E2E_TOOL_TESTS")
 class TestToolFormHarness(SeleniumTestCase, RunsToolTests):
     ensure_registered = True
 
