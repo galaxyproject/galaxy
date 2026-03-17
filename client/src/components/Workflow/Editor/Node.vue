@@ -452,7 +452,7 @@ function toggleSelected() {
     transition: opacity 0.2s ease;
 
     &.node-not-in-focus {
-        opacity: 0.4;
+        opacity: 0.7;
     }
 
     &.node-multi-selected {
