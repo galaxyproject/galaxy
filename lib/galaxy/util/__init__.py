@@ -1505,6 +1505,8 @@ def metric_prefix(number: Union[int, float], base: int) -> Tuple[float, str]:
     (1.001, 'K')
     >>> metric_prefix(1000000, 1000)
     (1.0, 'M')
+    >>> metric_prefix(10**26, 1000)
+    (100.0, 'Y')
     >>> metric_prefix(1000**10, 1000)
     (1.0, 'Q')
     >>> metric_prefix(1000**11, 1000)
@@ -1517,12 +1519,11 @@ def metric_prefix(number: Union[int, float], base: int) -> Tuple[float, str]:
     else:
         sign = 1
 
-    for prefix in prefixes:
-        if number < base:
-            return sign * float(number), prefix
-        number /= base
+    for i, prefix in enumerate(prefixes):
+        if number < base ** (i + 1):
+            return sign * number / (base**i), prefix
     else:
-        return sign * float(number) * base, prefix
+        return sign * number / (base**i), prefix
 
 
 def shorten_with_metric_prefix(amount: int) -> str:
