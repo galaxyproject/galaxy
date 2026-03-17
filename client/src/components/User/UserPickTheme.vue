@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { BModal } from "bootstrap-vue";
-
+import GModal from "../BaseComponents/GModal.vue";
 import ThemeSelector from "@/components/User/ThemeSelector.vue";
 
 const emit = defineEmits<{
@@ -9,8 +8,8 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <BModal id="pick-theme-modal" title="Pick a theme" size="lg" hide-footer centered visible @hidden="emit('reset')">
+    <GModal id="pick-theme-modal" show title="Pick a theme" size="medium" @close="emit('reset')">
         Select a theme from the list below. The theme will be applied to the entire application.
         <ThemeSelector />
-    </BModal>
+    </GModal>
 </template>
