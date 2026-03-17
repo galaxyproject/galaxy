@@ -1,0 +1,16 @@
+- doc: |
+    Test that PJAs are NOT applied to skipped outputs. When all inputs are
+    null, first_or_skip produces a skipped HDA (expression.json). The
+    ChangeDatatypeAction should not corrupt it.
+  job:
+    input_data:
+      type: File
+      value: 1.bed
+      file_type: bed
+    when:
+      type: raw
+      value: false
+  outputs:
+    picked:
+      class: File
+      ftype: expression.json

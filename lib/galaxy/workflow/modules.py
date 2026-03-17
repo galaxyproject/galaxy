@@ -2163,8 +2163,10 @@ class PickValueModule(WorkflowModule):
         """Apply post job actions directly to module output via ActionBox.
 
         Uses execute_on_mapped_over which operates on step_outputs dict
-        rather than requiring a Job object.
+        rather than requiring a Job object. Skipped outputs are left untouched.
         """
+        if self._is_null_or_skipped(output):
+            return
         step_outputs = {"output": output}
         step_inputs = {}
         for pja in step.post_job_actions:
