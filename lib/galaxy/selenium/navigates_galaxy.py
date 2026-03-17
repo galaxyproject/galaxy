@@ -1445,6 +1445,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 self.sleep_for(self.wait_types.UX_RENDER)
                 self.screenshot(screenshot_partial)
         self.drag_and_drop(source_element, sink_element)
+        if self._driver_impl.backend_type == "playwright":
+            # dispatch_event is synchronous but Vue reactivity (store updates,
+            # terminal type recalculation) runs in microtasks — wait for it.
+            self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
         editor = self.components.workflow_editor
