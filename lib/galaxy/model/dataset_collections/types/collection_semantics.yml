@@ -961,6 +961,10 @@
                         invocation: {inputs: {i: {type: collection, ref: C_AS_LPU_n}}}
                         output: o
     tests:
+        tool_runtime:
+            api_test: "test_tool_execute.py::test_map_over_list_paired_or_unpaired_with_list_of_lists"
+        workflow_runtime:
+            framework_test: "collection_semantics_list_paired_or_unpaired_2"
         workflow_editor: "accepts list:list -> list:paired_or_unpaired connection"
 
 - doc: |

@@ -71,11 +71,33 @@ class CollectionTypeDescription:
         if subcollection_type == "single_datasets":
             return self.collection_type
 
-        # When the subcollection type is paired_or_unpaired but the collection
-        # actually ends with :paired (a subtype match), strip the actual suffix
-        # rather than the longer paired_or_unpaired string.
-        if subcollection_type == "paired_or_unpaired" and self.collection_type.endswith(":paired"):
-            return self.collection_type[: -len(":paired")]
+        normalized = _normalize_collection_type(self.collection_type)
+        normalized_sub = _normalize_collection_type(subcollection_type)
+
+        if subcollection_type == "paired_or_unpaired":
+            if self.collection_type.endswith(":paired"):
+                # paired_or_unpaired consumes the :paired suffix
+                return self.collection_type[: -len(":paired")]
+            elif normalized.endswith("list"):
+                # paired_or_unpaired acts like single_datasets for collections
+                # whose innermost type is list (each element wrapped as unpaired)
+                return self.collection_type
+            else:
+                # strip last rank (paired_or_unpaired consumes it)
+                return self.collection_type[: self.collection_type.rfind(":")]
+
+        if normalized_sub.endswith(":paired_or_unpaired"):
+            # Compound :paired_or_unpaired suffix — iterative peel-off matching
+            # TS effectiveMapOver logic. Strip ranks from both sides, then
+            # optionally strip one more if :paired was consumed.
+            current = self.collection_type
+            current_other = subcollection_type
+            while ":" in current_other:
+                current_other = current_other[: current_other.rfind(":")]
+                current = current[: current.rfind(":")]
+            if normalized.endswith(":paired"):
+                current = current[: current.rfind(":")]
+            return current
 
         return self.collection_type[: -(len(subcollection_type) + 1)]
 
@@ -100,6 +122,17 @@ class CollectionTypeDescription:
             # this can be thought of as a subcollection of anything except a pair
             # since it would match a pair exactly
             return collection_type != "paired"
+        if other_collection_type.endswith(":paired_or_unpaired"):
+            # Compound :paired_or_unpaired suffix — e.g. list:list can map over
+            # list:paired_or_unpaired. Strip the :paired_or_unpaired to get the
+            # required higher ranks, optionally strip :paired from self (since
+            # paired_or_unpaired consumes paired), then check alignment.
+            higher_ranks_required = other_collection_type[: other_collection_type.rfind(":")]
+            if collection_type.endswith(":paired"):
+                higher_ranks = collection_type[: collection_type.rfind(":")]
+            else:
+                higher_ranks = collection_type
+            return higher_ranks.endswith(higher_ranks_required) and higher_ranks != higher_ranks_required
         if other_collection_type == "single_datasets":
             # effectively any collection has unpaired subcollections
             return True

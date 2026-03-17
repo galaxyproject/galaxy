@@ -51,3 +51,34 @@
           text: "forward content"
         - that: has_text
           text: "reverse content"
+
+- doc: |
+    MAPPING_LIST_LIST_OVER_LIST_PAIRED_OR_UNPAIRED: A list:list collection mapped
+    over a list:paired_or_unpaired tool input produces a list output collection.
+    Each inner list is consumed as list:paired_or_unpaired via single_datasets.
+  job:
+    input1:
+      class: Collection
+      collection_type: list:list
+      elements:
+        - identifier: outer1
+          class: Collection
+          type: list
+          elements:
+            - identifier: el1
+              class: File
+              contents: "data from outer1 el1"
+            - identifier: el2
+              class: File
+              contents: "data from outer1 el2"
+        - identifier: outer2
+          class: Collection
+          type: list
+          elements:
+            - identifier: el1
+              class: File
+              contents: "data from outer2 el1"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: list
