@@ -2,7 +2,6 @@ import { faSave as farSave } from "@fortawesome/free-regular-svg-icons";
 import {
     faDownload,
     faEdit,
-    faExclamation,
     faHistory,
     faMagic,
     faPencilAlt,
@@ -15,7 +14,7 @@ import {
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { watchImmediate } from "@vueuse/core";
-import { faDiagramNext, faSearch, type IconDefinition } from "font-awesome-6";
+import { faDiagramNext, faSearch } from "font-awesome-6";
 import { computed, type ComputedRef, type Ref } from "vue";
 
 import { useActivityStore } from "@/stores/activityStore";
@@ -229,16 +228,16 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
     /** Indicator for best practices activity
      * @returns
      * - `number`: count of critical issues remaining
-     * - `faInfoCircle`: non-critical issues remaining
+     * - `true`: non-critical issues remaining (renders exclamation icon)
      * - `undefined`: no issues remaining
      */
-    const bestPracticesIndicator = computed<number | IconDefinition | undefined>(() => {
+    const bestPracticesIndicator = computed<number | true | undefined>(() => {
         const { resolvedPriorityIssues, totalPriorityIssues, resolvedAttributeIssues, totalAttributeIssues } =
             options.value.lintData;
         if (totalPriorityIssues.value > resolvedPriorityIssues.value) {
             return totalPriorityIssues.value - resolvedPriorityIssues.value;
         } else if (totalAttributeIssues.value > resolvedAttributeIssues.value) {
-            return faExclamation;
+            return true;
         }
         return undefined;
     });

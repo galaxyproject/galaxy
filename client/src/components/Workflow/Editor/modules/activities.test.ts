@@ -1,4 +1,3 @@
-import { faExclamation } from "@fortawesome/free-solid-svg-icons";
 import { createTestingPinia } from "@pinia/testing";
 import { setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -77,10 +76,8 @@ describe("useSpecialWorkflowActivities", () => {
             expect(setUpBestPractices(false, makeLintData(3, 1)).bestPracticesActivity.indicator).toBe(2);
         });
 
-        it("shows faExclamation icon when only minor issues remain", () => {
-            expect(setUpBestPractices(false, makeLintData(0, 0, 2, 0)).bestPracticesActivity.indicator).toBe(
-                faExclamation,
-            );
+        it("shows true when only minor issues remain", () => {
+            expect(setUpBestPractices(false, makeLintData(0, 0, 2, 0)).bestPracticesActivity.indicator).toBe(true);
         });
 
         it("uses danger variant for numeric indicator and primary for icon indicator", () => {
