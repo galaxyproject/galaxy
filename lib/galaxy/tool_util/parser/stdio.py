@@ -48,8 +48,8 @@ class ToolStdioExitCode:
     def to_dict(self):
         return {
             "class": "ToolStdioExitCode",
-            "range_start": self.range_start,
-            "range_end": self.range_end,
+            "range_start": None if math.isinf(self.range_start) else self.range_start,
+            "range_end": None if math.isinf(self.range_end) else self.range_end,
             "error_level": self.error_level,
             "desc": self.desc,
         }
