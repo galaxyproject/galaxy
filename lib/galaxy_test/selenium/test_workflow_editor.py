@@ -1119,6 +1119,112 @@ steps:
         assert tool_state["mode"] == "all_non_null"
 
     @selenium_test
+    def test_pick_value_change_datatype_pja(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs:
+  input_data: data
+steps:
+  branch_a:
+    tool_id: cat
+    in:
+      input1: input_data
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+"""
+        )
+        editor = self.components.workflow_editor
+        pick_node = editor.node._(label="pick")
+        pick_node.wait_for_and_click()
+        # Expand the output card — PJA controls are inside a collapsed FormCard
+        editor.configure_output(output="output").wait_for_and_click()
+        editor.change_datatype.wait_for_and_click()
+        editor.select_datatype_text_search.wait_for_and_send_keys("bam")
+        editor.select_datatype(datatype="bam").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        pick_step = [s for s in workflow["steps"].values() if s["type"] == "pick_value"][0]
+        pjas = pick_step["post_job_actions"]
+        assert "ChangeDatatypeActionoutput" in pjas
+        assert pjas["ChangeDatatypeActionoutput"]["action_arguments"]["newtype"] == "bam"
+
+    @selenium_test
+    def test_pick_value_rename_pja(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs:
+  input_data: data
+steps:
+  branch_a:
+    tool_id: cat
+    in:
+      input1: input_data
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+"""
+        )
+        editor = self.components.workflow_editor
+        pick_node = editor.node._(label="pick")
+        pick_node.wait_for_and_click()
+        editor.configure_output(output="output").wait_for_and_click()
+        editor.rename_output.wait_for_and_clear_and_send_keys("my_picked_output")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        pick_step = [s for s in workflow["steps"].values() if s["type"] == "pick_value"][0]
+        pjas = pick_step["post_job_actions"]
+        assert "RenameDatasetActionoutput" in pjas
+        assert pjas["RenameDatasetActionoutput"]["action_arguments"]["newname"] == "my_picked_output"
+
+    @selenium_test
+    def test_pick_value_add_tags_pja(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs:
+  input_data: data
+steps:
+  branch_a:
+    tool_id: cat
+    in:
+      input1: input_data
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+"""
+        )
+        editor = self.components.workflow_editor
+        pick_node = editor.node._(label="pick")
+        pick_node.wait_for_and_click()
+        editor.configure_output(output="output").wait_for_and_click()
+        editor.add_tags_button.wait_for_and_click()
+        tag_input = editor.add_tags_input.wait_for_visible()
+        tag_input.send_keys("#picktag")
+        self.send_enter(tag_input)
+        self.send_escape(tag_input)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        pick_step = [s for s in workflow["steps"].values() if s["type"] == "pick_value"][0]
+        pjas = pick_step["post_job_actions"]
+        assert "TagDatasetActionoutput" in pjas
+        assert "picktag" in pjas["TagDatasetActionoutput"]["action_arguments"]["tags"]
+
+    @selenium_test
     def test_editor_create_conditional_step(self):
         editor = self.components.workflow_editor
         self.workflow_create_new(annotation="simple when step definition")
