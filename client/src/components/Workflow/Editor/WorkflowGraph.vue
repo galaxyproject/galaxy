@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useElementBounding, useScroll } from "@vueuse/core";
+import { useElementBounding, useEventListener, useScroll } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, type PropType, provide, reactive, type Ref, ref, watch, watchEffect } from "vue";
 
@@ -150,6 +150,46 @@ function onActivate(nodeId: number | null) {
 function onDeactivate() {
     stateStore.activeNodeId = null;
 }
+
+/**
+ * Max total pixel movement (|dx| + |dy|) between pointerdown and pointerup
+ * that still counts as a "click" rather than a pan/drag.
+ */
+const mouseMovementThreshold = 9;
+
+/** The position of the last pointerdown event, or null if there hasn't been one yet. */
+let canvasPointerDownPos: { x: number; y: number } | null = null;
+
+// capture: true makes these fire in the capture phase, before D3 zoom's bubble-phase
+// listeners on the same element — so D3 cannot stopImmediatePropagation us out.
+useEventListener(
+    canvas,
+    "pointerdown",
+    (e: PointerEvent) => {
+        canvasPointerDownPos = { x: e.clientX, y: e.clientY };
+    },
+    { capture: true },
+);
+
+useEventListener(
+    canvas,
+    "pointerup",
+    (e: PointerEvent) => {
+        if (!canvasPointerDownPos) {
+            return;
+        }
+        const dx = Math.abs(e.clientX - canvasPointerDownPos.x);
+        const dy = Math.abs(e.clientY - canvasPointerDownPos.y);
+        canvasPointerDownPos = null;
+        // walk up the DOM from the release target — if we hit a node, this was a node click
+        const clickedOnNode = !!(e.target as HTMLElement).closest(".workflow-node");
+        // only deactivate on a clean click (no pan) on the canvas background
+        if (dx + dy <= mouseMovementThreshold && !clickedOnNode) {
+            onDeactivate();
+        }
+    },
+    { capture: true },
+);
 
 watch(
     () => transform.value.k,
