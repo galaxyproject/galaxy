@@ -218,16 +218,16 @@ export function bytesToString(size: number, normalFont = true, numPlaces = 1) {
 
     if (size >= tb) {
         size = size / tb;
-        unit = "TB";
+        unit = "TiB";
     } else if (size >= gb) {
         size = size / gb;
-        unit = "GB";
+        unit = "GiB";
     } else if (size >= mb) {
         size = size / mb;
-        unit = "MB";
+        unit = "MiB";
     } else if (size >= kb) {
         size = size / kb;
-        unit = "KB";
+        unit = "KiB";
     } else if (size > 0) {
         unit = "b";
     } else {

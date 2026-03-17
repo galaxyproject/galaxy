@@ -1558,11 +1558,11 @@ def nice_size(size: Union[float, int, str, Decimal]) -> str:
     >>> nice_size(100)
     '100 bytes'
     >>> nice_size(10000)
-    '9.8 KB'
+    '9.8 KiB'
     >>> nice_size(1000000)
-    '976.6 KB'
+    '976.6 KiB'
     >>> nice_size(100000000)
-    '95.4 MB'
+    '95.4 MiB'
     """
     try:
         size = float(size)
@@ -1572,7 +1572,7 @@ def nice_size(size: Union[float, int, str, Decimal]) -> str:
     if prefix == "":
         return f"{int(size)} bytes"
     else:
-        return f"{size:.1f} {prefix}B"
+        return f"{size:.1f} {prefix}iB"
 
 
 def size_to_bytes(size):
