@@ -2,17 +2,21 @@ import axios from "axios";
 
 import { getGalaxyInstance } from "@/app";
 import { withPrefix } from "@/utils/redirect";
+import { addSearchParams } from "@/utils/url";
 
 function userLogoutUrl(sessionCsrfToken, logoutAll) {
-    return withPrefix(`/user/logout?session_csrf_token=${sessionCsrfToken}&logout_all=${logoutAll}`);
+    return addSearchParams(withPrefix("/user/logout"), {
+        session_csrf_token: sessionCsrfToken,
+        logout_all: String(logoutAll),
+    });
 }
 
 function authnzLogoutUrl(provider, logoutAll) {
-    const query = new URLSearchParams({ logout_all: String(logoutAll) });
+    const params = { logout_all: String(logoutAll) };
     if (provider) {
-        query.set("provider", provider);
+        params.provider = provider;
     }
-    return withPrefix(`/authnz/logout?${query.toString()}`);
+    return addSearchParams(withPrefix("/authnz/logout"), params);
 }
 
 function hasAuthnzLogoutResponse(response) {
