@@ -407,12 +407,13 @@ class FileSourceInstancesManager:
         payload: CanTestPluginStatus,
         template: FileSourceTemplate,
     ) -> tuple[Optional[TemplateParameters], Optional[PluginAspectStatus]]:
-        template_server_configuration = self._resolver.template_server_configuration(
-            trans.user, template.id, template.version
-        )
+        template_server_configuration = TemplateServerConfiguration()
         template_parameters = None
         exception = None
         try:
+            template_server_configuration = self._resolver.template_server_configuration(
+                trans.user, template.id, template.version
+            )
             template_parameters = prepare_template_parameters_for_testing(
                 trans, template, template_server_configuration, payload, self._app_vault, self._app_config
             )
