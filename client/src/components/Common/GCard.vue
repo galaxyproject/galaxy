@@ -748,6 +748,12 @@ function onKeyDown(event: KeyboardEvent) {
         background-color: $body-bg;
         border: 1px solid $brand-secondary;
         border-radius: 0.5rem;
+        overflow: hidden;
+
+        .g-card-description :deep(img) {
+            max-width: 100%;
+            height: auto;
+        }
 
         .g-card-title-truncate {
             display: -webkit-box;
