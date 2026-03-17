@@ -197,7 +197,7 @@ export function roundToDecimalPlaces(number: number, numPlaces: number) {
     return parseFloat(number.toFixed(numPlaces));
 }
 
-const kb = 1024;
+const kb = 1000;
 const mb = kb * kb;
 const gb = mb * kb;
 const tb = gb * kb;
@@ -218,16 +218,16 @@ export function bytesToString(size: number, normalFont = true, numPlaces = 1) {
 
     if (size >= tb) {
         size = size / tb;
-        unit = "TiB";
+        unit = "TB";
     } else if (size >= gb) {
         size = size / gb;
-        unit = "GiB";
+        unit = "GB";
     } else if (size >= mb) {
         size = size / mb;
-        unit = "MiB";
+        unit = "MB";
     } else if (size >= kb) {
         size = size / kb;
-        unit = "KiB";
+        unit = "KB";
     } else if (size > 0) {
         unit = "b";
     } else {
