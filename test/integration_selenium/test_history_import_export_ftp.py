@@ -30,8 +30,13 @@ class TestHistoryImportExportFtpSeleniumIntegrationBase(SeleniumIntegrationTestC
         user_ftp_dir = os.path.join(self.ftp_dir(), email)
         os.makedirs(user_ftp_dir)
 
+    def _wait_for_files_dialog_ready(self):
+        """Wait for the files dialog to finish loading and display its options."""
+        self.components.files_dialog.options_ready.wait_for_visible()
+
     def _export_to_ftp_with_filename(self, filename: str):
         self.components.history_export.directory_input.wait_for_and_click()
+        self._wait_for_files_dialog_ready()
         self.components.files_dialog.ftp_label.wait_for_and_click()
         self.components.upload.file_dialog_ok.wait_for_and_click()
         self.components.history_export.name_input.wait_for_and_send_keys(filename)
@@ -72,6 +77,7 @@ class TestHistoryImportExportFtpSeleniumIntegration(TestHistoryImportExportFtpSe
         history_import = gx_selenium_context.components.history_import
         history_import.radio_button_remote_files.wait_for_and_click()
         history_import.open_files_dialog.wait_for_and_click()
+        self._wait_for_files_dialog_ready()
         files_dialog.ftp_label.wait_for_and_click()
         files_dialog.row(uri="gxftp://my_export.tar.gz").wait_for_and_click()
 
@@ -128,6 +134,7 @@ class TestHistoryImportExportFtpSeleniumIntegrationWithTasks(TestHistoryImportEx
 
         # Select FTP file source
         self.components.history_export.directory_input.wait_for_and_click()
+        self._wait_for_files_dialog_ready()
         self.components.files_dialog.ftp_label.wait_for_and_click()
         self.components.upload.file_dialog_ok.wait_for_and_click()
 

@@ -551,6 +551,7 @@ files_dialog:
     ftp_details: 'span[title="details-gxftp://"]'
     row: 'span[title="label-${uri}"]'
     back_btn: '#back-btn'
+    options_ready: '[data-description="selection dialog options"] .selection-dialog-table[aria-busy="false"]'
 
 history_export:
   selectors:
