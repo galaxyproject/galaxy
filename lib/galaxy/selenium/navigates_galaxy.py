@@ -3057,7 +3057,10 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         Accepts Selenium Keys constants and plain text, matching PlaywrightElement.send_keys semantics.
         """
         if self._driver_impl.backend_type == "playwright":
-            from galaxy.selenium.playwright_element import _SELENIUM_KEY_TO_PLAYWRIGHT, _SELENIUM_MODIFIERS
+            from galaxy.selenium.playwright_element import (
+                _SELENIUM_KEY_TO_PLAYWRIGHT,
+                _SELENIUM_MODIFIERS,
+            )
 
             pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
             page = pw_driver.page
