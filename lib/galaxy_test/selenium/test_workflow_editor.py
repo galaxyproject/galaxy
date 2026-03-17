@@ -1515,11 +1515,14 @@ steps:
 
         return (int(width_stripped), int(height_stripped))
 
+    @retry_assertion_during_transitions
     def assert_node_output_is(self, label: str, output_type: str, subcollection_type: Optional[str] = None):
         editor = self.components.workflow_editor
         node_label, output_name = label.split("#")
         node = editor.node._(label=node_label)
         node.wait_for_present()
+        # Dismiss any stale tooltip before hovering so retry gets fresh text
+        self.click_center()
         output_element = node.output_terminal(name=output_name).wait_for_visible()
         self.hover_over(output_element)
         element = self.components._.tooltip_inner.wait_for_present()
