@@ -31,6 +31,11 @@ import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
+from .playwright_element import (
+    _SELENIUM_KEY_TO_PLAYWRIGHT,
+    _SELENIUM_MODIFIERS,
+)
+
 if TYPE_CHECKING:
     from selenium.webdriver.remote.webdriver import WebDriver
 
@@ -3057,11 +3062,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         Accepts Selenium Keys constants and plain text, matching PlaywrightElement.send_keys semantics.
         """
         if self._driver_impl.backend_type == "playwright":
-            from galaxy.selenium.playwright_element import (
-                _SELENIUM_KEY_TO_PLAYWRIGHT,
-                _SELENIUM_MODIFIERS,
-            )
-
             pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
             page = pw_driver.page
             all_chars = "".join(str(v) for v in value)
