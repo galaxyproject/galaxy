@@ -21,7 +21,7 @@ export function galaxyLegacyPlugin() {
                     include: ["store", "jquery-migrate", "underscore", "backbone"],
 
                     // Fix CommonJS global references
-                    esbuildOptions: {
+                    rolldownOptions: {
                         define: {
                             global: "globalThis",
                         },
