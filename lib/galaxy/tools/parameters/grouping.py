@@ -4,13 +4,13 @@ Constructs for grouping tool parameters
 
 import io
 import logging
+import math
 import os
 import unicodedata
 from collections.abc import (
     Callable,
     Mapping,
 )
-import math
 from math import inf
 from typing import (
     Any,
