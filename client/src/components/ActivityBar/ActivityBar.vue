@@ -93,6 +93,13 @@ watchImmediate(
     },
 );
 
+watchImmediate(
+    () => props.specialActivities,
+    (specials) => {
+        activityStore.setSpecialPanelActivityIds(specials.filter((a) => a.panel).map((a) => a.id));
+    },
+);
+
 const { isAdmin, isAnonymous } = storeToRefs(userStore);
 
 const emit = defineEmits<{
