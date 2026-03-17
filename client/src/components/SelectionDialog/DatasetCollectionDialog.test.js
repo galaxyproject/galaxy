@@ -14,7 +14,6 @@ const { server, http } = useServerMock();
 
 const mockOptions = {
     callback: () => {},
-    modalStatic: true,
     history: "f2db41e1fa331b3e",
 };
 
