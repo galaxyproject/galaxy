@@ -2168,7 +2168,7 @@ class PickValueModule(WorkflowModule):
         if self._is_null_or_skipped(output):
             return
         step_outputs = {"output": output}
-        step_inputs = {}
+        step_inputs: dict[str, Any] = {}
         for pja in step.post_job_actions:
             ActionBox.execute_on_mapped_over(
                 trans, trans.sa_session, pja, step_inputs, step_outputs, replacement_dict
