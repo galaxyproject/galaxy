@@ -50,6 +50,9 @@ def populate_model(request_context, inputs, state_inputs, group_inputs: list[dic
         elif input.type == "section":
             tool_dict = input.to_dict(request_context)
             populate_model(request_context, input.inputs, group_state, tool_dict["inputs"], other_values)
+        elif input.type == "upload_dataset":
+            tool_dict = input.to_dict(request_context)
+            populate_model(request_context, input.inputs, group_state, tool_dict["inputs"], other_values)
         else:
             try:
                 initial_value = input.get_initial_value(request_context, other_values)
