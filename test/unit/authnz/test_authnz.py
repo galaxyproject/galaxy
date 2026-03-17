@@ -1,4 +1,5 @@
 import tempfile
+from typing import Optional
 from unittest.mock import MagicMock
 
 import pytest
@@ -121,7 +122,7 @@ def test_psa_authnz_config(mock_app):
     assert psa_authnz.config[setting_name("USERNAME_KEY")] == config_values["username_key"]
 
 
-def _create_backend_config_with_idphint(idphint_value: str = None) -> tuple[str, str]:
+def _create_backend_config_with_idphint(idphint_value: Optional[str] = None) -> tuple[str, str]:
     """Create a Keycloak backend config, optionally including an <idphint> element."""
     idphint_element = f"        <idphint>{idphint_value}</idphint>" if idphint_value else ""
     contents = f"""<?xml version="1.0"?>
