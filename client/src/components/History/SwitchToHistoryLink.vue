@@ -131,7 +131,10 @@ const linkClass = computed(() => {
 .history-link {
     display: flex;
     gap: 1px;
-    align-items: center;
-    justify-content: space-between;
+    align-items: baseline;
+}
+
+.history-link :deep(.g-link) {
+    text-align: start;
 }
 </style>
