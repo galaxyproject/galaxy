@@ -1368,11 +1368,11 @@ gx_data:
 
 
 gx_data_optional:
-  request_valid:
+  request_valid: &data_optional_request_valid
    - parameter: {src: hda, id: abcdabcd}
    - parameter: null
    - {}
-  request_invalid:
+  request_invalid: &data_optional_request_invalid
    - parameter: {src: hda, id: 5}
    - parameter: {src: hdca, id: abcdabcd}
    - parameter: {src: fooda, id: abcdabcd}
@@ -1381,11 +1381,11 @@ gx_data_optional:
    - parameter: true
    - parameter: 5
    - parameter: "5"
-  request_internal_valid:
+  request_internal_valid: &data_optional_request_internal_valid
    - parameter: {src: hda, id: 5}
    - parameter: null
    - {}
-  request_internal_invalid:
+  request_internal_invalid: &data_optional_request_internal_invalid
    - parameter: {src: hda, id: abcdabcd}
    - parameter: {src: hdca, id: abcdabcd}
    - parameter: {src: fooda, id: abcdabcd}
@@ -1394,10 +1394,10 @@ gx_data_optional:
    - parameter: true
    - parameter: 5
    - parameter: "5"
-  job_internal_valid:
+  job_internal_valid: &data_optional_job_internal_valid
    - parameter: null
    - parameter: {src: hda, id: 5}
-  job_internal_invalid:
+  job_internal_invalid: &data_optional_job_internal_invalid
    - {}
   job_runtime_valid:
    - parameter: {class: File, basename: "f.txt", location: "step_input://0",
@@ -1407,26 +1407,40 @@ gx_data_optional:
    - parameter: {src: hda, id: 7}
    - parameter: {class: File}
    - {}
-  workflow_step_valid:
+  workflow_step_valid: &data_optional_workflow_step_valid
    - {}
-  workflow_step_invalid:
+  workflow_step_invalid: &data_optional_workflow_step_invalid
    - {src: hda, id: abcdabcd}
    - {src: hda, id: 7}
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {__class__: 'ConnectedValue'}
-  workflow_step_linked_valid:
+  workflow_step_linked_valid: &data_optional_workflow_step_linked_valid
    - {}
    - parameter: {__class__: 'ConnectedValue'}
-  workflow_step_linked_invalid:
+  workflow_step_linked_invalid: &data_optional_workflow_step_linked_invalid
    - {src: hda, id: abcdabcd}
    - {src: hda, id: 7}
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {__class__: 'ConnectedValueX'}
-  test_case_xml_valid:
+  test_case_xml_valid: &data_optional_test_case_xml_valid
   - {}
   - parameter: {class: "File", path: "1.bed"}
-  test_case_xml_invalid:
+  test_case_xml_invalid: &data_optional_test_case_xml_invalid
   - parameter: {class: "NotAFile", path: "1.bed"}
+
+gx_hidden_data:
+  request_valid: *data_optional_request_valid
+  request_invalid: *data_optional_request_invalid
+  request_internal_valid: *data_optional_request_internal_valid
+  request_internal_invalid: *data_optional_request_internal_invalid
+  job_internal_valid: *data_optional_job_internal_valid
+  job_internal_invalid: *data_optional_job_internal_invalid
+  workflow_step_valid: *data_optional_workflow_step_valid
+  workflow_step_invalid: *data_optional_workflow_step_invalid
+  workflow_step_linked_valid: *data_optional_workflow_step_linked_valid
+  workflow_step_linked_invalid: *data_optional_workflow_step_linked_invalid
+  test_case_xml_valid: *data_optional_test_case_xml_valid
+  test_case_xml_invalid: *data_optional_test_case_xml_invalid
 
 gx_data_multiple:
   request_valid:

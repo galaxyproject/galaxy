@@ -1496,9 +1496,12 @@ steps:
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 403)
 
-    @skip_if_github_down
-    def test_url_import(self):
-        url = "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
+    def test_url_import(self, mock_http_server):
+        url = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga",
+            file_path="lib/galaxy_test/base/data/test_workflow_1.ga",
+            content_type="application/json",
+        )
         workflow_id = self._post("workflows", data={"archive_source": url}).json()["id"]
         workflow = self._download_workflow(workflow_id)
         assert "TestWorkflow1" in workflow["name"]

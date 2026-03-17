@@ -20,7 +20,6 @@ from requests import (
 
 from galaxy.tool_util.verify.interactor import ValidToolTestDict
 from galaxy.util import galaxy_root_path
-from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.api_asserts import (
     assert_error_code_is,
@@ -365,13 +364,16 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert "ex2" in option_values
 
     @skip_without_tool("test_data_source")
-    @skip_if_github_down
-    def test_data_source_ok_request(self):
+    def test_data_source_ok_request(self, mock_http_server):
         with self.dataset_populator.test_history() as history_id:
+            url = mock_http_server.get_url(
+                remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                file_path="test-data/1.bed",
+            )
             payload = self.dataset_populator.run_tool_payload(
                 tool_id="test_data_source",
                 inputs={
-                    "URL": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                    "URL": url,
                     "URL_method": "get",
                     "data_type": "bed",
                 },

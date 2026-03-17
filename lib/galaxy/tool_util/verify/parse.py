@@ -324,7 +324,7 @@ def _process_raw_inputs(
                 location = param_extra.get("location")
                 if param_type != "text":
                     param_value = split_if_str(param_value)
-                if param_type == "data":
+                if param_type in ("data", "hidden_data"):
                     if location and input_source.get_bool("multiple", False):
                         # We get the input/s from the location which can be a list of urls separated by commas
                         locations = split_if_str(location)

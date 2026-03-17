@@ -1,15 +1,12 @@
 import sqlite3
 from contextlib import contextmanager
+from functools import lru_cache
 from typing import (
     NewType,
     Optional,
 )
 
-from sqlalchemy import (
-    create_engine,
-    select,
-    update,
-)
+from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.orm import object_session
@@ -20,7 +17,6 @@ from sqlalchemy.sql.expression import (
 )
 
 from galaxy.exceptions import ConfigurationError
-from galaxy.model import Job
 
 DbUrl = NewType("DbUrl", str)
 
@@ -147,19 +143,21 @@ def is_one_database(db1_url: str, db2_url: Optional[str]):
     return not (db1_url and db2_url and db1_url != db2_url)
 
 
+@lru_cache(maxsize=1)
 def supports_returning(engine: Engine) -> bool:
     """
     Return True if the database bound to `engine` supports the `RETURNING` SQL clause.
     """
-    stmt = update(Job).where(Job.id == -1).values(create_time=None).returning(Job.id)
+    stmt = text("UPDATE job SET tool_id=abc WHERE false RETURNING id")
     return _statement_executed_without_error(stmt, engine)
 
 
+@lru_cache(maxsize=1)
 def supports_skip_locked(engine: Engine) -> bool:
     """
     Return True if the database bound to `engine` supports the `SKIP_LOCKED` parameter.
     """
-    stmt = select(Job).where(Job.id == -1).with_for_update(skip_locked=True)
+    stmt = text("SELECT 1 FROM job WHERE false FOR UPDATE SKIP LOCKED")
     return _statement_executed_without_error(stmt, engine)
 
 
