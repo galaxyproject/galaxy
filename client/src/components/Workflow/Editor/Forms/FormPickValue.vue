@@ -1,20 +1,33 @@
 <script setup lang="ts">
 import { toRef, watch } from "vue";
 
-import type { Step } from "@/stores/workflowStepStore";
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import type { InputTerminalSource, PostJobActions, Step } from "@/stores/workflowStepStore";
 
 import { useToolState } from "../composables/useToolState";
 
 import FormElement from "@/components/Form/FormElement.vue";
+import FormSection from "@/components/Workflow/Editor/Forms/FormSection.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 interface ToolState {
     mode: string;
     num_inputs: number;
 }
 
-const props = defineProps<{
-    step: Step;
-}>();
+const props = withDefaults(
+    defineProps<{
+        step: Step;
+        datatypes?: DatatypesMapperModel["datatypes"];
+        nodeInputs?: InputTerminalSource[];
+        postJobActions?: PostJobActions;
+    }>(),
+    {
+        datatypes: undefined,
+        nodeInputs: () => [],
+        postJobActions: () => ({}),
+    }
+);
 
 const stepRef = toRef(props, "step");
 const { toolState } = useToolState(stepRef);
@@ -34,7 +47,7 @@ function cleanToolState(): ToolState {
     return { mode: "first_non_null", num_inputs: 2 };
 }
 
-const emit = defineEmits(["onChange"]);
+const emit = defineEmits(["onChange", "onChangePostJobActions"]);
 
 const modeOptions = [
     ["First non-null (error if all null)", "first_non_null"],
@@ -47,6 +60,10 @@ function onMode(newMode: string) {
     const state = cleanToolState();
     state.mode = newMode;
     emit("onChange", state);
+}
+
+function onChangePostJobActions(postJobActions: PostJobActions) {
+    emit("onChangePostJobActions", postJobActions);
 }
 
 // Grow-on-connect: watch step connections, add terminal when last empty one gets connected
@@ -77,5 +94,16 @@ emit("onChange", cleanToolState());
             :options="modeOptions"
             help="How to select among the connected inputs."
             @input="onMode" />
+        <div v-if="datatypes && step.outputs && step.outputs.length > 0" class="mt-2 mb-4">
+            <Heading h2 separator bold size="sm"> Additional Options </Heading>
+            <FormSection
+                :id="step.id"
+                :node-inputs="nodeInputs ?? []"
+                :node-outputs="step.outputs"
+                :step="step"
+                :datatypes="datatypes"
+                :post-job-actions="postJobActions ?? {}"
+                @onChange="onChangePostJobActions" />
+        </div>
     </div>
 </template>

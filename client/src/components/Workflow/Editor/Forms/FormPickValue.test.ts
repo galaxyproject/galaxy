@@ -35,7 +35,7 @@ function makeStep(overrides: Partial<Step> = {}): Step {
 }
 
 function mountPickValue(step?: Step): Wrapper<Vue> {
-    return shallowMount(FormPickValue, {
+    return shallowMount(FormPickValue as any, {
         propsData: {
             step: step ?? makeStep(),
         },

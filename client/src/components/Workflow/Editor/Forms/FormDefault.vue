@@ -46,7 +46,11 @@
             <FormPickValue
                 v-if="type == 'pick_value'"
                 :step="step"
-                @onChange="onChange" />
+                :datatypes="datatypes"
+                :node-inputs="stepInputs"
+                :post-job-actions="postJobActions"
+                @onChange="onChange"
+                @onChangePostJobActions="onChangePostJobActions" />
             <FormInputCollection
                 v-else-if="type == 'data_collection_input'"
                 :step="step"
@@ -104,9 +108,11 @@ const emit = defineEmits([
     "onEditSubworkflow",
     "onSetData",
     "onUpdateStep",
+    "onChangePostJobActions",
 ]);
 const stepRef = toRef(props, "step");
-const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
+const { stepId, contentId, annotation, label, name, type, configForm, stepInputs, postJobActions } =
+    useStepProps(stepRef);
 const { stepStore } = useWorkflowStores();
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
@@ -131,6 +137,9 @@ function onEditSubworkflow() {
 }
 function onUpgradeSubworkflow() {
     emit("onAttemptRefactor", [{ action_type: "upgrade_subworkflow", step: { order_index: stepId.value } }]);
+}
+function onChangePostJobActions(postJobActions: unknown) {
+    emit("onChangePostJobActions", stepId.value, postJobActions);
 }
 
 // keeps the component from emitting the onCreate change event

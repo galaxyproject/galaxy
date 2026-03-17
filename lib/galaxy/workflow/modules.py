@@ -1961,6 +1961,27 @@ class PickValueModule(WorkflowModule):
 
     MODES = ("first_non_null", "first_or_skip", "the_only_non_null", "all_non_null")
 
+    def __init__(self, trans, content_id=None, **kwds):
+        super().__init__(trans, content_id=content_id, **kwds)
+        self.post_job_actions: dict[str, Any] = {}
+
+    @classmethod
+    def from_dict(Class, trans, d, **kwds):
+        module = super().from_dict(trans, d, **kwds)
+        module.post_job_actions = d.get("post_job_actions", {})
+        return module
+
+    @classmethod
+    def from_workflow_step(Class, trans, step, **kwds):
+        module = super().from_workflow_step(trans, step, **kwds)
+        module.post_job_actions = {}
+        for pja in step.post_job_actions:
+            module.post_job_actions[pja.action_type + pja.output_name] = pja
+        return module
+
+    def get_post_job_actions(self, incoming):
+        return self.post_job_actions
+
     def get_inputs(self):
         # State managed by frontend Vue component, not backend forms
         return {}
@@ -1981,6 +2002,10 @@ class PickValueModule(WorkflowModule):
     def save_to_step(self, step, detached=False):
         step.type = self.type
         step.tool_inputs = self._get_state_dict()
+        if not detached:
+            for k, v in self.post_job_actions.items():
+                pja = self._to_pja(k, v, step)
+                self.trans.sa_session.add(pja)
 
     @property
     def _num_inputs(self):
@@ -2093,6 +2118,7 @@ class PickValueModule(WorkflowModule):
             raise ValueError(f"Unknown pick_value mode: {mode}")
 
         progress.set_step_outputs(invocation_step, {"output": output})
+        self._apply_post_job_actions(trans, step, output, progress.effective_replacement_dict())
         return None
 
     def _create_skipped_output(self, trans, invocation_step):
@@ -2132,6 +2158,28 @@ class PickValueModule(WorkflowModule):
             element_identifiers=elements,
         )
         return hdca
+
+    def _apply_post_job_actions(self, trans, step, output, replacement_dict):
+        """Apply post job actions directly to module output via ActionBox.
+
+        Uses execute_on_mapped_over which operates on step_outputs dict
+        rather than requiring a Job object.
+        """
+        step_outputs = {"output": output}
+        step_inputs = {}
+        for pja in step.post_job_actions:
+            ActionBox.execute_on_mapped_over(
+                trans, trans.sa_session, pja, step_inputs, step_outputs, replacement_dict
+            )
+
+    @staticmethod
+    def _to_pja(key, value, step):
+        if isinstance(value, PostJobAction):
+            return value
+        output_name = value.get("output_name") if isinstance(value, dict) else None
+        action_arguments = value.get("action_arguments") if isinstance(value, dict) else None
+        action_type = value.get("action_type", key) if isinstance(value, dict) else key
+        return PostJobAction(action_type, step, output_name, action_arguments)
 
 
 class ToolModule(WorkflowModule):
