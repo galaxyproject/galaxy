@@ -100,7 +100,7 @@ jobs:
         run: npm run sync-version
         working-directory: 'client-api'
       - name: build client-api
-        run: npm install && npm run build
+        run: pnpm install && pnpm run build
         working-directory: 'client-api'
       - name: publish client-api
         if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)

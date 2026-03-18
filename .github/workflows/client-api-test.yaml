@@ -33,11 +33,11 @@ jobs:
         run: pnpm install --frozen-lockfile
         working-directory: client
       - name: Install client-api dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         working-directory: client-api
       - name: Build client-api
-        run: npm run build
+        run: pnpm run build
         working-directory: client-api
       - name: Run client-api tests
-        run: npm test
+        run: pnpm test
         working-directory: client-api
