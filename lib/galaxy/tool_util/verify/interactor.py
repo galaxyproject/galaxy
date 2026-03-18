@@ -21,6 +21,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -711,6 +712,80 @@ class GalaxyInteractorApi:
             raise ValueError(f"Invalid `location` URL: `{location}`")
         return location
 
+    def _credential_api_call(self, method: str, path: str, data: Optional[Dict[str, Any]] = None) -> Any:
+        """Low-level helper: call a credential API endpoint, raise on error, return JSON."""
+        if method == "post":
+            response = self._post(path, data=data or {}, json=True)
+        elif method == "get":
+            response = self._get(path)
+        elif method == "delete":
+            response = self._delete(path)
+        else:
+            raise ValueError(f"Unsupported method: {method}")
+        raise_for_status(response)
+        return response.json()
+
+    def _create_test_credentials(
+        self, testdef: "ToolTestDescription"
+    ) -> Tuple[List[Dict[str, Any]], Optional[List[Dict[str, Any]]]]:
+        """Create vault credentials for a test and return (created_credentials, credentials_context)."""
+        if not testdef.credentials:
+            return [], None
+
+        user_id = self._credential_api_call("get", "whoami")["id"]
+        created_credentials = []
+        credentials_context_list = []
+
+        for cred in testdef.credentials:
+            credential_payload = {
+                "source_type": "tool",
+                "source_id": testdef.tool_id,
+                "source_version": testdef.tool_version or "1.0.0",
+                "service_credential": {
+                    "name": cred["name"],
+                    "version": cred.get("version", "1.0"),
+                    "group": {
+                        "name": f"test_group_{cred['name']}",
+                        "variables": cred.get("variables", []),
+                        "secrets": cred.get("secrets", []),
+                    },
+                },
+            }
+            created_cred = self._credential_api_call("post", f"users/{user_id}/credentials", data=credential_payload)
+            all_credentials = self._credential_api_call("get", f"users/{user_id}/credentials")
+
+            # Find user_credentials_id by matching the newly-created group id.
+            user_credentials_id = None
+            for user_cred in all_credentials:
+                if (
+                    user_cred["source_type"] == "tool"
+                    and user_cred["source_id"] == testdef.tool_id
+                    and user_cred.get("source_version") == (testdef.tool_version or "1.0.0")
+                ):
+                    for group in user_cred["groups"]:
+                        if group["id"] == created_cred["id"]:
+                            user_credentials_id = user_cred["id"]
+                            break
+                    if user_credentials_id:
+                        break
+
+            if not user_credentials_id:
+                raise RuntimeError(
+                    f"Failed to find user_credentials_id for created credential group {created_cred['id']}"
+                )
+
+            created_credentials.append({"user_credentials_id": user_credentials_id, "user_id": user_id})
+            credentials_context_list.append(
+                {
+                    "user_credentials_id": user_credentials_id,
+                    "name": cred["name"],
+                    "version": cred.get("version", "1.0"),
+                    "selected_group": {"id": created_cred["id"], "name": created_cred["name"]},
+                }
+            )
+
+        return created_credentials, credentials_context_list
+
     def run_tool(
         self,
         testdef: "ToolTestDescription",
@@ -788,80 +863,10 @@ class GalaxyInteractorApi:
 
         submit_response = None
 
-        # Create vault-based credentials via API for test execution
-        created_credentials = []
-        credentials_context = None
-        if testdef.credentials:
-            # Get user_id for credential creation
-            whoami_response = self._get("whoami")
-            user_id = whoami_response.json()["id"]
-
-            credentials_context_list = []
-            for cred in testdef.credentials:
-                # Build payload for credential creation
-                credential_payload = {
-                    "source_type": "tool",
-                    "source_id": testdef.tool_id,
-                    "source_version": testdef.tool_version or "1.0.0",
-                    "service_credential": {
-                        "name": cred["name"],
-                        "version": cred.get("version", "1.0"),
-                        "group": {
-                            "name": f"test_group_{cred['name']}",
-                            "variables": cred.get("variables", []),
-                            "secrets": cred.get("secrets", []),
-                        },
-                    },
-                }
-
-                # Create credentials via API
-                create_response = self._post(f"users/{user_id}/credentials", data=credential_payload, json=True)
-                raise_for_status(create_response)
-                created_cred = create_response.json()
-
-                # Get the user_credentials_id by listing credentials
-                # (POST returns ServiceCredentialGroupResponse which only has the group id,
-                # we need UserServiceCredentialsResponse which has the user_credentials_id)
-                list_response = self._get(f"users/{user_id}/credentials")
-                raise_for_status(list_response)
-                all_credentials = list_response.json()
-
-                # Find the user_credentials_id by searching for the UserCredentials entry
-                # that contains our newly-created group (matched by group ID).
-                # Filter by source_type, source_id, and source_version to reduce the scan.
-                user_credentials_id = None
-                for user_cred in all_credentials:
-                    if (
-                        user_cred["source_type"] == "tool"
-                        and user_cred["source_id"] == testdef.tool_id
-                        and user_cred.get("source_version") == (testdef.tool_version or "1.0.0")
-                    ):
-                        for group in user_cred["groups"]:
-                            if group["id"] == created_cred["id"]:
-                                user_credentials_id = user_cred["id"]
-                                break
-                        if user_credentials_id:
-                            break
-
-                if not user_credentials_id:
-                    raise RuntimeError(
-                        f"Failed to find user_credentials_id for created credential group {created_cred['id']}"
-                    )
-
-                # Store for cleanup
-                created_credentials.append({"user_credentials_id": user_credentials_id, "user_id": user_id})
-
-                # Build credentials_context entry
-                credentials_context_list.append(
-                    {
-                        "user_credentials_id": user_credentials_id,
-                        "name": cred["name"],
-                        "version": cred.get("version", "1.0"),
-                        "selected_group": {"id": created_cred["id"], "name": created_cred["name"]},
-                    }
-                )
-
-            credentials_context = credentials_context_list
+        extra_data: Dict[str, Any] = {}
+        created_credentials, credentials_context = self._create_test_credentials(testdef)
+        if credentials_context is not None:
+            extra_data["credentials_context"] = credentials_context
 
         for _ in range(DEFAULT_TOOL_TEST_WAIT):
             submit_response = self.__submit_tool(
@@ -870,7 +875,7 @@ class GalaxyInteractorApi:
                 tool_input=inputs_tree,
                 tool_version=testdef.tool_version,
                 use_legacy_api=submit_with_legacy_api,
-                credentials_context=credentials_context,
+                extra_data=extra_data,
             )
             if _are_tool_inputs_not_ready(submit_response):
                 print("Tool inputs not ready yet")
@@ -887,10 +892,9 @@ class GalaxyInteractorApi:
             def _cleanup_credentials():
                 for cred_info in created_credentials:
                     try:
-                        delete_response = self._delete(
-                            f"users/{cred_info['user_id']}/credentials/{cred_info['user_credentials_id']}"
+                        self._credential_api_call(
+                            "delete", f"users/{cred_info['user_id']}/credentials/{cred_info['user_credentials_id']}"
                         )
-                        raise_for_status(delete_response)
                     except Exception as e:
                         print(f"Warning: Failed to delete test credentials: {e}")
 
@@ -1130,17 +1134,15 @@ class GalaxyInteractorApi:
         files: Optional[dict] = None,
         tool_version: Optional[str] = None,
         use_legacy_api: bool = True,
-        credentials_context: Optional[List[Dict[str, Any]]] = None,
     ):
         extra_data = extra_data or {}
         if use_legacy_api:
-            if credentials_context:
+            if "credentials_context" in extra_data:
                 data = dict(
                     history_id=history_id,
                     tool_id=tool_id,
                     inputs=tool_input,
                     tool_version=tool_version,
-                    credentials_context=credentials_context,
                     **extra_data,
                 )
                 return self._post("tools", data=data, json=True)
@@ -1157,8 +1159,6 @@ class GalaxyInteractorApi:
             data = dict(
                 history_id=history_id, tool_id=tool_id, inputs=tool_input, tool_version=tool_version, **extra_data
             )
-            if credentials_context:
-                data["credentials_context"] = credentials_context
             submit_tool_request_response = self._post("jobs", data=data, json=True)
             return submit_tool_request_response
 
