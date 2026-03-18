@@ -164,6 +164,12 @@ def safe_label_or_none(label: str) -> Optional[str]:
     return label
 
 
+def safe_label(label: str, value_index: int) -> str:
+    if len(label) <= 63:
+        return label
+    return f"_input_{value_index}"
+
+
 T = TypeVar("T")
 
 
@@ -788,7 +794,7 @@ class JobSearch:
         c = aliased(model.HistoryDatasetAssociation)
         d = aliased(model.JobParameter)
         e = aliased(model.HistoryDatasetAssociationHistory)
-        labeled_col = a.dataset_id.label(f"{k}_{value_index}")
+        labeled_col = a.dataset_id.label(safe_label(f"{k}_{value_index}", value_index))
         stmt = stmt.add_columns(labeled_col)
         used_ids.append(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
@@ -849,8 +855,7 @@ class JobSearch:
         value_index: int,
     ) -> "Select[tuple[int]]":
         a = aliased(model.JobToInputLibraryDatasetAssociation)
-        label = safe_label_or_none(f"{k}_{value_index}")
-        labeled_col = a.ldda_id.label(label)
+        labeled_col = a.ldda_id.label(safe_label(f"{k}_{value_index}", value_index))
         stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         data_conditions.append(and_(a.name == k, a.ldda_id == v))
@@ -1093,7 +1098,7 @@ class JobSearch:
         # Main query `stmt` construction
         # This section joins the base job statement with the associations and then filters
         # by the HDCAs identified as equivalent in the CTEs.
-        labeled_col = a.dataset_collection_id.label(f"{k}_{value_index}")
+        labeled_col = a.dataset_collection_id.label(safe_label(f"{k}_{value_index}", value_index))
         stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
 
@@ -1419,7 +1424,7 @@ class JobSearch:
                 model.JobToInputDatasetCollectionElementAssociation,
                 name=f"job_to_input_dce_association_{k}_{value_index}",
             )
-            labeled_col = a.dataset_collection_element_id.label(f"{k}_{value_index}")
+            labeled_col = a.dataset_collection_element_id.label(safe_label(f"{k}_{value_index}", value_index))
             stmt = stmt.add_columns(labeled_col)
             stmt = stmt.join(a, a.job_id == model.Job.id)
 
@@ -1462,7 +1467,7 @@ class JobSearch:
             hda_right = safe_aliased(model.HistoryDatasetAssociation, name=f"hda_right_{k}_{value_index}")
 
             # Start joins from job → input DCE association → first-level DCE (left side)
-            labeled_col = a.dataset_collection_element_id.label(safe_label_or_none(f"{k}_{value_index}"))
+            labeled_col = a.dataset_collection_element_id.label(safe_label(f"{k}_{value_index}", value_index))
             stmt = stmt.add_columns(labeled_col)
             stmt = stmt.join(a, a.job_id == model.Job.id)
             stmt = stmt.join(dce_left, dce_left.id == a.dataset_collection_element_id)
