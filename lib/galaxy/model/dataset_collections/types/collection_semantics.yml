@@ -605,7 +605,7 @@
                         output: o
     tests:
         tool_runtime:
-            api_test: "test_tools.py::TestToolsApi::test_subcollection_mapping"
+            api_test: "test_tool_execute.py::test_simple_subcollection_mapping"
         workflow_editor: "accepts list:paired -> paired connection"
 
 - doc: |
