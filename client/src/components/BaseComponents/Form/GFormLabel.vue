@@ -71,12 +71,28 @@ const stateClasses = computed(() => {
     &.valid {
         :deep(input) {
             border-color: var(--color-green-500) !important;
+
+            &:focus {
+                box-shadow: 0 0 0 0.2rem rgb(from var(--color-green-500) r g b / 0.33);
+            }
+
+            &:focus-visible {
+                box-shadow: 0 0 0 0.2rem var(--color-green-500);
+            }
         }
     }
 
     &.invalid {
         :deep(input) {
             border-color: var(--color-red-500) !important;
+
+            &:focus {
+                box-shadow: 0 0 0 0.2rem rgb(from var(--color-red-500) r g b / 0.33);
+            }
+
+            &:focus-visible {
+                box-shadow: 0 0 0 0.2rem var(--color-red-500);
+            }
         }
     }
 

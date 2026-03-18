@@ -8,6 +8,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     (e: "input", value: string | null): void;
     (e: "keydown", event: KeyboardEvent): void;
+    (e: "blur", event: FocusEvent): void;
 }>();
 
 const inputElement = ref<HTMLInputElement | null>(null);
@@ -29,7 +30,12 @@ defineExpose({
 </script>
 
 <template>
-    <input ref="inputElement" v-model="inputValue" class="g-form-input" @keydown="(event) => emit('keydown', event)" />
+    <input
+        ref="inputElement"
+        v-model="inputValue"
+        class="g-form-input"
+        @keydown="(event) => emit('keydown', event)"
+        @blur="(event) => emit('blur', event)" />
 </template>
 
 <style scoped lang="scss">
