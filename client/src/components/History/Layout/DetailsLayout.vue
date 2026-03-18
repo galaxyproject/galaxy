@@ -139,7 +139,7 @@ function selectText() {
                     v-if="renameable"
                     ref="clickToEditRef"
                     v-model="clickToEditName"
-                    v-b-tooltip.hover="clickToEditClamped ? name : undefined"
+                    v-b-tooltip.hover="clickToEditClamped ? name : ''"
                     component="h3"
                     title="..."
                     data-description="name display"

@@ -67,9 +67,9 @@ function checkClamped() {
 
 const clampTooltip = computed(() => {
     if (isClamped.value) {
-        return headingRef.value?.textContent?.trim();
+        return headingRef.value?.textContent?.trim() ?? "";
     }
-    return undefined;
+    return "";
 });
 
 const clampStyle = computed(() => {
