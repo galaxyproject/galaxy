@@ -193,7 +193,7 @@ prov==1.5.1
 psutil==7.2.2
 pulsar-galaxy-lib==0.15.14
 py-key-value-aio==0.4.4
-pyasn1==0.6.2
+pyasn1==0.6.3
 pyasn1-modules==0.4.2
 pycparser==3.0 ; (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy') or (implementation_name == 'pypy' and platform_python_implementation == 'PyPy')
 pycryptodome==3.23.0
