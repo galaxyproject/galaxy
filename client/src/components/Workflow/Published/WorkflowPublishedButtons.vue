@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { faDownload, faEdit, faPlay } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEdit, faLink, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
+import { BButton, BButtonGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { StoredWorkflowDetailed } from "@/api/workflows";
+import { getFullAppUrl } from "@/app/utils";
 import { galaxyLogo } from "@/components/icons/galaxyIcons";
 import { useUserStore } from "@/stores/userStore";
+import { copy } from "@/utils/clipboard";
 import { withPrefix } from "@/utils/redirect";
 
 const props = defineProps<{
@@ -23,9 +25,15 @@ const runUrl = computed(() => withPrefix(`/workflows/run?id=${props.id}`));
 
 const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`));
 
+const fullLink = computed(() => getFullAppUrl(`published/workflow?id=${props.id}`));
+
 const sharedWorkflow = computed(() => {
     return !userStore.matchesCurrentUsername(props.workflowInfo.owner);
 });
+
+function copyLink() {
+    copy(fullLink.value);
+}
 
 const editButtonTitle = computed(() => {
     if (userStore.isAnonymous) {
@@ -50,15 +58,25 @@ function logInTitle(title: string) {
 
 <template>
     <span>
-        <BButton
-            v-b-tooltip.hover.noninteractive
-            title="Download workflow in .ga format"
-            variant="outline-primary"
-            size="md"
-            :href="downloadUrl">
-            <FontAwesomeIcon :icon="faDownload" />
-            Download
-        </BButton>
+        <BButtonGroup>
+            <BButton
+                v-b-tooltip.hover.noninteractive
+                title="Download workflow in .ga format"
+                variant="outline-primary"
+                size="md"
+                :href="downloadUrl">
+                <FontAwesomeIcon :icon="faDownload" />
+                Download
+            </BButton>
+            <BButton
+                v-b-tooltip.hover.noninteractive
+                title="Copy link to workflow"
+                variant="outline-primary"
+                size="md"
+                @click="copyLink">
+                <FontAwesomeIcon :icon="faLink" />
+            </BButton>
+        </BButtonGroup>
 
         <BButton
             v-if="!props.embed && sharedWorkflow"
