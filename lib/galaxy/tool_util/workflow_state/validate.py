@@ -16,6 +16,7 @@ from typing import (
 from pydantic import BaseModel
 
 from ._report_models import (
+    ConnectionValidationReport,
     SingleValidationReport,
     TreeValidationReport,
     ValidationStepResult,
@@ -56,6 +57,7 @@ class ValidateOptions(BaseModel):
     tool_source: str = "auto"
     strict: bool = False
     summary: bool = False
+    connections: bool = False
     report_json: Optional[str] = None
     report_markdown: Optional[str] = None
     allow: List[str] = []
@@ -432,6 +434,112 @@ def format_json_tree(report: TreeValidationReport) -> dict:
     return report.model_dump(by_alias=True)
 
 
+# -- Connection validation formatting --
+
+
+def format_connection_text(report: ConnectionValidationReport, summary_only: bool = False) -> str:
+    """Format ConnectionValidationReport as human-readable text."""
+    lines = []
+    s = report.summary
+
+    if not summary_only:
+        for sr in report.step_results:
+            if not sr.connections and not sr.errors:
+                continue
+            step_label = f"Step {sr.step}"
+            if sr.tool_id:
+                step_label += f" ({sr.tool_id})"
+            if sr.map_over:
+                step_label += f" [map_over: {sr.map_over}]"
+
+            for cr in sr.connections:
+                src = f"{cr.source_step}/{cr.source_output}"
+                if cr.status == "ok":
+                    if cr.mapping:
+                        lines.append(f"  {src} → {cr.target_input}: OK (mapping: {cr.mapping})")
+                    else:
+                        lines.append(f"  {src} → {cr.target_input}: OK")
+                elif cr.status == "invalid":
+                    lines.append(f"  {src} → {cr.target_input}: INVALID")
+                    for err in cr.errors:
+                        lines.append(f"    {err}")
+                elif cr.status == "skip":
+                    lines.append(f"  {src} → {cr.target_input}: SKIP")
+
+            for err in sr.errors:
+                lines.append(f"  {step_label}: {err}")
+
+        if lines:
+            lines.insert(0, "--- Connection Validation ---")
+            lines.append("---")
+
+    lines.append(f"Connections: {s.get('ok', 0)} OK, {s.get('invalid', 0)} INVALID, {s.get('skip', 0)} SKIP")
+    return "\n".join(lines)
+
+
+def format_connection_markdown(report: ConnectionValidationReport) -> str:
+    """Format ConnectionValidationReport as Markdown."""
+    s = report.summary
+    lines = [
+        "## Connection Validation",
+        "",
+        f"**Status:** {'VALID' if report.valid else 'INVALID'}",
+        f"**Connections:** {s.get('ok', 0)} OK, {s.get('invalid', 0)} INVALID, {s.get('skip', 0)} SKIP",
+        "",
+    ]
+
+    has_details = any(sr.connections or sr.errors for sr in report.step_results)
+    if has_details:
+        lines.append("| Source | Target | Status | Mapping | Errors |")
+        lines.append("| --- | --- | --- | --- | --- |")
+        for sr in report.step_results:
+            for cr in sr.connections:
+                src = f"{cr.source_step}/{cr.source_output}"
+                tgt = f"{cr.target_step}/{cr.target_input}"
+                mapping = cr.mapping or "-"
+                errors = "; ".join(cr.errors) if cr.errors else "-"
+                lines.append(f"| {src} | {tgt} | {cr.status} | {mapping} | {errors} |")
+            for err in sr.errors:
+                step_label = f"{sr.step} ({sr.tool_id})" if sr.tool_id else sr.step
+                lines.append(f"| - | {step_label} | error | - | {err} |")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def _run_connection_validation(options: ValidateOptions, tool_info) -> int:
+    """Run connection validation and print results."""
+    from .connection_validation import validate_connections_report
+
+    is_dir = os.path.isdir(options.workflow_path)
+    if is_dir:
+        from .workflow_tree import (
+            discover_workflows,
+            load_workflow_safe,
+        )
+
+        workflows = discover_workflows(options.workflow_path)
+        any_invalid = False
+        for info in workflows:
+            wf_dict = load_workflow_safe(info)
+            if wf_dict is None:
+                continue
+            report = validate_connections_report(wf_dict, tool_info)
+            if not report.valid:
+                any_invalid = True
+            text = format_connection_text(report, summary_only=options.summary)
+            if text.strip():
+                print(f"\n{info.relative_path}:")
+                print(text)
+        return 1 if any_invalid else 0
+    else:
+        workflow = load_workflow(options.workflow_path)
+        report = validate_connections_report(workflow, tool_info)
+        print()
+        print(format_connection_text(report, summary_only=options.summary))
+        return 1 if not report.valid else 0
+
+
 # -- Entry point --
 
 
@@ -459,11 +567,18 @@ def run_validate(options: ValidateOptions) -> int:
 
     if is_dir:
         report = validate_tree(options.workflow_path, tool_info, policy=policy)
-        return _emit_tree_results(options, report)
+        exit_code = _emit_tree_results(options, report)
     else:
         workflow = load_workflow(options.workflow_path)
         results = validate_workflow_cli(workflow, tool_info, policy=policy)
-        return _emit_single_results(options, results)
+        exit_code = _emit_single_results(options, results)
+
+    if options.connections:
+
+        conn_exit = _run_connection_validation(options, tool_info)
+        exit_code = max(exit_code, conn_exit)
+
+    return exit_code
 
 
 def _emit_single_results(options: ValidateOptions, results: List[ValidationStepResult]) -> int:

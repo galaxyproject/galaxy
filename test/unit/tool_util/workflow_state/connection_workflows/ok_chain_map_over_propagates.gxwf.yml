@@ -1,0 +1,15 @@
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list
+steps:
+  step1:
+    tool_id: gx_data
+    in:
+      parameter: input_collection
+  step2:
+    tool_id: gx_data
+    in:
+      parameter:
+        source: step1/output

@@ -192,7 +192,7 @@ class ToolShedGetToolInfo:
             readable_id = tool_id
         return toolshed_url, trs_tool_id, version, readable_id
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> ParsedTool:
+    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
         toolshed_url, trs_tool_id, version, readable_id = self._resolve_tool_coordinates(tool_id, tool_version)
         if version is None:
             raise KeyError(f"No version available for tool: {tool_id}")

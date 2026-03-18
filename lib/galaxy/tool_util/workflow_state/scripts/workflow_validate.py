@@ -26,6 +26,7 @@ def build_parser():
     parser.add_argument("workflow_path", help="Path to .ga/.gxwf.yml file or directory (auto-detected)")
     parser.add_argument("--strict", action="store_true", help="Treat skips (missing tool defs) as failures")
     parser.add_argument("--summary", action="store_true", help="Show only summary counts")
+    parser.add_argument("--connections", action="store_true", help="Validate inter-step connection type compatibility")
     parser.add_argument(
         "--report-json",
         nargs="?",

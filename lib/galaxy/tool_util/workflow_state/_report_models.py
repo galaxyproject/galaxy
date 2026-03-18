@@ -21,6 +21,7 @@ from pydantic import (
 )
 
 StepStatus = Literal["ok", "fail", "skip"]
+ConnectionStatus = Literal["ok", "invalid", "skip"]
 
 
 # -- Step-level results --
@@ -59,6 +60,7 @@ class WorkflowResultBase(BaseModel):
 
 class WorkflowValidationResult(WorkflowResultBase):
     step_results: List[ValidationStepResult] = Field(default=[], serialization_alias="results")
+    connection_report: Optional["ConnectionValidationReport"] = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -75,6 +77,51 @@ class WorkflowValidationResult(WorkflowResultBase):
 class WorkflowCleanResult(WorkflowResultBase):
     step_results: List[CleanStepResult] = Field(default=[], serialization_alias="results")
     total_removed: int = 0
+
+
+# -- Connection validation report models --
+
+
+class ConnectionResult(BaseModel):
+    """Single connection between two steps.
+
+    status and mapping are orthogonal:
+    - status: whether the connection is valid (ok/invalid/skip)
+    - mapping: what collection type is being mapped over (None = direct match)
+    """
+
+    source_step: str
+    source_output: str
+    target_step: str
+    target_input: str
+    status: ConnectionStatus
+    mapping: Optional[str] = None
+    errors: List[str] = []
+
+
+class ResolvedOutputType(BaseModel):
+    """Resolved collection type for a step output."""
+
+    name: str
+    collection_type: Optional[str] = None  # None = plain dataset
+
+
+class ConnectionStepResult(StepResultBase):
+    """Connection validation result for one step."""
+
+    step_type: str = "tool"
+    map_over: Optional[str] = None
+    connections: List[ConnectionResult] = []
+    resolved_outputs: List[ResolvedOutputType] = []
+    errors: List[str] = []
+
+
+class ConnectionValidationReport(BaseModel):
+    """Connection validation results for one workflow."""
+
+    valid: bool
+    step_results: List[ConnectionStepResult] = []
+    summary: Dict[str, int] = {}
 
 
 # -- Tree-level (directory) reports --
