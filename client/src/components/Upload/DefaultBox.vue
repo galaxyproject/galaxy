@@ -46,6 +46,7 @@ interface Props {
     disableFooter?: boolean;
     emitUploaded?: boolean;
     size?: ComponentSize;
+    showBetaUpload?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -54,6 +55,7 @@ const props = withDefaults(defineProps<Props>(), {
     lazyLoad: 150,
     size: "medium",
     isCollection: false,
+    showBetaUpload: true,
 });
 
 const emit = defineEmits<{
@@ -495,6 +497,7 @@ defineExpose({
             }">
             <div class="d-flex">
                 <GButton
+                    v-if="props.showBetaUpload"
                     id="btn-beta-upload"
                     size="small"
                     title="Try our new upload experience"
