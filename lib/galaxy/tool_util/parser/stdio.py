@@ -40,8 +40,8 @@ class ToolStdioExitCode:
 
     def __init__(self, as_dict=None):
         as_dict = as_dict or {}
-        self.range_start = as_dict.get("range_start", -math.inf)
-        self.range_end = as_dict.get("range_end", math.inf)
+        self.range_start = float(as_dict.get("range_start", -math.inf))
+        self.range_end = float(as_dict.get("range_end", math.inf))
         self.error_level = as_dict.get("error_level", StdioErrorLevel.FATAL)
         self.desc = as_dict.get("desc", "")
 
