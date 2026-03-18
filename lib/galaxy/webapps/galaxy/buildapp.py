@@ -111,6 +111,8 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     )
     webapp.add_route("/{controller}/{action}", action="index")
     webapp.add_route("/{action}", controller="root", action="index")
+    # The root URL needs an explicit route since /{action} requires a value
+    webapp.add_route("/", controller="root", action="client")
 
     # allow for subdirectories in extra_files_path
     webapp.add_route(
