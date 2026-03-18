@@ -28,7 +28,7 @@ import { type EventData, useEventStore } from "@/stores/eventStore";
 import { orList } from "@/utils/strings";
 
 import type { DataOption, ExtendedCollectionType } from "./types";
-import { containsDataOption } from "./types";
+import { containsDataOption, isDataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
@@ -38,12 +38,24 @@ import FormDataWorkflowRunTabs from "./FormDataWorkflowRunTabs.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 
+type HistoryOrCollectionItem = HistoryItemSummary | DCESummary;
+
+/**
+ * These are raw API items that need to be converted to DataOption format.
+ */
+type SingleOrMultipleHistoryItems = HistoryOrCollectionItem | HistoryOrCollectionItem[];
+
+/**
+ * Response types from the data dialog callback.
+ * DataOption[] is returned by the beta upload path for fresh uploads.
+ * SingleOrMultipleHistoryItems (HistoryItemSummary and DCESummary) are returned for dataset/collection selection.
+ */
+type DialogResponse = DataOption[] | SingleOrMultipleHistoryItems;
+
 type SelectOption = {
     label: string;
     value: DataOption | null;
 };
-
-type HistoryOrCollectionItem = HistoryItemSummary | DCESummary;
 
 const props = withDefaults(
     defineProps<{
@@ -225,6 +237,10 @@ const formattedOptions = computed(() => {
                 // check if option (with same id) is already in result, if yes replace it with keepOption
                 const existingOptionIndex = result.findIndex((v) => v.value?.id === option.value?.id);
                 if (existingOptionIndex >= 0) {
+                    const existingOption = result[existingOptionIndex];
+                    if (existingOption?.value && shouldPreferCanonicalOption(existingOption.value, option.value)) {
+                        return;
+                    }
                     result[existingOptionIndex] = option;
                 } else {
                     result.unshift(option);
@@ -351,8 +367,16 @@ function getSourceType(val: DataOption) {
     }
 }
 
-/** Add values from drag/drop or data dialog sources */
-function handleIncoming(incoming: Record<string, unknown> | Record<string, unknown>[], partial = true) {
+/**
+ * Handle incoming data from sources that require validation and transformation.
+ * This includes drag-drop operations and data dialog selections.
+ * Validates datatype compatibility, source type compatibility, and converts to DataOption format.
+ *
+ * @param incoming - The incoming data objects to process
+ * @param partial - If true, merge with existing selection; if false, replace selection
+ * @returns true if processing succeeded, false otherwise
+ */
+function handleIncoming(incoming: SingleOrMultipleHistoryItems, partial = true) {
     if (incoming) {
         const values = Array.isArray(incoming) ? incoming : [incoming];
 
@@ -479,6 +503,81 @@ function toDataOption(item: HistoryOrCollectionItem): DataOption | null {
 }
 
 /**
+ * Normalize an uploaded option by finding matching options in existing props.
+ * Returns the canonical option if found, otherwise returns the uploaded option.
+ */
+function normalizeOption(option: DataOption): DataOption {
+    const keepKey = `${option.id}_${option.src}`;
+    const existingOptions = props.options?.[option.src];
+    const foundOption = existingOptions?.find((existing) => existing.id === option.id);
+
+    if (foundOption) {
+        return foundOption;
+    }
+
+    // Cache new option in keepOptions if not already present
+    if (!isInKeepOptions(keepKey, option)) {
+        keepOptions[keepKey] = {
+            label: `${option.hid || "Selected"}: ${option.name}`,
+            value: option,
+        };
+        keepOptionsUpdate.value++;
+    }
+
+    return option;
+}
+
+/**
+ * Normalize an array of uploaded options, preferring existing matches.
+ */
+function normalizeUploadedOptions(options: DataOption[]): DataOption[] {
+    return options.map(normalizeOption);
+}
+
+/**
+ * Update currentValue based on the current variant configuration.
+ * For multiple dataset fields, merges new options. Otherwise, selects the first option.
+ */
+function updateCurrentValue(options: DataOption[]): void {
+    const config = currentVariant.value;
+
+    if (config?.src === SOURCE.DATASET && config.multiple) {
+        // Merge new options into existing selection, avoiding duplicates
+        const merged = currentValue.value ? [...currentValue.value] : [];
+        for (const option of options) {
+            if (!containsDataOption(merged, option)) {
+                merged.push(option);
+            }
+        }
+        currentValue.value = merged;
+    } else {
+        // Single selection: use first option
+        currentValue.value = [options[0]!];
+    }
+}
+
+/**
+ * Handle data options freshly uploaded through the upload dialog.
+ * Normalizes options against existing props and updates the current selection.
+ */
+function handleUploadedDataOptions(uploadedOptions: DataOption[]): void {
+    if (!uploadedOptions?.length) {
+        return;
+    }
+
+    const normalized = normalizeUploadedOptions(uploadedOptions);
+    updateCurrentValue(normalized);
+}
+
+function isUnavailableName(name: string | undefined): boolean {
+    return Boolean(name && name.toLowerCase().startsWith("(unavailable)"));
+}
+
+function shouldPreferCanonicalOption(canonical: DataOption, keep: DataOption): boolean {
+    return (isUnavailableName(keep.name) && !isUnavailableName(canonical.name)) || (!keep.hid && !!canonical.hid);
+}
+
+/**
  * Check if the new value is already in the keepOptions.
  * This doesn't only check if the value is already stored by the `keepKey`, but also if the new value
  * has a `hid` and the existing value doesn't. This is to ensure that values with `hid` are preferred.
@@ -495,23 +594,35 @@ function isInKeepOptions(keepKey: string, newValue: DataOption): boolean {
 }
 
 /**
- * Open file dialog
+ * Callback handler for the data dialog.
+ * Routes responses to appropriate handlers based on their type.
+ *
+ * @param response - The response from the data dialog
+ */
+function onDataDialogResponse(response: DialogResponse): void {
+    // The data dialog's beta upload path returns DataOption[] directly
+    if (isDataOptionArray(response)) {
+        handleUploadedDataOptions(response);
+        return;
+    }
+    // Handle responses that require validation and transformation
+    handleIncoming(response, false);
+}
+
+/**
+ * Open file dialog for data selection or upload.
  */
 function onBrowse() {
     if (currentVariant.value) {
         const library = !!currentVariant.value.library;
         const multiple = !!currentVariant.value.multiple;
-        getGalaxyInstance().data.dialog(
-            (response: Record<string, unknown>) => {
-                handleIncoming(response, false);
-            },
-            {
-                allowUpload: true,
-                format: null,
-                library,
-                multiple,
-            },
-        );
+        const options = {
+            allowUpload: true,
+            format: null,
+            library,
+            multiple,
+        };
+        getGalaxyInstance().data.dialog(onDataDialogResponse, options);
     }
 }
 
@@ -716,6 +827,10 @@ function isHistoryOrCollectionItem(item: EventData): item is HistoryOrCollection
     return isHistoryItem(item) || isDCE(item);
 }
 
+function isDataOptionArray(value: unknown): value is DataOption[] {
+    return Array.isArray(value) && value.every((item) => isDataOption(item as object));
+}
+
 /**
  * Helper function to handle collection type changes safely
  */
@@ -792,7 +907,10 @@ function onDragLeave(evt: DragEvent) {
 
 function onDrop(e: DragEvent) {
     if (dragData.value.length) {
-        if (handleIncoming(dragData.value, dragData.value.length === 1)) {
+        // Filter to only valid history/collection items
+        const filteredItems = dragData.value.filter(isHistoryOrCollectionItem) as HistoryOrCollectionItem[];
+        const partial = filteredItems.length === 1;
+        if (handleIncoming(filteredItems, partial)) {
             currentHighlighting.value = "success";
             if (props.workflowRun) {
                 workflowTab.value = "view";
@@ -895,10 +1013,13 @@ const noOptionsWarningMessage = computed(() => {
                 :collection-types="props.collectionTypes"
                 :current-source="currentSource || undefined"
                 :is-populated="currentValue && currentValue.length > 0"
+                :extensions="props.extensions"
+                :multiple="Boolean(currentVariant?.multiple)"
                 show-field-options
                 :show-view-create-options="props.workflowRun && !usingSimpleSelect"
                 :workflow-tab.sync="workflowTab"
                 @create-collection-type="handleCollectionTypeChange"
+                @uploaded-data="handleUploadedDataOptions"
                 @on-browse="onBrowse"
                 @set-current-field="(value) => (currentField = value)" />
 
@@ -946,9 +1067,12 @@ const noOptionsWarningMessage = computed(() => {
                 :collection-types="props.collectionTypes"
                 :current-source="currentSource || undefined"
                 :is-populated="currentValue && currentValue.length > 0"
+                :extensions="props.extensions"
+                :multiple="Boolean(currentVariant?.multiple)"
                 show-view-create-options
                 :workflow-tab.sync="workflowTab"
-                @create-collection-type="handleCollectionTypeChange" />
+                @create-collection-type="handleCollectionTypeChange"
+                @uploaded-data="handleUploadedDataOptions" />
         </div>
 
         <FormDataExtensions
