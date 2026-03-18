@@ -11,11 +11,11 @@ import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
-import { useUploadQueue } from "@/composables/uploadQueue";
+import { buildPreparedUpload } from "@/utils/upload";
 import { mapToPasteContentUpload } from "@/utils/upload/itemMappers";
 import { bytesToString } from "@/utils/utils";
 
-import type { UploadMethodComponent, UploadMethodConfig } from "../types";
+import type { PreparedUpload, UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { PasteContentItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
@@ -31,10 +31,24 @@ import GTable from "@/components/Common/GTable.vue";
 
 interface Props {
     method: UploadMethodConfig;
+    /** History ID where uploaded datasets will be added. */
     targetHistoryId: string;
+    /** Allow creating dataset collections from pasted datasets. */
+    allowCollections?: boolean;
+    /** Optional list of allowed formats to constrain selectable extensions. */
+    formats?: string[];
+    /** When false, restrict to a single pasted dataset. */
+    multiple?: boolean;
+    /** When true, do not persist staging to the shared store (modal use). */
+    transient?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    allowCollections: true,
+    formats: undefined,
+    multiple: true,
+    transient: false,
+});
 
 const emit = defineEmits<{
     (e: "ready", ready: boolean): void;
@@ -42,14 +56,12 @@ const emit = defineEmits<{
 
 const { advancedMode } = useUploadAdvancedMode();
 
-const uploadQueue = useUploadQueue();
-
-const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults();
+const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults(props.formats);
 
 const tableContainerRef = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
 
-const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
+const { collectionState, handleCollectionStateChange, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
 
 let nextId = 1;
@@ -66,7 +78,11 @@ function createPasteContentItem(id: number, name: string): PasteContentItem {
 const pasteItems = ref<PasteContentItem[]>([createPasteContentItem(nextId++, "Pasted Dataset 1")]);
 const expandedItemIds = ref<Set<number>>(new Set());
 const rowToggleMap = ref<Map<number, () => void>>(new Map());
-const { clear: clearStaging } = useUploadStaging<PasteContentItem>(props.method.id, pasteItems);
+const { clear: clearStaging } = useUploadStaging<PasteContentItem>(props.method.id, pasteItems, {
+    disableStore: props.transient,
+});
+
+const isSingleMode = computed(() => props.multiple === false);
 
 const hasItems = computed(() => pasteItems.value.some((item) => item.content.trim().length > 0));
 
@@ -109,6 +125,16 @@ function removeItem(id: number) {
     const nextExpanded = new Set(expandedItemIds.value);
     nextExpanded.delete(id);
     expandedItemIds.value = nextExpanded;
+}
+
+function reset() {
+    clearStaging();
+    // Reset to single empty item
+    const newItemId = nextId++;
+    rowToggleMap.value = new Map();
+    expandedItemIds.value = new Set();
+    pasteItems.value = [createPasteContentItem(newItemId, "Pasted Dataset 1")];
+    resetCollection();
 }
 
 function getItemSize(content: string) {
@@ -252,28 +278,17 @@ onMounted(() => {
     });
 });
 
-function startUpload() {
+function prepareUpload(): PreparedUpload | null {
     const validItems = pasteItems.value.filter((item) => item.content.trim().length > 0);
     if (validItems.length === 0) {
-        return;
+        return null;
     }
 
     const uploads = validItems.map((item) => mapToPasteContentUpload(item, props.targetHistoryId));
-    const collectionConfig = buildCollectionConfig(props.targetHistoryId);
-
-    uploadQueue.enqueue(uploads, collectionConfig);
-
-    // Reset to single empty item
-    const newItemId = nextId++;
-    pasteItems.value = [createPasteContentItem(newItemId, "Pasted Dataset 1")];
-    rowToggleMap.value = new Map();
-    expandedItemIds.value = new Set();
-    nextTick(() => expandRow(newItemId));
-    clearStaging();
-    resetCollection();
+    return buildPreparedUpload(uploads);
 }
 
-defineExpose<UploadMethodComponent>({ startUpload });
+defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 </script>
 
 <template>
@@ -454,12 +469,14 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
             <!-- Collection Creation Section -->
             <CollectionCreationConfig
+                v-if="props.allowCollections !== false"
                 ref="collectionConfigComponent"
                 :files="pasteItems"
                 @update:state="handleCollectionStateChange" />
 
             <div class="paste-list-actions mt-2">
                 <GButton
+                    v-if="!isSingleMode"
                     color="grey"
                     tooltip
                     tooltip-placement="top"

@@ -15,17 +15,17 @@ import { getFolderContents, getLibraries, isLibraryFile } from "@/api/libraries"
 import type { BreadcrumbItem } from "@/components/Common";
 import type { TableField } from "@/components/Common/GTable.types";
 import { Model } from "@/components/FilesDialog/model";
+import { selectionToArray } from "@/components/FilesDialog/utilities";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
-import { useUploadQueue } from "@/composables/uploadQueue";
 import { useUrlTracker } from "@/composables/urlTracker";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { mapToLibraryDatasetUpload } from "@/utils/upload/itemMappers";
 import { bytesToString } from "@/utils/utils";
 
-import type { UploadMethodComponent, UploadMethodConfig } from "../types";
+import type { PreparedUpload, UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { LibraryDatasetItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
@@ -37,23 +37,34 @@ import UtcDate from "@/components/UtcDate.vue";
 
 interface Props {
     method: UploadMethodConfig;
+    /** History ID where uploaded datasets will be added. */
     targetHistoryId: string;
+    /** Allow creating dataset collections from selected library datasets. */
+    allowCollections?: boolean;
+    /** When false, restrict selection to a single dataset. */
+    multiple?: boolean;
+    /** When true, do not persist staging to the shared store (modal use). */
+    transient?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    allowCollections: true,
+    multiple: true,
+    transient: false,
+});
 
 const emit = defineEmits<{
     (e: "ready", ready: boolean): void;
 }>();
 
-const uploadQueue = useUploadQueue();
-
 const tableContainerRef = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
 const libraryDatasetItems = ref<LibraryDatasetItem[]>([]);
-const { clear: clearStaging } = useUploadStaging<LibraryDatasetItem>(props.method.id, libraryDatasetItems);
+const { clear: clearStaging } = useUploadStaging<LibraryDatasetItem>(props.method.id, libraryDatasetItems, {
+    disableStore: props.transient,
+});
 
-const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
+const { collectionState, handleCollectionStateChange, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
 
 let nextId = 1;
@@ -106,7 +117,8 @@ function createLibraryDatasetItem(item: AnyLibraryFolderItem, libraryId: string,
 
 const showBrowser = ref(true);
 
-const selectionModel = ref<Model>(new Model({ multiple: true }));
+const isSingleMode = computed(() => props.multiple === false);
+const selectionModel = ref<Model>(new Model({ multiple: !isSingleMode.value }));
 const selectionCount = ref(0);
 
 // Navigation state
@@ -174,6 +186,10 @@ const hasPagination = computed(() => {
 
 const hasItems = computed(() => libraryDatasetItems.value.length > 0);
 const hasSelection = computed(() => selectionCount.value > 0);
+const addMoreDatasetsTitle = computed(() =>
+    isSingleMode.value ? "Change selected dataset" : "Add more datasets to the upload list",
+);
+const addMoreDatasetsLabel = computed(() => (isSingleMode.value ? "Change selected dataset" : "Add More Datasets"));
 
 const searchTitle = computed(() => {
     if (!currentLibrary.value) {
@@ -420,7 +436,12 @@ async function navigateToBreadcrumb(index: number) {
 }
 
 function addSelectedDatasets() {
-    const selectedItems = selectionModel.value.finalize() as SelectionItem[];
+    let selectedItems = selectionToArray(selectionModel.value.finalize());
+
+    if (isSingleMode.value) {
+        selectedItems = selectedItems.slice(0, 1);
+        libraryDatasetItems.value = [];
+    }
 
     // Filter out any items that already exist in libraryDatasetItems
     const existingUrls = new Set(libraryDatasetItems.value.map((item) => item.url));
@@ -435,7 +456,7 @@ function addSelectedDatasets() {
     }
 
     // Clear selection and switch to table view
-    selectionModel.value = new Model({ multiple: true });
+    selectionModel.value = new Model({ multiple: !isSingleMode.value });
     selectionCount.value = 0;
     showBrowser.value = false;
     scrollToBottom();
@@ -460,18 +481,24 @@ function scrollToBottom() {
 
 function removeItem(id: number) {
     libraryDatasetItems.value = libraryDatasetItems.value.filter((item) => item.id !== id);
+
+    if (libraryDatasetItems.value.length === 0) {
+        showBrowser.value = true;
+        resetCollection();
+    }
 }
 
-function clearAll() {
+function reset() {
     libraryDatasetItems.value = [];
     resetCollection();
-    selectionModel.value = new Model({ multiple: true });
+    selectionModel.value = new Model({ multiple: !isSingleMode.value });
     selectionCount.value = 0;
     searchQuery.value = "";
     urlTracker.reset();
     currentPage.value = 1;
     loadLibraries();
     showBrowser.value = true;
+    clearStaging();
 }
 
 function clearSearch() {
@@ -482,21 +509,17 @@ function updateSearchQuery(newQuery: string) {
     searchQuery.value = newQuery;
 }
 
-function startUpload() {
+function prepareUpload(): PreparedUpload | null {
+    if (libraryDatasetItems.value.length === 0) {
+        return null;
+    }
+
     const uploads = libraryDatasetItems.value.map((item) => mapToLibraryDatasetUpload(item, props.targetHistoryId));
-    const collectionConfig = buildCollectionConfig(props.targetHistoryId);
 
-    uploadQueue.enqueue(uploads, collectionConfig);
-
-    // Reset state
-    libraryDatasetItems.value = [];
-    clearStaging();
-    showBrowser.value = true;
-    resetCollection();
-    selectionModel.value = new Model({ multiple: true });
-    selectionCount.value = 0;
-    clearSearch();
-    urlTracker.reset();
+    return {
+        apiItems: [],
+        uploadItems: uploads,
+    };
 }
 
 const libraryFields: TableField[] = [
@@ -694,7 +717,7 @@ onMounted(async () => {
     }
 });
 
-defineExpose<UploadMethodComponent>({ startUpload });
+defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 </script>
 
 <template>
@@ -771,7 +794,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     @row-click="onBrowserRowClick">
                     <template v-slot:head(select)>
                         <BFormCheckbox
-                            v-if="datasetsOnCurrentPage.length > 0"
+                            v-if="props.multiple !== false && datasetsOnCurrentPage.length > 0"
                             :checked="allDatasetsSelected"
                             :indeterminate="someDatasetsSelected"
                             @change="toggleSelectAll" />
@@ -888,6 +911,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
             <!-- Collection Creation Section -->
             <CollectionCreationConfig
+                v-if="props.allowCollections !== false"
                 ref="collectionConfigComponent"
                 :files="libraryDatasetItems"
                 @update:state="handleCollectionStateChange" />
@@ -897,10 +921,10 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     color="grey"
                     tooltip
                     tooltip-placement="top"
-                    title="Add more datasets to the upload list"
+                    :title="addMoreDatasetsTitle"
                     @click="showFolderBrowser">
                     <FontAwesomeIcon :icon="faPlus" class="mr-1" />
-                    Add More Datasets
+                    {{ addMoreDatasetsLabel }}
                 </GButton>
                 <GButton
                     outline
@@ -908,7 +932,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     tooltip
                     tooltip-placement="top"
                     title="Remove all datasets from the upload list"
-                    @click="clearAll">
+                    @click="reset">
                     Clear All
                 </GButton>
             </div>

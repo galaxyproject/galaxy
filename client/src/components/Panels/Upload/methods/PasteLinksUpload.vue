@@ -12,11 +12,11 @@ import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
-import { useUploadQueue } from "@/composables/uploadQueue";
+import { buildPreparedUpload } from "@/utils/upload";
 import { mapToPasteUrlUpload } from "@/utils/upload/itemMappers";
 import { extractNameFromUrl, isValidUrl, validateUrl } from "@/utils/url";
 
-import type { UploadMethodComponent, UploadMethodConfig } from "../types";
+import type { PreparedUpload, UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { PasteUrlItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
@@ -32,10 +32,24 @@ import GTable from "@/components/Common/GTable.vue";
 
 interface Props {
     method: UploadMethodConfig;
+    /** History ID where uploaded datasets will be added. */
     targetHistoryId: string;
+    /** Allow creating dataset collections from pasted URLs. */
+    allowCollections?: boolean;
+    /** Optional list of allowed formats to constrain selectable extensions. */
+    formats?: string[];
+    /** When false, restrict to a single URL entry. */
+    multiple?: boolean;
+    /** When true, do not persist staging to the shared store (modal use). */
+    transient?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    allowCollections: true,
+    formats: undefined,
+    multiple: true,
+    transient: false,
+});
 
 const emit = defineEmits<{
     (e: "ready", ready: boolean): void;
@@ -43,14 +57,12 @@ const emit = defineEmits<{
 
 const { advancedMode } = useUploadAdvancedMode();
 
-const uploadQueue = useUploadQueue();
-
-const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults();
+const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults(props.formats);
 
 const tableContainerRef = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
 
-const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
+const { collectionState, handleCollectionStateChange, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
 
 let nextId = 1;
@@ -68,11 +80,18 @@ function createPasteUrlItem(id: number, url: string, name: string): PasteUrlItem
 const urlItems = ref<PasteUrlItem[]>([]);
 const urlText = ref("");
 const showInputArea = ref(true);
-const { clear: clearStaging } = useUploadStaging<PasteUrlItem>(props.method.id, urlItems);
+const { clear: clearStaging } = useUploadStaging<PasteUrlItem>(props.method.id, urlItems, {
+    disableStore: props.transient,
+});
 
 const placeholder = "https://example.org/data1.txt\nhttps://example.org/data2.txt";
 
 const hasItems = computed(() => urlItems.value.length > 0);
+const isSingleMode = computed(() => props.multiple === false);
+const addMoreUrlsTitle = computed(() =>
+    isSingleMode.value ? "Change selected URL" : "Add more URLs to the upload list",
+);
+const addMoreUrlsLabel = computed(() => (isSingleMode.value ? "Change selected URL" : "Add More URLs"));
 
 const { isNameValid, restoreOriginalName } = useUploadItemValidation();
 
@@ -103,7 +122,14 @@ function addUrlsFromText() {
         .map((u) => u.trim())
         .filter((u) => u.length > 0);
 
-    for (const url of urls) {
+    // Enforce single URL when multiple is false
+    const urlsToAdd = isSingleMode.value ? urls.slice(0, 1) : urls;
+
+    if (isSingleMode.value) {
+        urlItems.value = [];
+    }
+
+    for (const url of urlsToAdd) {
         urlItems.value.push(createPasteUrlItem(nextId++, url, extractNameFromUrl(url)));
     }
 
@@ -131,6 +157,11 @@ function scrollToBottom() {
 
 function removeItem(id: number) {
     urlItems.value = urlItems.value.filter((item) => item.id !== id);
+
+    if (urlItems.value.length === 0) {
+        showInputArea.value = true;
+        resetCollection();
+    }
 }
 
 const tableFields: TableField[] = [
@@ -176,33 +207,25 @@ const tableFields: TableField[] = [
     },
 ];
 
-function clearAll() {
+function reset() {
     urlItems.value = [];
     urlText.value = "";
+    clearStaging();
     showInputArea.value = true;
     resetCollection();
 }
 
-function startUpload() {
+function prepareUpload(): PreparedUpload | null {
     const validItems = urlItems.value.filter((item) => item.url.trim().length > 0);
     if (validItems.length === 0) {
-        return;
+        return null;
     }
 
     const uploads = validItems.map((item) => mapToPasteUrlUpload(item, props.targetHistoryId));
-    const collectionConfig = buildCollectionConfig(props.targetHistoryId);
-
-    uploadQueue.enqueue(uploads, collectionConfig);
-
-    // Reset state
-    urlItems.value = [];
-    clearStaging();
-    urlText.value = "";
-    showInputArea.value = true;
-    resetCollection();
+    return buildPreparedUpload(uploads);
 }
 
-defineExpose<UploadMethodComponent>({ startUpload });
+defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 </script>
 
 <template>
@@ -347,19 +370,15 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
             <!-- Collection Creation Section -->
             <CollectionCreationConfig
+                v-if="props.allowCollections !== false"
                 ref="collectionConfigComponent"
                 :files="urlItems"
                 @update:state="handleCollectionStateChange" />
 
             <div class="url-list-actions mt-2">
-                <GButton
-                    color="grey"
-                    tooltip
-                    tooltip-placement="top"
-                    title="Add more URLs to the upload list"
-                    @click="showUrlInput">
+                <GButton color="grey" tooltip tooltip-placement="top" :title="addMoreUrlsTitle" @click="showUrlInput">
                     <FontAwesomeIcon :icon="faPlus" class="mr-1" />
-                    Add More URLs
+                    {{ addMoreUrlsLabel }}
                 </GButton>
                 <GButton
                     outline
@@ -367,7 +386,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                     tooltip
                     tooltip-placement="top"
                     title="Remove all URLs from the upload list"
-                    @click="clearAll">
+                    @click="reset">
                     Clear All
                 </GButton>
             </div>

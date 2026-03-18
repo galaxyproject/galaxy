@@ -12,11 +12,11 @@ import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
-import { useUploadQueue } from "@/composables/uploadQueue";
+import { buildPreparedUpload } from "@/utils/upload";
 import { mapToLocalFileUpload } from "@/utils/upload/itemMappers";
 import { bytesToString } from "@/utils/utils";
 
-import type { UploadMethodComponent, UploadMethodConfig } from "../types";
+import type { PreparedUpload, UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { LocalFileItem } from "../types/uploadItem";
 
 import CollectionCreationConfig from "../CollectionCreationConfig.vue";
@@ -32,10 +32,24 @@ import GTable from "@/components/Common/GTable.vue";
 
 interface Props {
     method: UploadMethodConfig;
+    /** History ID where uploaded datasets will be added. */
     targetHistoryId: string;
+    /** Allow creating dataset collections from selected files. */
+    allowCollections?: boolean;
+    /** Optional list of allowed formats to constrain selectable extensions. */
+    formats?: string[];
+    /** When false, restrict selection to a single file. */
+    multiple?: boolean;
+    /** When true, do not persist staging to the shared store (modal use). */
+    transient?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    allowCollections: true,
+    formats: undefined,
+    multiple: true,
+    transient: false,
+});
 
 const emit = defineEmits<{
     (e: "ready", ready: boolean): void;
@@ -43,20 +57,21 @@ const emit = defineEmits<{
 
 const { advancedMode } = useUploadAdvancedMode();
 
-const uploadQueue = useUploadQueue();
-
-const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults();
+const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults(props.formats);
 
 const selectedFiles = ref<LocalFileItem[]>([]);
-const { clear: clearStaging } = useUploadStaging<LocalFileItem>(props.method.id, selectedFiles);
+const { clear: clearStaging } = useUploadStaging<LocalFileItem>(props.method.id, selectedFiles, {
+    disableStore: props.transient,
+});
 const uploadFile = ref<HTMLInputElement | null>(null);
 const dropZoneElement = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
 
-const { collectionState, handleCollectionStateChange, buildCollectionConfig, resetCollection } =
+const { collectionState, handleCollectionStateChange, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
 
 const hasFiles = computed(() => selectedFiles.value.length > 0);
+const canAddMoreFiles = computed(() => props.multiple !== false || selectedFiles.value.length === 0);
 const totalSize = computed(() => {
     const bytes = selectedFiles.value.reduce((sum, item) => sum + item.file.size, 0);
     return bytesToString(bytes);
@@ -141,7 +156,14 @@ function addFiles(files: FileList | File[] | null) {
     const fileArray = Array.from(files);
     const defaults = createItemDefaults();
 
-    for (const file of fileArray) {
+    // Enforce single file limit if multiple is false
+    const filesToAdd = props.multiple === false ? fileArray.slice(0, 1) : fileArray;
+
+    for (const file of filesToAdd) {
+        // If multiple is false, replace existing files
+        if (props.multiple === false) {
+            selectedFiles.value = [];
+        }
         selectedFiles.value.push({
             file,
             name: file.name,
@@ -166,22 +188,22 @@ function handleBrowse() {
     uploadFile.value?.click();
 }
 
-function clearAll() {
+function reset() {
     selectedFiles.value = [];
     resetCollection();
-}
-
-function startUpload() {
-    const uploads = selectedFiles.value.map((item) => mapToLocalFileUpload(item, props.targetHistoryId));
-    const collectionConfig = buildCollectionConfig(props.targetHistoryId);
-
-    uploadQueue.enqueue(uploads, collectionConfig);
-    selectedFiles.value = [];
     clearStaging();
-    resetCollection();
 }
 
-defineExpose<UploadMethodComponent>({ startUpload });
+function prepareUpload(): PreparedUpload | null {
+    if (selectedFiles.value.length === 0) {
+        return null;
+    }
+
+    const uploads = selectedFiles.value.map((item) => mapToLocalFileUpload(item, props.targetHistoryId));
+    return buildPreparedUpload(uploads);
+}
+
+defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 </script>
 
 <template>
@@ -300,6 +322,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
 
                 <!-- Collection Creation Section -->
                 <CollectionCreationConfig
+                    v-if="props.allowCollections !== false"
                     ref="collectionConfigComponent"
                     :files="selectedFiles"
                     @update:state="handleCollectionStateChange" />
@@ -309,7 +332,12 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         color="grey"
                         tooltip
                         tooltip-placement="top"
-                        title="Browse and add more files to the upload list"
+                        :disabled="!canAddMoreFiles"
+                        :title="
+                            canAddMoreFiles
+                                ? 'Browse and add more files to the upload list'
+                                : 'Only one file can be selected'
+                        "
                         @click="handleBrowse">
                         <FontAwesomeIcon :icon="faLaptop" class="mr-1" />
                         Add More Files
@@ -320,7 +348,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                         tooltip
                         tooltip-placement="top"
                         title="Remove all files from the upload list"
-                        @click="clearAll">
+                        @click="reset">
                         Clear All
                     </GButton>
                 </div>
@@ -340,7 +368,7 @@ defineExpose<UploadMethodComponent>({ startUpload });
                 id="local-file-input"
                 ref="uploadFile"
                 type="file"
-                multiple
+                :multiple="props.multiple !== false"
                 class="d-none"
                 @change="addFileFromInput($event.target)" />
         </div>
