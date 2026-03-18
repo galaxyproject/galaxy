@@ -12,6 +12,7 @@ from typing import (
 )
 
 import packaging.version
+from pydantic import TypeAdapter
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parameters.convert import _select_which_when
@@ -42,7 +43,6 @@ from .interface import (
     AssertionDict,
     AssertionList,
     DirectCredential,
-    DirectCredentialValue,
     InputSource,
     PageSource,
     PagesSource,
@@ -430,6 +430,9 @@ def _parse_test(i: int, test_dict: dict) -> ToolSourceTest:
     return cast(ToolSourceTest, test_dict)
 
 
+_direct_credential_adapter: TypeAdapter = TypeAdapter(List[DirectCredential])
+
+
 def __parse_credentials_yaml(credentials_data) -> Optional[List[DirectCredential]]:
     """
     Parse credentials from YAML test definition.
@@ -438,57 +441,17 @@ def __parse_credentials_yaml(credentials_data) -> Optional[List[DirectCredential
     - List: [{name: "cred1", variables: [...], secrets: [...]}]
     - Dict: {cred1: {variables: [...], secrets: []}}
     """
-
     if not credentials_data:
         return None
 
-    credentials_list: List[DirectCredential] = []
-
-    # Support both dict and list formats
+    # Normalise both dict and list formats into a flat list of raw dicts.
     if is_dict(credentials_data):
-        # Convert {name: {variables: [], secrets: []}} to list format
-        items = credentials_data.items()
+        # {name: {variables: [], secrets: []}} → [{name: ..., variables: [], secrets: []}]
+        raw_list = [{"name": name, **cred_data} for name, cred_data in credentials_data.items()]
     else:
-        # Already a list: [{name: "...", variables: [], secrets: []}]
-        items = [(cred.get("name"), cred) for cred in credentials_data]
+        raw_list = list(credentials_data)
 
-    for name, cred_data in items:
-        if not name:
-            raise ValueError("Test credentials must have a 'name'")
-
-        variables: List[DirectCredentialValue] = []
-        for var_data in cred_data.get("variables", []):
-            if is_dict(var_data):
-                var_name = var_data.get("name")
-                var_value = var_data.get("value")
-            else:
-                raise ValueError("YAML credential variable must be a dictionary with 'name' and 'value'")
-            if not var_name:
-                raise ValueError("Credential variable must have a 'name'")
-            if var_value is None:
-                raise ValueError(f"Credential variable '{var_name}' must have a 'value'")
-            variables.append(DirectCredentialValue(name=var_name, value=var_value))
-
-        secrets: List[DirectCredentialValue] = []
-        for secret_data in cred_data.get("secrets", []):
-            if is_dict(secret_data):
-                secret_name = secret_data.get("name")
-                secret_value = secret_data.get("value")
-            else:
-                raise ValueError("YAML credential secret must be a dictionary with 'name' and 'value'")
-            if not secret_name:
-                raise ValueError("Credential secret must have a 'name'")
-            if secret_value is None:
-                raise ValueError(f"Credential secret '{secret_name}' must have a 'value'")
-            secrets.append(DirectCredentialValue(name=secret_name, value=secret_value))
-
-        cred: DirectCredential = {"name": name, "variables": variables, "secrets": secrets}
-        version = cred_data.get("version") if is_dict(cred_data) else None
-        if version is not None:
-            cred["version"] = str(version)
-        credentials_list.append(cred)
-
-    return credentials_list if credentials_list else None
+    return _direct_credential_adapter.validate_python(raw_list)
 
 
 def to_test_assert_list(assertions) -> AssertionList:

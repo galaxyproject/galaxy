@@ -18,6 +18,7 @@ from typing import (
 )
 
 from packaging.version import Version
+from pydantic import TypeAdapter
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
@@ -54,7 +55,6 @@ from galaxy.util import (
 from .interface import (
     AssertionList,
     DirectCredential,
-    DirectCredentialValue,
     DrillDownDynamicOptions,
     DynamicOptions,
     InputSource,
@@ -1096,45 +1096,31 @@ def __parse_inputs_elems(test_elem, i) -> ToolSourceTestInputs:
     return raw_inputs
 
 
+_direct_credential_adapter: TypeAdapter = TypeAdapter(List[DirectCredential])
+
+
 def __parse_credentials_elems(test_elem):
     """
     Parse credential definitions from test element.
     Returns a list of DirectCredential dictionaries or None if no credentials are defined.
     """
-
-    credentials_list = []
+    raw_list = []
     for cred_elem in test_elem.findall("credentials"):
-        name = cred_elem.get("name")
-        if not name:
-            raise ValueError("Credentials element must have a 'name' attribute")
-
-        variables = []
-        for var_elem in cred_elem.findall("variable"):
-            var_name = var_elem.get("name")
-            var_value = var_elem.get("value")
-            if not var_name:
-                raise ValueError("Credential variable must have a 'name' attribute")
-            if var_value is None:
-                raise ValueError(f"Credential variable '{var_name}' must have a 'value' attribute")
-            variables.append(DirectCredentialValue(name=var_name, value=var_value))
-
-        secrets = []
-        for secret_elem in cred_elem.findall("secret"):
-            secret_name = secret_elem.get("name")
-            secret_value = secret_elem.get("value")
-            if not secret_name:
-                raise ValueError("Credential secret must have a 'name' attribute")
-            if secret_value is None:
-                raise ValueError(f"Credential secret '{secret_name}' must have a 'value' attribute")
-            secrets.append(DirectCredentialValue(name=secret_name, value=secret_value))
-
-        cred: DirectCredential = {"name": name, "variables": variables, "secrets": secrets}
+        variables = [
+            {"name": v.get("name"), "value": v.get("value")} for v in cred_elem.findall("variable")
+        ]
+        secrets = [
+            {"name": s.get("name"), "value": s.get("value")} for s in cred_elem.findall("secret")
+        ]
+        raw: dict = {"name": cred_elem.get("name"), "variables": variables, "secrets": secrets}
         version = cred_elem.get("version")
         if version is not None:
-            cred["version"] = version
-        credentials_list.append(cred)
+            raw["version"] = version
+        raw_list.append(raw)
 
-    return credentials_list if credentials_list else None
+    if not raw_list:
+        return None
+    return _direct_credential_adapter.validate_python(raw_list)
 
 
 def _test_collection_def_dict(elem: Element) -> XmlTestCollectionDefDict:
