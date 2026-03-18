@@ -4,16 +4,10 @@ Provides factory methods to assemble the Galaxy web application
 
 import atexit
 import logging
-import os
-from inspect import isclass
-from urllib.parse import parse_qs
 
-import routes
 from paste import httpexceptions
-from routes.middleware import RoutesMiddleware
 
 import galaxy.webapps.base.webapp
-from galaxy import util
 from galaxy.structured_app import BasicSharedApp
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
@@ -52,26 +46,10 @@ class CommunityWebApplication(galaxy.webapps.base.webapp.WebApplication):
 
 
 def add_ui_controllers(webapp, app):
-    """
-    Search for controllers in the 'galaxy.webapps.controllers' module and add
-    them to the webapp.
-    """
-    import tool_shed.webapp.controllers
-    from galaxy.webapps.base.controller import BaseUIController
+    """Register the HgController — the only remaining WSGI controller."""
+    from tool_shed.webapp.controllers.hg import HgController
 
-    controller_dir = tool_shed.webapp.controllers.__path__[0]
-    for fname in os.listdir(controller_dir):
-        if not fname.startswith("_") and fname.endswith(".py"):
-            name = fname[:-3]
-            module_name = f"tool_shed.webapp.controllers.{name}"
-            module = __import__(module_name)
-            for comp in module_name.split(".")[1:]:
-                module = getattr(module, comp)
-            # Look for a controller inside the modules
-            for key in dir(module):
-                T = getattr(module, key)
-                if isclass(T) and T is not BaseUIController and issubclass(T, BaseUIController):
-                    webapp.add_ui_controller(name, T(app))
+    webapp.add_ui_controller("hg", HgController(app))
 
 
 def app_factory(*args, **kwargs):
@@ -107,18 +85,6 @@ def app_pair(global_conf, load_app_kwds=None, **kwargs):
     # Create the universe WSGI application
     webapp = CommunityWebApplication(app, session_cookie="galaxycommunitysession", name="tool_shed")
     add_ui_controllers(webapp, app)
-    # Handle displaying tool help images and README file images for tools contained in repositories.
-    webapp.add_route(
-        "/repository/static/images/{repository_id}/{image_file:.+?}",
-        controller="repository",
-        action="display_image_in_repository",
-        repository_id=None,
-        image_file=None,
-    )
-    # Catch-all route for /repository/* endpoints used by Galaxy's install client
-    # (e.g. get_ctx_rev, get_required_repo_info_dict, etc.)
-    webapp.add_route("/{controller}/{action}", action="index")
-    webapp.add_route("/{action}", controller="repository", action="index")
     # Enable 'hg clone' functionality on repos by letting hgwebapp handle the request
     webapp.add_route("/repos/*path_info", controller="hg", action="handle_request", path_info="/")
     webapp.finalize_config()
@@ -140,30 +106,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # wrapped around the application (it can interact poorly with
     # other middleware):
     app = wrap_if_allowed(app, stack, httpexceptions.make_middleware, name="paste.httpexceptions", args=(conf,))
-    # Create a separate mapper for redirects to prevent conflicts.
-    redirect_mapper = routes.Mapper()
-    redirect_mapper = _map_redirects(redirect_mapper)
-    # Load the Routes middleware which we use for redirecting
-    app = wrap_if_allowed(app, stack, RoutesMiddleware, args=(redirect_mapper,))
-    # If we're using remote_user authentication, add middleware that
-    # protects Galaxy from improperly configured authentication in the
-    # upstream server
-    if asbool(conf.get("use_remote_user", False)):
-        from tool_shed.webapp.framework.middleware.remoteuser import RemoteUser
-
-        app = wrap_if_allowed(
-            app,
-            stack,
-            RemoteUser,
-            kwargs=dict(
-                maildomain=conf.get("remote_user_maildomain", None),
-                display_servers=util.listify(conf.get("display_servers", "")),
-                admin_users=conf.get("admin_users", "").split(","),
-                remote_user_header=conf.get("remote_user_header", "HTTP_REMOTE_USER"),
-                remote_user_secret_header=conf.get("remote_user_secret", None),
-                normalize_remote_user_email=conf.get("normalize_remote_user_email", False),
-            ),
-        )
+    assert not asbool(conf.get("use_remote_user", False))
 
     # Transaction logging (apache access.log style)
     if asbool(conf.get("use_translogger", True)):
@@ -178,25 +121,3 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # Error middleware
     app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))
     return app
-
-
-def _map_redirects(mapper):
-    """
-    Add redirect to the Routes mapper and forward the received query string.
-    Subsequently when the redirect is triggered in Routes middleware the request
-    will not even reach the webapp.
-    """
-
-    def forward_qs(environ, result):
-        qs_dict = parse_qs(environ["QUERY_STRING"])
-        for qs in qs_dict:
-            result[qs] = qs_dict[qs]
-        return True
-
-    mapper.redirect(
-        "/repository/status_for_installed_repository",
-        "/api/repositories/updates/",
-        _redirect_code="301 Moved Permanently",
-        conditions=dict(function=forward_qs),
-    )
-    return mapper

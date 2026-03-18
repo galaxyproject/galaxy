@@ -309,6 +309,12 @@ CategoryRepositoriesSortKeyQueryParam: str = Query("name", title="Sort Key")
 CategoryRepositoriesSortOrderQueryParam: str = Query("asc", title="Sort Order")
 CategoryRepositoriesPageQueryParam: Optional[int] = Query(None, title="Page")
 
+FromTipQueryParam: bool = Query(
+    default=False,
+    title="From Tip",
+    description="If true, use repository tip as upper bound changeset revision.",
+)
+
 
 def ensure_valid_session(trans: SessionRequestContext) -> None:
     """

@@ -158,11 +158,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
         if not toolshed:
             # Default to the current tool shed.
             toolshed = self.trans.repositories_hostname
-            log.warning(f"\n\n\n\n\n\nin not toolshed with {toolshed}\n\n\n\n")
-            # toolshed = str(url_for("/", qualified=True)).rstrip("/")
             repository_dependency_tup[0] = toolshed
-        else:
-            log.warning(f"moooocww.....{toolshed}\n\n\n\n\n")
         toolshed = common_util.remove_protocol_from_tool_shed_url(toolshed)
 
         if suc.tool_shed_is_this_tool_shed(toolshed, trans=self.trans):

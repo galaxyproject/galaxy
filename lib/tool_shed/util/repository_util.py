@@ -471,7 +471,7 @@ def update_validated_repository(
     if "category_ids" in kwds and isinstance(kwds["category_ids"], list):
 
         # Remove existing category associations
-        delete_repository_category_associations(sa_session, model.RepositoryCategoryAssociation, repository.id)
+        _delete_repository_category_associations(sa_session, model.RepositoryCategoryAssociation, repository.id)
 
         # Then (re)create category associations
         for category_id in kwds["category_ids"]:
@@ -591,7 +591,7 @@ def get_current_groups(session: "scoped_session"):
     return session.scalars(stmt)
 
 
-def delete_repository_category_associations(session, repository_category_assoc_model, repository_id):
+def _delete_repository_category_associations(session, repository_category_assoc_model, repository_id):
     stmt = delete(repository_category_assoc_model).where(repository_category_assoc_model.repository_id == repository_id)
     return session.execute(stmt)
 
