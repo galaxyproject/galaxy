@@ -236,8 +236,8 @@ function toggleSidebar(toggle: string = "", to: string | null = null) {
 }
 
 function onChatGxyClick() {
-    toggleSidebar("chatgxy");
     if (chatStore.isCenterMode) {
+        toggleSidebar("chatgxy");
         if (route.path.startsWith("/chatgxy")) {
             router.push("/");
         } else {

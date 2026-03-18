@@ -15,7 +15,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 import { getGalaxyInstance } from "@/app";
@@ -53,6 +53,7 @@ const emit = defineEmits<{
     (e: "undock"): void;
 }>();
 
+const route = useRoute();
 const router = useRouter();
 const chatStore = useChatStore();
 
@@ -386,14 +387,18 @@ function dockToSide() {
     chatStore.setActiveChatId(currentChatId.value);
     chatStore.setLocation("right");
     chatStore.showChat();
-    router.push("/");
+    if (route.path.startsWith("/chatgxy")) {
+        router.push("/");
+    }
 }
 
 function dockToBottomPanel() {
     chatStore.setActiveChatId(currentChatId.value);
     chatStore.setLocation("bottom");
     chatStore.showChat();
-    router.push("/");
+    if (route.path.startsWith("/chatgxy")) {
+        router.push("/");
+    }
 }
 
 watch(currentChatId, (newId) => {

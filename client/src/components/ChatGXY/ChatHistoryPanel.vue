@@ -74,6 +74,9 @@ function startNewChat() {
 }
 
 function openDockedChat() {
+    if (chatStore.isCenterMode) {
+        chatStore.setLocation("right");
+    }
     const latestId = chatHistory.value.length > 0 ? chatHistory.value[0]!.id : null;
     chatStore.showChat(latestId);
 }
