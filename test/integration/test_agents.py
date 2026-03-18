@@ -1,7 +1,7 @@
 """Test Galaxy AI agents API with live LLM.
 
 Requires a configured LLM — skipped unless GALAXY_TEST_ENABLE_LIVE_LLM=1.
-For deterministic tests without LLM, see test_agents_static.py.
+For deterministic tests without LLM, see test_static_agent_backend.py.
 
 ## Running:
     export GALAXY_TEST_AI_API_KEY="your-api-key"
