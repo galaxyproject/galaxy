@@ -1106,12 +1106,8 @@ def __parse_credentials_elems(test_elem):
     """
     raw_list = []
     for cred_elem in test_elem.findall("credentials"):
-        variables = [
-            {"name": v.get("name"), "value": v.get("value")} for v in cred_elem.findall("variable")
-        ]
-        secrets = [
-            {"name": s.get("name"), "value": s.get("value")} for s in cred_elem.findall("secret")
-        ]
+        variables = [{"name": v.get("name"), "value": v.get("value")} for v in cred_elem.findall("variable")]
+        secrets = [{"name": s.get("name"), "value": s.get("value")} for s in cred_elem.findall("secret")]
         raw: dict = {"name": cred_elem.get("name"), "variables": variables, "secrets": secrets}
         version = cred_elem.get("version")
         if version is not None:
