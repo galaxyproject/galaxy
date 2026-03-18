@@ -11,6 +11,7 @@ import l from "@/utils/localization";
 import type { DetailsLayoutSummarized } from "./types";
 
 import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
+import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -40,8 +41,8 @@ const userStore = useUserStore();
 const { isAnonymous } = storeToRefs(userStore);
 
 const nameRef = ref<HTMLInputElement | null>(null);
-const nameDisplayRef = ref<InstanceType<typeof ClickToEdit> | HTMLElement | null>(null);
-const nameClamped = ref(false);
+const clickToEditRef = ref<InstanceType<typeof ClickToEdit> | null>(null);
+const clickToEditClamped = ref(false);
 
 const editing = ref(false);
 const textSelected = ref(false);
@@ -106,17 +107,17 @@ function onToggle() {
     }
 }
 
-function checkNameClamped() {
-    const el = nameDisplayRef.value instanceof HTMLElement ? nameDisplayRef.value : nameDisplayRef.value?.$el;
+function checkClickToEditClamped() {
+    const el = clickToEditRef.value?.$el;
     if (el) {
-        nameClamped.value = el.scrollHeight > el.clientHeight;
+        clickToEditClamped.value = el.scrollHeight > el.clientHeight;
     }
 }
 
-onMounted(checkNameClamped);
+onMounted(checkClickToEditClamped);
 watch(
     () => props.name,
-    () => nextTick(checkNameClamped),
+    () => nextTick(checkClickToEditClamped),
 );
 
 function selectText() {
@@ -136,22 +137,17 @@ function selectText() {
             <template v-if="!summarized && !editing">
                 <ClickToEdit
                     v-if="renameable"
-                    ref="nameDisplayRef"
+                    ref="clickToEditRef"
                     v-model="clickToEditName"
-                    v-b-tooltip.hover="nameClamped ? name : undefined"
+                    v-b-tooltip.hover="clickToEditClamped ? name : undefined"
                     component="h3"
                     title="..."
                     data-description="name display"
                     no-save-on-blur
                     class="name-display my-2 w-100" />
-                <h3
-                    v-else
-                    ref="nameDisplayRef"
-                    v-b-tooltip.hover
-                    :title="nameClamped ? name : undefined"
-                    class="name-display my-2 w-100">
+                <Heading v-else h3 :clamp="2" class="my-2 w-100">
                     {{ props.name || "..." }}
-                </h3>
+                </Heading>
             </template>
             <div v-else class="overflow-hidden" style="max-width: 80%">
                 <TextSummary
