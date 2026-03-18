@@ -39,7 +39,6 @@ from galaxy.agents import (
     QueryRouterAgent,
 )
 from galaxy.agents.registry import build_default_registry
-from galaxy.managers.agents import AgentService
 
 agent_registry = build_default_registry()
 from galaxy.agents.error_analysis import ErrorAnalysisResult
@@ -199,24 +198,12 @@ class TestAgentUnitMocked:
         registry = build_default_registry()
         assert len(registry.list_agents()) == 5
 
-    @pytest.mark.asyncio
-    async def test_disabled_agent_execution_raises(self):
-        """Executing a disabled agent should raise ConfigurationError."""
-        from galaxy.exceptions import ConfigurationError
-
-        config = mock.Mock()
-        config.inference_services = {"custom_tool": {"enabled": False}}
-        registry = build_default_registry(config)
-        service = AgentService(config, mock.Mock(), registry)
-        with pytest.raises(ConfigurationError, match="disabled"):
-            await service.execute_agent("custom_tool", "test", self.mock_trans, self.mock_user)
-
     def test_disabled_agent_registry_get_agent_raises(self):
-        """Registry.get_agent for a disabled agent gives a clear 'disabled' error."""
+        """Registry.get_agent for a disabled agent gives 'Unknown agent type' error."""
         config = mock.Mock()
         config.inference_services = {"custom_tool": {"enabled": False}}
         registry = build_default_registry(config)
-        with pytest.raises(ValueError, match="disabled"):
+        with pytest.raises(ValueError, match="Unknown agent type"):
             registry.get_agent("custom_tool", self.deps)
 
     def test_agent_registry(self):

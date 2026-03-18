@@ -22,7 +22,6 @@ class AgentRegistry:
         """Initialize empty registry."""
         self._agents: dict[str, type[BaseGalaxyAgent]] = {}
         self._agent_metadata: dict[str, dict] = {}
-        self._disabled: set[str] = set()
 
     def register(
         self,
@@ -68,8 +67,6 @@ class AgentRegistry:
         Raises:
             ValueError: If agent type is not registered
         """
-        if agent_type in self._disabled:
-            raise ValueError(f"Agent '{agent_type}' is disabled in configuration")
         if agent_type not in self._agents:
             available = list(self._agents.keys())
             raise ValueError(f"Unknown agent type: {agent_type}. Available: {available}")
@@ -149,11 +146,10 @@ def build_default_registry(config=None) -> AgentRegistry:
             return agent_cfg.get("enabled", True)
         return True
 
-    def _register_or_disable(registry: AgentRegistry, agent_type: str, agent_class: type[BaseGalaxyAgent]):
+    def _register_if_enabled(registry: AgentRegistry, agent_type: str, agent_class: type[BaseGalaxyAgent]):
         if _is_enabled(agent_type):
             registry.register(agent_type, agent_class)
         else:
-            registry._disabled.add(agent_type)
             log.info(f"Agent '{agent_type}' disabled by configuration, skipping registration")
 
     registry = AgentRegistry()
@@ -163,8 +159,8 @@ def build_default_registry(config=None) -> AgentRegistry:
         log.warning("Router agent cannot be disabled — ignoring enabled: false")
     registry.register(AgentType.ROUTER, QueryRouterAgent)
 
-    _register_or_disable(registry, AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent)
-    _register_or_disable(registry, AgentType.CUSTOM_TOOL, CustomToolAgent)
-    _register_or_disable(registry, AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
-    _register_or_disable(registry, AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)
+    _register_if_enabled(registry, AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent)
+    _register_if_enabled(registry, AgentType.CUSTOM_TOOL, CustomToolAgent)
+    _register_if_enabled(registry, AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
+    _register_if_enabled(registry, AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)
     return registry

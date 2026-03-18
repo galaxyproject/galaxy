@@ -59,12 +59,7 @@ class AgentAPI:
         agents = []
         for agent_type in self.agent_service.list_agents():
             agent_info = self.agent_service.get_agent_info(agent_type)
-
-            # Disabled agents are already excluded from the registry,
-            # but double-check inference_services config here
             agent_config = inference_config.get(agent_type, {})
-            if isinstance(agent_config, dict) and not agent_config.get("enabled", True):
-                continue
 
             # Resolve model: agent-specific -> default -> global
             model = None
