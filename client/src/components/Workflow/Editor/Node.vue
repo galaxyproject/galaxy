@@ -212,6 +212,7 @@ const props = defineProps({
     isInvocation: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
     populatedInputs: { type: Boolean, default: false },
+    isOutOfFocus: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -275,6 +276,7 @@ const classes = computed(() => {
         "node-highlight": props.highlight || isActive.value,
         "is-active": isActive.value,
         "node-multi-selected": stateStore.getStepMultiSelected(props.id),
+        "node-not-in-focus": props.isOutOfFocus && !isActive.value,
     };
 });
 
@@ -446,6 +448,12 @@ function toggleSelected() {
     border: solid $brand-primary 1px;
 
     $multi-selected: lighten($brand-info, 20%);
+
+    transition: opacity 0.2s ease;
+
+    &.node-not-in-focus {
+        opacity: 0.7;
+    }
 
     &.node-multi-selected {
         box-shadow:
