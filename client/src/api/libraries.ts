@@ -89,7 +89,7 @@ export async function getFolderContents(
         rethrowSimple(error);
     }
 
-    return data;
+    return data as LibraryFolderContentsIndexResult;
 }
 
 export function isLibraryFolder(item: AnyLibraryFolderItem | Record<string, unknown>): item is FolderLibraryFolderItem {
