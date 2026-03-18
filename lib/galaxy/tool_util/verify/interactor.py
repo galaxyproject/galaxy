@@ -866,7 +866,7 @@ class GalaxyInteractorApi:
         extra_data: Dict[str, Any] = {}
         created_credentials, credentials_context = self._create_test_credentials(testdef)
         if credentials_context is not None:
-            extra_data["credentials_context"] = credentials_context
+            extra_data["credentials_context"] = dumps(credentials_context)
 
         for _ in range(DEFAULT_TOOL_TEST_WAIT):
             submit_response = self.__submit_tool(
@@ -1137,15 +1137,6 @@ class GalaxyInteractorApi:
     ):
         extra_data = extra_data or {}
         if use_legacy_api:
-            if "credentials_context" in extra_data:
-                data = dict(
-                    history_id=history_id,
-                    tool_id=tool_id,
-                    inputs=tool_input,
-                    tool_version=tool_version,
-                    **extra_data,
-                )
-                return self._post("tools", data=data, json=True)
             data = dict(
                 history_id=history_id,
                 tool_id=tool_id,
