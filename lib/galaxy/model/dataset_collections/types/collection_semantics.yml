@@ -795,6 +795,8 @@
                 i: {type: map_over, collection: C}
     is_valid: false
     tests:
+        tool_runtime:
+            api_test: "test_tool_execute.py::test_paired_or_unpaired_not_consumed_by_paired_when_mapping"
         workflow_editor: "rejects list:paired_or_unpaired -> paired connection"
 
 - example:

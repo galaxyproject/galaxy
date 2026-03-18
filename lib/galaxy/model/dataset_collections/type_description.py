@@ -116,7 +116,7 @@ class CollectionTypeDescription:
         other_collection_type = _normalize_collection_type(other_collection_type)
         if collection_type == other_collection_type:
             return False
-        if collection_type.endswith(other_collection_type):
+        if collection_type.endswith(f":{other_collection_type}"):
             return True
         if other_collection_type == "paired_or_unpaired":
             # this can be thought of as a subcollection of anything except a pair

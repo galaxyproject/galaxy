@@ -95,6 +95,29 @@ def test_effective_collection_type_paired_or_unpaired_over_paired():
     assert c_t("list:paired_or_unpaired").effective_collection_type("paired_or_unpaired") == "list"
 
 
+def test_endswith_colon_boundary():
+    """Regression: endswith must require colon boundary to avoid partial matches.
+
+    'list:paired_or_unpaired'.endswith('paired') was True because 'paired'
+    is a substring at the end of 'paired_or_unpaired'. The fix requires
+    ':paired' (with colon prefix) so only proper rank boundaries match.
+    """
+    # list:paired_or_unpaired does NOT have subcollections of type paired
+    # PAIRED_OR_UNPAIRED_NOT_CONSUMED_BY_PAIRED_WHEN_MAPPING
+    assert not c_t("list:paired_or_unpaired").has_subcollections_of_type("paired")
+
+    # But list:paired DOES have subcollections of type paired (proper boundary)
+    assert c_t("list:paired").has_subcollections_of_type("paired")
+
+    # And list:list:paired_or_unpaired does NOT have subcollections of type paired
+    assert not c_t("list:list:paired_or_unpaired").has_subcollections_of_type("paired")
+
+    # Existing cases still work
+    assert c_t("list:list:paired").has_subcollections_of_type("paired")
+    assert c_t("list:list:paired").has_subcollections_of_type("list:paired")
+    assert not c_t("list:list:paired").has_subcollections_of_type("list")
+
+
 def test_compound_paired_or_unpaired_has_subcollections():
     """Test compound :paired_or_unpaired suffix in has_subcollections_of_type.
 

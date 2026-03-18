@@ -585,6 +585,18 @@ def test_map_over_list_paired_or_unpaired_with_list_of_lists(
 
 
 @requires_tool_id("collection_paired_test")
+def test_paired_or_unpaired_not_consumed_by_paired_when_mapping(
+    target_history: TargetHistory, required_tool: RequiredTool
+):
+    """PAIRED_OR_UNPAIRED_NOT_CONSUMED_BY_PAIRED_WHEN_MAPPING:
+    list:paired_or_unpaired cannot be mapped over a paired tool input."""
+    hdca = target_history.with_list_of_paired_and_unpaired()
+    required_tool.execute().with_inputs(
+        {"f1": {"batch": True, "values": [{"map_over_type": "paired", **hdca.src_dict}]}}
+    ).assert_fails.with_error_containing("Cannot split collection")
+
+
+@requires_tool_id("collection_paired_test")
 def test_simple_subcollection_mapping(
     target_history: TargetHistory, required_tool: RequiredTool, tool_input_format: DescribeToolInputs
 ):
