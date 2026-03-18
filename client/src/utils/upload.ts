@@ -52,6 +52,7 @@ import {
     guessInitialFilterType,
     guessNameForPair,
 } from "@/components/Collections/pairing";
+import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import type { UploadRowModel } from "@/components/Upload/model";
 import type { SupportedCollectionType } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
@@ -1004,6 +1005,16 @@ export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatas
         const errorMessage = errorMessageAsString(err);
         config.error?.(errorMessage);
     }
+}
+
+/**
+ * Builds a PreparedUpload object from UI upload items.
+ */
+export function buildPreparedUpload(items: NewUploadItem[]): PreparedUpload {
+    return {
+        apiItems: items.map((item) => toApiUploadItem(item)),
+        uploadItems: items,
+    };
 }
 
 /**
