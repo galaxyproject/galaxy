@@ -271,7 +271,7 @@ import { InsertStepAction, useStepActions } from "./Actions/stepActions";
 import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
-import { useActivityLogic, useSpecialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
+import { useSpecialWorkflowActivities, useWorkflowActivities } from "./modules/activities";
 import { getWorkflowInputs } from "./modules/inputs";
 import { fromSteps } from "./modules/labels";
 import { fromSimple } from "./modules/model";
@@ -349,6 +349,7 @@ export default {
             useWorkflowBoundingBox(id);
 
         const { undo, redo } = undoRedoStore;
+        const { undoStackLength } = storeToRefs(undoRedoStore);
         const { ctrl_z, ctrl_shift_z, meta_z, meta_shift_z } = useMagicKeys();
 
         const undoKeys = logicOr(ctrl_z, meta_z);
@@ -610,13 +611,6 @@ export default {
             hasInvalidConnections.value ? `${errorText.value}, review and remove workflow errors.` : "Save Workflow",
         );
 
-        useActivityLogic(
-            computed(() => ({
-                activityBarId: "workflow-editor",
-                isNewTempWorkflow: isNewTempWorkflow.value,
-            })),
-        );
-
         const { confirm } = useConfirmDialog();
         const inputs = getWorkflowInputs();
 
@@ -628,10 +622,12 @@ export default {
 
         const unprivilegedToolStore = useUnprivilegedToolStore();
         const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
-        const workflowActivities = computed(() =>
-            workflowEditorActivities.filter(
-                (activity) => activity.id !== "workflow-editor-user-defined-tools" || canUseUnprivilegedTools.value,
-            ),
+        const workflowActivities = useWorkflowActivities(
+            "workflow-editor",
+            isNewTempWorkflow,
+            hasChanges,
+            undoStackLength,
+            canUseUnprivilegedTools,
         );
 
         const scrollToId = ref(null);

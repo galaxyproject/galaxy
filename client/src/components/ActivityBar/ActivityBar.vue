@@ -93,6 +93,13 @@ watchImmediate(
     },
 );
 
+watchImmediate(
+    () => props.specialActivities,
+    (specials) => {
+        activityStore.setSpecialPanelActivityIds(specials.filter((a) => a.panel).map((a) => a.id));
+    },
+);
+
 const { isAdmin, isAnonymous } = storeToRefs(userStore);
 
 const emit = defineEmits<{
@@ -287,6 +294,8 @@ defineExpose({
                                 :key="activity.id"
                                 :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
+                                :indicator="activity.indicator"
+                                :indicator-variant="activity.indicatorVariant"
                                 :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faQuestion } from "@fortawesome/free-solid-svg-icons";
+import { faExclamation, faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { Placement } from "@popperjs/core";
 import { computed } from "vue";
@@ -27,7 +27,7 @@ export interface Props {
     activityBarId: string;
     title?: string;
     icon?: IconDefinition;
-    indicator?: number | IconDefinition;
+    indicator?: number | boolean;
     indicatorVariant?: ActivityVariant;
     isActive?: boolean;
     tooltip?: string;
@@ -109,11 +109,11 @@ const meta = computed(() => store.metaForId(props.id));
                         {{ Math.min(indicator, 99) }}
                     </span>
                     <span
-                        v-else-if="typeof indicator !== 'number'"
+                        v-else-if="indicator === true"
                         class="nav-indicator"
                         :class="`${indicatorVariant}-indicator`"
                         data-description="activity indicator">
-                        <FontAwesomeIcon :icon="indicator" />
+                        <FontAwesomeIcon :icon="faExclamation" />
                     </span>
                     <FontAwesomeIcon :icon="icon" />
                 </div>

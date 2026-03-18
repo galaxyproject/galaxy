@@ -167,6 +167,46 @@ describe("Activity Store", () => {
         });
     });
 
+    describe("setSpecialPanelActivityIds", () => {
+        it("prevents sync from resetting toggledSideBar when set to a registered special panel activity", async () => {
+            const activityStore = useActivityStore("default");
+            await activityStore.sync();
+
+            activityStore.setSpecialPanelActivityIds(["special-panel-id"]);
+            activityStore.toggledSideBar = "special-panel-id";
+
+            await activityStore.sync();
+
+            expect(activityStore.toggledSideBar).toBe("special-panel-id");
+        });
+
+        it("still resets toggledSideBar when it is not in defaults or registered special activities", async () => {
+            const activityStore = useActivityStore("default");
+            await activityStore.sync();
+
+            activityStore.setSpecialPanelActivityIds([]);
+            activityStore.toggledSideBar = "unknown-panel-id";
+
+            await activityStore.sync();
+
+            expect(activityStore.toggledSideBar).toBe("a-id");
+        });
+
+        it("resets toggledSideBar after special activity is unregistered", async () => {
+            const activityStore = useActivityStore("default");
+            await activityStore.sync();
+
+            activityStore.setSpecialPanelActivityIds(["special-panel-id"]);
+            activityStore.toggledSideBar = "special-panel-id";
+            await activityStore.sync();
+            expect(activityStore.toggledSideBar).toBe("special-panel-id");
+
+            activityStore.setSpecialPanelActivityIds([]);
+            await activityStore.sync();
+            expect(activityStore.toggledSideBar).toBe("a-id");
+        });
+    });
+
     describe("ensureVisible", () => {
         it("marks an existing activity as visible", async () => {
             const activityStore = useActivityStore("default");
