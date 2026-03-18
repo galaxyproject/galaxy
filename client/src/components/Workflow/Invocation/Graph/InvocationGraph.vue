@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faArrowCircleLeft, faArrowCircleRight, faArrowDown, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faArrowCircleLeft, faArrowCircleRight, faArrowDown, faEye, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
 import { BAlert, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
@@ -60,6 +60,7 @@ const pollTimeout = ref<any>(null);
 const showSideOverlay = ref(false);
 const stepCard = ref<BCard | null>(null);
 const loadedJobInfo = ref<typeof WorkflowInvocationStep | null>(null);
+const detailedViewEnabled = ref(false);
 const workflowGraph = ref<InstanceType<typeof WorkflowGraph> | null>(null);
 
 const { datatypesMapper } = useDatatypesMapper();
@@ -171,6 +172,10 @@ function stepClicked(nodeId: number | null) {
         scrollStepToView();
     }
 }
+
+function toggleDetailedView() {
+    detailedViewEnabled.value = !detailedViewEnabled.value;
+}
 </script>
 
 <template>
@@ -204,6 +209,7 @@ function stepClicked(nodeId: number | null) {
                             :scroll-to-id="activeNodeId"
                             :show-minimap="props.showMinimap"
                             :show-zoom-controls="props.showZoomControls"
+                            :detailed-view="detailedViewEnabled"
                             :fixed-height="60"
                             is-invocation
                             readonly
@@ -212,6 +218,25 @@ function stepClicked(nodeId: number | null) {
                             v-if="activeNodeId !== null && showSideOverlay"
                             class="graph-scroll-overlay overlay-right" />
                     </BCard>
+
+                    <GButton
+                        v-if="activeNodeId !== null"
+                        class="detailed-view-button"
+                        tooltip
+                        :title="
+                            detailedViewEnabled
+                                ? 'Hide step connections'
+                                : 'Show the inputs and outputs of the selected step, including all connections leading in and out'
+                        "
+                        data-description="toggle step connections button"
+                        size="small"
+                        color="blue"
+                        outline
+                        :pressed="detailedViewEnabled"
+                        @click="toggleDetailedView">
+                        <FontAwesomeIcon :icon="faEye" fixed-width />
+                        Show Connections
+                    </GButton>
                 </div>
             </div>
             <BCard v-if="activeNodeId !== null && activeStep" ref="stepCard" class="invocation-step-card mt-2" no-body>
@@ -306,5 +331,13 @@ function stepClicked(nodeId: number | null) {
 
 .invocation-step-card {
     min-height: 500px;
+}
+
+.detailed-view-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 150;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 </style>
