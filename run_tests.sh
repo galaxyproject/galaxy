@@ -411,6 +411,7 @@ do
           export GALAXY_TEST_DRIVER_BACKEND
           report_file="./run_playwright_tests.html"
           skip_client_build=""
+          install_playwright_browers=(chromium)
           if [ $# -gt 1 ]; then
               selenium_script=$2
               shift 2
@@ -551,6 +552,7 @@ do
             --ignore lib/tool_shed/webapp/controllers
             --ignore=lib/tool_shed/webapp/model/migrations/alembic/'
           generate_cwl_conformance_tests=1
+          install_playwright_browers=(chromium firefox)
           if [ $# -gt 1 ]; then
               unit_extra="$unit_extra $2"
               shift 2
@@ -633,6 +635,10 @@ fi
 . ./scripts/common_startup_functions.sh
 
 setup_python
+
+if [ -n "$install_playwright_browers" ]; then
+    playwright install "${install_playwright_browers[@]}"
+fi
 
 if [ -n "$framework_test" ] || [ -n "$data_managers_test" ] ; then
     if [ -n "$test_id" ]; then

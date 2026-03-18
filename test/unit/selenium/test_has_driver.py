@@ -898,7 +898,7 @@ class TestUtilityMethods:
     def test_prepend_timeout_message(self, has_driver_instance, request):
         """Test prepending message to timeout exception."""
         backend = request.node.callspec.params.get("has_driver_instance")
-        if backend == "selenium":
+        if backend in ("selenium", "proxy-selenium"):
             original_selenium_exc = SeleniumTimeoutException(msg="original message")
             new_selenium_exception = has_driver_instance.prepend_timeout_message(original_selenium_exc, "New prefix:")
             assert "New prefix:" in new_selenium_exception.msg
