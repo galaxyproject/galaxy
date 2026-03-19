@@ -7,24 +7,40 @@ dynamically without requiring client rebuilds.
 
 import logging
 from typing import (
+    Annotated,
     Optional,
 )
 
 from fastapi import (
-    Body,
     Path,
     Query,
     status,
 )
-from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.schema.visualization_admin import (
+    AvailableVisualizationListResponse,
+    CleanStagingResultResponse,
+    InstalledVisualizationListResponse,
+    InstalledVisualizationResponse,
+    InstallVisualizationRequest,
+    MessageResponse,
+    StagingResultResponse,
+    StagingStatusResponse,
+    ToggleVisualizationRequest,
+    ToggleVisualizationResponse,
+    UpdateVisualizationRequest,
+    UsageStatsResponse,
+    VisualizationStagingResultResponse,
+)
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
 )
-from galaxy.webapps.galaxy.services.admin_visualizations import AdminVisualizationsService
+from galaxy.webapps.galaxy.services.admin_visualizations import (
+    AdminVisualizationsService,
+)
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +48,11 @@ router = Router(tags=["admin_visualizations"])
 
 VisualizationIdPathParam = Annotated[
     str,
-    Path(..., title="Visualization ID", description="The identifier of the visualization package."),
+    Path(
+        ...,
+        title="Visualization ID",
+        description="The identifier of the visualization package.",
+    ),
 ]
 
 
@@ -53,7 +73,7 @@ class FastAPIAdminVisualizations:
             title="Include disabled",
             description="Whether to include disabled visualizations in the result.",
         ),
-    ):
+    ) -> InstalledVisualizationListResponse:
         """Return a list of all installed visualization packages with their status."""
         return self.service.index(trans, include_disabled=include_disabled)
 
@@ -66,9 +86,11 @@ class FastAPIAdminVisualizations:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         search: Optional[str] = Query(
-            default=None, title="Search term", description="Filter available packages by name or description."
+            default=None,
+            title="Search term",
+            description="Filter available packages by name or description.",
         ),
-    ):
+    ) -> AvailableVisualizationListResponse:
         """Return a list of available @galaxyproject visualization packages from npm registry."""
         return self.service.get_available_packages(trans, search=search)
 
@@ -81,7 +103,7 @@ class FastAPIAdminVisualizations:
         self,
         viz_id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> InstalledVisualizationResponse:
         """Return detailed information about a specific visualization package."""
         return self.service.show(trans, viz_id)
 
@@ -94,12 +116,11 @@ class FastAPIAdminVisualizations:
     def install(
         self,
         viz_id: VisualizationIdPathParam,
+        request: InstallVisualizationRequest,
         trans: ProvidesUserContext = DependsOnTrans,
-        package: str = Body(..., description="The npm package name"),
-        version: str = Body(..., description="The package version to install"),
-    ):
+    ) -> InstalledVisualizationResponse:
         """Install a visualization package from npm registry."""
-        return self.service.install_package(trans, viz_id, package, version)
+        return self.service.install_package(trans, viz_id, request.package, request.version)
 
     @router.put(
         "/api/admin/visualizations/{viz_id}/update",
@@ -109,11 +130,11 @@ class FastAPIAdminVisualizations:
     def update(
         self,
         viz_id: VisualizationIdPathParam,
+        request: UpdateVisualizationRequest,
         trans: ProvidesUserContext = DependsOnTrans,
-        version: str = Body(..., description="The new version to update to"),
-    ):
+    ) -> InstalledVisualizationResponse:
         """Update an installed visualization package to a new version."""
-        return self.service.update_package(trans, viz_id, version)
+        return self.service.update_package(trans, viz_id, request.version)
 
     @router.delete(
         "/api/admin/visualizations/{viz_id}",
@@ -137,11 +158,11 @@ class FastAPIAdminVisualizations:
     def toggle(
         self,
         viz_id: VisualizationIdPathParam,
+        request: ToggleVisualizationRequest,
         trans: ProvidesUserContext = DependsOnTrans,
-        enabled: bool = Body(..., description="Whether to enable or disable the visualization"),
-    ):
+    ) -> ToggleVisualizationResponse:
         """Enable or disable a visualization package without uninstalling it."""
-        return self.service.toggle_package(trans, viz_id, enabled)
+        return self.service.toggle_package(trans, viz_id, request.enabled)
 
     @router.post(
         "/api/admin/visualizations/reload",
@@ -151,7 +172,7 @@ class FastAPIAdminVisualizations:
     def reload(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> MessageResponse:
         """Reload the visualization registry to pick up configuration changes."""
         return self.service.reload_registry(trans)
 
@@ -163,8 +184,12 @@ class FastAPIAdminVisualizations:
     def usage_stats(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        days: int = Query(default=30, title="Days", description="Number of days to look back for usage statistics"),
-    ):
+        days: int = Query(
+            default=30,
+            title="Days",
+            description="Number of days to look back for usage statistics",
+        ),
+    ) -> UsageStatsResponse:
         """Return usage statistics for installed visualizations."""
         return self.service.get_usage_stats(trans, days=days)
 
@@ -176,7 +201,7 @@ class FastAPIAdminVisualizations:
     def stage_all(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> StagingResultResponse:
         """Stage all visualization assets from config/plugins to static/plugins for Galaxy to serve."""
         return self.service.stage_all_visualizations(trans)
 
@@ -189,7 +214,7 @@ class FastAPIAdminVisualizations:
         self,
         viz_id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> VisualizationStagingResultResponse:
         """Stage assets for a specific visualization from config/plugins to static/plugins."""
         return self.service.stage_visualization(trans, viz_id)
 
@@ -201,7 +226,7 @@ class FastAPIAdminVisualizations:
     def clean_staged(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> CleanStagingResultResponse:
         """Clean all staged visualization assets from static/plugins."""
         return self.service.clean_staged_assets(trans)
 
@@ -213,6 +238,6 @@ class FastAPIAdminVisualizations:
     def staging_status(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> StagingStatusResponse:
         """Get information about currently staged visualizations."""
         return self.service.get_staging_status(trans)

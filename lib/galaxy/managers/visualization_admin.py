@@ -13,8 +13,6 @@ import subprocess
 import tempfile
 from glob import glob
 from typing import (
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -43,7 +41,7 @@ class VisualizationPackageManager(ModelManager):
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
         os.makedirs(self.static_path, exist_ok=True)
 
-    def load_config(self) -> Dict:
+    def load_config(self) -> dict:
         """Load the visualizations.yml configuration file."""
         try:
             if not os.path.exists(self.config_path):
@@ -56,7 +54,7 @@ class VisualizationPackageManager(ModelManager):
             log.error(f"Failed to load visualization config: {e}")
             raise exceptions.InternalServerError(f"Failed to load configuration: {e}")
 
-    def save_config(self, config: Dict) -> None:
+    def save_config(self, config: dict) -> None:
         """Save the visualizations.yml configuration file."""
         try:
             with open(self.config_path, "w") as f:
@@ -66,7 +64,7 @@ class VisualizationPackageManager(ModelManager):
             log.error(f"Failed to save visualization config: {e}")
             raise exceptions.InternalServerError(f"Failed to save configuration: {e}")
 
-    def get_package_info(self, viz_id: str) -> Optional[Dict]:
+    def get_package_info(self, viz_id: str) -> Optional[dict]:
         """Get information about a specific package from config."""
         config = self.load_config()
         return config.get(viz_id)
@@ -99,13 +97,22 @@ class VisualizationPackageManager(ModelManager):
 
         self.save_config(config)
 
-    def install_npm_package(self, package: str, version: str, target_dir: str) -> Dict:
+    def install_npm_package(self, package: str, version: str, target_dir: str) -> dict:
         """Install an npm package to a target directory."""
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Install package using npm
                 package_spec = f"{package}@{version}"
-                cmd = ["npm", "install", package_spec, "--prefix", temp_dir, "--no-audit", "--no-fund", "--production"]
+                cmd = [
+                    "npm",
+                    "install",
+                    package_spec,
+                    "--prefix",
+                    temp_dir,
+                    "--no-audit",
+                    "--no-fund",
+                    "--production",
+                ]
 
                 log.info(f"Installing npm package: {package_spec}")
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, cwd=temp_dir)
@@ -217,7 +224,7 @@ class VisualizationPackageManager(ModelManager):
 
         return total_size
 
-    def get_package_metadata(self, viz_id: str) -> Dict:
+    def get_package_metadata(self, viz_id: str) -> dict:
         """Get metadata from an installed package's package.json."""
         package_path = self.get_package_path(viz_id)
         package_json_path = os.path.join(package_path, "package.json")
@@ -232,7 +239,7 @@ class VisualizationPackageManager(ModelManager):
             log.warning(f"Failed to read package.json for {viz_id}: {e}")
             return {}
 
-    def query_npm_registry(self, search_term: Optional[str] = None) -> List[Dict]:
+    def query_npm_registry(self, search_term: Optional[str] = None) -> list[dict]:
         """Query npm registry for @galaxyproject visualization packages."""
         try:
             # Build search URL
@@ -242,7 +249,7 @@ class VisualizationPackageManager(ModelManager):
             if search_term:
                 query_parts.append(search_term)
 
-            params: Dict[str, Union[str, int]] = {
+            params: dict[str, Union[str, int]] = {
                 "text": " ".join(query_parts),
                 "size": 250,  # Maximum results
             }
@@ -279,7 +286,7 @@ class VisualizationPackageManager(ModelManager):
             log.error(f"Failed to query npm registry: {e}")
             raise exceptions.InternalServerError(f"Failed to query package registry: {e}")
 
-    def get_package_versions(self, package_name: str) -> List[str]:
+    def get_package_versions(self, package_name: str) -> list[str]:
         """Get available versions for a specific package from npm registry."""
         try:
             url = f"https://registry.npmjs.org/{package_name}"
@@ -322,7 +329,7 @@ class VisualizationPackageManager(ModelManager):
             log.error(f"Failed to restore config: {e}")
             raise exceptions.InternalServerError(f"Failed to restore configuration: {e}")
 
-    def stage_all_visualizations(self) -> Dict:
+    def stage_all_visualizations(self) -> dict:
         """
         Stage all visualization assets from config/plugins/visualizations to static/plugins/visualizations.
         This is equivalent to the gulp stagePlugins task.
@@ -360,7 +367,11 @@ class VisualizationPackageManager(ModelManager):
                     if os.path.exists(target_dir):
                         shutil.rmtree(target_dir)
 
-                    shutil.copytree(source_dir, target_dir, ignore=shutil.ignore_patterns("node_modules/.bin"))
+                    shutil.copytree(
+                        source_dir,
+                        target_dir,
+                        ignore=shutil.ignore_patterns("node_modules/.bin"),
+                    )
 
                     staged_count += 1
                     # Extract visualization name from path
@@ -375,13 +386,17 @@ class VisualizationPackageManager(ModelManager):
                     log.error(error_msg)
                     errors.append(error_msg)
 
-            return {"staged_count": staged_count, "staged_visualizations": staged_visualizations, "errors": errors}
+            return {
+                "staged_count": staged_count,
+                "staged_visualizations": staged_visualizations,
+                "errors": errors,
+            }
 
         except Exception as e:
             log.error(f"Failed to stage visualizations: {e}")
             raise exceptions.InternalServerError(f"Failed to stage visualizations: {e}")
 
-    def stage_visualization(self, viz_id: str) -> Dict:
+    def stage_visualization(self, viz_id: str) -> dict:
         """
         Stage assets for a specific visualization from config/plugins to static/plugins.
         """
@@ -394,7 +409,11 @@ class VisualizationPackageManager(ModelManager):
                 # Check for nested visualizations (like jqplot/jqplot_bar)
                 (
                     os.path.join(
-                        plugins_base_dir, "visualizations", viz_id.split("/")[0], viz_id.split("/")[-1], "static"
+                        plugins_base_dir,
+                        "visualizations",
+                        viz_id.split("/")[0],
+                        viz_id.split("/")[-1],
+                        "static",
                     )
                     if "/" in viz_id
                     else None
@@ -421,7 +440,11 @@ class VisualizationPackageManager(ModelManager):
             if os.path.exists(target_dir):
                 shutil.rmtree(target_dir)
 
-            shutil.copytree(source_dir, target_dir, ignore=shutil.ignore_patterns("node_modules/.bin"))
+            shutil.copytree(
+                source_dir,
+                target_dir,
+                ignore=shutil.ignore_patterns("node_modules/.bin"),
+            )
 
             log.info(f"Staged visualization assets for {viz_id}: {relative_path}")
 
@@ -439,7 +462,7 @@ class VisualizationPackageManager(ModelManager):
                 raise exceptions.ObjectNotFound(f"Visualization '{viz_id}' not found")
             raise exceptions.InternalServerError(f"Failed to stage visualization: {e}")
 
-    def clean_staged_assets(self) -> Dict:
+    def clean_staged_assets(self) -> dict:
         """
         Clean all staged visualization assets from static/plugins/visualizations.
         This is equivalent to the gulp cleanPlugins task.
@@ -468,7 +491,7 @@ class VisualizationPackageManager(ModelManager):
             log.error(f"Failed to clean staged assets: {e}")
             raise exceptions.InternalServerError(f"Failed to clean staged assets: {e}")
 
-    def get_staging_status(self) -> Dict:
+    def get_staging_status(self) -> dict:
         """
         Get information about currently staged visualizations.
         """
@@ -488,10 +511,19 @@ class VisualizationPackageManager(ModelManager):
                     total_size += size
 
                     staged_items.append(
-                        {"name": item, "path": item_path, "size": size, "last_modified": os.path.getmtime(item_path)}
+                        {
+                            "name": item,
+                            "path": item_path,
+                            "size": size,
+                            "last_modified": os.path.getmtime(item_path),
+                        }
                     )
 
-            return {"staged_count": len(staged_items), "staged_visualizations": staged_items, "total_size": total_size}
+            return {
+                "staged_count": len(staged_items),
+                "staged_visualizations": staged_items,
+                "total_size": total_size,
+            }
 
         except Exception as e:
             log.error(f"Failed to get staging status: {e}")
