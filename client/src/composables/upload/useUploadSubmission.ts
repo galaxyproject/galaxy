@@ -1,9 +1,9 @@
 import { copyDataset } from "@/api/datasets";
-import type { FetchDataResponse } from "@/api/tools";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { useConfig } from "@/composables/config";
 import type { LibraryDatasetUploadItem, UploadedDataset } from "@/composables/upload/uploadItemTypes";
+import { datasetsFromFetchResponse } from "@/composables/upload/uploadResponse";
 import type { TrackedUpload } from "@/composables/upload/uploadTracking";
 import {
     initializeTrackedUploads,
@@ -15,83 +15,6 @@ import {
 import { errorMessageAsString } from "@/utils/simple-error";
 import type { UploadDatasetsConfig } from "@/utils/upload";
 import { uploadCollectionDatasets, uploadDatasets } from "@/utils/upload";
-
-interface UploadResponseData {
-    id: string;
-    name?: string;
-    label?: string;
-    hid?: number;
-    src?: string;
-}
-
-function isUploadResponseData(value: unknown): value is UploadResponseData {
-    if (!value || typeof value !== "object") {
-        return false;
-    }
-    // At minimum, check that it has an 'id' property which is what we actually need
-    return "id" in value && typeof value.id === "string";
-}
-
-function toUploadedDataset(output: unknown): UploadedDataset | null {
-    if (!isUploadResponseData(output)) {
-        return null;
-    }
-
-    if (!output.id) {
-        return null;
-    }
-
-    return {
-        id: output.id,
-        name: output.name ?? output.label ?? output.id,
-        hid: output.hid,
-        src: output.src === "hdca" ? "hdca" : "hda",
-    };
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function collectUploadedDatasets(responseOutputs: unknown, datasets: UploadedDataset[]): void {
-    if (!responseOutputs) {
-        return;
-    }
-
-    if (Array.isArray(responseOutputs)) {
-        responseOutputs.forEach((item) => collectUploadedDatasets(item, datasets));
-        return;
-    }
-
-    const converted = toUploadedDataset(responseOutputs);
-    if (converted) {
-        datasets.push(converted);
-        return;
-    }
-
-    if (isPlainObject(responseOutputs)) {
-        Object.values(responseOutputs).forEach((nested) => collectUploadedDatasets(nested, datasets));
-    }
-}
-
-function datasetsFromResponse(response: FetchDataResponse): UploadedDataset[] {
-    if (!response.outputs) {
-        return [];
-    }
-
-    const datasets: UploadedDataset[] = [];
-    collectUploadedDatasets(response.outputs, datasets);
-
-    // Deduplicate by dataset ID in case multiple nested paths contain the same output.
-    const seen = new Set<string>();
-    return datasets.filter((dataset) => {
-        if (seen.has(dataset.id)) {
-            return false;
-        }
-        seen.add(dataset.id);
-        return true;
-    });
-}
 
 /**
  * Composable that provides a centralized handler for submitting a prepared upload
@@ -131,7 +54,7 @@ export function useUploadSubmission() {
             const config: UploadDatasetsConfig = {
                 chunkSize: galaxyConfig.value.chunk_upload_size as number,
                 success: (response) => {
-                    const uploadedDatasets = datasetsFromResponse(response);
+                    const uploadedDatasets = datasetsFromFetchResponse(response);
 
                     markTrackedCompleted(uploadState, apiIds);
                     datasets.push(...uploadedDatasets);
