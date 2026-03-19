@@ -1,0 +1,13 @@
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: collection
+    collection_type: sample_sheet
+outputs:
+  wf_output:
+    outputSource: tool_step/output
+steps:
+  tool_step:
+    tool_id: __SAMPLE_SHEET_TO_TABULAR__
+    in:
+      input: input1

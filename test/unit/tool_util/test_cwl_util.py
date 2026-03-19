@@ -151,3 +151,107 @@ def test_galactic_job_json_collection_element_filetype():
     for target in captured_targets:
         assert isinstance(target, FileLiteralTarget)
         assert target.properties.get("filetype") == "fastqsanger"
+
+
+def test_galactic_job_json_sample_sheet_collection_without_rows():
+    """sample_sheet collection works without rows metadata."""
+    created_collections = []
+
+    def collection_create_func(element_identifiers, collection_type, rows=None, name=None):
+        created_collections.append(
+            {"element_identifiers": element_identifiers, "collection_type": collection_type, "rows": rows, "name": name}
+        )
+        return {"id": f"collection_{collection_type}"}
+
+    job = {
+        "input1": {
+            "class": "Collection",
+            "collection_type": "sample_sheet",
+            "elements": [
+                {"identifier": "el1", "class": "File", "contents": "element 1"},
+                {"identifier": "el2", "class": "File", "contents": "element 2"},
+            ],
+        }
+    }
+    result_job, datasets = galactic_job_json(
+        job, ".", _mock_upload_func, collection_create_func, tool_or_workflow="workflow"
+    )
+    assert len(created_collections) == 1
+    coll = created_collections[0]
+    assert coll["collection_type"] == "sample_sheet"
+    assert coll["rows"] is None
+    assert len(coll["element_identifiers"]) == 2
+    assert coll["element_identifiers"][0]["name"] == "el1"
+    assert coll["element_identifiers"][1]["name"] == "el2"
+
+
+def test_galactic_job_json_sample_sheet_collection_with_rows():
+    """sample_sheet collection passes rows metadata through."""
+    created_collections = []
+
+    def collection_create_func(element_identifiers, collection_type, rows=None, name=None):
+        created_collections.append(
+            {"element_identifiers": element_identifiers, "collection_type": collection_type, "rows": rows, "name": name}
+        )
+        return {"id": f"collection_{collection_type}"}
+
+    job = {
+        "input1": {
+            "class": "Collection",
+            "collection_type": "sample_sheet",
+            "elements": [
+                {"identifier": "el1", "class": "File", "contents": "element 1"},
+                {"identifier": "el2", "class": "File", "contents": "element 2"},
+            ],
+            "rows": {"el1": {"condition": "treatment"}, "el2": {"condition": "control"}},
+        }
+    }
+    result_job, datasets = galactic_job_json(
+        job, ".", _mock_upload_func, collection_create_func, tool_or_workflow="workflow"
+    )
+    assert len(created_collections) == 1
+    coll = created_collections[0]
+    assert coll["collection_type"] == "sample_sheet"
+    assert coll["rows"] == {"el1": {"condition": "treatment"}, "el2": {"condition": "control"}}
+
+
+def test_galactic_job_json_sample_sheet_paired_collection():
+    """sample_sheet:paired creates nested collection with paired sub-elements."""
+    created_collections = []
+
+    def collection_create_func(element_identifiers, collection_type, rows=None, name=None):
+        created_collections.append(
+            {"element_identifiers": element_identifiers, "collection_type": collection_type, "rows": rows, "name": name}
+        )
+        return {"id": f"collection_{collection_type}"}
+
+    job = {
+        "input1": {
+            "class": "Collection",
+            "collection_type": "sample_sheet:paired",
+            "elements": [
+                {
+                    "identifier": "sample1",
+                    "class": "Collection",
+                    "type": "paired",
+                    "elements": [
+                        {"identifier": "forward", "class": "File", "contents": "fwd reads"},
+                        {"identifier": "reverse", "class": "File", "contents": "rev reads"},
+                    ],
+                }
+            ],
+        }
+    }
+    result_job, datasets = galactic_job_json(
+        job, ".", _mock_upload_func, collection_create_func, tool_or_workflow="workflow"
+    )
+    assert len(created_collections) == 1
+    coll = created_collections[0]
+    assert coll["collection_type"] == "sample_sheet:paired"
+    assert coll["rows"] is None
+    assert len(coll["element_identifiers"]) == 1
+    el = coll["element_identifiers"][0]
+    assert el["name"] == "sample1"
+    assert el["src"] == "new_collection"
+    assert el["collection_type"] == "paired"
+    assert len(el["element_identifiers"]) == 2
