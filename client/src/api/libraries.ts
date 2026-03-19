@@ -89,6 +89,8 @@ export async function getFolderContents(
         rethrowSimple(error);
     }
 
+    // Cast needed -- openapi-typescript-helpers Readable<T> widens tuples
+    // https://github.com/openapi-ts/openapi-typescript/issues/2632
     return data as LibraryFolderContentsIndexResult;
 }
 
