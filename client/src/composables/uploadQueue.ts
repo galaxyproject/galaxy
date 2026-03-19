@@ -20,6 +20,7 @@ import {
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import type { SupportedCollectionType, UploadCollectionConfig } from "@/composables/upload/collectionTypes";
 import type { CompositeFileUploadItem, NewUploadItem } from "@/composables/upload/uploadItemTypes";
+import { initializeTrackedUploads } from "@/composables/upload/uploadTracking";
 import { useHistoryStore } from "@/stores/historyStore";
 import { getHistoryUploadActionErrorMessage, getHistoryUploadBlockReason } from "@/utils/historyUpload";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -690,25 +691,21 @@ export function useUploadQueue() {
         const isDirectCreation =
             collectionConfig !== undefined && items.every((item) => item.uploadMode !== "data-library");
 
-        // Create batch first if collection config provided
-        const batchId = collectionConfig ? uploadState.addBatch(collectionConfig, [], isDirectCreation) : undefined;
+        const { trackedUploads, batchId } = initializeTrackedUploads(uploadState, items, {
+            collectionConfig,
+            directCreation: isDirectCreation,
+            startUploading: false,
+        });
+        const ids = trackedUploads.map((tracked) => tracked.id);
 
-        // Add upload items with batch ID
-        const ids = items.map((item) => uploadState.addUploadItem(item, batchId));
-
-        // Update batch with upload IDs and create internal batch for tracking
-        if (batchId) {
-            const batch = uploadState.getBatch(batchId);
-            if (batch) {
-                batch.uploadIds = ids;
-            }
-
+        // Create internal batch for queue-specific tracking
+        if (batchId && collectionConfig) {
             batches.push({
                 batchId,
                 ids,
                 items,
                 datasetIds: [],
-                collectionConfig: collectionConfig!,
+                collectionConfig,
             });
         }
 

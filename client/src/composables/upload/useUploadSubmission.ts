@@ -3,7 +3,15 @@ import type { FetchDataResponse } from "@/api/tools";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { useConfig } from "@/composables/config";
-import type { LibraryDatasetUploadItem, NewUploadItem, UploadedDataset } from "@/composables/upload/uploadItemTypes";
+import type { LibraryDatasetUploadItem, UploadedDataset } from "@/composables/upload/uploadItemTypes";
+import type { TrackedUpload } from "@/composables/upload/uploadTracking";
+import {
+    initializeTrackedUploads,
+    markTrackedCompleted,
+    markTrackedError,
+    splitTrackedUploadsByType,
+    updateTrackedProgress,
+} from "@/composables/upload/uploadTracking";
 import { errorMessageAsString } from "@/utils/simple-error";
 import type { UploadDatasetsConfig } from "@/utils/upload";
 import { uploadCollectionDatasets, uploadDatasets } from "@/utils/upload";
@@ -16,30 +24,12 @@ interface UploadResponseData {
     src?: string;
 }
 
-interface TrackedUpload<T extends NewUploadItem = NewUploadItem> {
-    item: T;
-    id: string;
-}
-
-interface InitializedUploads {
-    trackedUploads: TrackedUpload[];
-    batchId?: string;
-}
-
 function isUploadResponseData(value: unknown): value is UploadResponseData {
     if (!value || typeof value !== "object") {
         return false;
     }
     // At minimum, check that it has an 'id' property which is what we actually need
     return "id" in value && typeof value.id === "string";
-}
-
-function isLibraryDatasetUpload(item: NewUploadItem): item is LibraryDatasetUploadItem {
-    return item.uploadMode === "data-library";
-}
-
-function isTrackedLibraryUpload(tracked: TrackedUpload): tracked is TrackedUpload<LibraryDatasetUploadItem> {
-    return isLibraryDatasetUpload(tracked.item);
 }
 
 function toUploadedDataset(output: unknown): UploadedDataset | null {
@@ -111,78 +101,15 @@ export function useUploadSubmission() {
     const uploadState = useUploadState();
     const { config: galaxyConfig } = useConfig();
 
-    /**
-     * Update progress for multiple tracked uploads.
-     */
-    const updateTrackedProgress = (ids: string[], percentage: number): void => {
-        ids.forEach((id) => uploadState.updateProgress(id, percentage));
-    };
-
-    /**
-     * Mark tracked uploads as completed.
-     */
-    const markTrackedCompleted = (ids: string[]): void => {
-        ids.forEach((id) => {
-            uploadState.updateProgress(id, 100);
-            uploadState.setStatus(id, "completed");
-        });
-    };
-
-    /**
-     * Mark an error for all tracked uploads.
-     */
-    const markTrackedError = (trackedUploads: TrackedUpload[], message: string): void => {
-        trackedUploads.forEach((tracked) => uploadState.setError(tracked.id, message));
-    };
-
-    /**
-     * Initialize tracked uploads for the given upload items.
-     */
-    const initializeUploads = (prepared: PreparedUpload): InitializedUploads => {
-        if (!prepared.uploadItems) {
-            return { trackedUploads: [] };
-        }
-
+    const initializeUploads = (prepared: PreparedUpload) => {
         const canTrackAsDirectCollectionBatch = Boolean(prepared.collectionConfig && prepared.apiItems.length > 0);
-        const batchId = canTrackAsDirectCollectionBatch
-            ? uploadState.addBatch(prepared.collectionConfig!, [], true)
-            : undefined;
+        const collectionConfig = canTrackAsDirectCollectionBatch ? prepared.collectionConfig : undefined;
 
-        const trackedUploads = prepared.uploadItems.map((item) => ({
-            item,
-            id: uploadState.addUploadItem(item, batchId),
-        }));
-
-        if (batchId) {
-            const batch = uploadState.getBatch(batchId);
-            if (batch) {
-                batch.uploadIds = trackedUploads.map((tracked) => tracked.id);
-            }
-        }
-
-        trackedUploads.forEach((tracked) => uploadState.setStatus(tracked.id, "uploading"));
-
-        return { trackedUploads, batchId };
-    };
-
-    /**
-     * Separate API uploads from library uploads.
-     */
-    const filterUploadsByType = (
-        trackedUploads: TrackedUpload[],
-    ): { apiIds: string[]; libraryUploads: TrackedUpload<LibraryDatasetUploadItem>[] } => {
-        const apiIds: string[] = [];
-        const libraryUploads: TrackedUpload<LibraryDatasetUploadItem>[] = [];
-
-        trackedUploads.forEach((tracked) => {
-            if (isTrackedLibraryUpload(tracked)) {
-                libraryUploads.push(tracked);
-            } else {
-                apiIds.push(tracked.id);
-            }
+        return initializeTrackedUploads(uploadState, prepared.uploadItems, {
+            collectionConfig,
+            directCreation: true,
+            startUploading: true,
         });
-
-        return { apiIds, libraryUploads };
     };
 
     /**
@@ -206,7 +133,7 @@ export function useUploadSubmission() {
                 success: (response) => {
                     const uploadedDatasets = datasetsFromResponse(response);
 
-                    markTrackedCompleted(apiIds);
+                    markTrackedCompleted(uploadState, apiIds);
                     datasets.push(...uploadedDatasets);
 
                     if (batchId) {
@@ -222,7 +149,7 @@ export function useUploadSubmission() {
                 error: (uploadError) => {
                     const errorMessage = errorMessageAsString(uploadError);
 
-                    markTrackedError(trackedUploads, errorMessage);
+                    markTrackedError(uploadState, trackedUploads, errorMessage);
                     if (batchId) {
                         uploadState.setBatchError(batchId, errorMessage);
                     }
@@ -230,7 +157,7 @@ export function useUploadSubmission() {
                 },
                 progress: (percentage) => {
                     onProgress?.(percentage);
-                    updateTrackedProgress(apiIds, percentage);
+                    updateTrackedProgress(uploadState, apiIds, percentage);
                 },
             };
 
@@ -272,7 +199,7 @@ export function useUploadSubmission() {
                     src: "hda",
                 });
             }
-            markTrackedCompleted([tracked.id]);
+            markTrackedCompleted(uploadState, [tracked.id]);
         }
     };
 
@@ -291,7 +218,7 @@ export function useUploadSubmission() {
     ): Promise<UploadedDataset[]> {
         const datasets: UploadedDataset[] = [];
         const { trackedUploads, batchId } = initializeUploads(prepared);
-        const { apiIds, libraryUploads } = filterUploadsByType(trackedUploads);
+        const { apiIds, libraryUploads } = splitTrackedUploadsByType(trackedUploads);
 
         await processApiUploads(prepared, apiIds, datasets, trackedUploads, batchId, onProgress);
         await processLibraryUploads(libraryUploads, historyId, datasets);
