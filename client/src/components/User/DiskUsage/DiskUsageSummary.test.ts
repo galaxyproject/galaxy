@@ -20,16 +20,16 @@ const quotaUsageClassSelector = ".quota-usage";
 const basicDiskUsageSummaryId = "#basic-disk-usage-summary";
 
 const fakeUserWithQuota = getFakeRegisteredUser({
-    total_disk_usage: 1048576,
-    quota_bytes: 104857600,
+    total_disk_usage: 1000000,
+    quota_bytes: 100000000,
     quota_percent: 1,
 });
 
 const fakeQuotaUsages: UserQuotaUsageData[] = [
     {
         quota_source_label: "Default",
-        quota_bytes: 104857600,
-        total_disk_usage: 1048576,
+        quota_bytes: 100000000,
+        total_disk_usage: 1000000,
     },
 ];
 
@@ -92,8 +92,8 @@ describe("DiskUsageSummary.vue", () => {
         const updatedFakeQuotaUsages: UserQuotaUsageData[] = [
             {
                 quota_source_label: "Default",
-                quota_bytes: 104857600,
-                total_disk_usage: 2097152,
+                quota_bytes: 100000000,
+                total_disk_usage: 2000000,
             },
         ];
         server.use(

@@ -1552,31 +1552,42 @@ def shorten_with_metric_prefix(amount: int) -> str:
         return str(amount)
 
 
-def nice_size(size: Union[float, int, str, Decimal]) -> str:
+def nice_size(size: Union[float, int, str, Decimal], binary: bool = False) -> str:
     """
     Returns a readably formatted string with the size
 
     >>> nice_size(100)
     '100 bytes'
     >>> nice_size(10000)
-    '9.8 KB'
+    '10.0 KB'
     >>> nice_size(1000000)
-    '976.6 KB'
+    '1.0 MB'
     >>> nice_size(100000000)
-    '95.4 MB'
+    '100.0 MB'
+    >>> nice_size(1024, binary=True)
+    '1.0 KiB'
+    >>> nice_size(1048576, binary=True)
+    '1.0 MiB'
     """
     try:
         size = float(size)
     except ValueError:
         return "??? bytes"
-    size, prefix = metric_prefix(size, 1024)
-    if prefix == "":
-        return f"{int(size)} bytes"
+    if binary:
+        size, prefix = metric_prefix(size, 1024)
+        if prefix == "":
+            return f"{int(size)} bytes"
+        else:
+            return f"{size:.1f} {prefix}iB"
     else:
-        return f"{size:.1f} {prefix}B"
+        size, prefix = metric_prefix(size, 1000)
+        if prefix == "":
+            return f"{int(size)} bytes"
+        else:
+            return f"{size:.1f} {prefix}B"
 
 
-def size_to_bytes(size):
+def size_to_bytes(size, binary: bool = False):
     """
     Returns a number of bytes (as integer) if given a reasonably formatted string with the size
 
@@ -1587,16 +1598,21 @@ def size_to_bytes(size):
     >>> size_to_bytes('10 bytes')
     10
     >>> size_to_bytes('4k')
-    4096
+    4000
     >>> size_to_bytes('2.2 TB')
-    2418925581107
+    2200000000000
     >>> size_to_bytes('.01 TB')
-    10995116277
+    10000000000
     >>> size_to_bytes('1.b')
     1
     >>> size_to_bytes('1.2E2k')
-    122880
+    120000
+    >>> size_to_bytes('4k', binary=True)
+    4096
+    >>> size_to_bytes('1 MB', binary=True)
+    1048576
     """
+    base = 1024 if binary else 1000
     # The following number regexp is based on https://stackoverflow.com/questions/385558/extract-float-double-value/385597#385597
     size_re = re.compile(r"(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$")
     size_match = size_re.match(size.lower())
@@ -1607,17 +1623,17 @@ def size_to_bytes(size):
     if multiple == "" or multiple.startswith("b"):
         return int(number)
     elif multiple.startswith("k"):
-        return int(number * 1024)
+        return int(number * base)
     elif multiple.startswith("m"):
-        return int(number * 1024**2)
+        return int(number * base**2)
     elif multiple.startswith("g"):
-        return int(number * 1024**3)
+        return int(number * base**3)
     elif multiple.startswith("t"):
-        return int(number * 1024**4)
+        return int(number * base**4)
     elif multiple.startswith("p"):
-        return int(number * 1024**5)
+        return int(number * base**5)
     elif multiple.startswith("e"):
-        return int(number * 1024**6)
+        return int(number * base**6)
     else:
         raise ValueError(f"Unknown multiplier '{multiple}' in '{size}'")
 

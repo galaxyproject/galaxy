@@ -68,7 +68,7 @@ TITLES = {
 CONVERSION = {
     "memory.oom_control.oom_kill_disable": lambda x: "No" if x == 1 else "Yes",
     "memory.oom_control.under_oom": lambda x: "Yes" if x == 1 else "No",
-    "memory.peak": lambda x: nice_size(x),
+    "memory.peak": lambda x: nice_size(x, binary=True),
     "cpuacct.usage": lambda x: formatting.seconds_to_str(x / 10**9),  # convert nanoseconds
     "cpu.stat.system_usec": lambda x: formatting.seconds_to_str(x / 10**6),  # convert microseconds
     "cpu.stat.usage_usec": lambda x: formatting.seconds_to_str(x / 10**6),  # convert microseconds
@@ -114,7 +114,7 @@ class CgroupPluginFormatter(formatting.JobMetricFormatter):
             return formatting.FormattedMetric(title, CONVERSION[key](value))
         elif key.endswith("_bytes"):
             try:
-                return formatting.FormattedMetric(title, nice_size(value))
+                return formatting.FormattedMetric(title, nice_size(value, binary=True))
             except ValueError:
                 pass
         else:

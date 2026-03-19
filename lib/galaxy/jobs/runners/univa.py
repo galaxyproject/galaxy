@@ -277,7 +277,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # qdel       100     137          user@mail
 
         extinfo["time_wasted"] = _parse_time(qacct["wallclock"])
-        extinfo["memory_wasted"] = size_to_bytes(qacct["maxvmem"])
+        extinfo["memory_wasted"] = size_to_bytes(qacct["maxvmem"], binary=True)
         extinfo["slots"] = int(qacct["slots"])
 
         # deleted_by
@@ -608,7 +608,7 @@ def _parse_native_specs(job_id, native_spec):
     # parse memory
     m = re.search(r"mem=([\d.]+[KGMT]?)[\s,]*", native_spec)
     if m is not None:
-        mem = size_to_bytes(m.group(1))
+        mem = size_to_bytes(m.group(1), binary=True)
         # mem = _parse_mem(m.group(1))
         if mem is None:
             log.error(f"DRMAAUniva: job {job_id} has unparsable memory native spec {native_spec}")
