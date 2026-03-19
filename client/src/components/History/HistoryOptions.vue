@@ -257,7 +257,11 @@ watch(
                 Do you also want to permanently delete the history <i class="ml-1">{{ history.name }}</i>
             </p>
 
-            <BFormCheckbox id="purge-history" v-model="purgeHistory" :disabled="isDeletedNotPurged">
+            <BFormCheckbox
+                id="purge-history"
+                v-model="purgeHistory"
+                :disabled="isDeletedNotPurged"
+                data-description="delete history checkbox">
                 <span v-localize>Yes, permanently delete this history.</span>
             </BFormCheckbox>
         </GModal>

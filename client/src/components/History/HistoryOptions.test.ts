@@ -1,12 +1,15 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import HistoryOptions from "./HistoryOptions.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 
 const localVue = getLocalVue();
 
@@ -31,6 +34,9 @@ const anonymousOptions = ["Resume Paused Jobs", "Delete History", "Export Tool R
 // options disabled for logged-out users
 const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOptions.includes(option));
 
+const activeHistory = { id: "history_a", name: "Active History", deleted: false, purged: false, archived: false };
+const deletedHistory = { id: "history_b", name: "Deleted History", deleted: true, purged: false, archived: false };
+
 async function createWrapper(propsData: object, userData?: any) {
     const pinia = createPinia();
 
@@ -45,13 +51,19 @@ async function createWrapper(propsData: object, userData?: any) {
 
     const historyStore = useHistoryStore();
     vi.spyOn(historyStore, "currentHistoryId", "get").mockReturnValue("current_history_id");
+    vi.spyOn(historyStore, "deleteHistory").mockImplementation(async () => {});
 
-    return wrapper;
+    await flushPromises();
+    return { wrapper, historyStore };
 }
 
 describe("History Navigation", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
     it("presents all options to logged-in users", async () => {
-        const wrapper = await createWrapper(
+        const { wrapper } = await createWrapper(
             {
                 history: { id: "current_history_id" },
                 histories: [],
@@ -70,7 +82,7 @@ describe("History Navigation", () => {
     });
 
     it("disables options for anonymous users", async () => {
-        const wrapper = await createWrapper({
+        const { wrapper } = await createWrapper({
             history: { id: "current_history_id" },
             histories: [],
         });
@@ -86,7 +98,7 @@ describe("History Navigation", () => {
     });
 
     it("prompts anonymous users to log in", async () => {
-        const wrapper = await createWrapper({
+        const { wrapper } = await createWrapper({
             history: { id: "current_history_id" },
             histories: [],
         });
@@ -97,5 +109,74 @@ describe("History Navigation", () => {
         disabledOptionElements.wrappers.forEach((option) => {
             expect((option.attributes("title") as string).toLowerCase()).toContain("log in");
         });
+    });
+
+    it("shows 'Delete History' for an active history", async () => {
+        const { wrapper } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
+        expect(wrapper.text()).toContain("Delete History");
+        expect(wrapper.text()).not.toContain("Permanently Delete History");
+    });
+
+    it("shows 'Permanently Delete History' for a deleted (not purged) history", async () => {
+        const { wrapper } = await createWrapper({ history: deletedHistory }, getFakeRegisteredUser());
+        expect(wrapper.text()).toContain("Permanently Delete History");
+    });
+
+    it("delete modal has correct title and ok-text for an active history", async () => {
+        const { wrapper } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
+        const modal = wrapper.findComponent(GModal);
+        expect(modal.props("title")).toBe("Delete History?");
+        expect(modal.props("okText")).toBe("Delete");
+    });
+
+    it("delete modal has correct title and ok-text for a deleted (not purged) history", async () => {
+        const { wrapper } = await createWrapper({ history: deletedHistory }, getFakeRegisteredUser());
+        const modal = wrapper.findComponent(GModal);
+        expect(modal.props("title")).toBe("Permanently Delete History?");
+        expect(modal.props("okText")).toBe("Permanently Delete");
+    });
+
+    it("purge checkbox is not disabled for an active history", async () => {
+        const { wrapper } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
+        expect(wrapper.find('[data-description="delete history checkbox"]').attributes("disabled")).toBeUndefined();
+    });
+
+    it("purge checkbox is disabled for an already-deleted history", async () => {
+        const { wrapper } = await createWrapper({ history: deletedHistory }, getFakeRegisteredUser());
+        expect(wrapper.find('[data-description="delete history checkbox"]').attributes("disabled")).toBeDefined();
+    });
+
+    it("calls deleteHistory with purge=false when checkbox is unchecked", async () => {
+        const { wrapper, historyStore } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(historyStore.deleteHistory).toHaveBeenCalledWith("history_a", false);
+    });
+
+    it("calls deleteHistory with purge=true when purge checkbox is manually checked", async () => {
+        const { wrapper, historyStore } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
+        wrapper.find('[data-description="delete history checkbox"]').vm.$emit("input", true);
+        await flushPromises();
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(historyStore.deleteHistory).toHaveBeenCalledWith("history_a", true);
+    });
+
+    it("auto-sets purge=true when history changes to a deleted one while modal is open", async () => {
+        // The watch fires on history.id change — covers the case where the modal is already open
+        // and the history switches to a deleted one (e.g. another tab deletes it).
+        const { wrapper, historyStore } = await createWrapper({ history: activeHistory }, getFakeRegisteredUser());
+
+        expect(wrapper.findComponent(GModal).text()).toContain(activeHistory.name);
+
+        await wrapper.setProps({ history: deletedHistory });
+
+        expect(wrapper.findComponent(GModal).text()).toContain(deletedHistory.name);
+
+        await flushPromises();
+        wrapper.findComponent(GModal).vm.$emit("ok");
+
+        await flushPromises();
+        expect(historyStore.deleteHistory).toHaveBeenCalledWith("history_b", true);
     });
 });
