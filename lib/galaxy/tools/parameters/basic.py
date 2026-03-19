@@ -590,7 +590,7 @@ class FloatToolParameter(TextToolParameter):
                 return value
             if not value and self.optional:
                 return None
-            raise ParameterValueError("a real number is required", self.name, value)
+            raise ParameterValueError("a float is required", self.name, value)
 
     def get_initial_value(self, trans, other_values):
         if self.value is None:
