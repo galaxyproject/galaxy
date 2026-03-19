@@ -13,6 +13,7 @@ from typing import (
     Any,
     Optional,
     Union,
+    cast,
 )
 
 import anyio
@@ -42,7 +43,10 @@ from galaxy.managers.context import (
     ProvidesUserContext
 )
 from galaxy.managers.jobs import JobManager
+from galaxy.managers.session import GalaxySessionManager
+from galaxy.managers.users import UserManager
 from galaxy.model import HistoryDatasetAssociation, User
+from galaxy.structured_app import StructuredApp
 from galaxy.schema.agents import AgentResponse, UploadedArtifact
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -54,6 +58,7 @@ from galaxy.schema.schema import (
     ChatResponse,
     PyodideResultPayload,
 )
+from galaxy.work.context import WorkRequestContext
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -157,6 +162,65 @@ async def _broadcast_exec_followup(exchange_id: int, message: dict[str, Any]) ->
                     connections.discard(ws)
                 if not connections:
                     ACTIVE_EXECUTION_STREAMS.pop(exchange_id, None)
+
+
+def _get_websocket_user(websocket: WebSocket) -> Optional[User]:
+    app = cast(StructuredApp, websocket.app)
+
+    galaxysession = websocket.cookies.get("galaxysession")
+    if galaxysession:
+        session_key = app.security.decode_guid(galaxysession)
+        if session_key:
+            galaxy_session = app[GalaxySessionManager].get_session_from_session_key(session_key)
+            if galaxy_session and galaxy_session.user:
+                return galaxy_session.user
+
+    api_key = websocket.query_params.get("key") or websocket.headers.get("x-api-key")
+    if api_key:
+        return app[UserManager].by_api_key(api_key=api_key)
+
+    authorization = websocket.headers.get("authorization")
+    if authorization:
+        scheme, _, token = authorization.partition(" ")
+        if scheme.lower() == "bearer" and token:
+            return app[UserManager].by_oidc_access_token(access_token=token)
+
+    return None
+
+
+@router.websocket("/api/chat/exchange/{exchange_id}/stream")
+async def chat_exchange_stream(
+    exchange_id: DecodedDatabaseIdField,
+    websocket: WebSocket,
+) -> None:
+    app = cast(StructuredApp, websocket.app)
+    user = _get_websocket_user(websocket)
+    if user is None:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    trans = WorkRequestContext(app=app, user=user)
+    exchange = app[ChatManager].get_exchange_by_id(trans, exchange_id)
+    if exchange is None:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    await websocket.accept()
+    await _register_stream(exchange_id, websocket)
+    try:
+        while True:
+            try:
+                message = await websocket.receive_text()
+            except WebSocketDisconnect:
+                break
+            if message and message.lower().startswith("ping"):
+                await websocket.send_text("pong")
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await _remove_stream(exchange_id, websocket)
+
+
 @router.cbv
 class ChatAPI:
     """Chat interface for AI agents.
@@ -703,28 +767,6 @@ class ChatAPI:
             size=artifact_size,
             download_url=download_url,
         )
-
-
-    @router.websocket("/api/chat/exchange/{exchange_id}/stream")
-    async def chat_exchange_stream(
-        self,
-        exchange_id: DecodedDatabaseIdField,
-        websocket: WebSocket,
-    ) -> None:
-        await websocket.accept()
-        await _register_stream(exchange_id, websocket)
-        try:
-            while True:
-                try:
-                    message = await websocket.receive_text()
-                except WebSocketDisconnect:
-                    break
-                if message and message.lower().startswith("ping"):
-                    await websocket.send_text("pong")
-        except WebSocketDisconnect:
-            pass
-        finally:
-            await _remove_stream(exchange_id, websocket)
 
 
     @router.post("/api/chat/exchange/{exchange_id}/pyodide_result")
