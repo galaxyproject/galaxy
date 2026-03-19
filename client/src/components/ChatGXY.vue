@@ -19,6 +19,7 @@ import {
     generateId,
     hasArtifacts,
     isAwaitingExecution,
+    isDataAnalysisMessage,
     normaliseAnalysisSteps,
     normaliseArtifactList,
     normalisePathList,
@@ -62,7 +63,6 @@ const {
     appendAssistantMessage,
     applyDatasetSelectionFromMessages,
     applyExecutionResultMetadata,
-    attachPendingCollapsedMessages,
     closeChatStream,
     datasetError,
     datasetOptions,
@@ -272,90 +272,119 @@ async function fetchConversation(exchangeId: string): Promise<boolean> {
     const taskIdToMessage: Record<string, ChatMessage> = {};
     const pendingExecResults: Record<string, any> = {};
     const assistantMessagesToReplay: ChatMessage[] = [];
+    const rebuiltMessages: ChatMessage[] = [];
+    let currentTurnAssistant: ChatMessage | null = null;
 
-    messages.value = fullConversation
-        .map((msg: any, index: number) => {
-            if (msg.role === "execution_result") {
-                if (msg.task_id) {
-                    deliveredTaskIds.add(String(msg.task_id));
-                    const target = taskIdToMessage[String(msg.task_id)];
-                    if (target) {
-                        applyExecutionResultMetadata(target, msg);
-                    } else {
-                        pendingExecResults[String(msg.task_id)] = msg;
-                    }
+    for (const [index, msg] of fullConversation.entries()) {
+        if (msg.role === "execution_result") {
+            if (msg.task_id) {
+                deliveredTaskIds.add(String(msg.task_id));
+                const target = taskIdToMessage[String(msg.task_id)];
+                if (target) {
+                    applyExecutionResultMetadata(target, msg);
+                } else {
+                    pendingExecResults[String(msg.task_id)] = msg;
                 }
-                return null;
             }
+            continue;
+        }
 
-            if (msg.role !== "user" && msg.role !== "assistant") {
-                return null;
+        if (msg.role !== "user" && msg.role !== "assistant") {
+            continue;
+        }
+
+        const message: ChatMessage = {
+            id: `hist-${msg.role}-${exchangeId}-${index}`,
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            feedback: null,
+        };
+
+        if (msg.role === "user") {
+            currentTurnAssistant = null;
+            rebuiltMessages.push(message);
+            continue;
+        }
+
+        message.agentType = msg.agent_type;
+        message.confidence = msg.agent_response?.confidence || "medium";
+        message.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
+
+        if (msg.agent_response) {
+            message.agentResponse = msg.agent_response;
+            message.suggestions = msg.agent_response.suggestions || [];
+            const metadata = msg.agent_response?.metadata;
+            const steps = metadata ? normaliseAnalysisSteps(metadata?.analysis_steps) : [];
+            if (steps.length) {
+                message.analysisSteps = steps;
             }
+            if (metadata) {
+                const artifactSource = metadata?.artifacts ?? metadata?.execution?.artifacts;
+                const storedArtifacts = normaliseArtifactList(artifactSource);
+                updateMessageOutputsFromArtifacts(message, storedArtifacts);
+                const plots = normalisePathList(metadata?.plots);
+                message.generatedPlots = plots.length ? plots : undefined;
+                const files = normalisePathList(metadata?.files);
+                message.generatedFiles = files.length ? files : undefined;
+                const executedTask = metadata?.executed_task;
+                const pendingTask = metadata?.pyodide_task;
+                const taskIdsToCheck = [executedTask?.task_id, pendingTask?.task_id].filter(Boolean) as string[];
 
-            const message: ChatMessage = {
-                id: `hist-${msg.role}-${exchangeId}-${index}`,
-                role: msg.role as "user" | "assistant",
-                content: msg.content,
-                timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-                feedback: null,
-            };
+                const taskTarget =
+                    currentTurnAssistant &&
+                    isDataAnalysisMessage(currentTurnAssistant) &&
+                    isDataAnalysisMessage(message)
+                        ? currentTurnAssistant
+                        : message;
 
-            if (msg.role === "assistant") {
-                message.agentType = msg.agent_type;
-                message.confidence = msg.agent_response?.confidence || "medium";
-                message.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
-
-                if (msg.agent_response) {
-                    message.agentResponse = msg.agent_response;
-                    message.suggestions = msg.agent_response.suggestions || [];
-                    const metadata = msg.agent_response?.metadata;
-                    const steps = metadata ? normaliseAnalysisSteps(metadata?.analysis_steps) : [];
-                    if (steps.length) {
-                        message.analysisSteps = steps;
-                    }
-                    if (metadata) {
-                        const artifactSource = metadata?.artifacts ?? metadata?.execution?.artifacts;
-                        const storedArtifacts = normaliseArtifactList(artifactSource);
-                        updateMessageOutputsFromArtifacts(message, storedArtifacts);
-                        const plots = normalisePathList(metadata?.plots);
-                        message.generatedPlots = plots.length ? plots : undefined;
-                        const files = normalisePathList(metadata?.files);
-                        message.generatedFiles = files.length ? files : undefined;
-                        const executedTask = metadata?.executed_task;
-                        if (executedTask?.task_id) {
-                            deliveredTaskIds.add(String(executedTask.task_id));
-                            pyodideTaskToMessage.set(String(executedTask.task_id), message);
-                            taskIdToMessage[String(executedTask.task_id)] = message;
-                        }
-                        const pendingTask = metadata?.pyodide_task;
-                        if (pendingTask?.task_id) {
-                            pyodideTaskToMessage.set(String(pendingTask.task_id), message);
-                            taskIdToMessage[String(pendingTask.task_id)] = message;
-                        }
-                        const taskIdsToCheck = [executedTask?.task_id, pendingTask?.task_id].filter(
-                            Boolean,
-                        ) as string[];
-                        taskIdsToCheck.forEach((taskId) => {
-                            if (pendingExecResults[taskId]) {
-                                applyExecutionResultMetadata(message, pendingExecResults[taskId]);
-                                delete pendingExecResults[taskId];
-                            }
-                        });
-                    }
+                if (executedTask?.task_id) {
+                    deliveredTaskIds.add(String(executedTask.task_id));
+                    pyodideTaskToMessage.set(String(executedTask.task_id), taskTarget);
+                    taskIdToMessage[String(executedTask.task_id)] = taskTarget;
                 }
-
-                applyCollapseState(message);
-                if (message.isCollapsible) {
-                    pendingCollapsedMessages.push(message);
-                    return null;
+                if (pendingTask?.task_id) {
+                    pyodideTaskToMessage.set(String(pendingTask.task_id), taskTarget);
+                    taskIdToMessage[String(pendingTask.task_id)] = taskTarget;
                 }
-                attachPendingCollapsedMessages(message);
-                assistantMessagesToReplay.push(message);
+                taskIdsToCheck.forEach((taskId) => {
+                    if (pendingExecResults[taskId]) {
+                        applyExecutionResultMetadata(taskTarget, pendingExecResults[taskId]);
+                        delete pendingExecResults[taskId];
+                    }
+                });
             }
+        }
 
-            return message;
-        })
-        .filter((msg): msg is ChatMessage => msg !== null);
+        applyCollapseState(message);
+
+        if (currentTurnAssistant && isDataAnalysisMessage(currentTurnAssistant) && isDataAnalysisMessage(message)) {
+            const history = currentTurnAssistant.collapsedHistory ? [...currentTurnAssistant.collapsedHistory] : [];
+            message.isCollapsed = true;
+            history.push(message);
+            currentTurnAssistant.collapsedHistory = history;
+            updateMessageOutputsFromArtifacts(currentTurnAssistant, message.artifacts);
+            currentTurnAssistant.generatedPlots = [
+                ...(currentTurnAssistant.generatedPlots || []),
+                ...(message.generatedPlots || []).filter(
+                    (entry) => !(currentTurnAssistant.generatedPlots || []).includes(entry),
+                ),
+            ];
+            currentTurnAssistant.generatedFiles = [
+                ...(currentTurnAssistant.generatedFiles || []),
+                ...(message.generatedFiles || []).filter(
+                    (entry) => !(currentTurnAssistant.generatedFiles || []).includes(entry),
+                ),
+            ];
+            continue;
+        }
+
+        currentTurnAssistant = message;
+        rebuiltMessages.push(message);
+        assistantMessagesToReplay.push(message);
+    }
+
+    messages.value = rebuiltMessages;
 
     applyDatasetSelectionFromMessages(fullConversation);
     assistantMessagesToReplay.forEach((assistantMessage) => maybeRunPyodideForMessage(assistantMessage));

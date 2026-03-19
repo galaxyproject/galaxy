@@ -189,29 +189,28 @@ export function useDataAnalysisAgent(
         applyCollapseState(message);
     }
 
+    function mergeMessageOutputs(target: ChatMessage, source: ChatMessage) {
+        target.artifacts = mergeUploadedArtifacts(target.artifacts, source.artifacts);
+        target.generatedPlots = mergePathEntries(target.generatedPlots, source.generatedPlots);
+        target.generatedFiles = mergePathEntries(target.generatedFiles, source.generatedFiles);
+    }
+
     function attachPendingCollapsedMessages(target: ChatMessage, options?: { mergeOutputs?: boolean }) {
         if (!pendingCollapsedMessages.length) {
             return;
         }
-        target.collapsedHistory = pendingCollapsedMessages.map((msg) => {
+        const existingHistory = target.collapsedHistory ? [...target.collapsedHistory] : [];
+        target.collapsedHistory = [...existingHistory, ...pendingCollapsedMessages].map((msg) => {
             msg.isCollapsed = true;
             return msg;
         });
         if (options?.mergeOutputs) {
-            let mergedPlots = target.generatedPlots ? [...target.generatedPlots] : [];
-            let mergedFiles = target.generatedFiles ? [...target.generatedFiles] : [];
-            let mergedArtifacts = target.artifacts ? [...target.artifacts] : [];
             for (let i = pendingCollapsedMessages.length - 1; i >= 0; i -= 1) {
                 const msg = pendingCollapsedMessages[i];
                 if (msg) {
-                    mergedPlots = mergePathEntries(mergedPlots, msg.generatedPlots);
-                    mergedFiles = mergePathEntries(mergedFiles, msg.generatedFiles);
-                    mergedArtifacts = mergeUploadedArtifacts(mergedArtifacts, msg.artifacts);
+                    mergeMessageOutputs(target, msg);
                 }
             }
-            target.generatedPlots = mergedPlots.length ? mergedPlots : target.generatedPlots;
-            target.generatedFiles = mergedFiles.length ? mergedFiles : target.generatedFiles;
-            target.artifacts = mergedArtifacts.length ? mergedArtifacts : target.artifacts;
         }
         if (target.isCollapsed === undefined) {
             target.isCollapsed = true;
