@@ -125,6 +125,22 @@ function safeRenderMarkdown(text: string): string {
     }
 }
 
+function applyLatestAssistantState(target: ChatMessage, latest: ChatMessage) {
+    target.content = latest.content;
+    target.timestamp = latest.timestamp;
+    target.agentType = latest.agentType;
+    target.confidence = latest.confidence;
+    target.feedback = latest.feedback;
+    target.agentResponse = latest.agentResponse;
+    target.suggestions = latest.suggestions;
+    target.analysisSteps = latest.analysisSteps;
+    target.routingInfo = latest.routingInfo;
+    target.isCollapsible = latest.isCollapsible;
+    if (latest.isCollapsed !== undefined) {
+        target.isCollapsed = latest.isCollapsed;
+    }
+}
+
 function showWelcome() {
     messages.value.push({
         id: generateId(),
@@ -376,6 +392,7 @@ async function fetchConversation(exchangeId: string): Promise<boolean> {
                     (entry) => !(currentTurnAssistant.generatedFiles || []).includes(entry),
                 ),
             ];
+            applyLatestAssistantState(currentTurnAssistant, message);
             continue;
         }
 
