@@ -16,6 +16,7 @@ from galaxy.util.resources import files
 def stock_tool_paths():
     yield from _walk_directory_for_tools(files(galaxy.tools))
     yield from _walk_directory_for_tools(Path(galaxy_directory()) / "test" / "functional" / "tools")
+    yield from _walk_directory_for_tools(Path(galaxy_directory()) / "tools")
 
 
 def stock_tool_sources():
