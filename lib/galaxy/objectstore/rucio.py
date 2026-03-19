@@ -160,7 +160,8 @@ class RucioBroker:
             temp_directory = self.extra_dirs["temp"]
             key_for_pass = "password"
             os.makedirs(temp_directory, exist_ok=True)
-            with open(self.rucio_config_path, "w") as f:
+            rucio_config_path = os.path.join(temp_directory, "rucio.cfg")
+            with open(rucio_config_path, "w") as f:
                 f.write(f"""[client]
 rucio_host = {self.config['host']}
 auth_host = {self.config['auth_host']}
@@ -169,7 +170,7 @@ auth_type = {self.config['auth_type']}
 username = {self.config['username']}
 {key_for_pass} = {self.config[key_for_pass]}
 """)
-            self.rucio_config_path = os.path.join(temp_directory, "rucio.cfg")
+            self.rucio_config_path = rucio_config_path
         # We may have crossed a forkpool boundary. No harm setting the env var again.
         # Fixes rucio integration tests
         os.environ["RUCIO_CONFIG"] = self.rucio_config_path
