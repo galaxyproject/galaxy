@@ -216,7 +216,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
 
             importable = history.importable
-            link_access = self.service.shareable_service.disable_link_access(trans, history_id)
+            link_access = self.service.shareable_service.disable_link_access(trans, history.id)
         return {
             "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}.",
             "sharing_status_changed": importable != link_access.importable,
