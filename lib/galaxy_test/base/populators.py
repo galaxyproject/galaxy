@@ -226,6 +226,19 @@ def skip_without_tool(tool_id: str):
     return method_wrapper
 
 
+def skip_without_agents(method):
+    @wraps(method)
+    def wrapped_method(api_test_case, *args, **kwd):
+        interactor = api_test_case.anonymous_galaxy_interactor
+        resp = interactor.get("configuration")
+        api_asserts.assert_status_code_is_ok(resp)
+        if not resp.json().get("llm_api_configured", False):
+            raise unittest.SkipTest("Agents not available")
+        return method(api_test_case, *args, **kwd)
+
+    return wrapped_method
+
+
 def skip_without_asgi(method):
     @wraps(method)
     def wrapped_method(api_test_case: HasAnonymousGalaxyInteractor, *args, **kwd):
