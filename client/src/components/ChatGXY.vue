@@ -59,6 +59,7 @@ const usingDataAnalysisAgent = ref(false);
 
 // Data Analysis agent state and actions
 const {
+    appendAssistantMessage,
     applyDatasetSelectionFromMessages,
     applyExecutionResultMetadata,
     attachPendingCollapsedMessages,
@@ -193,27 +194,7 @@ async function submitQuery() {
             await nextTick();
             scrollToBottom(chatContainer.value);
         } else if (data) {
-            const agentResponse = data.agent_response;
-            const content = data.response || "No response received";
-
-            if (data.exchange_id) {
-                currentChatId.value = data.exchange_id;
-            }
-
-            const assistantMessage: ChatMessage = {
-                id: generateId(),
-                role: "assistant",
-                content: content,
-                timestamp: new Date(),
-                agentType:
-                    agentResponse?.agent_type ||
-                    (selectedAgentType.value === "auto" ? "router" : selectedAgentType.value),
-                confidence: agentResponse?.confidence || "medium",
-                feedback: null,
-                agentResponse: agentResponse,
-                suggestions: agentResponse?.suggestions || [],
-            };
-            messages.value.push(assistantMessage);
+            appendAssistantMessage(data, selectedAgentType.value);
 
             await nextTick();
             scrollToBottom(chatContainer.value);

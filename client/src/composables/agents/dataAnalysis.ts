@@ -839,6 +839,8 @@ export function useDataAnalysisAgent(
     );
 
     return {
+        /** Normalize and append an assistant message payload */
+        appendAssistantMessage,
         /** Apply dataset selection from messages */
         applyDatasetSelectionFromMessages,
         /** Apply execution result metadata to a message, updating its state and outputs accordingly */

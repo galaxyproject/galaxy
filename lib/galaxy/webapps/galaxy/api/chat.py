@@ -157,9 +157,6 @@ async def _broadcast_exec_followup(exchange_id: int, message: dict[str, Any]) ->
                     connections.discard(ws)
                 if not connections:
                     ACTIVE_EXECUTION_STREAMS.pop(exchange_id, None)
-
-
-
 @router.cbv
 class ChatAPI:
     """Chat interface for AI agents.
@@ -330,6 +327,7 @@ class ChatAPI:
                     storable_result = {
                         "response": result.get("response", ""),
                         "agent_response": agent_resp.model_dump() if agent_resp else None,
+                        "dataset_ids": [encode_id(d) for d in dataset_ids],
                     }
                     exchange = await anyio.to_thread.run_sync(
                         partial(
@@ -807,7 +805,8 @@ class ChatAPI:
             return
         if not metadata or not isinstance(metadata, dict):
             return
-        if "pyodide_task" not in metadata:
+        pyodide_task = metadata.get("pyodide_task")
+        if not isinstance(pyodide_task, dict) or not pyodide_task:
             return
         status = metadata.get("pyodide_status") or "pending"
         if status not in (None, "pending"):
