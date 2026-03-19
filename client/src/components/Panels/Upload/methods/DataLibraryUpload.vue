@@ -22,6 +22,7 @@ import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
 import { useUrlTracker } from "@/composables/urlTracker";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { buildPreparedUpload } from "@/utils/upload";
 import { mapToLibraryDatasetUpload } from "@/utils/upload/itemMappers";
 import { bytesToString } from "@/utils/utils";
 
@@ -516,11 +517,7 @@ function prepareUpload(): PreparedUpload | null {
 
     const uploads = libraryDatasetItems.value.map((item) => mapToLibraryDatasetUpload(item, props.targetHistoryId));
 
-    return {
-        apiItems: [],
-        collectionConfig: buildCollectionConfig(props.targetHistoryId),
-        uploadItems: uploads,
-    };
+    return buildPreparedUpload(uploads, buildCollectionConfig(props.targetHistoryId));
 }
 
 const libraryFields: TableField[] = [
