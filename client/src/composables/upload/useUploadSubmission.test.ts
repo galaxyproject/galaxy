@@ -9,8 +9,8 @@ import { defineComponent, ref } from "vue";
 import { useServerMock } from "@/api/client/__mocks__";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
+import type { UploadCollectionConfig } from "@/composables/upload/collectionTypes";
 import type { LibraryDatasetUploadItem, UrlUploadItem } from "@/composables/upload/uploadItemTypes";
-import type { CollectionConfig } from "@/composables/uploadQueue";
 import { buildPreparedUpload } from "@/utils/upload";
 
 import { useUploadSubmission } from "./useUploadSubmission";
@@ -89,7 +89,7 @@ function mountHarness(prepared: PreparedUpload) {
     return mount(Harness, { localVue, pinia: createPinia() });
 }
 
-function makeCollectionConfig(overrides: Partial<CollectionConfig> = {}): CollectionConfig {
+function makeCollectionConfig(overrides: Partial<UploadCollectionConfig> = {}): UploadCollectionConfig {
     return {
         name: "Uploaded Collection",
         type: "list",

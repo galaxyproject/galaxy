@@ -1,6 +1,9 @@
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
+import type { UploadedDataset } from "@/composables/upload/uploadItemTypes";
 
 import type { UploadMethod } from "./types";
+
+export type { UploadedDataset } from "@/composables/upload/uploadItemTypes";
 
 /**
  * Subset of UploadMethod that directly creates new datasets in the history.
@@ -29,20 +32,6 @@ export interface UploadModalConfig {
     title?: string;
     /** Whether to hide user tips/help text. */
     hideTips?: boolean;
-}
-
-/**
- * Represents a dataset that was successfully uploaded.
- */
-export interface UploadedDataset {
-    /** Unique identifier for the dataset. */
-    id: string;
-    /** Display name of the dataset. */
-    name: string;
-    /** History item ID (sequential index). */
-    hid?: number;
-    /** Type of dataset: history dataset (hda) or history dataset collection (hdca). */
-    src: "hda" | "hdca";
 }
 
 /**

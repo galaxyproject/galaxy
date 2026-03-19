@@ -19,6 +19,16 @@ export interface CollectionCreationInput {
 }
 
 /**
+ * Collection configuration used by upload orchestration.
+ */
+export interface UploadCollectionConfig extends CollectionCreationInput {
+    /** Whether to hide source datasets after collection creation */
+    hideSourceItems: boolean;
+    /** Target history ID where the collection will be created */
+    historyId: string;
+}
+
+/**
  * Validation state for a collection configuration
  */
 export interface CollectionValidationState {

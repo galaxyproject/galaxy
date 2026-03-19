@@ -3,6 +3,7 @@
  * These types represent items in various stages of the upload lifecycle.
  */
 
+import type { HistoryContentSource } from "@/api/datasets";
 import type { FetchDatasetHash } from "@/api/tools";
 import type { UploadMethod } from "@/components/Panels/Upload/types";
 
@@ -123,3 +124,20 @@ export interface UploadState {
 
 /** Upload item with state tracking (used in active upload queue) */
 export type UploadItem = NewUploadItem & UploadState;
+
+/** Sources returned for uploaded history contents. */
+export type UploadedDatasetSource = Extract<HistoryContentSource, "hda" | "hdca">;
+
+/**
+ * Represents a dataset that was successfully uploaded.
+ */
+export interface UploadedDataset {
+    /** Unique identifier for the dataset. */
+    id: string;
+    /** Display name of the dataset. */
+    name: string;
+    /** History item ID (sequential index). */
+    hid?: number;
+    /** Type of dataset: history dataset (hda) or history dataset collection (hdca). */
+    src: UploadedDatasetSource;
+}

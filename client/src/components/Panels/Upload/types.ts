@@ -1,7 +1,7 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
+import type { UploadCollectionConfig } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
-import type { CollectionConfig } from "@/composables/uploadQueue";
 import type { ApiUploadItem } from "@/utils/upload";
 
 export type UploadMethod =
@@ -112,7 +112,7 @@ export interface PreparedUpload {
     /** Items formatted for the Galaxy upload API. */
     apiItems: ApiUploadItem[];
     /** Optional dataset collection configuration for atomic collection creation. */
-    collectionConfig?: CollectionConfig;
+    collectionConfig?: UploadCollectionConfig;
     /** Items used for progress tracking in the upload state store. */
     uploadItems?: NewUploadItem[];
 }

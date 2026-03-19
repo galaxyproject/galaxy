@@ -1,10 +1,9 @@
 import { copyDataset } from "@/api/datasets";
 import type { FetchDataResponse } from "@/api/tools";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
-import type { UploadedDataset } from "@/components/Panels/Upload/uploadModalTypes";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { useConfig } from "@/composables/config";
-import type { LibraryDatasetUploadItem, NewUploadItem } from "@/composables/upload/uploadItemTypes";
+import type { LibraryDatasetUploadItem, NewUploadItem, UploadedDataset } from "@/composables/upload/uploadItemTypes";
 import { errorMessageAsString } from "@/utils/simple-error";
 import type { UploadDatasetsConfig } from "@/utils/upload";
 import { uploadCollectionDatasets, uploadDatasets } from "@/utils/upload";

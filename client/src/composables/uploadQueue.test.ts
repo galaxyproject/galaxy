@@ -7,9 +7,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
+import type { UploadCollectionConfig } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 
-import { type CollectionConfig, useUploadQueue, validateUploadItem } from "./uploadQueue";
+import { useUploadQueue, validateUploadItem } from "./uploadQueue";
 
 // TUS upload is a non-HTTP protocol — mock it so tests never attempt real TUS connections.
 vi.mock("@/utils/tusUpload", () => ({
@@ -90,7 +91,7 @@ function makeLibraryItem(overrides: Partial<NewUploadItem> = {}): NewUploadItem 
     } as NewUploadItem;
 }
 
-function makeCollectionConfig(overrides: Partial<CollectionConfig> = {}): CollectionConfig {
+function makeCollectionConfig(overrides: Partial<UploadCollectionConfig> = {}): UploadCollectionConfig {
     return {
         name: "My Collection",
         type: "list",

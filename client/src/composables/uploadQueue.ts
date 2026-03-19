@@ -18,7 +18,7 @@ import {
     guessNameForPair,
 } from "@/components/Collections/pairing";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
-import type { CollectionCreationInput, SupportedCollectionType } from "@/composables/upload/collectionTypes";
+import type { SupportedCollectionType, UploadCollectionConfig } from "@/composables/upload/collectionTypes";
 import type { CompositeFileUploadItem, NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { useHistoryStore } from "@/stores/historyStore";
 import { getHistoryUploadActionErrorMessage, getHistoryUploadBlockReason } from "@/utils/historyUpload";
@@ -31,17 +31,6 @@ import {
     uploadCollectionDatasets,
     uploadDatasets,
 } from "@/utils/upload";
-
-/**
- * Collection configuration for batch uploads that will be combined
- * into a collection after uploads complete.
- */
-export interface CollectionConfig extends CollectionCreationInput {
-    /** Whether to hide source datasets after collection creation */
-    hideSourceItems: boolean;
-    /** Target history ID where the collection will be created */
-    historyId: string;
-}
 
 /**
  * Represents a batch of uploads that will be combined into a dataset collection
@@ -57,7 +46,7 @@ interface CollectionBatch {
     /** Dataset IDs collected from successful upload responses */
     datasetIds: string[];
     /** Collection configuration specifying name, type, target history, and options */
-    collectionConfig: CollectionConfig;
+    collectionConfig: UploadCollectionConfig;
 }
 
 /**
@@ -696,7 +685,7 @@ export function useUploadQueue() {
      * @param collectionConfig - Optional collection configuration for creating a collection from uploaded datasets
      * @returns Array of upload IDs for tracking
      */
-    function enqueue(items: NewUploadItem[], collectionConfig?: CollectionConfig): string[] {
+    function enqueue(items: NewUploadItem[], collectionConfig?: UploadCollectionConfig): string[] {
         // Determine if this batch can use direct HDCA creation
         const isDirectCreation =
             collectionConfig !== undefined && items.every((item) => item.uploadMode !== "data-library");
