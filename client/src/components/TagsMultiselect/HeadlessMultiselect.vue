@@ -431,6 +431,7 @@ onClickOutside(
         background: none;
         cursor: text;
         text-align: left;
+        white-space: nowrap;
         margin: 0;
         border: none;
         width: 100%;
