@@ -2127,6 +2127,7 @@ class PickValueModule(WorkflowModule):
         history = invocation.history
         hda = model.HistoryDatasetAssociation(
             name="Pick Value - skipped",
+            history=history,
             create_dataset=True,
             flush=False,
         )
