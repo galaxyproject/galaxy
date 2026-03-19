@@ -899,6 +899,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 for attribute in attributes:
                     if attribute in collection_attrs:
                         setattr(dc, attribute, collection_attrs.get(attribute))
+                # Clear existing elements to avoid duplicates when re-importing
+                if "elements" in collection_attrs:
+                    for element in list(dc.elements):
+                        self.sa_session.delete(element)
+                    dc.elements.clear()
                 materialize_elements(dc)
             else:
                 # create collection
