@@ -4,10 +4,7 @@ from typing import (
     Optional,
 )
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    wait_on,
-)
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
@@ -95,21 +92,26 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
         # Purge the entire history
         purge_response = self._delete(f"histories/{self.test_history_id}", data={"purge": True}, json=True)
         self._assert_status_code_is_ok(purge_response)
+        purge_result = purge_response.json()
 
         # Verify history is purged
-        history_response = self._get(f"histories/{self.test_history_id}").json()
-        assert history_response["purged"]
-        assert history_response["deleted"]
+        assert purge_result["purged"]
+        assert purge_result["deleted"]
 
-        # Verify HDAs are marked as purged
+        # Verify the response contains a purge_task with an id
+        assert "purge_task" in purge_result
+        purge_task = purge_result["purge_task"]
+        assert "id" in purge_task
+        purge_task_id = purge_task["id"]
+
+        # Wait for the celery task to complete via the tasks API
+        self.dataset_populator.wait_on_task_id(purge_task_id)
+
+        # After task completion, HDAs should be purged and files deleted
         self.dataset_populator.wait_for_purge(self.test_history_id, hda1_id)
         self.dataset_populator.wait_for_purge(self.test_history_id, hda2_id)
-
-        # Wait for underlying dataset files to be removed from disk.
-        # With batched history purging, HDAs are marked purged synchronously
-        # but the actual file deletion happens via a batched celery task.
-        self._wait_for_file_deleted(dataset_file1)
-        self._wait_for_file_deleted(dataset_file2)
+        assert not self._file_exists_on_disk(dataset_file1)
+        assert not self._file_exists_on_disk(dataset_file2)
 
     def _get_underlying_dataset_on_disk(self, hda_id: str) -> Optional[str]:
         detailed_response = self._get(f"datasets/{hda_id}", admin=True).json()
@@ -117,9 +119,3 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
 
     def _file_exists_on_disk(self, filename: Optional[str]) -> bool:
         return os.path.isfile(filename) if filename else False
-
-    def _wait_for_file_deleted(self, filename: Optional[str], timeout: int = 10):
-        def _check():
-            return True if not self._file_exists_on_disk(filename) else None
-
-        wait_on(_check, f"file {filename} to be deleted", timeout=timeout)

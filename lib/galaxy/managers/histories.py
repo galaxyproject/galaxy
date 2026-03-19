@@ -298,14 +298,16 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
 
             request = PurgeHistoryDatasetsTaskRequest(history_id=item.id)
             user = item.user
-            purge_history_datasets.delay(request=request, task_user_id=user.id if user else None)
+            result = purge_history_datasets.delay(request=request, task_user_id=user.id if user else None)
         else:
+            result = None
             for hda in item.datasets:
                 if not hda.purged:
                     self.hda_manager.purge(hda, flush=True, **kwargs)
 
         # Now mark the history as purged
         super().purge(item, flush=flush, **kwargs)
+        return result
 
     # .... current
     # TODO: make something to bypass the anon user + current history permissions issue

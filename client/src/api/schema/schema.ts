@@ -7464,6 +7464,11 @@ export interface components {
              */
             published: boolean;
             /**
+             * Purge Task
+             * @description Summary of the async task purging datasets in this history. Only present when purge is performed via a background task.
+             */
+            purge_task?: components["schemas"]["AsyncTaskResultSummary"] | null;
+            /**
              * Purged
              * @description Whether this item has been permanently removed.
              */
@@ -7586,6 +7591,11 @@ export interface components {
              * @description Whether this resource is currently publicly available to all users.
              */
             published: boolean;
+            /**
+             * Purge Task
+             * @description Summary of the async task purging datasets in this history. Only present when purge is performed via a background task.
+             */
+            purge_task?: components["schemas"]["AsyncTaskResultSummary"] | null;
             /**
              * Purged
              * @description Whether this item has been permanently removed.
@@ -9975,6 +9985,11 @@ export interface components {
              */
             published?: boolean | null;
             /**
+             * Purge Task
+             * @description Summary of the async task purging datasets in this history. Only present when purge is performed via a background task.
+             */
+            purge_task?: components["schemas"]["AsyncTaskResultSummary"] | null;
+            /**
              * Purged
              * @description Whether this item has been permanently removed.
              */
@@ -10213,6 +10228,11 @@ export interface components {
              * @description Whether this resource is currently publicly available to all users.
              */
             published?: boolean | null;
+            /**
+             * Purge Task
+             * @description Summary of the async task purging datasets in this history. Only present when purge is performed via a background task.
+             */
+            purge_task?: components["schemas"]["AsyncTaskResultSummary"] | null;
             /**
              * Purged
              * @description Whether this item has been permanently removed.
@@ -15493,6 +15513,11 @@ export interface components {
              */
             published: boolean;
             /**
+             * Purge Task
+             * @description Summary of the async task purging datasets in this history. Only present when purge is performed via a background task.
+             */
+            purge_task?: components["schemas"]["AsyncTaskResultSummary"] | null;
+            /**
              * Purged
              * @description Whether this item has been permanently removed.
              */
@@ -15613,6 +15638,11 @@ export interface components {
              * @description Whether this resource is currently publicly available to all users.
              */
             published: boolean;
+            /**
+             * Purge Task
+             * @description Summary of the async task purging datasets in this history. Only present when purge is performed via a background task.
+             */
+            purge_task?: components["schemas"]["AsyncTaskResultSummary"] | null;
             /**
              * Purged
              * @description Whether this item has been permanently removed.

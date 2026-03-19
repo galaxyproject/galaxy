@@ -121,7 +121,7 @@ def purge_datasets(
     dataset_manager.purge_datasets(request)
 
 
-@galaxy_task(ignore_result=True, action="purge all datasets in a history")
+@galaxy_task(action="purge all datasets in a history")
 def purge_history_datasets(
     sa_session: galaxy_scoped_session,
     dataset_manager: DatasetManager,
