@@ -512,12 +512,12 @@ class IntegerToolParameter(TextToolParameter):
     def to_python(self, value, app):
         try:
             return int(value)
-        except (TypeError, ValueError) as err:
+        except (TypeError, ValueError):
             if contains_workflow_parameter(value):
                 return value
             if not value and self.optional:
                 return None
-            raise err
+            raise ParameterValueError("an integer is required", self.name, value)
 
     def get_initial_value(self, trans, other_values):
         if self.value is not None and self.value != "":
@@ -585,12 +585,12 @@ class FloatToolParameter(TextToolParameter):
     def to_python(self, value, app):
         try:
             return float(value)
-        except (TypeError, ValueError) as err:
+        except (TypeError, ValueError):
             if contains_workflow_parameter(value):
                 return value
             if not value and self.optional:
                 return None
-            raise err
+            raise ParameterValueError("a real number is required", self.name, value)
 
     def get_initial_value(self, trans, other_values):
         if self.value is None:
