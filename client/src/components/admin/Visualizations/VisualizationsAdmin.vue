@@ -369,7 +369,7 @@ export default {
                     (viz) =>
                         viz.id.toLowerCase().includes(searchLower) ||
                         viz.package.toLowerCase().includes(searchLower) ||
-                        (viz.metadata?.description && viz.metadata.description.toLowerCase().includes(searchLower))
+                        (viz.metadata?.description && viz.metadata.description.toLowerCase().includes(searchLower)),
                 );
             }
 
@@ -388,7 +388,7 @@ export default {
                 await toggleVisualization(viz.id, !viz.enabled);
                 this.showMessage(
                     `Visualization ${viz.id} ${!viz.enabled ? "enabled" : "disabled"} successfully`,
-                    "success"
+                    "success",
                 );
                 await this.loadInstalledPackages();
             } catch (error) {
@@ -517,7 +517,7 @@ export default {
         async cleanStagedAssets() {
             if (
                 !confirm(
-                    "Are you sure you want to clean all staged assets? This will remove all visualizations from Galaxy's serving directory."
+                    "Are you sure you want to clean all staged assets? This will remove all visualizations from Galaxy's serving directory.",
                 )
             ) {
                 return;
