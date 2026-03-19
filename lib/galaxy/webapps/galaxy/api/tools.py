@@ -63,7 +63,10 @@ from galaxy.tool_util.parameters import (
     ToolParameterT,
 )
 from galaxy.tool_util.verify import ToolTestDescriptionDict
-from galaxy.tool_util_models import UserToolSource
+from galaxy.tool_util_models import (
+    ParsedTool,
+    UserToolSource,
+)
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.fetch.workbooks import (
     FetchWorkbookCollectionType,
@@ -89,7 +92,10 @@ from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api.common import serve_workbook
 from galaxy.webapps.galaxy.services.base import tool_request_detailed_to_model
-from galaxy.webapps.galaxy.services.tools import ToolsService
+from galaxy.webapps.galaxy.services.tools import (
+    get_tool,
+    ToolsService,
+)
 from . import (
     APIContentTypeRoute,
     as_form,
@@ -148,6 +154,11 @@ ToolIDPathParam: str = Path(
     ...,
     title="Tool ID",
     description="The tool ID for the lineage stored in Galaxy's toolbox.",
+)
+ToolVersionPathParam: str = Path(
+    ...,
+    title="Tool Version",
+    description="The full version string defined on the Galaxy tool wrapper.",
 )
 ToolVersionQueryParam: Optional[str] = Query(default=None, title="Tool Version", description="")
 
@@ -421,6 +432,87 @@ class FetchTools:
             TestCaseToolState,
             inputs,
         )
+
+    @router.get(
+        "/api/tools/{tool_id}/parsed",
+        operation_id="tools__parsed",
+        summary="Return Galaxy's meta model description of the tool's inputs and outputs.",
+    )
+    def parsed_tool(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: Optional[str] = ToolVersionQueryParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> ParsedTool:
+        return self._parsed_tool(trans, tool_id, tool_version)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/parsed",
+        operation_id="tools__versioned_parsed",
+        summary="Return Galaxy's meta model description of the tool's inputs and outputs.",
+    )
+    def parsed_tool_versioned(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str = ToolVersionPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> ParsedTool:
+        return self._parsed_tool(trans, tool_id, tool_version)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/parameter_request_schema",
+        operation_id="tools__versioned_parameter_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool request API.",
+    )
+    def tool_state_request_versioned(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str = ToolVersionPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(RequestToolState, inputs)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/parameter_landing_request_schema",
+        operation_id="tools__versioned_parameter_landing_request_schema",
+        summary="Return a JSON schema description of the tool's inputs for the tool landing request API.",
+    )
+    def tool_state_landing_request_versioned(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str = ToolVersionPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(LandingRequestToolState, inputs)
+
+    @router.get(
+        "/api/tools/{tool_id}/versions/{tool_version}/parameter_test_case_xml_schema",
+        operation_id="tools__versioned_parameter_test_case_xml_schema",
+        summary="Return a JSON schema description of the tool's inputs for test case construction.",
+    )
+    def tool_state_test_case_xml_versioned(
+        self,
+        tool_id: str = ToolIDPathParam,
+        tool_version: str = ToolVersionPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Response:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        inputs = self.service.inputs(trans, tool_run_ref)
+        return json_schema_response_for_tool_state_model(TestCaseToolState, inputs)
+
+    def _parsed_tool(
+        self,
+        trans: ProvidesHistoryContext,
+        tool_id: str,
+        tool_version: Optional[str],
+    ) -> ParsedTool:
+        tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
+        tool = get_tool(trans, tool_run_ref)
+        return tool.parsed_tool
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):

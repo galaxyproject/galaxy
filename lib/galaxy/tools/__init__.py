@@ -80,6 +80,7 @@ from galaxy.tool_util.loader import (
     template_macro_params,
 )
 from galaxy.tool_util.loader_directory import looks_like_a_tool
+from galaxy.tool_util.model_factory import parse_tool
 from galaxy.tool_util.ontologies.ontology_data import (
     biotools_reference,
     expand_ontology_data,
@@ -126,6 +127,7 @@ from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
 )
+from galaxy.tool_util_models import ParsedTool
 from galaxy.tool_util_models.parameters import (
     MaybeToolParameterBundle,
     ToolParameterBundleModel,
@@ -197,6 +199,7 @@ from galaxy.util import (
     listify,
     Params,
     parse_xml_string,
+    parse_xml_string_to_etree,
     rst_to_html,
     string_as_bool,
     unicodify,
@@ -1145,6 +1148,18 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     @property
     def history_manager(self):
         return self.app.history_manager
+
+    @property
+    def parsed_tool(self) -> ParsedTool:
+        """Return a ParsedTool model for this tool.
+
+        After tool loading, mem_optimize destroys the XML tree to save memory.
+        When that has happened, re-parse from the stored string representation.
+        """
+        tool_source = self.tool_source
+        if getattr(tool_source, "root", None) is None:
+            tool_source = get_tool_source(xml_tree=parse_xml_string_to_etree(tool_source.to_string()))
+        return parse_tool(tool_source)
 
     @property
     def _view(self):
