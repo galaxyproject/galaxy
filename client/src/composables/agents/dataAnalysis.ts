@@ -199,20 +199,20 @@ export function useDataAnalysisAgent(
             msg.isCollapsed = true;
             return msg;
         });
+        let mergedPlots = target.generatedPlots ? [...target.generatedPlots] : [];
+        let mergedFiles = target.generatedFiles ? [...target.generatedFiles] : [];
+        let mergedArtifacts = target.artifacts ? [...target.artifacts] : [];
         for (let i = pendingCollapsedMessages.length - 1; i >= 0; i -= 1) {
             const msg = pendingCollapsedMessages[i];
             if (msg) {
-                if (!target.generatedPlots?.length && msg.generatedPlots?.length) {
-                    target.generatedPlots = [...msg.generatedPlots];
-                }
-                if (!target.generatedFiles?.length && msg.generatedFiles?.length) {
-                    target.generatedFiles = [...msg.generatedFiles];
-                }
-                if ((!target.artifacts || !target.artifacts.length) && msg.artifacts?.length) {
-                    target.artifacts = [...msg.artifacts];
-                }
+                mergedPlots = mergePathEntries(mergedPlots, msg.generatedPlots);
+                mergedFiles = mergePathEntries(mergedFiles, msg.generatedFiles);
+                mergedArtifacts = mergeUploadedArtifacts(mergedArtifacts, msg.artifacts);
             }
         }
+        target.generatedPlots = mergedPlots.length ? mergedPlots : target.generatedPlots;
+        target.generatedFiles = mergedFiles.length ? mergedFiles : target.generatedFiles;
+        target.artifacts = mergedArtifacts.length ? mergedArtifacts : target.artifacts;
         if (target.isCollapsed === undefined) {
             target.isCollapsed = true;
         }
@@ -621,7 +621,7 @@ export function useDataAnalysisAgent(
         if (!artifacts || artifacts.length === 0) {
             return;
         }
-        message.artifacts = artifacts;
+        message.artifacts = mergeUploadedArtifacts(message.artifacts, artifacts);
         const plotNames: string[] = [];
         const fileNames: string[] = [];
         for (const artifact of artifacts) {
@@ -635,8 +635,33 @@ export function useDataAnalysisAgent(
                 fileNames.push(`generated_file/${name}`);
             }
         }
-        message.generatedPlots = plotNames.length ? plotNames : message.generatedPlots;
-        message.generatedFiles = fileNames.length ? fileNames : message.generatedFiles;
+        message.generatedPlots = mergePathEntries(message.generatedPlots, plotNames);
+        message.generatedFiles = mergePathEntries(message.generatedFiles, fileNames);
+    }
+
+    function mergePathEntries(existing: string[] | undefined, incoming: string[] | undefined): string[] {
+        const seen = new Set<string>();
+        const merged: string[] = [];
+        for (const entry of [...(existing || []), ...(incoming || [])]) {
+            if (!entry || seen.has(entry)) {
+                continue;
+            }
+            seen.add(entry);
+            merged.push(entry);
+        }
+        return merged;
+    }
+
+    function mergeUploadedArtifacts(
+        existing: UploadedArtifact[] | undefined,
+        incoming: UploadedArtifact[] | undefined,
+    ): UploadedArtifact[] {
+        const merged = new Map<string, UploadedArtifact>();
+        for (const artifact of [...(existing || []), ...(incoming || [])]) {
+            const key = artifact.dataset_id || artifact.download_url || artifact.name || generateId();
+            merged.set(key, artifact);
+        }
+        return Array.from(merged.values());
     }
 
     function serializeUploadedArtifacts(artifacts: UploadedArtifact[] = []): UploadedArtifact[] {
