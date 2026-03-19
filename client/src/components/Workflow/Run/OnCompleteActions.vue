@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BButton, BFormCheckbox, BFormGroup, BModal } from "bootstrap-vue";
+import { BButton, BFormCheckbox, BFormGroup } from "bootstrap-vue";
 import { computed, reactive, ref, watch } from "vue";
 
 import type { WriteStoreToPayload } from "@/api/exports";
@@ -7,6 +7,7 @@ import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 
 import ExportOnCompleteWizard from "./ExportOnCompleteWizard.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 
@@ -173,17 +174,16 @@ const exportSummary = computed(() => {
                 </BButton>
             </BFormGroup>
 
-            <BModal
-                v-model="showExportWizard"
-                title="Configure Completion Export"
-                size="lg"
-                hide-footer
+            <GModal
+                :show.sync="showExportWizard"
+                title="Configure Export on Completion"
+                size="medium"
                 data-test-id="export-wizard-modal">
                 <ExportOnCompleteWizard
                     :initial-config="state.exportConfig"
                     @configured="onExportConfigured"
                     @cancel="showExportWizard = false" />
-            </BModal>
+            </GModal>
         </template>
     </FormCard>
 </template>
