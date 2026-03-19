@@ -67,9 +67,9 @@ function checkClamped() {
 
 const clampTooltip = computed(() => {
     if (isClamped.value) {
-        return headingRef.value?.textContent?.trim() ?? "";
+        return headingRef.value?.textContent?.trim() ?? null;
     }
-    return "";
+    return null;
 });
 
 const clampStyle = computed(() => {
@@ -93,7 +93,7 @@ onUpdated(() => nextTick(checkClamped));
         <component
             :is="element"
             ref="headingRef"
-            v-b-tooltip.hover="clampTooltip"
+            :title="clampTooltip"
             :class="[
                 sizeClass,
                 props.bold ? 'font-weight-bold' : '',
@@ -111,7 +111,7 @@ onUpdated(() => nextTick(checkClamped));
         :is="element"
         v-else
         ref="headingRef"
-        v-b-tooltip.hover="clampTooltip"
+        :title="clampTooltip"
         class="heading word-wrap-break"
         :class="[
             sizeClass,
