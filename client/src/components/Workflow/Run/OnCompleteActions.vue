@@ -62,8 +62,13 @@ watch(
             state.sendNotification = newValue.some((a) => "send_notification" in a);
             const exportAction = newValue.find((a) => "export_to_file_source" in a);
             if (exportAction && exportAction.export_to_file_source) {
-                state.exportEnabled = true;
-                state.exportConfig = { ...state.exportConfig, ...exportAction.export_to_file_source };
+                const incoming = exportAction.export_to_file_source;
+                // Only update exportConfig if content actually changed, to avoid circular watcher loop:
+                // state change → emit("input") → props.value update → state change → ...
+                if (JSON.stringify(incoming) !== JSON.stringify(state.exportConfig)) {
+                    state.exportEnabled = true;
+                    state.exportConfig = { ...incoming };
+                }
             }
         }
     },
