@@ -2127,10 +2127,10 @@ class PickValueModule(WorkflowModule):
         history = invocation.history
         hda = model.HistoryDatasetAssociation(
             name="Pick Value - skipped",
-            history=history,
             create_dataset=True,
             flush=False,
         )
+        history.add_dataset(hda)
         object_store_populator = ObjectStorePopulator(trans.app, trans.user)
         hda.set_skipped(object_store_populator, replace_dataset=False)
         trans.sa_session.add(hda)
