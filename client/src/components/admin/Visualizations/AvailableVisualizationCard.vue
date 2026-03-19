@@ -88,11 +88,11 @@ export default {
 
     computed: {
         isInstalled() {
-            return this.installedVisualizations.some((viz) => viz.package === this.visualization.name);
+            return this.installedVisualizations.some((viz) => viz.package === this.packageData.name);
         },
 
         isLoading() {
-            return this.loadingActions.has(`install-${this.visualization.name}`);
+            return this.loadingActions.has(`install-${this.packageData.name}`);
         },
     },
 
