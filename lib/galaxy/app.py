@@ -29,7 +29,12 @@ from galaxy.agents.factory import build_registry as build_agent_registry
 from galaxy.agents.registry import AgentRegistry
 from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.celery.base_task import (
+    GalaxyTaskAfterReturn,
+    GalaxyTaskAfterReturnConcurrencyLimit,
     GalaxyTaskBeforeStart,
+    GalaxyTaskBeforeStartCombined,
+    GalaxyTaskBeforeStartConcurrencyLimitPostgres,
+    GalaxyTaskBeforeStartConcurrencyLimitStandard,
     GalaxyTaskBeforeStartUserRateLimitPostgres,
     GalaxyTaskBeforeStartUserRateLimitStandard,
 )
@@ -709,23 +714,54 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
     def _register_celery_galaxy_task_components(self):
         """
-        Register subtype class instance to support implementation of a user rate limit for execution of celery tasks.
-        The default supertype class does not enforce a user rate limit. This is the case if the celery_user_rate_limit
-        config param is the default value.
+        Register subtype class instances for user rate limiting and concurrency
+        limiting of celery task executions. Both can be enabled independently
+        or together (combined via GalaxyTaskBeforeStartCombined).
         """
-        task_before_start: GalaxyTaskBeforeStart
+        hooks: list[GalaxyTaskBeforeStart] = []
+
+        # Rate limiting hook
         if self.config.celery_user_rate_limit:
             if is_postgres(self.config.database_connection):  # type: ignore[arg-type]
-                task_before_start = GalaxyTaskBeforeStartUserRateLimitPostgres(
-                    self.config.celery_user_rate_limit, self.model.session
+                hooks.append(
+                    GalaxyTaskBeforeStartUserRateLimitPostgres(self.config.celery_user_rate_limit, self.model.session)
                 )
             else:
-                task_before_start = GalaxyTaskBeforeStartUserRateLimitStandard(
-                    self.config.celery_user_rate_limit, self.model.session
+                hooks.append(
+                    GalaxyTaskBeforeStartUserRateLimitStandard(self.config.celery_user_rate_limit, self.model.session)
                 )
+
+        # Concurrency limiting hook
+        if self.config.celery_user_concurrency_limit:
+            if is_postgres(self.config.database_connection):  # type: ignore[arg-type]
+                hooks.append(
+                    GalaxyTaskBeforeStartConcurrencyLimitPostgres(
+                        self.config.celery_user_concurrency_limit, self.model.session
+                    )
+                )
+            else:
+                hooks.append(
+                    GalaxyTaskBeforeStartConcurrencyLimitStandard(
+                        self.config.celery_user_concurrency_limit, self.model.session
+                    )
+                )
+
+        # Register the appropriate before_start hook
+        if len(hooks) > 1:
+            task_before_start: GalaxyTaskBeforeStart = GalaxyTaskBeforeStartCombined(*hooks)
+        elif len(hooks) == 1:
+            task_before_start = hooks[0]
         else:
             task_before_start = GalaxyTaskBeforeStart()
         self._register_singleton(GalaxyTaskBeforeStart, task_before_start)
+
+        # Register after_return hook for concurrency tracking cleanup
+        task_after_return: GalaxyTaskAfterReturn
+        if self.config.celery_user_concurrency_limit:
+            task_after_return = GalaxyTaskAfterReturnConcurrencyLimit(self.model.session)
+        else:
+            task_after_return = GalaxyTaskAfterReturn()
+        self._register_singleton(GalaxyTaskAfterReturn, task_after_return)
 
     def _configure_tool_shed_registry(self) -> None:
         # Set up the tool sheds registry

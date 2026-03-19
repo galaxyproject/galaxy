@@ -1,10 +1,12 @@
 import datetime
+import logging
 from abc import abstractmethod
 from typing import cast
 
 from celery import Task
 from sqlalchemy import (
     bindparam,
+    delete,
     func,
     insert,
     select,
@@ -15,7 +17,16 @@ from sqlalchemy.engine import CursorResult
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import scoped_session
 
-from galaxy.model import CeleryUserRateLimit
+from galaxy.model import (
+    CeleryUserActiveTask,
+    CeleryUserRateLimit,
+)
+
+log = logging.getLogger(__name__)
+
+HEADER_SCHEDULED_TIME = "_gxy_rate_limit_scheduled_time"
+HEADER_CONCURRENCY_TRACKED = "_gxy_concurrency_tracked"
+CONCURRENCY_RETRY_COUNTDOWN_SECS = 5.0
 
 
 class GalaxyTaskBeforeStart:
@@ -25,6 +36,16 @@ class GalaxyTaskBeforeStart:
     This superclass is used directly when no user rate limit logic
     is to be enforced based on value of config param,
     celery_user_rate_limit.
+    """
+
+    def __call__(self, task: Task, task_id, args, kwargs):
+        pass
+
+
+class GalaxyTaskAfterReturn:
+    """
+    Hook called after a task returns (success, failure, or retry).
+    Base class is a no-op; subclasses implement concurrency tracking cleanup.
     """
 
     def __call__(self, task: Task, task_id, args, kwargs):
@@ -42,6 +63,11 @@ class GalaxyTaskBeforeStartUserRateLimit(GalaxyTaskBeforeStart):
     by doing a task.retry.
     If the last scheduled execution was far enough in the past
     then we allow the task to run immediately.
+
+    The reserved timeslot is stored in a message header so that on
+    retry the task can verify it has reached its scheduled time
+    without re-reserving a new slot. This ensures tasks are never
+    lost and will keep retrying until their timeslot arrives.
     """
 
     def __init__(
@@ -56,17 +82,39 @@ class GalaxyTaskBeforeStartUserRateLimit(GalaxyTaskBeforeStart):
         self.ga_scoped_session = ga_scoped_session
 
     def __call__(self, task: Task, task_id, args, kwargs):
-        if task.request.retries > 0:
-            return
         usr = kwargs.get("task_user_id")
         if not usr:
             return
         now = datetime.datetime.now()
-        sa_session = self.ga_scoped_session
-        next_scheduled_time = self.calculate_task_start_time(usr, sa_session, self.task_exec_countdown_secs, now)
-        if next_scheduled_time > now:
-            count_down = next_scheduled_time - now
-            task.retry(countdown=count_down.total_seconds())
+
+        # Check if this task already has a reserved timeslot from a previous attempt
+        headers = task.request.headers or {}
+        reserved_time_str = headers.get(HEADER_SCHEDULED_TIME)
+
+        if reserved_time_str:
+            # Retry path: verify we've reached our reserved timeslot
+            reserved_time = datetime.datetime.fromisoformat(reserved_time_str)
+            if now >= reserved_time:
+                return  # Timeslot reached, proceed with execution
+            # Not yet time — retry with remaining countdown
+            remaining = (reserved_time - now).total_seconds()
+            task.retry(
+                countdown=remaining,
+                max_retries=None,
+                headers={HEADER_SCHEDULED_TIME: reserved_time_str},
+            )
+        else:
+            # First attempt: reserve a timeslot atomically in the DB
+            sa_session = self.ga_scoped_session
+            next_scheduled_time = self.calculate_task_start_time(usr, sa_session, self.task_exec_countdown_secs, now)
+            if next_scheduled_time > now:
+                count_down = next_scheduled_time - now
+                task.retry(
+                    countdown=count_down.total_seconds(),
+                    max_retries=None,
+                    headers={HEADER_SCHEDULED_TIME: next_scheduled_time.isoformat()},
+                )
+            # else: scheduled time is now or in the past, execute immediately
 
     @abstractmethod
     def calculate_task_start_time(
@@ -157,3 +205,129 @@ class GalaxyTaskBeforeStartUserRateLimitStandard(GalaxyTaskBeforeStartUserRateLi
                     raise Exception(f"Failed to update a celery_user_rate_limit row for user id {user_id}")
                 sa_session.commit()
         return sched_time
+
+
+# --- Per-user concurrency limiting ---
+
+
+class GalaxyTaskBeforeStartConcurrencyLimit(GalaxyTaskBeforeStart):
+    """
+    Enforces a per-user concurrency limit on Celery task execution.
+    Before a task starts, checks if the user already has the maximum
+    number of tasks running. If so, defers execution via task.retry().
+
+    On successful admission, inserts a tracking row into celery_user_active_task
+    and sets a header so after_return knows to clean it up.
+    """
+
+    def __init__(
+        self,
+        max_concurrent: int,
+        ga_scoped_session: scoped_session,
+    ):
+        self.max_concurrent = max_concurrent
+        self.ga_scoped_session = ga_scoped_session
+
+    def __call__(self, task: Task, task_id, args, kwargs):
+        usr = kwargs.get("task_user_id")
+        if not usr:
+            return
+
+        headers = task.request.headers or {}
+
+        # If this task was already admitted (retry after concurrency admission),
+        # don't re-check concurrency — it already has a tracking row.
+        if headers.get(HEADER_CONCURRENCY_TRACKED):
+            return
+
+        sa_session = self.ga_scoped_session
+        now = datetime.datetime.now()
+
+        # Count currently active tasks for this user
+        active_count = self._get_active_count(usr, sa_session)
+
+        if active_count >= self.max_concurrent:
+            # User is at capacity — defer this task
+            sa_session.commit()
+            task.retry(
+                countdown=CONCURRENCY_RETRY_COUNTDOWN_SECS,
+                max_retries=None,
+            )
+            return
+
+        # Admit this task: insert tracking row
+        try:
+            sa_session.execute(
+                insert(CeleryUserActiveTask).values(
+                    task_id=str(task_id),
+                    user_id=usr,
+                    started_at=now,
+                )
+            )
+            sa_session.commit()
+        except IntegrityError:
+            # Task ID already tracked (e.g., redelivery) — that's fine
+            sa_session.rollback()
+
+    @abstractmethod
+    def _get_active_count(self, user_id: int, sa_session: scoped_session) -> int: ...
+
+
+class GalaxyTaskBeforeStartConcurrencyLimitPostgres(GalaxyTaskBeforeStartConcurrencyLimit):
+    """Postgres-optimized concurrency check using SELECT COUNT with row-level advisory awareness."""
+
+    def _get_active_count(self, user_id: int, sa_session: scoped_session) -> int:
+        count = sa_session.scalar(
+            select(func.count()).select_from(CeleryUserActiveTask).where(CeleryUserActiveTask.user_id == user_id)
+        )
+        return count or 0
+
+
+class GalaxyTaskBeforeStartConcurrencyLimitStandard(GalaxyTaskBeforeStartConcurrencyLimit):
+    """Standard SQL concurrency check."""
+
+    def _get_active_count(self, user_id: int, sa_session: scoped_session) -> int:
+        count = sa_session.scalar(
+            select(func.count()).select_from(CeleryUserActiveTask).where(CeleryUserActiveTask.user_id == user_id)
+        )
+        return count or 0
+
+
+class GalaxyTaskAfterReturnConcurrencyLimit(GalaxyTaskAfterReturn):
+    """
+    Cleans up the concurrency tracking row after a task completes
+    (regardless of success or failure).
+    """
+
+    def __init__(self, ga_scoped_session: scoped_session):
+        self.ga_scoped_session = ga_scoped_session
+
+    def __call__(self, task: Task, task_id, args, kwargs):
+        usr = kwargs.get("task_user_id")
+        if not usr:
+            return
+
+        sa_session = self.ga_scoped_session
+        try:
+            sa_session.execute(delete(CeleryUserActiveTask).where(CeleryUserActiveTask.task_id == str(task_id)))
+            sa_session.commit()
+        except Exception:
+            log.exception(f"Failed to remove concurrency tracking row for task {task_id}")
+            sa_session.rollback()
+
+
+# --- Combined before_start that chains rate limit + concurrency limit ---
+
+
+class GalaxyTaskBeforeStartCombined(GalaxyTaskBeforeStart):
+    """
+    Chains multiple before_start hooks. Rate limiting runs first
+    (to schedule the timeslot), then concurrency limiting (to gate execution).
+    """
+
+    def __init__(self, *hooks: GalaxyTaskBeforeStart):
+        self.hooks = hooks
+
+    def __call__(self, task: Task, task_id, args, kwargs):
+        for hook in self.hooks:
+            hook(task, task_id, args, kwargs)

@@ -12633,6 +12633,20 @@ class CeleryUserRateLimit(Base):
         )
 
 
+class CeleryUserActiveTask(Base):
+    """
+    Tracks actively executing Celery tasks per user for concurrency limiting.
+    Each row represents a task that has started but not yet completed.
+    A periodic cleanup task removes stale rows from crashed workers.
+    """
+
+    __tablename__ = "celery_user_active_task"
+
+    task_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
+    started_at: Mapped[datetime]
+
+
 class UserCredentials(Base):
     """
     Represents a credential associated with a user for a specific service.

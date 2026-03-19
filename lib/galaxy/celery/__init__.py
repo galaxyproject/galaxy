@@ -23,7 +23,10 @@ from celery.signals import (
 )
 from kombu import serialization
 
-from galaxy.celery.base_task import GalaxyTaskBeforeStart
+from galaxy.celery.base_task import (
+    GalaxyTaskAfterReturn,
+    GalaxyTaskBeforeStart,
+)
 from galaxy.config import Configuration
 from galaxy.main_config import find_config
 from galaxy.util import ExecutionTimer
@@ -71,8 +74,8 @@ class GalaxyCelery(Celery):
 
 class GalaxyTask(Task):
     """
-    Custom celery task used to limit number of tasks executions per user
-    per second.
+    Custom celery task used to enforce per-user rate limits and
+    concurrency limits on task executions.
     """
 
     def before_start(self, task_id, args, kwargs):
@@ -82,6 +85,17 @@ class GalaxyTask(Task):
         app = get_galaxy_app()
         assert app
         app[GalaxyTaskBeforeStart](self, task_id, args, kwargs)
+
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        """
+        Called after task returns (success, failure, revoked, or retry).
+        Used to clean up concurrency tracking rows.
+        """
+        if status == "RETRY":
+            return  # Don't clean up on retry — the task will run again
+        app = get_galaxy_app()
+        if app:
+            app[GalaxyTaskAfterReturn](self, task_id, args, kwargs)
 
 
 def set_thread_app(app):
@@ -250,6 +264,10 @@ def setup_periodic_tasks(config, celery_app):
 
     if config.vault_token_renewal_interval:
         schedule_task("renew_vault_token", config.vault_token_renewal_interval)
+
+    if config.celery_user_concurrency_limit:
+        # Run cleanup every 5 minutes (300 seconds)
+        schedule_task("cleanup_stale_concurrency_slots", 300)
 
     if beat_schedule:
         celery_app.conf.beat_schedule = beat_schedule
