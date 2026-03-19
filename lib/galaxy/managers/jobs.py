@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 from collections.abc import Iterable
@@ -167,7 +168,10 @@ def safe_label_or_none(label: str) -> Optional[str]:
 def safe_label(label: str, value_index: int) -> str:
     if len(label) <= 63:
         return label
-    return f"_input_{value_index}"
+    # Use a hash of the full label to avoid collisions when different keys
+    # share the same value_index (value_index resets per key).
+    label_hash = hashlib.md5(label.encode()).hexdigest()[:8]
+    return f"_i_{label_hash}_{value_index}"
 
 
 T = TypeVar("T")
