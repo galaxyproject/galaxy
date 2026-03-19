@@ -1018,8 +1018,7 @@ steps:
 
     @selenium_test
     def test_pick_value_grow_on_connect(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 inputs:
   input_data: data
@@ -1039,8 +1038,7 @@ steps:
     in:
       input_0: branch_a/out_file1
       input_1: branch_b/out_file1
-"""
-        )
+""")
         editor = self.components.workflow_editor
         pick_node = editor.node._(label="pick")
         pick_node.input_terminal(name="input_0").wait_for_present()
@@ -1050,8 +1048,7 @@ steps:
 
     @selenium_test
     def test_pick_value_conditional_workflow_roundtrip(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 inputs:
   input_data: data
@@ -1073,8 +1070,7 @@ steps:
     in:
       input_0: branch_a/out_file1
       input_1: branch_b/out_file1
-"""
-        )
+""")
         editor = self.components.workflow_editor
         pick_node = editor.node._(label="pick")
         pick_node.wait_for_present()
@@ -1089,8 +1085,7 @@ steps:
 
     @selenium_test
     def test_pick_value_output_type_changes_with_mode(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 inputs:
   input_data: data
@@ -1105,8 +1100,7 @@ steps:
       mode: first_non_null
     in:
       input_0: branch_a/out_file1
-"""
-        )
+""")
         editor = self.components.workflow_editor
         pick_node = editor.node._(label="pick")
         pick_node.wait_for_and_click()
@@ -1120,8 +1114,7 @@ steps:
 
     @selenium_test
     def test_pick_value_change_datatype_pja(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 inputs:
   input_data: data
@@ -1136,8 +1129,7 @@ steps:
       mode: first_non_null
     in:
       input_0: branch_a/out_file1
-"""
-        )
+""")
         editor = self.components.workflow_editor
         pick_node = editor.node._(label="pick")
         pick_node.wait_for_and_click()
@@ -1156,8 +1148,7 @@ steps:
 
     @selenium_test
     def test_pick_value_rename_pja(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 inputs:
   input_data: data
@@ -1172,8 +1163,7 @@ steps:
       mode: first_non_null
     in:
       input_0: branch_a/out_file1
-"""
-        )
+""")
         editor = self.components.workflow_editor
         pick_node = editor.node._(label="pick")
         pick_node.wait_for_and_click()
@@ -1189,8 +1179,7 @@ steps:
 
     @selenium_test
     def test_pick_value_add_tags_pja(self):
-        self.open_in_workflow_editor(
-            """
+        self.open_in_workflow_editor("""
 class: GalaxyWorkflow
 inputs:
   input_data: data
@@ -1205,8 +1194,7 @@ steps:
       mode: first_non_null
     in:
       input_0: branch_a/out_file1
-"""
-        )
+""")
         editor = self.components.workflow_editor
         pick_node = editor.node._(label="pick")
         pick_node.wait_for_and_click()

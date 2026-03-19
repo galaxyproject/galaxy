@@ -41,12 +41,12 @@ from galaxy.model import (
     WorkflowStepConnection,
 )
 from galaxy.model.base import ensure_object_added_to_session
-from galaxy.objectstore import ObjectStorePopulator
 from galaxy.model.dataset_collections import matching
 from galaxy.model.dataset_collections.adapters import PromoteCollectionElementToCollectionAdapter
 from galaxy.model.dataset_collections.query import HistoryQuery
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
+from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import (
     CredentialsContext,
     SelectedGroup,
@@ -2170,9 +2170,7 @@ class PickValueModule(WorkflowModule):
         step_outputs = {"output": output}
         step_inputs: dict[str, Any] = {}
         for pja in step.post_job_actions:
-            ActionBox.execute_on_mapped_over(
-                trans, trans.sa_session, pja, step_inputs, step_outputs, replacement_dict
-            )
+            ActionBox.execute_on_mapped_over(trans, trans.sa_session, pja, step_inputs, step_outputs, replacement_dict)
 
     @staticmethod
     def _to_pja(key, value, step):
