@@ -16,9 +16,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText, BFormCheckbox, BModal } from "bootstrap-vue";
+import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { canMutateHistory, type HistorySummary } from "@/api";
@@ -29,6 +29,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import GModal from "../BaseComponents/GModal.vue";
 import CopyModal from "@/components/History/Modals/CopyModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -100,6 +101,13 @@ function onDelete() {
         historyStore.deleteHistory(props.history.id, false);
     }
 }
+
+watch(
+    () => [showDeleteModal.value, props.history.id],
+    () => {
+        purgeHistory.value = isDeletedNotPurged.value;
+    },
+);
 </script>
 
 <template>
@@ -237,16 +245,14 @@ function onDelete() {
 
         <CopyModal :history="history" :show-modal.sync="showCopyModal" />
 
-        <BModal
-            v-model="showDeleteModal"
-            centered
+        <GModal
+            :show.sync="showDeleteModal"
             :title="isDeletedNotPurged ? 'Permanently Delete History?' : 'Delete History?'"
-            title-tag="h2"
-            :ok-title="isDeletedNotPurged ? 'Permanently Delete' : 'Delete'"
-            ok-variant="danger"
-            cancel-variant="outline-primary"
-            @ok="onDelete"
-            @show="purgeHistory = isDeletedNotPurged">
+            :ok-text="isDeletedNotPurged ? 'Permanently Delete' : 'Delete'"
+            ok-color="red"
+            confirm
+            size="small"
+            @ok="onDelete">
             <p v-localize>
                 Do you also want to permanently delete the history <i class="ml-1">{{ history.name }}</i>
             </p>
@@ -254,6 +260,6 @@ function onDelete() {
             <BFormCheckbox id="purge-history" v-model="purgeHistory" :disabled="isDeletedNotPurged">
                 <span v-localize>Yes, permanently delete this history.</span>
             </BFormCheckbox>
-        </BModal>
+        </GModal>
     </div>
 </template>
