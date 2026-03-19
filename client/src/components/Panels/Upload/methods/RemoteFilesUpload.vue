@@ -82,7 +82,7 @@ const { clear: clearStaging } = useUploadStaging<RemoteFileItem>(props.method.id
     disableStore: props.transient,
 });
 
-const { collectionState, handleCollectionStateChange, resetCollection } =
+const { buildCollectionConfig, collectionState, handleCollectionStateChange, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
 
 let nextId = 1;
@@ -561,7 +561,7 @@ function prepareUpload(): PreparedUpload | null {
     }
 
     const uploads = remoteFileItems.value.map((item) => mapToRemoteFileUpload(item, props.targetHistoryId));
-    return buildPreparedUpload(uploads);
+    return buildPreparedUpload(uploads, buildCollectionConfig(props.targetHistoryId));
 }
 
 onMounted(() => {

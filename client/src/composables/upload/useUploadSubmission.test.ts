@@ -10,6 +10,7 @@ import { useServerMock } from "@/api/client/__mocks__";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import type { LibraryDatasetUploadItem, UrlUploadItem } from "@/composables/upload/uploadItemTypes";
+import type { CollectionConfig } from "@/composables/uploadQueue";
 import { buildPreparedUpload } from "@/utils/upload";
 
 import { useUploadSubmission } from "./useUploadSubmission";
@@ -86,6 +87,16 @@ function mountHarness(prepared: PreparedUpload) {
     });
 
     return mount(Harness, { localVue, pinia: createPinia() });
+}
+
+function makeCollectionConfig(overrides: Partial<CollectionConfig> = {}): CollectionConfig {
+    return {
+        name: "Uploaded Collection",
+        type: "list",
+        hideSourceItems: true,
+        historyId: "hist_1",
+        ...overrides,
+    };
 }
 
 describe("useUploadSubmission", () => {
@@ -200,5 +211,45 @@ describe("useUploadSubmission", () => {
 
         expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"name":"fallback-name.txt"');
         expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_3"');
+    });
+
+    it("submits collection uploads with the prepared collection config", async () => {
+        server.use(
+            http.post("/api/tools/fetch", async ({ request }) => {
+                const body = await request.json();
+
+                expect(body).toMatchObject({
+                    history_id: "hist_1",
+                    targets: [
+                        {
+                            destination: { type: "hdca" },
+                            collection_type: "list",
+                            name: "Uploaded Collection",
+                        },
+                    ],
+                });
+
+                return HttpResponse.json({
+                    jobs: [{ id: "job_1" }],
+                    outputs: [{ id: "hdca_2", name: "Uploaded Collection", src: "hdca" }],
+                });
+            }),
+        );
+
+        const apiItem = makeUrlItem({ name: "1.bed", url: "https://example.org/1.bed" });
+        const prepared = buildPreparedUpload([apiItem], makeCollectionConfig());
+        const wrapper = mountHarness(prepared);
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hdca_2"');
+
+        const state = useUploadState();
+        const uploadedEntry = state.activeItems.value.find((item) => item.name === "1.bed");
+
+        expect(uploadedEntry?.status).toBe("completed");
+        expect(uploadedEntry?.progress).toBe(100);
     });
 });

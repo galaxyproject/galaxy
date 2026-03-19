@@ -67,7 +67,7 @@ const uploadFile = ref<HTMLInputElement | null>(null);
 const dropZoneElement = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
 
-const { collectionState, handleCollectionStateChange, resetCollection } =
+const { buildCollectionConfig, collectionState, handleCollectionStateChange, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
 
 const hasFiles = computed(() => selectedFiles.value.length > 0);
@@ -200,7 +200,7 @@ function prepareUpload(): PreparedUpload | null {
     }
 
     const uploads = selectedFiles.value.map((item) => mapToLocalFileUpload(item, props.targetHistoryId));
-    return buildPreparedUpload(uploads);
+    return buildPreparedUpload(uploads, buildCollectionConfig(props.targetHistoryId));
 }
 
 defineExpose<UploadMethodComponent>({ prepareUpload, reset });

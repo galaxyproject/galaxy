@@ -56,6 +56,7 @@ import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import type { UploadRowModel } from "@/components/Upload/model";
 import type { SupportedCollectionType } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
+import type { CollectionConfig } from "@/composables/uploadQueue";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { isUrl } from "@/utils/url";
@@ -1010,9 +1011,10 @@ export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatas
 /**
  * Builds a PreparedUpload object from UI upload items.
  */
-export function buildPreparedUpload(items: NewUploadItem[]): PreparedUpload {
+export function buildPreparedUpload(items: NewUploadItem[], collectionConfig?: CollectionConfig): PreparedUpload {
     return {
         apiItems: items.map((item) => toApiUploadItem(item)),
+        collectionConfig,
         uploadItems: items,
     };
 }

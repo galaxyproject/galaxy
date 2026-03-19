@@ -6,7 +6,8 @@ import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { useConfig } from "@/composables/config";
 import type { LibraryDatasetUploadItem, NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { uploadDatasets } from "@/utils/upload";
+import type { UploadDatasetsConfig } from "@/utils/upload";
+import { uploadCollectionDatasets, uploadDatasets } from "@/utils/upload";
 
 interface UploadResponseData {
     id: string;
@@ -183,7 +184,7 @@ export function useUploadSubmission() {
         }
 
         return new Promise<void>((resolve, reject) => {
-            uploadDatasets(prepared.apiItems, {
+            const config: UploadDatasetsConfig = {
                 chunkSize: galaxyConfig.value.chunk_upload_size as number,
                 success: (response) => {
                     markTrackedCompleted(apiIds);
@@ -198,7 +199,20 @@ export function useUploadSubmission() {
                     onProgress?.(percentage);
                     updateTrackedProgress(apiIds, percentage);
                 },
-            });
+            };
+
+            if (prepared.collectionConfig) {
+                uploadCollectionDatasets(
+                    prepared.apiItems,
+                    {
+                        collectionName: prepared.collectionConfig.name,
+                        collectionType: prepared.collectionConfig.type,
+                    },
+                    config,
+                );
+            } else {
+                uploadDatasets(prepared.apiItems, config);
+            }
         });
     };
 

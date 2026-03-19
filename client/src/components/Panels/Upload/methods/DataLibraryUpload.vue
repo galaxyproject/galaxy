@@ -64,7 +64,7 @@ const { clear: clearStaging } = useUploadStaging<LibraryDatasetItem>(props.metho
     disableStore: props.transient,
 });
 
-const { collectionState, handleCollectionStateChange, resetCollection } =
+const { buildCollectionConfig, collectionState, handleCollectionStateChange, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
 
 let nextId = 1;
@@ -518,6 +518,7 @@ function prepareUpload(): PreparedUpload | null {
 
     return {
         apiItems: [],
+        collectionConfig: buildCollectionConfig(props.targetHistoryId),
         uploadItems: uploads,
     };
 }

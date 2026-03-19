@@ -62,7 +62,7 @@ const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults
 const tableContainerRef = ref<HTMLElement | null>(null);
 const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
 
-const { collectionState, handleCollectionStateChange, resetCollection } =
+const { buildCollectionConfig, collectionState, handleCollectionStateChange, resetCollection } =
     useCollectionCreation(collectionConfigComponent);
 
 let nextId = 1;
@@ -222,7 +222,7 @@ function prepareUpload(): PreparedUpload | null {
     }
 
     const uploads = validItems.map((item) => mapToPasteUrlUpload(item, props.targetHistoryId));
-    return buildPreparedUpload(uploads);
+    return buildPreparedUpload(uploads, buildCollectionConfig(props.targetHistoryId));
 }
 
 defineExpose<UploadMethodComponent>({ prepareUpload, reset });
