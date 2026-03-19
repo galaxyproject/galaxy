@@ -1,8 +1,10 @@
-import { GalaxyApi } from "@/api";
+import { type components, GalaxyApi } from "@/api";
 import { toQuotaUsage } from "@/components/User/DiskUsage/Quota/model";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export { type QuotaUsage } from "@/components/User/DiskUsage/Quota/model";
+
+export type APIKeyModel = components["schemas"]["APIKeyModel"];
 
 export async function fetchCurrentUserQuotaUsages() {
     const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/usage", {
