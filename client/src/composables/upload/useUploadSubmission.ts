@@ -22,6 +22,11 @@ interface TrackedUpload<T extends NewUploadItem = NewUploadItem> {
     id: string;
 }
 
+interface InitializedUploads {
+    trackedUploads: TrackedUpload[];
+    batchId?: string;
+}
+
 function isUploadResponseData(value: unknown): value is UploadResponseData {
     if (!value || typeof value !== "object") {
         return false;
@@ -134,19 +139,31 @@ export function useUploadSubmission() {
     /**
      * Initialize tracked uploads for the given upload items.
      */
-    const initializeUploads = (prepared: PreparedUpload): TrackedUpload[] => {
+    const initializeUploads = (prepared: PreparedUpload): InitializedUploads => {
         if (!prepared.uploadItems) {
-            return [];
+            return { trackedUploads: [] };
         }
+
+        const canTrackAsDirectCollectionBatch = Boolean(prepared.collectionConfig && prepared.apiItems.length > 0);
+        const batchId = canTrackAsDirectCollectionBatch
+            ? uploadState.addBatch(prepared.collectionConfig!, [], true)
+            : undefined;
 
         const trackedUploads = prepared.uploadItems.map((item) => ({
             item,
-            id: uploadState.addUploadItem(item),
+            id: uploadState.addUploadItem(item, batchId),
         }));
+
+        if (batchId) {
+            const batch = uploadState.getBatch(batchId);
+            if (batch) {
+                batch.uploadIds = trackedUploads.map((tracked) => tracked.id);
+            }
+        }
 
         trackedUploads.forEach((tracked) => uploadState.setStatus(tracked.id, "uploading"));
 
-        return trackedUploads;
+        return { trackedUploads, batchId };
     };
 
     /**
@@ -177,6 +194,7 @@ export function useUploadSubmission() {
         apiIds: string[],
         datasets: UploadedDataset[],
         trackedUploads: TrackedUpload[],
+        batchId?: string,
         onProgress?: (percentage: number) => void,
     ): Promise<void> => {
         if (prepared.apiItems.length === 0) {
@@ -187,12 +205,28 @@ export function useUploadSubmission() {
             const config: UploadDatasetsConfig = {
                 chunkSize: galaxyConfig.value.chunk_upload_size as number,
                 success: (response) => {
+                    const uploadedDatasets = datasetsFromResponse(response);
+
                     markTrackedCompleted(apiIds);
-                    datasets.push(...datasetsFromResponse(response));
+                    datasets.push(...uploadedDatasets);
+
+                    if (batchId) {
+                        const createdCollection = uploadedDatasets.find((dataset) => dataset.src === "hdca");
+                        if (createdCollection) {
+                            uploadState.setBatchCollectionId(batchId, createdCollection.id);
+                        }
+                        uploadState.updateBatchStatus(batchId, "completed");
+                    }
+
                     resolve();
                 },
                 error: (uploadError) => {
-                    markTrackedError(trackedUploads, errorMessageAsString(uploadError));
+                    const errorMessage = errorMessageAsString(uploadError);
+
+                    markTrackedError(trackedUploads, errorMessage);
+                    if (batchId) {
+                        uploadState.setBatchError(batchId, errorMessage);
+                    }
                     reject(uploadError);
                 },
                 progress: (percentage) => {
@@ -257,10 +291,10 @@ export function useUploadSubmission() {
         onProgress?: (percentage: number) => void,
     ): Promise<UploadedDataset[]> {
         const datasets: UploadedDataset[] = [];
-        const trackedUploads = initializeUploads(prepared);
+        const { trackedUploads, batchId } = initializeUploads(prepared);
         const { apiIds, libraryUploads } = filterUploadsByType(trackedUploads);
 
-        await processApiUploads(prepared, apiIds, datasets, trackedUploads, onProgress);
+        await processApiUploads(prepared, apiIds, datasets, trackedUploads, batchId, onProgress);
         await processLibraryUploads(libraryUploads, historyId, datasets);
 
         return datasets;

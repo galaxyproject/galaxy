@@ -213,7 +213,7 @@ describe("useUploadSubmission", () => {
         expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_3"');
     });
 
-    it("submits collection uploads with the prepared collection config", async () => {
+    it("groups direct collection uploads into a batch in upload state", async () => {
         server.use(
             http.post("/api/tools/fetch", async ({ request }) => {
                 const body = await request.json();
@@ -236,8 +236,9 @@ describe("useUploadSubmission", () => {
             }),
         );
 
-        const apiItem = makeUrlItem({ name: "1.bed", url: "https://example.org/1.bed" });
-        const prepared = buildPreparedUpload([apiItem], makeCollectionConfig());
+        const firstItem = makeUrlItem({ name: "1.bed", url: "https://example.org/1.bed" });
+        const secondItem = makeUrlItem({ name: "2.bed", url: "https://example.org/2.bed" });
+        const prepared = buildPreparedUpload([firstItem, secondItem], makeCollectionConfig());
         const wrapper = mountHarness(prepared);
         await flushPromises();
 
@@ -247,9 +248,14 @@ describe("useUploadSubmission", () => {
         expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hdca_2"');
 
         const state = useUploadState();
-        const uploadedEntry = state.activeItems.value.find((item) => item.name === "1.bed");
+        const batch = state.activeBatches.value[0];
 
-        expect(uploadedEntry?.status).toBe("completed");
-        expect(uploadedEntry?.progress).toBe(100);
+        expect(batch?.name).toBe("Uploaded Collection");
+        expect(batch?.status).toBe("completed");
+        expect(batch?.collectionId).toBe("hdca_2");
+        expect(batch?.uploadIds).toHaveLength(2);
+        expect(state.standaloneUploads.value).toHaveLength(0);
+        expect(state.orderedUploadItems.value[0]?.type).toBe("batch");
+        expect(state.activeItems.value.every((item) => item.batchId === batch?.id)).toBe(true);
     });
 });
