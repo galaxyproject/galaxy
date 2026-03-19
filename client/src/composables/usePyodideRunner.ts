@@ -54,7 +54,9 @@ function ensureWorker(): Worker {
         throw new Error("Pyodide is not supported in this environment");
     }
     if (!worker) {
-        worker = new Worker(new URL("../components/ChatGXY/pyodide.worker.ts", import.meta.url));
+        worker = new Worker(new URL("../components/ChatGXY/pyodide.worker.ts", import.meta.url), {
+            type: "module",
+        });
         worker.onmessage = (event: MessageEvent) => {
             const { type, id } = event.data as { type: string; id: string };
             if (!id) {
