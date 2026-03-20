@@ -81,6 +81,8 @@ onMounted(() => {
         if (props.accordion) {
             accordionRegistry.set(props.accordion, closeSelf);
         }
+    } else if (el) {
+        el.style.display = "none";
     }
 });
 
@@ -94,6 +96,7 @@ function onTransitionEnd(e: TransitionEvent) {
         el.style.overflow = "visible";
         emit("shown");
     } else {
+        el.style.display = "none";
         el.style.height = "";
         el.style.overflow = "";
         contentActive.value = false;
@@ -118,9 +121,9 @@ watch(
                 }
                 accordionRegistry.set(props.accordion, closeSelf);
             }
-            // Opening: start from 0, animate to scrollHeight.
-            // Use rAF so the browser finishes laying out v-if content
-            // before we read scrollHeight (matches BCollapse's approach).
+            // Switch from display:none to height:0/overflow:hidden so
+            // scrollHeight is readable, then animate to full height.
+            el.style.display = "";
             el.style.overflow = "hidden";
             el.style.height = "0px";
             requestAnimationFrame(() => {
