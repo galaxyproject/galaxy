@@ -762,7 +762,8 @@ class SubWorkflowModule(WorkflowModule):
                 )
                 step_type = step.type
                 if step_type == "data_collection_input":
-                    input["collection_type"] = step.tool_inputs.get("collection_type") if step.tool_inputs else None
+                    collection_type = step.tool_inputs.get("collection_type") if step.tool_inputs else None
+                    input["collection_types"] = listify(collection_type) if collection_type else None
                 if step_type == "parameter_input":
                     input["type"] = step.tool_inputs["parameter_type"]
                 input["optional"] = step.tool_inputs.get("optional", False)
