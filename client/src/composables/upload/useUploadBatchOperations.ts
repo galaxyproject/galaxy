@@ -1,8 +1,12 @@
 import { createHistoryDatasetCollectionInstanceFull } from "@/api/datasetCollections";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
 import { buildCollectionElements } from "@/composables/upload/collectionElements";
-import type { UploadItem } from "@/composables/upload/uploadItemTypes";
+import type { NewUploadItem, UploadItem } from "@/composables/upload/uploadItemTypes";
+import { validateUploadItem } from "@/composables/upload/uploadItemTypes";
+import { useHistoryStore } from "@/stores/historyStore";
+import { getHistoryUploadActionErrorMessage, getHistoryUploadBlockReason } from "@/utils/historyUpload";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { toApiUploadItem, uploadCollectionDatasets } from "@/utils/upload";
 
 interface UploadBatchOperationsOptions {
     autoRecover?: boolean;
@@ -17,16 +21,32 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
         return uploadState.activeItems.value.find((item) => item.id === id);
     }
 
+    async function validateTargetHistory(targetHistoryId: string): Promise<string | null> {
+        const historyStore = useHistoryStore();
+        let history = historyStore.getHistoryById(targetHistoryId, false) ?? null;
+        if (!history) {
+            await historyStore.loadHistoryById(targetHistoryId);
+            history = historyStore.getHistoryById(targetHistoryId, false) ?? null;
+        }
+        if (!history) {
+            return null;
+        }
+        const blockReason = getHistoryUploadBlockReason(history);
+        return blockReason ? getHistoryUploadActionErrorMessage(blockReason) : null;
+    }
+
     /**
      * Creates a dataset collection from uploaded datasets.
      *
      * @param batchId - Batch ID in upload state
+     * @throws {Error} If the batch is not found, has missing data, or collection creation fails
      */
     async function createCollection(batchId: string): Promise<void> {
         const batch = uploadState.getBatch(batchId);
         if (!batch) {
-            console.error(`Batch not found: ${batchId}`);
-            return;
+            const errorMsg = `Batch not found: ${batchId}`;
+            console.error(errorMsg);
+            throw new Error(errorMsg);
         }
 
         if (batch.collectionId) {
@@ -34,8 +54,9 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
         }
 
         if (!batch.datasetIds || batch.datasetIds.length === 0) {
-            uploadState.setBatchError(batchId, "No dataset IDs available for collection creation");
-            return;
+            const errorMsg = "No dataset IDs available for collection creation";
+            uploadState.setBatchError(batchId, errorMsg);
+            throw new Error(errorMsg);
         }
 
         const items = batch.uploadIds
@@ -43,16 +64,15 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
             .filter((item): item is UploadItem => item !== undefined);
 
         if (items.length === 0) {
-            uploadState.setBatchError(batchId, "No upload items available for collection creation");
-            return;
+            const errorMsg = "No upload items available for collection creation";
+            uploadState.setBatchError(batchId, errorMsg);
+            throw new Error(errorMsg);
         }
 
         if (items.length !== batch.uploadIds.length) {
-            uploadState.setBatchError(
-                batchId,
-                `Cannot create collection: only ${items.length} of ${batch.uploadIds.length} upload items found. This can happen after a page refresh. Please re-upload the files or manually create the collection.`,
-            );
-            return;
+            const errorMsg = `Cannot create collection: only ${items.length} of ${batch.uploadIds.length} upload items found. This can happen after a page refresh. Please re-upload the files or manually create the collection.`;
+            uploadState.setBatchError(batchId, errorMsg);
+            throw new Error(errorMsg);
         }
 
         uploadState.updateBatchStatus(batchId, "creating-collection");
@@ -88,6 +108,68 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
                     item.error = "Uploaded successfully, but collection creation failed";
                 }
             });
+
+            throw new Error(errorMsg);
+        }
+    }
+
+    /**
+     * Processes a collection batch using the direct HDCA creation path.
+     * All items are uploaded together in one /api/tools/fetch request that
+     * creates the collection atomically — no separate collection creation step.
+     *
+     * Used for non-library batches where all items can be fed to the upload API directly.
+     */
+    async function processDirectBatch(batchId: string, ids: string[], items: NewUploadItem[]): Promise<void> {
+        const batch = uploadState.getBatch(batchId);
+        if (!batch) {
+            console.error(`Batch not found: ${batchId}`);
+            return;
+        }
+
+        ids.forEach((id) => uploadState.setStatus(id, "uploading"));
+        uploadState.updateBatchStatus(batchId, "uploading");
+
+        try {
+            const historyError = await validateTargetHistory(batch.historyId);
+            if (historyError) {
+                throw new Error(historyError);
+            }
+
+            for (const item of items) {
+                const validationError = validateUploadItem(item);
+                if (validationError) {
+                    throw new Error(validationError);
+                }
+            }
+
+            const apiItems = items.map((item) => toApiUploadItem(item));
+
+            await uploadCollectionDatasets(
+                apiItems,
+                {
+                    collectionName: batch.name,
+                    collectionType: batch.type,
+                },
+                {
+                    progress: (percentage) => {
+                        ids.forEach((id) => uploadState.updateProgress(id, percentage));
+                    },
+                    success: () => {
+                        ids.forEach((id) => uploadState.updateProgress(id, 100));
+                        uploadState.updateBatchStatus(batchId, "completed");
+                    },
+                    error: (err) => {
+                        const errorMsg = errorMessageAsString(err);
+                        ids.forEach((id) => uploadState.setError(id, errorMsg));
+                        uploadState.setBatchError(batchId, errorMsg);
+                    },
+                },
+            );
+        } catch (err) {
+            const errorMsg = errorMessageAsString(err);
+            ids.forEach((id) => uploadState.setError(id, errorMsg));
+            uploadState.setBatchError(batchId, errorMsg);
         }
     }
 
@@ -166,6 +248,7 @@ export function useUploadBatchOperations(options: UploadBatchOperationsOptions =
         clearAll,
         clearCompleted,
         createCollection,
+        processDirectBatch,
         recoverIncompleteBatches,
         retryCollectionCreation,
     };

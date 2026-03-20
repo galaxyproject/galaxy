@@ -115,6 +115,13 @@ export interface PreparedUpload {
     collectionConfig?: UploadCollectionConfig;
     /** Items used for progress tracking in the upload state store. */
     uploadItems?: NewUploadItem[];
+    /** Optional upload behavior flags forwarded to uploadDatasets. */
+    uploadOptions?: {
+        /** Treat multiple API items as one composite dataset. */
+        composite?: boolean;
+        /** Display name for the composite dataset. */
+        compositeName?: string;
+    };
 }
 
 /**

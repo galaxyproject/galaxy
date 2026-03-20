@@ -1008,13 +1008,35 @@ export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatas
 }
 
 /**
+ * Determines if an upload item is compatible with the Fetch API (i.e., can be included in the payload).
+ * Items with uploadMode "data-library" are not compatible because they are copied from the data library and require a different handling approach.
+ */
+export function isFetchApiCompatible(item: NewUploadItem): boolean {
+    return item.uploadMode !== "data-library";
+}
+
+/**
  * Builds a PreparedUpload object from UI upload items.
  */
 export function buildPreparedUpload(items: NewUploadItem[], collectionConfig?: UploadCollectionConfig): PreparedUpload {
+    return buildPreparedUploadWithOptions(items, collectionConfig);
+}
+
+interface PreparedUploadBuildOptions {
+    apiItems?: ApiUploadItem[];
+    uploadOptions?: PreparedUpload["uploadOptions"];
+}
+
+export function buildPreparedUploadWithOptions(
+    items: NewUploadItem[],
+    collectionConfig?: UploadCollectionConfig,
+    options?: PreparedUploadBuildOptions,
+): PreparedUpload {
     return {
-        apiItems: items.map((item) => toApiUploadItem(item)),
+        apiItems: options?.apiItems ?? items.filter(isFetchApiCompatible).map((item) => toApiUploadItem(item)),
         collectionConfig,
         uploadItems: items,
+        uploadOptions: options?.uploadOptions,
     };
 }
 
