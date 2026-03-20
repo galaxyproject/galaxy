@@ -1,6 +1,5 @@
 """API Controller providing Chat functionality"""
 
-import asyncio
 import json
 import logging
 import mimetypes
@@ -36,6 +35,7 @@ from starlette.responses import StreamingResponse
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ConfigurationError
 from galaxy.managers.agents import AgentService
+from galaxy.managers.chat_execution_streams import ChatExecutionStreamsManager
 from galaxy.managers.chat_execution import ChatExecutionService
 from galaxy.managers.chat import ChatManager
 from galaxy.managers.context import (
@@ -123,47 +123,6 @@ def _guess_extension(filename: Optional[str], mime_type: Optional[str]) -> str:
             return guessed.lstrip(".")
     return "data"
 
-
-
-ACTIVE_EXECUTION_STREAMS: dict[int, set[WebSocket]] = {}
-STREAM_LOCK = asyncio.Lock()
-
-
-async def _register_stream(exchange_id: int, websocket: WebSocket) -> None:
-    async with STREAM_LOCK:
-        ACTIVE_EXECUTION_STREAMS.setdefault(exchange_id, set()).add(websocket)
-
-
-async def _remove_stream(exchange_id: int, websocket: WebSocket) -> None:
-    async with STREAM_LOCK:
-        connections = ACTIVE_EXECUTION_STREAMS.get(exchange_id)
-        if connections and websocket in connections:
-            connections.remove(websocket)
-            if not connections:
-                ACTIVE_EXECUTION_STREAMS.pop(exchange_id, None)
-
-
-async def _broadcast_exec_followup(exchange_id: int, message: dict[str, Any]) -> None:
-    async with STREAM_LOCK:
-        targets = list(ACTIVE_EXECUTION_STREAMS.get(exchange_id, set()))
-    if not targets:
-        return
-    stale: list[WebSocket] = []
-    for ws in targets:
-        try:
-            await ws.send_json(message)
-        except Exception:
-            stale.append(ws)
-    if stale:
-        async with STREAM_LOCK:
-            connections = ACTIVE_EXECUTION_STREAMS.get(exchange_id)
-            if connections:
-                for ws in stale:
-                    connections.discard(ws)
-                if not connections:
-                    ACTIVE_EXECUTION_STREAMS.pop(exchange_id, None)
-
-
 def _get_websocket_user(websocket: WebSocket) -> Optional[User]:
     app = cast(StructuredApp, websocket.app)
 
@@ -194,6 +153,7 @@ async def chat_exchange_stream(
     websocket: WebSocket,
 ) -> None:
     app = cast(StructuredApp, websocket.app)
+    stream_manager = app[ChatExecutionStreamsManager]
     user = _get_websocket_user(websocket)
     if user is None:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
@@ -206,7 +166,7 @@ async def chat_exchange_stream(
         return
 
     await websocket.accept()
-    await _register_stream(exchange_id, websocket)
+    await stream_manager.register(exchange_id, websocket)
     try:
         while True:
             try:
@@ -218,7 +178,7 @@ async def chat_exchange_stream(
     except WebSocketDisconnect:
         pass
     finally:
-        await _remove_stream(exchange_id, websocket)
+        await stream_manager.remove(exchange_id, websocket)
 
 
 @router.cbv
@@ -788,7 +748,7 @@ class ChatAPI:
         response_payload = await self.chat_execution_service.handle_pyodide_result(exchange_id, payload, trans, user)
 
         if response_payload.get("agent_response"):
-            await _broadcast_exec_followup(
+            await trans.app[ChatExecutionStreamsManager].broadcast_exec_followup(
                 exchange_id,
                 {
                     "type": "exec_followup",
