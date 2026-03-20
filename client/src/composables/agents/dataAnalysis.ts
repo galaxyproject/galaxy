@@ -533,13 +533,13 @@ export function useDataAnalysisAgent(
             });
     }
 
-    function openChatStream(exchangeId: number) {
+    function openChatStream(exchangeId: string) {
         if (!streamSupported) {
             return;
         }
         const existing = chatStream.value;
         if (existing) {
-            const existingId = (existing as any)._exchangeId as number | undefined;
+            const existingId = (existing as any)._exchangeId as string | undefined;
             if (
                 existingId === exchangeId &&
                 (existing.readyState === WebSocket.OPEN || existing.readyState === WebSocket.CONNECTING)
@@ -591,9 +591,6 @@ export function useDataAnalysisAgent(
         try {
             const payload = JSON.parse(event.data);
             if (payload?.type === "exec_followup" && payload.payload) {
-                if (payload.exchange_id && payload.exchange_id !== currentChatId.value) {
-                    return;
-                }
                 const taskId = payload.task_id as string | undefined;
                 if (taskId && deliveredTaskIds.has(taskId)) {
                     return;
@@ -827,7 +824,7 @@ export function useDataAnalysisAgent(
                 closeChatStream();
                 deliveredTaskIds.clear();
             }
-            if (typeof newId === "number") {
+            if (typeof newId === "string") {
                 openChatStream(newId);
             }
             if (newId == null) {
