@@ -211,7 +211,7 @@ def get_required_user(
 class UrlBuilder:
     def __init__(self, request: Request):
         self.request = request
-        self._route_cache: dict[str, Any] = {}
+        self._route_cache: dict[tuple[str, frozenset[str]], Any] = {}
 
     def __call__(self, name: str, **path_params):
         qualified = path_params.pop("qualified", False)
@@ -235,14 +235,19 @@ class UrlBuilder:
             return web.url_for(name, **path_params)
 
     def _url_path_for_cached(self, name: str, **path_params) -> str:
-        """Cached version of app.url_path_for that avoids repeated linear route scans."""
-        cached_route = self._route_cache.get(name)
+        """Cached version of app.url_path_for that avoids repeated linear route scans.
+
+        The cache key includes both the route name and the frozenset of parameter
+        names, because multiple routes can share a name yet expect different parameters.
+        """
+        cache_key = (name, frozenset(path_params))
+        cached_route = self._route_cache.get(cache_key)
         if cached_route is not None:
             return cached_route.url_path_for(name, **path_params)
         for route in self.request.app.routes:
             try:
                 url = route.url_path_for(name, **path_params)
-                self._route_cache[name] = route
+                self._route_cache[cache_key] = route
                 return url
             except NoMatchFound:
                 pass
