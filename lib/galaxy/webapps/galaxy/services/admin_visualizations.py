@@ -1,14 +1,11 @@
-"""
-Service layer for admin visualization package management.
+"""Service layer for admin visualization package management."""
 
-Provides business logic for managing visualization packages through the admin interface.
-"""
+from __future__ import annotations
 
 import logging
 import os
 import shutil
 import tempfile
-from typing import Optional
 
 from galaxy import exceptions
 from galaxy.managers.context import ProvidesUserContext
@@ -91,7 +88,7 @@ class AdminVisualizationsService(ServiceBase):
             raise exceptions.InternalServerError(f"Failed to load visualization packages: {e}")
 
     def get_available_packages(
-        self, trans: ProvidesUserContext, search: Optional[str] = None
+        self, trans: ProvidesUserContext, search: str | None = None
     ) -> AvailableVisualizationListResponse:
         """Get available @galaxyproject visualization packages from npm registry."""
         raw = self.package_manager.query_npm_registry(search)
