@@ -94,6 +94,8 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "custom_vm_image": dict(map=str, default=None),
             # Job cleanup: if true, delete GCP Batch jobs after Galaxy marks them complete
             "delete_completed_jobs": dict(map=bool, default=True),
+            # Prefix for GCP Batch job IDs (helps identify which Galaxy server submitted a job)
+            "job_id_prefix": dict(map=str, default="galaxy-job"),
             # Object store fallback (for future use)
             "use_object_store": dict(map=bool, default=False),
             "object_store_path": dict(map=str, default=None),
@@ -194,12 +196,13 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         """Submit a job to Google Cloud Batch and return the job name."""
         log.debug("Starting _submit_batch_job for job %s", job_wrapper.get_id_tag())
 
-        # Generate unique job name
-        job_name = f"galaxy-job-{int(time.time())}-{os.urandom(4).hex()}"
-
         # Get job destination parameters
         job_destination = job_wrapper.job_destination
         params = self._get_job_params(job_destination)
+
+        # Generate unique job name
+        prefix = params.get("job_id_prefix", "galaxy-job")
+        job_name = f"{prefix}-{int(time.time())}-{os.urandom(4).hex()}"
 
         # Create the batch job specification
         batch_job = self._create_batch_job_spec(job_wrapper, ajs, params)
@@ -252,6 +255,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             "use_object_store",
             "object_store_path",
             "service_account_email",
+            "job_id_prefix",
         ]:
             params[key] = job_destination.params.get(key, self.runner_params.get(key))
 
