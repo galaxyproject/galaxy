@@ -89,9 +89,9 @@ function togglePreferences() {
             </BButton>
         </div>
 
-        <GCollapse v-model="preferencesOpen">
+        <GCollapse v-slot="{ contentActive }" v-model="preferencesOpen">
             <div class="notifications-list-preferences card-container">
-                <NotificationsPreferences v-if="preferencesOpen" header-size="h-md" :embedded="false" />
+                <NotificationsPreferences v-if="contentActive" header-size="h-md" :embedded="false" />
             </div>
         </GCollapse>
 

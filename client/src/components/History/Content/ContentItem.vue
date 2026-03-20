@@ -438,10 +438,10 @@ function unexpandedClick(event: Event) {
                 @tag-click="onTagClick" />
         </span>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
-        <GCollapse :visible="expandDataset" class="px-2 pb-2">
+        <GCollapse v-slot="{ contentActive }" :visible="expandDataset" class="px-2 pb-2">
             <div v-if="item.accessible === false">You are not allowed to access this dataset</div>
             <DatasetDetails
-                v-else-if="expandDataset && item.id"
+                v-else-if="contentActive && item.id"
                 :id="item.id"
                 :writable="writable"
                 :show-highlight="(isHistoryItem && filterable) || addHighlightBtn"

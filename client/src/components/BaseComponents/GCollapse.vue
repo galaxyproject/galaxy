@@ -41,6 +41,8 @@ const emit = defineEmits<{
 
 const contentRef = ref<HTMLElement | null>(null);
 const internalOpen = ref(false);
+// Stays true during close animation so slot content can remain mounted
+const contentActive = ref(false);
 
 const isOpen = computed(() => {
     if (props.value !== undefined) {
@@ -57,9 +59,21 @@ function closeSelf() {
     emit("input", false);
 }
 
+// Sync: set contentActive true immediately so slot renders before post-flush animation
+watch(
+    isOpen,
+    (open) => {
+        if (open) {
+            contentActive.value = true;
+        }
+    },
+    { flush: "sync" },
+);
+
 onMounted(() => {
     const el = contentRef.value;
     if (isOpen.value) {
+        contentActive.value = true;
         if (el) {
             el.style.height = "auto";
             el.style.overflow = "visible";
@@ -82,10 +96,12 @@ function onTransitionEnd(e: TransitionEvent) {
     } else {
         el.style.height = "";
         el.style.overflow = "";
+        contentActive.value = false;
         emit("hidden");
     }
 }
 
+// Post-flush: run animations after DOM updates
 watch(
     isOpen,
     (open) => {
@@ -102,11 +118,14 @@ watch(
                 }
                 accordionRegistry.set(props.accordion, closeSelf);
             }
-            // Opening: start from 0, animate to scrollHeight
+            // Opening: start from 0, animate to scrollHeight.
+            // Use rAF so the browser finishes laying out v-if content
+            // before we read scrollHeight (matches BCollapse's approach).
             el.style.overflow = "hidden";
             el.style.height = "0px";
-            el.offsetHeight; // force reflow
-            el.style.height = el.scrollHeight + "px";
+            requestAnimationFrame(() => {
+                el.style.height = el.scrollHeight + "px";
+            });
         } else {
             emit("hide");
             // Closing: start from current height, animate to 0
@@ -128,7 +147,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div ref="contentRef" class="g-collapse" :class="{ 'g-collapse-open': isOpen }" @transitionend="onTransitionEnd">
-        <slot />
+        <slot :content-active="contentActive" />
     </div>
 </template>
 
