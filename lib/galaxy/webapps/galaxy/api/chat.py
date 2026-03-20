@@ -10,51 +10,31 @@ from typing import (
     Any,
     Optional,
     Union,
-    cast,
 )
 
 import anyio
 from fastapi import (
     Body,
-    File,
-    Form,
     HTTPException,
     Path,
     Query,
-    UploadFile,
-    WebSocket,
-    WebSocketDisconnect,
     status,
 )
 from pydantic import Field
 
-from starlette.responses import StreamingResponse
-
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     ConfigurationError,
-    InternalServerError,
-    ItemAccessibilityException,
-    ObjectNotFound,
-    RequestParameterInvalidException,
-    RequestParameterMissingException,
 )
 from galaxy.managers.agents import AgentService
-from galaxy.managers.data_analysis_chat_artifacts import DataAnalysisChatArtifactsManager
-from galaxy.managers.data_analysis_chat_datasets import DataAnalysisChatDatasetsManager
-from galaxy.managers.chat_execution_streams import ChatExecutionStreamsManager
-from galaxy.managers.chat_execution import ChatExecutionService
 from galaxy.managers.chat import ChatManager
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext
 )
 from galaxy.managers.jobs import JobManager
-from galaxy.managers.session import GalaxySessionManager
-from galaxy.managers.users import UserManager
 from galaxy.model import User
-from galaxy.structured_app import StructuredApp
-from galaxy.schema.agents import AgentResponse, UploadedArtifact
+from galaxy.schema.agents import AgentResponse
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     encode_id,
@@ -63,9 +43,7 @@ from galaxy.schema.schema import (
     ChatExchangeBatchDeletePayload,
     ChatPayload,
     ChatResponse,
-    PyodideResultPayload,
 )
-from galaxy.work.context import WorkRequestContext
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -115,63 +93,6 @@ JobIdPathParam = Annotated[
     DecodedDatabaseIdField,
     Path(title="Job ID", description="The Job ID the chat exchange is linked to."),
 ]
-def _get_websocket_user(websocket: WebSocket) -> Optional[User]:
-    app = cast(StructuredApp, websocket.app)
-
-    galaxysession = websocket.cookies.get("galaxysession")
-    if galaxysession:
-        session_key = app.security.decode_guid(galaxysession)
-        if session_key:
-            galaxy_session = app[GalaxySessionManager].get_session_from_session_key(session_key)
-            if galaxy_session and galaxy_session.user:
-                return galaxy_session.user
-
-    api_key = websocket.query_params.get("key") or websocket.headers.get("x-api-key")
-    if api_key:
-        return app[UserManager].by_api_key(api_key=api_key)
-
-    authorization = websocket.headers.get("authorization")
-    if authorization:
-        scheme, _, token = authorization.partition(" ")
-        if scheme.lower() == "bearer" and token:
-            return app[UserManager].by_oidc_access_token(access_token=token)
-
-    return None
-
-
-@router.websocket("/api/chat/exchange/{exchange_id}/stream")
-async def chat_exchange_stream(
-    exchange_id: DecodedDatabaseIdField,
-    websocket: WebSocket,
-) -> None:
-    app = cast(StructuredApp, websocket.app)
-    stream_manager = app[ChatExecutionStreamsManager]
-    user = _get_websocket_user(websocket)
-    if user is None:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-
-    trans = WorkRequestContext(app=app, user=user)
-    exchange = app[ChatManager].get_exchange_by_id(trans, exchange_id)
-    if exchange is None:
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-
-    await websocket.accept()
-    await stream_manager.register(exchange_id, websocket)
-    try:
-        while True:
-            try:
-                message = await websocket.receive_text()
-            except WebSocketDisconnect:
-                break
-            if message and message.lower().startswith("ping"):
-                await websocket.send_text("pong")
-    except WebSocketDisconnect:
-        pass
-    finally:
-        await stream_manager.remove(exchange_id, websocket)
-
 
 @router.cbv
 class ChatAPI:
@@ -184,9 +105,6 @@ class ChatAPI:
     chat_manager: ChatManager = depends(ChatManager)
     job_manager: JobManager = depends(JobManager)
     agent_service: AgentService = depends(AgentService)
-    chat_execution_service: ChatExecutionService = depends(ChatExecutionService)
-    data_analysis_chat_artifacts_manager: DataAnalysisChatArtifactsManager = depends(DataAnalysisChatArtifactsManager)
-    data_analysis_chat_datasets_manager: DataAnalysisChatDatasetsManager = depends(DataAnalysisChatDatasetsManager)
 
     @property
     def pyodide_timeout_seconds(self) -> int:
@@ -567,105 +485,6 @@ class ChatAPI:
                 )
 
         return messages
-
-    @router.get("/api/chat/datasets/{dataset_id}/download", response_class=StreamingResponse)
-    async def download_dataset_for_execution(
-        self,
-        dataset_id: str,
-        token: str = Query(..., description="Signed dataset download token"),
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        user: User = DependsOnUser,
-    ):
-        """Stream a history dataset referenced by a signed execution token."""
-
-        try:
-            prepared_download = self.data_analysis_chat_datasets_manager.prepare_download(trans, user, dataset_id, token)
-        except RequestParameterMissingException as exc:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-        except ItemAccessibilityException as exc:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-        except ObjectNotFound as exc:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
-        safe_name = prepared_download.display_name.replace("\\", "").replace('"', "")
-        headers = {
-            "Content-Disposition": f'attachment; filename="{safe_name}"',
-            "Content-Length": str(prepared_download.content_length),
-        }
-
-        def iter_file():
-            with open(prepared_download.file_path, "rb") as handle:
-                while True:
-                    chunk = handle.read(65536)
-                    if not chunk:
-                        break
-                    yield chunk
-
-        return StreamingResponse(iter_file(), media_type=prepared_download.mime_type, headers=headers)
-
-    @router.post("/api/chat/exchange/{exchange_id}/artifacts")
-    async def upload_pyodide_artifact(
-        self,
-        exchange_id: DecodedDatabaseIdField,
-        file: UploadFile = File(...),
-        name: Optional[str] = Form(default=None),
-        mime_type: Optional[str] = Form(default=None),
-        size: Optional[int] = Form(default=None),
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        user: User = DependsOnUser,
-    ) -> UploadedArtifact:
-        """Persist an artifact generated by the Pyodide worker as a history dataset."""
-
-        raw_bytes = await file.read()
-        artifact_name = name or file.filename or "artifact"
-        artifact_mime = mime_type or file.content_type or "application/octet-stream"
-        try:
-            return self.data_analysis_chat_artifacts_manager.create_artifact(
-                exchange_id=exchange_id,
-                trans=trans,
-                raw_bytes=raw_bytes,
-                name=artifact_name,
-                mime_type=artifact_mime,
-                size=size,
-            )
-        except ObjectNotFound as exc:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-        except RequestParameterInvalidException as exc:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-        except InternalServerError as exc:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
-
-
-    @router.post("/api/chat/exchange/{exchange_id}/pyodide_result")
-    async def submit_pyodide_result(
-        self,
-        exchange_id: DecodedDatabaseIdField,
-        payload: PyodideResultPayload,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        user: User = DependsOnUser,
-    ) -> dict[str, Any]:
-        """Persist results from client-side Pyodide execution and trigger follow-up reasoning."""
-
-        if not user:
-            return {"message": "Authentication required"}
-
-        exchange = self.chat_manager.get_exchange_by_id(trans, exchange_id)
-        if not exchange:
-            return {"message": "Chat exchange not found"}
-        response_payload = await self.chat_execution_service.handle_pyodide_result(exchange_id, payload, trans, user)
-
-        if response_payload.get("agent_response"):
-            await trans.app[ChatExecutionStreamsManager].broadcast_exec_followup(
-                exchange_id,
-                {
-                    "type": "exec_followup",
-                    "exchange_id": exchange_id,
-                    "task_id": payload.task_id,
-                    "payload": response_payload,
-                },
-            )
-
-        return response_payload
 
     def _refresh_artifact_download_urls(self, trans: ProvidesUserContext, payload: Any) -> Any:
         if isinstance(payload, dict):
