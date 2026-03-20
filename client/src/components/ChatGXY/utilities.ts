@@ -86,7 +86,7 @@ export function isDataAnalysisMessage(message?: ChatMessage): boolean {
     if (!message) {
         return false;
     }
-    const agentType = message.agentType || message.agentResponse?.agent_type;
+    const agentType = message.agentResponse?.agent_type || message.agentType;
     return typeof agentType === "string" && agentType.startsWith("data_analysis");
 }
 
