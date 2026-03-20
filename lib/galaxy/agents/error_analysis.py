@@ -4,6 +4,7 @@ Error analysis agent for enhanced tool error diagnosis.
 
 import logging
 import re
+from functools import partial
 from pathlib import Path
 from typing import (
     Any,
@@ -11,6 +12,7 @@ from typing import (
     Optional,
 )
 
+import anyio
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
@@ -94,7 +96,9 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             if not self.deps.job_manager:
                 return {"error": "Job manager not available"}
 
-            job = self.deps.job_manager.get_accessible_job(self.deps.trans, job_id)
+            job = await anyio.to_thread.run_sync(
+                partial(self.deps.job_manager.get_accessible_job, self.deps.trans, job_id)
+            )
             if not job:
                 return {"error": f"Job {job_id} not found or not accessible"}
 

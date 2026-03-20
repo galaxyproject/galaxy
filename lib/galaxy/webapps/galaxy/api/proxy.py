@@ -1,13 +1,15 @@
 """
-API Controller to handle remote zip operations.
+API Controller to proxy remote files.
 """
 
 import logging
+from functools import partial
 from urllib.parse import (
     urljoin,
     urlparse,
 )
 
+import anyio
 import httpx
 from fastapi import (
     Query,
@@ -71,7 +73,7 @@ class FastAPIProxy:
         if trans.anonymous:
             raise UserRequiredException("Anonymous users are not allowed to access this endpoint")
 
-        self._validate_url_and_access(url, trans)
+        await anyio.to_thread.run_sync(partial(self._validate_url_and_access, url, trans))
 
         headers: dict[str, str] = {}
         if "range" in request.headers:
@@ -151,7 +153,7 @@ class FastAPIProxy:
                 # Handle relative URLs by resolving them against the current URL
                 redirect_url = urljoin(current_url, redirect_location)
 
-                self._validate_url_and_access(redirect_url, trans)
+                await anyio.to_thread.run_sync(partial(self._validate_url_and_access, redirect_url, trans))
 
                 # Close current response and follow the validated redirect
                 await response.aclose()
