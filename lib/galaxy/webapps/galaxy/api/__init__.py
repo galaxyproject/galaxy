@@ -211,6 +211,7 @@ def get_required_user(
 class UrlBuilder:
     def __init__(self, request: Request):
         self.request = request
+        self._route_cache: dict[str, Any] = {}
 
     def __call__(self, name: str, **path_params):
         qualified = path_params.pop("qualified", False)
@@ -223,7 +224,7 @@ class UrlBuilder:
                 else:
                     url = str(self.request.url_for(name, **path_params))
             else:
-                url = self.request.app.url_path_for(name, **path_params)
+                url = self._url_path_for_cached(name, **path_params)
             if query_params:
                 url = f"{url}?{urlencode(query_params)}"
             return url
@@ -232,6 +233,20 @@ class UrlBuilder:
             if query_params:
                 path_params.update(query_params)
             return web.url_for(name, **path_params)
+
+    def _url_path_for_cached(self, name: str, **path_params) -> str:
+        """Cached version of app.url_path_for that avoids repeated linear route scans."""
+        cached_route = self._route_cache.get(name)
+        if cached_route is not None:
+            return cached_route.url_path_for(name, **path_params)
+        for route in self.request.app.routes:
+            try:
+                url = route.url_path_for(name, **path_params)
+                self._route_cache[name] = route
+                return url
+            except NoMatchFound:
+                pass
+        raise NoMatchFound(name, path_params)
 
 
 class GalaxyASGIRequest(GalaxyAbstractRequest):
