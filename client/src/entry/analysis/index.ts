@@ -21,7 +21,7 @@ window.addEventListener("load", async () => {
     const router = getRouter(Galaxy);
 
     // Initialize globals
-    await initSentry(Galaxy, router);
+    initSentry(Galaxy, router);
     await initWebhooks(Galaxy);
 
     // Mount application
