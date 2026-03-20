@@ -2067,20 +2067,9 @@ class PickValueModule(WorkflowModule):
                 return True
         return False
 
-    def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
-    ) -> Optional[bool]:
+    def _pick_from_replacements(self, trans, invocation_step, mode, replacements):
+        """Apply pick logic to a list of replacement values. Returns the picked output."""
         step = invocation_step.workflow_step
-        mode = step.tool_inputs.get("mode", "first_non_null") if step.tool_inputs else "first_non_null"
-
-        # Gather replacements from each named input terminal, in order
-        replacements = []
-        for input_dict in self.get_all_inputs():
-            replacement = progress.replacement_for_input(trans, step, input_dict)
-            if replacement is not NO_REPLACEMENT:
-                replacements.append(replacement)
-
-        # Separate non-null from null/skipped, preserving order
         non_null = [r for r in replacements if not self._is_null_or_skipped(r)]
 
         if mode == "first_non_null":
@@ -2091,13 +2080,12 @@ class PickValueModule(WorkflowModule):
                         workflow_step_id=step.id,
                     )
                 )
-            output = non_null[0]
+            return non_null[0]
 
         elif mode == "first_or_skip":
             if not non_null:
-                output = self._create_skipped_output(trans, invocation_step)
-            else:
-                output = non_null[0]
+                return self._create_skipped_output(trans, invocation_step)
+            return non_null[0]
 
         elif mode == "the_only_non_null":
             if len(non_null) != 1:
@@ -2107,19 +2095,76 @@ class PickValueModule(WorkflowModule):
                         workflow_step_id=step.id,
                     )
                 )
-            output = non_null[0]
+            return non_null[0]
 
         elif mode == "all_non_null":
-            # CWL spec: all_non_null returns list of non-null values,
-            # which may be empty if all inputs are null.
-            output = self._create_collection_from_list(trans, invocation_step, non_null)
+            return self._create_collection_from_list(trans, invocation_step, non_null)
 
         else:
             raise ValueError(f"Unknown pick_value mode: {mode}")
 
+    def execute(
+        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+    ) -> Optional[bool]:
+        step = invocation_step.workflow_step
+        mode = step.tool_inputs.get("mode", "first_non_null") if step.tool_inputs else "first_non_null"
+        all_inputs = self.get_all_inputs()
+
+        collection_info = self.compute_collection_info(progress, step, all_inputs)
+
+        if collection_info:
+            output = self._execute_mapped(trans, invocation_step, mode, all_inputs, collection_info)
+        else:
+            # Gather replacements from each named input terminal, in order
+            replacements = []
+            for input_dict in all_inputs:
+                replacement = progress.replacement_for_input(trans, step, input_dict)
+                if replacement is not NO_REPLACEMENT:
+                    replacements.append(replacement)
+            output = self._pick_from_replacements(trans, invocation_step, mode, replacements)
+
         progress.set_step_outputs(invocation_step, {"output": output})
         self._apply_post_job_actions(trans, step, output, progress.effective_replacement_dict())
         return None
+
+    def _execute_mapped(self, trans, invocation_step, mode, all_inputs, collection_info):
+        """Execute pick_value mapped over collection inputs."""
+        invocation = invocation_step.workflow_invocation
+        history = invocation.history
+
+        # Build a map of input_name -> input_dict for quick lookup
+        input_names = {d["name"] for d in all_inputs}
+
+        per_element_outputs = []
+        for iteration_elements, _when_value in collection_info.slice_collections():
+            # For each slice, extract per-element replacements
+            replacements = []
+            for input_dict in all_inputs:
+                name = input_dict["name"]
+                if iteration_elements and name in iteration_elements:
+                    dce = iteration_elements[name]
+                    replacement = dce.hda if hasattr(dce, "hda") and dce.hda else dce.child_collection
+                else:
+                    # Input not part of the mapped collection — not connected
+                    replacement = NO_REPLACEMENT
+                if replacement is not NO_REPLACEMENT:
+                    replacements.append(replacement)
+
+            element_output = self._pick_from_replacements(trans, invocation_step, mode, replacements)
+            # Track the identifier from the first mapped input for naming
+            first_mapped = (
+                next(
+                    (iteration_elements[n] for n in sorted(iteration_elements) if n in input_names),
+                    None,
+                )
+                if iteration_elements
+                else None
+            )
+            identifier = first_mapped.element_identifier if first_mapped else str(len(per_element_outputs))
+            per_element_outputs.append((identifier, element_output))
+
+        # Build the output collection from per-element outputs
+        return self._create_mapped_output_collection(trans, history, mode, per_element_outputs)
 
     def _create_skipped_output(self, trans, invocation_step):
         """Create a skipped HDA for first_or_skip when all inputs are null."""
@@ -2159,6 +2204,50 @@ class PickValueModule(WorkflowModule):
             element_identifiers=elements,
         )
         return hdca
+
+    def _create_mapped_output_collection(self, trans, history, mode, per_element_outputs):
+        """Create an implicit output collection from per-element pick results.
+
+        For single-value modes (first_non_null, etc.), creates a flat list of HDAs.
+        For all_non_null mode, creates a list:list where each element is a sub-collection.
+        """
+        collection_manager = trans.app.dataset_collection_manager
+        if mode == "all_non_null":
+            # Each element is an HDCA — build list:list
+            elements = []
+            for identifier, hdca in per_element_outputs:
+                elements.append(
+                    dict(
+                        name=identifier,
+                        src="hdca",
+                        id=hdca.id,
+                    )
+                )
+            return collection_manager.create(
+                trans,
+                history,
+                name="Pick Value - mapped all non-null",
+                collection_type="list:list",
+                element_identifiers=elements,
+            )
+        else:
+            # Each element is an HDA — build flat list
+            elements = []
+            for identifier, hda in per_element_outputs:
+                elements.append(
+                    dict(
+                        name=identifier,
+                        src="hda",
+                        id=hda.id,
+                    )
+                )
+            return collection_manager.create(
+                trans,
+                history,
+                name="Pick Value - mapped",
+                collection_type="list",
+                element_identifiers=elements,
+            )
 
     def _apply_post_job_actions(self, trans, step, output, replacement_dict):
         """Apply post job actions directly to module output via ActionBox.
