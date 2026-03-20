@@ -217,6 +217,15 @@ function _convertValue(node, value) {
         }
         return value;
     }
+    if (node.type === "select" && node.multiple) {
+        if (value === null || value === undefined) {
+            return value;
+        }
+        if (!Array.isArray(value)) {
+            return [value];
+        }
+        return value;
+    }
     return value;
 }
 

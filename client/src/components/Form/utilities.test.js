@@ -773,6 +773,21 @@ describe("form component utilities", () => {
             expect(buildNestedState(inputs, { val: 2.718 })).toEqual({ val: 2.718 });
         });
 
+        it("should wrap multiple select string value as array", () => {
+            const inputs = [{ name: "sel", type: "select", multiple: true }];
+            expect(buildNestedState(inputs, { sel: "a_check" })).toEqual({ sel: ["a_check"] });
+        });
+
+        it("should preserve multiple select array value", () => {
+            const inputs = [{ name: "sel", type: "select", multiple: true }];
+            expect(buildNestedState(inputs, { sel: ["a", "b"] })).toEqual({ sel: ["a", "b"] });
+        });
+
+        it("should preserve multiple select null value", () => {
+            const inputs = [{ name: "sel", type: "select", multiple: true }];
+            expect(buildNestedState(inputs, { sel: null })).toEqual({ sel: null });
+        });
+
         it("should handle the full tool model from test data", () => {
             // Build formData from the tool model (mimics what visitInputs collects)
             const formData = {};
