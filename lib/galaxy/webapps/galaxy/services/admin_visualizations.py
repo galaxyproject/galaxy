@@ -95,7 +95,7 @@ class AdminVisualizationsService(ServiceBase):
         return AvailableVisualizationListResponse(root=[AvailableVisualizationResponse(**pkg) for pkg in raw])
 
     def show(self, trans: ProvidesUserContext, viz_id: str) -> InstalledVisualizationResponse:
-        """Get detailed information about a specific visualization package."""
+        self.package_manager.validate_viz_id(viz_id)
         package_info = self.package_manager.get_package_info(viz_id)
 
         if not package_info:
@@ -130,8 +130,8 @@ class AdminVisualizationsService(ServiceBase):
     def install_package(
         self, trans: ProvidesUserContext, viz_id: str, package: str, version: str
     ) -> InstalledVisualizationResponse:
-        """Install a visualization package from npm registry."""
-        if self.package_manager.is_package_installed(viz_id):
+        self.package_manager.validate_viz_id(viz_id)
+        if self.package_manager.get_package_info(viz_id) or self.package_manager.is_package_installed(viz_id):
             raise exceptions.Conflict(f"Package '{viz_id}' is already installed")
 
         target_dir = self.package_manager.get_package_path(viz_id)
@@ -152,12 +152,8 @@ class AdminVisualizationsService(ServiceBase):
         )
 
     def update_package(self, trans: ProvidesUserContext, viz_id: str, version: str) -> InstalledVisualizationResponse:
-        """Update an existing visualization package to a new version.
-
-        Uses a safe update pattern: installs the new version to a temporary
-        location first, then swaps it in on success. If the new install fails,
-        the old version is preserved.
-        """
+        """Safe update: install new version to temp, swap on success, keep old on failure."""
+        self.package_manager.validate_viz_id(viz_id)
         current_info = self.show(trans, viz_id)
         package = current_info.package
         target_dir = self.package_manager.get_package_path(viz_id)
@@ -196,7 +192,7 @@ class AdminVisualizationsService(ServiceBase):
         )
 
     def uninstall_package(self, trans: ProvidesUserContext, viz_id: str) -> None:
-        """Uninstall a visualization package and clean up its assets."""
+        self.package_manager.validate_viz_id(viz_id)
         if not self.package_manager.get_package_info(viz_id):
             raise exceptions.ObjectNotFound(f"Package '{viz_id}' not found")
 
@@ -206,7 +202,7 @@ class AdminVisualizationsService(ServiceBase):
         log.info(f"Successfully uninstalled visualization package {viz_id}")
 
     def toggle_package(self, trans: ProvidesUserContext, viz_id: str, enabled: bool) -> ToggleVisualizationResponse:
-        """Enable or disable a visualization package."""
+        self.package_manager.validate_viz_id(viz_id)
         self.package_manager.toggle_package_enabled(viz_id, enabled)
 
         log.info(f"Successfully {'enabled' if enabled else 'disabled'} visualization package {viz_id}")
@@ -256,7 +252,7 @@ class AdminVisualizationsService(ServiceBase):
             raise exceptions.InternalServerError(f"Failed to stage visualizations: {e}")
 
     def stage_visualization(self, trans: ProvidesUserContext, viz_id: str) -> VisualizationStagingResultResponse:
-        """Stage assets for a specific visualization from config/plugins to static/plugins."""
+        self.package_manager.validate_viz_id(viz_id)
         try:
             result = self.package_manager.stage_visualization(viz_id)
 
@@ -270,10 +266,10 @@ class AdminVisualizationsService(ServiceBase):
                 size=result["size"],
             )
 
+        except exceptions.ObjectNotFound:
+            raise
         except Exception as e:
             log.error(f"Failed to stage visualization {viz_id}: {e}")
-            if "not found" in str(e).lower():
-                raise exceptions.ObjectNotFound(f"Visualization '{viz_id}' not found for staging")
             raise exceptions.InternalServerError(f"Failed to stage visualization: {e}")
 
     def clean_staged_assets(self, trans: ProvidesUserContext) -> CleanStagingResultResponse:

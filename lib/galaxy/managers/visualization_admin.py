@@ -19,10 +19,9 @@ from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
-# Matches valid npm package names (scoped or unscoped)
 _NPM_PACKAGE_RE = re.compile(r"^(@[a-z0-9-~][a-z0-9._-~]*/)?[a-z0-9-~][a-z0-9._-~]*$")
-# Loose semver -- digits.digits.digits with optional pre-release/build suffix
 _SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+([a-zA-Z0-9.+-]*)$")
+_VIZ_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+(/[a-zA-Z0-9_-]+)?$")
 
 
 class VisualizationPackageManager:
@@ -43,6 +42,12 @@ class VisualizationPackageManager:
             raise exceptions.RequestParameterInvalidException(f"Invalid npm package name: {package}")
         if not _SEMVER_RE.match(version):
             raise exceptions.RequestParameterInvalidException(f"Invalid package version (expected semver): {version}")
+
+    @staticmethod
+    def validate_viz_id(viz_id: str) -> None:
+        """Reject viz IDs that could escape the static directory."""
+        if not viz_id or not _VIZ_ID_RE.match(viz_id) or ".." in viz_id:
+            raise exceptions.RequestParameterInvalidException(f"Invalid visualization ID: {viz_id}")
 
     def load_config(self) -> dict:
         """Load the visualization packages configuration file."""
