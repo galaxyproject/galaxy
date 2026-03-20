@@ -37,18 +37,6 @@ export async function getAvailableVisualizations(search?: string) {
     return data!;
 }
 
-export async function getVisualizationDetails(vizId: string) {
-    const { data, error } = await GalaxyApi().GET("/api/admin/visualizations/{viz_id}", {
-        params: { path: { viz_id: vizId } },
-    });
-
-    if (error) {
-        rethrowSimple(error);
-    }
-
-    return data!;
-}
-
 export async function installVisualization(vizId: string, packageName: string, version: string) {
     const { data, error } = await GalaxyApi().POST("/api/admin/visualizations/{viz_id}/install", {
         params: { path: { viz_id: vizId } },

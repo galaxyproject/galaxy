@@ -16,6 +16,7 @@ import yaml
 
 from galaxy import exceptions
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util.path import safe_relpath
 
 log = logging.getLogger(__name__)
 
@@ -50,12 +51,24 @@ class VisualizationPackageManager:
             raise exceptions.RequestParameterInvalidException(f"Invalid visualization ID: {viz_id}")
 
     def load_config(self) -> dict:
-        """Load the visualization packages configuration file."""
+        """Load and normalize the visualization packages config file.
+
+        Legacy entries that are bare strings get normalized to dict format
+        so callers don't need to handle both shapes.
+        """
         try:
             if not os.path.exists(self.config_path):
                 return {}
             with open(self.config_path) as f:
-                return yaml.safe_load(f) or {}
+                raw = yaml.safe_load(f) or {}
+            for viz_id, info in raw.items():
+                if not isinstance(info, dict):
+                    raw[viz_id] = {
+                        "package": str(info),
+                        "version": "unknown",
+                        "enabled": True,
+                    }
+            return raw
         except Exception as e:
             log.error(f"Failed to load visualization config: {e}")
             raise exceptions.InternalServerError(f"Failed to load configuration: {e}")
@@ -302,12 +315,11 @@ class VisualizationPackageManager:
 
     def restore_config(self, backup_path: str) -> None:
         """Restore configuration from a backup."""
+        if not os.path.exists(backup_path):
+            raise exceptions.ObjectNotFound("Backup file not found")
         try:
-            if os.path.exists(backup_path):
-                shutil.copy2(backup_path, self.config_path)
-                log.info("Configuration restored from backup")
-            else:
-                raise exceptions.ObjectNotFound("Backup file not found")
+            shutil.copy2(backup_path, self.config_path)
+            log.info("Configuration restored from backup")
         except Exception as e:
             log.error(f"Failed to restore config: {e}")
             raise exceptions.InternalServerError(f"Failed to restore configuration: {e}")
@@ -335,12 +347,25 @@ class VisualizationPackageManager:
                         continue
 
                     relative_path = os.path.relpath(source_dir, plugins_base_dir)
+                    if not safe_relpath(relative_path):
+                        log.warning(f"Skipping unsafe staging path: {source_dir}")
+                        continue
+
                     target_dir = os.path.join(self.app.config.root, "static", "plugins", relative_path)
 
-                    os.makedirs(os.path.dirname(target_dir), exist_ok=True)
+                    # Skip if target is already up to date
                     if os.path.exists(target_dir):
+                        src_mtime = os.path.getmtime(source_dir)
+                        tgt_mtime = os.path.getmtime(target_dir)
+                        if tgt_mtime >= src_mtime:
+                            viz_name = self._extract_viz_name_from_path(relative_path)
+                            if viz_name:
+                                staged_visualizations.append(viz_name)
+                            staged_count += 1
+                            continue
                         shutil.rmtree(target_dir)
 
+                    os.makedirs(os.path.dirname(target_dir), exist_ok=True)
                     shutil.copytree(
                         source_dir,
                         target_dir,
@@ -399,6 +424,9 @@ class VisualizationPackageManager:
                 raise exceptions.ObjectNotFound(f"Static assets not found for visualization '{viz_id}'")
 
             relative_path = os.path.relpath(source_dir, plugins_base_dir)
+            if not safe_relpath(relative_path):
+                raise exceptions.InternalServerError(f"Unsafe staging path for visualization '{viz_id}'")
+
             target_dir = os.path.join(self.app.config.root, "static", "plugins", relative_path)
 
             os.makedirs(os.path.dirname(target_dir), exist_ok=True)
@@ -420,10 +448,10 @@ class VisualizationPackageManager:
                 "size": self.get_directory_size(target_dir),
             }
 
+        except exceptions.ObjectNotFound:
+            raise
         except Exception as e:
             log.error(f"Failed to stage visualization {viz_id}: {e}")
-            if "not found" in str(e).lower():
-                raise exceptions.ObjectNotFound(f"Visualization '{viz_id}' not found")
             raise exceptions.InternalServerError(f"Failed to stage visualization: {e}")
 
     def clean_staged_assets(self) -> dict:
