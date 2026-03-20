@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 from datetime import datetime, timezone
 import time
 from functools import partial
@@ -35,11 +34,14 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     ConfigurationError,
     InternalServerError,
+    ItemAccessibilityException,
     ObjectNotFound,
     RequestParameterInvalidException,
+    RequestParameterMissingException,
 )
 from galaxy.managers.agents import AgentService
 from galaxy.managers.data_analysis_chat_artifacts import DataAnalysisChatArtifactsManager
+from galaxy.managers.data_analysis_chat_datasets import DataAnalysisChatDatasetsManager
 from galaxy.managers.chat_execution_streams import ChatExecutionStreamsManager
 from galaxy.managers.chat_execution import ChatExecutionService
 from galaxy.managers.chat import ChatManager
@@ -184,6 +186,7 @@ class ChatAPI:
     agent_service: AgentService = depends(AgentService)
     chat_execution_service: ChatExecutionService = depends(ChatExecutionService)
     data_analysis_chat_artifacts_manager: DataAnalysisChatArtifactsManager = depends(DataAnalysisChatArtifactsManager)
+    data_analysis_chat_datasets_manager: DataAnalysisChatDatasetsManager = depends(DataAnalysisChatDatasetsManager)
 
     @property
     def pyodide_timeout_seconds(self) -> int:
@@ -575,55 +578,30 @@ class ChatAPI:
     ):
         """Stream a history dataset referenced by a signed execution token."""
 
-        if not token:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing download token")
-
         try:
-            self.agent_service.verify_dataset_download_token(trans, dataset_id, token)
-        except ValueError as exc:
+            prepared_download = self.data_analysis_chat_datasets_manager.prepare_download(trans, user, dataset_id, token)
+        except RequestParameterMissingException as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        except ItemAccessibilityException as exc:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-
-        try:
-            decoded_id = trans.security.decode_id(dataset_id)
-        except Exception as exc:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dataset not found") from exc
-
-        hda_manager = trans.app.hda_manager
-        try:
-            hda = hda_manager.get_accessible(decoded_id, user, current_history=trans.history, trans=trans)
-        except Exception as exc:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Dataset is not accessible") from exc
-
-        try:
-            hda_manager.ensure_dataset_on_disk(trans, hda)
-        except Exception as exc:
+        except ObjectNotFound as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
-        dataset = hda.dataset
-        file_path = dataset.get_file_name()
-        if not file_path or not os.path.exists(file_path):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dataset file not found")
-
-        mime_type = hda.get_mime() or "application/octet-stream"
-        try:
-            display_name = hda.display_name()
-        except Exception:
-            display_name = hda.name or dataset_id
-        safe_name = (display_name or dataset_id).replace('\\', '').replace('"', '')
+        safe_name = prepared_download.display_name.replace("\\", "").replace('"', "")
         headers = {
             "Content-Disposition": f'attachment; filename="{safe_name}"',
-            "Content-Length": str(os.path.getsize(file_path)),
+            "Content-Length": str(prepared_download.content_length),
         }
 
         def iter_file():
-            with open(file_path, "rb") as handle:
+            with open(prepared_download.file_path, "rb") as handle:
                 while True:
                     chunk = handle.read(65536)
                     if not chunk:
                         break
                     yield chunk
 
-        return StreamingResponse(iter_file(), media_type=mime_type, headers=headers)
+        return StreamingResponse(iter_file(), media_type=prepared_download.mime_type, headers=headers)
 
     @router.post("/api/chat/exchange/{exchange_id}/artifacts")
     async def upload_pyodide_artifact(
