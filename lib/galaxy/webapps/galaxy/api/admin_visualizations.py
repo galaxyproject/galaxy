@@ -60,6 +60,8 @@ VisualizationIdPathParam = Annotated[
 class FastAPIAdminVisualizations:
     service: AdminVisualizationsService = depends(AdminVisualizationsService)
 
+    # --- Static-segment routes (must be declared before {viz_id} routes) ---
+
     @router.get(
         "/api/admin/visualizations",
         summary="List all installed visualization packages.",
@@ -93,6 +95,73 @@ class FastAPIAdminVisualizations:
     ) -> AvailableVisualizationListResponse:
         """Return a list of available @galaxyproject visualization packages from npm registry."""
         return self.service.get_available_packages(trans, search=search)
+
+    @router.get(
+        "/api/admin/visualizations/usage_stats",
+        summary="Get usage statistics for visualizations.",
+        require_admin=True,
+    )
+    def usage_stats(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        days: int = Query(
+            default=30,
+            title="Days",
+            description="Number of days to look back for usage statistics",
+        ),
+    ) -> UsageStatsResponse:
+        """Return usage statistics for installed visualizations."""
+        return self.service.get_usage_stats(trans, days=days)
+
+    @router.get(
+        "/api/admin/visualizations/staging_status",
+        summary="Get staging status information.",
+        require_admin=True,
+    )
+    def staging_status(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> StagingStatusResponse:
+        """Get information about currently staged visualizations."""
+        return self.service.get_staging_status(trans)
+
+    @router.post(
+        "/api/admin/visualizations/reload",
+        summary="Reload the visualization registry.",
+        require_admin=True,
+    )
+    def reload(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> MessageResponse:
+        """Reload the visualization registry to pick up configuration changes."""
+        return self.service.reload_registry(trans)
+
+    @router.post(
+        "/api/admin/visualizations/stage",
+        summary="Stage all visualization assets.",
+        require_admin=True,
+    )
+    def stage_all(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> StagingResultResponse:
+        """Stage all visualization assets from config/plugins to static/plugins for Galaxy to serve."""
+        return self.service.stage_all_visualizations(trans)
+
+    @router.delete(
+        "/api/admin/visualizations/staged",
+        summary="Clean all staged visualization assets.",
+        require_admin=True,
+    )
+    def clean_staged(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> CleanStagingResultResponse:
+        """Clean all staged visualization assets from static/plugins."""
+        return self.service.clean_staged_assets(trans)
+
+    # --- Dynamic {viz_id} routes ---
 
     @router.get(
         "/api/admin/visualizations/{viz_id}",
@@ -165,47 +234,6 @@ class FastAPIAdminVisualizations:
         return self.service.toggle_package(trans, viz_id, request.enabled)
 
     @router.post(
-        "/api/admin/visualizations/reload",
-        summary="Reload the visualization registry.",
-        require_admin=True,
-    )
-    def reload(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ) -> MessageResponse:
-        """Reload the visualization registry to pick up configuration changes."""
-        return self.service.reload_registry(trans)
-
-    @router.get(
-        "/api/admin/visualizations/usage_stats",
-        summary="Get usage statistics for visualizations.",
-        require_admin=True,
-    )
-    def usage_stats(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        days: int = Query(
-            default=30,
-            title="Days",
-            description="Number of days to look back for usage statistics",
-        ),
-    ) -> UsageStatsResponse:
-        """Return usage statistics for installed visualizations."""
-        return self.service.get_usage_stats(trans, days=days)
-
-    @router.post(
-        "/api/admin/visualizations/stage",
-        summary="Stage all visualization assets.",
-        require_admin=True,
-    )
-    def stage_all(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ) -> StagingResultResponse:
-        """Stage all visualization assets from config/plugins to static/plugins for Galaxy to serve."""
-        return self.service.stage_all_visualizations(trans)
-
-    @router.post(
         "/api/admin/visualizations/{viz_id}/stage",
         summary="Stage assets for a specific visualization.",
         require_admin=True,
@@ -217,27 +245,3 @@ class FastAPIAdminVisualizations:
     ) -> VisualizationStagingResultResponse:
         """Stage assets for a specific visualization from config/plugins to static/plugins."""
         return self.service.stage_visualization(trans, viz_id)
-
-    @router.delete(
-        "/api/admin/visualizations/staged",
-        summary="Clean all staged visualization assets.",
-        require_admin=True,
-    )
-    def clean_staged(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ) -> CleanStagingResultResponse:
-        """Clean all staged visualization assets from static/plugins."""
-        return self.service.clean_staged_assets(trans)
-
-    @router.get(
-        "/api/admin/visualizations/staging_status",
-        summary="Get staging status information.",
-        require_admin=True,
-    )
-    def staging_status(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ) -> StagingStatusResponse:
-        """Get information about currently staged visualizations."""
-        return self.service.get_staging_status(trans)
