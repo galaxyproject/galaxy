@@ -52,15 +52,9 @@ class AdminVisualizationsService(ServiceBase):
 
             for viz_id, info in config.items():
                 is_installed = self.package_manager.is_package_installed(viz_id)
-
-                if isinstance(info, dict):
-                    package = info.get("package", "")
-                    version = info.get("version", "unknown")
-                    enabled = info.get("enabled", True)
-                else:
-                    package = str(info)
-                    version = "unknown"
-                    enabled = True
+                package = info.get("package", "")
+                version = info.get("version", "unknown")
+                enabled = info.get("enabled", True)
 
                 if not include_disabled and not enabled:
                     continue
@@ -101,21 +95,12 @@ class AdminVisualizationsService(ServiceBase):
         if not package_info:
             raise exceptions.ObjectNotFound(f"Visualization package '{viz_id}' not found")
 
-        if isinstance(package_info, dict):
-            package = package_info.get("package", "")
-            version = package_info.get("version", "unknown")
-            enabled = package_info.get("enabled", True)
-        else:
-            package = str(package_info)
-            version = "unknown"
-            enabled = True
-
         is_installed = self.package_manager.is_package_installed(viz_id)
         result = InstalledVisualizationResponse(
             id=viz_id,
-            package=package,
-            version=version,
-            enabled=enabled,
+            package=package_info.get("package", ""),
+            version=package_info.get("version", "unknown"),
+            enabled=package_info.get("enabled", True),
             installed=is_installed,
         )
 
