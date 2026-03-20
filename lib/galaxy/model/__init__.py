@@ -4737,14 +4737,16 @@ class Dataset(Base, StorableObject, Serializable):
 
     def full_delete(self):
         """Remove the file and extra files, marks deleted and purged"""
-        # os.unlink( self.file_name )
         try:
             self.object_store.delete(self)
         except galaxy.exceptions.ObjectNotFound:
             pass
         if (rel_path := self._extra_files_rel_path) is not None:
             if self.object_store.exists(self, extra_dir=rel_path, dir_only=True):
-                self.object_store.delete(self, entire_dir=True, extra_dir=rel_path, dir_only=True)
+                try:
+                    self.object_store.delete(self, entire_dir=True, extra_dir=rel_path, dir_only=True)
+                except galaxy.exceptions.ObjectNotFound:
+                    pass
         # TODO: purge metadata files
         self.deleted = True
         self.purged = True
