@@ -2,13 +2,11 @@
 
 import logging
 import mimetypes
-import uuid
 from typing import (
     Any,
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
 )
 from urllib.parse import urlencode
 
@@ -24,16 +22,11 @@ from galaxy.agents import GalaxyAgentDependencies
 from galaxy.agents.registry import AgentRegistry
 from galaxy.agents.router import QueryRouterAgent
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.exceptions import ConfigurationError
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
-from galaxy.schema.agents import (
-    AgentResponse,
-    PyodideFile,
-    PyodideTask,
-    PyodideTaskConfig,
-)
-
+from galaxy.schema.agents import AgentResponse
 log = logging.getLogger(__name__)
 
 
@@ -126,239 +119,6 @@ class AgentService:
         except RuntimeError as e:
             log.exception(f"Runtime error executing agent {agent_type}: {e}")
             raise
-
-
-    async def _execute_data_analysis_dspy(
-        self,
-        agent: DataAnalysisDSPyAgent,
-        question: str,
-        context: Dict[str, Any],
-    ) -> Dict[str, Any]:
-        datasets: List[str] = context.get("dataset_ids", []) or []
-        conversation_history = [dict(entry) for entry in context.get("conversation_history", [])]
-        data_agent = DataAnalysisAgent(agent.deps)
-
-        step_context = dict(context)
-        step_context["conversation_history"] = conversation_history
-
-        step_payload = agent.plan_step(question, step_context)
-        plan = agent.last_plan()
-
-        if plan is None:
-            descriptors, _ = self._dataset_descriptors(data_agent, datasets)
-            return self._build_dspy_response(agent, None, descriptors)
-
-        if "final_answer" in step_payload:
-            descriptors, _ = self._dataset_descriptors(data_agent, datasets)
-            return self._build_dspy_response(
-                agent,
-                plan,
-                descriptors,
-                summary_override=step_payload.get("final_answer"),
-            )
-
-        action_payload = step_payload.get("action_payload") or {}
-        action_name = step_payload.get("action") or action_payload.get("action")
-        timeout_ms = action_payload.get("timeout_ms", DataAnalysisDSPyAgent.DEFAULT_TIMEOUT_MS)
-
-        if plan.python_code and action_name == "ExecutePythonInBrowser":
-            requested_dataset_ids = self._extract_dataset_ids(step_payload, datasets)
-            descriptors, alias_index = self._dataset_descriptors(data_agent, requested_dataset_ids)
-            pyodide_task = self._build_pyodide_task(agent.deps.trans, plan, descriptors, alias_index, timeout_ms)
-            return self._build_dspy_response(
-                agent,
-                plan,
-                descriptors,
-                pyodide_task=pyodide_task,
-            )
-
-        descriptors, _ = self._dataset_descriptors(data_agent, datasets)
-        return self._build_dspy_response(agent, plan, descriptors)
-
-    def _build_dspy_response(
-        self,
-        agent: DataAnalysisDSPyAgent,
-        plan: Optional[DSPyPlanResult],
-        dataset_descriptors: List[Dict[str, Any]],
-        *,
-        summary_override: Optional[str] = None,
-        pyodide_task: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        summary = (summary_override or (plan.summary if plan else "")).strip() if plan or summary_override else ""
-        if not summary and plan and plan.raw_answer:
-            summary = (plan.raw_answer.get("explanation") or "").strip()
-        if not summary and pyodide_task:
-            summary = "Generated analysis plan with executable Python."
-        if not summary:
-            summary = "Analysis complete."
-
-        follow_up = plan.follow_up if plan else []
-        analysis_steps: List[Dict[str, Any]] = []
-        if plan and plan.analysis_steps:
-            for step in plan.analysis_steps:
-                analysis_steps.append(dict(step))
-
-        if pyodide_task:
-            for step in reversed(analysis_steps):
-                if step.get("type") == "action":
-                    step["status"] = "pending"
-                    break
-        else:
-            for step in analysis_steps:
-                if step.get("type") == "action" and "status" not in step:
-                    step["status"] = "completed"
-
-        metadata: Dict[str, Any] = {
-            "planner": "dspy",
-            "summary": summary,
-            "analysis_steps": analysis_steps,
-            "plots": plan.plots if plan else [],
-            "files": plan.files if plan else [],
-            "follow_up": follow_up,
-            "datasets_used": dataset_descriptors,
-            "dataset_ids": [descriptor.get("id") for descriptor in dataset_descriptors if descriptor.get("id")],
-        }
-        if plan and plan.raw_answer:
-            metadata["raw_answer"] = plan.raw_answer
-        if pyodide_task:
-            metadata["pyodide_task"] = pyodide_task
-            metadata["pyodide_status"] = "pending"
-        else:
-            metadata["pyodide_status"] = "completed"
-
-        suggestions: List[Dict[str, Any]] = []
-        if not pyodide_task and follow_up:
-            suggestions = [
-                {
-                    "action_type": "refine_query",
-                    "description": item,
-                    "parameters": {},
-                    "confidence": "medium",
-                    "priority": index + 1,
-                }
-                for index, item in enumerate(follow_up)
-            ]
-
-        if pyodide_task:
-            content = f"{summary}\n\nExecuting generated Python in the browser..." if summary else "Executing generated Python in the browser..."
-            confidence = "medium"
-        else:
-            content = summary
-            confidence = "high" if plan and plan.is_complete else "medium"
-
-        return {
-            "content": content,
-            "agent_type": agent.agent_type,
-            "confidence": confidence,
-            "suggestions": suggestions,
-            "metadata": metadata,
-            "reasoning": None,
-        }
-
-    def _extract_dataset_ids(self, step_payload: Dict[str, Any], fallback_ids: List[str]) -> List[str]:
-        dataset_ids: List[str] = []
-        action_payload = step_payload.get("action_payload")
-        if isinstance(action_payload, dict):
-            for ref in action_payload.get("files") or []:
-                dataset_id = ref.get("id") if isinstance(ref, dict) else ref
-                if dataset_id and dataset_id not in dataset_ids:
-                    dataset_ids.append(str(dataset_id))
-            for ref in action_payload.get("datasets") or []:
-                dataset_id = ref.get("id") if isinstance(ref, dict) else ref
-                if dataset_id and dataset_id not in dataset_ids:
-                    dataset_ids.append(str(dataset_id))
-        for ref in step_payload.get("datasets") or []:
-            dataset_id = ref.get("id") if isinstance(ref, dict) else ref
-            if dataset_id and dataset_id not in dataset_ids:
-                dataset_ids.append(str(dataset_id))
-        if not dataset_ids:
-            dataset_ids = list(dict.fromkeys(str(item) for item in fallback_ids))
-        return dataset_ids
-
-    def _dataset_descriptors(
-        self,
-        data_agent: "DataAnalysisAgent",
-        dataset_ids: List[str],
-    ) -> tuple[List[Dict[str, Any]], Dict[str, str]]:
-        if not dataset_ids:
-            return [], {}
-        try:
-            _, metadata = data_agent._prepare_dataset_aliases(dataset_ids)
-        except Exception as exc:  # pragma: no cover - defensive fallback
-            log.debug("Failed to prepare dataset aliases: %s", exc)
-            metadata = []
-        descriptors: List[Dict[str, Any]] = []
-        alias_index: Dict[str, str] = {}
-        for entry in metadata:
-            dataset_id = entry.get("id")
-            aliases = entry.get("aliases") or []
-            info = {
-                "id": dataset_id,
-                "name": entry.get("name"),
-                "size": entry.get("size"),
-                "aliases": aliases,
-            }
-            descriptors.append(info)
-            for alias in aliases:
-                if dataset_id is not None:
-                    alias_index.setdefault(alias, dataset_id)
-            if dataset_id is not None:
-                alias_index.setdefault(dataset_id, dataset_id)
-        if not descriptors:
-            for dataset_id in dataset_ids:
-                dataset_id = str(dataset_id)
-                descriptors.append(
-                    {
-                        "id": dataset_id,
-                        "name": dataset_id,
-                        "size": None,
-                        "aliases": [dataset_id],
-                    }
-                )
-                alias_index.setdefault(dataset_id, dataset_id)
-        return descriptors, alias_index
-
-    def _build_pyodide_task(
-        self,
-        trans: ProvidesUserContext,
-        plan: DSPyPlanResult,
-        dataset_descriptors: List[Dict[str, Any]],
-        alias_index: Dict[str, str],
-        timeout_ms: int,
-    ) -> PyodideTask:
-        code = (plan.python_code or "").strip()
-        packages = sorted({pkg for pkg in (plan.requirements or []) if pkg})
-        files: List[PyodideFile] = []
-        for descriptor in dataset_descriptors:
-            dataset_id = descriptor.get("id")
-            if not dataset_id:
-                continue
-            files.append(
-                PyodideFile(
-                    id=dataset_id,
-                    name=descriptor.get("name") or dataset_id,
-                    size=descriptor.get("size"),
-                    aliases=descriptor.get("aliases") or [],
-                    url=self._dataset_download_url(trans, dataset_id),
-                    mime_type=self._guess_mime_type(descriptor.get("name")),
-                )
-            )
-        config: PyodideTaskConfig | None = None
-        index_url = getattr(self.config, "pyodide_index_url", None)
-        if index_url:
-            config = PyodideTaskConfig(index_url=index_url)
-        task: PyodideTask = PyodideTask(
-            task_id=str(uuid.uuid4()),
-            action="ExecutePythonInBrowser",
-            code=code,
-            packages=packages,
-            files=files,
-            timeout_ms=timeout_ms or DataAnalysisDSPyAgent.DEFAULT_TIMEOUT_MS,
-            alias_map=alias_index,
-        )
-        if config:
-            task.config = config
-        return task
 
     def _dataset_download_url(self, trans: ProvidesUserContext, dataset_id: str) -> str:
         token = self._sign_dataset_download_token(trans, dataset_id)
