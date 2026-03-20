@@ -21,23 +21,19 @@ import requests
 import yaml
 
 from galaxy import exceptions
-from galaxy.managers.base import ModelManager
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
 
-class VisualizationPackageManager(ModelManager):
+class VisualizationPackageManager:
     """Manager for visualization package operations."""
 
-    model_class = type(None)  # Not managing database models
-
     def __init__(self, app: MinimalManagerApp):
-        super().__init__(app)
-        self.config_path = os.path.join(app.config.root, "client", "visualizations.yml")
+        self.app = app
+        self.config_path = os.path.join(app.config.root, "config", "visualization_packages.yml")
         self.static_path = os.path.join(app.config.root, "static", "plugins", "visualizations")
 
-        # Ensure directories exist
         os.makedirs(os.path.dirname(self.config_path), exist_ok=True)
         os.makedirs(self.static_path, exist_ok=True)
 
