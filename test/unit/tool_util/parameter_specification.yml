@@ -1247,11 +1247,11 @@ gx_data:
    - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd}]}
    - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd, map_over_type: paired}]}
    - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd, map_over_type: null}]}
+   - parameter: {src: dce, id: abcdabcd}
   request_invalid:
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    # map_over_type only valid on hdca/dce, not hda/ldda
    - parameter: {__class__: "Batch", values: [{src: hda, id: abcdabcd, map_over_type: paired}]}
-   - parameter: {src: dce, id: abcdabcd}
    - parameter: {src: hda, id: 7}
    - parameter: {src: hdca, id: abcdabcd}
    - parameter: null
