@@ -19,7 +19,7 @@ from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
-_NPM_PACKAGE_RE = re.compile(r"^(@[a-z0-9-~][a-z0-9._-~]*/)?[a-z0-9-~][a-z0-9._-~]*$")
+_NPM_PACKAGE_RE = re.compile(r"^(@[a-z0-9][a-z0-9._~-]*/)?[a-z0-9][a-z0-9._~-]*$")
 _SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+([a-zA-Z0-9.+-]*)$")
 _VIZ_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+(/[a-zA-Z0-9_-]+)?$")
 
