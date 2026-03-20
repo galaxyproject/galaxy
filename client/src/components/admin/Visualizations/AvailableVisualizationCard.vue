@@ -17,8 +17,8 @@
                         <span v-if="packageData.keywords?.length" class="mr-3">
                             <strong>Keywords:</strong> {{ packageData.keywords.join(", ") }}
                         </span>
-                        <span v-if="packageData.modified" class="mr-3">
-                            <strong>Last Updated:</strong> {{ formatDate(packageData.modified) }}
+                        <span v-if="packageData.date" class="mr-3">
+                            <strong>Last Updated:</strong> {{ formatDate(packageData.date) }}
                         </span>
                     </div>
                 </div>
@@ -33,15 +33,19 @@
 
                 <div class="small">
                     <a
-                        v-if="packageData.homepage"
-                        :href="packageData.homepage"
+                        v-if="packageData.links?.homepage"
+                        :href="packageData.links.homepage"
                         target="_blank"
                         rel="noopener"
                         class="mr-3">
-                        Homepage <i class="fa fa-external-link-alt fa-sm"></i>
+                        Homepage <FontAwesomeIcon :icon="faExternalLinkAlt" size="sm" />
                     </a>
-                    <a v-if="packageData.repository" :href="packageData.repository" target="_blank" rel="noopener">
-                        Repository <i class="fa fa-external-link-alt fa-sm"></i>
+                    <a
+                        v-if="packageData.links?.repository"
+                        :href="packageData.links.repository"
+                        target="_blank"
+                        rel="noopener">
+                        Repository <FontAwesomeIcon :icon="faExternalLinkAlt" size="sm" />
                     </a>
                 </div>
             </div>
@@ -52,14 +56,14 @@
                     variant="primary"
                     size="sm"
                     :disabled="isLoading"
-                    @click="$emit('install', packageData)">
-                    <b-spinner v-if="isLoading" small></b-spinner>
-                    <i v-else class="fa fa-download mr-1"></i>
+                    @click="emit('install', packageData)">
+                    <b-spinner v-if="isLoading" small />
+                    <FontAwesomeIcon v-else :icon="faDownload" class="mr-1" />
                     Install
                 </b-button>
 
                 <b-button v-else variant="outline-success" size="sm" disabled>
-                    <i class="fa fa-check mr-1"></i>
+                    <FontAwesomeIcon :icon="faCheck" class="mr-1" />
                     Installed
                 </b-button>
             </div>
@@ -67,45 +71,43 @@
     </b-card>
 </template>
 
-<script>
-export default {
-    name: "AvailableVisualizationCard",
+<script setup lang="ts">
+import { faCheck, faDownload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
 
-    props: {
-        packageData: {
-            type: Object,
-            required: true,
-        },
-        installedVisualizations: {
-            type: Array,
-            default: () => [],
-        },
-        loadingActions: {
-            type: Set,
-            default: () => new Set(),
-        },
-    },
+import type { AvailableVisualization, Visualization } from "./services";
 
-    computed: {
-        isInstalled() {
-            return this.installedVisualizations.some((viz) => viz.package === this.packageData.name);
-        },
+interface Props {
+    packageData: AvailableVisualization;
+    installedPackages?: Visualization[];
+    loadingActions?: Record<string, boolean>;
+}
 
-        isLoading() {
-            return this.loadingActions.has(`install-${this.packageData.name}`);
-        },
-    },
+const props = withDefaults(defineProps<Props>(), {
+    installedPackages: () => [],
+    loadingActions: () => ({}),
+});
 
-    methods: {
-        formatDate(dateString) {
-            try {
-                return new Date(dateString).toLocaleDateString();
-            } catch {
-                return dateString;
-            }
-        },
-    },
-};
+const emit = defineEmits<{
+    (e: "install", packageData: AvailableVisualization): void;
+}>();
+
+const isInstalled = computed(() => {
+    return props.installedPackages.some((viz) => viz.package === props.packageData.name);
+});
+
+const isLoading = computed(() => {
+    return !!props.loadingActions[`install-${props.packageData.name}`];
+});
+
+function formatDate(dateString: string) {
+    try {
+        return new Date(dateString).toLocaleDateString();
+    } catch {
+        return dateString;
+    }
+}
 </script>
 
 <style scoped>
@@ -115,9 +117,5 @@ export default {
 
 .available-visualization-card:hover {
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
-
-.badge {
-    font-size: 0.75em;
 }
 </style>
