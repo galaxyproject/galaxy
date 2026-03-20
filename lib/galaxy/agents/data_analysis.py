@@ -365,6 +365,7 @@ class DataAnalysisAgent(BaseGalaxyAgent):
 
         if pyodide_task:
             metadata_kwargs["pyodide_task"] = pyodide_task
+            metadata_kwargs["completion_state"] = "pending"
             metadata_kwargs["pyodide_status"] = PyodideStatus.PENDING
             metadata_kwargs["pyodide_started_at"] = datetime.now(timezone.utc).isoformat()
             metadata_kwargs["pyodide_context"] = pyodide_context
