@@ -1,4 +1,4 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import { getLocalVue, suppressExpectedErrorMessages } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { http, HttpResponse } from "msw";
@@ -9,8 +9,7 @@ import { defineComponent, ref } from "vue";
 import { useServerMock } from "@/api/client/__mocks__";
 import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import { useUploadState } from "@/components/Panels/Upload/uploadState";
-import type { UploadCollectionConfig } from "@/composables/upload/collectionTypes";
-import type { LibraryDatasetUploadItem, UrlUploadItem } from "@/composables/upload/uploadItemTypes";
+import { makeCollectionConfig, makeLibraryItem, makeUrlItem } from "@/composables/upload/testHelpers/uploadFixtures";
 import { buildPreparedUpload } from "@/utils/upload";
 
 import { useUploadSubmission } from "./useUploadSubmission";
@@ -23,41 +22,6 @@ const SELECTORS = {
 
 const localVue = getLocalVue();
 const { server } = useServerMock();
-
-function makeUrlItem(overrides: Partial<UrlUploadItem> = {}): UrlUploadItem {
-    return {
-        uploadMode: "paste-links",
-        name: "remote.txt",
-        url: "https://example.org/remote.txt",
-        size: 0,
-        targetHistoryId: "hist_1",
-        dbkey: "?",
-        extension: "auto",
-        spaceToTab: false,
-        toPosixLines: false,
-        deferred: false,
-        ...overrides,
-    };
-}
-
-function makeLibraryItem(overrides: Partial<LibraryDatasetUploadItem> = {}): LibraryDatasetUploadItem {
-    return {
-        uploadMode: "data-library",
-        name: "library.txt",
-        size: 0,
-        targetHistoryId: "hist_1",
-        dbkey: "?",
-        extension: "auto",
-        spaceToTab: false,
-        toPosixLines: false,
-        deferred: false,
-        libraryId: "lib_1",
-        folderId: "folder_1",
-        lddaId: "ldda_1",
-        url: "/api/libraries/datasets/ldda_1",
-        ...overrides,
-    };
-}
 
 function mountHarness(prepared: PreparedUpload) {
     const Harness = defineComponent({
@@ -89,14 +53,11 @@ function mountHarness(prepared: PreparedUpload) {
     return mount(Harness, { localVue, pinia: createPinia() });
 }
 
-function makeCollectionConfig(overrides: Partial<UploadCollectionConfig> = {}): UploadCollectionConfig {
-    return {
+function makeSubmissionCollectionConfig() {
+    return makeCollectionConfig({
         name: "Uploaded Collection",
-        type: "list",
         hideSourceItems: true,
-        historyId: "hist_1",
-        ...overrides,
-    };
+    });
 }
 
 describe("useUploadSubmission", () => {
@@ -136,7 +97,7 @@ describe("useUploadSubmission", () => {
             }),
         );
 
-        const apiItem = makeUrlItem();
+        const apiItem = makeUrlItem({ name: "remote.txt", url: "https://example.org/remote.txt" });
         const apiPrepared = buildPreparedUpload([apiItem]);
         const wrapper = mountHarness({
             apiItems: apiPrepared.apiItems,
@@ -166,7 +127,7 @@ describe("useUploadSubmission", () => {
             http.post("/api/tools/fetch", () => HttpResponse.json({ err_msg: "upload failed" }, { status: 500 })),
         );
 
-        const apiItem = makeUrlItem({ url: "https://example.org/broken.txt" });
+        const apiItem = makeUrlItem({ name: "remote.txt", url: "https://example.org/broken.txt" });
         const apiPrepared = buildPreparedUpload([apiItem]);
         const wrapper = mountHarness({
             apiItems: apiPrepared.apiItems,
@@ -238,7 +199,7 @@ describe("useUploadSubmission", () => {
 
         const firstItem = makeUrlItem({ name: "1.bed", url: "https://example.org/1.bed" });
         const secondItem = makeUrlItem({ name: "2.bed", url: "https://example.org/2.bed" });
-        const prepared = buildPreparedUpload([firstItem, secondItem], makeCollectionConfig());
+        const prepared = buildPreparedUpload([firstItem, secondItem], makeSubmissionCollectionConfig());
         const wrapper = mountHarness(prepared);
         await flushPromises();
 
@@ -257,5 +218,99 @@ describe("useUploadSubmission", () => {
         expect(state.standaloneUploads.value).toHaveLength(0);
         expect(state.orderedUploadItems.value[0]?.type).toBe("batch");
         expect(state.activeItems.value.every((item) => item.batchId === batch?.id)).toBe(true);
+    });
+
+    it("creates a two-step collection for library-only uploads", async () => {
+        server.use(
+            http.post("/api/histories/hist_1/contents/datasets", () => HttpResponse.json({ id: "hda_lib_1", hid: 3 })),
+            http.post("/api/dataset_collections", async ({ request }) => {
+                const body = await request.json();
+                expect(body).toMatchObject({
+                    history_id: "hist_1",
+                    collection_type: "list",
+                    name: "Uploaded Collection",
+                    element_identifiers: [{ id: "hda_lib_1", src: "hda" }],
+                });
+                return HttpResponse.json({ id: "hdca_lib_1" });
+            }),
+        );
+
+        const prepared = buildPreparedUpload([makeLibraryItem()], makeSubmissionCollectionConfig());
+        const wrapper = mountHarness(prepared);
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_lib_1"');
+
+        const batch = useUploadState().activeBatches.value[0];
+        expect(batch?.status).toBe("completed");
+        expect(batch?.collectionId).toBe("hdca_lib_1");
+        expect(batch?.datasetIds).toEqual(["hda_lib_1"]);
+    });
+
+    it("creates a two-step collection for mixed api and library uploads", async () => {
+        server.use(
+            http.post("/api/tools/fetch", () =>
+                HttpResponse.json({
+                    outputs: [{ id: "hda_api_1", name: "api dataset", hid: 1, src: "hda" }],
+                }),
+            ),
+            http.post("/api/histories/hist_1/contents/datasets", () => HttpResponse.json({ id: "hda_lib_2", hid: 2 })),
+            http.post("/api/dataset_collections", async ({ request }) => {
+                const body = await request.json();
+                expect(body).toMatchObject({
+                    history_id: "hist_1",
+                    collection_type: "list",
+                    name: "Uploaded Collection",
+                    element_identifiers: [
+                        { id: "hda_api_1", src: "hda" },
+                        { id: "hda_lib_2", src: "hda" },
+                    ],
+                });
+                return HttpResponse.json({ id: "hdca_mixed_1" });
+            }),
+        );
+
+        const apiItem = makeUrlItem({ name: "api-first.txt" });
+        const libraryItem = makeLibraryItem({ name: "library-second.txt", lddaId: "ldda_2" });
+        const wrapper = mountHarness(buildPreparedUpload([apiItem, libraryItem], makeSubmissionCollectionConfig()));
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_api_1"');
+        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_lib_2"');
+
+        const batch = useUploadState().activeBatches.value[0];
+        expect(batch?.status).toBe("completed");
+        expect(batch?.collectionId).toBe("hdca_mixed_1");
+        expect(batch?.datasetIds).toEqual(["hda_api_1", "hda_lib_2"]);
+    });
+
+    it("surfaces two-step collection creation failures after uploads succeed", async () => {
+        suppressExpectedErrorMessages(["Collection error"]);
+        server.use(
+            http.post("/api/histories/hist_1/contents/datasets", () => HttpResponse.json({ id: "hda_lib_3", hid: 4 })),
+            http.post("/api/dataset_collections", () =>
+                HttpResponse.json({ err_msg: "Collection error" }, { status: 500 }),
+            ),
+        );
+
+        const wrapper = mountHarness(
+            buildPreparedUpload([makeLibraryItem({ lddaId: "ldda_3" })], makeSubmissionCollectionConfig()),
+        );
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find(SELECTORS.ERROR).text()).toContain("Collection error");
+
+        const batch = useUploadState().activeBatches.value[0];
+        expect(batch?.status).toBe("error");
+        expect(batch?.collectionId).toBeUndefined();
     });
 });
