@@ -73,19 +73,21 @@ def test_galaxy_expression_metadata(target_history: TargetHistory, required_tool
 
 
 @requires_tool_id("multi_select")
-def test_multi_select_as_list(required_tool: RequiredTool):
-    execution = required_tool.execute().with_inputs({"select_ex": ["--ex1", "ex2"]})
+def test_multi_select_as_list(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    inputs = tool_input_format.when.any({"select_ex": ["--ex1", "ex2"]})
+    execution = required_tool.execute().with_inputs(inputs)
     execution.assert_has_single_job.with_output("output").with_contents("--ex1,ex2")
 
 
 @requires_tool_id("multi_select")
-def test_multi_select_optional(required_tool: RequiredTool):
-    execution = required_tool.execute().with_inputs(
+def test_multi_select_optional(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    inputs = tool_input_format.when.any(
         {
             "select_ex": ["--ex1"],
             "select_optional": None,
         }
     )
+    execution = required_tool.execute().with_inputs(inputs)
     job = execution.assert_has_single_job
     job.assert_has_output("output").with_contents("--ex1")
     job.assert_has_output("output2").with_contents_stripped("None")
@@ -997,3 +999,44 @@ def test_map_over_dce_on_non_multiple_data_param(
     output_collection = execute.assert_creates_implicit_collection(0)
     output_collection.assert_has_dataset_element("forward").with_contents_stripped("123")
     output_collection.assert_has_dataset_element("reverse").with_contents_stripped("456")
+
+
+@requires_tool_id("gx_repeat_optional")
+def test_empty_repeat_explicit(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    """Empty repeat as explicit [] executes — tool sees zero repeat instances.
+
+    Contrasts with workflow execution where an absent repeat key in tool_state
+    causes Cheetah template failure (see test_wf_conversion_artifacts.py).
+    Direct API execution handles both empty [] and absent repeat identically
+    because populate_state initializes all params with defaults.
+    """
+    inputs = tool_input_format.when.flat({}).when.nested({"parameter": []}).when.request({"parameter": []})
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_single_job.with_single_output.containing("length: 0")
+
+
+@requires_tool_id("gx_repeat_optional")
+def test_absent_repeat(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    """Absent repeat key executes via API — populate_state initializes defaults.
+
+    Unlike workflow execution (which uses params_from_strings and skips absent
+    keys), direct API execution uses populate_state which initializes all params
+    with get_initial_value() before processing inputs. So an absent repeat
+    becomes [] and the tool runs fine.
+    """
+    inputs = tool_input_format.when.any({})
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_single_job.with_single_output.containing("length: 0")
+
+
+@requires_tool_id("gx_repeat_optional")
+def test_repeat_with_instances(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    """Repeat with instances provided works across all formats."""
+    inputs = (
+        tool_input_format.when.flat({"parameter_0|text_parameter": "hello", "parameter_1|text_parameter": "world"})
+        .when.nested({"parameter": [{"text_parameter": "hello"}, {"text_parameter": "world"}]})
+        .when.request({"parameter": [{"text_parameter": "hello"}, {"text_parameter": "world"}]})
+    )
+    execute = required_tool.execute().with_inputs(inputs)
+    output = execute.assert_has_single_job.with_single_output
+    output.containing("length: 2").containing("hello").containing("world")
