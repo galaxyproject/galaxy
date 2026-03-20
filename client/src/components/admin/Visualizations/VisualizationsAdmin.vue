@@ -49,17 +49,9 @@
                 </div>
                 <div>
                     <b-input-group>
-                        <b-form-input
-                            v-model="searchFilter"
-                            placeholder="Filter visualizations..."
-                            @input="filterInstalled" />
+                        <b-form-input v-model="searchFilter" placeholder="Filter visualizations..." />
                         <b-input-group-append>
-                            <b-button
-                                variant="outline-secondary"
-                                @click="
-                                    searchFilter = '';
-                                    filterInstalled();
-                                ">
+                            <b-button variant="outline-secondary" @click="searchFilter = ''">
                                 <FontAwesomeIcon :icon="faTimes" />
                             </b-button>
                         </b-input-group-append>
@@ -216,6 +208,7 @@
             :show="showInstallModal"
             :package-data="selectedVisualization"
             :installing="installing"
+            :installed-visualizations="installedVisualizations"
             @confirm="confirmInstall"
             @cancel="showInstallModal = false" />
     </div>
@@ -234,6 +227,7 @@ import {
     faUpload,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useDebounceFn } from "@vueuse/core";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -276,9 +270,25 @@ const loadingActions: Record<string, boolean> = reactive({});
 const installing = ref(false);
 
 const installedVisualizations = ref<Visualization[]>([]);
-const filteredInstalledVisualizations = ref<Visualization[]>([]);
 const showDisabled = ref(true);
 const searchFilter = ref("");
+
+const filteredInstalledVisualizations = computed(() => {
+    let filtered = installedVisualizations.value;
+    if (!showDisabled.value) {
+        filtered = filtered.filter((viz) => viz.enabled);
+    }
+    if (searchFilter.value) {
+        const q = searchFilter.value.toLowerCase();
+        filtered = filtered.filter(
+            (viz) =>
+                viz.id.toLowerCase().includes(q) ||
+                viz.package.toLowerCase().includes(q) ||
+                (viz.metadata?.description && (viz.metadata.description as string).toLowerCase().includes(q)),
+        );
+    }
+    return filtered;
+});
 
 const availableVisualizations = ref<AvailableVisualization[]>([]);
 const availableSearchFilter = ref("");
@@ -290,10 +300,6 @@ const stagingStatus = ref<StagingStatus | null>(null);
 
 const showInstallModal = ref(false);
 const selectedVisualization = ref<AvailableVisualization | null>(null);
-
-watch(showDisabled, () => {
-    filterInstalled();
-});
 
 watch(activeTab, async (newTab) => {
     if (newTab === "available" && availableVisualizations.value.length === 0) {
@@ -309,31 +315,10 @@ onMounted(async () => {
     await loadInstalledPackages();
 });
 
-function filterInstalled() {
-    let filtered = installedVisualizations.value;
-
-    if (!showDisabled.value) {
-        filtered = filtered.filter((viz) => viz.enabled);
-    }
-
-    if (searchFilter.value) {
-        const searchLower = searchFilter.value.toLowerCase();
-        filtered = filtered.filter(
-            (viz) =>
-                viz.id.toLowerCase().includes(searchLower) ||
-                viz.package.toLowerCase().includes(searchLower) ||
-                (viz.metadata?.description && (viz.metadata.description as string).toLowerCase().includes(searchLower)),
-        );
-    }
-
-    filteredInstalledVisualizations.value = filtered;
-}
-
 async function loadInstalledPackages() {
     loading.value = true;
     try {
         installedVisualizations.value = await getInstalledVisualizations(showDisabled.value);
-        filterInstalled();
     } catch (error) {
         toast.error("Failed to load installed visualizations");
         console.error("Error loading installed visualizations:", error);
@@ -366,9 +351,7 @@ async function loadUsageStats() {
     }
 }
 
-async function searchAvailablePackages() {
-    await loadAvailablePackages();
-}
+const searchAvailablePackages = useDebounceFn(loadAvailablePackages, 300);
 
 async function handleToggle(viz: Visualization) {
     const actionKey = `toggle-${viz.id}`;
