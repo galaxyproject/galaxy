@@ -572,7 +572,7 @@ class DataRequestCollectionUri(StrictModel):
 
 
 _DataRequest = Annotated[
-    Union[DataRequestHda, DataRequestLdda, DataRequestLd, DataRequestUri], Field(discriminator="src")
+    Union[DataRequestHda, DataRequestLdda, DataRequestLd, DataRequestDce, DataRequestUri], Field(discriminator="src")
 ]
 DataRequest: Type = cast(Type, _DataRequest)
 
@@ -582,6 +582,7 @@ FileOrCollectionRequest = Annotated[Union[FileRequestUri, DataRequestCollectionU
 DataRequestHda.model_rebuild()
 DataRequestLd.model_rebuild()
 DataRequestLdda.model_rebuild()
+DataRequestDce.model_rebuild()
 DataRequestUri.model_rebuild()
 DataRequestHdca.model_rebuild()
 DataRequestCollectionUri.model_rebuild()
