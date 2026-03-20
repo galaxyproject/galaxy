@@ -669,9 +669,17 @@ tool_form:
     parameter_data_label: 'div.ui-form-element[id="form-element-${parameter}"] [data-description="form data label"]'
     parameter_data_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
 
+    parameter_checkbox_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="checkbox"]'
+    parameter_color_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="color"]'
+    parameter_text_input: 'div.ui-form-element[id="form-element-${parameter}"] input'
+    parameter_form_selection: 'div.ui-form-element[id="form-element-${parameter}"] .form-selection'
+    parameter_multiselect_tag_close: 'div.ui-form-element[id="form-element-${parameter}"] i.multiselect__tag-icon'
+    parameter_drilldown_option: 'div.ui-form-element[id="form-element-${parameter}"] #drilldown-option-${value}'
+
     repeat_insert: '[data-description="repeat insert"]'
     repeat_move_up: '#${parameter}_up'
     repeat_move_down: '#${parameter}_down'
+    section_header: '.ui-portlet-section .portlet-header'
     reference: '.formatted-reference'
     about: '.tool-footer'
     storage_options: '.tool-storage'

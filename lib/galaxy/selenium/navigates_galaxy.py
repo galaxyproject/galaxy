@@ -2184,14 +2184,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         edit_button_element = rules_div_element.find_element(By.CSS_SELECTOR, ".form-rules-edit button")
         edit_button_element.click()
 
-    def tool_set_value(self, expanded_parameter_id, value, expected_type=None):
+    def tool_set_value(self, expanded_parameter_id, value, expected_type=None, multiple=False):
         div_element = self.tool_parameter_div(expanded_parameter_id)
         assert div_element
         if expected_type in ["select", "data", "data_collection"]:
             select_field = self.components.tool_form.parameter_data_select(
                 parameter=expanded_parameter_id
             ).wait_for_visible()
-            self.select_set_value(select_field, value)
+            self.select_set_value(select_field, value, multiple=multiple)
         else:
             input_element = div_element.find_element(By.CSS_SELECTOR, "input")
             # Clear default value
