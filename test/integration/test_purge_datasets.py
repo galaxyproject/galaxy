@@ -76,6 +76,43 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
         purge_result = purge_response.json()
         assert purge_result["success_count"] == 1
 
+    def test_purge_history_removes_underlying_datasets_from_disk(self):
+        """Test that purging a history purges all its datasets and removes files from disk."""
+        hda1 = self.dataset_populator.new_dataset(self.test_history_id, wait=True)
+        hda2 = self.dataset_populator.new_dataset(self.test_history_id, wait=True)
+        hda1_id = hda1["id"]
+        hda2_id = hda2["id"]
+
+        # Ensure dataset files exist on disk
+        dataset_file1 = self._get_underlying_dataset_on_disk(hda1_id)
+        dataset_file2 = self._get_underlying_dataset_on_disk(hda2_id)
+        assert self._file_exists_on_disk(dataset_file1)
+        assert self._file_exists_on_disk(dataset_file2)
+
+        # Purge the entire history
+        purge_response = self._delete(f"histories/{self.test_history_id}", data={"purge": True}, json=True)
+        self._assert_status_code_is_ok(purge_response)
+        purge_result = purge_response.json()
+
+        # Verify history is purged
+        assert purge_result["purged"]
+        assert purge_result["deleted"]
+
+        # Verify the response contains a purge_task with an id
+        assert "purge_task" in purge_result
+        purge_task = purge_result["purge_task"]
+        assert "id" in purge_task
+        purge_task_id = purge_task["id"]
+
+        # Wait for the celery task to complete via the tasks API
+        self.dataset_populator.wait_on_task_id(purge_task_id)
+
+        # After task completion, HDAs should be purged and files deleted
+        self.dataset_populator.wait_for_purge(self.test_history_id, hda1_id)
+        self.dataset_populator.wait_for_purge(self.test_history_id, hda2_id)
+        assert not self._file_exists_on_disk(dataset_file1)
+        assert not self._file_exists_on_disk(dataset_file2)
+
     def _get_underlying_dataset_on_disk(self, hda_id: str) -> Optional[str]:
         detailed_response = self._get(f"datasets/{hda_id}", admin=True).json()
         return detailed_response.get("file_name")

@@ -79,6 +79,7 @@ from galaxy.schema.storage_cleaner import (
     StoredItem,
     StoredItemOrderBy,
 )
+from galaxy.schema.tasks import PurgeHistoryDatasetsTaskRequest
 from galaxy.security.validate_user_input import validate_preferred_object_store_id
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util.search import (
@@ -292,12 +293,21 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         self.error_unless_mutable(item)
         self.hda_manager.dataset_manager.error_unless_dataset_purge_allowed()
         # First purge all the datasets
-        for hda in item.datasets:
-            if not hda.purged:
-                self.hda_manager.purge(hda, flush=True, **kwargs)
+        if self.app.config.enable_celery_tasks:
+            from galaxy.celery.tasks import purge_history_datasets
+
+            request = PurgeHistoryDatasetsTaskRequest(history_id=item.id)
+            user = item.user
+            result = purge_history_datasets.delay(request=request, task_user_id=user.id if user else None)
+        else:
+            result = None
+            for hda in item.datasets:
+                if not hda.purged:
+                    self.hda_manager.purge(hda, flush=True, **kwargs)
 
         # Now mark the history as purged
         super().purge(item, flush=flush, **kwargs)
+        return result
 
     # .... current
     # TODO: make something to bypass the anon user + current history permissions issue

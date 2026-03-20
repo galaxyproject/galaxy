@@ -454,10 +454,14 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         """
         history = self.manager.get_mutable(history_id, trans.user, current_history=trans.history)
         if purge:
-            self.manager.purge(history)
+            result = self.manager.purge(history)
         else:
+            result = None
             self.manager.delete(history)
-        return self._serialize_history(trans, history, serialization_params)
+        rval = self._serialize_history(trans, history, serialization_params)
+        if result is not None:
+            rval["purge_task"] = async_task_summary(result)
+        return rval
 
     def undelete(
         self,
