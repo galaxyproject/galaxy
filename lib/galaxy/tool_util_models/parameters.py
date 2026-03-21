@@ -963,11 +963,6 @@ DataRequestInternal: Type = cast(
         Field(discriminator=MultiDataInstanceDiscriminator),
     ],
 )
-DataRequestInternalDereferencedT = Union[DataRequestInternalHda, DataRequestInternalLdda]
-DataRequestInternalDereferenced: Type = cast(
-    Type,
-    Annotated[DataRequestInternalDereferencedT, Field(discriminator="src")],
-)
 
 
 class DatasetCollectionElementReference(StrictModel):
@@ -975,6 +970,14 @@ class DatasetCollectionElementReference(StrictModel):
     id: StrictInt
     map_over_type: Optional[str] = None
 
+
+DataRequestInternalDereferencedT = Union[
+    DataRequestInternalHda, DataRequestInternalLdda, DatasetCollectionElementReference
+]
+DataRequestInternalDereferenced: Type = cast(
+    Type,
+    Annotated[DataRequestInternalDereferencedT, Field(discriminator="src")],
+)
 
 DataJobInternalT = Union[DataRequestInternalHda, DataRequestInternalLdda, DatasetCollectionElementReference]
 DataJobInternal: Type = cast(

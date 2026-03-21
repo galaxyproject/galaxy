@@ -1287,6 +1287,7 @@ gx_data:
    - parameter: {__class__: "Batch", values: [{src: dce, id: 5, map_over_type: paired}]}
    - parameter: {src: hda, id: 5}
    - parameter: {src: hda, id: 0}
+   - parameter: {src: dce, id: 5}
   request_internal_dereferenced_invalid:
    # the difference between request internal and request internal dereferenced is that these have been converted
    # to datasets.
