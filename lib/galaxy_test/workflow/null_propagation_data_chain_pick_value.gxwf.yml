@@ -1,0 +1,43 @@
+class: GalaxyWorkflow
+doc: |
+  Skipped step -> cat (data input) -> pick_value with fallback.
+  Tests whether pick_value sees the intermediate cat output as real or null.
+inputs:
+  input_file:
+    type: data
+  fallback_file:
+    type: data
+  should_run:
+    type: boolean
+outputs:
+  pick_out:
+    outputSource: pick_value/data_param
+steps:
+  conditional_cat:
+    tool_id: cat
+    in:
+      input1:
+        source: input_file
+      should_run:
+        source: should_run
+    when: $(inputs.should_run)
+  pass_through_cat:
+    tool_id: cat
+    in:
+      input1:
+        source: conditional_cat/out_file1
+  pick_value:
+    tool_id: pick_value
+    in:
+      style_cond|type_cond|pick_from_0|value:
+        source: pass_through_cat/out_file1
+      style_cond|type_cond|pick_from_1|value:
+        source: fallback_file
+    tool_state:
+      style_cond:
+        pick_style: first
+        type_cond:
+          param_type: data
+          pick_from:
+          - value: pass_through_cat/out_file1
+          - value: fallback_file

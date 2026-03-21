@@ -1,0 +1,58 @@
+- doc: |
+    Discovery test: when should_run=false, step1 is skipped producing
+    expression.json null. Does skip propagate through step2 and step3?
+    Hypothesis A: skip propagates, all outputs are expression.json null.
+    Hypothesis B: cat processes the null file literally, step2/3 produce
+    regular files containing "null" text.
+    Starting with hypothesis A (all expression.json).
+  job:
+    input_file:
+      type: File
+      value: 1.fasta
+    should_run:
+      type: raw
+      value: false
+  outputs:
+    out_step1:
+      class: File
+      ftype: expression.json
+      asserts:
+      - that: has_text
+        text: "null"
+    out_step2:
+      class: File
+      ftype: expression.json
+      asserts:
+      - that: has_text
+        text: "null"
+    out_step3:
+      class: File
+      ftype: expression.json
+      asserts:
+      - that: has_text
+        text: "null"
+- doc: |
+    Control: when should_run=true, all steps run normally.
+  job:
+    input_file:
+      type: File
+      value: 1.fasta
+    should_run:
+      type: raw
+      value: true
+  outputs:
+    out_step1:
+      class: File
+      asserts:
+      - that: has_size
+        min: 1
+    out_step2:
+      class: File
+      asserts:
+      - that: has_size
+        min: 1
+    out_step3:
+      class: File
+      asserts:
+      - that: has_size
+        min: 1

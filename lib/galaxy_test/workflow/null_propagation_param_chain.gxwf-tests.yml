@@ -1,0 +1,47 @@
+- doc: |
+    Omit optional text param. Step1 receives null via NoReplacement,
+    outputs expression.json with null. Step2 deserializes that null,
+    passes it through, outputs expression.json null. Step3 same.
+    All three outputs should be expression.json containing null.
+  job: {}
+  outputs:
+    out_step1:
+      class: File
+      ftype: expression.json
+      asserts:
+      - that: has_text
+        text: "null"
+    out_step2:
+      class: File
+      ftype: expression.json
+      asserts:
+      - that: has_text
+        text: "null"
+    out_step3:
+      class: File
+      ftype: expression.json
+      asserts:
+      - that: has_text
+        text: "null"
+- doc: |
+    Provide text param. All three steps pass it through unchanged.
+  job:
+    optional_text:
+      type: raw
+      value: hello_world
+  outputs:
+    out_step1:
+      class: File
+      asserts:
+      - that: has_text
+        text: "hello_world"
+    out_step2:
+      class: File
+      asserts:
+      - that: has_text
+        text: "hello_world"
+    out_step3:
+      class: File
+      asserts:
+      - that: has_text
+        text: "hello_world"

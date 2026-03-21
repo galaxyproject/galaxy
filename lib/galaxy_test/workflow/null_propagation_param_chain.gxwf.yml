@@ -1,0 +1,33 @@
+class: GalaxyWorkflow
+doc: |
+  Chain of 3 expression_null_handling_text steps where the first receives
+  an optional text param that is omitted. Tests whether null propagates
+  through expression tool parameter chains (expression.json deserialized
+  as JSON value at each hop).
+inputs:
+  optional_text:
+    type: text
+    optional: true
+outputs:
+  out_step1:
+    outputSource: step1/text_out
+  out_step2:
+    outputSource: step2/text_out
+  out_step3:
+    outputSource: step3/text_out
+steps:
+  step1:
+    tool_id: expression_null_handling_text
+    in:
+      text_input:
+        source: optional_text
+  step2:
+    tool_id: expression_null_handling_text
+    in:
+      text_input:
+        source: step1/text_out
+  step3:
+    tool_id: expression_null_handling_text
+    in:
+      text_input:
+        source: step2/text_out

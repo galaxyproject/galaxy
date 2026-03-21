@@ -1,0 +1,42 @@
+class: GalaxyWorkflow
+doc: |
+  Parent maps list_a over subworkflow (single_from_parent is data input,
+  receives one element per invocation). Subworkflow also receives list_b
+  as a collection and maps cat over it internally. Tests whether output
+  becomes list:list (outer=list_a, inner=list_b).
+inputs:
+  list_a:
+    type: collection
+    collection_type: list
+  list_b:
+    type: collection
+    collection_type: list
+outputs:
+  combined_out:
+    outputSource: sub/sub_out
+steps:
+  sub:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        single_from_parent: data
+        collection_to_map:
+          type: collection
+          collection_type: list
+      outputs:
+        sub_out:
+          outputSource: the_cat/out_file1
+      steps:
+        consume_parent:
+          tool_id: cat
+          in:
+            input1:
+              source: single_from_parent
+        the_cat:
+          tool_id: cat
+          in:
+            input1:
+              source: collection_to_map
+    in:
+      single_from_parent: list_a
+      collection_to_map: list_b

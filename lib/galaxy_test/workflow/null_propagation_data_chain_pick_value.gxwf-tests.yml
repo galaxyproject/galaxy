@@ -1,0 +1,42 @@
+- doc: |
+    When should_run=false, conditional_cat skipped -> expression.json null.
+    Depends on 4a results: if skip propagates through pass_through_cat,
+    pick_value gets null first input and picks fallback_file.
+    If cat runs on null file literally, pick_value gets a real dataset
+    containing "null" text and picks that instead.
+    Initial assertion assumes skip propagates (pick_value picks fallback).
+  job:
+    input_file:
+      type: File
+      value: 1.fasta
+    fallback_file:
+      type: File
+      value: 1.bed
+    should_run:
+      type: raw
+      value: false
+  outputs:
+    pick_out:
+      class: File
+      asserts:
+      - that: has_text
+        text: "chr1"
+- doc: |
+    Control: should_run=true, conditional_cat runs, pass_through_cat
+    processes real output, pick_value picks the first (real) input.
+  job:
+    input_file:
+      type: File
+      value: 1.fasta
+    fallback_file:
+      type: File
+      value: 1.bed
+    should_run:
+      type: raw
+      value: true
+  outputs:
+    pick_out:
+      class: File
+      asserts:
+      - that: has_size
+        min: 1

@@ -1,0 +1,36 @@
+class: GalaxyWorkflow
+doc: |
+  Chain of 3 cat steps where the first is conditionally skipped.
+  Discovery test: does null expression.json propagate skip through
+  downstream data-input steps, or do they process it as a literal file?
+inputs:
+  input_file:
+    type: data
+  should_run:
+    type: boolean
+outputs:
+  out_step1:
+    outputSource: step1_cat/out_file1
+  out_step2:
+    outputSource: step2_cat/out_file1
+  out_step3:
+    outputSource: step3_cat/out_file1
+steps:
+  step1_cat:
+    tool_id: cat
+    in:
+      input1:
+        source: input_file
+      should_run:
+        source: should_run
+    when: $(inputs.should_run)
+  step2_cat:
+    tool_id: cat
+    in:
+      input1:
+        source: step1_cat/out_file1
+  step3_cat:
+    tool_id: cat
+    in:
+      input1:
+        source: step2_cat/out_file1
