@@ -10,9 +10,7 @@ import Vue from "vue";
 Vue.config.productionTip = false;
 Vue.config.devtools = false;
 
-// Mock the g-tooltip directive globally (same mock as getLocalVue() in helpers.js)
-// so components don't trigger "Failed to resolve directive" warnings. Captures
-// tooltip content in data-mock-directive for assertions without running floating-ui.
+// Mock g-tooltip directive so components don't trigger "Failed to resolve directive" warnings
 Vue.directive("g-tooltip", {
     bind(el: HTMLElement, binding: { value?: string }) {
         el.setAttribute("data-mock-directive", binding.value || el.title || "");

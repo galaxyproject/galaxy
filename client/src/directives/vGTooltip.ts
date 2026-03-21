@@ -24,6 +24,7 @@ import {
     type Placement,
     shift,
 } from "@floating-ui/dom";
+import purify from "dompurify";
 import type { DirectiveOptions, VNode } from "vue";
 
 interface TooltipState {
@@ -205,7 +206,7 @@ function showTooltip(el: HTMLElement) {
 
     if (
         (el as HTMLButtonElement).disabled ||
-        el.getAttribute("disabled") === "true" ||
+        el.hasAttribute("disabled") ||
         el.getAttribute("aria-disabled") === "true"
     ) {
         return;
@@ -225,6 +226,7 @@ function showTooltip(el: HTMLElement) {
         document.body.appendChild(state.tooltipEl);
     }
 
+    state.cleanupAutoUpdate?.();
     state.cleanupAutoUpdate = autoUpdate(el, state.tooltipEl, () => updatePosition(el, state));
 }
 
@@ -282,8 +284,7 @@ function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg
 function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipState, vnode?: VNode) {
     const content = getContent(el, bindingValue, vnode);
     if (state.isHtml) {
-        // lgtm[js/xss-through-dom] — .html modifier is explicit developer opt-in (same pattern as v-html)
-        state.contentEl.innerHTML = content;
+        state.contentEl.innerHTML = purify.sanitize(content);
     } else {
         state.contentEl.textContent = content;
     }
