@@ -6,7 +6,6 @@ verification.
 import pytest
 
 from galaxy.util.unittest_utils import skip_unless_environ
-
 from .framework import (
     managed_history,
     RunsToolTests,
