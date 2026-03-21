@@ -78,6 +78,14 @@ TOOL_TESTS = [
     ("sim_size_delta", 0),
     ("job_properties", 0),
     ("detect_errors_aggressive", 0),
+    ("strict_shell", 0),
+    ("strict_shell", 1),
+    ("strict_shell_profile", 0),
+    ("strict_shell_profile", 1),
+    ("strict_shell_default_off", 0),
+    ("unicode_stream", 0),
+    ("unicode_stream", 1),
+    ("unicode_stream", 2),
 ]
 
 
