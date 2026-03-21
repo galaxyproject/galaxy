@@ -14,6 +14,17 @@
                         title="Registered in config but package files are missing from disk">
                         Missing Files
                     </b-badge>
+                    <b-badge
+                        v-if="visualization.installed"
+                        :variant="isStaged ? 'info' : 'warning'"
+                        class="mr-2"
+                        :title="
+                            isStaged
+                                ? 'Assets are in Galaxy\'s serving directory'
+                                : 'Assets need to be staged before users can access this visualization'
+                        ">
+                        {{ isStaged ? "Staged" : "Not Staged" }}
+                    </b-badge>
                 </div>
 
                 <div class="text-muted mb-2">
@@ -77,10 +88,7 @@
                         {{ visualization.enabled ? "Disable" : "Enable" }}
                     </b-dropdown-item>
 
-                    <b-dropdown-item
-                        v-if="visualization.installed"
-                        :disabled="isLoading"
-                        @click="showUpdateModal = true">
+                    <b-dropdown-item v-if="visualization.installed" :disabled="isLoading" @click="openUpdateModal">
                         <FontAwesomeIcon :icon="faArrowUp" fixed-width />
                         Update
                     </b-dropdown-item>
@@ -146,15 +154,25 @@
 
             <div v-else>
                 <p>
-                    Update <strong>{{ visualization.id }}</strong> to a new version:
+                    Update <strong>{{ visualization.id }}</strong> ({{ visualization.package }})
                 </p>
 
-                <b-form-group label="New Version:" label-for="version-input">
-                    <b-form-input
-                        id="version-input"
-                        v-model="updateVersion"
-                        placeholder="e.g., 1.2.3"
-                        :state="updateVersion ? true : null" />
+                <b-form-group label="Version:" label-for="version-input">
+                    <b-form-select v-if="availableVersions.length > 0" id="version-input" v-model="updateVersion">
+                        <b-form-select-option :value="''" disabled>Select a version...</b-form-select-option>
+                        <b-form-select-option
+                            v-for="v in availableVersions"
+                            :key="v"
+                            :value="v"
+                            :disabled="v === visualization.version">
+                            {{ v }}{{ v === visualization.version ? " (current)" : "" }}
+                        </b-form-select-option>
+                    </b-form-select>
+                    <div v-else-if="loadingVersions" class="text-muted small">
+                        <b-spinner small class="mr-1" />
+                        Loading available versions...
+                    </div>
+                    <b-form-input v-else id="version-input" v-model="updateVersion" placeholder="e.g., 1.2.3" />
                     <b-form-text> Current version: {{ visualization.version }} </b-form-text>
                 </b-form-group>
             </div>
@@ -179,14 +197,17 @@ import { computed, ref, watch } from "vue";
 import { bytesToString } from "@/utils/utils";
 
 import type { Visualization } from "./services";
+import { getPackageVersions } from "./services";
 
 interface Props {
     visualization: Visualization;
     loadingActions?: Record<string, boolean>;
+    stagedNames?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
     loadingActions: () => ({}),
+    stagedNames: () => [],
 });
 
 const emit = defineEmits<{
@@ -201,6 +222,8 @@ const showDetails = ref(false);
 const showUpdateModal = ref(false);
 const updateVersion = ref("");
 const updating = ref(false);
+const availableVersions = ref<string[]>([]);
+const loadingVersions = ref(false);
 
 const isLoading = computed(() => {
     return (
@@ -212,12 +235,29 @@ const isLoading = computed(() => {
     );
 });
 
+const isStaged = computed(() => props.stagedNames.includes(props.visualization.id));
+
 watch(showUpdateModal, (isShown) => {
     if (!isShown) {
         updateVersion.value = "";
         updating.value = false;
+        availableVersions.value = [];
     }
 });
+
+async function openUpdateModal() {
+    showUpdateModal.value = true;
+    loadingVersions.value = true;
+    try {
+        const result = await getPackageVersions(props.visualization.package);
+        availableVersions.value = result.versions;
+    } catch {
+        // Fall back to manual text input if version fetch fails
+        availableVersions.value = [];
+    } finally {
+        loadingVersions.value = false;
+    }
+}
 
 function handleUpdate() {
     if (!updateVersion.value) {

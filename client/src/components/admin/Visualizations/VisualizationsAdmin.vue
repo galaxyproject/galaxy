@@ -81,6 +81,7 @@
                     :key="viz.id"
                     :visualization="viz"
                     :loading-actions="loadingActions"
+                    :staged-names="stagedNames"
                     class="mb-3"
                     @toggle="handleToggle"
                     @update="handleUpdate"
@@ -316,6 +317,7 @@ const usageStats = ref<UsageStats>({ days: 30, stats: {} } as UsageStats);
 
 const stagingLoading = ref(false);
 const stagingStatus = ref<StagingStatus | null>(null);
+const stagedNames = computed(() => stagingStatus.value?.staged_visualizations.map((v) => v.name) ?? []);
 
 const showInstallModal = ref(false);
 const selectedVisualization = ref<AvailableVisualization | null>(null);
@@ -331,7 +333,7 @@ watch(activeTab, async (newTab) => {
 });
 
 onMounted(async () => {
-    await loadInstalledPackages();
+    await Promise.all([loadInstalledPackages(), loadStagingStatus()]);
 });
 
 function errorMessage(error: unknown): string {
@@ -435,10 +437,7 @@ async function handleStage(viz: Visualization) {
     try {
         await stageVisualization(viz.id);
         toast.success(`Staged ${viz.id}`);
-
-        if (activeTab.value === "staging") {
-            await loadStagingStatus();
-        }
+        await loadStagingStatus();
     } catch (error) {
         toast.error(`Failed to stage ${viz.id}: ${errorMessage(error)}`);
     } finally {

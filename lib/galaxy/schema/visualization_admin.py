@@ -110,6 +110,15 @@ class StagingStatusResponse(Model):
     total_size: int = Field(0, title="Total Size")
 
 
+class PackageVersionsResponse(Model):
+    package: str = Field(..., title="Package", description="The npm package name.")
+    versions: list[str] = Field(
+        default_factory=list,
+        title="Versions",
+        description="Available versions, newest first.",
+    )
+
+
 class UsageStatsResponse(Model):
     message: str = Field(..., title="Message")
     days: int = Field(..., title="Days")
