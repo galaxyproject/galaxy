@@ -44,8 +44,7 @@ from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions,
 )
-from galaxy.tool_util.verify import verify
-from galaxy.tool_util.verify.asserts import verify_assertions
+from galaxy.tool_util.verify import verify, verify_job_metadata
 from galaxy.tool_util.verify.interactor import prepare_request_params
 from galaxy.util import (
     asbool,
@@ -1086,31 +1085,40 @@ class RunsToolTests(NavigatesGalaxyMixin):
         assert new_job is not None
         job_id = new_job["id"]
 
+        has_job_checks = (
+            expect_exit_code is not None
+            or stdout_assertions
+            or stderr_assertions
+            or command_assertions
+            or command_version_assertions
+        )
+
         if expect_failure:
             dataset_populator.wait_for_job(job_id, assert_ok=False)
-            job_details = dataset_populator.get_job_details(job_id, full=False).json()
+            job_details = dataset_populator.get_job_details(job_id, full=has_job_checks).json()
             assert job_details["state"] == "error", f"Expected job to fail but state is '{job_details['state']}'"
-            self._verify_job_metadata(
-                job_id,
+            if has_job_checks:
+                verify_job_metadata(
+                    job_details,
+                    expect_exit_code,
+                    stdout_assertions,
+                    stderr_assertions,
+                    command_assertions,
+                    command_version_assertions,
+                )
+            return
+
+        dataset_populator.wait_for_job(job_id, assert_ok=True)
+        if has_job_checks:
+            job_details = dataset_populator.get_job_details(job_id, full=True).json()
+            verify_job_metadata(
+                job_details,
                 expect_exit_code,
                 stdout_assertions,
                 stderr_assertions,
                 command_assertions,
                 command_version_assertions,
-                dataset_populator,
             )
-            return
-
-        dataset_populator.wait_for_job(job_id, assert_ok=True)
-        self._verify_job_metadata(
-            job_id,
-            expect_exit_code,
-            stdout_assertions,
-            stderr_assertions,
-            command_assertions,
-            command_version_assertions,
-            dataset_populator,
-        )
 
         all_job_outputs = dataset_populator.job_outputs(job_id)
 
@@ -1232,51 +1240,6 @@ class RunsToolTests(NavigatesGalaxyMixin):
                     wait=False,
                 )
                 verify(element_id, content, element_attrib if isinstance(element_attrib, dict) else {})
-
-    def _verify_job_metadata(
-        self,
-        job_id,
-        expect_exit_code,
-        stdout_assertions,
-        stderr_assertions,
-        command_assertions,
-        command_version_assertions,
-        dataset_populator,
-    ):
-        has_work = (
-            expect_exit_code is not None
-            or stdout_assertions
-            or stderr_assertions
-            or command_assertions
-            or command_version_assertions
-        )
-        if not has_work:
-            return
-        job_details = dataset_populator.get_job_details(job_id, full=True).json()
-        if expect_exit_code is not None:
-            actual = job_details.get("exit_code")
-            assert actual == int(expect_exit_code), f"Expected exit code {expect_exit_code}, got {actual}"
-        if command_assertions:
-            verify_assertions(job_details.get("command_line", "").encode("utf-8"), command_assertions)
-        if command_version_assertions:
-            verify_assertions(job_details.get("command_version", "").encode("utf-8"), command_version_assertions)
-        if stdout_assertions or stderr_assertions:
-            stdout_prefix = ""
-            stderr_prefix = ""
-            for msg in job_details.get("job_messages") or []:
-                msg_type = msg.get("type")
-                if msg_type == "regex" and msg.get("stream") == "stderr":
-                    stderr_prefix += f"{msg.get('desc') or ''}\n"
-                elif msg_type == "regex" and msg.get("stream") == "stdout":
-                    stdout_prefix += f"{msg.get('desc') or ''}\n"
-                elif msg_type == "exit_code":
-                    stderr_prefix += f"{msg.get('desc') or ''}\n"
-            if stdout_assertions:
-                data = stdout_prefix + job_details.get("stdout", "")
-                verify_assertions(data.encode("utf-8"), stdout_assertions)
-            if stderr_assertions:
-                data = stderr_prefix + job_details.get("stderr", "")
-                verify_assertions(data.encode("utf-8"), stderr_assertions)
 
 
 EXAMPLE_WORKFLOW_URL_1 = (

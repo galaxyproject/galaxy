@@ -75,7 +75,7 @@ from ._types import (
     ToolTestDescriptionDict,
     ValueStateRepresentationT,
 )
-from .asserts import verify_assertions
+from . import verify_job_metadata
 from .wait import wait_on
 
 log = getLogger(__name__)
@@ -1804,46 +1804,16 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
             except Exception as e:
                 register_exception(e)
 
-    other_checks = {
-        "command_line": "Command produced by the job",
-        "command_version": "Tool version indicated during job execution",
-        "stdout": "Standard output of the job",
-        "stderr": "Standard error of the job",
-    }
-    # TODO: Only hack the stdio like this for older profile, for newer tool profiles
-    # add some syntax for asserting job messages maybe - or just drop this because exit
-    # code and regex on stdio can be tested directly - so this is really testing Galaxy
-    # core handling more than the tool.
-    job_messages = job_stdio.get("job_messages") or []
-    stdout_prefix = ""
-    stderr_prefix = ""
-    for job_message in job_messages:
-        message_type = job_message.get("type")
-        if message_type == "regex" and job_message.get("stream") == "stderr":
-            stderr_prefix += f"{job_message.get('desc') or ''}\n"
-        elif message_type == "regex" and job_message.get("stream") == "stdout":
-            stdout_prefix += f"{job_message.get('desc') or ''}\n"
-        elif message_type == "exit_code":
-            stderr_prefix += f"{job_message.get('desc') or ''}\n"
-        else:
-            raise Exception(f"Unknown job message type [{message_type}] in [{job_message}]")
-
-    for what, description in other_checks.items():
-        if getattr(testdef, what, None) is not None:
-            try:
-                raw_data = job_stdio[what]
-                assertions = getattr(testdef, what)
-                if what == "stdout":
-                    data = stdout_prefix + raw_data
-                elif what == "stderr":
-                    data = stderr_prefix + raw_data
-                else:
-                    data = raw_data
-                verify_assertions(data, assertions)
-            except AssertionError as err:
-                errmsg = f"{description} different than expected\n"
-                errmsg += util.unicodify(err)
-                register_exception(AssertionError(errmsg))
+    try:
+        verify_job_metadata(
+            job_stdio,
+            stdout_assertions=getattr(testdef, "stdout", None),
+            stderr_assertions=getattr(testdef, "stderr", None),
+            command_assertions=getattr(testdef, "command", None),
+            command_version_assertions=getattr(testdef, "command_version", None),
+        )
+    except AssertionError as err:
+        register_exception(err)
 
     for output_collection_def in testdef.output_collections:
         try:
