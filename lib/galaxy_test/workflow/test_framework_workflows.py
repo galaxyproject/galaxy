@@ -102,11 +102,18 @@ class TestWorkflow(ApiTestCase):
             verify_file_contents_against_dict(get_filename, _get_location, item_label, output_content, test_properties)
             if isinstance(test_properties, dict):
                 metadata = get_metadata_to_test(test_properties)
-                if metadata:
+                top_level_properties = _get_top_level_properties(test_properties)
+                if metadata or top_level_properties:
                     dataset_details = self.dataset_populator.get_history_dataset_details(
                         run_summary.history_id, content_id=dataset["id"]
                     )
-                    compare_expected_metadata_to_api_response(metadata, dataset_details)
+                    if metadata:
+                        compare_expected_metadata_to_api_response(metadata, dataset_details)
+                    for prop, expected in top_level_properties.items():
+                        actual = dataset_details.get(prop)
+                        assert (
+                            actual == expected
+                        ), f"Expected {prop}={expected!r} but got {prop}={actual!r} for {item_label}"
 
         if is_collection_test:
             assert isinstance(test_properties, dict)
@@ -144,6 +151,13 @@ def _workflow_test_path(workflow_path: Path) -> Path:
     base_name = workflow_path.name[0 : -len(".gxwf.yml")]
     test_path = workflow_path.parent / f"{base_name}.gxwf-tests.yml"
     return test_path
+
+
+TOP_LEVEL_ASSERTION_PROPERTIES = {"visible", "deleted"}
+
+
+def _get_top_level_properties(test_properties: dict) -> dict:
+    return {k: test_properties[k] for k in TOP_LEVEL_ASSERTION_PROPERTIES if k in test_properties}
 
 
 def _get_location(location: str) -> str:

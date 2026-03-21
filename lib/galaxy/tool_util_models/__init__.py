@@ -196,6 +196,8 @@ class BaseTestOutputModel(StrictModel):
 
 class TestDataOutputAssertions(BaseTestOutputModel):
     class_: Optional[Literal["File"]] = Field("File", alias="class")
+    visible: Optional[bool] = None
+    deleted: Optional[bool] = None
 
 
 class TestCollectionCollectionElementAssertions(StrictModel):
