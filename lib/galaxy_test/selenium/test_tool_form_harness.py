@@ -76,6 +76,8 @@ TOOL_TESTS = [
     ("output_filter_exception_1", 0),
     ("detect_errors", 0),
     ("sim_size_delta", 0),
+    ("job_properties", 0),
+    ("detect_errors_aggressive", 0),
 ]
 
 
