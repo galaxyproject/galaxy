@@ -17,6 +17,7 @@ from galaxy.schema.visualization_admin import (
     InstalledVisualizationListResponse,
     InstalledVisualizationResponse,
     MessageResponse,
+    PackageVersionsResponse,
     StagedVisualizationInfo,
     StagingResultResponse,
     StagingStatusResponse,
@@ -87,6 +88,10 @@ class AdminVisualizationsService(ServiceBase):
         """Get available @galaxyproject visualization packages from npm registry."""
         raw = self.package_manager.query_npm_registry(search)
         return AvailableVisualizationListResponse(root=[AvailableVisualizationResponse(**pkg) for pkg in raw])
+
+    def get_package_versions(self, trans: ProvidesUserContext, package_name: str) -> PackageVersionsResponse:
+        versions = self.package_manager.get_package_versions(package_name)
+        return PackageVersionsResponse(package=package_name, versions=versions)
 
     def show(self, trans: ProvidesUserContext, viz_id: str) -> InstalledVisualizationResponse:
         self.package_manager.validate_viz_id(viz_id)

@@ -144,6 +144,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/visualizations/versions/{package_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get available versions for an npm package.
+         * @description Return available versions for a specific npm package.
+         */
+        get: operations["package_versions_api_admin_visualizations_versions__package_name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/visualizations/{viz_id}": {
         parameters: {
             query?: never;
@@ -19960,6 +19980,19 @@ export interface components {
              */
             output_name: string | null;
         };
+        /** PackageVersionsResponse */
+        PackageVersionsResponse: {
+            /**
+             * Package
+             * @description The npm package name.
+             */
+            package: string;
+            /**
+             * Versions
+             * @description Available versions, newest first.
+             */
+            versions?: string[];
+        };
         /**
          * PageContentFormat
          * @enum {string}
@@ -26854,6 +26887,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UsageStatsResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    package_versions_api_admin_visualizations_versions__package_name__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The npm package name (e.g., @galaxyproject/circster). */
+                package_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackageVersionsResponse"];
                 };
             };
             /** @description Request Error */
