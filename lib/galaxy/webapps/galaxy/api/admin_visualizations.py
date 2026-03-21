@@ -25,6 +25,7 @@ from galaxy.schema.visualization_admin import (
     InstalledVisualizationResponse,
     InstallVisualizationRequest,
     MessageResponse,
+    PackageVersionsResponse,
     StagingResultResponse,
     StagingStatusResponse,
     ToggleVisualizationRequest,
@@ -95,6 +96,23 @@ class FastAPIAdminVisualizations:
     ) -> AvailableVisualizationListResponse:
         """Return a list of available @galaxyproject visualization packages from npm registry."""
         return self.service.get_available_packages(trans, search=search)
+
+    @router.get(
+        "/api/admin/visualizations/versions/{package_name:path}",
+        summary="Get available versions for an npm package.",
+        require_admin=True,
+    )
+    def package_versions(
+        self,
+        package_name: str = Path(
+            ...,
+            title="Package Name",
+            description="The npm package name (e.g., @galaxyproject/circster).",
+        ),
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> PackageVersionsResponse:
+        """Return available versions for a specific npm package."""
+        return self.service.get_package_versions(trans, package_name)
 
     @router.get(
         "/api/admin/visualizations/usage_stats",
