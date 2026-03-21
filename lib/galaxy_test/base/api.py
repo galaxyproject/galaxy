@@ -100,11 +100,14 @@ class UsesApiTestCaseMixin:
 
     def tearDown(self):
         if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
-            # Only kill running jobs after test for managed test instances
-            response = self.galaxy_interactor.get("jobs?state=running")
+            # Only kill running jobs after test for managed test instances.
+            # Use low-level methods to bypass aiocop blocking-I/O checks —
+            # tearDown cleanup should not fail the test for server-side
+            # blocking events.
+            response = self.galaxy_interactor._get("jobs?state=running")
             if response.ok:
                 for job in response.json():
-                    self._delete(f"jobs/{job['id']}")
+                    self.galaxy_interactor._delete(f"jobs/{job['id']}")
 
     def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
         if not params:
@@ -224,6 +227,37 @@ class UsesApiTestCaseMixin:
     _assert_has_key = _assert_has_keys
 
 
+AIOCOP_ENABLED = os.environ.get("GALAXY_TEST_AIOCOP", "").lower() in ("1", "true", "yes")
+# Matches aiocop's THRESHOLD_HIGH — high-severity events (socket.connect,
+# subprocess, etc.) fail the request; lower-severity stat-like calls are
+# logged but not treated as test failures.
+AIOCOP_FAIL_SEVERITY = 50
+
+
+def _check_aiocop_violations(response: "Response") -> None:
+    """Fail the test if the server reported a high-severity aiocop violation.
+
+    When the Galaxy test server has ``GALAXY_TEST_AIOCOP=1`` set, each
+    response includes an ``X-Aiocop-Violations`` header summarizing any
+    blocking-I/O events caught by the aiocop audit hook during that
+    request.  See ``galaxy.web.framework.middleware.aiocop_integration``.
+    """
+    header = response.headers.get("x-aiocop-violations")
+    if not header:
+        return
+    fields = dict(part.split("=", 1) for part in header.split(";") if "=" in part)
+    try:
+        severity = int(fields.get("severity", "0"))
+    except ValueError:
+        severity = 0
+    if severity >= AIOCOP_FAIL_SEVERITY:
+        raise AssertionError(
+            f"aiocop detected high-severity blocking I/O (severity={severity}, "
+            f"count={fields.get('count', '?')}, first={fields.get('first', '?')}) "
+            f"during {response.request.method} {response.request.path_url}"
+        )
+
+
 class ApiTestInteractor(BaseInteractor):
     """Specialized variant of the API interactor (originally developed for
     tool functional tests) for testing the API generally.
@@ -239,26 +273,31 @@ class ApiTestInteractor(BaseInteractor):
     # directly to test API - instead of relying on higher-level constructs for
     # specific pieces of the API (the way it is done with the variant for tool)
     # testing.
+    def _maybe_check_aiocop(self, response: "Response") -> "Response":
+        if AIOCOP_ENABLED:
+            _check_aiocop_violations(response)
+        return response
+
     def get(self, *args, **kwds):
-        return self._get(*args, **kwds)
+        return self._maybe_check_aiocop(self._get(*args, **kwds))
 
     def head(self, *args, **kwds):
-        return self._head(*args, **kwds)
+        return self._maybe_check_aiocop(self._head(*args, **kwds))
 
     def post(self, *args, **kwds):
-        return self._post(*args, **kwds)
+        return self._maybe_check_aiocop(self._post(*args, **kwds))
 
     def options(self, *args, **kwds):
-        return self._options(*args, **kwds)
+        return self._maybe_check_aiocop(self._options(*args, **kwds))
 
     def delete(self, *args, **kwds):
-        return self._delete(*args, **kwds)
+        return self._maybe_check_aiocop(self._delete(*args, **kwds))
 
     def patch(self, *args, **kwds):
-        return self._patch(*args, **kwds)
+        return self._maybe_check_aiocop(self._patch(*args, **kwds))
 
     def put(self, *args, **kwds):
-        return self._put(*args, **kwds)
+        return self._maybe_check_aiocop(self._put(*args, **kwds))
 
 
 class AnonymousGalaxyInteractor(ApiTestInteractor):
