@@ -64,6 +64,10 @@ TOOL_TESTS = [
     ("inheritance_simple", 1),
     ("markdown_report_simple", 0),
     ("gx_conditional_boolean_checked", 0),
+    ("checksum", 0),
+    ("qc_stdout", 0),
+    ("cheetah_casting", 0),
+    ("output_order", 0),
 ]
 
 
