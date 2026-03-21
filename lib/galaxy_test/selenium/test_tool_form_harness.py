@@ -86,6 +86,13 @@ TOOL_TESTS = [
     ("unicode_stream", 0),
     ("unicode_stream", 1),
     ("unicode_stream", 2),
+    ("multi_output_assign_primary", 0),
+    ("multi_output_assign_primary_ext_dbkey", 0),
+    ("tool_provided_metadata_2", 0),
+    ("tool_provided_metadata_3", 0),
+    ("tool_provided_metadata_6", 0),
+    ("tool_provided_metadata_7", 0),
+    ("tool_provided_metadata_10", 0),
 ]
 
 

@@ -1133,6 +1133,20 @@ class RunsToolTests(NavigatesGalaxyMixin):
                     wait=False,
                 )
                 verify(output_name, output_content, output_def.get("attributes", {}))
+                primary_datasets = output_def.get("attributes", {}).get("primary_datasets", {})
+                for designation, (_primary_outfile, primary_attribs) in primary_datasets.items():
+                    primary_key = f"__new_primary_file_{output_name}|{designation}__"
+                    assert primary_key in output_id_by_name, (
+                        f"Discovered dataset '{designation}' not found for output '{output_name}': "
+                        f"{list(output_id_by_name.keys())}"
+                    )
+                    primary_content = dataset_populator.get_history_dataset_content(
+                        history_id,
+                        dataset_id=output_id_by_name[primary_key],
+                        type="bytes",
+                        wait=False,
+                    )
+                    verify(designation, primary_content, primary_attribs)
 
         if output_collections:
             collection_id_by_name = {
