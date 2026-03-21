@@ -894,6 +894,9 @@ class RunsToolTests(NavigatesGalaxyMixin):
         if deferred:
             self.sleep_for(self.wait_types.UX_RENDER)
             for key, value in deferred:
+                expanded_id = key.replace("|", "-")
+                if self.components.tool_form.parameter_div(parameter=expanded_id).is_absent:
+                    continue
                 self._set_tool_form_value(key, value, required_filenames)
 
         for key, value in data_params:
@@ -1048,10 +1051,11 @@ class RunsToolTests(NavigatesGalaxyMixin):
     def _verify_tool_test_outputs(
         self, test_def: dict, history_id: str, tool_id: str, pre_job_ids: set, dataset_populator
     ):
-
+        expect_failure = test_def.get("expect_failure", False)
         outputs = test_def.get("outputs", [])
         output_collections = test_def.get("output_collections", [])
-        if not outputs and not output_collections:
+        expect_num_outputs = test_def.get("expect_num_outputs")
+        if not outputs and not output_collections and not expect_failure and expect_num_outputs is None:
             return
 
         def _find_new_job(driver=None):
@@ -1064,9 +1068,20 @@ class RunsToolTests(NavigatesGalaxyMixin):
         new_job = self._wait_on(_find_new_job, "tool job to appear in history")
         assert new_job is not None
         job_id = new_job["id"]
+
+        if expect_failure:
+            dataset_populator.wait_for_job(job_id, assert_ok=False)
+            job_details = dataset_populator.get_job_details(job_id, full=False).json()
+            assert job_details["state"] == "error", f"Expected job to fail but state is '{job_details['state']}'"
+            return
+
         dataset_populator.wait_for_job(job_id, assert_ok=True)
 
         all_job_outputs = dataset_populator.job_outputs(job_id)
+
+        if expect_num_outputs is not None:
+            actual_count = len([o for o in all_job_outputs if "dataset" in o])
+            assert actual_count == int(expect_num_outputs), f"Expected {expect_num_outputs} outputs, got {actual_count}"
 
         if outputs:
             output_id_by_name = {o["name"]: o["dataset"]["id"] for o in all_job_outputs if "dataset" in o}

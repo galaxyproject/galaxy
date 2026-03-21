@@ -68,6 +68,9 @@ TOOL_TESTS = [
     ("qc_stdout", 0),
     ("cheetah_casting", 0),
     ("output_order", 0),
+    ("output_filter", 2),
+    ("cheetah_problem_unbound_var", 0),
+    ("detect_errors", 1),
 ]
 
 
