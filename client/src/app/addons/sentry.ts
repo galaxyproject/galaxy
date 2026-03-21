@@ -1,3 +1,4 @@
+import type { Integration } from "@sentry/core";
 import * as Sentry from "@sentry/vue";
 import Vue from "vue";
 import type VueRouter from "vue-router";
@@ -8,9 +9,32 @@ interface GalaxyConfig {
     version_minor?: string;
 }
 
+interface GalaxyUser {
+    get(attr: string): string | undefined;
+    attributes?: {
+        preferences?: {
+            extra_user_preferences?: string;
+        };
+    };
+}
+
 interface GalaxyInstance {
     config: GalaxyConfig;
-    user?: { get(attr: string): string | undefined };
+    user?: GalaxyUser;
+}
+
+function isReplayEnabled(user?: GalaxyUser): boolean {
+    try {
+        const prefsJson = user?.attributes?.preferences?.extra_user_preferences;
+        if (!prefsJson) {
+            return false;
+        }
+        const prefs = JSON.parse(prefsJson);
+        const value = prefs["sentry_replay|enabled"];
+        return value === true || value === "true";
+    } catch {
+        return false;
+    }
 }
 
 export function initSentry(Galaxy: GalaxyInstance, router: VueRouter): void {
@@ -25,11 +49,24 @@ export function initSentry(Galaxy: GalaxyInstance, router: VueRouter): void {
         release += `.${config.version_minor}`;
     }
 
+    const replayEnabled = isReplayEnabled(Galaxy.user);
+    const integrations: Integration[] = [Sentry.browserTracingIntegration({ router })];
+    if (replayEnabled) {
+        integrations.push(
+            Sentry.replayIntegration({
+                maskAllText: true,
+                blockAllMedia: true,
+            }),
+        );
+    }
+
     Sentry.init({
         Vue,
         dsn: config.sentry_dsn_public,
-        integrations: [Sentry.browserTracingIntegration({ router })],
+        integrations,
         release,
+        replaysSessionSampleRate: 0,
+        replaysOnErrorSampleRate: replayEnabled ? 1.0 : 0,
         beforeSend(event, hint) {
             const error = hint.originalException;
             if (error instanceof Error && ["AdminRequired", "RegisteredUserRequired"].includes(error.name)) {
