@@ -35,7 +35,7 @@
 
             <BAlert v-if="idConflict" variant="warning" show>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="mr-1" />
-                A visualization with this ID already exists and will be overwritten.
+                A visualization with this ID is already installed. Installing will replace it.
             </BAlert>
         </div>
     </b-modal>
