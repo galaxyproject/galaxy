@@ -7,8 +7,12 @@
                     <b-badge :variant="visualization.enabled ? 'success' : 'secondary'" class="mr-2">
                         {{ visualization.enabled ? "Enabled" : "Disabled" }}
                     </b-badge>
-                    <b-badge :variant="visualization.installed ? 'primary' : 'warning'" class="mr-2">
-                        {{ visualization.installed ? "Installed" : "Not Installed" }}
+                    <b-badge
+                        v-if="!visualization.installed"
+                        variant="warning"
+                        class="mr-2"
+                        title="Registered in config but package files are missing from disk">
+                        Missing Files
                     </b-badge>
                 </div>
 
