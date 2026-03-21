@@ -1,0 +1,13 @@
+- doc: |
+    Text parameter "my_prefix" passes through parent -> level1 -> level2
+    where it's substituted in output rename PJA. Verifies parameter
+    substitution works across two subworkflow boundaries.
+  job:
+    rename_text:
+      value: my_prefix
+      type: raw
+  outputs:
+    out:
+      class: File
+      metadata:
+        name: 'my_prefix deep_output'

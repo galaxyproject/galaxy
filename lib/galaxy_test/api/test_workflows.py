@@ -4650,6 +4650,55 @@ some_file:
             # Verify workflow_step_id points to the conditional_step (step 2 in the subworkflow)
             assert message["workflow_step_id"] == 2
 
+    def test_nested_subworkflow_error_includes_two_level_step_path(self):
+        """Test that errors from doubly-nested subworkflows include a 2-element step path."""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_file: data
+steps:
+  outer_sub:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        mid_input: data
+      steps:
+        inner_sub:
+          run:
+            class: GalaxyWorkflow
+            inputs:
+              deep_input: data
+            steps:
+              failing_step:
+                tool_id: cat1
+                in:
+                  input1: deep_input
+                when: $("not_a_boolean")
+          in:
+            deep_input: mid_input
+    in:
+      mid_input: input_file
+""",
+                test_data="""
+input_file:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation_details["state"] == "failed"
+            assert len(invocation_details["messages"]) >= 1
+            message = invocation_details["messages"][0]
+            assert message["reason"] == "when_not_boolean"
+            assert message["details"] == "Type is: str"
+            # workflow_step_index_path should have 2 elements tracing through outer_sub and inner_sub
+            assert len(message["workflow_step_index_path"]) == 2
+
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")
         workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow)
@@ -9856,6 +9905,46 @@ should_run:
             job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
             assert job_details["state"] == "skipped"
             assert job_details["copied_from_job_id"]
+
+    def test_cache_miss_on_parameter_change(self):
+        """Changing a tool parameter causes cache miss even with use_cached_job=True."""
+        wf = """class: GalaxyWorkflow
+inputs: []
+steps:
+  create:
+    tool_id: create_2
+    state:
+      sleep_time: 0
+"""
+        wf_different = """class: GalaxyWorkflow
+inputs: []
+steps:
+  create:
+    tool_id: create_2
+    state:
+      sleep_time: 1
+"""
+        with self.dataset_populator.test_history() as history_id:
+            # Run 1: no cache, sleep_time=0
+            summary_1 = self._run_workflow(wf, history_id=history_id)
+            inv_1 = self.workflow_populator.get_invocation(summary_1.invocation_id, step_details=True)
+            job_1 = inv_1["steps"][0]["jobs"][0]
+            job_details_1 = self.dataset_populator.get_job_details(job_1["id"], full=True).json()
+            assert not job_details_1["copied_from_job_id"]
+
+            # Run 2: same params with cache -> cache HIT
+            summary_2 = self._run_workflow(wf, history_id=history_id, use_cached_job=True)
+            inv_2 = self.workflow_populator.get_invocation(summary_2.invocation_id, step_details=True)
+            job_2 = inv_2["steps"][0]["jobs"][0]
+            job_details_2 = self.dataset_populator.get_job_details(job_2["id"], full=True).json()
+            assert job_details_2["copied_from_job_id"], "Expected cache hit with same parameters"
+
+            # Run 3: different sleep_time with cache -> cache MISS
+            summary_3 = self._run_workflow(wf_different, history_id=history_id, use_cached_job=True)
+            inv_3 = self.workflow_populator.get_invocation(summary_3.invocation_id, step_details=True)
+            job_3 = inv_3["steps"][0]["jobs"][0]
+            job_details_3 = self.dataset_populator.get_job_details(job_3["id"], full=True).json()
+            assert not job_details_3["copied_from_job_id"], "Expected cache miss with changed parameter"
 
     def test_run_workflow_use_cached_job_format_source_pick_param(self):
         wf = """class: GalaxyWorkflow

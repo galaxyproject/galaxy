@@ -1,0 +1,19 @@
+class: GalaxyWorkflow
+doc: |
+  Verify format_source on a tool output inherits the input file's format.
+  cat_data_and_sleep declares format_source="input1" on its output,
+  so the output format should match whatever format the input has.
+inputs:
+  input_file:
+    type: data
+outputs:
+  out:
+    outputSource: the_cat/out_file1
+steps:
+  the_cat:
+    tool_id: cat_data_and_sleep
+    state:
+      sleep_time: 0
+    in:
+      input1:
+        source: input_file

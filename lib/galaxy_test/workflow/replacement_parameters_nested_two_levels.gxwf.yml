@@ -1,0 +1,39 @@
+class: GalaxyWorkflow
+doc: |
+  Text parameter flows through TWO subworkflow boundaries and is
+  substituted in PJA RenameDatasetAction at the deepest level.
+inputs:
+  rename_text: text
+outputs:
+  out:
+    outputSource: subworkflow_level1/output
+steps:
+  subworkflow_level1:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        rename_text_l1: text
+      outputs:
+        output:
+          outputSource: subworkflow_level2/output
+      steps:
+        subworkflow_level2:
+          run:
+            class: GalaxyWorkflow
+            inputs:
+              rename_text_l2: text
+            outputs:
+              output:
+                outputSource: create_step/out_file1
+            steps:
+              create_step:
+                tool_id: create_2
+                state:
+                  sleep_time: 0
+                outputs:
+                  out_file1:
+                    rename: "${rename_text_l2} deep_output"
+          in:
+            rename_text_l2: rename_text_l1
+    in:
+      rename_text_l1: rename_text

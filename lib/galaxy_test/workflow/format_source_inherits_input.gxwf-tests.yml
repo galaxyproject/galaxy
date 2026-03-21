@@ -1,0 +1,23 @@
+- doc: |
+    Input is .bed format. Tool uses format_source="input1" on output.
+    Output should inherit .bed format, not the tool's default.
+  job:
+    input_file:
+      type: File
+      value: 1.bed
+      file_type: bed
+  outputs:
+    out:
+      class: File
+      ftype: bed
+- doc: |
+    Input is .fasta format. Output should inherit .fasta format.
+  job:
+    input_file:
+      type: File
+      value: 1.fasta
+      file_type: fasta
+  outputs:
+    out:
+      class: File
+      ftype: fasta
