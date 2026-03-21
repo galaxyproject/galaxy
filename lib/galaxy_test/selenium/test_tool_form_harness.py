@@ -71,6 +71,11 @@ TOOL_TESTS = [
     ("output_filter", 2),
     ("cheetah_problem_unbound_var", 0),
     ("detect_errors", 1),
+    ("cheetah_problem_syntax_error", 0),
+    ("python_environment_problem", 0),
+    ("output_filter_exception_1", 0),
+    ("detect_errors", 0),
+    ("sim_size_delta", 0),
 ]
 
 
