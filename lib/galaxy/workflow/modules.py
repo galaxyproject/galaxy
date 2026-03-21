@@ -2135,7 +2135,7 @@ class PickValueModule(WorkflowModule):
         # Build a map of input_name -> input_dict for quick lookup
         input_names = {d["name"] for d in all_inputs}
 
-        per_element_outputs = []
+        per_element_outputs: list[tuple[str, Any]] = []
         for iteration_elements, _when_value in collection_info.slice_collections():
             # For each slice, extract per-element replacements
             replacements = []
