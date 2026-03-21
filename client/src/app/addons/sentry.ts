@@ -1,10 +1,10 @@
-import type { Integration } from "@sentry/core";
 import * as Sentry from "@sentry/vue";
 import Vue from "vue";
 import type VueRouter from "vue-router";
 
 interface GalaxyConfig {
     sentry_dsn_public?: string;
+    sentry_client_traces_sample_rate?: number;
     version_major: string;
     version_minor?: string;
 }
@@ -50,7 +50,7 @@ export function initSentry(Galaxy: GalaxyInstance, router: VueRouter): void {
     }
 
     const replayEnabled = isReplayEnabled(Galaxy.user);
-    const integrations: Integration[] = [Sentry.browserTracingIntegration({ router })];
+    const integrations = [Sentry.browserTracingIntegration({ router })];
     if (replayEnabled) {
         integrations.push(
             Sentry.replayIntegration({
@@ -65,6 +65,7 @@ export function initSentry(Galaxy: GalaxyInstance, router: VueRouter): void {
         dsn: config.sentry_dsn_public,
         integrations,
         release,
+        tracesSampleRate: config.sentry_client_traces_sample_rate ?? 0,
         replaysSessionSampleRate: 0,
         replaysOnErrorSampleRate: replayEnabled ? 1.0 : 0,
         beforeSend(event, hint) {

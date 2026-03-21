@@ -2431,6 +2431,16 @@ mapping:
           will have that percentage chance of being sent to Sentry. A value higher than 0
           is required to analyze performance.
 
+      sentry_client_traces_sample_rate:
+        type: float
+        default: 0.0
+        required: false
+        desc: |
+          Sample rate for client-side (browser) performance tracing, between 0
+          and 1. Controls what fraction of page loads and navigations generate
+          performance traces sent to Sentry. Independent of
+          sentry_traces_sample_rate, which controls server-side tracing.
+
       sentry_ca_certs:
         type: str
         required: False

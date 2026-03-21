@@ -245,6 +245,7 @@ class ConfigSerializer(base.ModelSerializer):
             "install_resolver_dependencies": _use_config,
             "enable_tool_generated_tours": _use_config,
             "sentry_dsn_public": lambda item, key, **context: item.sentry_dsn_public,
+            "sentry_client_traces_sample_rate": _use_config,
             "enable_webhooks": lambda item, key, **context: hasattr(self.app, "webhooks_registry")
             and bool(self.app.webhooks_registry.webhooks),
         }

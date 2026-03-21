@@ -1911,6 +1911,12 @@ galaxy:
   # to Sentry. A value higher than 0 is required to analyze performance.
   #sentry_traces_sample_rate: 0.0
 
+  # Sample rate for client-side (browser) performance tracing, between 0
+  # and 1. Controls what fraction of page loads and navigations generate
+  # performance traces sent to Sentry. Independent of
+  # sentry_traces_sample_rate, which controls server-side tracing.
+  #sentry_client_traces_sample_rate: 0.0
+
   # Use this option to provide the path to location of the CA
   # (Certificate Authority) certificate file if the sentry server uses a
   # self-signed certificate.
