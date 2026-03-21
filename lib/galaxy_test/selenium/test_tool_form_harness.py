@@ -56,6 +56,14 @@ TOOL_TESTS = [
     ("collection_optional_param", 1),
     ("collection_creates_pair", 0),
     ("collection_creates_list_of_pairs", 0),
+    ("output_format_collection", 0),
+    ("tool_directory", 0),
+    ("from_work_dir_glob", 0),
+    ("min_repeat", 0),
+    ("implicit_conversion", 0),
+    ("inheritance_simple", 1),
+    ("markdown_report_simple", 0),
+    ("gx_conditional_boolean_checked", 0),
 ]
 
 
