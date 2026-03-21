@@ -1,0 +1,35 @@
+- doc: |
+    Test that a workflow output sourced from an always-skipped step (when=false)
+    produces a null expression.json dataset that is hidden.
+  job:
+    input_file:
+      type: File
+      value: 1.fasta
+    should_run:
+      type: raw
+      value: false
+  outputs:
+    out:
+      class: File
+      ftype: expression.json
+      visible: false
+      asserts:
+      - that: has_text
+        text: "null"
+- doc: |
+    Test that the same workflow with when=true executes the step and produces
+    real output with the original file type.
+  job:
+    input_file:
+      type: File
+      value: 1.fasta
+    should_run:
+      type: raw
+      value: true
+  outputs:
+    out:
+      class: File
+      visible: true
+      asserts:
+      - that: has_size
+        min: 1

@@ -1,0 +1,24 @@
+class: GalaxyWorkflow
+doc: |
+  Test workflow output from a mapped conditional step where some collection
+  elements are skipped and others execute. The output collection should
+  contain both real datasets and null expression.json placeholders.
+inputs:
+  boolean_input_files:
+    type: collection
+outputs:
+  out:
+    outputSource: the_cat/out_file1
+steps:
+  param_out:
+    tool_id: param_value_from_file
+    in:
+      input1: boolean_input_files
+    state:
+      param_type: boolean
+  the_cat:
+    tool_id: cat
+    in:
+      input1: boolean_input_files
+      should_run: param_out/boolean_param
+    when: $(inputs.should_run)

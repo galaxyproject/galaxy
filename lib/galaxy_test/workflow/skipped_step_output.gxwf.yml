@@ -1,0 +1,22 @@
+class: GalaxyWorkflow
+doc: |
+  Test workflow output behavior when sourced from a conditionally-skipped
+  step without pick_value. Verifies that skipped steps produce expression.json
+  null outputs that are correctly recorded as workflow outputs.
+inputs:
+  input_file:
+    type: data
+  should_run:
+    type: boolean
+outputs:
+  out:
+    outputSource: cat/out_file1
+steps:
+  cat:
+    tool_id: cat
+    in:
+      input1:
+        source: input_file
+      should_run:
+        source: should_run
+    when: $(inputs.should_run)
