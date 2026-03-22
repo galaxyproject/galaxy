@@ -4320,3 +4320,23 @@ gx_conditional_underscore_name:
   - { __cond_opts__: { __selector__: "a", param_a: "test" } }
   - { __cond_opts__: { __selector__: "a", param_a: {__class__: ConnectedValue} } }
   - {}
+
+gx_conditional_single_when:
+  request_valid:
+  - { cond: { enabled: true, param: "hello" } }
+  - { cond: { enabled: false } }
+  request_invalid:
+  - { cond: { enabled: false, param: "not allowed in false branch" } }
+  request_internal_valid:
+  - { cond: { enabled: true, param: "hello" } }
+  - { cond: { enabled: false } }
+  job_internal_valid:
+  - { cond: { enabled: true, param: "hello" } }
+  - { cond: { enabled: false } }
+  workflow_step_valid:
+  - { cond: { enabled: true, param: "hello" } }
+  - { cond: { enabled: false } }
+  workflow_step_linked_valid:
+  - { cond: { enabled: true, param: "hello" } }
+  - { cond: { enabled: true, param: {__class__: ConnectedValue} } }
+  - { cond: { enabled: false } }

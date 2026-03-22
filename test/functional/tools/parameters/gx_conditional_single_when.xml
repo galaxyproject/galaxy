@@ -1,0 +1,14 @@
+<tool id="gx_conditional_single_when" name="gx_conditional_single_when" version="1.0.0" profile="24.2">
+    <command detect_errors="exit_code"><![CDATA[echo '$cond.enabled' > '$output']]></command>
+    <inputs>
+        <conditional name="cond">
+            <param name="enabled" type="boolean" checked="false" label="Enable feature"/>
+            <when value="true">
+                <param name="param" type="text" value="default_val" label="Feature parameter"/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+</tool>

@@ -2177,6 +2177,42 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
                     )
                     when_types.append(cast(type[BaseModel], Annotated[default_type, Tag("__absent__")]))
 
+        # Add empty when branches for test parameter values that don't have
+        # explicit <when> blocks. Galaxy's runtime handles these as no-op branches;
+        # the model should accept them too.
+        declared_tags: set[str] = set()
+        for when in self.whens:
+            declared_tags.add(str(when.discriminator) if not is_boolean else str(when.discriminator).lower())
+
+        all_possible_tags: list[str]
+        if is_boolean:
+            all_possible_tags = ["true", "false"]
+        else:
+            select = cast(SelectParameterModel, self.test_parameter)
+            all_possible_tags = [str(opt.value) for opt in (select.options or [])]
+
+        for tag in all_possible_tags:
+            if tag in declared_tags:
+                continue
+            if is_boolean:
+                disc_value: Any = tag == "true"
+            else:
+                disc_value = tag
+            if test_parameter_requires_value:
+                initialize_test = ...
+            else:
+                initialize_test = None
+            test_field_alias = test_param_name if safe_test_name != test_param_name else None
+            empty_kwd = {safe_test_name: (Literal[disc_value], Field(initialize_test, alias=test_field_alias))}
+            empty_when = create_field_model(
+                [],
+                f"When_{test_param_name}_{tag}",
+                state_representation,
+                extra_kwd=empty_kwd,
+                extra_validators=extra_validators,
+            )
+            when_types.append(cast(type[BaseModel], Annotated[empty_when, Tag(tag)]))
+
         def model_x_discriminator(v: Any) -> str | None:
             # returning None causes a validation error, this is what we would want if
             # if the conditional state is not a dictionary.
