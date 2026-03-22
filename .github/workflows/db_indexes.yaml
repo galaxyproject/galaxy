@@ -58,6 +58,6 @@ jobs:
         run: uv tool install tox --with tox-uv
       - name: Set database connection on PostgreSQL
         if: matrix.db == 'postgresql'
-        run: echo 'GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8' >> $GITHUB_ENV
+        run: echo 'GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8' >> $GITHUB_ENV
       - name: Check indexes
         run: tox -e check_indexes
