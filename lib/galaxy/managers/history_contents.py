@@ -17,6 +17,7 @@ from sqlalchemy import (
     func,
     Integer,
     literal,
+    null,
     nullsfirst,
     nullslast,
     select,
@@ -417,7 +418,7 @@ class HistoryContentsManager(base.SortableManager):
             object_store_id=model.Dataset.object_store_id,
             quota_source_label=model.Dataset.object_store_id,
             # do not have inner collections
-            collection_id=literal(None),
+            collection_id=null(),
         )
         subquery = self._session().query(*columns)
         # for the HDA's we need to join the Dataset since it has an actual state column
@@ -439,14 +440,14 @@ class HistoryContentsManager(base.SortableManager):
             component_class,
             history_content_type=literal("dataset_collection"),
             # do not have datasets
-            dataset_id=literal(None),
-            size=literal(None),
+            dataset_id=null(),
+            size=null(),
             state=model.DatasetCollection.populated_state,
-            object_store_id=literal(None),
-            quota_source_label=literal(None),
+            object_store_id=null(),
+            quota_source_label=null(),
             # TODO: should be purgable? fix
-            purged=literal(False),
-            extension=literal(None),
+            purged=false(),
+            extension=null(),
         )
         subquery = self._session().query(*columns)
         # for the HDCA's we need to join the DatasetCollection since it has the populated_state
