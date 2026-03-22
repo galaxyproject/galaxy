@@ -119,21 +119,102 @@ describe("FormPickValue", () => {
         });
 
         it("does not increment when a non-last terminal gets connected", async () => {
-            const step = makeStep({ tool_state: { mode: "first_non_null", num_inputs: 3 } });
+            const step = makeStep({
+                tool_state: { mode: "first_non_null", num_inputs: 3 },
+                input_connections: {
+                    input_0: [{ id: 1, output_name: "output" }],
+                    input_1: [{ id: 2, output_name: "output" }],
+                },
+            });
             const wrapper = mountPickValue(step);
             const countBefore = getEmittedCount(wrapper);
 
-            // Connect to input_1 (not the last terminal input_3)
+            // Connect to input_2 (not the last terminal input_3)
             await wrapper.setProps({
                 step: {
                     ...step,
                     input_connections: {
+                        input_0: [{ id: 1, output_name: "output" }],
                         input_1: [{ id: 2, output_name: "output" }],
+                        input_2: [{ id: 3, output_name: "output" }],
                     },
                 },
             });
 
+            // num_inputs stays 3 since input_2 is not the last terminal (input_3)
             expect(getEmittedCount(wrapper)).toBe(countBefore);
+        });
+    });
+
+    describe("shrink-on-disconnect", () => {
+        it("decrements num_inputs when a connection is removed", async () => {
+            const step = makeStep({
+                tool_state: { mode: "first_non_null", num_inputs: 3 },
+                input_connections: {
+                    input_0: [{ id: 1, output_name: "output" }],
+                    input_1: [{ id: 2, output_name: "output" }],
+                    input_2: [{ id: 3, output_name: "output" }],
+                },
+            });
+            const wrapper = mountPickValue(step);
+
+            // Simulate disconnect of input_1 after compaction: input_2 renamed to input_1
+            await wrapper.setProps({
+                step: {
+                    ...step,
+                    input_connections: {
+                        input_0: [{ id: 1, output_name: "output" }],
+                        input_1: [{ id: 3, output_name: "output" }],
+                    },
+                },
+            });
+
+            expect(getLastEmittedState(wrapper).num_inputs).toBe(2);
+        });
+
+        it("does not shrink below minimum of 2", async () => {
+            const step = makeStep({
+                tool_state: { mode: "first_non_null", num_inputs: 2 },
+                input_connections: {
+                    input_0: [{ id: 1, output_name: "output" }],
+                },
+            });
+            const wrapper = mountPickValue(step);
+
+            // Disconnect all
+            await wrapper.setProps({
+                step: {
+                    ...step,
+                    input_connections: {},
+                },
+            });
+
+            expect(getLastEmittedState(wrapper).num_inputs).toBe(2);
+        });
+
+        it("increases num_inputs on undo-of-shrink", async () => {
+            const step = makeStep({
+                tool_state: { mode: "first_non_null", num_inputs: 2 },
+                input_connections: {
+                    input_0: [{ id: 1, output_name: "output" }],
+                },
+            });
+            const wrapper = mountPickValue(step);
+
+            // Simulate undo restoring connections
+            await wrapper.setProps({
+                step: {
+                    ...step,
+                    tool_state: { mode: "first_non_null", num_inputs: 2 },
+                    input_connections: {
+                        input_0: [{ id: 1, output_name: "output" }],
+                        input_1: [{ id: 2, output_name: "output" }],
+                        input_2: [{ id: 3, output_name: "output" }],
+                    },
+                },
+            });
+
+            expect(getLastEmittedState(wrapper).num_inputs).toBe(3);
         });
     });
 

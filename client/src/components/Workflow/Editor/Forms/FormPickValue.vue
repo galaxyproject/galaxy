@@ -66,15 +66,33 @@ function onChangePostJobActions(postJobActions: PostJobActions) {
     emit("onChangePostJobActions", postJobActions);
 }
 
-// Grow-on-connect: watch step connections, add terminal when last empty one gets connected
+// Watch connections: grow on connect, shrink on disconnect
 watch(
     () => props.step.input_connections,
     (connections) => {
         const state = cleanToolState();
+
+        // Grow: last terminal got connected
         const lastTerminalName = `input_${state.num_inputs}`;
         if (connections && connections[lastTerminalName]) {
             state.num_inputs = state.num_inputs + 1;
             emit("onChange", state);
+            return;
+        }
+
+        // Shrink or undo-of-shrink: sync num_inputs with actual connections
+        if (connections) {
+            const connectedCount = Object.keys(connections).filter(
+                (k) =>
+                    k.startsWith("input_") &&
+                    connections[k] != null &&
+                    (!Array.isArray(connections[k]) || (connections[k] as unknown[]).length > 0),
+            ).length;
+            const desired = Math.max(2, connectedCount);
+            if (desired !== state.num_inputs) {
+                state.num_inputs = desired;
+                emit("onChange", state);
+            }
         }
     },
     { deep: true },
