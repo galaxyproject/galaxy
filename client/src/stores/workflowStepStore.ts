@@ -370,8 +370,10 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
             if (Array.isArray(inputConnections)) {
                 inputStep.input_connections[connection.input.name] = inputConnections.filter(
                     (outputLink) =>
-                        !(outputLink.id === connection.output.stepId,
-                        outputLink.output_name === connection.output.name),
+                        !(
+                            outputLink.id === connection.output.stepId &&
+                            outputLink.output_name === connection.output.name
+                        ),
                 );
             } else {
                 del(inputStep.input_connections, connection.input.name);
