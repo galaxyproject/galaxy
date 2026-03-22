@@ -122,6 +122,15 @@ class NullTourCallback:
         pass
 
 
+def _exception_indicates_playwright_timeout(e):
+    try:
+        from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError
+
+        return isinstance(e, PlaywrightTimeoutError)
+    except ImportError:
+        return False
+
+
 def exception_seems_to_indicate_transition(e):
     """True if exception seems to indicate the page state is transitioning.
 
@@ -132,14 +141,16 @@ def exception_seems_to_indicate_transition(e):
     cause of the exception. The methods that follow use it to allow retrying actions during
     transitions.
 
-    Currently the two kinds of exceptions that we say may indicate a transition are
-    StaleElement exceptions (a DOM element grabbed at one step is no longer available)
-    and "not clickable" exceptions (so perhaps a popup modal is blocking a click).
+    Currently the kinds of exceptions that we say may indicate a transition are
+    StaleElement exceptions (a DOM element grabbed at one step is no longer available),
+    "not clickable" exceptions (so perhaps a popup modal is blocking a click), and
+    Playwright TimeoutErrors (element not yet present/visible during a transition).
     """
     return (
         exception_indicates_stale_element(e)
         or exception_indicates_not_clickable(e)
         or exception_indicates_click_intercepted(e)
+        or _exception_indicates_playwright_timeout(e)
     )
 
 
