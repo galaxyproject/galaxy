@@ -47,8 +47,8 @@ DEFAULT_GALAXY_URL = "https://usegalaxy.org"
 def parse_toolshed_tool_id(tool_id: str) -> Optional[Tuple[str, str, Optional[str]]]:
     """Parse a toolshed tool_id into (toolshed_url, trs_tool_id, tool_version).
 
-    Input format: toolshed.g2.bx.psu.edu/repos/owner/repo/tool_name/version
-    Or with scheme: https://toolshed.g2.bx.psu.edu/repos/owner/repo/tool_name/version
+    Input format: toolshed.g2.bx.psu.edu/repos/owner/repo/tool_id/version
+    Or with scheme: https://toolshed.g2.bx.psu.edu/repos/owner/repo/tool_id/version
 
     Returns None if the tool_id is not a toolshed tool.
     """
@@ -59,16 +59,16 @@ def parse_toolshed_tool_id(tool_id: str) -> Optional[Tuple[str, str, Optional[st
     toolshed_base = parts[0]
     rest = parts[1]
 
-    # rest is: owner/repo/tool_name/version (or owner/repo/tool_name without version)
+    # rest is: owner/repo/tool_id/version (or owner/repo/tool_id without version)
     segments = rest.split("/")
     if len(segments) < 3:
         return None
 
-    # owner/repo/tool_name are the TRS tool ID components
+    # owner/repo/tool_id are the TRS tool ID components
     owner = segments[0]
     repo = segments[1]
-    tool_name = segments[2]
-    trs_tool_id = f"{owner}~{repo}~{tool_name}"
+    tool_id_segment = segments[2]
+    trs_tool_id = f"{owner}~{repo}~{tool_id_segment}"
 
     # Version may be the 4th segment or provided separately
     tool_version = segments[3] if len(segments) > 3 else None
@@ -88,7 +88,7 @@ def _cache_key(toolshed_url: str, trs_tool_id: str, tool_version: str) -> str:
 
 def _tool_id_from_trs(toolshed_url: str, trs_tool_id: str) -> str:
     """Reconstruct a readable tool_id from toolshed_url and trs_tool_id."""
-    # trs_tool_id is owner~repo~tool_name
+    # trs_tool_id is owner~repo~tool_id
     parts = trs_tool_id.split("~")
     # Strip scheme for display
     base = toolshed_url.replace("https://", "").replace("http://", "")
