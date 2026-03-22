@@ -709,8 +709,12 @@ class ToolBox(AbstractToolBox):
             if tools:
                 tool = self.get_tool(tool_id, tool_version=tool_version, get_all_versions=False)
                 assert tool
-                if len(tools) > 1:
-                    tool_version_select_field = self.__build_tool_version_select_field(tools, tool.id, set_selected)
+                visible_tools = [candidate for candidate in tools if not candidate.hidden]
+                if len(visible_tools) > 1:
+                    tool_version_select_field = self.__build_tool_version_select_field(
+                        visible_tools, tool.id, set_selected
+                    )
+                tools = visible_tools
                 break
         return tool_version_select_field, tools, tool
 
@@ -1165,6 +1169,10 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             return list(self.lineage.tool_versions)
         else:
             return []
+
+    @property
+    def visible_tool_versions(self):
+        return [tool.version for tool in self.tool_versions if not tool.hidden]
 
     @property
     def is_latest_version(self):
@@ -3119,7 +3127,7 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                 "sharable_url": self.sharable_url,
                 "message": tool_message,
                 "warnings": tool_warnings,
-                "versions": self.tool_versions,
+                "versions": self.visible_tool_versions,
                 "requirements": [{"name": r.name, "version": r.version} for r in self.requirements],
                 "credentials": [credential.to_dict() for credential in self.credentials] if self.credentials else [],
                 "errors": state_errors,

@@ -1653,6 +1653,27 @@ class TestToolsApi(ApiTestCase, TestsTools):
         # Return last version
         assert tool_info["version"] == "0.2"
 
+    @skip_without_tool("multiple_versions_hidden")
+    def test_show_filters_hidden_versions(self):
+        tool_info = self._show_valid_tool("multiple_versions_hidden", tool_version="0.1")
+        assert tool_info["version"] == "0.1"
+        assert tool_info["versions"] == ["0.2"]
+
+    @skip_without_tool("multiple_versions_hidden")
+    def test_run_hidden_version(self):
+        with self.dataset_populator.test_history_for(self.test_run_hidden_version) as history_id:
+            outputs = self._run(
+                tool_id="multiple_versions_hidden",
+                history_id=history_id,
+                tool_version="0.1",
+                assert_ok=True,
+                wait_for_job=True,
+            )
+            assert len(outputs["outputs"]) == 1
+            output = outputs["outputs"][0]
+            output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+            assert output_content.strip() == "Hidden Version 0.1"
+
     @skip_without_tool("cat1")
     def test_run_cat1_single_meta_wrapper(self):
         with self.dataset_populator.test_history_for(self.test_run_cat1_single_meta_wrapper) as history_id:
