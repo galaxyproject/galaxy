@@ -1482,6 +1482,10 @@ class DistributedObjectStore(NestedObjectStore):
         as_dict["backends"] = backends
         return as_dict
 
+    def start(self):
+        for backend in self.backends.values():
+            backend.start()
+
     def shutdown(self):
         """Shut down. Kill the free space monitor if there is one."""
         super().shutdown()
