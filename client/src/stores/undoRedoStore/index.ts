@@ -34,6 +34,8 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
 
     const changeId = ref(0);
 
+    const undoStackLength = computed(() => undoActionStack.value.length);
+
     watch(
         () => [undoActionStack.value.length, deletedActions.value.length],
         () => (changeId.value += 1),
@@ -204,6 +206,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         maxUndoActions,
         savedUndoActions,
         deletedActions,
+        undoStackLength,
         undo,
         redo,
         applyAction,

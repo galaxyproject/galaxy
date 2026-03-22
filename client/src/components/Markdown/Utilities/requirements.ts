@@ -66,5 +66,9 @@ export function hasValidObject(name: string | undefined, args: Record<string, st
         // we don't control this anyway
         return true;
     }
+    if (requiredObject === "job_id" && args.implicit_collection_jobs_id) {
+        // accept implicit_collection_jobs_id where a job_id is expected for collection steps
+        return true;
+    }
     return !requiredObject || !!args[requiredObject];
 }

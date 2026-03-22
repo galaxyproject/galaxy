@@ -1,7 +1,7 @@
 """Playwright tests for component showcase screenshots.
 
 Run with:
-    TOOL_SHED_TEST_SCREENSHOTS=/tmp/component_screenshots TOOL_SHED_API_VERSION=v2 uv run pytest \
+    TOOL_SHED_TEST_SCREENSHOTS=/tmp/component_screenshots uv run pytest \
         tool_shed/test/functional/test_component_showcase.py -v
 
 Screenshots are saved to TOOL_SHED_TEST_SCREENSHOTS directory if set.
@@ -13,7 +13,6 @@ from pathlib import Path
 
 from playwright.sync_api import expect
 
-from ..base.api import skip_if_api_v1
 from ..base.playwrighttestcase import PlaywrightTestCase
 
 
@@ -47,43 +46,36 @@ class TestComponentShowcase(PlaywrightTestCase):
 
     # === General Components ===
 
-    @skip_if_api_v1
     def test_loading_div(self):
         """Screenshot LoadingDiv component."""
         self._navigate_to_showcase()
         self._screenshot_component("LoadingDiv")
 
-    @skip_if_api_v1
     def test_error_banner(self):
         """Screenshot ErrorBanner component."""
         self._navigate_to_showcase()
         self._screenshot_component("ErrorBanner")
 
-    @skip_if_api_v1
     def test_repository_link(self):
         """Screenshot RepositoryLink component."""
         self._navigate_to_showcase()
         self._screenshot_component("RepositoryLink")
 
-    @skip_if_api_v1
     def test_repository_actions(self):
         """Screenshot RepositoryActions component."""
         self._navigate_to_showcase()
         self._screenshot_component("RepositoryActions")
 
-    @skip_if_api_v1
     def test_recently_created_repositories(self):
         """Screenshot RecentlyCreatedRepositories component."""
         self._navigate_to_showcase()
         self._screenshot_component("RecentlyCreatedRepositories")
 
-    @skip_if_api_v1
     def test_landing_search_box(self):
         """Screenshot LandingSearchBox component."""
         self._navigate_to_showcase()
         self._screenshot_component("LandingSearchBox")
 
-    @skip_if_api_v1
     def test_landing_info_sections(self):
         """Screenshot LandingInfoSections component."""
         self._navigate_to_showcase()
@@ -91,37 +83,31 @@ class TestComponentShowcase(PlaywrightTestCase):
 
     # === MetadataInspector Components ===
 
-    @skip_if_api_v1
     def test_changeset_summary_table(self):
         """Screenshot ChangesetSummaryTable component."""
         self._navigate_to_showcase()
         self._screenshot_component("ChangesetSummaryTable")
 
-    @skip_if_api_v1
     def test_json_diff_viewer(self):
         """Screenshot JsonDiffViewer component."""
         self._navigate_to_showcase()
         self._screenshot_component("JsonDiffViewer")
 
-    @skip_if_api_v1
     def test_metadata_json_viewer(self):
         """Screenshot MetadataJsonViewer component."""
         self._navigate_to_showcase()
         self._screenshot_component("MetadataJsonViewer")
 
-    @skip_if_api_v1
     def test_revisions_tab(self):
         """Screenshot RevisionsTab component."""
         self._navigate_to_showcase()
         self._screenshot_component("RevisionsTab")
 
-    @skip_if_api_v1
     def test_overview_tab(self):
         """Screenshot OverviewTab component."""
         self._navigate_to_showcase()
         self._screenshot_component("OverviewTab")
 
-    @skip_if_api_v1
     def test_tool_history_tab(self):
         """Screenshot ToolHistoryTab component."""
         self._navigate_to_showcase()

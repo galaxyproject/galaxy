@@ -1,12 +1,9 @@
-import logging
 from typing import (
     Any,
 )
 
 from galaxy.util.expressions import ExpressionContext
 from .basic import ImplicitConversionRequired
-
-log = logging.getLogger(__name__)
 
 
 def populate_model(request_context, inputs, state_inputs, group_inputs: list[dict[str, Any]], other_values=None):
@@ -50,6 +47,8 @@ def populate_model(request_context, inputs, state_inputs, group_inputs: list[dic
         elif input.type == "section":
             tool_dict = input.to_dict(request_context)
             populate_model(request_context, input.inputs, group_state, tool_dict["inputs"], other_values)
+        elif input.type == "upload_dataset":
+            tool_dict = input.to_dict(request_context)
         else:
             try:
                 initial_value = input.get_initial_value(request_context, other_values)
@@ -60,12 +59,9 @@ def populate_model(request_context, inputs, state_inputs, group_inputs: list[dic
                 tool_dict["default_value"] = input.value_to_basic(initial_value, request_context.app, use_security=True)
                 tool_dict["text_value"] = input.value_to_display_text(tool_dict["value"])
             except ImplicitConversionRequired:
-                tool_dict = input.to_dict(request_context)
+                tool_dict = input.to_dict(request_context, other_values=other_values)
                 # This hack leads client to display a text field
                 tool_dict["textable"] = True
-            except Exception:
-                tool_dict = input.to_dict(request_context)
-                log.exception("tools::to_json() - Skipping parameter expansion '%s'", input.name)
         if input_index >= len(group_inputs):
             group_inputs.append(tool_dict)
         else:

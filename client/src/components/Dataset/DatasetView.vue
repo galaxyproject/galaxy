@@ -42,6 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
 const iframeLoading = ref(true);
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
+const loadError = computed(() => datasetStore.getDatasetError(props.datasetId));
 const downloadUrl = computed(() => withPrefix(`/datasets/${props.datasetId}/display`));
 const headerState = computed(() => (headerCollapsed.value ? "closed" : "open"));
 
@@ -66,6 +67,11 @@ const isBinaryDataset = computed(() => {
 const isImageDataset = computed(() => {
     if (!dataset.value?.file_ext || !datatypesMapperStore.datatypesMapper) {
         return false;
+    }
+    // SVG is not an image subclass, but should use DatasetAsImage for better
+    // user experience
+    if (dataset.value.file_ext === "svg") {
+        return true;
     }
     return datatypesMapperStore.datatypesMapper.isSubTypeOfAny(dataset.value.file_ext, [
         "galaxy.datatypes.images.Image",
@@ -102,7 +108,16 @@ watch(
 </script>
 
 <template>
-    <LoadingSpan v-if="isLoading || !dataset" message="Loading dataset details" />
+    <div v-if="loadError" class="alert alert-danger m-4">
+        <h4 class="alert-heading">Dataset Not Available</h4>
+        <p>
+            {{
+                loadError.message ||
+                "This dataset could not be loaded. It may not exist or you may not have permission to access it."
+            }}
+        </p>
+    </div>
+    <LoadingSpan v-else-if="isLoading || !dataset" message="Loading dataset details" />
     <div v-else class="dataset-view d-flex flex-column">
         <header v-if="!displayOnly" :key="`dataset-header-${dataset.id}`" class="dataset-header flex-shrink-0">
             <div class="d-flex">

@@ -237,9 +237,9 @@ class PBSJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             return
 
         # define job attributes
-        ofile = f"{job_wrapper.working_directory}/{job_wrapper.job_id}.o"
-        efile = f"{job_wrapper.working_directory}/{job_wrapper.job_id}.e"
-        ecfile = f"{job_wrapper.working_directory}/{job_wrapper.job_id}.ec"
+        ofile = os.path.join(job_wrapper.working_directory, f"{job_wrapper.job_id}.o")
+        efile = os.path.join(job_wrapper.working_directory, f"{job_wrapper.job_id}.e")
+        ecfile = os.path.join(job_wrapper.working_directory, f"{job_wrapper.job_id}.ec")
 
         output_fnames = job_wrapper.job_io.get_output_fnames()
 
@@ -293,7 +293,7 @@ class PBSJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         script = self.get_job_file(
             job_wrapper, exit_code_path=ecfile, env_setup_commands=env_setup_commands, shell=job_wrapper.shell
         )
-        job_file = f"{job_wrapper.working_directory}/{job_wrapper.job_id}.sh"
+        job_file = os.path.join(job_wrapper.working_directory, f"{job_wrapper.job_id}.sh")
         self.write_executable_script(job_file, script, job_io=job_wrapper.job_io)
         # job was deleted while we were preparing it
         if job_wrapper.get_state() in (model.Job.states.DELETED, model.Job.states.STOPPED):
@@ -537,10 +537,10 @@ class PBSJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             job_wrapper=job_wrapper,
             job_destination=job_wrapper.job_destination,
             job_id=job_id,
-            job_file=f"{job_wrapper.working_directory}/{job.id}.sh",
-            output_file=f"{job_wrapper.working_directory}/{job.id}.o",
-            error_file=f"{job_wrapper.working_directory}/{job.id}.e",
-            exit_code_file=f"{job_wrapper.working_directory}/{job.id}.ec",
+            job_file=os.path.join(job_wrapper.working_directory, f"{job.id}.sh"),
+            output_file=os.path.join(job_wrapper.working_directory, f"{job.id}.o"),
+            error_file=os.path.join(job_wrapper.working_directory, f"{job.id}.e"),
+            exit_code_file=os.path.join(job_wrapper.working_directory, f"{job.id}.ec"),
         )
         job_wrapper.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):

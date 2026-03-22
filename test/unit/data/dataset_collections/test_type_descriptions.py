@@ -86,6 +86,91 @@ def test_sample_sheet_acts_like_list():
     assert sample_sheet_paired.effective_collection_type(paired_type) == "sample_sheet"
 
 
+def test_effective_collection_type_paired_or_unpaired_over_paired():
+    # list:paired mapped over paired_or_unpaired should yield "list"
+    assert c_t("list:paired").effective_collection_type("paired_or_unpaired") == "list"
+    # list:list:paired mapped over paired_or_unpaired should yield "list:list"
+    assert c_t("list:list:paired").effective_collection_type("paired_or_unpaired") == "list:list"
+    # list:paired_or_unpaired mapped over paired_or_unpaired should still yield "list"
+    assert c_t("list:paired_or_unpaired").effective_collection_type("paired_or_unpaired") == "list"
+
+
+def test_endswith_colon_boundary():
+    """Regression: endswith must require colon boundary to avoid partial matches.
+
+    'list:paired_or_unpaired'.endswith('paired') was True because 'paired'
+    is a substring at the end of 'paired_or_unpaired'. The fix requires
+    ':paired' (with colon prefix) so only proper rank boundaries match.
+    """
+    # list:paired_or_unpaired does NOT have subcollections of type paired
+    # PAIRED_OR_UNPAIRED_NOT_CONSUMED_BY_PAIRED_WHEN_MAPPING
+    assert not c_t("list:paired_or_unpaired").has_subcollections_of_type("paired")
+
+    # But list:paired DOES have subcollections of type paired (proper boundary)
+    assert c_t("list:paired").has_subcollections_of_type("paired")
+
+    # And list:list:paired_or_unpaired does NOT have subcollections of type paired
+    assert not c_t("list:list:paired_or_unpaired").has_subcollections_of_type("paired")
+
+    # Existing cases still work
+    assert c_t("list:list:paired").has_subcollections_of_type("paired")
+    assert c_t("list:list:paired").has_subcollections_of_type("list:paired")
+    assert not c_t("list:list:paired").has_subcollections_of_type("list")
+
+
+def test_compound_paired_or_unpaired_has_subcollections():
+    """Test compound :paired_or_unpaired suffix in has_subcollections_of_type.
+
+    Covers collection_semantics.yml examples:
+    - MAPPING_LIST_LIST_OVER_LIST_PAIRED_OR_UNPAIRED
+    - MAPPING_LIST_LIST_PAIRED_OVER_PAIRED_OR_UNPAIRED (via compound path)
+    """
+    # list:list can map over list:paired_or_unpaired
+    assert c_t("list:list").has_subcollections_of_type("list:paired_or_unpaired")
+
+    # list:list:paired can map over list:paired_or_unpaired
+    # (paired consumed by paired_or_unpaired, higher ranks list == list)
+    assert c_t("list:list:paired").has_subcollections_of_type("list:paired_or_unpaired")
+
+    # list:list:list can map over list:paired_or_unpaired
+    assert c_t("list:list:list").has_subcollections_of_type("list:paired_or_unpaired")
+
+    # list:paired cannot map over list:paired_or_unpaired — same rank,
+    # after stripping :paired the higher ranks are equal (no remainder)
+    assert not c_t("list:paired").has_subcollections_of_type("list:paired_or_unpaired")
+
+    # list cannot map over list:paired_or_unpaired — lower rank
+    assert not c_t("list").has_subcollections_of_type("list:paired_or_unpaired")
+
+    # paired cannot map over list:paired_or_unpaired — higher ranks don't align
+    assert not c_t("paired").has_subcollections_of_type("list:paired_or_unpaired")
+
+    # paired:paired cannot map over list:paired_or_unpaired — higher ranks
+    # don't align (paired != list)
+    assert not c_t("paired:paired").has_subcollections_of_type("list:paired_or_unpaired")
+
+
+def test_compound_paired_or_unpaired_effective_collection_type():
+    """Test effective_collection_type with compound :paired_or_unpaired."""
+    # list:list over list:paired_or_unpaired → list
+    assert c_t("list:list").effective_collection_type("list:paired_or_unpaired") == "list"
+
+    # list:list:paired over list:paired_or_unpaired → list
+    # (peel off list and paired_or_unpaired ranks, then strip :paired)
+    assert c_t("list:list:paired").effective_collection_type("list:paired_or_unpaired") == "list"
+
+    # list:list:list over list:paired_or_unpaired → list:list
+    assert c_t("list:list:list").effective_collection_type("list:paired_or_unpaired") == "list:list"
+
+
+def test_effective_collection_type_paired_or_unpaired_non_paired():
+    """Test that paired_or_unpaired acts like single_datasets for non-paired collections."""
+    # list over paired_or_unpaired → list (full type preserved, like single_datasets)
+    assert c_t("list").effective_collection_type("paired_or_unpaired") == "list"
+    # list:list over paired_or_unpaired → list:list
+    assert c_t("list:list").effective_collection_type("paired_or_unpaired") == "list:list"
+
+
 def test_validate():
     c_t("list").validate()
     c_t("list:paired").validate()

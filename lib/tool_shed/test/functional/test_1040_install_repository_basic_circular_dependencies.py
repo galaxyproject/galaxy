@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 freebayes_repository_name = "freebayes_0040"
 freebayes_repository_description = "Galaxy's freebayes tool for test 0040"
@@ -14,7 +14,7 @@ category_name = "test_0040_repository_circular_dependencies"
 running_standalone = False
 
 
-class TestInstallingCircularDependencies(ShedTwillTestCase):
+class TestInstallingCircularDependencies(ShedTestCase):
     """Verify that the code correctly handles installing repositories with circular dependencies."""
 
     requires_galaxy = True

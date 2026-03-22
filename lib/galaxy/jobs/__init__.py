@@ -1702,7 +1702,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 )
                 conditions.append(destination_job_count < destination_user_limit)
 
-        elif anonymous_user_concurrent_jobs and job.galaxy_session and job.galaxy_session.id:
+        elif anonymous_user_concurrent_jobs is not None and job.galaxy_session and job.galaxy_session.id:
             anon_job_count = (
                 select(func.count(Job.id))
                 .where(
@@ -2231,24 +2231,27 @@ class MinimalJobWrapper(HasResourceParameters):
                 dataset.full_delete()
                 collected_bytes = 0
 
-        # Calculate dataset hash
-        for dataset_assoc in output_dataset_associations:
-            dataset = dataset_assoc.dataset.dataset
-            if not dataset.purged and dataset.state == Dataset.states.OK and not dataset.hashes:
-                if self.app.config.calculate_dataset_hash == "always" or (
-                    self.app.config.calculate_dataset_hash == "upload" and job.tool_id in ("upload1", "__DATA_FETCH__")
-                ):
-                    # Calculate dataset hash via a celery task
-                    if self.app.config.enable_celery_tasks:
-                        from galaxy.celery.tasks import compute_dataset_hash
+        # Calculate dataset hash - only if the job completed successfully,
+        # otherwise dataset files may be missing/invalid (e.g. failed fetch from 404 URL).
+        if final_job_state == job.states.OK:
+            for dataset_assoc in output_dataset_associations:
+                dataset = dataset_assoc.dataset.dataset
+                if not dataset.purged and dataset.state == Dataset.states.OK and not dataset.hashes:
+                    if self.app.config.calculate_dataset_hash == "always" or (
+                        self.app.config.calculate_dataset_hash == "upload"
+                        and job.tool_id in ("upload1", "__DATA_FETCH__")
+                    ):
+                        # Calculate dataset hash via a celery task
+                        if self.app.config.enable_celery_tasks:
+                            from galaxy.celery.tasks import compute_dataset_hash
 
-                        extra_files_path = dataset.extra_files_path if dataset.extra_files_path_exists() else None
-                        request = ComputeDatasetHashTaskRequest(
-                            dataset_id=dataset.id,
-                            extra_files_path=extra_files_path,
-                            hash_function=self.app.config.hash_function,
-                        )
-                        compute_dataset_hash.delay(request=request)
+                            extra_files_path = dataset.extra_files_path if dataset.extra_files_path_exists() else None
+                            request = ComputeDatasetHashTaskRequest(
+                                dataset_id=dataset.id,
+                                extra_files_path=extra_files_path,
+                                hash_function=self.app.config.hash_function,
+                            )
+                            compute_dataset_hash.delay(request=request)
 
         user = job.user
         if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:
@@ -2433,12 +2436,28 @@ class MinimalJobWrapper(HasResourceParameters):
                         str(runtime).split(".")[0], self.app.job_config.limits.walltime
                     ),
                 )
+        if runtime is not None and self.tool:
+            timelimit = self.tool.timelimit
+            if timelimit and timelimit > 0:
+                timelimit_delta = datetime.timedelta(seconds=timelimit)
+                if runtime > timelimit_delta:
+                    log.warning(
+                        "(%s) Job runtime %s has exceeded the tool time limit of %ss, it will be terminated",
+                        self.get_id_tag(),
+                        runtime,
+                        timelimit,
+                    )
+                    return (
+                        JobState.runner_states.TOOL_TIMELIMIT_REACHED,
+                        f"Job exceeded tool time limit (runtime: {str(runtime).split('.')[0]}, limit: {timelimit}s)",
+                    )
         return None
 
     def has_limits(self):
         has_output_limit = self.app.job_config.limits.output_size and self.app.job_config.limits.output_size > 0
         has_walltime_limit = self.app.job_config.limits.walltime_delta is not None
-        return has_output_limit or has_walltime_limit
+        has_tool_timelimit = self.tool is not None and self.tool.timelimit is not None
+        return has_output_limit or has_walltime_limit or has_tool_timelimit
 
     def get_command_line(self):
         """Return complete command line, including possible version command."""

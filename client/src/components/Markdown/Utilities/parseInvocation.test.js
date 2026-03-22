@@ -18,6 +18,11 @@ const INVOCATION = {
             label: "input_3",
             id: "input_id_3",
         },
+        {
+            label: "input_collection_1",
+            id: "input_collection_id_1",
+            src: "hdca",
+        },
     ],
     outputs: {
         output_1: {
@@ -83,6 +88,17 @@ describe("parseInvocation.ts", () => {
                 }).implicit_collection_jobs_id,
             ).toBe("implicit_id_2");
             expect(parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "", {}).invocation.id).toBe("invocation_id_1");
+            // collection inputs (src=hdca) route to history_dataset_collection_id, not history_dataset_id
+            expect(
+                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "history_dataset_as_image", {
+                    input: "input_collection_1",
+                }).history_dataset_collection_id,
+            ).toBe("input_collection_id_1");
+            expect(
+                parseInvocation(INVOCATION, STORED_WORKFLOW_ID, "history_dataset_as_image", {
+                    input: "input_collection_1",
+                }).history_dataset_id,
+            ).toBeUndefined();
         });
     });
 });

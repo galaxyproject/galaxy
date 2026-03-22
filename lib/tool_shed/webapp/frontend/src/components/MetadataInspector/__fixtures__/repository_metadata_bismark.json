@@ -94,7 +94,7 @@
                 "version_string_cmd": null
             }
         ],
-        "invalid_tools": ["bismark_bowtie_wrapper.xml"]
+        "invalid_tools": [{"tool_config": "bismark_bowtie_wrapper.xml", "error_message": "Tool XML parsing error"}]
     },
     "1:babbdbda7d7a": {
         "model_class": "RepositoryMetadata",
@@ -161,6 +161,6 @@
                 "version_string_cmd": null
             }
         ],
-        "invalid_tools": ["bismark_bowtie_wrapper.xml", "bismark_bowtie2_wrapper.xml"]
+        "invalid_tools": [{"tool_config": "bismark_bowtie_wrapper.xml", "error_message": "Tool XML parsing error"}, {"tool_config": "bismark_bowtie2_wrapper.xml", "error_message": "Tool XML parsing error"}]
     }
 }

@@ -4,7 +4,7 @@
 import { createLocalVue } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
 import { PiniaVuePlugin } from "pinia";
-import { expect, test, vi } from "vitest";
+import { expect, vi } from "vitest";
 import VueRouter from "vue-router";
 
 import { localizationPlugin } from "@/components/plugins/localization";
@@ -39,40 +39,43 @@ export function getLocalVue(instrumentLocalization = false) {
 }
 
 export function suppressDebugConsole() {
-    vi.spyOn(console, "debug").mockImplementation(vi.fn());
+    vi.spyOn(console, "debug").mockImplementation(() => {});
 }
 
 export function suppressBootstrapVueWarnings() {
     const originalWarn = console.warn;
-    vi.spyOn(console, "warn").mockImplementation(
-        vi.fn((msg) => {
-            if (typeof msg !== "string" || msg.indexOf("BootstrapVue warn") < 0) {
-                originalWarn(msg);
-            }
-        }),
-    );
+    vi.spyOn(console, "warn").mockImplementation((msg) => {
+        if (!String(msg).includes("BootstrapVue warn")) {
+            originalWarn(msg);
+        }
+    });
 }
 
 export function suppressErrorForCustomIcons() {
     const originalError = console.error;
-    vi.spyOn(console, "error").mockImplementation(
-        vi.fn((msg) => {
-            if (msg.indexOf("Could not find one or more icon(s)") < 0) {
-                originalError(msg);
-            }
-        }),
-    );
+    vi.spyOn(console, "error").mockImplementation((msg) => {
+        if (!String(msg).includes("Could not find one or more icon(s)")) {
+            originalError(msg);
+        }
+    });
 }
 
 export function suppressLucideVue2Deprecation() {
     const originalWarn = console.warn;
-    vi.spyOn(console, "warn").mockImplementation(
-        vi.fn((msg) => {
-            if (msg.indexOf("[Lucide Vue] This package will be deprecated") < 0) {
-                originalWarn(msg);
-            }
-        }),
-    );
+    vi.spyOn(console, "warn").mockImplementation((msg) => {
+        if (!String(msg).includes("[Lucide Vue] This package will be deprecated")) {
+            originalWarn(msg);
+        }
+    });
+}
+
+export function suppressExpectedErrorMessages(expectedMessages = []) {
+    const originalError = console.error;
+    vi.spyOn(console, "error").mockImplementation((msg) => {
+        if (!expectedMessages.some((expected) => String(msg).includes(expected))) {
+            originalError(msg);
+        }
+    });
 }
 
 function isTestLocalized(received) {

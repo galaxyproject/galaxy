@@ -4,6 +4,7 @@ Constructs for grouping tool parameters
 
 import io
 import logging
+import math
 import os
 import unicodedata
 from collections.abc import (
@@ -182,6 +183,8 @@ class Repeat(Group):
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
         repeat_dict = super().to_dict(trans)
+        if math.isinf(repeat_dict.get("max", 0)):
+            repeat_dict["max"] = None
 
         def input_to_dict(input):
             return input.to_dict(trans)

@@ -47,7 +47,7 @@ def test_job_metrics_format_cgroup():
         "memory.limit_in_bytes",
         9223372036854771712,
         assert_title="Memory limit on cgroup (MEM)",
-        assert_value="8.0 EB",
+        assert_value="8.0 EiB",
     )
     _assert_format(
         "cgroup",
@@ -61,7 +61,7 @@ def test_job_metrics_format_cgroup():
         "memory.peak",
         45097156608,
         assert_title="Max memory usage recorded",
-        assert_value="42.0 GB",
+        assert_value="42.0 GiB",
     )
 
 

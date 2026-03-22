@@ -249,6 +249,17 @@ def test_to_cwl():
     assert hda_references == hdas
 
 
+def test_to_cwl_purged_dataset():
+    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda.id = 1
+    hda.dataset.state = model.Dataset.states.OK
+    hda.dataset.purged = True
+    step = model.WorkflowStep()
+    step.id = 1
+    with pytest.raises(modules.FailWorkflowEvaluation):
+        modules.to_cwl(hda, [], step)
+
+
 def test_to_cwl_nested_collection():
     hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
     hda.dataset.state = model.Dataset.states.OK

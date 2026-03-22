@@ -226,6 +226,19 @@ def skip_without_tool(tool_id: str):
     return method_wrapper
 
 
+def skip_without_agents(method):
+    @wraps(method)
+    def wrapped_method(api_test_case, *args, **kwd):
+        interactor = api_test_case.anonymous_galaxy_interactor
+        resp = interactor.get("configuration")
+        api_asserts.assert_status_code_is_ok(resp)
+        if not resp.json().get("llm_api_configured", False):
+            raise unittest.SkipTest("Agents not available")
+        return method(api_test_case, *args, **kwd)
+
+    return wrapped_method
+
+
 def skip_without_asgi(method):
     @wraps(method)
     def wrapped_method(api_test_case: HasAnonymousGalaxyInteractor, *args, **kwd):
@@ -1214,10 +1227,16 @@ class BaseDatasetPopulator(BasePopulator):
                 kwds["__files"][key] = value
                 del inputs[key]
 
+        if "credentials_context" in kwds and not isinstance(kwds["credentials_context"], str):
+            kwds["credentials_context"] = json.dumps(kwds["credentials_context"])
         return dict(tool_id=tool_id, inputs=json.dumps(inputs), history_id=history_id, **kwds)
 
-    def build_tool_state(self, tool_id: str, history_id: str):
-        response = self._post(f"tools/{tool_id}/build?history_id={history_id}")
+    def build_tool_state(self, tool_id: str, history_id: str, inputs: Optional[dict] = None):
+        if inputs is not None:
+            payload = {"history_id": history_id, "inputs": inputs}
+            response = self._post(f"tools/{tool_id}/build", data=payload, json=True)
+        else:
+            response = self._post(f"tools/{tool_id}/build?history_id={history_id}")
         response.raise_for_status()
         return response.json()
 
@@ -1797,6 +1816,11 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
 
+    def get_request_schema(self, tool_id: str) -> dict[str, Any]:
+        response = self._get(f"tools/{tool_id}/parameter_request_schema")
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
     def get_history_tool_requests(self, history_id: str) -> list[dict[str, Any]]:
         response = self._get(f"histories/{history_id}/tool_requests")
         api_asserts.assert_status_code_is_ok(response)
@@ -2086,6 +2110,204 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
             yield history_id
 
 
+class BaseCredentialsPopulator(BasePopulator):
+    """Abstract base class for credential operations in Galaxy tests."""
+
+    DEFAULT_SOURCE_TYPE = "tool"
+    DEFAULT_SOURCE_VERSION = "test"
+    DEFAULT_SERVICE_NAME = "service1"
+    DEFAULT_SERVICE_VERSION = "v1"
+
+    def build_credentials_payload(
+        self,
+        tool_id: str,
+        variables: list,
+        secrets: list,
+        source_type: str = DEFAULT_SOURCE_TYPE,
+        source_version: str = DEFAULT_SOURCE_VERSION,
+        service_name: str = DEFAULT_SERVICE_NAME,
+        service_version: str = DEFAULT_SERVICE_VERSION,
+        group_name: Optional[str] = None,
+    ) -> dict:
+        """Build and return a credentials payload dict without posting it."""
+        if group_name is None:
+            group_name = random_name()
+        return {
+            "source_type": source_type,
+            "source_id": tool_id,
+            "source_version": source_version,
+            "service_credential": {
+                "name": service_name,
+                "version": service_version,
+                "group": {
+                    "name": group_name,
+                    "variables": [dict(v) for v in variables],
+                    "secrets": [dict(s) for s in secrets],
+                },
+            },
+        }
+
+    def post_credentials(self, payload: dict, expected_status: int = 200, anon: bool = False) -> dict:
+        """Post credentials payload, assert expected status, and return the response JSON."""
+        response = self._post("/api/users/current/credentials", data=payload, json=True, anon=anon)
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response.json()
+
+    def create_credentials(
+        self,
+        tool_id: str,
+        variables: list,
+        secrets: list,
+        expected_status: int = 200,
+        anon: bool = False,
+        **kwargs,
+    ) -> dict:
+        """Build and post credentials in one step. Returns response JSON."""
+        payload = self.build_credentials_payload(tool_id=tool_id, variables=variables, secrets=secrets, **kwargs)
+        return self.post_credentials(payload, expected_status=expected_status, anon=anon)
+
+    def list_credentials(
+        self,
+        source_type: Optional[str] = None,
+        source_id: Optional[str] = None,
+        include_definition: bool = False,
+        expected_status: int = 200,
+    ) -> list:
+        """Return credentials for the current user, optionally filtered by source or definition."""
+        params = []
+        if source_type is not None:
+            params.append(f"source_type={source_type}")
+        if source_id is not None:
+            params.append(f"source_id={source_id}")
+        if include_definition:
+            params.append("include_definition=true")
+        url = "/api/users/current/credentials"
+        if params:
+            url += "?" + "&".join(params)
+        response = self._get(url)
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response.json()
+
+    def get_credentials(self, source_type: str, source_id: str) -> list:
+        """Return credentials list for the given source."""
+        return self.list_credentials(source_type=source_type, source_id=source_id)
+
+    def update_credentials_group(
+        self, user_credentials_id: str, group_id: str, payload: dict, expected_status: int = 200
+    ) -> dict:
+        """PUT /api/users/current/credentials/{id}/groups/{gid} and return response JSON."""
+        response = self._put(
+            f"/api/users/current/credentials/{user_credentials_id}/groups/{group_id}", data=payload, json=True
+        )
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response.json()
+
+    def select_current_group(
+        self,
+        source_type: str,
+        source_id: str,
+        source_version: str,
+        user_credentials_id: str,
+        current_group_id: Optional[str],
+        expected_status: int = 204,
+    ) -> None:
+        """PUT /api/users/current/credentials to select (or unset) the current group."""
+        payload = {
+            "source_type": source_type,
+            "source_id": source_id,
+            "source_version": source_version,
+            "service_credentials": [{"user_credentials_id": user_credentials_id, "current_group_id": current_group_id}],
+        }
+        response = self._put("/api/users/current/credentials", data=payload, json=True)
+        api_asserts.assert_status_code_is(response, expected_status)
+
+    def delete_service_credentials(self, user_credentials_id: str, expected_status: int = 204) -> None:
+        """DELETE /api/users/current/credentials/{id}."""
+        response = self._delete(f"/api/users/current/credentials/{user_credentials_id}")
+        api_asserts.assert_status_code_is(response, expected_status)
+
+    def delete_credentials_group(self, user_credentials_id: str, group_id: str, expected_status: int = 204) -> None:
+        """DELETE /api/users/current/credentials/{id}/groups/{gid}."""
+        response = self._delete(f"/api/users/current/credentials/{user_credentials_id}/groups/{group_id}")
+        api_asserts.assert_status_code_is(response, expected_status)
+
+    def setup_credentials_context(
+        self,
+        tool_id: str,
+        variables: list,
+        secrets: list,
+        service_name: str = DEFAULT_SERVICE_NAME,
+        service_version: str = DEFAULT_SERVICE_VERSION,
+        group_name: str = "default",
+        source_version: str = DEFAULT_SOURCE_VERSION,
+    ) -> list:
+        """Create credentials and return a ready-to-use credentials_context list for tool execution.
+
+        Idempotent: if the service credentials and group already exist (e.g. from a prior test
+        in the same server session), reuses them instead of failing with a 409 conflict.
+        Also selects the group as the current group so server-side resolution
+        (e.g. during workflow execution) can find it via current_group_id.
+        """
+        # Check whether credentials already exist for this service.
+        existing = self.get_credentials("tool", tool_id)
+        user_cred_entry = next(
+            (c for c in existing if c.get("name") == service_name and c.get("version") == service_version),
+            None,
+        )
+        if user_cred_entry:
+            user_credentials_id = user_cred_entry["id"]
+            created_group = next(
+                (g for g in user_cred_entry.get("groups", []) if g["name"] == group_name),
+                None,
+            )
+            if created_group is None:
+                # User credentials exist but this group doesn't — create only the group.
+                created_group = self.create_credentials(
+                    tool_id=tool_id,
+                    variables=variables,
+                    secrets=secrets,
+                    service_name=service_name,
+                    service_version=service_version,
+                    group_name=group_name,
+                    source_version=source_version,
+                )
+        else:
+            created_group = self.create_credentials(
+                tool_id=tool_id,
+                variables=variables,
+                secrets=secrets,
+                service_name=service_name,
+                service_version=service_version,
+                group_name=group_name,
+                source_version=source_version,
+            )
+            credentials_list = self.get_credentials("tool", tool_id)
+            user_credentials_id = credentials_list[0]["id"]
+        self.select_current_group(
+            source_type="tool",
+            source_id=tool_id,
+            source_version=source_version,
+            user_credentials_id=user_credentials_id,
+            current_group_id=created_group["id"],
+        )
+        return [
+            {
+                "user_credentials_id": user_credentials_id,
+                "name": service_name,
+                "version": service_version,
+                "selected_group": {
+                    "id": created_group["id"],
+                    "name": created_group["name"],
+                },
+            }
+        ]
+
+
+class CredentialsPopulator(GalaxyInteractorHttpMixin, BaseCredentialsPopulator):
+    def __init__(self, galaxy_interactor: ApiTestInteractor) -> None:
+        self.galaxy_interactor = galaxy_interactor
+
+
 # Things gxformat2 knows how to upload as workflows
 YamlContentT = Union[StrPath, dict]
 
@@ -2134,6 +2356,7 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def create_workflow(self, workflow: dict[str, Any], **create_kwds) -> str:
         upload_response = self.create_workflow_response(workflow, **create_kwds)
+        api_asserts.assert_status_code_is(upload_response, 200)
         uploaded_workflow_id = upload_response.json()["id"]
         return uploaded_workflow_id
 
@@ -2378,6 +2601,7 @@ class BaseWorkflowPopulator(BasePopulator):
         history_id: Optional[str] = None,
         instance: Optional[bool] = None,
         version: Optional[int] = None,
+        preserve_external_subworkflow_links: Optional[bool] = None,
     ) -> dict:
         params: dict[str, Any] = {}
         if style is not None:
@@ -2388,6 +2612,8 @@ class BaseWorkflowPopulator(BasePopulator):
             params["instance"] = instance
         if version is not None:
             params["version"] = version
+        if preserve_external_subworkflow_links is not None:
+            params["preserve_external_subworkflow_links"] = preserve_external_subworkflow_links
         response = self._get(f"workflows/{workflow_id}/download", data=params)
         api_asserts.assert_status_code_is(response, 200)
         if style != "format2":
@@ -2456,6 +2682,7 @@ class BaseWorkflowPopulator(BasePopulator):
         raw_yaml: bool = False,
         use_cached_job: bool = False,
         copy_inputs_to_history: bool = False,
+        job_dir: Optional[str] = None,
     ):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
         workflow_populator = self
@@ -2489,9 +2716,33 @@ class BaseWorkflowPopulator(BasePopulator):
         replacement_parameters = test_data_dict.pop("replacement_parameters", {})
         if history_id is None:
             history_id = self.dataset_populator.new_history()
-        inputs, label_map, has_uploads = load_data_dict(
-            history_id, test_data_dict, self.dataset_populator, self.dataset_collection_populator
-        )
+        if _uses_class_syntax(test_data_dict):
+            # Copy because galactic_job_json() mutates the dict in-place
+            job_copy = dict(test_data_dict)
+            # Extract raw parameters before staging — galactic_job_json
+            # doesn't understand type: raw and would misinterpret them
+            raw_params = {}
+            for k, v in list(job_copy.items()):
+                if isinstance(v, dict) and v.get("type") == "raw":
+                    raw_params[k] = v["value"]
+                    del job_copy[k]
+            staged_job, datasets = stage_inputs(
+                self.dataset_populator.galaxy_interactor,
+                history_id,
+                job_copy,
+                use_path_paste=False,
+                job_dir=job_dir,
+            )
+            if datasets:
+                self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            staged_job.update(raw_params)
+            label_map = staged_job
+            inputs = staged_job
+            has_uploads = bool(datasets)
+        else:
+            inputs, label_map, has_uploads = load_data_dict(
+                history_id, test_data_dict, self.dataset_populator, self.dataset_collection_populator
+            )
         workflow_request: dict[str, Any] = dict(
             history=f"hist_id={history_id}",
             workflow_id=workflow_id,
@@ -3758,6 +4009,16 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
         return create_response
 
 
+def _uses_class_syntax(test_data_dict: dict) -> bool:
+    """Detect Planemo-style class: Collection/File syntax in test data."""
+    for value in test_data_dict.values():
+        if isinstance(value, dict) and "class" in value:
+            return True
+        if isinstance(value, list):  # CWL list shorthand
+            return True
+    return False
+
+
 LoadDataDictResponseT = tuple[dict[str, Any], dict[str, Any], bool]
 
 
@@ -3814,6 +4075,10 @@ def load_data_dict(
                 fetch_response = dataset_collection_populator.create_list_of_pairs_in_history(
                     history_id, contents=elements, wait=True, **new_collection_kwds
                 ).json()
+            elif collection_type == "list:paired_or_unpaired":
+                fetch_response = dataset_collection_populator.create_list_of_paired_and_unpaired_in_history(
+                    history_id, wait=True, **new_collection_kwds
+                ).json()
             elif collection_type and ":" in collection_type:
                 fetch_response = {
                     "outputs": [
@@ -3826,6 +4091,15 @@ def load_data_dict(
                 fetch_response = dataset_collection_populator.create_list_in_history(
                     history_id, contents=elements, direct_upload=True, wait=True, **new_collection_kwds
                 ).json()
+            elif collection_type == "paired_or_unpaired":
+                if elements:
+                    fetch_response = dataset_collection_populator.upload_collection(
+                        history_id, "paired_or_unpaired", elements=elements, wait=True, **new_collection_kwds
+                    ).json()
+                else:
+                    fetch_response = dataset_collection_populator.create_paired_or_unpaired_pair_in_history(
+                        history_id, wait=True, **new_collection_kwds
+                    ).json()
             else:
                 fetch_response = dataset_collection_populator.create_pair_in_history(
                     history_id, contents=elements or None, direct_upload=True, wait=True, **new_collection_kwds
@@ -3881,6 +4155,17 @@ def stage_inputs(
     job_dir: Optional[str] = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Alternative to load_data_dict that uses production-style workflow inputs."""
+    test_data_resolver = TestDataResolver()
+
+    def resolve_data(filename):
+        result = galaxy_interactor._find_in_test_data_directories(filename)
+        if result and os.path.exists(result):
+            return result
+        try:
+            return test_data_resolver.get_filename(filename)
+        except Exception:
+            return None
+
     kwds = {}
     if job_dir is not None:
         kwds["job_dir"] = job_dir
@@ -3890,7 +4175,7 @@ def stage_inputs(
         job=job,
         use_path_paste=use_path_paste,
         to_posix_lines=to_posix_lines,
-        resolve_data=galaxy_interactor._find_in_test_data_directories,
+        resolve_data=resolve_data,
         **kwds,
     )
 
@@ -4551,6 +4836,15 @@ class TargetHistory:
                 self._history_id, contents=contents, direct_upload=True, wait=True
             )
         )
+
+    def with_sample_sheet(self, contents: Optional[ListContentsDescription] = None) -> "HasSrcDict":
+        if contents is None:
+            contents = [("foo", "text for foo element")]
+        create_response = self._dataset_collection_populator.create_sample_sheet(
+            self._history_id, contents=contents, column_definitions=[], rows={c[0]: [] for c in contents}
+        )
+        api_asserts.assert_status_code_is_ok(create_response)
+        return HasSrcDict("hdca", create_response.json())
 
     def with_example_list_of_pairs(self) -> "HasSrcDict":
         return HasSrcDict("hdca", self._dataset_collection_populator.example_list_of_pairs(self._history_id))

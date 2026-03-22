@@ -138,7 +138,11 @@ def path_or_uri_to_uri(path_or_uri: str) -> str:
 class CollectionCreateFunc(Protocol):
 
     def __call__(
-        self, element_identifiers: List[Dict[str, Any]], collection_type: str, rows: Optional[Dict[str, Any]] = None
+        self,
+        element_identifiers: List[Dict[str, Any]],
+        collection_type: str,
+        rows: Optional[Dict[str, Any]] = None,
+        name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create a collection from these identifiers."""
 
@@ -253,6 +257,8 @@ def galactic_job_json(
             kwd["hashes"] = value["hashes"]
         if value.get("metadata"):
             kwd["metadata"] = value["metadata"]
+        if "name" in value:
+            kwd["name"] = value["name"]
         if composite_data_raw:
             composite_data = []
             for entry in composite_data_raw:
@@ -268,7 +274,7 @@ def galactic_job_json(
         if file_path is None:
             contents = value.get("contents")
             if contents is not None:
-                return upload_file_literal(contents, **kwd)
+                return upload_file_literal(contents, filetype=filetype, **kwd)
 
             return value
 
@@ -359,7 +365,9 @@ def galactic_job_json(
         elements = to_elements(value, collection_type)
         kwds = {}
         if collection_type.startswith("sample_sheet"):
-            kwds["rows"] = value["rows"]
+            kwds["rows"] = value.get("rows")
+        if "name" in value:
+            kwds["name"] = value["name"]
         collection = collection_create_func(elements, collection_type, **kwds)
         dataset_collections.append(collection)
         hdca_id = collection["id"]

@@ -194,7 +194,13 @@ describe("RevisionsTab", () => {
                 [keys[0]]: makeRevision({
                     tools: [],
                     downloadable: false,
-                    invalid_tools: ["t1.xml", "t2.xml", "t3.xml", "t4.xml", "t5.xml"],
+                    invalid_tools: [
+                        { tool_config: "t1.xml", error_message: "error" },
+                        { tool_config: "t2.xml", error_message: "error" },
+                        { tool_config: "t3.xml", error_message: "error" },
+                        { tool_config: "t4.xml", error_message: "error" },
+                        { tool_config: "t5.xml", error_message: "error" },
+                    ],
                 }),
             }
 

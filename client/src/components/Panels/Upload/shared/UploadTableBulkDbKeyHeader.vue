@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { BFormSelect } from "bootstrap-vue";
+import { computed } from "vue";
 
 import type { DbKey } from "@/composables/uploadConfigurations";
+
+import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 interface Props {
     /** Selected bulk dbKey value */
@@ -14,7 +16,7 @@ interface Props {
     tooltip?: string;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     disabled: false,
     tooltip: "Set database key for all items",
 });
@@ -23,26 +25,25 @@ const emit = defineEmits<{
     (e: "input", value: string): void;
 }>();
 
-function handleInput(value: string) {
-    emit("input", value);
+const optionsWithDefault = computed(() => [{ id: "", text: "Set all..." }, ...(props.dbKeys || [])]);
+
+function onItemSelection(item: DbKey) {
+    emit("input", item.id);
 }
 </script>
 
 <template>
     <div class="column-header-vertical">
         <span class="column-title">Reference</span>
-        <BFormSelect
+        <SingleItemSelector
             v-b-tooltip.hover.noninteractive
-            :value="value"
-            size="sm"
+            class="w-100"
+            collection-name="References"
             :title="tooltip"
+            :items="optionsWithDefault"
+            :current-item="props.dbKeys.find((dbKey) => dbKey.id === props.value) || optionsWithDefault[0]"
             :disabled="disabled"
-            @input="handleInput">
-            <option value="">Set all...</option>
-            <option v-for="(dbKey, dbKeyIndex) in dbKeys" :key="dbKeyIndex" :value="dbKey.id">
-                {{ dbKey.text }}
-            </option>
-        </BFormSelect>
+            @update:selected-item="onItemSelection" />
     </div>
 </template>
 

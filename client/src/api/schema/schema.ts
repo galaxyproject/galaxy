@@ -121,6 +121,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat/exchange/{exchange_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete Exchange
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        delete: operations["delete_exchange_api_chat_exchange__exchange_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chat/exchange/{exchange_id}/feedback": {
         parameters: {
             query?: never;
@@ -154,6 +174,26 @@ export interface paths {
          */
         get: operations["get_exchange_messages_api_chat_exchange__exchange_id__messages_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/exchanges/batch/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Batch Delete Exchanges
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        put: operations["batch_delete_exchanges_api_chat_exchanges_batch_delete_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -7745,6 +7785,16 @@ export interface components {
              */
             type: string;
         };
+        /** BibtexCitationResponse */
+        BibtexCitationResponse: {
+            /** Content */
+            content: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            format: "bibtex";
+        };
         /** Body_analyze_error_api_ai_agents_error_analysis_post */
         Body_analyze_error_api_ai_agents_error_analysis_post: {
             /**
@@ -8195,6 +8245,14 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** ChatExchangeBatchDeletePayload */
+        ChatExchangeBatchDeletePayload: {
+            /**
+             * Exchange IDs
+             * @description List of chat exchange IDs to delete.
+             */
+            ids: string[];
+        };
         /** ChatMessage */
         ChatMessage: {
             /** Content */
@@ -8225,7 +8283,7 @@ export interface components {
              * Exchange ID
              * @description The ID of an existing chat exchange to continue.
              */
-            exchange_id?: number | null;
+            exchange_id?: string | null;
             /**
              * Query
              * @description The query to be sent to the chatbot.
@@ -8258,7 +8316,7 @@ export interface components {
              * Exchange ID
              * @description The ID of the chat exchange for continuing conversations.
              */
-            exchange_id?: number | null;
+            exchange_id?: string | null;
             /**
              * Processing Time
              * @description Time taken to process the query in seconds.
@@ -8324,6 +8382,18 @@ export interface components {
             content: string;
             /** type */
             type: string;
+        };
+        /** CitationErrorResponse */
+        CitationErrorResponse: {
+            /** Error */
+            error: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            format: "error";
+            /** Tool Id */
+            tool_id: string;
         };
         /** ClaimLandingPayload */
         ClaimLandingPayload: {
@@ -10529,7 +10599,7 @@ export interface components {
              * Populated
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
-            populated?: boolean;
+            populated?: boolean | null;
         };
         /** DataCollectionParameterModel */
         DataCollectionParameterModel: {
@@ -10960,9 +11030,8 @@ export interface components {
             /**
              * User Id
              * @description ID of the user who owns the referenced dataset.
-             * @example 0123456789ABCDEF
              */
-            user_id: string;
+            user_id: string | null;
         };
         /**
          * DatasetPermissionAction
@@ -14346,7 +14415,7 @@ export interface components {
              * Populated
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
-            populated?: boolean;
+            populated?: boolean | null;
             /**
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
@@ -14515,7 +14584,7 @@ export interface components {
              * Populated
              * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
              */
-            populated?: boolean;
+            populated?: boolean | null;
             /**
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
@@ -15007,7 +15076,7 @@ export interface components {
              * Posts
              * @description The list of posts returned by the search.
              */
-            posts?: components["schemas"]["HelpForumPost"][];
+            posts?: components["schemas"]["HelpForumPost"][] | null;
             /**
              * Tags
              * @description The list of tags returned by the search.
@@ -15017,7 +15086,7 @@ export interface components {
              * Topics
              * @description The list of topics returned by the search.
              */
-            topics?: components["schemas"]["HelpForumTopic"][];
+            topics?: components["schemas"]["HelpForumTopic"][] | null;
             /**
              * Users
              * @description The list of users returned by the search.
@@ -16327,6 +16396,39 @@ export interface components {
              */
             workflow_step_index_path?: number[] | null;
         };
+        /** InvocationFailureStepInputDeletedResponse */
+        InvocationFailureStepInputDeletedResponse: {
+            /**
+             * Details
+             * @description Details about which input referenced a deleted dataset.
+             */
+            details: string;
+            /**
+             * HistoryDatasetAssociation ID
+             * @description HistoryDatasetAssociation ID of the deleted dataset, if applicable.
+             */
+            hda_id?: string | null;
+            /**
+             * HistoryDatasetCollectionAssociation ID
+             * @description HistoryDatasetCollectionAssociation ID of the deleted collection, if applicable.
+             */
+            hdca_id?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            reason: "step_input_deleted";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+            /**
+             * Workflow Step Index Path
+             * @description Path of workflow step IDs from parent workflow through subworkflows (excludes the failing step itself).
+             */
+            workflow_step_index_path?: number[] | null;
+        };
         /** InvocationFailureWhenNotBooleanResponse */
         InvocationFailureWhenNotBooleanResponse: {
             /**
@@ -16451,7 +16553,8 @@ export interface components {
             | components["schemas"]["InvocationFailureWhenNotBooleanResponse"]
             | components["schemas"]["InvocationUnexpectedFailureResponse"]
             | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"]
-            | components["schemas"]["InvocationFailureWorkflowParameterInvalidResponse"];
+            | components["schemas"]["InvocationFailureWorkflowParameterInvalidResponse"]
+            | components["schemas"]["InvocationFailureStepInputDeletedResponse"];
         /** InvocationOutput */
         InvocationOutput: {
             /**
@@ -20995,6 +21098,11 @@ export interface components {
             ram_min: number | null;
             /** shm_size */
             shm_size?: number | null;
+            /**
+             * timelimit
+             * @description Maximum time in seconds the tool is allowed to run. Job will be terminated if exceeded.
+             */
+            timelimit?: number | null;
             /** tmpdir_max */
             tmpdir_max?: number | null;
             /** tmpdir_min */
@@ -26085,6 +26193,51 @@ export interface operations {
             };
         };
     };
+    delete_exchange_api_chat_exchange__exchange_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                exchange_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
     set_exchange_feedback_api_chat_exchange__exchange_id__feedback_put: {
         parameters: {
             query?: never;
@@ -26093,7 +26246,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                exchange_id: number;
+                exchange_id: string;
             };
             cookie?: never;
         };
@@ -26142,7 +26295,7 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                exchange_id: number;
+                exchange_id: string;
             };
             cookie?: never;
         };
@@ -26157,6 +26310,53 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     }[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    batch_delete_exchanges_api_chat_exchanges_batch_delete_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatExchangeBatchDeletePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
             /** @description Request Error */
@@ -32409,7 +32609,10 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown[];
+                    "application/json": (
+                        | components["schemas"]["BibtexCitationResponse"]
+                        | components["schemas"]["CitationErrorResponse"]
+                    )[];
                 };
             };
             /** @description Request Error */

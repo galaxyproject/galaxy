@@ -76,7 +76,7 @@ INVOCATION_STEP_MODEL_CLASS = Literal["WorkflowInvocationStep"]
 INVOCATION_REPORT_MODEL_CLASS = Literal["Report"]
 IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = Literal["ImplicitCollectionJobs"]
 
-OptionalNumberT = Annotated[Optional[Union[int, float]], Field(None)]
+OptionalNumberT = Optional[Union[int, float]]
 
 TAG_ITEM_PATTERN = r"^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$"
 
@@ -261,9 +261,8 @@ ElementCountField = Annotated[
 ]
 
 PopulatedField = Annotated[
-    bool,
+    Optional[bool],
     Field(
-        None,
         title="Populated",
         description="Whether the dataset collection elements (and any subcollections elements) were successfully populated.",
     ),
@@ -408,8 +407,8 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
 
 
 class UserUpdatePayload(Model):
-    active: Annotated[Optional[bool], Field(None, title="Active", description="User is active")]
-    username: Annotated[Optional[str], Field(None, title="Username", description="The name of the user.")]
+    active: Annotated[Optional[bool], Field(title="Active", description="User is active")] = None
+    username: Annotated[Optional[str], Field(title="Username", description="The name of the user.")] = None
     preferred_object_store_id: Annotated[Optional[str], PreferredObjectStoreIdField]
 
 
@@ -810,16 +809,15 @@ class DatasetSource(Model):
     )
     source_uri: Annotated[RelativeUrl, Field(..., title="Source URI", description="The URI of the dataset source.")]
     extra_files_path: Annotated[
-        Optional[str], Field(None, title="Extra Files Path", description="The path to the extra files.")
-    ]
+        Optional[str], Field(title="Extra Files Path", description="The path to the extra files.")
+    ] = None
     transform: Annotated[
         Optional[list[DatasetSourceTransform]],
         Field(
-            None,
             title="Transform",
             description="The transformations applied to the dataset source.",
         ),
-    ]
+    ] = None
 
 
 class HDADetailed(HDASummary, WithModelClass):
@@ -966,11 +964,11 @@ class HDADetailed(HDASummary, WithModelClass):
         ),
     ]
     copied_from_history_dataset_association_id: Annotated[
-        Optional[EncodedDatabaseIdField], Field(None, description="ID of HDA this HDA was copied from.")
-    ]
+        Optional[EncodedDatabaseIdField], Field(description="ID of HDA this HDA was copied from.")
+    ] = None
     copied_from_library_dataset_dataset_association_id: Annotated[
-        Optional[EncodedDatabaseIdField], Field(None, description="ID of LDDA this HDA was copied from.")
-    ]
+        Optional[EncodedDatabaseIdField], Field(description="ID of LDDA this HDA was copied from.")
+    ] = None
 
 
 class HDAExtended(HDADetailed):
@@ -1029,7 +1027,7 @@ class DCObject(Model, WithModelClass):
     id: DatasetCollectionId
     model_class: DC_MODEL_CLASS = ModelClassField(DC_MODEL_CLASS)
     collection_type: CollectionType = CollectionTypeField
-    populated: PopulatedField
+    populated: PopulatedField = None
     element_count: ElementCountField
     contents_url: Optional[ContentsUrlField] = None
     elements: list["DCESummary"] = ElementsField
@@ -1087,7 +1085,7 @@ DCObject.model_rebuild()
 class DCDetailed(DCSummary):
     """Dataset Collection detailed information."""
 
-    populated: PopulatedField
+    populated: PopulatedField = None
     elements: list[DCESummary] = ElementsField
 
 
@@ -1249,7 +1247,7 @@ class HDCASummary(HDCACommon, WithModelClass):
 class HDCADetailed(HDCASummary):
     """History Dataset Collection Association detailed information."""
 
-    populated: PopulatedField
+    populated: PopulatedField = None
     elements: list[DCESummary] = ElementsField
     implicit_collection_jobs_id: Optional[EncodedDatabaseIdField] = Field(
         None,
@@ -1989,27 +1987,25 @@ class ExportObjectResultMetadata(Model):
     error: Optional[str] = None
 
     @model_validator(mode="after")
-    @classmethod
-    def validate_success(cls, model):
+    def validate_success(self):
         """
         Ensure successful exports do not have error text.
         """
-        if model.success and model.error is not None:
+        if self.success and self.error is not None:
             raise ValueError("successful exports cannot have error text")
 
-        return model
+        return self
 
     @model_validator(mode="after")
-    @classmethod
-    def validate_uri(cls, model):
+    def validate_uri(self):
         """
         Ensure unsuccessful exports do not have a URI.
         """
 
-        if not model.success and model.uri:
+        if not self.success and self.uri:
             raise ValueError("unsuccessful exports cannot have a URI")
 
-        return model
+        return self
 
 
 class ExportObjectMetadata(Model):
@@ -3490,9 +3486,9 @@ ModifyIdsField = Annotated[
 
 
 class UpdateDatasetPermissionsPayload(UpdateDatasetPermissionsPayloadBase):
-    access_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="access_ids[]")] = None
-    manage_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="manage_ids[]")] = None
-    modify_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="modify_ids[]")] = None
+    access_ids: Annotated[Optional[RoleIdList], Field(alias="access_ids[]")] = None
+    manage_ids: Annotated[Optional[RoleIdList], Field(alias="manage_ids[]")] = None
+    modify_ids: Annotated[Optional[RoleIdList], Field(alias="modify_ids[]")] = None
 
 
 class UpdateDatasetPermissionsPayloadAliasB(UpdateDatasetPermissionsPayloadBase):
@@ -3883,7 +3879,7 @@ class ChatPayload(Model):
         title="Context",
         description="The context for the chatbot.",
     )
-    exchange_id: Optional[int] = Field(
+    exchange_id: Optional[DecodedDatabaseIdField] = Field(
         default=None,
         title="Exchange ID",
         description="The ID of an existing chat exchange to continue.",
@@ -3916,7 +3912,7 @@ class ChatResponse(BaseModel):
         title="Agent Response",
         description="Full structured agent response with metadata and suggestions.",
     )
-    exchange_id: Optional[int] = Field(
+    exchange_id: Optional[EncodedDatabaseIdField] = Field(
         default=None,
         title="Exchange ID",
         description="The ID of the chat exchange for continuing conversations.",
@@ -3925,6 +3921,14 @@ class ChatResponse(BaseModel):
         default=None,
         title="Processing Time",
         description="Time taken to process the query in seconds.",
+    )
+
+
+class ChatExchangeBatchDeletePayload(Model):
+    ids: list[DecodedDatabaseIdField] = Field(
+        ...,
+        title="Exchange IDs",
+        description="List of chat exchange IDs to delete.",
     )
 
 

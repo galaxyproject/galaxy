@@ -1,8 +1,7 @@
 import logging
 
 from ..base import common
-from ..base.api import skip_if_api_v2
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +21,7 @@ freebayes_repository_long_description = "Long description of Freebayes tool for 
 """
 
 
-class TestToolShedBrowseUtilities(ShedTwillTestCase):
+class TestToolShedBrowseUtilities(ShedTestCase):
     """Test browsing for Galaxy utilities."""
 
     def test_0000_initiate_users(self):
@@ -83,37 +82,3 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
             "freebayes/freebayes.tar",
             commit_message="Uploaded freebayes.tar.",
         )
-
-    @skip_if_api_v2
-    def test_0030_browse_tools(self):
-        """Load the page to browse tools.
-
-        We are at step 3.
-        Verify the existence of emboss tools in the browse tools page.
-        """
-        repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
-        changeset_revision = self.get_repository_tip(repository)
-        strings_displayed = ["EMBOSS", "antigenic1", "5.0.0", changeset_revision, "user1", "emboss_0430"]
-        self.browse_tools(strings_displayed=strings_displayed)
-
-    @skip_if_api_v2
-    def test_0040_browse_tool_dependencies(self):
-        """Browse tool dependencies and look for the right versions of freebayes and samtools.
-
-        We are at step 4.
-        Verify that the browse tool dependencies page shows the correct dependencies defined for freebayes_0430.
-        """
-        freebayes_repository = self._get_repository_by_name_and_owner(
-            freebayes_repository_name, common.test_user_1_name
-        )
-        freebayes_changeset_revision = self.get_repository_tip(freebayes_repository)
-        strings_displayed = [
-            freebayes_changeset_revision,
-            "freebayes_0430",
-            "user1",
-            "0.9.4_9696d0ce8a96",
-            "freebayes",
-            "samtools",
-            "0.1.18",
-        ]
-        self.browse_tool_dependencies(strings_displayed=strings_displayed)

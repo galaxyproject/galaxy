@@ -20,6 +20,13 @@ from galaxy.structured_app import StructuredApp
 log = logging.getLogger(__name__)
 
 
+def _get_registry_type(config) -> str:
+    inference_config = getattr(config, "inference_services", None) or {}
+    if isinstance(inference_config, dict) and inference_config.get("static_responses"):
+        return "static"
+    return "default"
+
+
 class ConfigurationManager:
     """Interface/service object for interacting with configuration and related data."""
 
@@ -232,6 +239,7 @@ class ConfigSerializer(base.ModelSerializer):
             "llm_api_configured": lambda item, key, **context: bool(
                 item.ai_api_key or item.ai_api_base_url or getattr(item, "inference_services", None)
             ),
+            "llm_registry_type": lambda item, key, **context: _get_registry_type(item),
             "install_tool_dependencies": _use_config,
             "install_repository_dependencies": _use_config,
             "install_resolver_dependencies": _use_config,

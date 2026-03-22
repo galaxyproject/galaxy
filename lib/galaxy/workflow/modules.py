@@ -29,7 +29,10 @@ from galaxy.exceptions import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.compute_environment import ComputeEnvironment
+from galaxy.managers.credentials import _build_user_credentials_query
 from galaxy.model import (
+    DatasetInstance,
+    HistoryDatasetCollectionAssociation,
     Job,
     PostJobAction,
     Workflow,
@@ -39,9 +42,15 @@ from galaxy.model import (
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
+from galaxy.model.dataset_collections.adapters import PromoteCollectionElementToCollectionAdapter
 from galaxy.model.dataset_collections.query import HistoryQuery
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
+from galaxy.schema.credentials import (
+    CredentialsContext,
+    SelectedGroup,
+    ServiceCredentialsContext,
+)
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -49,6 +58,7 @@ from galaxy.schema.invocation import (
     InvocationFailureDatasetFailed,
     InvocationFailureExpressionEvaluationFailed,
     InvocationFailureOutputNotFound,
+    InvocationFailureStepInputDeleted,
     InvocationFailureWhenNotBoolean,
     InvocationFailureWorkflowParameterInvalid,
 )
@@ -87,6 +97,7 @@ from galaxy.tools.parameters.basic import (
     HiddenToolParameter,
     IntegerToolParameter,
     parameter_types,
+    ParameterValueError,
     raw_to_galaxy,
     SelectToolParameter,
     TextToolParameter,
@@ -167,6 +178,12 @@ def to_cwl(
                 why = f"dataset [{value.id}] is needed for valueFrom expression and is non-ready"
                 raise DelayedWorkflowEvaluation(why=why)
             if not value.is_ok:
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureDatasetFailed(
+                        reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
+                    )
+                )
+            if value.dataset.purged:
                 raise FailWorkflowEvaluation(
                     why=InvocationFailureDatasetFailed(
                         reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
@@ -495,7 +512,9 @@ class WorkflowModule:
 
             def update_value(input, context, prefixed_name, **kwargs):
                 if prefixed_name in step_updates:
-                    value, error = check_param(trans, input, step_updates.get(prefixed_name), context)
+                    value, error = check_param(
+                        trans, input, step_updates.get(prefixed_name), context, simple_errors=False
+                    )
                     if error is not None:
                         step_errors[prefixed_name] = error
                     return value
@@ -632,6 +651,20 @@ class WorkflowModule:
 
                 subcollection_type_description = history_query.can_map_over(data) or None
                 if subcollection_type_description:
+                    # Translate paired_or_unpaired to concrete mapping type for
+                    # flat collections. Mirrors logic in basic.py:2675-2679 that
+                    # the API tool execution path uses.
+                    _sub_ct = subcollection_type_description.collection_type
+                    _hdca_ct = data.collection.collection_type
+                    if _sub_ct == "paired_or_unpaired" and not _hdca_ct.endswith("paired_or_unpaired"):
+                        if _hdca_ct.endswith("paired"):
+                            subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
+                                "paired"
+                            )
+                        else:
+                            subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
+                                "single_datasets"
+                            )
                     subcollection_type_list = subcollection_type_description.collection_type.split(":")
                     for collection_type in reversed(subcollection_type_list):
                         if type_list:
@@ -2368,9 +2401,12 @@ class ToolModule(WorkflowModule):
             # TODO: why do we even create an invocation, seems like something we could check on submit?
             message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
             raise exceptions.MessageException(message)
-        self.state, _ = self.compute_runtime_state(
+        self.state, step_errors = self.compute_runtime_state(
             trans, step, step_updates=progress.param_map.get(step.id), replace_default_values=True
         )
+        if step_errors:
+            failure = self._build_step_error_failure(trans, step, step_errors, progress)
+            raise FailWorkflowEvaluation(why=failure)
         step.state = self.state
         tool_state = step.state
         assert tool_state is not None
@@ -2408,9 +2444,25 @@ class ToolModule(WorkflowModule):
             def callback(input, prefixed_name: str, **kwargs):
                 input_dict = all_inputs_by_name[prefixed_name]
 
-                replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
+                replacement: Union[model.Dataset, NoReplacement, PromoteCollectionElementToCollectionAdapter] = (
+                    NO_REPLACEMENT
+                )
                 if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
                     replacement = iteration_elements[prefixed_name]  # noqa: B023
+                    # When mapping flat collections over paired_or_unpaired via
+                    # single_datasets, wrap each element in an adapter so the
+                    # tool sees a paired_or_unpaired collection.
+                    if (
+                        collection_info  # noqa: B023
+                        and isinstance(replacement, model.DatasetCollectionElement)
+                        and not replacement.child_collection
+                    ):
+                        mapping_type = collection_info.subcollection_mapping_type(prefixed_name)  # noqa: B023
+                        if (
+                            hasattr(mapping_type, "collection_type")
+                            and mapping_type.collection_type == "single_datasets"
+                        ):
+                            replacement = PromoteCollectionElementToCollectionAdapter(replacement)
                 else:
                     replacement = progress.replacement_for_input(trans, step, input_dict)
 
@@ -2502,6 +2554,7 @@ class ToolModule(WorkflowModule):
                 if pja.action_type == "ValidateOutputsAction":
                     validate_outputs = True
 
+            credentials_context = self._resolve_credentials_context(tool)
             execution_tracker = execute(
                 trans=self.trans,
                 tool=tool,
@@ -2517,6 +2570,7 @@ class ToolModule(WorkflowModule):
                 ),
                 completed_jobs=completed_jobs,
                 workflow_resource_parameters=resource_parameters,
+                credentials_context=credentials_context,
             )
             complete = True
         except PartialJobExecution as pje:
@@ -2566,6 +2620,36 @@ class ToolModule(WorkflowModule):
 
         return complete
 
+    @staticmethod
+    def _build_step_error_failure(trans, step, step_errors, progress):
+        """Build the appropriate invocation failure message for step parameter errors.
+
+        Inspects the ParameterValueError objects to determine whether the error
+        is due to a deleted dataset/collection input or a generic validation failure.
+        """
+        for error in step_errors.values():
+            if isinstance(error, ParameterValueError):
+                pv = error.parameter_value
+                if isinstance(pv, DatasetInstance) and pv.deleted:
+                    return InvocationFailureStepInputDeleted(
+                        reason=FailureReason.step_input_deleted,
+                        workflow_step_id=step.id,
+                        hda_id=pv.id,
+                        details=str(error),
+                    )
+                if isinstance(pv, HistoryDatasetCollectionAssociation) and pv.deleted:
+                    return InvocationFailureStepInputDeleted(
+                        reason=FailureReason.step_input_deleted,
+                        workflow_step_id=step.id,
+                        hdca_id=pv.id,
+                        details=str(error),
+                    )
+        return InvocationFailureWorkflowParameterInvalid(
+            reason=FailureReason.workflow_parameter_invalid,
+            workflow_step_id=step.id,
+            details=str({k: str(v) for k, v in step_errors.items()}),
+        )
+
     def _effective_post_job_actions(self, step):
         effective_post_job_actions = step.post_job_actions[:]
         for key, value in self.runtime_post_job_actions.items():
@@ -2579,6 +2663,38 @@ class ToolModule(WorkflowModule):
                 ActionBox.execute_on_mapped_over(
                     self.trans, self.trans.sa_session, pja, step_inputs, step_outputs, replacement_dict
                 )
+
+    def _resolve_credentials_context(self, tool: "Tool") -> Optional[CredentialsContext]:
+        """Auto-resolve the user's current credentials for a tool in workflow execution."""
+        if not tool.credentials:
+            return None
+        trans = self.trans
+        if not trans.user:
+            return None
+        stmt = _build_user_credentials_query(
+            user_id=trans.user.id,
+            source_type="tool",
+            source_id=tool.id,
+            current_group_only=True,
+        )
+        results = trans.sa_session.execute(stmt).tuples().all()
+        if not results:
+            return None
+        encode = trans.security.encode_id
+        seen = {}
+        for user_cred, group, _cred in results:
+            key = (user_cred.id, user_cred.name, user_cred.version)
+            if key not in seen:
+                seen[key] = ServiceCredentialsContext(
+                    user_credentials_id=encode(user_cred.id),
+                    name=user_cred.name,
+                    version=user_cred.version,
+                    selected_group=SelectedGroup(
+                        id=encode(group.id),
+                        name=group.name,
+                    ),
+                )
+        return CredentialsContext(root=list(seen.values()))
 
     def _handle_post_job_actions(self, step, job, replacement_dict):
         # Create new PJA associations with the created job, to be run on completion.
@@ -2768,7 +2884,8 @@ def populate_module_and_state(
         step_errors = module_injector.compute_runtime_state(step, step_args=step_args)
         if step_errors:
             raise exceptions.MessageException(
-                "Error computing workflow step runtime state", err_data={step.order_index: step_errors}
+                "Error computing workflow step runtime state",
+                err_data={step.order_index: {k: str(v) for k, v in step_errors.items()}},
             )
         if step.upgrade_messages:
             if allow_tool_state_corrections:

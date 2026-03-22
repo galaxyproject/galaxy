@@ -6,26 +6,25 @@ Base classes and utilities for Tool Shed functional tests.
 
 ```
 base/
-├── driver.py           # ToolShedTestDriver - embedded server setup
-├── twilltestcase.py    # ShedTwillTestCase - main test base class
+├── driver.py             # ToolShedTestDriver - embedded server setup
+├── testcase.py           # ShedTestCase - main test base class
 ├── playwrighttestcase.py # PlaywrightTestCase - browser test base
 ├── playwrightbrowser.py  # PlaywrightShedBrowser - browser abstraction
-├── twillbrowser.py     # TwillShedBrowser - legacy browser
-├── browser.py          # ShedBrowser protocol
-├── populators.py       # ToolShedPopulator - API fixture creation
-├── api.py              # ShedApiTestCase - API test base
-├── api_util.py         # API interaction utilities
-└── test_db_util.py     # Direct database access
+├── browser.py            # ShedBrowser protocol
+├── populators.py         # ToolShedPopulator - API fixture creation
+├── api.py                # ShedApiTestCase - API test base
+├── api_util.py           # API interaction utilities
+└── test_db_util.py       # Direct database access
 ```
 
 ## Base Classes
 
-### ShedTwillTestCase
+### ShedTestCase
 
 Main test base class with repository/category management:
 
 ```python
-class TestFeature(ShedTwillTestCase):
+class TestFeature(ShedTestCase):
     def test_repo_creation(self):
         category = self.create_category(name="Tools")
         repo = self.get_or_create_repository(
@@ -37,6 +36,7 @@ class TestFeature(ShedTwillTestCase):
 ```
 
 Key methods:
+
 - `create_category()` - Create test category
 - `get_or_create_repository()` - Create repository with category
 - `upload_file()` / `commit_tar_to_repository()` - Upload content
@@ -57,6 +57,7 @@ class TestUI(PlaywrightTestCase):
 ```
 
 Properties:
+
 - `_page` - Playwright Page instance
 - `_playwright_browser` - PlaywrightShedBrowser wrapper
 
@@ -129,13 +130,10 @@ browser.expect_logged_in()
 ```
 
 Locators available via `Locators` class:
+
 - `Locators.toolbar_login`
 - `Locators.login_submit_button`
 - `Locators.register_link`
-
-### TwillShedBrowser
-
-Legacy browser using Twill library (deprecated, use Playwright).
 
 ## Test Driver
 

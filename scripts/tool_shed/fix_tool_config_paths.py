@@ -31,6 +31,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.attributes import flag_modified
 
 from galaxy.util.script import (
     app_properties_from_args,
@@ -274,10 +275,10 @@ def process_repository_metadata(session, current_file_path, dry_run, backup_dir,
                 else:
                     stats.paths_with_missing_files += 1
 
-        # Save changes if modified (SQLAlchemy change detection for MutableJSONType)
+        # Save changes if modified (SQLAlchemy change detection for JSON columns)
         if modified and not dry_run:
-            # Reassign the metadata dict to trigger SQLAlchemy's change detection
-            repo_metadata.metadata = repo_metadata.metadata.copy()
+            # Force SQLAlchemy to detect the change by flagging the attribute as modified
+            flag_modified(repo_metadata, "metadata")
 
         # Always backup original metadata if there were tools
         if tools:

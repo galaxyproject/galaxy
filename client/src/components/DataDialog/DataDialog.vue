@@ -25,7 +25,6 @@ interface Props {
     filterByTypeIds?: string[];
     format?: string;
     library?: boolean;
-    modalStatic?: boolean;
     multiple?: boolean;
     title?: string;
     history: string;
@@ -38,7 +37,6 @@ const props = withDefaults(defineProps<Props>(), {
     filterByTypeIds: undefined,
     format: "download",
     library: true,
-    modalStatic: false,
     multiple: false,
     title: "",
 });

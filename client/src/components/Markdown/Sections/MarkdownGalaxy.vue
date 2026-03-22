@@ -158,11 +158,18 @@ watch(
                 :content="`Galaxy Version ${config.version_major}`" />
             <TextContent v-else-if="name == 'generate_time'" class="galaxy-time" :content="new Date().toUTCString()" />
             <HistoryDatasetAsImage
-                v-else-if="name == 'history_dataset_as_image'"
+                v-else-if="name == 'history_dataset_as_image' && args.history_dataset_id"
                 :dataset-id="args.history_dataset_id"
                 :path="args.path" />
+            <DatasetCollectionElementPicker
+                v-else-if="name == 'history_dataset_as_image' && args.history_dataset_collection_id"
+                :hdca-id="args.history_dataset_collection_id">
+                <template v-slot:element="{ element }">
+                    <HistoryDatasetAsImage v-if="element" :key="element" :dataset-id="element" :path="args.path" />
+                </template>
+            </DatasetCollectionElementPicker>
             <HistoryDatasetAsTable
-                v-else-if="name == 'history_dataset_as_table'"
+                v-else-if="name == 'history_dataset_as_table' && args.history_dataset_id"
                 :compact="compact"
                 :dataset-id="args.history_dataset_id"
                 :footer="args.footer"
@@ -179,12 +186,14 @@ watch(
                         'history_dataset_info',
                         'history_dataset_peek',
                         'history_dataset_type',
-                    ].includes(name)
+                    ].includes(name) && args.history_dataset_id
                 "
                 :dataset-id="args.history_dataset_id"
                 :name="name" />
             <HistoryDatasetDisplay
-                v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(name)"
+                v-else-if="
+                    ['history_dataset_embedded', 'history_dataset_display'].includes(name) && args.history_dataset_id
+                "
                 :dataset-id="args.history_dataset_id"
                 :embedded="name == 'history_dataset_embedded'" />
             <HistoryDatasetIndex v-else-if="name == 'history_dataset_index'" :args="args" />

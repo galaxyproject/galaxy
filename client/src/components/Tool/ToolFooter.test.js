@@ -36,11 +36,11 @@ const citationsB = [
 vi.mock("@/components/Citation/services", () => ({
     getCitations: vi.fn((source, id) => {
         if (id === "tool_a") {
-            return Promise.resolve(citationsA);
+            return Promise.resolve({ citations: citationsA, warnings: [] });
         } else if (id === "tool_b") {
-            return Promise.resolve(citationsB);
+            return Promise.resolve({ citations: citationsB, warnings: [] });
         }
-        return Promise.resolve([]);
+        return Promise.resolve({ citations: [], warnings: [] });
     }),
 }));
 

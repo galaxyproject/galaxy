@@ -18,11 +18,8 @@ from tool_shed_client.schema import (
     RepositoryRevisionMetadata,
     UpdateRepositoryRequest,
 )
-from ..base.api import (
-    ShedApiTestCase,
-    skip_if_api_v1,
-    skip_if_api_v2,
-)
+from ..base.api import ShedApiTestCase
+from ..base.populators import ToolShedPopulator
 
 COLUMN_MAKER_PATH = resource_path(__name__, "../test_data/column_maker/column_maker.tar")
 
@@ -111,6 +108,9 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert repository_metadata
         for _, value in repository_metadata.root.items():
             assert value.invalid_tools
+            for invalid_tool in value.invalid_tools:
+                assert invalid_tool.tool_config
+                assert invalid_tool.error_message
 
     def test_index_simple(self):
         # Logic and typing is pretty different if given a tool id to search for - this should
@@ -130,7 +130,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert repository.owner == repo.owner
         assert repository.name == repo.name
 
-    @skip_if_api_v1
     def test_index_pagination(self):
         populator = self.populator
         category1 = populator.new_category(prefix="paginatecat1")
@@ -161,7 +160,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         response = populator.repository_index_paginated(request)
         assert response.total_results == 1
 
-    @skip_if_api_v1
     def test_index_sorting(self):
         populator = self.populator
         category1 = populator.new_category(prefix="paginatecat1")
@@ -184,7 +182,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert "_a" in order_of_these[0]
         assert "_z" in order_of_these[1]
 
-    @skip_if_api_v1
     def test_allow_push(self):
         populator = self.populator
         request = {
@@ -216,7 +213,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert "sharewith" not in populator.get_usernames_allowed_to_push(repo)
         assert "alsosharewith" in populator.get_usernames_allowed_to_push(repo)
 
-    @skip_if_api_v1
     def test_set_malicious(self):
         populator = self.populator
         repository = populator.setup_column_maker_repo(prefix="repoformalicious")
@@ -231,7 +227,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         populator.unset_malicious(repository, only_revision.changeset_revision)
         assert not populator.tip_is_malicious(repository)
 
-    @skip_if_api_v1
     def test_set_deprecated(self):
         populator = self.populator
         repository = populator.setup_column_maker_repo(prefix="repofordeprecated")
@@ -300,7 +295,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
             else:
                 raise AssertionError("Wrong number of repo tars returned...")
 
-    @skip_if_api_v1
     def test_readmes(self):
         populator = self.populator
         repository = populator.setup_test_data_repo("column_maker_with_readme")
@@ -334,21 +328,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         api_asserts.assert_status_code_is_ok(response)
         populator.assert_has_n_installable_revisions(repository, 3)
 
-    @skip_if_api_v2
-    def test_reset_all_v1(self):
-        populator = self.populator
-        repository = populator.setup_test_data_repo("column_maker_with_download_gaps")
-        populator.assert_has_n_installable_revisions(repository, 3)
-        # resetting one at a time or resetting everything via the web controllers works...
-        # resetting all at once via the API does not work - it breaks the repository
-        response = self.api_interactor.post(
-            "repositories/reset_metadata_on_repositories",
-            data={"payload": "can not be empty because bug in controller"},
-        )
-        api_asserts.assert_status_code_is_ok(response)
-        populator.assert_has_n_installable_revisions(repository, 3)
-
-    @skip_if_api_v1
     def test_reset_all_v2(self):
         populator = self.populator
         repository = populator.setup_test_data_repo("column_maker_with_download_gaps")
@@ -357,7 +336,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         api_asserts.assert_status_code_is_ok(response)
         populator.assert_has_n_installable_revisions(repository, 3)
 
-    @skip_if_api_v1
     def test_reset_metadata_dry_run(self):
         """Verify dry_run=True returns success but doesn't modify repository."""
         populator = self.populator
@@ -379,7 +357,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         # Revisions should still be there (nothing changed)
         populator.assert_has_n_installable_revisions(repository, 3)
 
-    @skip_if_api_v1
     def test_reset_metadata_verbose(self):
         """Verify verbose=True returns per-changeset details."""
         populator = self.populator
@@ -401,7 +378,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
             assert "numeric_revision" in detail
             assert "comparison_result" in detail or "error" in detail
 
-    @skip_if_api_v1
     def test_reset_metadata_dry_run_and_verbose(self):
         """Verify dry_run + verbose returns details without persisting."""
         populator = self.populator
@@ -422,7 +398,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         # Verify repo unchanged
         populator.assert_has_n_installable_revisions(repository, 3)
 
-    @skip_if_api_v1
     def test_reset_metadata_legacy_endpoint_with_dry_run(self):
         """Verify legacy endpoint supports dry_run in request body."""
         populator = self.populator
@@ -438,7 +413,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert result["dry_run"] is True
         assert result["changeset_details"] is not None
 
-    @skip_if_api_v1
     def test_reset_metadata_verbose_includes_before_after(self):
         """Verify verbose=True returns repository_metadata_before and after snapshots."""
         populator = self.populator
@@ -469,7 +443,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
                 for tool in rev_data["tools"]:
                     assert "tool_config" in tool
 
-    @skip_if_api_v1
     def test_reset_metadata_non_verbose_omits_before_after(self):
         """Verify verbose=False (default) omits before/after metadata."""
         populator = self.populator
@@ -496,7 +469,6 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert only_revision
         return only_revision
 
-    @skip_if_api_v1
     def test_generate_frontend_fixtures(self):
         """Generate JSON fixture files for frontend unit tests.
 
@@ -697,3 +669,129 @@ Now with improved help text!
             filepath = os.path.join(output_dir, filename)
             size = os.path.getsize(filepath)
             print(f"  - {filename} ({size} bytes)")
+
+
+class TestRepositoryAdminRole(ShedApiTestCase):
+    """Tests for repository admin role management API endpoints."""
+
+    _SECOND_USER_NAME = "admintest_user2"
+
+    def _second_user_populator(self) -> ToolShedPopulator:
+        email = "admintest_user2@galaxyproject.org"
+        password = "testPassword1"
+        create_user(
+            self.admin_api_interactor,
+            {"email": email, "username": self._SECOND_USER_NAME, "password": password},
+            assert_ok=False,
+        )
+        interactor = self._api_interactor_by_credentials(email, password)
+        return self._get_populator(interactor)
+
+    def test_admin_list_contains_owner(self):
+        populator = self.populator
+        repo = populator.setup_column_maker_repo(prefix="adminlist")
+        admins = populator.get_admin_users(repo)
+        # The owner should always be in the admin list
+        assert len(admins) >= 1
+
+    def test_grant_admin_to_user(self):
+        populator = self.populator
+        create_user(
+            self.admin_api_interactor,
+            {"email": "admingrant@galaxyproject.org", "username": "admingrant", "password": "testPassword1"},
+        )
+        repo = populator.setup_column_maker_repo(prefix="admingrant")
+        assert "admingrant" not in populator.get_admin_users(repo)
+
+        populator.add_admin_user(repo, "admingrant")
+        assert "admingrant" in populator.get_admin_users(repo)
+
+    def test_revoke_admin_from_user(self):
+        populator = self.populator
+        create_user(
+            self.admin_api_interactor,
+            {"email": "adminrevoke@galaxyproject.org", "username": "adminrevoke", "password": "testPassword1"},
+        )
+        repo = populator.setup_column_maker_repo(prefix="adminrevoke")
+
+        populator.add_admin_user(repo, "adminrevoke")
+        assert "adminrevoke" in populator.get_admin_users(repo)
+
+        populator.remove_admin_user(repo, "adminrevoke")
+        assert "adminrevoke" not in populator.get_admin_users(repo)
+
+    def test_cannot_remove_owner(self):
+        populator = self.populator
+        repo = populator.setup_column_maker_repo(prefix="adminowner")
+        admins = populator.get_admin_users(repo)
+        assert len(admins) >= 1
+        owner_username = admins[0]  # owner is always present
+
+        response = populator.remove_admin_user_raw(repo, owner_username)
+        api_asserts.assert_status_code_is(response, 400)
+
+    def test_non_manager_gets_403(self):
+        populator = self.populator
+        repo = populator.setup_column_maker_repo(prefix="admin403")
+        user2_populator = self._second_user_populator()
+
+        # user2 cannot list admins
+        response = user2_populator.get_admin_users_raw(repo)
+        api_asserts.assert_status_code_is(response, 403)
+
+        # user2 cannot grant admin
+        response = user2_populator.add_admin_user_raw(repo, self._SECOND_USER_NAME)
+        api_asserts.assert_status_code_is(response, 403)
+
+        # user2 cannot revoke admin
+        response = user2_populator.remove_admin_user_raw(repo, self._SECOND_USER_NAME)
+        api_asserts.assert_status_code_is(response, 403)
+
+    def test_grant_nonexistent_user_404(self):
+        populator = self.populator
+        repo = populator.setup_column_maker_repo(prefix="admin404")
+        response = populator.add_admin_user_raw(repo, "nosuchuser_xyzzy")
+        api_asserts.assert_status_code_is(response, 404)
+
+    def test_idempotent_grant(self):
+        populator = self.populator
+        create_user(
+            self.admin_api_interactor,
+            {"email": "adminidem@galaxyproject.org", "username": "adminidem", "password": "testPassword1"},
+        )
+        repo = populator.setup_column_maker_repo(prefix="adminidem")
+
+        populator.add_admin_user(repo, "adminidem")
+        admins_after_first = populator.get_admin_users(repo)
+
+        # Second grant should be a no-op
+        populator.add_admin_user(repo, "adminidem")
+        admins_after_second = populator.get_admin_users(repo)
+        assert sorted(admins_after_first) == sorted(admins_after_second)
+
+    def test_revoke_non_admin_user_404(self):
+        populator = self.populator
+        create_user(
+            self.admin_api_interactor,
+            {"email": "adminnotadmin@galaxyproject.org", "username": "adminnotadmin", "password": "testPassword1"},
+        )
+        repo = populator.setup_column_maker_repo(prefix="adminnotadmin")
+        # User exists but is not an admin — should get 404
+        response = populator.remove_admin_user_raw(repo, "adminnotadmin")
+        api_asserts.assert_status_code_is(response, 404)
+
+    def test_admin_can_manage(self):
+        populator = self.populator
+        user2_populator = self._second_user_populator()
+        repo = populator.setup_column_maker_repo(prefix="adminmanage")
+
+        # user2 cannot update repo before being granted admin
+        response = user2_populator.update_raw(repo, UpdateRepositoryRequest(description="should fail"))
+        api_asserts.assert_status_code_is(response, 403)
+
+        # Grant admin to user2
+        populator.add_admin_user(repo, self._SECOND_USER_NAME)
+
+        # Now user2 can update the repo description
+        updated = user2_populator.update(repo, UpdateRepositoryRequest(description="updated by admin"))
+        assert updated.description == "updated by admin"

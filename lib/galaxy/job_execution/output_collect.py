@@ -56,7 +56,10 @@ from galaxy.util import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.model import LibraryFolder
+    from galaxy.model import (
+        Job,
+        LibraryFolder,
+    )
     from galaxy.model.store import (
         BaseDirectoryImportModelStore,
         DirectoryModelExportStore,
@@ -265,6 +268,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         working_directory: str,
         final_job_state: "JobState",
         max_discovered_files: Optional[int],
+        job: Optional["Job"] = None,
     ):
         # TODO: use a metadata source provider... (pop from inputs and add parameter)
         super().__init__(object_store, export_store, working_directory)
@@ -274,6 +278,11 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         self.final_job_state = final_job_state
         self.max_discovered_files = float("inf") if max_discovered_files is None else max_discovered_files
         self.discovered_file_count = 0
+        self._job = job
+
+    @property
+    def job(self):
+        return self._job
 
     @property
     def change_datatype_actions(self):

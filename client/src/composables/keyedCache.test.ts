@@ -2,6 +2,8 @@ import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { computed, ref } from "vue";
 
+import { ApiError } from "@/utils/simple-error";
+
 import { useKeyedCache } from "./keyedCache";
 
 interface ItemData {
@@ -193,6 +195,85 @@ describe("useKeyedCache", () => {
         expect(shouldFetch).toHaveBeenCalled();
     });
 
+    it("should not re-fetch after a failed request", async () => {
+        const id = "1";
+
+        fetchItem.mockRejectedValue(new Error("Request failed"));
+
+        const { getItemById, getItemLoadError, isLoadingItem } = useKeyedCache<ItemData>(fetchItem);
+
+        getItemById.value(id);
+        await flushPromises();
+
+        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(getItemLoadError.value(id)).toBeInstanceOf(Error);
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+
+        // Calling getItemById again should not trigger another fetch
+        getItemById.value(id);
+        await flushPromises();
+
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+    });
+
+    it("should retry on transient errors (429, 5xx) up to max retries", async () => {
+        const id = "1";
+
+        fetchItem.mockRejectedValue(new ApiError("Too Many Requests", 429));
+
+        const { getItemById, getItemLoadError } = useKeyedCache<ItemData>(fetchItem);
+
+        // Initial fetch + MAX_RETRIES retries = 4 total calls
+        for (let i = 1; i <= 4; i++) {
+            getItemById.value(id);
+            await flushPromises();
+            expect(fetchItem).toHaveBeenCalledTimes(i);
+            expect(getItemLoadError.value(id)).toBeInstanceOf(ApiError);
+        }
+
+        // Should stop after max retries exhausted
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(4);
+    });
+
+    it("should not retry on permanent errors (403, 404)", async () => {
+        const id = "1";
+
+        fetchItem.mockRejectedValue(new ApiError("Forbidden", 403));
+
+        const { getItemById, getItemLoadError } = useKeyedCache<ItemData>(fetchItem);
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+        expect(getItemLoadError.value(id)).toBeInstanceOf(ApiError);
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+    });
+
+    it("should recover on retry if transient error resolves", async () => {
+        const id = "1";
+        const item = { id, name: "Item 1" };
+
+        fetchItem.mockRejectedValueOnce(new ApiError("Service Unavailable", 503)).mockResolvedValueOnce(item);
+
+        const { getItemById, storedItems, getItemLoadError } = useKeyedCache<ItemData>(fetchItem);
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+        expect(getItemLoadError.value(id)).toBeInstanceOf(ApiError);
+
+        // Retry should succeed
+        getItemById.value(id);
+        await flushPromises();
+        expect(fetchItem).toHaveBeenCalledTimes(2);
+        expect(storedItems.value[id]).toEqual(item);
+    });
+
     it("should handle fake timers without hanging when advanced manually", async () => {
         vi.useFakeTimers();
         const id = "1";
@@ -210,5 +291,23 @@ describe("useKeyedCache", () => {
         vi.runOnlyPendingTimers();
         await flushPromises();
         expect(true).toBe(true);
+    });
+
+    it("should clear error on successful recovery after transient failure", async () => {
+        const id = "1";
+        const item = { id, name: "Item 1" };
+        fetchItem.mockRejectedValueOnce(new ApiError("service unavailable", 503));
+        fetchItem.mockResolvedValue(item);
+
+        const { getItemById, storedItems, getItemLoadError } = useKeyedCache<ItemData>(fetchItem);
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(getItemLoadError.value(id)).toBeTruthy();
+
+        getItemById.value(id);
+        await flushPromises();
+        expect(storedItems.value[id]).toEqual(item);
+        expect(getItemLoadError.value(id)).toBeNull();
     });
 });

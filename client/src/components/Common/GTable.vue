@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { faEllipsisV, faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BDropdown, BDropdownItem, BFormCheckbox, BOverlay } from "bootstrap-vue";
+import { BAlert, BDropdown, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { BootstrapSize } from "@/components/Common";
@@ -17,6 +17,7 @@ import type {
     TableField,
 } from "./GTable.types";
 
+import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -87,6 +88,19 @@ interface Props {
     filter?: string;
 
     /**
+     * Array of field keys to exclude from filtering
+     * @default undefined
+     */
+    filterIgnoredFields?: string[];
+
+    /**
+     * Array of field keys to include in filtering
+     * If specified, only these fields will be searched
+     * @default undefined
+     */
+    filterIncludedFields?: string[];
+
+    /**
      * Whether to use fixed table layout (BootstrapVue `fixed`)
      * @default false
      */
@@ -97,6 +111,12 @@ interface Props {
      * @default true
      */
     hover?: boolean;
+
+    /**
+     * Header variant style for the table header
+     * @default light
+     */
+    headVariant?: "light" | "dark";
 
     /**
      * Whether to hide the table header
@@ -135,12 +155,6 @@ interface Props {
     loadMoreMessage?: string;
 
     /**
-     * Whether to show overlay loading (for sorting/filtering operations)
-     * @default false
-     */
-    overlayLoading?: boolean;
-
-    /**
      * Whether to use local filtering (client-side) or rely on external filtering (server-side)
      * @default true
      */
@@ -151,6 +165,20 @@ interface Props {
      * @default true
      */
     localSorting?: boolean;
+
+    /**
+     * Prevent text selection when clicking on table rows.
+     * When true and selectable is true, rows can only be selected via checkbox clicks.
+     * When false and selectable is true, rows can be selected by clicking anywhere on the row.
+     * @default false
+     */
+    noSelectOnClick?: boolean;
+
+    /**
+     * Whether to show overlay loading (for sorting/filtering operations)
+     * @default false
+     */
+    overlayLoading?: boolean;
 
     /**
      * Number of items per page for pagination
@@ -175,6 +203,12 @@ interface Props {
      * @default []
      */
     selectedItems?: number[];
+
+    /**
+     * Whether to show the empty state message when no items are available
+     * @default false
+     */
+    showEmpty?: boolean;
 
     /**
      * Current sort field key
@@ -232,8 +266,11 @@ const props = withDefaults(defineProps<Props>(), {
     emptyState: () => ({ message: "No data available" }),
     fields: () => [],
     filter: "",
+    filterIgnoredFields: undefined,
+    filterIncludedFields: undefined,
     fixed: false,
     hover: true,
+    headVariant: "light",
     hideHeader: false,
     items: () => [],
     loading: false,
@@ -242,10 +279,12 @@ const props = withDefaults(defineProps<Props>(), {
     loadMoreMessage: "Loading more...",
     localFiltering: true,
     localSorting: true,
+    noSelectOnClick: false,
     overlayLoading: false,
     perPage: undefined,
     selectable: false,
     selectedItems: () => [],
+    showEmpty: false,
     showSelectAll: false,
     sortBy: "",
     sortDesc: false,
@@ -292,7 +331,7 @@ const emit = defineEmits<{
 }>();
 
 const sortBy = ref<string>(props.sortBy || "update_time");
-const sortDesc = ref<boolean>(props.sortDesc || true);
+const sortDesc = ref<boolean>(props.sortDesc ?? false);
 const expandedRows = ref<Set<number>>(new Set());
 
 const stackedClass = computed(() => {
@@ -310,6 +349,10 @@ const stickyHeaderMaxHeight = computed(() => {
         return undefined;
     }
     return props.stickyHeader === true ? "300px" : props.stickyHeader;
+});
+
+const headerVariantClass = computed(() => {
+    return props.headVariant === "dark" ? "g-header-dark" : undefined;
 });
 
 const paginatedLocalItems = computed(() => {
@@ -333,11 +376,23 @@ const localItems = computed(() => {
     if (props.localFiltering && props.filter && props.filter.trim() !== "") {
         const filterLower = props.filter.toLowerCase().trim();
         items = items.filter((item) => {
-            // Search through all field values
-            return Object.values(item).some((value) => {
+            // Search through specified fields based on filterIncludedFields and filterIgnoredFields
+            return Object.entries(item).some(([key, value]) => {
+                // Skip if field is in ignored list
+                if (props.filterIgnoredFields && props.filterIgnoredFields.includes(key)) {
+                    return false;
+                }
+
+                // Skip if included list is specified and field is not in it
+                if (props.filterIncludedFields && !props.filterIncludedFields.includes(key)) {
+                    return false;
+                }
+
+                // Skip null/undefined values
                 if (value == null) {
                     return false;
                 }
+
                 return String(value).toLowerCase().includes(filterLower);
             });
         });
@@ -453,11 +508,15 @@ function getSortIcon(field: TableField) {
  * Handle row click
  */
 function onRowClick(item: T, index: number, event: MouseEvent | KeyboardEvent) {
-    if (!props.clickableRows) {
-        return;
+    // Handle row selection on click if selectable and noSelectOnClick is false
+    if (props.selectable && !props.noSelectOnClick) {
+        onRowSelect(item, index);
     }
 
-    emit("row-click", { item, index, event, toggleDetails: () => toggleRowDetails(index) });
+    // Emit row-click event if rows are clickable
+    if (props.clickableRows) {
+        emit("row-click", { item, index, event, toggleDetails: () => toggleRowDetails(index) });
+    }
 }
 
 function onSelectAll(selected: boolean) {
@@ -575,12 +634,27 @@ function getIconProps(item: T, index: number) {
 const getFieldId = (tableId: string, fieldKey: string) => `g-table-field-${fieldKey}-${tableId}`;
 const getRowId = (tableId: string, index: number) => `g-table-row-${index}-${tableId}`;
 const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table-cell-${fieldKey}-${index}-${tableId}`;
+
+/**
+ * Refresh the table - useful for manual recalculation of computed properties
+ */
+function refresh() {
+    // Force reactivity by re-assigning the expanded rows set
+    expandedRows.value = new Set(expandedRows.value);
+}
+
+/**
+ * Expose refresh method to parent components
+ */
+defineExpose({
+    refresh,
+});
 </script>
 
 <template>
     <div :id="`g-table-container-${props.id}`" class="g-table-container" :class="containerClass">
         <!-- Table wrapper -->
-        <BOverlay :show="overlayLoading" rounded="sm" class="position-relative w-100">
+        <GOverlay :show="overlayLoading" class="position-relative w-100">
             <div
                 :id="`g-table-wrapper-${props.id}`"
                 class="position-relative w-100"
@@ -595,6 +669,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                         { 'g-table-compact': compact },
                         { 'g-table-fixed': fixed },
                         { 'caption-top': captionTop },
+                        { 'g-table-no-select': props.noSelectOnClick },
                         stackedClass,
                         tableClass,
                     ]">
@@ -604,7 +679,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
 
                     <thead v-if="!props.hideHeader">
                         <tr>
-                            <th v-if="selectable" class="g-table-select-column">
+                            <th v-if="selectable" class="g-table-select-column" :class="headerVariantClass">
                                 <slot name="head-select">
                                     <BFormCheckbox
                                         v-if="showSelectAll"
@@ -626,6 +701,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                 :key="field.key"
                                 :class="[
                                     field.headerClass,
+                                    headerVariantClass,
                                     { 'g-table-sortable': field.sortable },
                                     { 'g-table-sorted': sortBy === field.key },
                                     { 'hide-on-small': field.hideOnSmall },
@@ -653,7 +729,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                     </thead>
 
                     <tbody>
-                        <tr v-if="!props.items.length">
+                        <tr v-if="props.showEmpty && !props.items.length" class="g-table-empty-row">
                             <td :colspan="(selectable ? 1 : 0) + props.fields.length + (props.actions ? 1 : 0)">
                                 <slot name="empty">
                                     <BAlert v-if="!loading" variant="info" show class="w-100 m-0">
@@ -669,7 +745,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                                     :id="getRowId(props.id, getGlobalIndex(paginatedIndex))"
                                     :key="`tr` + getGlobalIndex(paginatedIndex)"
                                     :class="{
-                                        'g-table-row-clickable': clickableRows,
+                                        'g-table-row-clickable': clickableRows || (selectable && !noSelectOnClick),
                                         'g-table-row-selected': isRowSelected(getGlobalIndex(paginatedIndex)),
                                     }"
                                     @click="onRowClick(item, getGlobalIndex(paginatedIndex), $event)">
@@ -782,7 +858,7 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
                     <LoadingSpan :message="props.loadMoreMessage" />
                 </div>
             </div>
-        </BOverlay>
+        </GOverlay>
     </div>
 </template>
 
@@ -891,6 +967,11 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
             font-weight: 600;
             padding: 0.75rem;
 
+            &.g-header-dark {
+                background-color: $brand-primary;
+                color: $body-bg;
+            }
+
             &.g-table-sortable {
                 cursor: pointer;
                 user-select: none;
@@ -946,6 +1027,10 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
         .g-table-select-column {
             width: 40px;
             text-align: center;
+
+            .custom-checkbox {
+                cursor: pointer;
+            }
         }
 
         .g-table-actions-column {
@@ -990,6 +1075,12 @@ const getCellId = (tableId: string, fieldKey: string, index: number) => `g-table
         &.caption-top {
             caption {
                 caption-side: top;
+            }
+        }
+
+        &.g-table-no-select {
+            tbody tr {
+                user-select: none;
             }
         }
     }

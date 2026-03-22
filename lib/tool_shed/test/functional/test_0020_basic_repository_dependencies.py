@@ -1,6 +1,5 @@
 from ..base import common
-from ..base.api import skip_if_api_v2
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_maker_repository_name = "column_maker_0020"
 column_maker_repository_description = "A flexible aligner."
@@ -11,7 +10,7 @@ emboss_repository_description = "Galaxy wrappers for Emboss version 5.0.0 tools 
 emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 tools for test 0020"
 
 
-class TestBasicRepositoryDependencies(ShedTwillTestCase):
+class TestBasicRepositoryDependencies(ShedTestCase):
     """Testing emboss 5 with repository dependencies."""
 
     def test_0000_initiate_users(self):
@@ -68,25 +67,6 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         self.create_repository_dependency(
             repository=repository, repository_tuples=[repository_tuple], filepath=repository_dependencies_path
         )
-
-    @skip_if_api_v2
-    def test_0030_verify_emboss_5_dependencies(self):
-        """Verify that the emboss_5 repository now depends on the emboss_datatypes repository with correct name, owner, and changeset revision."""
-        repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
-        column_maker_repository = self._get_repository_by_name_and_owner(
-            column_maker_repository_name, common.test_user_1_name
-        )
-        changeset_revision = self.get_repository_tip(column_maker_repository)
-        strings_displayed = [
-            "Tool dependencies",
-            "emboss",
-            "5.0.0",
-            "package",
-            "user1",
-            changeset_revision,
-            "Repository dependencies",
-        ]
-        self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0040_verify_repository_metadata(self):
         """Verify that resetting the metadata does not change it."""

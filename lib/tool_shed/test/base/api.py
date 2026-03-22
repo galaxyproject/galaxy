@@ -1,5 +1,4 @@
 import os
-from functools import wraps
 from typing import (
     Any,
     Optional,
@@ -100,25 +99,6 @@ class ShedGalaxyInteractorApi(GalaxyInteractorApi):
         interactor_kwds["master_api_key"] = get_galaxy_admin_api_key()
         interactor_kwds["api_key"] = get_galaxy_user_key()
         super().__init__(**interactor_kwds)
-
-
-def make_skip_if_api_version_wrapper(version):
-    def wrapper(method):
-        @wraps(method)
-        def wrapped_method(api_test_case, *args, **kwd):
-            interactor: ShedApiInteractor = api_test_case.api_interactor
-            api_version = interactor.api_version
-            if api_version == version:
-                raise pytest.skip(f"{version} tool shed API found, skipping test")
-            return method(api_test_case, *args, **kwd)
-
-        return wrapped_method
-
-    return wrapper
-
-
-skip_if_api_v1 = make_skip_if_api_version_wrapper("v1")
-skip_if_api_v2 = make_skip_if_api_version_wrapper("v2")
 
 
 class ShedApiTestCase(ShedBaseTestCase, UsesShedApi):

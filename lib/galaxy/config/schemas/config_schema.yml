@@ -2957,15 +2957,6 @@ mapping:
           Please read the GDPR section under the special topics area of the
           admin documentation.
 
-      enable_beta_workflow_modules:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable beta workflow modules that should not yet be considered part of Galaxy's
-          stable API. (The module state definitions may change and workflows built using
-          these modules may not function in the future.)
-
       edam_panel_views:
         type: str
         default: 'operations,topics'
@@ -4094,9 +4085,15 @@ mapping:
         type: any
         required: false
         desc: |
-          Configuration for AI inference services used by agents. Supports per-agent model, temperature, and token settings.
-          Agents inherit from 'default' configuration, which itself falls back to global ai_model/ai_api_key settings.
-          Example: inference_services: { default: { model: gpt-4o-mini, temperature: 0.7 } }
+          Configuration for AI inference services used by agents and visualization plugins.
+          Supports per-agent or per-plugin model, temperature, max_tokens, api_key, api_base_url, and enabled settings.
+          Valid keys include agent types (e.g. router, error_analysis) and plugin names (e.g. jupyterlite).
+          Agents and plugins inherit from 'default' configuration, which itself falls back to global ai_model/ai_api_key settings.
+          All agents are enabled by default.
+          Example: inference_services: { default: { model: gpt-4o-mini, temperature: 0.7 }, custom_tool: { enabled: false }, jupyterlite: { model: gpt-4o } }
+          Set static_responses to a YAML file path to replace all LLM calls with
+          deterministic responses for testing:
+          inference_services: { static_responses: test/integration/static_agents.yml }
 
       enable_tool_recommendations:
         type: bool
@@ -4374,3 +4371,10 @@ mapping:
         default: 86400
         desc: |
           The interval in seconds between attempts to delete all failed Galaxy job's working directories from the filesystem (every 24 hours by default) if enable_failed_jobs_working_directory_cleanup is ``true``. Runs in a Celery task.
+
+      enable_beta_tool_formats:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable beta tool formats (yaml, cwl, ...) which is a prerequisite for user defined tools.

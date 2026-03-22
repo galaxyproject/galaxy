@@ -91,7 +91,6 @@ import VisualizationCreate from "@/components/Visualizations/VisualizationCreate
 import VisualizationDisplay from "@/components/Visualizations/VisualizationDisplay.vue";
 import VisualizationPublished from "@/components/Visualizations/VisualizationPublished.vue";
 import HistoryInvocations from "@/components/Workflow/HistoryInvocations.vue";
-import TrsImport from "@/components/Workflow/Import/TrsImport.vue";
 import TrsSearch from "@/components/Workflow/Import/TrsSearch.vue";
 import InvocationReport from "@/components/Workflow/InvocationReport.vue";
 import WorkflowList from "@/components/Workflow/List/WorkflowList.vue";
@@ -571,9 +570,13 @@ export function getRouter(Galaxy) {
                         component: TourList,
                     },
                     {
-                        path: "chatgxy",
+                        path: "chatgxy/:exchangeId?",
                         component: ChatGXY,
                         redirect: redirectAnon(),
+                        props: (route) => ({
+                            exchangeId: route.params.exchangeId || undefined,
+                            compact: route.query.compact === "true",
+                        }),
                     },
                     {
                         path: "wizard",
@@ -778,6 +781,16 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                     },
                     {
+                        path: "workflows/trs_import",
+                        component: WorkflowImport,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "workflows/trs_search",
+                        component: TrsSearch,
+                        redirect: redirectAnon(),
+                    },
+                    {
                         path: "workflows/invocations",
                         component: GridInvocation,
                         redirect: redirectAnon(),
@@ -859,21 +872,6 @@ export function getRouter(Galaxy) {
                             pluralName: "Workflows",
                             modelClass: "Workflow",
                         }),
-                    },
-                    {
-                        path: "workflows/trs_import",
-                        component: TrsImport,
-                        props: (route) => ({
-                            queryTrsServer: route.query.trs_server,
-                            queryTrsId: route.query.trs_id,
-                            queryTrsVersionId: route.query.trs_version,
-                            queryTrsUrl: route.query.trs_url,
-                            isRun: route.query.run_form == "true",
-                        }),
-                    },
-                    {
-                        path: "workflows/trs_search",
-                        component: TrsSearch,
                     },
                     {
                         path: "workflows/:storedWorkflowId/invocations",

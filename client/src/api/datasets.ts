@@ -9,7 +9,7 @@ import {
     type HDASummary,
 } from "@/api";
 import { withPrefix } from "@/utils/redirect";
-import { rethrowSimple } from "@/utils/simple-error";
+import { rethrowSimple, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 export interface LoadDatasetsOptions {
     limit?: number;
@@ -55,7 +55,7 @@ export async function loadDatasets(options: LoadDatasetsOptions): Promise<LoadDa
 }
 
 export async function fetchDatasetTextContentDetails(params: { id: string }): Promise<DatasetTextContentDetails> {
-    const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}/get_content_as_text", {
+    const { data, error, response } = await GalaxyApi().GET("/api/datasets/{dataset_id}/get_content_as_text", {
         params: {
             path: {
                 dataset_id: params.id,
@@ -64,13 +64,13 @@ export async function fetchDatasetTextContentDetails(params: { id: string }): Pr
     });
 
     if (error) {
-        rethrowSimple(error);
+        rethrowSimpleWithStatus(error, response);
     }
     return data;
 }
 
 export async function fetchDatasetDetails(params: { id: string }, view: string = "detailed"): Promise<HDADetailed> {
-    const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {
+    const { data, error, response } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {
         params: {
             path: {
                 dataset_id: params.id,
@@ -80,7 +80,7 @@ export async function fetchDatasetDetails(params: { id: string }, view: string =
     });
 
     if (error) {
-        rethrowSimple(error);
+        rethrowSimpleWithStatus(error, response);
     }
     return data as HDADetailed;
 }

@@ -220,10 +220,10 @@ class DataMetaFilter(Filter):
             ref = _get_ref_data(other_values, self.ref_name)
         except KeyError:  # no such dataset
             log.warning(f"could not filter by metadata: {self.ref_name} unknown")
-            return []
+            return copy.deepcopy(options)
         except ValueError:  # not a valid dataset
             log.warning(f"could not filter by metadata: {self.ref_name} not a data or collection parameter")
-            return []
+            return copy.deepcopy(options)
         # get the metadata value.
         # - for lists: (of data sets) and collections the meta data values of all
         #   elements is determined
@@ -234,7 +234,9 @@ class DataMetaFilter(Filter):
         for r in ref:
             if not r.metadata.element_is_set(self.key):
                 continue
-            _add_meta(meta_value, r.metadata.get(self.key))
+            meta_val = r.metadata.get(self.key)
+            if meta_val is not None:
+                _add_meta(meta_value, meta_val)
 
         # if no meta data value could be determined just return a copy
         # of the original options

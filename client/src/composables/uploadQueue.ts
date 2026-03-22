@@ -389,7 +389,8 @@ export function useUploadQueue() {
     async function validateTargetHistory(targetHistoryId: string): Promise<string | null> {
         let history = historyStore.getHistoryById(targetHistoryId, false) ?? null;
         if (!history) {
-            history = (await historyStore.loadHistoryById(targetHistoryId)) ?? null;
+            await historyStore.loadHistoryById(targetHistoryId);
+            history = historyStore.getHistoryById(targetHistoryId, false) ?? null;
         }
 
         // If history still cannot be resolved, treat as no validation error here

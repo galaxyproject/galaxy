@@ -21,7 +21,6 @@ from requests import (
     delete,
     get,
     post,
-    put,
 )
 
 from galaxy.exceptions import error_codes
@@ -236,9 +235,15 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
         jobs = self._history_jobs(history_id)
         assert len(jobs) == n
 
-    def _download_workflow(self, workflow_id, style=None, history_id=None, instance=None):
+    def _download_workflow(
+        self, workflow_id, style=None, history_id=None, instance=None, preserve_external_subworkflow_links=None
+    ):
         return self.workflow_populator.download_workflow(
-            workflow_id, style=style, history_id=history_id, instance=instance
+            workflow_id,
+            style=style,
+            history_id=history_id,
+            instance=instance,
+            preserve_external_subworkflow_links=preserve_external_subworkflow_links,
         )
 
     def _assert_is_runtime_input(self, tool_state_value):
@@ -1234,6 +1239,119 @@ steps:
         refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
         refactor_response.raise_for_status()
 
+    @skip_without_tool("boolean_conditional")
+    def test_wrong_current_case_ignored_on_execution(self):
+        """Prove __current_case__ is redundant: set it wrong, assert output follows test param."""
+        # boolean_conditional tool: boolfalse branch (case 1) outputs "p1notused",
+        # booltrue branch (case 0) outputs "p1used". We set test param to boolfalse
+        # but __current_case__ to 0 (booltrue) — output must be "p1notused".
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+outputs:
+  out:
+    outputSource: step/out_file1
+steps:
+  step:
+    tool_id: boolean_conditional
+    state:
+      p1:
+        p1use: false
+        p1val: "p1notused"
+""",
+        )
+        native = self._download_workflow(workflow_id)
+        step = list(native["steps"].values())[0]
+        tool_state = json.loads(step["tool_state"])
+        # p1use=boolfalse selects case 1 — deliberately set to 0 (wrong)
+        tool_state["p1"]["__current_case__"] = 0
+        step["tool_state"] = json.dumps(tool_state)
+        native["name"] = "Wrong __current_case__ test"
+        tampered_id = self.workflow_populator.create_workflow(native)
+        # Galaxy recomputes __current_case__ from test param on import — verify correction
+        reimported = self._download_workflow(tampered_id)
+        reimported_state = json.loads(list(reimported["steps"].values())[0]["tool_state"])
+        assert (
+            reimported_state["p1"]["__current_case__"] == 1
+        ), "Galaxy should correct __current_case__ to match test param on import"
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.invoke_workflow_and_wait(tampered_id, history_id=history_id)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            # If Galaxy used __current_case__=0, output would be "p1used".
+            # Correct behavior: follow test param (boolfalse) → "p1notused".
+            assert content.strip() == "p1notused", f"Expected 'p1notused' but got: {content!r}"
+        # Same thing in the other direction to verify tool parameter defaults
+        # are not involved in the recomputation.
+        # p1use=true (case 0) but __current_case__=1 (wrong) — must output "p1used"
+        workflow_id_inv = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+outputs:
+  out:
+    outputSource: step/out_file1
+steps:
+  step:
+    tool_id: boolean_conditional
+    state:
+      p1:
+        p1use: true
+        p1val: "p1used"
+""",
+        )
+        native_inv = self._download_workflow(workflow_id_inv)
+        step_inv = list(native_inv["steps"].values())[0]
+        tool_state_inv = json.loads(step_inv["tool_state"])
+        tool_state_inv["p1"]["__current_case__"] = 1
+        step_inv["tool_state"] = json.dumps(tool_state_inv)
+        native_inv["name"] = "Wrong __current_case__ test (inverse)"
+        tampered_inv_id = self.workflow_populator.create_workflow(native_inv)
+        reimported_inv = self._download_workflow(tampered_inv_id)
+        reimported_inv_state = json.loads(list(reimported_inv["steps"].values())[0]["tool_state"])
+        assert reimported_inv_state["p1"]["__current_case__"] == 0, "Galaxy should correct inverse case too"
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.invoke_workflow_and_wait(tampered_inv_id, history_id=history_id)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert content.strip() == "p1used", f"Expected 'p1used' but got: {content!r}"
+
+    @skip_without_tool("boolean_conditional")
+    def test_missing_current_case_recomputed_on_execution(self):
+        """Prove __current_case__ can be absent — Galaxy recomputes it from the test param."""
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+outputs:
+  out:
+    outputSource: step/out_file1
+steps:
+  step:
+    tool_id: boolean_conditional
+    state:
+      p1:
+        p1use: true
+        p1val: "p1used"
+""",
+        )
+        native = self._download_workflow(workflow_id)
+        step = list(native["steps"].values())[0]
+        tool_state = json.loads(step["tool_state"])
+        del tool_state["p1"]["__current_case__"]
+        step["tool_state"] = json.dumps(tool_state)
+        native["name"] = "Missing __current_case__ test"
+        tampered_id = self.workflow_populator.create_workflow(native)
+        # Galaxy recomputes __current_case__ from test param on import — verify it's restored
+        reimported = self._download_workflow(tampered_id)
+        reimported_state = json.loads(list(reimported["steps"].values())[0]["tool_state"])
+        assert (
+            reimported_state["p1"]["__current_case__"] == 0
+        ), "Galaxy should recompute __current_case__ from test param"
+        with self.dataset_populator.test_history() as history_id:
+            self.workflow_populator.invoke_workflow_and_wait(tampered_id, history_id=history_id)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert content.strip() == "p1used", f"Expected 'p1used' but got: {content!r}"
+
     def test_update_no_tool_id(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")
         upload_response = self.__test_upload(workflow=workflow_object)
@@ -1378,9 +1496,12 @@ steps:
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 403)
 
-    @skip_if_github_down
-    def test_url_import(self):
-        url = "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
+    def test_url_import(self, mock_http_server):
+        url = mock_http_server.get_url(
+            remote_url="https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga",
+            file_path="lib/galaxy_test/base/data/test_workflow_1.ga",
+            content_type="application/json",
+        )
         workflow_id = self._post("workflows", data={"archive_source": url}).json()["id"]
         workflow = self._download_workflow(workflow_id)
         assert "TestWorkflow1" in workflow["name"]
@@ -1532,6 +1653,222 @@ steps:
         reuploaded_workflow_id = self.workflow_populator.create_workflow(original_workflow)
         reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
         assert reuploaded_workflow.get("source_metadata") is None
+
+    @staticmethod
+    def _build_outer_ga_workflow(subworkflow_step_props: dict, input_name: str = "WorkflowInput1") -> dict:
+        """Build a .ga outer workflow with a data input connected to a subworkflow step."""
+        return {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "Outer Workflow",
+            "annotation": "",
+            "steps": {
+                "0": {
+                    "type": "data_input",
+                    "id": 0,
+                    "tool_id": None,
+                    "tool_version": None,
+                    "tool_state": json.dumps({"name": "outer_input"}),
+                    "input_connections": {},
+                    "inputs": [{"name": "outer_input", "description": ""}],
+                    "outputs": [],
+                    "annotation": "",
+                },
+                "1": {
+                    "type": "subworkflow",
+                    "id": 1,
+                    "input_connections": {input_name: {"id": 0, "output_name": "output"}},
+                    "annotation": "",
+                    **subworkflow_step_props,
+                },
+            },
+        }
+
+    @staticmethod
+    def _get_subworkflow_step(workflow: dict) -> dict:
+        """Find and return the subworkflow step dict from a downloaded workflow."""
+        for step in workflow["steps"].values():
+            if step["type"] == "subworkflow":
+                return step
+        raise AssertionError("No subworkflow step found in downloaded workflow")
+
+    @staticmethod
+    def _get_subworkflow_dict(workflow: dict) -> dict:
+        """Find the subworkflow step in a downloaded workflow and return its embedded subworkflow dict."""
+        for step in workflow["steps"].values():
+            if step["type"] == "subworkflow":
+                return step["subworkflow"]
+        raise AssertionError("No subworkflow step found in downloaded workflow")
+
+    def test_import_ga_workflow_with_url_subworkflow(self):
+        """Test importing a .ga workflow where a subworkflow is referenced via a base64:// URL."""
+        inner_workflow = self.workflow_populator.load_workflow("inner_workflow")
+        base64_url = "base64://" + base64.b64encode(json.dumps(inner_workflow).encode()).decode()
+        outer_workflow = self._build_outer_ga_workflow({"content_source": "url", "content_id": base64_url})
+        workflow_id = self.workflow_populator.create_workflow(outer_workflow)
+        workflow = self._download_workflow(workflow_id)
+        subworkflow = self._get_subworkflow_dict(workflow)
+        assert subworkflow["name"] == "inner_workflow"
+        assert subworkflow.get("source_metadata") == {"url": base64_url}
+
+    def test_import_gxformat2_workflow_with_url_subworkflow(self):
+        """Test importing a gxformat2 workflow where a subworkflow is referenced via a base64:// URL."""
+        base64_url = "base64://" + base64.b64encode(WORKFLOW_SIMPLE.strip().encode()).decode()
+        outer_yaml = f"""
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: nested_workflow/wf_output_1
+steps:
+  nested_workflow:
+    run: "{base64_url}"
+    in:
+      input1: outer_input
+"""
+        workflow_id = self._upload_yaml_workflow(outer_yaml)
+        workflow = self._download_workflow(workflow_id)
+        subworkflow = self._get_subworkflow_dict(workflow)
+        assert subworkflow.get("source_metadata") == {"url": base64_url}
+
+    @skip_if_github_down
+    def test_import_ga_workflow_with_trs_url_subworkflow(self):
+        """Test importing a .ga workflow where a subworkflow is referenced via a TRS URL."""
+        trs_url = (
+            "https://dockstore.org/api/ga4gh/trs/v2/tools/"
+            "%23workflow%2Fgithub.com%2Fjmchilton%2Fgalaxy-workflow-dockstore-example-1%2Fmycoolworkflow/"
+            "versions/master"
+        )
+        outer_workflow = self._build_outer_ga_workflow(
+            {"content_source": "trs_url", "content_id": trs_url},
+            input_name="input1",
+        )
+        workflow_id = self.workflow_populator.create_workflow(outer_workflow)
+        workflow = self._download_workflow(workflow_id)
+        subworkflow = self._get_subworkflow_dict(workflow)
+        assert "Test Workflow" in subworkflow["name"]
+        source_metadata = subworkflow.get("source_metadata")
+        assert source_metadata is not None
+        assert (
+            source_metadata["trs_tool_id"]
+            == "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
+        )
+        assert source_metadata["trs_version_id"] == "master"
+        assert source_metadata["trs_url"] == trs_url
+
+    @skip_if_github_down
+    def test_import_ga_workflow_with_trs_id_subworkflow(self):
+        """Test importing a .ga workflow where a subworkflow is referenced via TRS server + tool ID + version."""
+        outer_workflow = self._build_outer_ga_workflow(
+            {
+                "content_source": "trs_id",
+                "trs_server": "dockstore",
+                "trs_tool_id": "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow",
+                "trs_version_id": "master",
+            },
+            input_name="input1",
+        )
+        workflow_id = self.workflow_populator.create_workflow(outer_workflow)
+        workflow = self._download_workflow(workflow_id)
+        subworkflow = self._get_subworkflow_dict(workflow)
+        assert "Test Workflow" in subworkflow["name"]
+        source_metadata = subworkflow.get("source_metadata")
+        assert source_metadata is not None
+        assert (
+            source_metadata["trs_tool_id"]
+            == "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
+        )
+        assert source_metadata["trs_version_id"] == "master"
+
+    def test_download_preserves_url_subworkflow_link(self):
+        """Test that downloading with preserve_external_subworkflow_links emits content_source/content_id."""
+        inner_workflow = self.workflow_populator.load_workflow("inner_workflow")
+        base64_url = "base64://" + base64.b64encode(json.dumps(inner_workflow).encode()).decode()
+        outer_workflow = self._build_outer_ga_workflow({"content_source": "url", "content_id": base64_url})
+        workflow_id = self.workflow_populator.create_workflow(outer_workflow)
+        # Default download embeds the subworkflow
+        default_download = self._download_workflow(workflow_id)
+        subworkflow = self._get_subworkflow_dict(default_download)
+        assert "subworkflow" not in self._get_subworkflow_step(default_download).get("content_source", "")
+        assert subworkflow["name"] == "inner_workflow"
+        # Download with preserved links emits content_source/content_id
+        preserved = self._download_workflow(workflow_id, preserve_external_subworkflow_links=True)
+        step = self._get_subworkflow_step(preserved)
+        assert step["content_source"] == "url"
+        assert step["content_id"] == base64_url
+        assert "subworkflow" not in step
+
+    def test_modified_subworkflow_not_preserved_as_link(self):
+        """After updating a subworkflow the external link is lost and content is embedded verbatim."""
+        inner_workflow = self.workflow_populator.load_workflow("inner_workflow")
+        base64_url = "base64://" + base64.b64encode(json.dumps(inner_workflow).encode()).decode()
+        outer_workflow = self._build_outer_ga_workflow({"content_source": "url", "content_id": base64_url})
+        workflow_id = self.workflow_populator.create_workflow(outer_workflow)
+        # Before modification, preserved links work
+        preserved = self._download_workflow(workflow_id, preserve_external_subworkflow_links=True)
+        step = self._get_subworkflow_step(preserved)
+        assert step["content_source"] == "url"
+        # Download full workflow with embedded subworkflow, modify it, re-upload as new workflow.
+        # This simulates what happens when a user edits and saves: the subworkflow is rebuilt
+        # from the embedded dict and loses its source_metadata.
+        full_download = self._download_workflow(workflow_id)
+        subworkflow = self._get_subworkflow_dict(full_download)
+        subworkflow["name"] = "Modified Inner Workflow"
+        modified_id = self.workflow_populator.create_workflow(full_download)
+        # After modification, preserved links option still embeds verbatim
+        after_update = self._download_workflow(modified_id, preserve_external_subworkflow_links=True)
+        step = self._get_subworkflow_step(after_update)
+        assert "content_source" not in step
+        assert "subworkflow" in step
+        assert step["subworkflow"]["name"] == "Modified Inner Workflow"
+        assert step["subworkflow"].get("source_metadata") is None
+
+    def test_roundtrip_ga_workflow_with_url_subworkflow(self):
+        """Import .ga with URL subworkflow, download with preserved links, re-import, verify."""
+        inner_workflow = self.workflow_populator.load_workflow("inner_workflow")
+        base64_url = "base64://" + base64.b64encode(json.dumps(inner_workflow).encode()).decode()
+        outer_workflow = self._build_outer_ga_workflow({"content_source": "url", "content_id": base64_url})
+        workflow_id = self.workflow_populator.create_workflow(outer_workflow)
+        # Download with preserved external links
+        exported = self._download_workflow(workflow_id, preserve_external_subworkflow_links=True)
+        # Re-import the exported workflow
+        reimported_id = self.workflow_populator.create_workflow(exported)
+        reimported = self._download_workflow(reimported_id)
+        subworkflow = self._get_subworkflow_dict(reimported)
+        assert subworkflow["name"] == "inner_workflow"
+        assert subworkflow.get("source_metadata") == {"url": base64_url}
+
+    def test_roundtrip_format2_workflow_with_url_subworkflow(self):
+        """Import gxformat2 with URL subworkflow, download format2 with preserved links, re-import, verify."""
+        base64_url = "base64://" + base64.b64encode(WORKFLOW_SIMPLE.strip().encode()).decode()
+        outer_yaml = f"""
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: nested_workflow/wf_output_1
+steps:
+  nested_workflow:
+    run: "{base64_url}"
+    in:
+      input1: outer_input
+"""
+        workflow_id = self._upload_yaml_workflow(outer_yaml)
+        # Download as format2 with preserved links
+        exported = self._download_workflow(
+            workflow_id,
+            style="format2",
+            preserve_external_subworkflow_links=True,
+        )
+        nested_step = exported["steps"]["nested_workflow"]
+        assert nested_step["run"] == base64_url
+        # Re-import the exported format2 workflow
+        reimported_id = self._upload_yaml_workflow(exported)
+        reimported = self._download_workflow(reimported_id)
+        subworkflow = self._get_subworkflow_dict(reimported)
+        assert subworkflow.get("source_metadata") == {"url": base64_url}
 
     def test_anonymous_published(self):
         def anonymous_published_workflows(explicit_query_parameter):
@@ -5822,6 +6159,68 @@ steps:
             assert datasets[PAUSED_1]["state"] == state
             assert datasets[PAUSED_2]["state"] == "paused"
 
+    @skip_without_tool("cat")
+    def test_workflow_with_deleted_dataset_step_parameter(self):
+        """Verify workflow fails gracefully when a step parameter references a deleted dataset.
+
+        Uses a pause step so we can delete the dataset after the invocation is
+        queued but before the cat step executes, avoiding a race condition.
+        """
+        with self.dataset_populator.test_history() as history_id:
+            workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: data
+steps:
+  the_pause:
+    type: pause
+    in:
+      input: input1
+  first_cat:
+    tool_id: cat
+    in:
+      input1: the_pause
+""")
+            valid_hda = self.dataset_populator.new_dataset(history_id, wait=True)
+            to_delete_hda = self.dataset_populator.new_dataset(history_id, wait=True)
+            to_delete_id = to_delete_hda["id"]
+            # Pass the to-be-deleted dataset as a step parameter override for the cat step
+            # (step order_index 2). This passes initial validation because the dataset
+            # is still valid at invocation time.
+            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                workflow_id,
+                history_id=history_id,
+                inputs={"input1": {"src": "hda", "id": valid_hda["id"]}},
+                request={
+                    "parameters": dumps({"2": {"input1": {"src": "hda", "id": to_delete_id}}}),
+                    "parameters_normalized": True,
+                },
+                inputs_by="name",
+            )
+            # Wait for the scheduler to hit the pause step (invocation state "new" → "ready")
+            # before deleting, otherwise the scheduler may detect the deleted dataset
+            # on step 2 during scheduling and fail the invocation before we can resume.
+            self._wait_for_invocation_state(workflow_id, invocation_id, "ready")
+            # Invocation is paused — delete the dataset before resuming.
+            self.dataset_populator.delete_dataset(history_id=history_id, content_id=to_delete_id, purge=False)
+            # Resume the pause step. The cat step will now run and
+            # ToolModule.execute() → compute_runtime_state will find the deleted dataset.
+            self.__review_paused_steps(workflow_id, invocation_id, order_index=1, action=True)
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id,
+                workflow_id=workflow_id,
+                invocation_id=invocation_id,
+                assert_ok=False,
+            )
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            assert invocation["state"] == "failed", invocation
+            assert len(invocation["messages"]) == 1
+            message = invocation["messages"][0]
+            assert message["reason"] == "step_input_deleted"
+            assert message["hda_id"] == to_delete_id
+            assert "the previously selected dataset has been deleted" in message["details"]
+
     def test_run_with_implicit_connection(self):
         with self.dataset_populator.test_history() as history_id:
             run_summary = self._run_workflow(
@@ -9087,11 +9486,11 @@ outer_input:
         invocation_step_details = invocation_step_response.json()
         return invocation_step_details
 
-    def _execute_invocation_step_action(self, workflow_id, invocation_id, step_id, action):
+    def _execute_invocation_step_action(self, workflow_id: str, invocation_id: str, step_id: str, action: bool):
         raw_url = f"workflows/{workflow_id}/usage/{invocation_id}/steps/{step_id}"
         url = self._api_url(raw_url, use_key=True)
-        payload = dumps(dict(action=action))
-        action_response = put(url, data=payload)
+        payload = {"action": action}
+        action_response = self._put(url, data=payload, json=True)
         self._assert_status_code_is(action_response, 200)
         invocation_step_details = action_response.json()
         return invocation_step_details
@@ -9127,7 +9526,9 @@ outer_input:
         )
         return workflow_request, history_id, uploaded_workflow_id
 
-    def __review_paused_steps(self, uploaded_workflow_id, invocation_id, order_index, action=True):
+    def __review_paused_steps(
+        self, uploaded_workflow_id: str, invocation_id: str, order_index: int, action: bool = True
+    ) -> None:
         invocation = self._invocation_details(uploaded_workflow_id, invocation_id)
         invocation_steps = invocation["steps"]
         pause_steps = [s for s in invocation_steps if s["order_index"] == order_index]
@@ -9295,6 +9696,56 @@ steps:
             assert (
                 len(copied_collections_with_tags) > 0
             ), f"Should find copied collection with tags {collection_tags} in new history"
+
+    def test_pick_value_output_visible_with_hidden_inputs(self):
+        """Test that pick_value output doesn't inherit hidden state from inputs."""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input_dataset:
+    type: data
+outputs:
+  pick_out:
+    outputSource: pick_value/data_param
+steps:
+  cat_skipped:
+    tool_id: cat1
+    in:
+      input1: input_dataset
+    when: $(false)
+  pick_value:
+    tool_id: pick_value
+    tool_state:
+      style_cond:
+        pick_style: first
+        type_cond:
+          param_type: data
+          pick_from:
+          - __index__: 0
+            value:
+              __class__: RuntimeValue
+          - __index__: 1
+            value:
+              __class__: RuntimeValue
+    in:
+      style_cond|type_cond|pick_from_0|value:
+        source: cat_skipped/out_file1
+      style_cond|type_cond|pick_from_1|value:
+        source: input_dataset
+""",
+                test_data="""input_dataset:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            pick_value_hda = invocation_details["outputs"]["pick_out"]
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id=history_id, content_id=pick_value_hda["id"]
+            )
+            assert dataset_details["visible"], "pick_value output should be visible even when inputs are hidden"
 
 
 class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):

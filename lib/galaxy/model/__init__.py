@@ -59,6 +59,7 @@ from social_core.storage import (
 from sqlalchemy import (
     alias,
     and_,
+    any_,
     asc,
     BigInteger,
     bindparam,
@@ -158,6 +159,7 @@ from galaxy.model.custom_types import (
     UUIDType,
 )
 from galaxy.model.database_object_names import NAMING_CONVENTION
+from galaxy.model.database_utils import supports_skip_locked as _check_supports_skip_locked
 from galaxy.model.item_attrs import (
     get_item_annotation_str,
     UsesAnnotations,
@@ -434,10 +436,12 @@ class HasTags:
         return tags_str_list
 
     def copy_tags_from(self, target_user, source):
+        existing = {(t.tag_id, t.value) for t in self.tags}
         for source_tag_assoc in source.tags:
-            new_tag_assoc = source_tag_assoc.copy()
-            new_tag_assoc.user = target_user
-            self.tags.append(new_tag_assoc)
+            if (source_tag_assoc.tag_id, source_tag_assoc.value) not in existing:
+                new_tag_assoc = source_tag_assoc.copy()
+                new_tag_assoc.user = target_user
+                self.tags.append(new_tag_assoc)
 
     @property
     def auto_propagated_tags(self):
@@ -1841,7 +1845,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 if obj.name not in out_data:
                     out_collections[obj.name] = obj.dataset_collection_instance
                 # else this is a mapped over output
-        out_collections.update([(obj.name, obj.dataset_collection) for obj in self.output_dataset_collections])
+        if not exclude_implicit_outputs:
+            out_collections.update([(obj.name, obj.dataset_collection) for obj in self.output_dataset_collections])
         return IoDicts(inp_data, out_data, out_collections)
 
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
@@ -2209,6 +2214,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         job_attrs["update_time"] = self.update_time.isoformat()
         job_attrs["job_messages"] = self.job_messages
         job_attrs["tool_state"] = self.tool_state
+        job_attrs["object_store_id"] = self.object_store_id
+        if self.object_store_id_overrides:
+            job_attrs["object_store_id_overrides"] = self.object_store_id_overrides
 
         # Get the job's parameters
         param_dict = self.raw_param_dict()
@@ -3776,13 +3784,18 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         else:
             hdcas = self.active_dataset_collections
         for hdca in hdcas:
-            new_hdca = hdca.copy(flush=False, element_destination=new_history, set_hid=False, minimize_copies=True)
+            new_hdca = hdca.copy(
+                flush=False,
+                element_destination=new_history,
+                set_hid=False,
+                minimize_copies=True,
+                target_user=target_user,
+            )
             new_history.add_dataset_collection(new_hdca, set_hid=False)
             db_session.add(new_hdca)
 
             if target_user:
                 new_hdca.copy_item_annotation(db_session, self.user, hdca, target_user, new_hdca)
-                new_hdca.copy_tags_from(target_user, hdca)
 
         new_history.hid_counter = self.hid_counter
         db_session.commit()
@@ -4792,6 +4805,8 @@ class Dataset(Base, StorableObject, Serializable):
         dialect_name = session.bind.dialect.name
 
         if dialect_name in ("postgresql", "sqlite"):
+            if dialect_name == "postgresql" and supports_skip_locked is None:
+                supports_skip_locked = _check_supports_skip_locked(session.get_bind())
             self._touch_collection_update_time_cte(session, supports_skip_locked)
         else:
             # Fallback for other databases
@@ -5913,9 +5928,12 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         if copy_tags is not None:
             if isinstance(copy_tags, dict):
                 copy_tags = copy_tags.values()
+            existing = {(t.tag_id, t.value) for t in self.tags}
             for tag in copy_tags:
-                copied_tag = tag.copy(cls=HistoryDatasetAssociationTagAssociation)
-                self.tags.append(copied_tag)
+                if (tag.tag_id, tag.value) not in existing:
+                    copied_tag = tag.copy(cls=HistoryDatasetAssociationTagAssociation)
+                    self.tags.append(copied_tag)
+                    existing.add((tag.tag_id, tag.value))
 
     def copy_attributes(self, new_dataset):
         if new_dataset.hid is None:
@@ -7057,49 +7075,169 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         dc = alias(DatasetCollection.__table__)
         dce = alias(DatasetCollectionElement.__table__)
         depth_collection_type = dataset_collection.collection_type
-        order_by_columns = [dce.c.element_index]
         nesting_level = 0
 
         def attribute_columns(column_collection, attributes, nesting_level=None):
             label_fragment = f"_{nesting_level}" if nesting_level is not None else ""
             return [getattr(column_collection, a).label(f"{a}{label_fragment}") for a in attributes]
 
-        q = (
-            select(
-                *attribute_columns(dce.c, element_attributes, nesting_level),
-                *attribute_columns(dc.c, collection_attributes, nesting_level),
+        # On PostgreSQL, joining dataset_collection_element to itself causes
+        # the planner to choose catastrophically slow hash/merge joins: it
+        # overestimates cardinality and scans the entire table at each level.
+        # The ARRAY(subquery) pattern avoids all DCE-to-DCE joins by
+        # evaluating each nesting level into a concrete array before the next
+        # lookup, forcing index scans throughout.
+        #
+        # Per-level element attributes and hierarchical ordering are
+        # provided via correlated scalar subqueries that walk UP from each
+        # leaf DCE to its ancestors via the indexed child_collection_id
+        # column.  Each subquery returns exactly one row via an index lookup.
+        #
+        # collection_attributes (e.g. populated_state) must stay on the
+        # outerjoin path: the ARRAY walk only visits branches that contain
+        # leaf DCEs, so empty sub-collections — common when conditional
+        # workflow steps are skipped — would be invisible and their
+        # populated_state never checked.
+        try:
+            session = object_session(self)
+        except Exception:
+            session = None
+        is_postgres = session is not None and session.bind and session.bind.dialect.name == "postgresql"
+        use_array_walk = is_postgres and ":" in depth_collection_type and not collection_attributes
+
+        if use_array_walk:
+            # Build nested ARRAY(subquery) expressions to walk the tree
+            # without any DCE-to-DCE joins.
+            dce_table = DatasetCollectionElement.__table__
+            inner_dce = alias(dce_table)
+            child_ids_subq = select(inner_dce.c.child_collection_id).where(
+                inner_dce.c.dataset_collection_id == dataset_collection.id
             )
-            .select_from(dce, dc)
-            .join(dce, dce.c.dataset_collection_id == dc.c.id)
-            .filter(dc.c.id == dataset_collection.id)
-        )
-
-        while ":" in depth_collection_type:
-            nesting_level += 1
-            inner_dce = alias(DatasetCollectionElement.__table__)
-            inner_dc = alias(DatasetCollection.__table__)
-            order_by_columns.append(inner_dce.c.element_index)
-            q = q.outerjoin(inner_dce, inner_dce.c.dataset_collection_id == dce.c.child_collection_id)
-            if collection_attributes:
-                q = q.outerjoin(inner_dc, inner_dc.c.id == dce.c.child_collection_id)
-                q = q.add_columns(
-                    *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
+            n_intermediates = depth_collection_type.count(":")
+            for _ in range(n_intermediates - 1):
+                next_dce = alias(dce_table)
+                child_ids_subq = select(next_dce.c.child_collection_id).where(
+                    next_dce.c.dataset_collection_id == any_(func.array(child_ids_subq.scalar_subquery()))
                 )
-            q = q.add_columns(*attribute_columns(inner_dce.c, element_attributes, nesting_level))
-            dce = inner_dce
-            dc = inner_dc
-            depth_collection_type = depth_collection_type.split(":", 1)[1]
+            leaf_dce = alias(dce_table)
+            q = (
+                select()
+                .select_from(leaf_dce)
+                .where(leaf_dce.c.dataset_collection_id == any_(func.array(child_ids_subq.scalar_subquery())))
+            )
+            n_levels = n_intermediates + 1
 
-        if (
+            # Build navigation chain of collection ID expressions from leaf
+            # to root.  coll_ids[0] = leaf's collection, coll_ids[k] = k
+            # steps up from the leaf.  Each entry after the first is a
+            # correlated scalar subquery that walks one level up via the
+            # indexed child_collection_id column.
+            coll_ids: list = [leaf_dce.c.dataset_collection_id]
+            for _i in range(n_intermediates):
+                nav = alias(dce_table)
+                coll_ids.append(
+                    select(nav.c.dataset_collection_id)
+                    .where(nav.c.child_collection_id == coll_ids[-1])
+                    .correlate(leaf_dce)
+                    .limit(1)
+                    .scalar_subquery()
+                )
+
+            # Add element attribute columns for each level (root first,
+            # leaf last) to match the column ordering of the outerjoin path.
+            for level in range(n_levels):
+                steps_up = n_levels - 1 - level
+                if steps_up == 0:
+                    # Leaf level: direct column access
+                    q = q.add_columns(*[getattr(leaf_dce.c, a).label(f"{a}_{level}") for a in element_attributes])
+                else:
+                    # Ancestor level: correlated subquery
+                    for attr in element_attributes:
+                        nav = alias(dce_table)
+                        q = q.add_columns(
+                            select(getattr(nav.c, attr))
+                            .where(nav.c.child_collection_id == coll_ids[steps_up - 1])
+                            .correlate(leaf_dce)
+                            .limit(1)
+                            .scalar_subquery()
+                            .label(f"{attr}_{level}")
+                        )
+
+            hda_join_col = leaf_dce.c.hda_id
+            dce_id_col = leaf_dce.c.id
+
+            # Build hierarchical ORDER BY from root level to leaf level.
+            order_by_columns: list[ColumnElement] = []
+            for level in range(n_levels):
+                steps_up = n_levels - 1 - level
+                if steps_up == 0:
+                    order_by_columns.append(leaf_dce.c.element_index)
+                else:
+                    nav = alias(dce_table)
+                    order_by_columns.append(
+                        select(nav.c.element_index)
+                        .where(nav.c.child_collection_id == coll_ids[steps_up - 1])
+                        .correlate(leaf_dce)
+                        .limit(1)
+                        .scalar_subquery()
+                    )
+        elif ":" not in depth_collection_type:
+            # Single-level collection: simple join, no nesting issues.
+            q = (
+                select(
+                    *attribute_columns(dce.c, element_attributes, nesting_level),
+                    *attribute_columns(dc.c, collection_attributes, nesting_level),
+                )
+                .select_from(dce, dc)
+                .join(dce, dce.c.dataset_collection_id == dc.c.id)
+                .filter(dc.c.id == dataset_collection.id)
+            )
+            hda_join_col = dce.c.hda_id
+            dce_id_col = dce.c.id
+            order_by_columns = [dce.c.element_index]
+        else:
+            # Nested collection on SQLite, or collection_attributes on
+            # PostgreSQL: use the original outerjoin approach.
+            order_by_columns = [dce.c.element_index]
+            q = (
+                select(
+                    *attribute_columns(dce.c, element_attributes, nesting_level),
+                    *attribute_columns(dc.c, collection_attributes, nesting_level),
+                )
+                .select_from(dce, dc)
+                .join(dce, dce.c.dataset_collection_id == dc.c.id)
+                .filter(dc.c.id == dataset_collection.id)
+            )
+            while ":" in depth_collection_type:
+                nesting_level += 1
+                inner_dce = alias(DatasetCollectionElement.__table__)
+                inner_dc = alias(DatasetCollection.__table__)
+                order_by_columns.append(inner_dce.c.element_index)
+                q = q.outerjoin(inner_dce, inner_dce.c.dataset_collection_id == dce.c.child_collection_id)
+                if collection_attributes:
+                    q = q.outerjoin(inner_dc, inner_dc.c.id == dce.c.child_collection_id)
+                    q = q.add_columns(
+                        *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
+                    )
+                q = q.add_columns(*attribute_columns(inner_dce.c, element_attributes, nesting_level))
+                dce = inner_dce
+                dc = inner_dc
+                depth_collection_type = depth_collection_type.split(":", 1)[1]
+            hda_join_col = dce.c.hda_id
+            dce_id_col = dce.c.id
+
+        needs_hda_join = bool(
             hda_attributes
             or dataset_attributes
             or dataset_permission_attributes
-            or return_entities
-            and not return_entities == (DatasetCollectionElement,)
-        ):
-            q = q.join(HistoryDatasetAssociation).join(Dataset)
+            or (return_entities and return_entities != (DatasetCollectionElement,))
+        )
+
+        if needs_hda_join:
+            q = q.join(HistoryDatasetAssociation, HistoryDatasetAssociation.id == hda_join_col)
+            q = q.join(Dataset, Dataset.id == HistoryDatasetAssociation.dataset_id)
         if dataset_permission_attributes:
-            q = q.join(DatasetPermissions)
+            q = q.join(DatasetPermissions, DatasetPermissions.dataset_id == Dataset.id)
         q = (
             q.add_columns(*attribute_columns(HistoryDatasetAssociation, hda_attributes))
             .add_columns(*attribute_columns(Dataset, dataset_attributes))
@@ -7108,7 +7246,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         for entity in return_entities:
             q = q.add_columns(entity)
             if entity == DatasetCollectionElement:
-                q = q.filter(entity.id == dce.c.id)
+                q = q.filter(entity.id == dce_id_col)
 
         q = q.order_by(*order_by_columns)
         return q
@@ -7215,14 +7353,55 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             if ":" not in self.collection_type:
                 _populated_optimized = self.populated_state == DatasetCollection.populated_states.OK
             else:
-                stmt = self._build_nested_collection_attributes_stmt(
-                    collection_attributes=("populated_state",),
-                )
                 session = required_object_session(self)
-                for row in session.execute(stmt):
-                    if any(state not in (DatasetCollection.populated_states.OK, None) for state in row):
-                        _populated_optimized = False
-                        break
+                is_postgres = session.bind and session.bind.dialect.name == "postgresql"
+                if is_postgres:
+                    # Query intermediate collection IDs directly using the
+                    # ARRAY walk pattern, then check their populated_state.
+                    # Unlike the leaf-DCE ARRAY walk in
+                    # _build_nested_collection_attributes_stmt, this
+                    # correctly handles empty sub-collections (which have
+                    # no leaf DCEs but may still have non-OK state, e.g.
+                    # from skipped conditional workflow steps).
+                    dce_table = DatasetCollectionElement.__table__
+                    dc_table = DatasetCollection.__table__
+                    n_intermediates = self.collection_type.count(":")
+
+                    inner_dce = alias(dce_table)
+                    child_ids_array = func.array(
+                        select(inner_dce.c.child_collection_id)
+                        .where(inner_dce.c.dataset_collection_id == self.id)
+                        .scalar_subquery()
+                    )
+                    level_conditions = [dc_table.c.id == any_(child_ids_array)]
+
+                    for _ in range(n_intermediates - 1):
+                        next_dce = alias(dce_table)
+                        child_ids_array = func.array(
+                            select(next_dce.c.child_collection_id)
+                            .where(next_dce.c.dataset_collection_id == any_(child_ids_array))
+                            .scalar_subquery()
+                        )
+                        level_conditions.append(dc_table.c.id == any_(child_ids_array))
+
+                    stmt = (
+                        select(literal(1))
+                        .select_from(dc_table)
+                        .where(
+                            or_(*level_conditions),
+                            dc_table.c.populated_state != DatasetCollection.populated_states.OK,
+                        )
+                        .limit(1)
+                    )
+                    _populated_optimized = session.execute(stmt).first() is None
+                else:
+                    stmt = self._build_nested_collection_attributes_stmt(
+                        collection_attributes=("populated_state",),
+                    )
+                    for row in session.execute(stmt):
+                        if any(state not in (DatasetCollection.populated_states.OK, None) for state in row):
+                            _populated_optimized = False
+                            break
             self._populated_optimized = _populated_optimized
 
         return self._populated_optimized
@@ -7878,6 +8057,7 @@ class HistoryDatasetCollectionAssociation(
         flush: bool = True,
         set_hid: bool = True,
         minimize_copies: bool = False,
+        target_user: Optional[User] = None,
     ):
         """
         Create a copy of this history dataset collection association. Copy
@@ -7906,8 +8086,9 @@ class HistoryDatasetCollectionAssociation(
         hdca.collection = collection_copy
         session = required_object_session(self)
         session.add(hdca)
-        if self.history and self.history.user:
-            hdca.copy_tags_from(self.history.user, self)
+        copy_user = target_user or (self.history.user if self.history else None)
+        if copy_user:
+            hdca.copy_tags_from(copy_user, self)
         if element_destination and set_hid:
             element_destination.stage_addition(hdca)
             element_destination.add_pending_items()
@@ -9997,6 +10178,9 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             if content.workflow_step_id == step_id:
                 return True
         for content in self.input_dataset_collections:
+            if content.workflow_step_id == step_id:
+                return True
+        for content in self.input_step_parameters:
             if content.workflow_step_id == step_id:
                 return True
         return False

@@ -258,6 +258,8 @@ class ToolsService(ServiceBase):
         tool_ref: ToolRunReference,
     ) -> list[ToolParameterT]:
         tool = get_tool(trans, tool_ref)
+        if tool.parameters is None:
+            raise exceptions.RequestParameterInvalidException("Tool input parameter schema could not be retrieved.")
         return tool.parameters
 
     def create_fetch(
@@ -321,7 +323,9 @@ class ToolsService(ServiceBase):
             history_id = trans.security.decode_id(history_id) if isinstance(history_id, str) else history_id
             target_history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         else:
-            target_history = None
+            if trans.history is None:
+                raise exceptions.RequestParameterMissingException("A valid history is required to execute tools.")
+            target_history = trans.history
 
         # Set up inputs.
         inputs = payload.get("inputs", {})

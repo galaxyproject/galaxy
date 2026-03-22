@@ -25,6 +25,6 @@ def test_check_html():
 
 def test_check_image():
     for filename, expected in (("1.tiff", True), ("454Score.png", True), ("1.bam", False)):
-        path = f"test-data/{filename}"
+        path = os.path.join("test-data", filename)
         assert os.path.exists(path)
         assert check_image(path) is expected

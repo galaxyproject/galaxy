@@ -1,8 +1,8 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 
-class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
+class TestUninstallingAndReinstallingRepositories(ShedTestCase):
     """Test uninstalling and reinstalling a basic repository."""
 
     requires_galaxy = True

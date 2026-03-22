@@ -1,15 +1,5 @@
 <script setup lang="ts">
-import {
-    BAlert,
-    BButton,
-    BFormCheckbox,
-    BFormCheckboxGroup,
-    BFormGroup,
-    BFormTextarea,
-    BModal,
-    BTab,
-    BTabs,
-} from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox, BFormCheckboxGroup, BFormGroup, BFormTextarea, BModal } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -19,6 +9,8 @@ import { Toast } from "@/composables/toast";
 import { useDbKeyStore } from "@/stores/dbKeyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GTab from "@/components/BaseComponents/GTab.vue";
+import GTabs from "@/components/BaseComponents/GTabs.vue";
 import FormDrilldown from "@/components/Form/Elements/FormDrilldown/FormDrilldown.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
@@ -269,11 +261,11 @@ watch(
 
 <template>
     <BModal :title="title" visible scrollable content-class="directory-dataset-picker" @hide="emit('onClose')">
-        <BTabs v-if="!pathMode" v-model="activeTab" fill pills>
-            <BTab title="Choose Files" />
+        <GTabs v-if="!pathMode" v-model="activeTab" fill pills>
+            <GTab title="Choose Files" />
 
-            <BTab title="Choose Folders" />
-        </BTabs>
+            <GTab title="Choose Folders" />
+        </GTabs>
 
         <BAlert v-if="filesMode" show class="mt-2">
             All files you select will be imported into the current folder ignoring their folder structure.

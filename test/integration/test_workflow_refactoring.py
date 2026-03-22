@@ -70,10 +70,10 @@ class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, U
         assert response.workflow["annotation"] == "my cool new annotation"
 
         actions = [
-            {"action_type": "update_license", "license": "AFL-3.0"},
+            {"action_type": "update_license", "license": "MIT"},
         ]
         self._refactor(actions)
-        assert self._latest_workflow.license == "AFL-3.0"
+        assert self._latest_workflow.license == "MIT"
 
         actions = [
             {"action_type": "update_creator", "creator": [{"class": "Person", "name": "Mary"}]},
@@ -348,10 +348,10 @@ steps:
         assert response.workflow["annotation"] == "my cool new annotation"
 
         actions = [
-            {"action_type": "update_license", "license": "AFL-3.0"},
+            {"action_type": "update_license", "license": "MIT"},
         ]
         response = self._dry_run(actions)
-        assert response.workflow["license"] == "AFL-3.0"
+        assert response.workflow["license"] == "MIT"
 
         actions = [
             {"action_type": "update_creator", "creator": [{"class": "Person", "name": "Mary"}]},

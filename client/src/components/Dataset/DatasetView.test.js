@@ -113,11 +113,11 @@ async function mountDatasetView(tab = "preview", options = {}) {
                 template: "<a><slot></slot></a>",
                 props: ["to"],
             },
-            BTabs: {
+            GTabs: {
                 template: '<div class="tabs-container"><slot></slot></div>',
                 props: ["pills", "card", "lazy", "value"],
             },
-            BTab: {
+            GTab: {
                 template: '<div class="tab-content"><slot></slot></div>',
                 props: ["title"],
             },
@@ -167,8 +167,8 @@ async function mountLoadingDatasetView() {
         stubs: {
             Heading: true,
             BLink: true,
-            BTabs: true,
-            BTab: true,
+            GTabs: true,
+            GTab: true,
         },
         mocks: {
             $store: {

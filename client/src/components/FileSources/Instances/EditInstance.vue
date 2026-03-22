@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { useConfigurationTemplateEdit } from "@/components/ConfigTemplates/useConfigurationTesting";
@@ -8,6 +7,8 @@ import { useInstanceAndTemplate } from "./instance";
 import { useInstanceRouting } from "./routing";
 
 import EditSecrets from "./EditSecrets.vue";
+import GTab from "@/components/BaseComponents/GTab.vue";
+import GTabs from "@/components/BaseComponents/GTabs.vue";
 
 const editTestUrl = "/api/file_source_instances/{uuid}/test";
 const editUrl = "/api/file_source_instances/{uuid}";
@@ -39,8 +40,8 @@ const {
 </script>
 <template>
     <div>
-        <BTabs v-if="hasSecrets">
-            <BTab title="Settings" active>
+        <GTabs v-if="hasSecrets">
+            <GTab title="Settings" active>
                 <ActionSummary
                     :error-data-description="errorDataDescription"
                     :test-results="testResults"
@@ -54,13 +55,13 @@ const {
                     :show-force-action-button="showForceActionButton"
                     @onForceSubmit="onForceSubmit"
                     @onSubmit="onSubmit" />
-            </BTab>
-            <BTab title="Secrets">
+            </GTab>
+            <GTab title="Secrets">
                 <div v-if="instance && template">
                     <EditSecrets :file-source="instance" :template="template" />
                 </div>
-            </BTab>
-        </BTabs>
+            </GTab>
+        </GTabs>
         <div v-else>
             <ActionSummary :error-data-description="errorDataDescription" :test-results="testResults" :error="error" />
             <InstanceForm

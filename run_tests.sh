@@ -46,8 +46,7 @@ The main test types are as follows:
    quickly test just a component or a few components of Galaxy's backend code.
 - Selenium: These are full stack tests meant to test the Galaxy UI with real
    browsers and are located in lib/galaxy_test/selenium.
-- ToolShed: These are web tests that use the older Python web testing
-   framework twill to test ToolShed related functionality. These are
+- ToolShed: These are tests that test ToolShed related functionality. These are
    located in lib/tool_shed/test.
 
 Python testing is done via pytest. Specific tests can be selected
@@ -294,7 +293,9 @@ TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
                                 tool shed test server files to be placed.
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
-GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
+GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages.
+GALAXY_TEST_LOG_LEVEL           Set Galaxy server log level for tests
+                                (default: DEBUG). E.g. WARNING to reduce output.
 GALAXY_TEST_AXE_SCRIPT_URL      URL of aXe script to use for accessibility testing.
 GALAXY_TEST_SKIP_AXE            Set this to '1' to skip aXe accessibilty testing when
                                 running selenium tests.
@@ -410,6 +411,7 @@ do
           export GALAXY_TEST_DRIVER_BACKEND
           report_file="./run_playwright_tests.html"
           skip_client_build=""
+          install_playwright_browers=(chromium)
           if [ $# -gt 1 ]; then
               selenium_script=$2
               shift 2
@@ -550,6 +552,7 @@ do
             --ignore lib/tool_shed/webapp/controllers
             --ignore=lib/tool_shed/webapp/model/migrations/alembic/'
           generate_cwl_conformance_tests=1
+          install_playwright_browers=(chromium firefox)
           if [ $# -gt 1 ]; then
               unit_extra="$unit_extra $2"
               shift 2
@@ -632,6 +635,10 @@ fi
 . ./scripts/common_startup_functions.sh
 
 setup_python
+
+if [ -n "$install_playwright_browers" ]; then
+    playwright install "${install_playwright_browers[@]}"
+fi
 
 if [ -n "$framework_test" ] || [ -n "$data_managers_test" ] ; then
     if [ -n "$test_id" ]; then

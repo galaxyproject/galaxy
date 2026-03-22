@@ -53,6 +53,7 @@ TOOL_XML_1 = """
         <resource type="cuda_device_count_min">1</resource>
         <resource type="cuda_device_count_max">2</resource>
         <resource type="shm_size">67108864</resource>
+        <resource type="timelimit">60</resource>
         <credentials name="Apollo" version="gmod.org/apollo" label="Apollo credential set" description="Please provide credentials for Apollo">
             <variable name="server" inject_as_env="apollo_url" optional="true" label="Your Apollo server" description="URL of your Apollo server" />
             <secret name="username" inject_as_env="apollo_user" optional="true" label="Your Apollo username" description="Username for Apollo" />
@@ -164,6 +165,8 @@ requirements:
     cuda_device_count_max: 2
   - type: resource
     shm_size: 67108864
+  - type: resource
+    timelimit: 60
 containers:
   - type: docker
     identifier: "awesome/bowtie"
@@ -384,6 +387,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert resource_requirements[4].resource_type == "cuda_device_count_min"
         assert resource_requirements[5].resource_type == "cuda_device_count_max"
         assert resource_requirements[6].resource_type == "shm_size"
+        assert resource_requirements[7].resource_type == "timelimit"
         assert not resource_requirements[0].runtime_required
         assert credentials[0].name == "Apollo"
         assert credentials[0].version == "gmod.org/apollo"
@@ -571,7 +575,7 @@ class TestYamlLoader(BaseLoaderTestCase):
             "resolve_dependencies": False,
             "shell": "/bin/sh",
         }
-        assert len(resource_requirements) == 7
+        assert len(resource_requirements) == 8
         assert resource_requirements[0].to_dict() == {"resource_type": "cores_min", "value_or_expression": 1}
         assert resource_requirements[1].to_dict() == {"resource_type": "cuda_version_min", "value_or_expression": 10.2}
         assert resource_requirements[2].to_dict() == {
@@ -590,6 +594,10 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert resource_requirements[6].to_dict() == {
             "resource_type": "shm_size",
             "value_or_expression": 67108864,
+        }
+        assert resource_requirements[7].to_dict() == {
+            "resource_type": "timelimit",
+            "value_or_expression": 60,
         }
         assert len(credentials) == 1
         assert len(credentials[0].secrets) == 2
@@ -940,8 +948,8 @@ class TestExpectations(FunctionalTestToolTestCase):
         tests = tests_dict["tests"]
         assert len(tests) == 10
         test_0 = tests[0]
-        assert len(test_0["stderr"]) == 1
-        assert len(test_0["stdout"]) == 2
+        assert len(test_0["stderr"]) == 2
+        assert len(test_0["stdout"]) == 1
 
 
 class TestExpectationsCommandVersion(FunctionalTestToolTestCase):

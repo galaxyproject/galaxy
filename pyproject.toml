@@ -42,8 +42,8 @@ dependencies = [
     "fs",
     "future>=1.0.0",  # Python 3.12 support
     "gravity>=1.2.0",  # Python 3.14 support
-    "gunicorn",
-    "gxformat2>=0.21.0",
+    "gunicorn!=25.1.0",  # https://github.com/benoitc/gunicorn/discussions/3509
+    "gxformat2>=0.22.0",
     "h5grove>=1.2.1",
     "h5py>=3.12",  # Python 3.13 support
     "httpx",
@@ -57,8 +57,7 @@ dependencies = [
     "Mako",
     "Markdown",
     "MarkupSafe",
-    "mercurial>=6.8.2 ; python_version<'3.14'",  # Python 3.13 support
-    "mercurial>=7.2rc0 ; python_version>='3.14'",  # Python 3.14 support
+    "mercurial>=7.2",  # Python 3.14 support
     "mrcfile",
     "more-itertools",
     "msal",
@@ -89,7 +88,7 @@ dependencies = [
     "python-multipart",  # required to support form parsing in FastAPI/Starlette
     "python-slugify",
     "PyYAML",
-    "refgenconf>=0.12.0",
+    "refgenconf>=0.13.0",  # https://github.com/refgenie/refgenconf/pull/149
     "regex",
     "requests",
     "rocrate",
@@ -153,7 +152,6 @@ test = [
     "testfixtures",
     "total-perspective-vortex>=3.1.1,<4",  # https://github.com/galaxyproject/total-perspective-vortex/pull/173
     "tuspy",
-    "twill>=3.2.5",  # Python 3.13 support
     "watchdog",
     "Werkzeug",
 ]

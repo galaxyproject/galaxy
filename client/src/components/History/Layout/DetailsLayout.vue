@@ -3,7 +3,7 @@ import { faPen, faSave, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BFormInput, BFormTextarea } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
 import l from "@/utils/localization";
@@ -11,6 +11,7 @@ import l from "@/utils/localization";
 import type { DetailsLayoutSummarized } from "./types";
 
 import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
+import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -40,6 +41,8 @@ const userStore = useUserStore();
 const { isAnonymous } = storeToRefs(userStore);
 
 const nameRef = ref<HTMLInputElement | null>(null);
+const clickToEditRef = ref<InstanceType<typeof ClickToEdit> | null>(null);
+const clickToEditClamped = ref(false);
 
 const editing = ref(false);
 const textSelected = ref(false);
@@ -104,6 +107,19 @@ function onToggle() {
     }
 }
 
+function checkClickToEditClamped() {
+    const el = clickToEditRef.value?.$el;
+    if (el) {
+        clickToEditClamped.value = el.scrollHeight > el.clientHeight;
+    }
+}
+
+onMounted(checkClickToEditClamped);
+watch(
+    () => props.name,
+    () => nextTick(checkClickToEditClamped),
+);
+
 function selectText() {
     if (!textSelected.value) {
         nameRef.value?.select();
@@ -121,17 +137,19 @@ function selectText() {
             <template v-if="!summarized && !editing">
                 <ClickToEdit
                     v-if="renameable"
+                    ref="clickToEditRef"
                     v-model="clickToEditName"
+                    v-b-tooltip.hover="clickToEditClamped ? name : ''"
                     component="h3"
                     title="..."
                     data-description="name display"
                     no-save-on-blur
-                    class="my-2 w-100" />
-                <h3 v-else class="my-2 w-100">
+                    class="name-display my-2 w-100" />
+                <Heading v-else h3 :clamp="2" class="my-2 w-100">
                     {{ props.name || "..." }}
-                </h3>
+                </Heading>
             </template>
-            <div v-else style="max-width: 80%">
+            <div v-else class="overflow-hidden" style="max-width: 80%">
                 <TextSummary
                     :description="name"
                     data-description="name display"
@@ -233,6 +251,14 @@ function selectText() {
 </template>
 
 <style lang="scss" scoped>
+.name-display :deep(h3),
+h3.name-display {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
 .summarized-details {
     margin-left: 0.5rem;
     max-width: 15rem;

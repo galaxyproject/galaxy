@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useElementBounding, useScroll } from "@vueuse/core";
+import { useElementBounding, useEventListener, useScroll } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, type PropType, provide, reactive, type Ref, ref, watch, watchEffect } from "vue";
 
@@ -10,6 +10,7 @@ import type { Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { useD3Zoom } from "./composables/d3Zoom";
+import { useFocusedNodes } from "./composables/useFocusedNodes";
 import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
 import type { Rectangle, Vector } from "./modules/geometry";
@@ -41,10 +42,13 @@ const props = defineProps({
     fixedHeight: { type: Number, default: undefined },
     populatedInputs: { type: Boolean, default: false },
     loading: { type: Boolean, default: false },
+    detailedView: { type: Boolean, default: false },
 });
 
-const { stateStore, stepStore } = useWorkflowStores();
+const { stateStore, stepStore, connectionStore } = useWorkflowStores();
 const { scale, activeNodeId, draggingPosition, draggingTerminal } = storeToRefs(stateStore);
+
+const { focusedNodeIds } = useFocusedNodes(activeNodeId, connectionStore);
 const canvas: Ref<HTMLElement | null> = ref(null);
 
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
@@ -147,6 +151,46 @@ function onDeactivate() {
     stateStore.activeNodeId = null;
 }
 
+/**
+ * Max total pixel movement (|dx| + |dy|) between pointerdown and pointerup
+ * that still counts as a "click" rather than a pan/drag.
+ */
+const mouseMovementThreshold = 9;
+
+/** The position of the last pointerdown event, or null if there hasn't been one yet. */
+let canvasPointerDownPos: { x: number; y: number } | null = null;
+
+// capture: true makes these fire in the capture phase, before D3 zoom's bubble-phase
+// listeners on the same element — so D3 cannot stopImmediatePropagation us out.
+useEventListener(
+    canvas,
+    "pointerdown",
+    (e: PointerEvent) => {
+        canvasPointerDownPos = { x: e.clientX, y: e.clientY };
+    },
+    { capture: true },
+);
+
+useEventListener(
+    canvas,
+    "pointerup",
+    (e: PointerEvent) => {
+        if (!canvasPointerDownPos) {
+            return;
+        }
+        const dx = Math.abs(e.clientX - canvasPointerDownPos.x);
+        const dy = Math.abs(e.clientY - canvasPointerDownPos.y);
+        canvasPointerDownPos = null;
+        // walk up the DOM from the release target — if we hit a node, this was a node click
+        const clickedOnNode = !!(e.target as HTMLElement).closest(".workflow-node");
+        // only deactivate on a clean click (no pan) on the canvas background
+        if (dx + dy <= mouseMovementThreshold && !clickedOnNode) {
+            onDeactivate();
+        }
+    },
+    { capture: true },
+);
+
 watch(
     () => transform.value.k,
     () => (stateStore.scale = transform.value.k),
@@ -210,7 +254,8 @@ defineExpose({
                 <WorkflowEdges
                     :transform="transform"
                     :dragging-terminal="draggingTerminal"
-                    :dragging-connection="draggingPosition" />
+                    :dragging-connection="draggingPosition"
+                    :focused-node-ids="focusedNodeIds" />
                 <WorkflowNode
                     v-for="(step, key) in steps"
                     :id="step.id"
@@ -224,8 +269,9 @@ defineExpose({
                     :scroll="scroll"
                     :scale="scale"
                     :readonly="readonly"
-                    :is-invocation="props.isInvocation"
+                    :is-invocation="props.isInvocation && (!props.detailedView || activeNodeId !== step.id)"
                     :populated-inputs="props.populatedInputs"
+                    :is-out-of-focus="focusedNodeIds !== null && !focusedNodeIds.has(step.id)"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"

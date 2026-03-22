@@ -1392,7 +1392,6 @@ class ColumnListParameter(SelectToolParameter):
     those columns that contain numerical values in the associated DataToolParameter.
 
     # TODO: we need better testing here, but not sure how to associate a DatatoolParameter with a ColumnListParameter
-    # from a twill perspective...
 
     >>> # Mock up a history (not connected to database)
     >>> from galaxy.model import History, HistoryDatasetAssociation
@@ -1501,17 +1500,13 @@ class ColumnListParameter(SelectToolParameter):
                     else:
                         dataset = converted_dataset
             # Columns can only be identified if the dataset is ready and metadata is available
-            if (
-                not hasattr(dataset, "metadata")
-                or not hasattr(dataset.metadata, "columns")
-                or not dataset.metadata.columns
-            ):
+            if not hasattr(dataset, "metadata") or not dataset.metadata.get_if_set("columns"):
                 return []
             # Build up possible columns for this dataset
             this_column_list = []
             if self.numerical:
                 # If numerical was requested, filter columns based on metadata
-                for i, col in enumerate(dataset.metadata.column_types):
+                for i, col in enumerate(dataset.metadata.get_if_set("column_types", [])):
                     if col == "int" or col == "float":
                         this_column_list.append(str(i + 1))
             else:
@@ -1528,23 +1523,24 @@ class ColumnListParameter(SelectToolParameter):
         Show column labels rather than c1..cn if use_header_names=True
         """
         options: Sequence[ParameterOption] = []
-        column_list = self.get_column_list(trans, other_values)
+        try:
+            column_list = self.get_column_list(trans, other_values)
+        except ImplicitConversionRequired:
+            return options
         if not column_list:
             return options
         # if available use column_names metadata for option names
         # otherwise read first row - assume is a header with tab separated names
         if self.usecolnames:
             dataset = other_values.get(self.data_ref, None)
-            if (
-                hasattr(dataset, "metadata")
-                and hasattr(dataset.metadata, "column_names")
-                and dataset.metadata.element_is_set("column_names")
-            ):
+            if isinstance(dataset, HistoryDatasetCollectionAssociation):
+                dataset = dataset.to_hda_representative()
+            if isinstance(dataset, DatasetCollectionElement):
+                dataset = dataset.first_dataset_instance()
+            column_names = getattr(dataset, "metadata", None) and dataset.metadata.get_if_set("column_names")
+            if column_names:
                 try:
-                    options = [
-                        ParameterOption(f"c{c}: {dataset.metadata.column_names[int(c) - 1]}", c, False)
-                        for c in column_list
-                    ]
+                    options = [ParameterOption(f"c{c}: {column_names[int(c) - 1]}", c, False) for c in column_list]
                 except IndexError:
                     # ignore and rely on fallback
                     pass
@@ -2022,10 +2018,10 @@ class BaseDataToolParameter(ToolParameter):
 
         if self.min is not None:
             if self.min > dataset_count:
-                raise ValueError(f"At least {self.min} datasets are required for {self.name}")
+                raise ParameterValueError(f"at least {self.min} datasets are required", self.name)
         if self.max is not None:
             if self.max < dataset_count:
-                raise ValueError(f"At most {self.max} datasets are required for {self.name}")
+                raise ParameterValueError(f"at most {self.max} datasets are required", self.name)
 
 
 ItemFromSrcAny = Union[
@@ -2247,7 +2243,9 @@ class DataToolParameter(BaseDataToolParameter):
                     raise ParameterValueError("Collection element in unexpected state", self.name)
             if isinstance(value_to_check, DatasetInstance):
                 if value_to_check.deleted:
-                    raise ParameterValueError("the previously selected dataset has been deleted.", self.name)
+                    raise ParameterValueError(
+                        "the previously selected dataset has been deleted.", self.name, value_to_check
+                    )
                 elif value_to_check.dataset and value_to_check.dataset.state in [
                     Dataset.states.ERROR,
                     Dataset.states.DISCARDED,
@@ -2260,7 +2258,11 @@ class DataToolParameter(BaseDataToolParameter):
                     value_to_check.implicit_conversion = True  # type: ignore[attr-defined]
             elif isinstance(value_to_check, HistoryDatasetCollectionAssociation):
                 if value_to_check.deleted:
-                    raise ParameterValueError("the previously selected dataset collection has been deleted.", self.name)
+                    raise ParameterValueError(
+                        "the previously selected dataset collection has been deleted.",
+                        self.name,
+                        value_to_check,
+                    )
                 value_to_check = value_to_check.collection
             if isinstance(value_to_check, DatasetCollection):
                 if value_to_check.elements_deleted:
@@ -2595,7 +2597,9 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         if rval:
             if isinstance(rval, HistoryDatasetCollectionAssociation):
                 if rval.deleted:
-                    raise ParameterValueError("the previously selected dataset collection has been deleted", self.name)
+                    raise ParameterValueError(
+                        "the previously selected dataset collection has been deleted", self.name, rval
+                    )
                 if rval.collection.elements_deleted:
                     raise ParameterValueError(
                         "the previously selected dataset collection has elements that are deleted.", self.name
@@ -2710,6 +2714,14 @@ class HiddenDataToolParameter(HiddenToolParameter, DataToolParameter):
         self.value = "None"
         self.type = "hidden_data"
         self.hidden = True
+        # hidden_data params are broken without optional="true" - the job runner's
+        # parameter validation rejects them when no dataset is provided. The only
+        # known tool using hidden_data (cufflinks) sets optional="true".
+        if not self.optional:
+            raise ParameterValueError(
+                'hidden_data parameters must declare optional="true" to function correctly',
+                self.name,
+            )
 
 
 class BaseJsonToolParameter(ToolParameter):

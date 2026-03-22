@@ -25,11 +25,13 @@ export interface Activity {
     tooltip: string;
     // indicate wether the activity should be visible by default
     visible?: boolean;
-    /** Activity indicator; a number or an icon */
-    indicator?: number | IconDefinition;
+    /** Activity indicator; a number, or true to show an exclamation icon */
+    indicator?: number | boolean;
     /** Variant for the activity indicator */
     indicatorVariant?: ActivityVariant;
     // if activity should cause a click event
     click?: true;
     variant?: ActivityVariant;
+    // optional title for opening in scratchbook window manager
+    windowTitle?: string;
 }

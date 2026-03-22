@@ -364,12 +364,30 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.workflow_run.run_workflow.wait_for_visible()
 
     def go_to_trs_search(self) -> None:
-        self.navigate_to(self.build_url("workflows/trs_search"))
+        self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
+        # The wizard auto-navigates to TRS method selection on mount
+        # Click the "Search workflow registries" card then advance the wizard
+        self.components.workflows.import_trs_search_link.wait_for_and_click()
+        self.components.workflows.import_next_button.wait_for_and_click()
 
     def go_to_trs_by_id(self) -> None:
         self.navigate_to(self.build_url("workflows/trs_import"))
         self.components.masthead._.wait_for_visible()
+        # The wizard auto-navigates to TRS method selection on mount
+        # Click the TRS ID sub-card then advance the wizard
+        self.components.workflows.import_trs_id_link.wait_for_and_click()
+        self.components.workflows.import_next_button.wait_for_and_click()
+
+    def go_to_trs_by_url(self) -> None:
+        self.navigate_to(self.build_url("workflows/trs_import"))
+        self.components.masthead._.wait_for_visible()
+        # The wizard auto-navigates to TRS method selection on mount
+        # Click the TRS URL sub-card then advance the wizard
+        self.components.workflows.import_trs_url_link.wait_for_and_click()
+        self.components.workflows.import_next_button.wait_for_and_click()
+        # Wait for the URL input to be visible after wizard navigates to the form
+        self.components.trs_import.url_input.wait_for_visible()
 
     def go_to_workflow_sharing(self, workflow_id: str) -> None:
         self.navigate_to(self.build_url(f"workflows/sharing?id={workflow_id}"))
@@ -1590,6 +1608,47 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.invocations.activity.wait_for_and_click()
         self.components.invocations.activity_expand.wait_for_and_click()
 
+    def navigate_to_chatgxy(self):
+        self.home()
+        self.components.chatgxy.activity.wait_for_and_click()
+
+    def chatgxy_ensure_new_chat(self):
+        """Ensure ChatGXY center panel shows an empty conversation."""
+        chatgxy = self.components.chatgxy
+        chatgxy._.wait_for_visible()
+        if len(chatgxy.query_cell.all()) > 0 or len(chatgxy.response_content.all()) > 0:
+            chatgxy.new_chat_button.wait_for_and_click()
+        self._chatgxy_assert_chat_empty()
+
+    def chatgxy_send_message(self, text):
+        """Type a message, click send, and wait for the response to appear."""
+        chatgxy = self.components.chatgxy
+        chatgxy.input.wait_for_and_send_keys(text)
+        chatgxy.send_button.wait_for_and_click()
+        chatgxy.loading.wait_for_absent_or_hidden()
+        chatgxy.response_content.wait_for_visible()
+
+    @retry_during_transitions
+    def _chatgxy_assert_chat_empty(self):
+        chatgxy = self.components.chatgxy
+        assert len(chatgxy.query_cell.all()) == 0
+        assert len(chatgxy.response_content.all()) == 0
+
+    def navigate_to_dataset_error(self, hid):
+        """Display a dataset and click the error tab."""
+        self.display_dataset(hid)
+        error_tab = self.wait_for_selector_clickable(
+            ".nav-item[title='View error information for this dataset'] > a.nav-link"
+        )
+        error_tab.click()
+
+    def galaxy_wizard_analyze(self):
+        """Click the wizard analyze button and wait for the response."""
+        wizard = self.components.galaxy_wizard
+        wizard.analyze_button.wait_for_and_click()
+        # Button disappears once queryResponse is set (v-if="!queryResponse")
+        wizard.analyze_button.wait_for_absent_or_hidden()
+
     def navigate_to_pages(self):
         self.home()
         self.components.pages.activity.wait_for_and_click()
@@ -1647,6 +1706,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         quota_component.add_form_submit.wait_for_and_click()
 
     def select_dataset_from_lib_import_modal(self, filenames):
+        self.wait_for_selector_visible(".directory-dataset-picker-list")
         for name in filenames:
             self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
         self.components.libraries.folder.import_dir_btn.wait_for_and_click()
@@ -1684,7 +1744,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         else:
             assert len(elements) == 1
             element = elements[0]
-            return element.find_elements(By.CSS_SELECTOR, "tr")  # [style='display: table-row']
+            return element.find_elements(By.CSS_SELECTOR, "tr:not(.g-table-empty-row)")
 
     def libraries_index_create(self, name):
         self.components.libraries.create_new_library_btn.wait_for_and_click()
@@ -1701,11 +1761,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         search_element.click()
         return search_element
 
-    def libraries_index_sort_selector(self):
-        return "th[aria-sort]"
-
     def libraries_index_sort_click(self):
-        sort_element = self.wait_for_selector_clickable(self.libraries_index_sort_selector())
+        sort_element = self.wait_for_selector_clickable(".g-table-sortable")
         sort_element.click()
         return sort_element
 
@@ -1746,6 +1803,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
                 self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_dataset_search,
                 to_select_item,
             )
+            self.sleep_for(self.wait_types.UX_RENDER)
             self.components.libraries.folder.import_datasets_from_history_modal_select_list_item_by_index(
                 row_index=1
             ).wait_for_and_click()
@@ -1762,8 +1820,8 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             )
 
     def libraries_table_elements(self):
-        tbody_element = self.wait_for_selector_visible("#folder_list_body > tbody")
-        return tbody_element.find_elements(By.CSS_SELECTOR, "tr:not(.b-table-empty-row)")
+        tbody_element = self.wait_for_selector_visible("#g-table-folder_list_body > tbody")
+        return tbody_element.find_elements(By.CSS_SELECTOR, "tr:not(.g-table-empty-row)")
 
     def populate_library_folder_from_import_dir(self, library_name, filenames):
         self.libraries_open_with_name(library_name)
@@ -1798,6 +1856,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def workflow_index_open(self):
         self.home()
         self.click_activity_workflow()
+
+    def navigate_to_workflows_import(self):
+        self.get("workflows/import")
 
     def workflow_index_open_with_name(self, name: str):
         self.workflow_index_open()
@@ -1921,10 +1982,21 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             raise KeyError(f"Failed to find tag {tag} on workflow with index {workflow_index}")
 
     def workflow_import_submit_url(self, url):
-        form_button = self.wait_for_selector_visible("#workflow-import-button")
+        # Click the "Fetch URL" card to select that import method
+        self.components.workflows.import_url_link.wait_for_and_click()
+        # Click the wizard's Next button to proceed to the URL input step
+        self.wait_for_and_click_selector(".wizard-actions .go-next-btn")
+        # Enter the URL
         url_element = self.wait_for_selector_visible("#workflow-import-url-input")
         url_element.send_keys(url)
-        form_button.click()
+        # Wait a moment for validation to occur
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # Wait for the Import button to become enabled (it's disabled until URL is valid)
+        import_button = self.wait_for_selector_clickable(".wizard-actions .go-next-btn.btn-primary:not([disabled])")
+        # Click the wizard's Import button
+        import_button.click()
+        # Wait for workflow list to appear after import completes
+        self.components.workflows.workflow_cards.wait_for_visible()
 
     def workflow_sharing_click_publish(self):
         self.wait_for_and_click_selector("input[name='make_accessible_and_publish']")
@@ -2112,14 +2184,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         edit_button_element = rules_div_element.find_element(By.CSS_SELECTOR, ".form-rules-edit button")
         edit_button_element.click()
 
-    def tool_set_value(self, expanded_parameter_id, value, expected_type=None):
+    def tool_set_value(self, expanded_parameter_id, value, expected_type=None, multiple=False):
         div_element = self.tool_parameter_div(expanded_parameter_id)
         assert div_element
         if expected_type in ["select", "data", "data_collection"]:
             select_field = self.components.tool_form.parameter_data_select(
                 parameter=expanded_parameter_id
             ).wait_for_visible()
-            self.select_set_value(select_field, value)
+            self.select_set_value(select_field, value, multiple=multiple)
         else:
             input_element = div_element.find_element(By.CSS_SELECTOR, "input")
             # Clear default value
@@ -2149,6 +2221,16 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def click_history_option_sharing(self):
         self.use_bootstrap_dropdown(option="share and manage access", menu="history options")
+
+    def click_history_option_extract_workflow(self):
+        self.use_bootstrap_dropdown(option="extract workflow", menu="history options")
+
+    def navigate_to_workflow_extraction(self):
+        """Navigate to workflow extraction UI via history options menu."""
+        self.click_history_option_extract_workflow()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.switch_to_main_panel()
+        self.components.workflow_extract._.wait_for_visible()
 
     def click_history_option(self, option_label_or_component):
         # Open menu

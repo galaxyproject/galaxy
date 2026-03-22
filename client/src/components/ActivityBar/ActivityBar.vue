@@ -16,6 +16,7 @@ import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
+import ChatHistoryPanel from "../ChatGXY/ChatHistoryPanel.vue";
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
@@ -89,6 +90,13 @@ watchImmediate(
         } else {
             activityStore.resetDefaultActivities();
         }
+    },
+);
+
+watchImmediate(
+    () => props.specialActivities,
+    (specials) => {
+        activityStore.setSpecialPanelActivityIds(specials.filter((a) => a.panel).map((a) => a.id));
     },
 );
 
@@ -286,6 +294,8 @@ defineExpose({
                                 :key="activity.id"
                                 :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
+                                :indicator="activity.indicator"
+                                :indicator-variant="activity.indicatorVariant"
                                 :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
@@ -304,6 +314,7 @@ defineExpose({
                                 :tooltip="activity.tooltip"
                                 :to="activity.to ?? undefined"
                                 :variant="activity.variant"
+                                :window-title="activity.windowTitle"
                                 @click="onActivityClicked(activity)" />
                         </div>
                     </div>
@@ -389,6 +400,7 @@ defineExpose({
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
+            <ChatHistoryPanel v-else-if="isActiveSideBar('chatgxy')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" in-panel />
             <InteractiveToolsPanel v-else-if="isActiveSideBar('interactivetools')" />

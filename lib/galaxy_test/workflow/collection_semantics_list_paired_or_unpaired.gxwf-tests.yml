@@ -1,0 +1,84 @@
+- doc: |
+    COLLECTION_INPUT_LIST_PAIRED_OR_UNPAIRED: A list:paired_or_unpaired collection
+    consumed by a tool expecting list:paired_or_unpaired produces a single dataset.
+  job:
+    input1:
+      class: Collection
+      collection_type: list:paired_or_unpaired
+      elements:
+        - identifier: el1
+          class: Collection
+          type: paired_or_unpaired
+          elements:
+            - identifier: forward
+              class: File
+              contents: "forward content"
+            - identifier: reverse
+              class: File
+              contents: "reverse content"
+  outputs:
+    wf_output:
+      asserts:
+        - that: has_text
+          text: "forward content"
+        - that: has_text
+          text: "reverse content"
+
+- doc: |
+    SAMPLE_SHEET_PAIRED_OR_UNPAIRED_MATCHES_LIST_PAIRED_OR_UNPAIRED: A
+    sample_sheet:paired_or_unpaired consumed by list:paired_or_unpaired via canMatch.
+  job:
+    input1:
+      class: Collection
+      collection_type: sample_sheet:paired_or_unpaired
+      rows:
+        el1: []
+      elements:
+        - identifier: el1
+          class: Collection
+          type: paired_or_unpaired
+          elements:
+            - identifier: forward
+              class: File
+              contents: "forward content"
+            - identifier: reverse
+              class: File
+              contents: "reverse content"
+  outputs:
+    wf_output:
+      asserts:
+        - that: has_text
+          text: "forward content"
+        - that: has_text
+          text: "reverse content"
+
+- doc: |
+    MAPPING_LIST_LIST_OVER_LIST_PAIRED_OR_UNPAIRED: A list:list collection mapped
+    over a list:paired_or_unpaired tool input produces a list output collection.
+    Each inner list is consumed as list:paired_or_unpaired via single_datasets.
+  job:
+    input1:
+      class: Collection
+      collection_type: list:list
+      elements:
+        - identifier: outer1
+          class: Collection
+          type: list
+          elements:
+            - identifier: el1
+              class: File
+              contents: "data from outer1 el1"
+            - identifier: el2
+              class: File
+              contents: "data from outer1 el2"
+        - identifier: outer2
+          class: Collection
+          type: list
+          elements:
+            - identifier: el1
+              class: File
+              contents: "data from outer2 el1"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: list

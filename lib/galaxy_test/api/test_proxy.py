@@ -7,11 +7,12 @@ from unittest.mock import (
 import pytest
 import requests
 
-from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
-URL_TO_TEST = "https://github.com/galaxyproject/galaxy/raw/6e7427e8e2e070d4ab491a6cce5a59b6b6a62a08/test-data/4.bed.zip"
+REMOTE_URL_TO_TEST = (
+    "https://github.com/galaxyproject/galaxy/raw/6e7427e8e2e070d4ab491a6cce5a59b6b6a62a08/test-data/4.bed.zip"
+)
 EXPECTED_HEADERS = {
     "content-length": "198",
     "content-type": "application/zip",
@@ -28,27 +29,36 @@ class TestProxyApi(ApiTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
-    @skip_if_github_down
-    def test_proxy_head_request(self):
-        response = self._head(f"proxy?url={URL_TO_TEST}")
+    def _get_zip_url(self, mock_http_server):
+        return mock_http_server.get_url(
+            remote_url=REMOTE_URL_TO_TEST,
+            file_path="test-data/4.bed.zip",
+            content_type="application/zip",
+            support_head=True,
+            support_ranges=True,
+        )
+
+    def test_proxy_head_request(self, mock_http_server):
+        url = self._get_zip_url(mock_http_server)
+        response = self._head(f"proxy?url={url}")
         self._assert_status_code_is_ok(response)
         assert response.headers["content-length"] == EXPECTED_HEADERS["content-length"]
         assert response.headers["content-type"] == EXPECTED_HEADERS["content-type"]
         assert response.headers["accept-ranges"] == EXPECTED_HEADERS["accept-ranges"]
 
-    @skip_if_github_down
-    def test_proxy_get_request(self):
-        response = self._get(f"proxy?url={URL_TO_TEST}")
+    def test_proxy_get_request(self, mock_http_server):
+        url = self._get_zip_url(mock_http_server)
+        response = self._get(f"proxy?url={url}")
         self._assert_status_code_is_ok(response)
         assert response.headers["content-length"] == EXPECTED_HEADERS["content-length"]
         assert response.headers["content-type"] == EXPECTED_HEADERS["content-type"]
         assert response.headers["accept-ranges"] == EXPECTED_HEADERS["accept-ranges"]
         assert len(response.content) == int(EXPECTED_HEADERS["content-length"])
 
-    @skip_if_github_down
-    def test_proxy_get_request_with_range(self):
+    def test_proxy_get_request_with_range(self, mock_http_server):
+        url = self._get_zip_url(mock_http_server)
         request_range = "bytes=0-3"
-        response = self._get(f"proxy?url={URL_TO_TEST}", headers={"range": request_range})
+        response = self._get(f"proxy?url={url}", headers={"range": request_range})
         self._assert_status_code_is(response, 206)
         assert response.headers["accept-ranges"] == "bytes"
         assert response.headers["content-length"] == "4"
@@ -56,7 +66,7 @@ class TestProxyApi(ApiTestCase):
         assert response.content == ZIP_MAGIC_NUMBER
 
     def test_anonymous_user_cannot_access_proxy(self):
-        response = self._get(f"proxy?url={URL_TO_TEST}", anon=True)
+        response = self._get(f"proxy?url={REMOTE_URL_TO_TEST}", anon=True)
         self._assert_status_code_is(response, 403)
         assert response.json()["err_msg"] == "Anonymous users are not allowed to access this endpoint"
 
@@ -83,12 +93,12 @@ class TestProxyApi(ApiTestCase):
     @pytest.mark.parametrize(
         "url_with_nonprintable",
         [
-            f"\t{URL_TO_TEST}",  # Tab at beginning
-            f"{URL_TO_TEST}\t",  # Tab at end
+            f"\t{REMOTE_URL_TO_TEST}",  # Tab at beginning
+            f"{REMOTE_URL_TO_TEST}\t",  # Tab at end
             "https://example.com/path\twith\ttab",  # Tabs in path
             "https://exam\tple.com/path",  # Tab in domain
-            f"\r\n{URL_TO_TEST}",  # CRLF at beginning
-            f"{URL_TO_TEST}\r\n",  # CRLF at end
+            f"\r\n{REMOTE_URL_TO_TEST}",  # CRLF at beginning
+            f"{REMOTE_URL_TO_TEST}\r\n",  # CRLF at end
         ],
     )
     def test_url_with_nonprintable_characters(self, url_with_nonprintable: str):

@@ -1,126 +1,84 @@
 <script setup lang="ts">
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import {
-    faBug,
-    faChartBar,
-    faClock,
-    faGraduationCap,
-    faHistory,
-    faMagic,
-    faPaperPlane,
-    faPlus,
-    faRobot,
-    faRoute,
-    faThumbsDown,
-    faThumbsUp,
-    faTrash,
-    faUser,
-} from "@fortawesome/free-solid-svg-icons";
+import { faExternalLinkAlt, faMagic, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
 import { nextTick, onMounted, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type ActionSuggestion, type AgentResponse, useAgentActions } from "@/composables/agentActions";
+import { getGalaxyInstance } from "@/app";
+import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import ActionCard from "./ChatGXY/ActionCard.vue";
+import { getAgentIcon } from "./ChatGXY/agentTypes";
+import type { ChatHistoryItem, ChatMessage } from "./ChatGXY/chatTypes";
+import { generateId, scrollToBottom } from "./ChatGXY/chatUtils";
+
+import ChatInput from "./ChatGXY/ChatInput.vue";
+import ChatMessageCell from "./ChatGXY/ChatMessageCell.vue";
 import Heading from "@/components/Common/Heading.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import UtcDate from "@/components/UtcDate.vue";
 
-interface Message {
-    id: string;
-    role: "user" | "assistant";
-    content: string;
-    timestamp: Date;
-    agentType?: string;
-    confidence?: string;
-    feedback?: "up" | "down" | null;
-    agentResponse?: AgentResponse;
-    suggestions?: ActionSuggestion[];
-    isSystemMessage?: boolean; // Flag for welcome/placeholder messages that shouldn't have feedback
-}
-
-interface ChatHistoryItem {
-    id: number;
-    query: string;
-    response: string;
-    agent_type: string;
-    agent_response?: AgentResponse; // Full agent response with suggestions
-    timestamp: string;
-    feedback?: number | null;
-}
+const props = withDefaults(
+    defineProps<{
+        exchangeId?: string;
+        compact?: boolean;
+    }>(),
+    {
+        exchangeId: undefined,
+        compact: false,
+    },
+);
 
 const query = ref("");
-const messages = ref<Message[]>([]);
-const errorMessage = ref("");
+const messages = ref<ChatMessage[]>([]);
 const busy = ref(false);
 const chatContainer = ref<HTMLElement>();
 const selectedAgentType = ref("auto");
-const showHistory = ref(false);
-const chatHistory = ref<ChatHistoryItem[]>([]);
-const loadingHistory = ref(false);
-const currentChatId = ref<number | null>(null);
+const currentChatId = ref<string | null>(null);
 const hasLoadedInitialChat = ref(false);
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 const { processingAction, handleAction } = useAgentActions();
 
-interface AgentType {
-    value: string;
-    label: string;
-    icon: IconDefinition;
-    description: string;
-}
-
-const agentTypes: AgentType[] = [
-    { value: "auto", label: "Auto (Router)", icon: faMagic, description: "Intelligent routing" },
-    { value: "router", label: "Router", icon: faRoute, description: "Query router" },
-    { value: "error_analysis", label: "Error Analysis", icon: faBug, description: "Debug tool errors" },
-    { value: "custom_tool", label: "Custom Tool", icon: faPlus, description: "Create custom tools" },
-    { value: "dataset_analyzer", label: "Dataset Analyzer", icon: faChartBar, description: "Analyze datasets" },
-    { value: "gtn_training", label: "GTN Training", icon: faGraduationCap, description: "Find tutorials" },
-];
-
-// Map agent types to their icons for quick lookup
-const agentIconMap: Record<string, IconDefinition> = {
-    auto: faMagic,
-    router: faRoute,
-    error_analysis: faBug,
-    custom_tool: faPlus,
-    dataset_analyzer: faChartBar,
-    gtn_training: faGraduationCap,
-};
-
 onMounted(async () => {
-    // Try to load the most recent chat
-    await loadLatestChat();
+    if (props.exchangeId) {
+        await loadChatById(props.exchangeId);
+    } else {
+        await loadLatestChat();
+    }
 
-    // If no chat was loaded, show the welcome message
     if (!hasLoadedInitialChat.value) {
-        messages.value.push({
-            id: generateId(),
-            role: "assistant",
-            content:
-                "👋 Welcome to ChatGXY! I can help you with:\n\n" +
-                "• **Finding the right tools** for your analysis\n" +
-                "• **Debugging errors** in your workflows\n" +
-                "• **Optimizing performance** of your pipelines\n" +
-                "• **Checking data quality** issues\n\n" +
-                "Just ask me anything about Galaxy and I'll route your question to the right specialist!",
-            timestamp: new Date(),
-            agentType: "router",
-            confidence: "high",
-            feedback: null,
-            isSystemMessage: true,
-        });
+        showWelcome();
     }
 });
 
-function generateId() {
-    return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+watch(
+    () => props.exchangeId,
+    async (newId, oldId) => {
+        if (newId === oldId) {
+            return;
+        }
+        if (newId) {
+            await loadChatById(newId);
+        } else {
+            startNewChat();
+        }
+    },
+);
+
+function showWelcome() {
+    messages.value.push({
+        id: generateId(),
+        role: "assistant",
+        content:
+            "Welcome to ChatGXY. Ask about tools, workflows, errors, or data quality " +
+            "and your question will be routed to the appropriate specialist agent.",
+        timestamp: new Date(),
+        agentType: "router",
+        confidence: "high",
+        feedback: null,
+        isSystemMessage: true,
+    });
 }
 
 async function submitQuery() {
@@ -128,7 +86,7 @@ async function submitQuery() {
         return;
     }
 
-    const userMessage: Message = {
+    const userMessage: ChatMessage = {
         id: generateId(),
         role: "user",
         content: query.value,
@@ -140,12 +98,10 @@ async function submitQuery() {
     const currentQuery = query.value;
     query.value = "";
 
-    // Scroll to bottom after adding user message
     await nextTick();
-    scrollToBottom();
+    scrollToBottom(chatContainer.value);
 
     busy.value = true;
-    errorMessage.value = "";
 
     try {
         const { data, error } = await GalaxyApi().POST("/api/chat", {
@@ -162,11 +118,11 @@ async function submitQuery() {
         });
 
         if (error) {
-            errorMessage.value = errorMessageAsString(error, "Failed to get response from ChatGXY.");
-            const errorMsg: Message = {
+            const errorText = errorMessageAsString(error, "Failed to get response from ChatGXY.");
+            const errorMsg: ChatMessage = {
                 id: generateId(),
                 role: "assistant",
-                content: `❌ Error: ${errorMessage.value}`,
+                content: `Error: ${errorText}`,
                 timestamp: new Date(),
                 agentType: selectedAgentType.value,
                 confidence: "low",
@@ -174,20 +130,17 @@ async function submitQuery() {
             };
             messages.value.push(errorMsg);
 
-            // Scroll to bottom after adding error message
             await nextTick();
-            scrollToBottom();
+            scrollToBottom(chatContainer.value);
         } else if (data) {
-            // Extract typed response fields
             const agentResponse = data.agent_response as AgentResponse | undefined;
             const content = data.response || "No response received";
 
-            // Get the exchange ID if returned
             if (data.exchange_id) {
                 currentChatId.value = data.exchange_id;
             }
 
-            const assistantMessage: Message = {
+            const assistantMessage: ChatMessage = {
                 id: generateId(),
                 role: "assistant",
                 content: content,
@@ -202,16 +155,15 @@ async function submitQuery() {
             };
             messages.value.push(assistantMessage);
 
-            // Scroll to bottom after adding assistant message
             await nextTick();
-            scrollToBottom();
+            scrollToBottom(chatContainer.value);
         }
     } catch (e) {
-        errorMessage.value = `Unexpected error: ${e}`;
-        const errorMsg: Message = {
+        console.error("Unexpected chat error:", e);
+        const errorMsg: ChatMessage = {
             id: generateId(),
             role: "assistant",
-            content: `❌ Unexpected error occurred. Please try again.`,
+            content: "Unexpected error occurred. Please try again.",
             timestamp: new Date(),
             agentType: selectedAgentType.value,
             confidence: "low",
@@ -219,40 +171,26 @@ async function submitQuery() {
         };
         messages.value.push(errorMsg);
 
-        // Scroll to bottom after adding error message
         await nextTick();
-        scrollToBottom();
+        scrollToBottom(chatContainer.value);
     } finally {
         busy.value = false;
         await nextTick();
-        scrollToBottom();
+        scrollToBottom(chatContainer.value);
     }
 }
 
-function scrollToBottom() {
-    if (chatContainer.value) {
-        // Use smooth scrolling and avoid focus disruption
-        chatContainer.value.scrollTo({
-            top: chatContainer.value.scrollHeight,
-            behavior: "auto", // Use 'smooth' if you want animated scrolling
-        });
-    }
-}
-
-// Scroll to bottom when busy state changes to show loading skeleton
 watch(busy, (isBusy) => {
     if (isBusy) {
-        nextTick(() => scrollToBottom());
+        nextTick(() => scrollToBottom(chatContainer.value));
     }
 });
 
 async function sendFeedback(messageId: string, value: "up" | "down") {
     const message = messages.value.find((m) => m.id === messageId);
     if (message) {
-        // Update UI immediately
         message.feedback = value;
 
-        // Only persist if we have a currentChatId (for saved chats)
         if (currentChatId.value) {
             try {
                 const feedbackValue = value === "up" ? 1 : 0;
@@ -265,166 +203,64 @@ async function sendFeedback(messageId: string, value: "up" | "down") {
 
                 if (error) {
                     console.error("Failed to save feedback:", error);
-                    // Revert on error
                     message.feedback = null;
                 }
             } catch (e) {
                 console.error("Failed to save feedback:", e);
-                // Revert on error
                 message.feedback = null;
             }
         }
     }
 }
 
-function getAgentIcon(agentType?: string): IconDefinition {
-    return agentIconMap[agentType || ""] || faRobot;
-}
+async function fetchConversation(exchangeId: string): Promise<boolean> {
+    const { data: fullConversation } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
+        params: {
+            path: { exchange_id: exchangeId },
+        },
+    });
 
-function getAgentLabel(agentType?: string) {
-    const agent = agentTypes.find((a) => a.value === agentType);
-    return agent?.label || agentType || "AI Assistant";
-}
-
-function formatModelName(model?: string): string {
-    if (!model) {
-        return "";
-    }
-    // Extract just the model name from full paths like "openai/gpt-4" or "anthropic/claude-3"
-    const parts = model.split("/");
-    return parts[parts.length - 1] || model;
-}
-
-function getAgentResponseOrEmpty(response?: AgentResponse): AgentResponse {
-    return (
-        response || ({ content: "", agent_type: "", confidence: "low", suggestions: [], metadata: {} } as AgentResponse)
-    );
-}
-
-async function loadChatHistory() {
-    loadingHistory.value = true;
-    try {
-        const { data, error } = await GalaxyApi().GET("/api/chat/history", {
-            params: {
-                query: { limit: 50 },
-            },
-        });
-
-        if (data && !error) {
-            chatHistory.value = data as unknown as ChatHistoryItem[];
-        }
-    } catch (e) {
-        console.error("Failed to load chat history:", e);
-    } finally {
-        loadingHistory.value = false;
-    }
-}
-
-async function clearHistory() {
-    if (!confirm("Are you sure you want to clear your chat history?")) {
-        return;
+    if (!fullConversation || fullConversation.length === 0) {
+        return false;
     }
 
-    try {
-        const { data, error } = await GalaxyApi().DELETE("/api/chat/history");
-        if (!error && data) {
-            console.log("Clear history response:", data);
-            chatHistory.value = [];
-            // Also clear current chat if it was from history
-            if (currentChatId.value) {
-                startNewChat();
+    messages.value = fullConversation.map((msg: any, index: number) => {
+        const message: ChatMessage = {
+            id: `hist-${msg.role}-${exchangeId}-${index}`,
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            feedback: null,
+        };
+
+        if (msg.role === "assistant") {
+            message.agentType = msg.agent_type;
+            message.confidence = msg.agent_response?.confidence || "medium";
+            message.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
+
+            if (msg.agent_response) {
+                message.agentResponse = msg.agent_response;
+                message.suggestions = msg.agent_response.suggestions || [];
             }
-        } else if (error) {
-            console.error("Failed to clear history - API error:", error);
-            alert("Failed to clear history. Please try again.");
+        }
+
+        return message;
+    });
+
+    currentChatId.value = exchangeId;
+    nextTick(() => scrollToBottom(chatContainer.value));
+    return true;
+}
+
+async function loadChatById(exchangeId: string) {
+    try {
+        const loaded = await fetchConversation(exchangeId);
+        if (loaded) {
+            hasLoadedInitialChat.value = true;
         }
     } catch (e) {
-        console.error("Failed to clear history - exception:", e);
-        alert("Failed to clear history. Please try again.");
+        console.error("Failed to load chat by ID:", e);
     }
-}
-
-async function loadPreviousChat(item: ChatHistoryItem) {
-    // Try to load the full conversation from the backend
-    try {
-        const { data: fullConversation } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
-            params: {
-                path: {
-                    exchange_id: item.id,
-                },
-            },
-        });
-
-        if (fullConversation && fullConversation.length > 0) {
-            // Clear and rebuild messages from full conversation
-            messages.value = [];
-
-            fullConversation.forEach((msg: any, index: number) => {
-                const message: Message = {
-                    id: `hist-${msg.role}-${item.id}-${index}`,
-                    role: msg.role as "user" | "assistant",
-                    content: msg.content,
-                    timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-                    feedback: null,
-                };
-
-                if (msg.role === "assistant") {
-                    message.agentType = msg.agent_type;
-                    message.confidence = msg.agent_response?.confidence || "medium";
-                    message.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
-
-                    if (msg.agent_response) {
-                        message.agentResponse = msg.agent_response;
-                        message.suggestions = msg.agent_response.suggestions || [];
-                    }
-                }
-
-                messages.value.push(message);
-            });
-        } else {
-            // Fallback to single message if no full conversation available
-            loadSingleMessageFallback(item);
-        }
-
-        currentChatId.value = item.id;
-        showHistory.value = false;
-        nextTick(() => scrollToBottom());
-    } catch (error) {
-        console.error("Error loading full conversation:", error);
-        // Fallback to simple loading on error
-        loadSingleMessageFallback(item);
-    }
-}
-
-function loadSingleMessageFallback(item: ChatHistoryItem) {
-    // Fallback method for loading just the first message pair
-    const userMessage: Message = {
-        id: `hist-user-${item.id}`,
-        role: "user",
-        content: item.query,
-        timestamp: new Date(item.timestamp),
-        feedback: null,
-    };
-
-    const assistantMessage: Message = {
-        id: `hist-assistant-${item.id}`,
-        role: "assistant",
-        content: item.response,
-        timestamp: new Date(item.timestamp),
-        agentType: item.agent_type,
-        confidence: item.agent_response?.confidence || "medium",
-        feedback: item.feedback === 1 ? "up" : item.feedback === 0 ? "down" : null,
-    };
-
-    if (item.agent_response) {
-        assistantMessage.agentResponse = item.agent_response;
-        assistantMessage.suggestions = item.agent_response.suggestions || [];
-    }
-
-    messages.value = [userMessage, assistantMessage];
-    currentChatId.value = item.id;
-    showHistory.value = false;
-    nextTick(() => scrollToBottom());
 }
 
 async function loadLatestChat() {
@@ -437,8 +273,14 @@ async function loadLatestChat() {
 
         if (data && !error && data.length > 0) {
             const latestChat = data[0] as unknown as ChatHistoryItem;
-            await loadPreviousChat(latestChat);
-            hasLoadedInitialChat.value = true;
+            try {
+                const loaded = await fetchConversation(latestChat.id);
+                if (loaded) {
+                    hasLoadedInitialChat.value = true;
+                }
+            } catch (e) {
+                console.error("Error loading latest conversation:", e);
+            }
         }
     } catch (e) {
         console.error("Failed to load latest chat:", e);
@@ -446,12 +288,11 @@ async function loadLatestChat() {
 }
 
 function startNewChat() {
-    // Clear messages and reset to welcome message
     messages.value = [
         {
             id: generateId(),
             role: "assistant",
-            content: "👋 Starting a new conversation! How can I help you today?",
+            content: "New conversation started. How can I help?",
             timestamp: new Date(),
             agentType: "router",
             confidence: "high",
@@ -461,20 +302,35 @@ function startNewChat() {
     ];
     currentChatId.value = null;
     query.value = "";
-    errorMessage.value = "";
 }
 
-function toggleHistory() {
-    showHistory.value = !showHistory.value;
-    if (showHistory.value && chatHistory.value.length === 0) {
-        loadChatHistory();
+async function deleteCurrentChat() {
+    if (!currentChatId.value) {
+        return;
     }
+    try {
+        const { error } = await GalaxyApi().DELETE("/api/chat/exchange/{exchange_id}", {
+            params: { path: { exchange_id: currentChatId.value } },
+        });
+        if (!error) {
+            startNewChat();
+        }
+    } catch (e) {
+        console.error("Failed to delete chat:", e);
+    }
+}
+
+function popOutToScratchbook() {
+    const Galaxy = getGalaxyInstance();
+    const path = currentChatId.value ? `/chatgxy/${currentChatId.value}` : "/chatgxy";
+    const url = `${path}?compact=true`;
+    Galaxy.frame.add({ title: "ChatGXY", url });
 }
 </script>
 
 <template>
-    <div class="chatgxy-container">
-        <div class="chatgxy-header">
+    <div class="chatgxy-container" :class="{ 'chatgxy-compact': compact }">
+        <div v-if="!compact" class="chatgxy-header">
             <Heading h2 :icon="faMagic" size="lg">
                 <span>ChatGXY</span>
             </Heading>
@@ -484,164 +340,48 @@ function toggleHistory() {
                     New
                 </button>
                 <button
-                    class="btn btn-sm"
-                    :class="showHistory ? 'btn-primary' : 'btn-outline-primary'"
-                    :title="showHistory ? 'Hide History' : 'Show History'"
-                    @click="toggleHistory">
-                    <FontAwesomeIcon :icon="faHistory" fixed-width />
+                    v-if="currentChatId"
+                    class="btn btn-sm btn-outline-danger"
+                    title="Delete this conversation"
+                    @click="deleteCurrentChat">
+                    <FontAwesomeIcon :icon="faTrash" fixed-width />
+                </button>
+                <button
+                    class="btn btn-sm btn-outline-primary"
+                    title="Open in floating window"
+                    @click="popOutToScratchbook">
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                 </button>
             </div>
         </div>
 
-        <div class="chatgxy-body">
-            <!-- History Sidebar -->
-            <div v-if="showHistory" class="history-sidebar">
-                <div class="history-header">
-                    <h5>Chat History</h5>
-                    <button class="btn btn-sm btn-link text-danger p-0" title="Clear History" @click="clearHistory">
-                        <FontAwesomeIcon :icon="faTrash" />
-                    </button>
-                </div>
+        <div ref="chatContainer" class="chat-messages">
+            <ChatMessageCell
+                v-for="message in messages"
+                :key="message.id"
+                :message="message"
+                :render-markdown="renderMarkdown"
+                :processing-action="processingAction"
+                @feedback="sendFeedback"
+                @handle-action="handleAction" />
 
-                <div v-if="loadingHistory" class="text-center p-3">
-                    <LoadingSpan message="Loading history..." />
-                </div>
-
-                <div v-else-if="chatHistory.length === 0" class="text-muted p-3 text-center">No chat history yet</div>
-
-                <div v-else class="history-list">
-                    <div
-                        v-for="item in chatHistory"
-                        :key="item.id"
-                        class="history-item"
-                        @click="() => loadPreviousChat(item)">
-                        <div class="history-query">{{ item.query }}</div>
-                        <div class="history-meta">
-                            <span class="history-agent">
-                                <FontAwesomeIcon :icon="getAgentIcon(item.agent_type)" fixed-width />
-                            </span>
-                            <span class="history-time">
-                                <FontAwesomeIcon :icon="faClock" class="mr-1" />
-                                <UtcDate :date="item.timestamp" mode="elapsed" />
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Main Chat Area -->
-            <div ref="chatContainer" class="chat-messages flex-grow-1">
-                <div
-                    v-for="message in messages"
-                    :key="message.id"
-                    :class="['notebook-cell', message.role === 'user' ? 'query-cell' : 'response-cell']">
-                    <!-- Query cell (user input) -->
-                    <template v-if="message.role === 'user'">
-                        <div class="cell-label">
-                            <FontAwesomeIcon :icon="faUser" fixed-width />
-                            <span>Query</span>
-                        </div>
-                        <div class="cell-content">{{ message.content }}</div>
-                    </template>
-
-                    <!-- Response cell (assistant output) -->
-                    <template v-else>
-                        <div class="cell-label">
-                            <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
-                            <span>{{ getAgentLabel(message.agentType) }}</span>
-                            <span
-                                v-if="message.agentResponse?.metadata?.handoff_info"
-                                class="routing-badge"
-                                :title="'Routed by ' + message.agentResponse.metadata.handoff_info.source_agent">
-                                via Router
-                            </span>
-                        </div>
-                        <div class="cell-content">
-                            <!-- eslint-disable-next-line vue/no-v-html -->
-                            <div v-html="renderMarkdown(message.content)" />
-
-                            <!-- Action suggestions -->
-                            <ActionCard
-                                v-if="message.suggestions?.length"
-                                :suggestions="message.suggestions"
-                                :processing-action="processingAction"
-                                @handle-action="
-                                    (action) => handleAction(action, getAgentResponseOrEmpty(message.agentResponse))
-                                " />
-                        </div>
-                        <div v-if="!message.content.startsWith('❌') && !message.isSystemMessage" class="cell-footer">
-                            <div class="feedback-actions">
-                                <button
-                                    class="feedback-btn"
-                                    :disabled="message.feedback !== null"
-                                    :class="{ active: message.feedback === 'up' }"
-                                    title="Helpful"
-                                    @click="sendFeedback(message.id, 'up')">
-                                    <FontAwesomeIcon :icon="faThumbsUp" fixed-width />
-                                </button>
-                                <button
-                                    class="feedback-btn"
-                                    :disabled="message.feedback !== null"
-                                    :class="{ active: message.feedback === 'down' }"
-                                    title="Not helpful"
-                                    @click="sendFeedback(message.id, 'down')">
-                                    <FontAwesomeIcon :icon="faThumbsDown" fixed-width />
-                                </button>
-                                <span v-if="message.feedback" class="feedback-text">Thanks!</span>
-                            </div>
-                            <div class="response-stats">
-                                <span class="stat-item" :title="'Agent: ' + getAgentLabel(message.agentType)">
-                                    <FontAwesomeIcon :icon="getAgentIcon(message.agentType)" fixed-width />
-                                    {{ getAgentLabel(message.agentType) }}
-                                </span>
-                                <span
-                                    v-if="message.agentResponse?.metadata?.model"
-                                    class="stat-item"
-                                    :title="'Model: ' + message.agentResponse.metadata.model">
-                                    {{ formatModelName(message.agentResponse.metadata.model) }}
-                                </span>
-                                <span
-                                    v-if="message.agentResponse?.metadata?.total_tokens"
-                                    class="stat-item"
-                                    title="Tokens used">
-                                    {{ message.agentResponse.metadata.total_tokens }} tokens
-                                </span>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-
-                <!-- Loading state -->
-                <div v-if="busy" class="notebook-cell response-cell loading-cell">
-                    <div class="cell-label">
+            <!-- Loading state -->
+            <div v-if="busy" class="loading-entry">
+                <div class="loading-gutter">
+                    <span class="loading-indicator">
                         <FontAwesomeIcon :icon="getAgentIcon(selectedAgentType)" fixed-width />
-                        <span>{{ getAgentLabel(selectedAgentType) }}</span>
-                    </div>
-                    <div class="cell-content">
-                        <BSkeleton animation="wave" width="85%" />
-                        <BSkeleton animation="wave" width="55%" />
-                        <BSkeleton animation="wave" width="70%" />
-                    </div>
+                    </span>
+                </div>
+                <div class="loading-body">
+                    <BSkeleton animation="wave" width="85%" />
+                    <BSkeleton animation="wave" width="55%" />
+                    <BSkeleton animation="wave" width="70%" />
                 </div>
             </div>
         </div>
 
         <div class="chatgxy-footer">
-            <div class="chat-input-container">
-                <label for="chat-input" class="sr-only">Chat message</label>
-                <textarea
-                    id="chat-input"
-                    v-model="query"
-                    :disabled="busy"
-                    placeholder="Ask about tools, workflows, errors, or anything Galaxy..."
-                    rows="1"
-                    class="form-control chat-input"
-                    @keydown.enter.prevent="!$event.shiftKey && submitQuery()" />
-                <button :disabled="busy || !query.trim()" class="btn btn-primary send-button" @click="submitQuery">
-                    <FontAwesomeIcon v-if="!busy" :icon="faPaperPlane" fixed-width />
-                    <LoadingSpan v-else message="" />
-                </button>
-            </div>
+            <ChatInput v-model="query" :busy="busy" @submit="submitQuery" />
         </div>
     </div>
 </template>
@@ -654,8 +394,20 @@ function toggleHistory() {
     display: flex;
     flex-direction: column;
     background: $white;
-    border-radius: $border-radius-large;
+    border-radius: 0.5rem;
     overflow: hidden;
+}
+
+.chatgxy-compact {
+    height: 100vh;
+
+    .chat-messages {
+        padding: 0.75rem 1rem;
+    }
+
+    .chatgxy-footer {
+        padding: 0.5rem 0.75rem;
+    }
 }
 
 .chatgxy-header {
@@ -672,19 +424,13 @@ function toggleHistory() {
     }
 }
 
-.chatgxy-body {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-}
-
 .chatgxy-footer {
     padding: 0.75rem 1rem;
     background: $panel-bg-color;
     border-top: $border-default;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
 }
 
-// Notebook-style cells
 .chat-messages {
     flex: 1;
     overflow-y: auto;
@@ -692,270 +438,37 @@ function toggleHistory() {
     background: $white;
 }
 
-.notebook-cell {
-    margin-bottom: 1rem;
+// Loading skeleton
+.loading-entry {
+    display: flex;
+    gap: 0;
+    margin-top: 1.25rem;
     animation: fadeIn 0.2s ease-out;
-
-    &.query-cell {
-        .cell-label {
-            color: $brand-primary;
-        }
-
-        .cell-content {
-            border-left: 3px solid $brand-primary;
-            background: rgba($brand-primary, 0.04);
-            padding: 0.75rem 1rem;
-            font-size: 0.95rem;
-            color: $text-color;
-        }
-    }
-
-    &.response-cell {
-        .cell-label {
-            color: $text-muted;
-        }
-
-        .cell-content {
-            border-left: 3px solid $brand-secondary;
-            background: $panel-bg-color;
-            padding: 0.75rem 1rem;
-        }
-
-        &.loading-cell {
-            .cell-content {
-                opacity: 0.7;
-            }
-        }
-    }
 }
 
-.cell-label {
-    display: flex;
+.loading-gutter {
+    flex-shrink: 0;
+    width: 2rem;
+    padding-top: 0.125rem;
+}
+
+.loading-indicator {
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    margin-bottom: 0.375rem;
-    padding-left: 0.25rem;
-}
-
-.routing-badge {
-    font-weight: 400;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: rgba($brand-primary, 0.08);
+    color: $brand-primary;
     font-size: 0.65rem;
-    color: $text-light;
-    text-transform: none;
-    cursor: help;
-
-    &::before {
-        content: "·";
-        margin: 0 0.25rem;
-    }
 }
 
-.cell-content {
-    border-radius: $border-radius-base;
-    word-wrap: break-word;
-    line-height: 1.6;
-
-    :deep(p:last-child) {
-        margin-bottom: 0;
-    }
-
-    :deep(p:first-child) {
-        margin-top: 0;
-    }
-
-    :deep(code) {
-        background: rgba($brand-dark, 0.08);
-        padding: 0.125rem 0.375rem;
-        border-radius: $border-radius-base;
-        font-family: $font-family-monospace;
-        font-size: 0.85em;
-    }
-
-    :deep(pre) {
-        background: $white;
-        border: $border-default;
-        padding: 0.75rem;
-        border-radius: $border-radius-base;
-        overflow-x: auto;
-        margin: 0.75rem 0;
-
-        code {
-            background: none;
-            padding: 0;
-        }
-    }
-
-    :deep(ul),
-    :deep(ol) {
-        margin-bottom: 0.75rem;
-        padding-left: 1.5rem;
-    }
-
-    :deep(li) {
-        margin-bottom: 0.25rem;
-    }
+.loading-body {
+    flex: 1;
+    opacity: 0.6;
 }
 
-.cell-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 0.5rem;
-    padding-left: 0.25rem;
-}
-
-.feedback-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-.response-stats {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-size: 0.7rem;
-    color: $text-light;
-
-    .stat-item {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
-    }
-}
-
-.feedback-btn {
-    background: none;
-    border: none;
-    padding: 0.25rem 0.5rem;
-    color: $text-light;
-    cursor: pointer;
-    border-radius: $border-radius-base;
-    transition: all 0.15s;
-
-    &:hover:not(:disabled) {
-        color: $brand-primary;
-        background: rgba($brand-primary, 0.08);
-    }
-
-    &:disabled {
-        cursor: default;
-        opacity: 0.5;
-    }
-
-    &.active {
-        color: $brand-success;
-    }
-}
-
-.feedback-text {
-    font-size: 0.7rem;
-    color: $text-light;
-    margin-left: 0.25rem;
-}
-
-// Input area
-.chat-input-container {
-    display: flex;
-    gap: 0.5rem;
-    align-items: flex-end;
-
-    .chat-input {
-        flex: 1;
-        resize: none;
-        border-radius: $border-radius-base;
-        padding: 0.625rem 0.875rem;
-        border: $border-default;
-        font-size: 0.9rem;
-        min-height: 2.5rem;
-        max-height: 8rem;
-
-        &:focus {
-            border-color: $brand-primary;
-            box-shadow: 0 0 0 2px rgba($brand-primary, 0.1);
-            outline: none;
-        }
-    }
-
-    .send-button {
-        flex-shrink: 0;
-        border-radius: $border-radius-base;
-        padding: 0.5rem 0.875rem;
-    }
-}
-
-// History sidebar
-.history-sidebar {
-    width: 280px;
-    border-right: $border-default;
-    background: $panel-bg-color;
-    display: flex;
-    flex-direction: column;
-
-    .history-header {
-        padding: 0.75rem 1rem;
-        border-bottom: $border-default;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-
-        h5 {
-            margin: 0;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: $text-color;
-        }
-    }
-
-    .history-list {
-        flex: 1;
-        overflow-y: auto;
-    }
-
-    .history-item {
-        padding: 0.625rem 1rem;
-        border-bottom: 1px solid darken($panel-bg-color, 5%);
-        cursor: pointer;
-        transition: background-color 0.15s;
-
-        &:hover {
-            background: darken($panel-bg-color, 3%);
-        }
-
-        .history-query {
-            font-size: 0.8rem;
-            color: $text-color;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            margin-bottom: 0.25rem;
-        }
-
-        .history-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.7rem;
-            color: $text-light;
-
-            .history-agent {
-                color: $brand-primary;
-            }
-
-            .history-time {
-                display: flex;
-                align-items: center;
-                gap: 0.25rem;
-            }
-        }
-    }
-}
-
-// Animations
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -965,18 +478,5 @@ function toggleHistory() {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-// Accessibility
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
 }
 </style>

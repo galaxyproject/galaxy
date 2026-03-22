@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormSelect } from "bootstrap-vue";
+import { computed } from "vue";
 
 import type { ExtensionDetails } from "@/composables/uploadConfigurations";
+
+import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 interface Props {
     /** Selected bulk extension value */
@@ -18,7 +20,7 @@ interface Props {
     tooltip?: string;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     disabled: false,
     tooltip: "Set file format for all items",
     warning: undefined,
@@ -28,26 +30,24 @@ const emit = defineEmits<{
     (e: "input", value: string): void;
 }>();
 
-function handleInput(value: string) {
-    emit("input", value);
+const optionsWithDefault = computed(() => [{ id: "", text: "Set all..." }, ...(props.extensions || [])]);
+
+function onItemSelection(item: ExtensionDetails) {
+    emit("input", item.id);
 }
 </script>
 
 <template>
     <div class="column-header-vertical">
         <span class="column-title">Type</span>
-        <BFormSelect
+        <SingleItemSelector
             v-b-tooltip.hover.noninteractive
-            :value="value"
-            size="sm"
+            collection-name="Data Types"
             :title="tooltip"
+            :items="optionsWithDefault"
+            :current-item="props.extensions.find((e) => e.id === props.value) || optionsWithDefault[0]"
             :disabled="disabled"
-            @input="handleInput">
-            <option value="">Set all...</option>
-            <option v-for="(ext, extIndex) in extensions" :key="extIndex" :value="ext.id">
-                {{ ext.text }}
-            </option>
-        </BFormSelect>
+            @update:selected-item="onItemSelection" />
         <FontAwesomeIcon
             v-if="warning"
             v-b-tooltip.hover.noninteractive

@@ -16,7 +16,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import joinedload
 
-import tool_shed.dependencies.repository
+import tool_shed.dependencies.repository.relation_builder
 from galaxy import (
     util,
     web,
@@ -242,17 +242,18 @@ def create_repository(
     final_repository_path = repository.ensure_hg_repository_path(app.config.file_path)
     os.rename(repository_path, final_repository_path)
     app.hgweb_config_manager.add_entry(lhs, final_repository_path)
-    # Update the repository registry.
-    app.repository_registry.add_entry(repository)
     message = f"Repository <b>{escape(str(repository.name))}</b> has been created."
     return repository, message
 
 
 def generate_sharable_link_for_repository_in_tool_shed(
-    repository: model.Repository, changeset_revision: Optional[str] = None
+    repository: model.Repository, changeset_revision: Optional[str] = None, base_url: Optional[str] = None
 ) -> str:
     """Generate the URL for sharing a repository that is in the tool shed."""
-    base_url = web.url_for("/", qualified=True).rstrip("/")
+    if base_url is None:
+        base_url = web.url_for("/", qualified=True).rstrip("/")
+    else:
+        base_url = base_url.rstrip("/")
     sharable_url = f"{base_url}/view/{repository.user.username}/{repository.name}"
     if changeset_revision:
         sharable_url += f"/{changeset_revision}"
@@ -470,7 +471,7 @@ def update_validated_repository(
     if "category_ids" in kwds and isinstance(kwds["category_ids"], list):
 
         # Remove existing category associations
-        delete_repository_category_associations(sa_session, model.RepositoryCategoryAssociation, repository.id)
+        _delete_repository_category_associations(sa_session, model.RepositoryCategoryAssociation, repository.id)
 
         # Then (re)create category associations
         for category_id in kwds["category_ids"]:
@@ -590,7 +591,7 @@ def get_current_groups(session: "scoped_session"):
     return session.scalars(stmt)
 
 
-def delete_repository_category_associations(session, repository_category_assoc_model, repository_id):
+def _delete_repository_category_associations(session, repository_category_assoc_model, repository_id):
     stmt = delete(repository_category_assoc_model).where(repository_category_assoc_model.repository_id == repository_id)
     return session.execute(stmt)
 

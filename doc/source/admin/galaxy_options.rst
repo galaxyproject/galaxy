@@ -4000,19 +4000,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_workflow_modules``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable beta workflow modules that should not yet be considered
-    part of Galaxy's stable API. (The module state definitions may
-    change and workflows built using these modules may not function in
-    the future.)
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~
 ``edam_panel_views``
 ~~~~~~~~~~~~~~~~~~~~
@@ -4803,6 +4790,19 @@
     extremely high job throughput is necessary, but doing so can
     increase CPU usage of handler processes. Float values are allowed.
 :Default: ``1.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_completion_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time in seconds between workflow completion monitor iterations.
+    The completion monitor checks for workflows that have all jobs
+    completed and triggers completion hooks (e.g., exports,
+    notifications). Float values are allowed.
+:Default: ``5.0``
 :Type: float
 
 
@@ -5925,6 +5925,17 @@
     is ``true``. Runs in a Celery task.
 :Default: ``86400``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_tool_formats``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
+    for user defined tools.
+:Default: ``false``
+:Type: bool
 
 
 

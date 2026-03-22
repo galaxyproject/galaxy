@@ -2,9 +2,9 @@
     Test that passing directory indexes works
   job:
     reference:
-      type: File
-      value: 1.fasta
-      file_type: fasta
+      class: File
+      path: 1.fasta
+      filetype: fasta
   outputs:
     output:
       class: File

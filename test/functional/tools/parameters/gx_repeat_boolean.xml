@@ -11,5 +11,15 @@ echo '$parameter[0].boolean_parameter' >> '$output'
         <data name="output" format="txt" />
     </outputs>
     <tests>
+        <test>
+            <repeat name="parameter">
+                <param name="boolean_parameter" value="true" />
+            </repeat>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="true" />
+                </assert_contents>
+            </output>
+        </test>
     </tests>
 </tool>

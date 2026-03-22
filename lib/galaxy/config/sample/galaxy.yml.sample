@@ -2236,11 +2236,6 @@ galaxy:
   # admin documentation.
   #enable_beta_gdpr: false
 
-  # Enable beta workflow modules that should not yet be considered part
-  # of Galaxy's stable API. (The module state definitions may change and
-  # workflows built using these modules may not function in the future.)
-  #enable_beta_workflow_modules: false
-
   # Comma-separated list of the EDAM panel views to load - choose from
   # merged, operations, topics. Set to empty string to disable EDAM all
   # together. Set default_panel_view to 'ontology:edam_topics' to
@@ -2632,6 +2627,12 @@ galaxy:
   # handler processes. Float values are allowed.
   #workflow_monitor_sleep: 1.0
 
+  # Time in seconds between workflow completion monitor iterations. The
+  # completion monitor checks for workflows that have all jobs completed
+  # and triggers completion hooks (e.g., exports, notifications). Float
+  # values are allowed.
+  #workflow_completion_monitor_sleep: 5.0
+
   # In which cases Galaxy should calculate a hash for a new dataset.
   # Dataset hashes can be used by the Galaxy job cache/search to check
   # if job inputs match. Setting the 'enable_celery_tasks' option to
@@ -2992,10 +2993,12 @@ galaxy:
   #ai_model: gpt-4o
 
   # Configuration for AI inference services used by agents. Supports
-  # per-agent model, temperature, and token settings. Agents inherit
-  # from 'default' configuration, which itself falls back to global
-  # ai_model/ai_api_key settings. Example: inference_services: {
-  # default: { model: gpt-4o-mini, temperature: 0.7 } }
+  # per-agent model, temperature, max_tokens, api_key, api_base_url,
+  # and enabled settings. Agents inherit from 'default' configuration,
+  # which itself falls back to global ai_model/ai_api_key settings. All
+  # agents are enabled by default. Example: inference_services: {
+  # default: { model: gpt-4o-mini, temperature: 0.7 }, custom_tool: {
+  # enabled: false } }
   #inference_services: null
 
   # Allow the display of tool recommendations in workflow editor and
@@ -3179,4 +3182,8 @@ galaxy:
   # default) if enable_failed_jobs_working_directory_cleanup is
   # ``true``. Runs in a Celery task.
   #failed_jobs_working_directory_cleanup_interval: 86400
+
+  # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
+  # for user defined tools.
+  #enable_beta_tool_formats: false
 

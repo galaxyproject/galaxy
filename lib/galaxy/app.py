@@ -25,6 +25,8 @@ from galaxy import (
     jobs,
     tools,
 )
+from galaxy.agents.factory import build_registry as build_agent_registry
+from galaxy.agents.registry import AgentRegistry
 from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.celery.base_task import (
     GalaxyTaskBeforeStart,
@@ -44,6 +46,7 @@ from galaxy.files.plugins import FileSourcePluginLoader
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
+from galaxy.managers.agents import AgentService
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
@@ -57,7 +60,10 @@ from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.interactivetool import InteractiveToolManager
-from galaxy.managers.jobs import JobSearch
+from galaxy.managers.jobs import (
+    JobManager as JobQueryManager,
+    JobSearch,
+)
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.notification import NotificationManager
@@ -641,6 +647,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.library_datasets_manager = self._register_singleton(LibraryDatasetsManager)
         self.role_manager = self._register_singleton(RoleManager)
         self.job_manager = self._register_singleton(JobManager)
+
         self.notification_manager = self._register_singleton(NotificationManager)
         self.interactivetool_manager = InteractiveToolManager(self)
 
@@ -764,6 +771,11 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # queue_worker *can* be initialized with a queue, but here we don't
         # want to and we'll allow postfork to bind and start it.
         self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
+
+        # AI agent registry and service
+        agent_registry = build_agent_registry(self.config)
+        self._register_singleton(AgentRegistry, agent_registry)
+        self._register_singleton(AgentService, AgentService(self.config, JobQueryManager(self), agent_registry))
 
         self.dependency_resolvers_view = self._register_singleton(
             DependencyResolversView, DependencyResolversView(self)

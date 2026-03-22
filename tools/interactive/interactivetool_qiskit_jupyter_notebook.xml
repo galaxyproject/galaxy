@@ -1,11 +1,33 @@
-<tool id="interactive_tool_qiskit_jupyter_notebook" tool_type="interactive" name="Qiskit Jupyter notebook" version="@VERSION@" profile="22.01">
+<tool id="interactive_tool_qiskit_jupyter_notebook" tool_type="interactive" name="Qiskit Jupyter notebook" version="@VERSION@" profile="26.0">
     <icon src="qiskit.png" />
     <description>interactive tool</description>
     <macros>
-        <token name="@VERSION@">0.2</token>
+        <token name="@VERSION@">1.0</token>
     </macros>
     <requirements>
-        <container type="docker">thepineapplepirate/qiskit_galaxy:1.1.0</container>
+        <container type="docker">thepineapplepirate/qiskit_galaxy:2.0.0 </container>
+          <!-- keep your existing container requirements etc. -->
+
+        <credentials name="ibm_quantum" version="1.0"
+                    label="IBM Quantum Credentials"
+                    description="Credentials for IBM Quantum (Qiskit Runtime)."
+                    optional="true">
+            <secret name="token"
+                    inject_as_env="IBM_QUANTUM_TOKEN"
+                    optional="true"
+                    label="IBM Quantum API token"/>
+
+            <variable name="instance"
+                    inject_as_env="IBM_QUANTUM_INSTANCE"
+                    optional="true"
+                    label="Instance (hub/group/project)"/>
+
+            <!-- optional: let users override channel, otherwise you default it -->
+            <variable name="channel"
+                    inject_as_env="IBM_QUANTUM_CHANNEL"
+                    optional="true"
+                    label="Channel (e.g. ibm_quantum_platform)"/>
+        </credentials>
     </requirements>
     <entry_points>
         <entry_point name="Qiskit Jupyter Notebook" requires_domain="True">
@@ -28,7 +50,7 @@ import json, os, shutil
 import os.path
 galaxy_inputs = "galaxy_inputs.json"
 galaxy_inputs_raw = "galaxy_inputs_raw.json"
-base_staging_path = "jupyter"
+base_staging_path = "/import/jupyter"
 base_data_staging_path = "galaxy_inputs"
 data_staging_path = os.path.join(base_staging_path, base_data_staging_path)
 os.makedirs(data_staging_path, exist_ok=True)
@@ -97,35 +119,59 @@ if additional_ids:
             galaxy_ie_helpers.get(int(hda["hid"]))
 
 try:
-    GALAXY_INPUTS = json.load(open(os.path.join(os.environ.get("GALAXY_WORKING_DIR", ""), "jupyter", "galaxy_inputs", "galaxy_inputs.json")))
+    GALAXY_INPUTS = json.load(open("/import/jupyter/galaxy_inputs/galaxy_inputs.json"))
 except FileNotFoundError:
     GALAXY_INPUTS = {}
         ]]>
     </configfile>
-        <configfile name="qiskitjson"><![CDATA[
-            {
-            "default-ibm-quantum": {
-                "channel": "ibm_quantum",
-                "token": "$__user__.extra_preferences.get('ibmq_account|token', "TOKEN_NOT_SET")",
-                "url": "https://auth.quantum-computing.ibm.com/api",
-                "verify": true
-            }}
-        ]]>
-        </configfile>
+
+<configfile name="write_qiskit_creds" filename="write_qiskit_creds.py"><![CDATA[
+import os, json
+
+token = os.environ.get("IBM_QUANTUM_TOKEN", "").strip()
+instance = os.environ.get("IBM_QUANTUM_INSTANCE", "").strip()
+channel = (os.environ.get("IBM_QUANTUM_CHANNEL", "").strip() or "ibm_quantum_platform")
+
+# If no token is provided, assume simulator-only usage and skip writing credentials.
+if not token:
+    print("No IBM_QUANTUM_TOKEN provided; simulator mode (skipping qiskit-ibm.json write).")
+    raise SystemExit(0)
+
+creds = {
+  "default-ibm-quantum-platform": {
+    "channel": channel,
+    "token": token,
+    "instance": instance,
+    "private_endpoint": False,
+    "url": "https://cloud.ibm.com",
+    "verify": True
+  }
+}
+
+home = os.path.expanduser("~")
+qdir = os.path.join(home, ".qiskit")
+os.makedirs(qdir, exist_ok=True)
+outpath = os.path.join(qdir, "qiskit-ibm.json")
+
+with open(outpath, "w") as f:
+    json.dump(creds, f, indent=2)
+
+print("Wrote", outpath)
+]]></configfile>
     </configfiles>
     <command><![CDATA[
         python staging_script.py &&
         export GALAXY_WORKING_DIR=`pwd` &&
-        mkdir -p ./jupyter/outputs/collection &&
-        mkdir -p ./jupyter/galaxy_inputs &&
+        mkdir -p /import/jupyter/outputs/collection &&
+        mkdir -p /import/jupyter/galaxy_inputs &&
 
         ## change into the directory where the notebooks are located
-        cd ./jupyter/ &&
+        cd /import/jupyter/ &&
         export HOME=/home/jovyan/ &&
         export PATH=/home/jovyan/.local/bin:\$PATH &&
         cp '${galaxy_input_startup_script}' /home/jovyan/.ipython/profile_default/startup/01-load.py &&
 
-        mkdir -p /home/jovyan/.qiskit && cp '${qiskitjson}' /home/jovyan/.qiskit/qiskit-ibm.json &&
+        python '${write_qiskit_creds}' &&
         mkdir -p Qiskit_Resources &&
         ln -s /home/jovyan/qiskit Qiskit_Resources/ &&
 

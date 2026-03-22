@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_maker_repository_name = "column_maker_0110"
 column_maker_repository_description = "A flexible aligner."
@@ -14,7 +14,7 @@ category_desc = "Test 0110 Invalid Repository Dependencies"
 running_standalone = False
 
 
-class TestBasicRepositoryDependencies(ShedTwillTestCase):
+class TestBasicRepositoryDependencies(ShedTestCase):
     """Testing emboss 5 with repository dependencies."""
 
     requires_galaxy = True
@@ -155,7 +155,6 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         preview_strings_displayed = [
             "emboss_0110",
             self.get_repository_tip(repository),
-            "Ignoring repository dependency definition",
         ]
         self._install_repository(
             emboss_repository_name,

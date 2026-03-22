@@ -329,6 +329,41 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/api/repositories/{encoded_repository_id}/admins": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Show Admins */
+        get: operations["repositories__show_admins"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/api/repositories/{encoded_repository_id}/admins/{username}": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        get?: never
+        put?: never
+        /** Add Admin */
+        post: operations["repositories__add_admin"]
+        /** Remove Admin */
+        delete: operations["repositories__remove_admin"]
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
     "/api/repositories/{encoded_repository_id}/allow_push": {
         parameters: {
             query?: never
@@ -823,6 +858,194 @@ export interface paths {
         patch?: never
         trace?: never
     }
+    "/repository/get_changeset_revision_and_ctx_rev": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Get Changeset Revision And Ctx Rev */
+        get: operations["legacy_install__get_changeset_revision_and_ctx_rev"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/get_ctx_rev": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Get Ctx Rev */
+        get: operations["legacy_install__get_ctx_rev"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/get_repository_dependencies": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Get Repository Dependencies */
+        get: operations["legacy_install__get_repository_dependencies"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/get_repository_type": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Get Repository Type */
+        get: operations["legacy_install__get_repository_type"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/get_required_repo_info_dict": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Get Required Repo Info Dict Via Get */
+        get: operations["legacy_install__get_required_repo_info_dict_get"]
+        put?: never
+        /** Get Required Repo Info Dict */
+        post: operations["legacy_install__get_required_repo_info_dict"]
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/get_tool_dependencies": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Get Tool Dependencies */
+        get: operations["legacy_install__get_tool_dependencies"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/next_installable_changeset_revision": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Next Installable Changeset Revision */
+        get: operations["legacy_install__next_installable_changeset_revision"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/previous_changeset_revisions": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Previous Changeset Revisions */
+        get: operations["legacy_install__previous_changeset_revisions"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/static/images/{repository_id}/{image_file}": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Display Image In Repository */
+        get: operations["legacy_install__display_image"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/status_for_installed_repository": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Status For Installed Repository */
+        get: operations["legacy_install__status_for_installed_repository"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    "/repository/updated_changeset_revisions": {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        /** Updated Changeset Revisions */
+        get: operations["legacy_install__updated_changeset_revisions"]
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -881,6 +1104,11 @@ export interface components {
              * @constant
              */
             type: "baseurl"
+        }
+        /** Body_legacy_install__get_required_repo_info_dict */
+        Body_legacy_install__get_required_repo_info_dict: {
+            /** Encoded Str */
+            encoded_str?: string | null
         }
         /** Body_repositories__create_revision */
         Body_repositories__create_revision: {
@@ -2219,6 +2447,13 @@ export interface components {
             /** value */
             value?: number | null
         }
+        /** InvalidTool */
+        InvalidTool: {
+            /** Error Message */
+            error_message: string
+            /** Tool Config */
+            tool_config: string
+        }
         /** LabelValue */
         LabelValue: {
             /** Label */
@@ -2489,7 +2724,7 @@ export interface components {
             /** Includes Workflows */
             includes_workflows?: boolean | null
             /** Invalid Tools */
-            invalid_tools: string[]
+            invalid_tools: components["schemas"]["InvalidTool"][]
             /** Malicious */
             malicious: boolean
             /** Missing Test Components */
@@ -2587,7 +2822,7 @@ export interface components {
             /** Includes Workflows */
             includes_workflows?: boolean | null
             /** Invalid Tools */
-            invalid_tools: string[]
+            invalid_tools: components["schemas"]["InvalidTool"][]
             /** Malicious */
             malicious: boolean
             /** Missing Test Components */
@@ -2633,7 +2868,7 @@ export interface components {
              * Invalid Tools
              * @default []
              */
-            invalid_tools: string[]
+            invalid_tools: components["schemas"]["InvalidTool"][]
             /** Malicious */
             malicious: boolean
             /** Missing Test Components */
@@ -4512,6 +4747,133 @@ export interface operations {
             }
         }
     }
+    repositories__show_admins: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description The encoded database identifier of the repository. */
+                encoded_repository_id: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": string[]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    repositories__add_admin: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description The encoded database identifier of the repository. */
+                encoded_repository_id: string
+                /** @description The target username. */
+                username: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": string[]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    repositories__remove_admin: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                /** @description The encoded database identifier of the repository. */
+                encoded_repository_id: string
+                /** @description The target username. */
+                username: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": string[]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
     repositories__show_allow_push: {
         parameters: {
             query?: never
@@ -5824,6 +6186,527 @@ export interface operations {
                 }
                 content: {
                     "application/json": components["schemas"]["RepositoryMetadata"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_changeset_revision_and_ctx_rev: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_ctx_rev: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_repository_dependencies: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": string
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_repository_type: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_required_repo_info_dict_get: {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": {
+                        [key: string]: unknown
+                    }
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_required_repo_info_dict: {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_legacy_install__get_required_repo_info_dict"]
+            }
+        }
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": {
+                        [key: string]: unknown
+                    }
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__get_tool_dependencies: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__next_installable_changeset_revision: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__previous_changeset_revisions: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+                /** @description If true, use repository tip as upper bound changeset revision. */
+                from_tip?: boolean
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__display_image: {
+        parameters: {
+            query?: never
+            header?: never
+            path: {
+                repository_id: string
+                image_file: string
+            }
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__status_for_installed_repository: {
+        parameters: {
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            301: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    legacy_install__updated_changeset_revisions: {
+        parameters: {
+            query: {
+                /** @description Name of the target repository. */
+                name: string
+                /** @description Owner of the target repository. */
+                owner: string
+                /** @description Changeset of the target repository. */
+                changeset_revision: string
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown
+                }
+                content: {
+                    "application/json": unknown
                 }
             }
             /** @description Request Error */

@@ -1,3 +1,4 @@
+import datetime
 import os
 import threading
 import time
@@ -123,6 +124,25 @@ class TestLocalJobRunner(TestCase, UsesTools):
         assert not psutil.pid_exists(external_id)
         assert "job terminated by Galaxy shutdown" in self.job_wrapper.fail_message
 
+    def test_timelimit_kills_job(self):
+        self.tool.timelimit = 3
+        self.job_wrapper.command_line = '''python -c "import time; time.sleep(30)"'''
+        runner = local.LocalJobRunner(self.app, 1)
+
+        def queue():
+            runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
+
+        t = threading.Thread(target=queue)
+        t.start()
+        external_id = self.job_wrapper.wait_for_external_id()
+        assert external_id is not None
+        assert psutil.pid_exists(external_id)
+        t.join(30)
+        assert not t.is_alive(), "Job was not killed by timelimit"
+        assert not psutil.pid_exists(external_id)
+        assert hasattr(self.job_wrapper, "fail_message")
+        assert "time limit" in self.job_wrapper.fail_message
+
 
 class MockJobWrapper:
     def __init__(self, app, test_directory, tool):
@@ -212,7 +232,19 @@ class MockJobWrapper:
         return ""
 
     def has_limits(self):
-        return False
+        return self.tool.timelimit is not None
+
+    def check_limits(self, runtime=None):
+        if runtime is not None and self.tool:
+            timelimit = self.tool.timelimit
+            if timelimit and timelimit > 0:
+                timelimit_delta = datetime.timedelta(seconds=timelimit)
+                if runtime > timelimit_delta:
+                    return (
+                        "tool_timelimit_reached",
+                        f"Job exceeded tool time limit (limit: {timelimit}s)",
+                    )
+        return None
 
     def fail(
         self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None

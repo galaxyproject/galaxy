@@ -197,7 +197,7 @@ export function roundToDecimalPlaces(number: number, numPlaces: number) {
     return parseFloat(number.toFixed(numPlaces));
 }
 
-const kb = 1024;
+const kb = 1000;
 const mb = kb * kb;
 const gb = mb * kb;
 const tb = gb * kb;

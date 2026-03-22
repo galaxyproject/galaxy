@@ -285,11 +285,11 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         input_element = self.components.histories.advanced_search_tag_input.wait_for_visible()
         input_element.send_keys(self.history3_tags[0])
         self.send_enter(input_element)
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_histories_present([self.history3_name])
 
     @retry_assertion_during_transitions
     def assert_histories_present(self, expected_histories, sort_by_matters=False):
+        self.sleep_for(self.wait_types.UX_RENDER)
         actual_histories = self.get_history_titles(len(expected_histories))
         assert len(actual_histories) == len(expected_histories)
 

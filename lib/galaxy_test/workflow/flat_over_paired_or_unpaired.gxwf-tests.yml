@@ -1,0 +1,40 @@
+- doc: |
+    A flat list mapped over a paired_or_unpaired tool input via
+    single_datasets produces a list output.
+  job:
+    input1:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "element 1"
+        - identifier: el2
+          class: File
+          contents: "element 2"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: list
+
+- doc: |
+    A flat sample_sheet mapped over a paired_or_unpaired tool input via
+    single_datasets produces a sample_sheet output.
+  job:
+    input1:
+      class: Collection
+      collection_type: sample_sheet
+      rows:
+        el1: []
+        el2: []
+      elements:
+        - identifier: el1
+          class: File
+          contents: "element 1"
+        - identifier: el2
+          class: File
+          contents: "element 2"
+  outputs:
+    wf_output:
+      class: Collection
+      collection_type: sample_sheet

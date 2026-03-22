@@ -21,7 +21,7 @@ from typing import (
 from urllib.parse import urlparse
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
-from galaxy.config import LOGGING_CONFIG_DEFAULT
+from galaxy.config import default_log_config
 from galaxy.model import mapping
 from galaxy.model.database_utils import (
     create_database,
@@ -192,7 +192,8 @@ def setup_galaxy_config(
     data_manager_config_file = _resolve_relative_config_paths(data_manager_config_file)
     tool_config_file = _resolve_relative_config_paths(tool_conf)
     tool_data_table_config_path = _resolve_relative_config_paths(tool_data_table_config_path)
-
+    log_level = os.environ.get("GALAXY_TEST_LOG_LEVEL", "DEBUG").upper()
+    logging = default_log_config(log_level)
     config = dict(
         admin_users="test@bx.psu.edu",
         allow_library_path_paste=True,
@@ -232,7 +233,7 @@ def setup_galaxy_config(
         use_heartbeat=False,
         user_library_import_dir=user_library_import_dir,
         webhooks_dir=TEST_WEBHOOKS_DIR,
-        logging=LOGGING_CONFIG_DEFAULT,
+        logging=logging,
         monitor_thread_join_timeout=5,
         object_store_store_by="uuid",
         fetch_url_allowlist=["127.0.0.0/24"],
@@ -291,6 +292,13 @@ backends:
     # Used by shed's twill dependency stuff
     # TODO: read from Galaxy's config API.
     os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir or os.path.join(tmpdir, "dependencies")
+
+    # Static agent backend for deterministic AI agent testing
+    static_agents_path = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), "..", "base", "data", "static_agents.yml")
+    )
+    if os.path.exists(static_agents_path):
+        config["inference_services"] = {"static_responses": static_agents_path}
 
     return config
 

@@ -31,6 +31,7 @@ from galaxy import (
     web,
 )
 from galaxy.datatypes.data import get_params_and_input_name
+from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -427,6 +428,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     RESTful controller for interactions with tools.
     """
 
+    citations_manager: CitationsManager = depends(CitationsManager)
     history_manager: HistoryManager = depends(HistoryManager)
     hda_manager: HDAManager = depends(HDAManager)
     hdca_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
@@ -792,11 +794,10 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
     @expose_api_anonymous_and_sessionless
     def citations(self, trans: GalaxyWebTransaction, id, **kwds):
-        tool = self.service._get_tool(trans, id, user=trans.user)
-        rval = []
-        for citation in tool.citations:
-            rval.append(citation.to_dict("bibtex"))
-        return rval
+        citations, errors = self.citations_manager.citations_for_tool_ids([id])
+        return [citation.to_dict("bibtex").model_dump() for citation in citations] + [
+            error.model_dump() for error in errors
+        ]
 
     @expose_api
     def conversion(self, trans: GalaxyWebTransaction, tool_id, payload, **kwd):

@@ -75,9 +75,16 @@ class PlaywrightElement:
         """
         text = "".join(str(v) for v in value)
         self._element.focus()
-        self._element.evaluate(
-            "el => { if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length) }"
-        )
+        # setSelectionRange is not supported on email, number, date, etc. inputs
+        # per the HTML spec. For those types, use the End key to move cursor to end.
+        input_type = self._element.evaluate("el => (el.type || '').toLowerCase()")
+        no_selection_range_types = {"email", "number", "date", "month", "week", "time", "datetime-local"}
+        if input_type in no_selection_range_types:
+            self._element.press("End")
+        else:
+            self._element.evaluate(
+                "el => { if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length) }"
+            )
         self._element.type(text)
 
     def clear(self) -> None:
@@ -126,6 +133,14 @@ class PlaywrightElement:
         Maps to Playwright's is_enabled() method.
         """
         return self._element.is_enabled()
+
+    def is_selected(self) -> bool:
+        """
+        Check if element is selected (for checkboxes, radio buttons, options).
+
+        Maps to Playwright's is_checked() method.
+        """
+        return self._element.is_checked()
 
     def submit(self) -> None:
         """

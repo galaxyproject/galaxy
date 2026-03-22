@@ -32,6 +32,12 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     const currentDefaultActivities = computed(() => customDefaultActivities.value ?? defaultActivities);
     const isSideBarOpen = computed(() => toggledSideBar.value !== "" && toggledSideBar.value !== "closed");
 
+    const specialPanelActivityIds = ref<Set<string>>(new Set());
+
+    function setSpecialPanelActivityIds(ids: string[]) {
+        specialPanelActivityIds.value = new Set(ids);
+    }
+
     const toggledSideBar = useUserLocalStorage(`activity-store-current-side-bar-${scope}`, "tools");
     const sidePanelWidth = useUserLocalStorage(`activity-store-side-panel-width-${scope}`, 300);
 
@@ -115,7 +121,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
                 }
             });
 
-            const allSideBarsSet = new Set(allSideBars);
+            const allSideBarsSet = new Set([...allSideBars, ...specialPanelActivityIds.value]);
             const firstSideBar = allSideBars[0];
 
             if (firstSideBar && !allSideBarsSet.has(toggledSideBar.value)) {
@@ -129,7 +135,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     }
 
     function setAll(newActivities: Array<Activity>) {
-        activities.value = newActivities;
+        activities.value = [...newActivities];
     }
 
     function remove(activityId: string) {
@@ -162,6 +168,43 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         set(meta, metaKey, value);
     }
 
+    function findById(activityId: string): Activity | undefined {
+        return activities.value.find((a: Activity) => a.id === activityId);
+    }
+
+    function setPosition(activityId: string, position: number) {
+        const currentIndex = activities.value.findIndex((a: Activity) => a.id === activityId);
+        if (currentIndex === -1) {
+            return;
+        }
+        const boundedPosition = Math.max(0, Math.min(position, activities.value.length - 1));
+        const spliced = activities.value.splice(currentIndex, 1);
+        const activity = spliced[0];
+        if (!activity) {
+            return;
+        }
+        activities.value.splice(boundedPosition, 0, activity);
+        activities.value = [...activities.value];
+    }
+
+    function ensureSideBarOpen(activityId: string) {
+        const activity = findById(activityId);
+        if (!activity || !activity.panel) {
+            return;
+        }
+        if (toggledSideBar.value !== activityId) {
+            toggledSideBar.value = activityId;
+        }
+    }
+
+    function ensureVisible(activityId: string) {
+        const activity = findById(activityId);
+        if (!activity) {
+            return;
+        }
+        activity.visible = true;
+    }
+
     watchImmediate(
         () => hashedUserId.value,
         () => {
@@ -174,13 +217,17 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         sidePanelWidth,
         toggleSideBar,
         closeSideBar,
+        ensureSideBarOpen,
+        ensureVisible,
         isSideBarOpen,
         activities,
         activityMeta,
         metaForId,
         setMeta,
         getAll,
+        findById,
         remove,
+        setPosition,
         setAll,
         restore,
         sync,
@@ -188,5 +235,6 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         currentDefaultActivities,
         overrideDefaultActivities,
         resetDefaultActivities,
+        setSpecialPanelActivityIds,
     };
 });

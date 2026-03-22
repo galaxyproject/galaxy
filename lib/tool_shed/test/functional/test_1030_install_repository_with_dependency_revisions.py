@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_maker_repository_name = "column_maker_0030"
 column_maker_repository_description = "A flexible aligner."
@@ -14,7 +14,7 @@ emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 t
 running_standalone = False
 
 
-class TestRepositoryWithDependencyRevisions(ShedTwillTestCase):
+class TestRepositoryWithDependencyRevisions(ShedTestCase):
     """Test installing a repository with dependency revisions."""
 
     requires_galaxy = True
@@ -138,12 +138,6 @@ class TestRepositoryWithDependencyRevisions(ShedTwillTestCase):
         self.browse_tool_shed(url=self.url, strings_displayed=["Test 0030 Repository Dependency Revisions"])
         category = self.populator.get_category_with_name("Test 0030 Repository Dependency Revisions")
         self.browse_category(category, strings_displayed=[emboss_repository_name])
-        if not self.is_v2:
-            self.preview_repository_in_tool_shed(
-                emboss_repository_name,
-                common.test_user_1_name,
-                strings_displayed=[emboss_repository_name, "Valid tools"],
-            )
 
     def test_0015_install_emboss_repository(self):
         """Install the emboss repository without installing tool dependencies."""

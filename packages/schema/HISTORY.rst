@@ -10,6 +10,17 @@ History
 
 
 -------------------
+25.1.2 (2026-03-09)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix help forum integration by `@davelopez <https://github.com/davelopez>`_ in `#21773 <https://github.com/galaxyproject/galaxy/pull/21773>`_
+
+-------------------
 25.1.1 (2026-02-03)
 -------------------
 

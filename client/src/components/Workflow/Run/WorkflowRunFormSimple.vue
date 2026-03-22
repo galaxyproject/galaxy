@@ -2,7 +2,7 @@
 import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BFormInput, BModal, BOverlay } from "bootstrap-vue";
+import { BAlert, BFormInput, BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
@@ -37,6 +37,7 @@ import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
+import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import HelpText from "@/components/Help/HelpText.vue";
@@ -601,7 +602,7 @@ onBeforeMount(() => {
                     :style="{ 'overflow-y': 'auto', 'overflow-x': 'hidden' }">
                     <div v-if="showRightPanel" class="ui-form-header-underlay sticky-top" />
                     <Heading v-if="showRightPanel" class="sticky-top" h2 separator bold size="sm"> Parameters </Heading>
-                    <BOverlay :show="changingCurrentHistory" no-fade rounded="sm" opacity="0.5">
+                    <GOverlay :show="changingCurrentHistory" no-fade :opacity="0.5">
                         <template v-slot:overlay>
                             <LoadingSpan message="Changing your current history" />
                         </template>
@@ -616,7 +617,7 @@ onBeforeMount(() => {
                             @onValidation="onValidation"
                             @stop-flagging="checkInputMatching = false"
                             @update:active-node-id="updateActiveNodeId" />
-                    </BOverlay>
+                    </GOverlay>
                 </div>
                 <div v-if="showRightPanel" class="h-100 w-50 d-flex flex-shrink-0">
                     <WorkflowRunGraph

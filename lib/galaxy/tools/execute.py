@@ -303,7 +303,7 @@ def _execute(
             history = execution_slice.history or history
             jobs_executed += 1
 
-    if execution_slice:
+    if execution_slice and history:
         history.add_pending_items()
     # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
     trans.sa_session.commit()

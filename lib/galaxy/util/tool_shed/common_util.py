@@ -7,7 +7,6 @@ from typing import (
 )
 from urllib.parse import urljoin
 
-from routes import url_for
 from typing_extensions import Protocol
 
 from galaxy import util
@@ -161,24 +160,6 @@ def handle_galaxy_url(trans, **kwd):
     return galaxy_url
 
 
-def handle_tool_shed_url_protocol(app: HasToolShedRegistry, shed_url: str) -> str:
-    """Handle secure and insecure HTTP protocol since they may change over time."""
-    try:
-        if app.name == "galaxy":
-            url = remove_protocol_from_tool_shed_url(shed_url)
-            tool_shed_url = get_tool_shed_url_from_tool_shed_registry(app, url)
-            assert tool_shed_url
-        else:
-            tool_shed_url = str(url_for("/", qualified=True)).rstrip("/")
-        return tool_shed_url
-    except Exception:
-        # We receive a lot of calls here where the tool_shed_url is None.  The container_util uses
-        # that value when creating a header row.  If the tool_shed_url is not None, we have a problem.
-        if shed_url is not None:
-            log.exception("Handled exception removing protocol from URL %s", str(shed_url))
-        return shed_url
-
-
 def parse_repository_dependency_tuple(repository_dependency_tuple, contains_error=False):
     # Default both prior_installation_required and only_if_compiling_contained_td to False in cases where metadata should be reset on the
     # repository containing the repository_dependency definition.
@@ -279,7 +260,6 @@ __all__ = (
     "get_tool_shed_url_from_tool_shed_registry",
     "get_tool_shed_repository_url",
     "handle_galaxy_url",
-    "handle_tool_shed_url_protocol",
     "parse_repository_dependency_tuple",
     "remove_port_from_tool_shed_url",
     "remove_protocol_and_port_from_tool_shed_url",

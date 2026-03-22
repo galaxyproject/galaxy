@@ -1,4 +1,3 @@
-import glob
 import os
 import tempfile
 from pathlib import Path
@@ -35,7 +34,7 @@ TEST_WORKFLOW_AFTER_RERUN = asbool(os.environ.get("GALAXY_TEST_WORKFLOW_AFTER_RE
 
 
 def find_workflows():
-    return [Path(p) for p in glob.glob(f"{SCRIPT_DIRECTORY}/*.gxwf.yml")]
+    return list(Path(SCRIPT_DIRECTORY).glob("*.gxwf.yml"))
 
 
 def pytest_generate_tests(metafunc):
@@ -70,6 +69,7 @@ class TestWorkflow(ApiTestCase):
                     yaml_content,
                     test_data=test_job["job"],
                     history_id=history_id,
+                    job_dir=str(workflow_path.parent),
                 )
                 if TEST_WORKFLOW_AFTER_RERUN:
                     run_summary = self.workflow_populator.rerun(run_summary)

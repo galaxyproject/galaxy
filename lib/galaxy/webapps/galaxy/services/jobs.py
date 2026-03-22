@@ -57,6 +57,7 @@ from galaxy.tool_util.parameters import (
     RelaxedRequestToolState,
     RequestToolState,
     strictify,
+    ToolParameterBundleModel,
 )
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
@@ -246,14 +247,17 @@ class JobsService(ServiceBase):
             target_history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
         inputs = job_request.inputs
         strict = job_request.strict
+        if tool.parameters is None:
+            raise exceptions.RequestParameterInvalidException(f"Tool {tool.id} has no parameters defined")
+        parameter_bundle = ToolParameterBundleModel(parameters=tool.parameters)
         if not strict:
             relaxed_request_state = RelaxedRequestToolState(inputs or {})
-            relaxed_request_state.validate(tool, f"{tool.id} (relaxed request model)")
-            request_state = strictify(relaxed_request_state, tool)
+            relaxed_request_state.validate(parameter_bundle, f"{tool.id} (relaxed request model)")
+            request_state = strictify(relaxed_request_state, parameter_bundle)
         else:
             request_state = RequestToolState(inputs or {})
-        request_state.validate(tool, f"{tool.id} (request model)")
-        request_internal_state = decode(request_state, tool, trans.security.decode_id)
+        request_state.validate(parameter_bundle, f"{tool.id} (request model)")
+        request_internal_state = decode(request_state, parameter_bundle, trans.security.decode_id)
         tool_request = ToolRequest()
         # TODO: hash and such...
         tool_source_model = ToolSourceModel(

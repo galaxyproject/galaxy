@@ -4,7 +4,6 @@
  * To regenerate these fixtures, run from packages/tool_shed:
  *
  *   TOOL_SHED_FIXTURE_OUTPUT_DIR=lib/tool_shed/webapp/frontend/src/components/MetadataInspector/__fixtures__ \
- *   TOOL_SHED_API_VERSION=v2 \
  *   uv run pytest tool_shed/test/functional/test_shed_repositories.py::TestShedRepositoriesApi::test_generate_frontend_fixtures -v
  */
 
@@ -120,7 +119,7 @@ export function getFirstRevision(metadata: RepositoryMetadata): RepositoryRevisi
 
 /** Get all tools from all revisions in metadata */
 export function getAllTools(
-    metadata: RepositoryMetadata
+    metadata: RepositoryMetadata,
 ): Array<{ tool: components["schemas"]["RepositoryTool"]; revisionKey: string }> {
     const tools: Array<{ tool: components["schemas"]["RepositoryTool"]; revisionKey: string }> = []
     for (const [key, revision] of Object.entries(metadata)) {

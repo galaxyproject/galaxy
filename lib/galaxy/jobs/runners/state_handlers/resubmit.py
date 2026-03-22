@@ -20,6 +20,7 @@ MESSAGES = dict(
     memory_limit_reached="it exceeded the amount of allocated memory",
     unknown_error="it encountered an unknown error",
     tool_detected="it encountered a tool detected error condition",
+    tool_timelimit_reached="it exceeded the tool's time limit",
 )
 
 
@@ -35,6 +36,7 @@ def failure(app: "GalaxyManagerApplication", job_runner: "BaseJobRunner", job_st
         JobState.runner_states.MEMORY_LIMIT_REACHED,
         JobState.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER,
         JobState.runner_states.TOOL_DETECT_ERROR,
+        JobState.runner_states.TOOL_TIMELIMIT_REACHED,
         JobState.runner_states.UNKNOWN_ERROR,
     ):
         # not set or not a handleable runner state
@@ -148,6 +150,7 @@ class _ExpressionContext:
                 "memory_limit_reached": runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
                 "unknown_error": runner_state == JobState.runner_states.UNKNOWN_ERROR,
                 "tool_detected_failure": runner_state == JobState.runner_states.TOOL_DETECT_ERROR,
+                "tool_timelimit_reached": runner_state == JobState.runner_states.TOOL_TIMELIMIT_REACHED,
                 "any_failure": True,
                 "any_potential_job_failure": True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
                 "attempt": attempt,

@@ -10,6 +10,24 @@ History
 
 
 -------------------
+25.1.2 (2026-03-09)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Add missing enable_beta_tool_formats config option by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21190 <https://github.com/galaxyproject/galaxy/pull/21190>`_
+
+============
+Enhancements
+============
+
+* Add Deacon idx format by `@SantaMcCloud <https://github.com/SantaMcCloud>`_ in `#21632 <https://github.com/galaxyproject/galaxy/pull/21632>`_
+* Add amnis cif flow cytometry data type by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21829 <https://github.com/galaxyproject/galaxy/pull/21829>`_
+
+-------------------
 25.1.1 (2026-02-03)
 -------------------
 

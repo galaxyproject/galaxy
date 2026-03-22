@@ -1,4 +1,6 @@
+import os
 import tarfile
+import tempfile
 from collections.abc import Iterator
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -352,6 +354,36 @@ class ToolShedPopulator:
         delete_response = self._api_interactor.delete(f"repositories/{repository_id}/allow_push/{username}")
         delete_response.raise_for_status()
 
+    def get_admin_users(self, repository: HasRepositoryId) -> list[str]:
+        repository_id = self._repository_id(repository)
+        response = self._api_interactor.get(f"repositories/{repository_id}/admins")
+        response.raise_for_status()
+        as_list = response.json()
+        assert isinstance(as_list, list)
+        return as_list
+
+    def add_admin_user(self, repository: HasRepositoryId, username: str) -> None:
+        repository_id = self._repository_id(repository)
+        response = self._api_interactor.post(f"repositories/{repository_id}/admins/{username}")
+        response.raise_for_status()
+
+    def remove_admin_user(self, repository: HasRepositoryId, username: str) -> None:
+        repository_id = self._repository_id(repository)
+        response = self._api_interactor.delete(f"repositories/{repository_id}/admins/{username}")
+        response.raise_for_status()
+
+    def add_admin_user_raw(self, repository: HasRepositoryId, username: str) -> requests.Response:
+        repository_id = self._repository_id(repository)
+        return self._api_interactor.post(f"repositories/{repository_id}/admins/{username}")
+
+    def remove_admin_user_raw(self, repository: HasRepositoryId, username: str) -> requests.Response:
+        repository_id = self._repository_id(repository)
+        return self._api_interactor.delete(f"repositories/{repository_id}/admins/{username}")
+
+    def get_admin_users_raw(self, repository: HasRepositoryId) -> requests.Response:
+        repository_id = self._repository_id(repository)
+        return self._api_interactor.get(f"repositories/{repository_id}/admins")
+
     def set_malicious(self, repository: HasRepositoryId, changeset_revision: str):
         repository_id = self._repository_id(repository)
         put_response = self._api_interactor.put(
@@ -462,6 +494,40 @@ class ToolShedPopulator:
 
     def new_user(self, username: str, password: str):
         return ensure_user_with_email(self._admin_api_interactor, username, password)
+
+    def get_tip_changeset(self, repository: Repository) -> str:
+        """Get the tip changeset revision for a repository."""
+        revisions = self.get_ordered_installable_revisions(repository.owner, repository.name)
+        assert revisions.root, f"No installable revisions for {repository.name}"
+        return revisions.root[-1]
+
+    def create_repository_dependency(
+        self,
+        repository: Repository,
+        dependency_tuples: list[tuple[str, str, str, str]],
+        prior_installation_required: bool = False,
+    ) -> None:
+        """Upload a repository_dependencies.xml to wire up a dependency.
+
+        Each tuple in dependency_tuples is (shed_url, name, owner, changeset_revision).
+        """
+        prior_attr = ' prior_installation_required="True"' if prior_installation_required else ""
+        dep_lines = []
+        for shed_url, name, owner, changeset in dependency_tuples:
+            dep_lines.append(
+                f'    <repository toolshed="{shed_url}" name="{name}" '
+                f'owner="{owner}" changeset_revision="{changeset}"{prior_attr} />'
+            )
+        xml = '<?xml version="1.0"?>\n<repositories>\n' + "\n".join(dep_lines) + "\n</repositories>\n"
+        tmpdir = tempfile.mkdtemp(prefix="repo_dep_")
+        xml_path = os.path.join(tmpdir, "repository_dependencies.xml")
+        with open(xml_path, "w") as f:
+            f.write(xml)
+        tar_path = os.path.join(tmpdir, "repo_dep.tar.gz")
+        with tarfile.open(tar_path, "w:gz") as tar:
+            tar.add(xml_path, arcname="repository_dependencies.xml")
+        response = self.upload_revision_raw(repository, Path(tar_path), commit_message="Add repository dependency")
+        api_asserts.assert_status_code_is_ok(response)
 
     def _repository_id(self, has_id: HasRepositoryId) -> str:
         if isinstance(has_id, Repository):

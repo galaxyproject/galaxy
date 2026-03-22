@@ -255,9 +255,9 @@ class HistoryContentsManager(base.SortableManager):
                 if c.history_content_type == "dataset":
                     copy = c.copy(flush=False)
                     h.stage_addition(copy)
+                    copy.copy_tags_from(user, c)
                 else:
                     copy = c.copy(element_destination=h)
-                copy.copy_tags_from(user, c)
 
         for h in target_histories:
             h.add_pending_items()

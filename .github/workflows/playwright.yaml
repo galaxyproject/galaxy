@@ -67,14 +67,6 @@ jobs:
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-playwright
-      - name: Install dependencies
-        run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
-        working-directory: 'galaxy root'
-      - name: Install Playwright
-        run: |
-          . .venv/bin/activate
-          playwright install chromium --with-deps
-        working-directory: 'galaxy root'
       - name: Restore client cache
         uses: actions/cache@v5
         with:
@@ -88,12 +80,12 @@ jobs:
         with:
           flags: playwright
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: Playwright test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/run_playwright_tests.html'
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: Playwright debug info (${{ matrix.python-version }}, ${{ matrix.chunk }})

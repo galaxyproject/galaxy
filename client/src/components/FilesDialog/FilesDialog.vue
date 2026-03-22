@@ -38,8 +38,6 @@ interface FilesDialogProps {
     callback?: (files: SelectionItem | SelectionItem[]) => void;
     /** Options to filter the file sources */
     filterOptions?: FilterFileSourcesOptions;
-    /** Decide wether to keep the underlying modal static or dynamic */
-    modalStatic?: boolean;
     /** Browsing mode to define the selection behavior */
     mode?: FileSourceBrowsingMode;
     /** Whether to allow multiple selections */
@@ -57,7 +55,6 @@ interface FilesDialogProps {
 const props = withDefaults(defineProps<FilesDialogProps>(), {
     callback: () => {},
     filterOptions: undefined,
-    modalStatic: false,
     mode: "file",
     multiple: false,
     requireWritable: false,
@@ -265,6 +262,7 @@ function load() {
     if (urlTracker.isAtRoot.value || errorMessage.value) {
         itemsProvider.value = undefined;
         errorMessage.value = undefined;
+        isBusy.value = true;
         fetchFileSources(props.filterOptions)
             .then((results) => {
                 const convertedItems = results
@@ -274,13 +272,15 @@ function load() {
                 const sortedItems = convertedItems.sort(sortPrivateFileSourcesFirst);
                 items.value = sortedItems;
                 formatRows();
-                optionsShow.value = true;
                 showTime.value = false;
                 showDetails.value = true;
                 totalItems.value = convertedItems.length;
+                isBusy.value = false;
+                optionsShow.value = true;
             })
             .catch((error) => {
                 errorMessage.value = errorMessageAsString(error);
+                isBusy.value = false;
             });
     } else {
         if (!urlTracker.current.value) {
@@ -303,17 +303,20 @@ function load() {
             return;
         }
 
+        isBusy.value = true;
         browseRemoteFiles(urlTracker.current.value?.url, false, props.requireWritable)
             .then((result) => {
                 items.value = filterByMode(result.entries).map(entryToRecord);
                 totalItems.value = result.totalMatches;
                 formatRows();
-                optionsShow.value = true;
                 showTime.value = true;
                 showDetails.value = false;
+                isBusy.value = false;
+                optionsShow.value = true;
             })
             .catch((error) => {
                 errorMessage.value = errorMessageAsString(error);
+                isBusy.value = false;
             });
     }
 }
@@ -475,7 +478,6 @@ onMounted(() => {
         :items-provider="itemsProvider"
         :total-items="totalItems"
         :modal-show="modalShow"
-        :modal-static="modalStatic"
         :multiple="multiple"
         :options-show="optionsShow"
         :select-all-variant="selectAllIcon"

@@ -67,7 +67,7 @@ class ProfileMiddleware:
         prof = cProfile.Profile()
         prof.runctx("run_app()", globals(), locals())
         # Build up body with stats
-        body = "".join(body)
+        body = b"".join(body)
         headers = catch_response[1]
         content_type = response.header_value(headers, "content-type")
         if not content_type.startswith("text/html"):
@@ -77,7 +77,7 @@ class ProfileMiddleware:
         stats.strip_dirs()
         stats.sort_stats("time", "calls")
         output = pstats_as_html(stats, self.limit)
-        body += template % output
+        body += (template % output).encode("utf-8")
         return [body]
 
 

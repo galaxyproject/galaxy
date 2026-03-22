@@ -1,5 +1,5 @@
 from ..base import common
-from ..base.twilltestcase import ShedTwillTestCase
+from ..base.testcase import ShedTestCase
 
 column_repository_name = "column_maker_1087"
 column_repository_description = "Add column"
@@ -13,7 +13,7 @@ category_name = "Test 1087 Advanced Circular Dependencies"
 category_description = "Test circular dependency features"
 
 
-class TestRepositoryDependencies(ShedTwillTestCase):
+class TestRepositoryDependencies(ShedTestCase):
     """Test installing a repository, then updating it to include repository dependencies."""
 
     requires_galaxy = True

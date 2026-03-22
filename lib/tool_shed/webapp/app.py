@@ -7,7 +7,6 @@ from sqlalchemy.orm.scoping import scoped_session
 
 import galaxy.datatypes.registry
 import galaxy.tools.data
-import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 import tool_shed.webapp.model
 from galaxy import auth
@@ -29,7 +28,6 @@ from galaxy.quota import (
 from galaxy.security import idencoding
 from galaxy.structured_app import BasicSharedApp
 from galaxy.web_stack import application_stack_instance
-from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
 from tool_shed.managers.model_cache import ModelCache
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util.hgweb_config import hgweb_config_manager
@@ -60,8 +58,6 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         self.datatypes_registry.load_datatypes(self.config.root, self.config.datatypes_config)
         # Initialize the Tool Shed repository_types registry.
         self.repository_types_registry = tool_shed.repository_types.registry.Registry()
-        # Initialize the RepositoryGridFilterManager.
-        self.repository_grid_filter_manager = RepositoryGridFilterManager()
         # Determine the Tool Shed database connection string.
         if self.config.database_connection:
             db_url = self.config.database_connection
@@ -104,11 +100,6 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         self.hgweb_config_manager = hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
         self.hgweb_config_manager.hgweb_repo_prefix = self.config.hgweb_repo_prefix
-        # Initialize the repository registry.
-        if config.SHED_API_VERSION != "v2":
-            self.repository_registry = tool_shed.repository_registry.Registry(self)
-        else:
-            self.repository_registry = tool_shed.repository_registry.NullRepositoryRegistry(self)
         # Configure Sentry client if configured
         self.configure_sentry_client()
         #  used for cachebusting -- refactor this into a *SINGLE* UniverseApplication base.

@@ -15,6 +15,7 @@ const props = defineProps<{
     draggingConnection: TerminalPosition | null;
     draggingTerminal: OutputTerminals | null;
     transform: WorkflowTransform;
+    focusedNodeIds: Set<number> | null;
 }>();
 
 const { connectionStore } = useWorkflowStores();
@@ -57,7 +58,8 @@ function id(connection: Connection) {
                 v-for="connection in connections"
                 :id="id(connection)"
                 :key="key(connection)"
-                :connection="connection" />
+                :connection="connection"
+                :focused-node-ids="props.focusedNodeIds" />
         </svg>
     </div>
 </template>

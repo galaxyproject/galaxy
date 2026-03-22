@@ -34,8 +34,19 @@ from galaxy.exceptions import (
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_shed.util import dependency_display
+from galaxy.tool_shed.util.hg_util import (
+    get_changectx_for_changeset,
+    reversed_lower_upper_bounded_changelog,
+)
+from galaxy.tool_shed.util.repository_util import get_repository_dependency_types
 from galaxy.util import listify
-from galaxy.util.tool_shed.encoding_util import tool_shed_encode
+from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
+from galaxy.util.tool_shed.encoding_util import (
+    encoding_sep,
+    encoding_sep2,
+    tool_shed_decode,
+    tool_shed_encode,
+)
 from tool_shed.context import (
     ProvidesRepositoriesContext,
     ProvidesUserContext,
@@ -45,11 +56,14 @@ from tool_shed.repository_types import util as rt_util
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util import hg_util
 from tool_shed.util.metadata_util import (
+    build_invalid_tools,
     get_all_dependencies,
     get_current_repository_metadata_for_changeset_revision,
     get_metadata_revisions,
     get_next_downloadable_changeset_revision,
+    get_previous_metadata_changeset_revision,
     get_repository_metadata_by_changeset_revision,
+    get_updated_changeset_revisions,
 )
 from tool_shed.util.readme_util import build_readme_files_dict
 from tool_shed.util.repository_content_util import upload_tar
@@ -488,7 +502,7 @@ def get_repository_revision_metadata_dict(
         metadata_dict["repository_dependencies"] = []
     if metadata.includes_tools:
         metadata_dict["tools"] = metadata.metadata["tools"]
-    metadata_dict["invalid_tools"] = metadata.metadata.get("invalid_tools", [])
+    metadata_dict["invalid_tools"] = build_invalid_tools(metadata.metadata)
     return metadata_dict
 
 
@@ -844,3 +858,323 @@ def _get_repositories_by_name_and_owner_and_deleted(security: IdEncodingHelper, 
         sort_by = sort_by.desc()
     stmt = stmt.order_by(sort_by)
     return stmt
+
+
+def usernames_with_admin_role(app: ToolShedApp, repository: Repository) -> list[str]:
+    """Return usernames associated with the repository's admin role."""
+    admin_role = repository.admin_role
+    return [ura.user.username for ura in admin_role.users]
+
+
+def add_admin_user(app: ToolShedApp, repository: Repository, username: str) -> list[str]:
+    """Grant admin role to a user by username. Returns updated admin list."""
+    sa_session = app.model.session
+    user = sa_session.scalars(select(User).where(User.username == username)).first()
+    if user is None:
+        raise ObjectNotFound(f"No user found with username '{username}'")
+    admin_role = repository.admin_role
+    for ura in admin_role.users:
+        if ura.user.id == user.id:
+            return usernames_with_admin_role(app, repository)
+    app.security_agent.associate_user_role(user, admin_role)
+    sa_session.refresh(admin_role)
+    return usernames_with_admin_role(app, repository)
+
+
+def remove_admin_user(app: ToolShedApp, repository: Repository, username: str) -> list[str]:
+    """Revoke admin role from a user. Owner cannot be removed."""
+    sa_session = app.model.session
+    if username == repository.user.username:
+        raise RequestParameterInvalidException("The repository owner cannot be removed from the admin role.")
+    admin_role = repository.admin_role
+    for ura in admin_role.users:
+        if ura.user.username == username:
+            sa_session.delete(ura)
+            sa_session.commit()
+            sa_session.refresh(admin_role)
+            return usernames_with_admin_role(app, repository)
+    raise ObjectNotFound(f"User '{username}' is not an admin of this repository.")
+
+
+# ---------------------------------------------------------------------------
+# Galaxy→ToolShed install-protocol helpers (migrated from legacy controller)
+# ---------------------------------------------------------------------------
+
+
+def _has_galaxy_utilities(repository_metadata: Optional[RepositoryMetadata]) -> dict:
+    """Extract boolean flags describing what Galaxy utilities a repository revision contains."""
+    d = dict(
+        includes_data_managers=False,
+        includes_datatypes=False,
+        includes_tools=False,
+        includes_tools_for_display_in_tool_panel=False,
+        has_repository_dependencies=False,
+        has_repository_dependencies_only_if_compiling_contained_td=False,
+        includes_tool_dependencies=False,
+        includes_workflows=False,
+    )
+    if repository_metadata:
+        metadata = repository_metadata.metadata
+        if metadata:
+            if "data_manager" in metadata:
+                d["includes_data_managers"] = True
+            if "datatypes" in metadata:
+                d["includes_datatypes"] = True
+            if "tools" in metadata:
+                d["includes_tools"] = True
+            if "tool_dependencies" in metadata:
+                d["includes_tool_dependencies"] = True
+            repository_dependencies_dict = metadata.get("repository_dependencies", {})
+            repository_dependencies = repository_dependencies_dict.get("repository_dependencies", [])
+            (
+                has_repository_dependencies,
+                has_repository_dependencies_only_if_compiling_contained_td,
+            ) = get_repository_dependency_types(repository_dependencies)
+            d["has_repository_dependencies"] = has_repository_dependencies
+            d["has_repository_dependencies_only_if_compiling_contained_td"] = (
+                has_repository_dependencies_only_if_compiling_contained_td
+            )
+            if "workflows" in metadata:
+                d["includes_workflows"] = True
+    return d
+
+
+def get_ctx_rev_for_repository(app: ToolShedApp, name: str, owner: str, changeset_revision: str) -> str:
+    """Given a repository and changeset_revision, return the correct ctx.rev() value."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    repo = repository.hg_repo
+    if ctx := get_changectx_for_changeset(repo, changeset_revision):
+        return str(ctx.rev())
+    return ""
+
+
+def get_changeset_revision_and_ctx_rev_str(app: ToolShedApp, name: str, owner: str, changeset_revision: str) -> str:
+    """Determine update target for an installed repository and return tool_shed_encode'd dict."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    repository_metadata = get_repository_metadata_by_changeset_revision(
+        app, app.security.encode_id(repository.id), changeset_revision
+    )
+    has_galaxy_utilities_dict = _has_galaxy_utilities(repository_metadata)
+    includes_data_managers = has_galaxy_utilities_dict["includes_data_managers"]
+    includes_datatypes = has_galaxy_utilities_dict["includes_datatypes"]
+    includes_tools = has_galaxy_utilities_dict["includes_tools"]
+    includes_tools_for_display_in_tool_panel = has_galaxy_utilities_dict["includes_tools_for_display_in_tool_panel"]
+    includes_tool_dependencies = has_galaxy_utilities_dict["includes_tool_dependencies"]
+    has_repository_dependencies = has_galaxy_utilities_dict["has_repository_dependencies"]
+    has_repository_dependencies_only_if_compiling_contained_td = has_galaxy_utilities_dict[
+        "has_repository_dependencies_only_if_compiling_contained_td"
+    ]
+    includes_workflows = has_galaxy_utilities_dict["includes_workflows"]
+    repo = repository.hg_repo
+    # Default to the received changeset revision and ctx_rev.
+    update_to_ctx = get_changectx_for_changeset(repo, changeset_revision)
+    ctx_rev = str(update_to_ctx.rev())
+    latest_changeset_revision = changeset_revision
+    update_dict = dict(
+        changeset_revision=changeset_revision,
+        ctx_rev=ctx_rev,
+        includes_data_managers=includes_data_managers,
+        includes_datatypes=includes_datatypes,
+        includes_tools=includes_tools,
+        includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
+        includes_tool_dependencies=includes_tool_dependencies,
+        has_repository_dependencies=has_repository_dependencies,
+        has_repository_dependencies_only_if_compiling_contained_td=has_repository_dependencies_only_if_compiling_contained_td,
+        includes_workflows=includes_workflows,
+    )
+    if changeset_revision == repository.tip():
+        # If changeset_revision is the repository tip, there are no additional updates.
+        return tool_shed_encode(update_dict)
+    else:
+        if repository_metadata:
+            # If changeset_revision is in the repository_metadata table, no additional updates.
+            return tool_shed_encode(update_dict)
+        else:
+            # The changeset_revision column has been updated with a new value since the
+            # repository was installed.  Find the changeset_revision to update to.
+            update_to_changeset_hash = None
+            for changeset in repo.changelog:
+                includes_tools = False
+                has_repository_dependencies = False
+                has_repository_dependencies_only_if_compiling_contained_td = False
+                changeset_hash = str(repo[changeset])
+                if update_to_changeset_hash:
+                    update_to_repository_metadata = get_repository_metadata_by_changeset_revision(
+                        app, app.security.encode_id(repository.id), changeset_hash
+                    )
+                    if update_to_repository_metadata:
+                        has_galaxy_utilities_dict = _has_galaxy_utilities(repository_metadata)
+                        includes_data_managers = has_galaxy_utilities_dict["includes_data_managers"]
+                        includes_datatypes = has_galaxy_utilities_dict["includes_datatypes"]
+                        includes_tools = has_galaxy_utilities_dict["includes_tools"]
+                        includes_tools_for_display_in_tool_panel = has_galaxy_utilities_dict[
+                            "includes_tools_for_display_in_tool_panel"
+                        ]
+                        includes_tool_dependencies = has_galaxy_utilities_dict["includes_tool_dependencies"]
+                        has_repository_dependencies = has_galaxy_utilities_dict["has_repository_dependencies"]
+                        has_repository_dependencies_only_if_compiling_contained_td = has_galaxy_utilities_dict[
+                            "has_repository_dependencies_only_if_compiling_contained_td"
+                        ]
+                        includes_workflows = has_galaxy_utilities_dict["includes_workflows"]
+                        # We found a RepositoryMetadata record.
+                        if changeset_hash == repository.tip():
+                            # The current ctx is the repository tip, so use it.
+                            update_to_ctx = get_changectx_for_changeset(repo, changeset_hash)
+                            latest_changeset_revision = changeset_hash
+                        else:
+                            update_to_ctx = get_changectx_for_changeset(repo, update_to_changeset_hash)
+                            latest_changeset_revision = update_to_changeset_hash
+                        break
+                elif not update_to_changeset_hash and changeset_hash == changeset_revision:
+                    # We've found the changeset in the changelog for which we need to get the next update.
+                    update_to_changeset_hash = changeset_hash
+            update_dict["includes_data_managers"] = includes_data_managers
+            update_dict["includes_datatypes"] = includes_datatypes
+            update_dict["includes_tools"] = includes_tools
+            update_dict["includes_tools_for_display_in_tool_panel"] = includes_tools_for_display_in_tool_panel
+            update_dict["includes_tool_dependencies"] = includes_tool_dependencies
+            update_dict["includes_workflows"] = includes_workflows
+            update_dict["has_repository_dependencies"] = has_repository_dependencies
+            update_dict["has_repository_dependencies_only_if_compiling_contained_td"] = (
+                has_repository_dependencies_only_if_compiling_contained_td
+            )
+            update_dict["changeset_revision"] = str(latest_changeset_revision)
+    update_dict["ctx_rev"] = str(update_to_ctx.rev())
+    return tool_shed_encode(update_dict)
+
+
+def get_repository_dependencies_for_install(
+    app: ToolShedApp, trans: ProvidesRepositoriesContext, name: str, owner: str, changeset_revision: str
+) -> str:
+    """Return an encoded dictionary of all repository dependencies for installation."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    dependencies = repository.get_repository_dependencies(
+        app, changeset_revision, trans.repositories_hostname, trans=trans
+    )
+    if dependencies:
+        return tool_shed_encode(dependencies)
+    return ""
+
+
+def _get_repository_information(
+    trans: ProvidesRepositoriesContext, repository_ids: list, changeset_revisions: list
+) -> dict:
+    """Build repo info dicts for a batch of repositories needed for installation."""
+    includes_tools = False
+    includes_tools_for_display_in_tool_panel = False
+    has_repository_dependencies = False
+    has_repository_dependencies_only_if_compiling_contained_td = False
+    includes_tool_dependencies = False
+    repo_info_dicts = []
+    for repository_id, changeset_revision in zip(listify(repository_ids), listify(changeset_revisions)):
+        (
+            repo_info_dict,
+            cur_includes_tools,
+            cur_includes_tool_dependencies,
+            cur_includes_tools_for_display_in_tool_panel,
+            cur_has_repository_dependencies,
+            cur_has_repository_dependencies_only_if_compiling_contained_td,
+        ) = get_repo_info_dict(trans, repository_id, changeset_revision)
+        if cur_has_repository_dependencies and not has_repository_dependencies:
+            has_repository_dependencies = True
+        if (
+            cur_has_repository_dependencies_only_if_compiling_contained_td
+            and not has_repository_dependencies_only_if_compiling_contained_td
+        ):
+            has_repository_dependencies_only_if_compiling_contained_td = True
+        if cur_includes_tools and not includes_tools:
+            includes_tools = True
+        if cur_includes_tool_dependencies and not includes_tool_dependencies:
+            includes_tool_dependencies = True
+        if cur_includes_tools_for_display_in_tool_panel and not includes_tools_for_display_in_tool_panel:
+            includes_tools_for_display_in_tool_panel = True
+        repo_info_dicts.append(tool_shed_encode(repo_info_dict))
+    return dict(
+        includes_tools=includes_tools,
+        includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
+        has_repository_dependencies=has_repository_dependencies,
+        has_repository_dependencies_only_if_compiling_contained_td=has_repository_dependencies_only_if_compiling_contained_td,
+        includes_tool_dependencies=includes_tool_dependencies,
+        repo_info_dicts=repo_info_dicts,
+    )
+
+
+def get_required_repo_info_dict_from_encoded(trans: ProvidesRepositoriesContext, encoded_str: Optional[str]) -> dict:
+    """Decode an encoded string of repository dependency tuples and return installation info."""
+    repo_info_dict: dict = {}
+    if encoded_str:
+        encoded_required_repository_str = tool_shed_decode(encoded_str)
+        encoded_required_repository_tups = encoded_required_repository_str.split(encoding_sep2)
+        decoded_required_repository_tups = []
+        for encoded_required_repository_tup in encoded_required_repository_tups:
+            decoded_required_repository_tups.append(encoded_required_repository_tup.split(encoding_sep))
+        encoded_repository_ids = []
+        changeset_revisions = []
+        for required_repository_tup in decoded_required_repository_tups:
+            (
+                tool_shed,
+                name,
+                owner,
+                changeset_revision,
+                prior_installation_required,
+                only_if_compiling_contained_td,
+            ) = parse_repository_dependency_tuple(required_repository_tup)
+            repository = get_repository_by_name_and_owner(trans.sa_session, name, owner)
+            encoded_repository_ids.append(trans.security.encode_id(repository.id))
+            changeset_revisions.append(changeset_revision)
+        if encoded_repository_ids and changeset_revisions:
+            repo_info_dict = _get_repository_information(trans, encoded_repository_ids, changeset_revisions)
+    return repo_info_dict
+
+
+def next_installable_changeset_revision_str(app: ToolShedApp, name: str, owner: str, changeset_revision: str) -> str:
+    """Return the next installable changeset revision beyond the given one."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    next_changeset_revision = get_next_downloadable_changeset_revision(app, repository, changeset_revision)
+    if next_changeset_revision and next_changeset_revision != changeset_revision:
+        return next_changeset_revision
+    return ""
+
+
+def previous_changeset_revisions_str(
+    app: ToolShedApp, name: str, owner: str, changeset_revision: str, from_tip: bool = False
+) -> str:
+    """Return comma-separated changeset hashes between previous metadata revision and the given one."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    if from_tip:
+        changeset_revision = repository.tip()
+    if changeset_revision is not None:
+        repo = repository.hg_repo
+        lower_bound_changeset_revision = get_previous_metadata_changeset_revision(
+            app, repository, changeset_revision, downloadable=True
+        )
+        changeset_hashes = []
+        for changeset in reversed_lower_upper_bounded_changelog(
+            repo, lower_bound_changeset_revision, changeset_revision
+        ):
+            changeset_hashes.append(str(repo[changeset]))
+        if changeset_hashes:
+            return ",".join(changeset_hashes)
+    return ""
+
+
+def updated_changeset_revisions_str(app: ToolShedApp, name: str, owner: str, changeset_revision: str) -> str:
+    """Return comma-separated changeset revision hashes for all available updates."""
+    if name and owner and changeset_revision:
+        return get_updated_changeset_revisions(app, name, owner, changeset_revision)
+    return ""
+
+
+def get_repository_type_str(app: ToolShedApp, name: str, owner: str) -> str:
+    """Given a repository name and owner, return the type."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    return str(repository.type)
+
+
+def get_tool_dependencies_for_changeset(app: ToolShedApp, name: str, owner: str, changeset_revision: str) -> str:
+    """Return encoded tool dependencies for a changeset revision."""
+    repository = get_repository_by_name_and_owner(app.model.context, name, owner)
+    dependencies = repository.get_tool_dependencies(app, changeset_revision)
+    if len(dependencies) > 0:
+        return tool_shed_encode(dependencies)
+    return ""

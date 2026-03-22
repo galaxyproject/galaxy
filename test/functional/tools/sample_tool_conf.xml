@@ -230,6 +230,7 @@
   <tool file="expression_null_handling_integer.xml" />
   <tool file="expression_null_handling_float.xml" />
   <tool file="expression_null_handling_text.xml" />
+  <tool file="expression_text_to_bool.xml" />
   <tool file="cheetah_casting.xml" />
   <tool file="cheetah_problem_unbound_var.xml" />
   <tool file="cheetah_problem_unbound_var_input.xml" />
@@ -259,6 +260,7 @@
   <tool file="multiple_versions_changes_v01.xml" />
   <tool file="multiple_versions_changes_v02.xml" />
   <tool file="html_output.xml" />
+  <tool file="html_output_with_extra_files.xml" />
 
   <tool file="interactivetool_simple.xml" />
   <tool file="interactivetool_two_entry_points.xml" />
@@ -335,6 +337,7 @@
 
   <!-- Tools without tool test but useful for hand-crafted, artisanal test cases. -->
   <tool file="cat_data_and_sleep.xml" />
+  <tool file="parameters/gx_int_min_max.xml" />
 
   <!-- Load collection operation tools - I consider these part of the
        "framework" and they are used to in API tests to test the underlying

@@ -37,7 +37,7 @@ const sanitizedToolId = ref<string | null>(null);
 const { isAdmin } = storeToRefs(useUserStore());
 
 const dataset = computed(() => getDataset(props.datasetId));
-const datasetUrl = computed(() => `/datasets/${props.datasetId}/display`);
+const datasetUrl = computed(() => `/datasets/${props.datasetId}/display/`);
 const downloadUrl = computed(() => withPrefix(`${datasetUrl.value}?to_ext=${dataset.value?.file_ext}`));
 const isLoading = computed(() => isLoadingDataset(props.datasetId));
 const previewUrl = computed(() => `${datasetUrl.value}?preview=True`);

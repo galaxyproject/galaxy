@@ -3,6 +3,8 @@
 import logging
 import re
 
+from humanfriendly import parse_timespan
+
 log = logging.getLogger(__name__)
 
 # Default values for GCP Batch runner configuration
@@ -176,6 +178,60 @@ def convert_memory_to_mib(memory_str):
     else:
         log.warning("Unknown memory unit: %s, treating as MiB", unit)
         return int(value)
+
+
+DEFAULT_MAX_RUN_DURATION = "86400s"
+
+
+def convert_duration_to_seconds(duration_str) -> str:
+    """
+    Convert a duration value to GCP Batch duration format (e.g., '3600s').
+
+    Accepts:
+        - Duration string with suffix: '3600s', '60m', '2h', '1d'
+        - Human-friendly strings: '1.5 hours', '2 days'
+        - Numeric string or number (treated as seconds): '3600', 3600
+
+    Returns:
+        Duration string in GCP Batch format (e.g., '3600s').
+    """
+    if not duration_str:
+        return DEFAULT_MAX_RUN_DURATION
+    try:
+        return f"{int(parse_timespan(str(duration_str)))}s"
+    except Exception:
+        log.warning("Invalid duration format: %s, using default %s", duration_str, DEFAULT_MAX_RUN_DURATION)
+        return DEFAULT_MAX_RUN_DURATION
+
+
+def resolve_max_run_duration(destination_params, runner_params, resource_params):
+    """
+    Resolve the maximum run duration from multiple configuration sources.
+
+    Resolution order (highest priority first):
+        1. Galaxy job resource parameter 'walltime' (user selection in tool form)
+        2. Destination param 'max_run_duration' (e.g., from TPV per-tool config)
+        3. TPV-style 'walltime' in destination params
+        4. Runner-level default from runner_params
+
+    Args:
+        destination_params: dict of job destination parameters
+        runner_params: dict of runner-level parameters (fallback defaults)
+        resource_params: dict of Galaxy job resource parameters (user selections)
+
+    Returns:
+        Duration string in GCP Batch format (e.g., '86400s')
+    """
+    if resource_params.get("walltime"):
+        return convert_duration_to_seconds(resource_params["walltime"])
+
+    if "max_run_duration" in destination_params:
+        return convert_duration_to_seconds(destination_params["max_run_duration"])
+
+    if "walltime" in destination_params:
+        return convert_duration_to_seconds(destination_params["walltime"])
+
+    return convert_duration_to_seconds(runner_params.get("max_run_duration", DEFAULT_MAX_RUN_DURATION))
 
 
 def compute_machine_type(cpu_milli, memory_mib, machine_type_family="n2"):

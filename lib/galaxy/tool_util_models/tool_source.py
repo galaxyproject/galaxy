@@ -71,6 +71,10 @@ class ResourceRequirement(ToolSourceBaseModel):
     cuda_device_count_min: Optional[Union[int, float]] = None
     cuda_device_count_max: Optional[Union[int, float]] = None
     shm_size: Optional[Union[int, float]] = None
+    timelimit: Annotated[
+        Union[int, float, None],
+        Field(description="Maximum time in seconds the tool is allowed to run. Job will be terminated if exceeded."),
+    ] = None
 
 
 class JavascriptRequirement(ToolSourceBaseModel):

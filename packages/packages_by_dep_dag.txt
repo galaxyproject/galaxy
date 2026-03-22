@@ -2,7 +2,6 @@ tool_util_models
 util
 
 config
-files
 job_metrics
 navigation
 objectstore
@@ -10,10 +9,13 @@ schema
 tool_shed_schema
 tool_util
 
+test_base
+
+files
+
 data
 selenium
 tours
-test_base
 
 auth
 job_execution

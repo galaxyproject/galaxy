@@ -3,7 +3,7 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BLink, BModal, BPagination, BSpinner, BTable } from "bootstrap-vue";
+import { BAlert, BButton, BLink, BPagination, BSpinner, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { type ItemsProvider, SELECTION_STATES, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
@@ -11,8 +11,9 @@ import type Filtering from "@/utils/filtering";
 
 import type { FieldEntry, SelectionItem } from "./selectionTypes";
 
+import GModal from "../BaseComponents/GModal.vue";
+import Heading from "../Common/Heading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
-import Heading from "@/components/Common/Heading.vue";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -33,7 +34,6 @@ interface Props {
     leafIcon?: string;
     folderIcon?: IconDefinition;
     modalShow?: boolean;
-    modalStatic?: boolean;
     multiple?: boolean;
     optionsShow?: boolean;
     undoShow?: boolean;
@@ -60,7 +60,6 @@ const props = withDefaults(defineProps<Props>(), {
     leafIcon: "fa fa-file-o",
     folderIcon: () => faFolder,
     modalShow: true,
-    modalStatic: false,
     multiple: false,
     optionsShow: false,
     undoShow: false,
@@ -158,6 +157,17 @@ if (props.watchOnPageChanges) {
     );
 }
 
+const dialog = ref<InstanceType<typeof GModal> | null>(null);
+watch(
+    () => dialog.value,
+    (newValue) => {
+        if (newValue) {
+            dialog.value?.showModal();
+        }
+    },
+    { immediate: true },
+);
+
 defineExpose({
     resetFilter,
     resetPagination,
@@ -166,17 +176,17 @@ defineExpose({
 </script>
 
 <template>
-    <BModal
-        v-if="modalShow"
-        modal-class="selection-dialog-modal"
-        header-class="flex-column"
-        visible
-        :static="modalStatic"
-        :title="title"
-        @hide="emit('onCancel')">
-        <template v-slot:modal-header>
-            <slot name="header">
-                <Heading v-if="props.title" h2> {{ props.title }} </Heading>
+    <GModal
+        ref="dialog"
+        class="selection-dialog-modal"
+        size="medium"
+        :show="props.modalShow"
+        fixed-height
+        footer
+        @close="emit('onCancel')">
+        <template v-slot:header>
+            <div class="d-flex flex-column">
+                <Heading v-if="props.title" size="sm"> {{ props.title }} </Heading>
 
                 <FilterMenu
                     v-if="props.filterClass"
@@ -189,14 +199,14 @@ defineExpose({
                     :show-advanced.sync="showAdvancedSearch" />
 
                 <DataDialogSearch v-else v-model="filter" :title="props.searchTitle || props.title" />
-            </slot>
+            </div>
         </template>
         <slot name="helper" />
         <BAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
         </BAlert>
         <div v-else>
-            <div v-if="optionsShow">
+            <div v-if="optionsShow" data-description="selection dialog options">
                 <BTable
                     small
                     hover
@@ -269,7 +279,7 @@ defineExpose({
                 <span>Please wait...</span>
             </div>
         </div>
-        <template v-slot:modal-footer>
+        <template v-slot:footer>
             <div class="d-flex justify-content-between w-100">
                 <div>
                     <BButton v-if="undoShow" data-description="selection dialog undo" size="sm" @click="emit('onUndo')">
@@ -307,13 +317,5 @@ defineExpose({
                 </div>
             </div>
         </template>
-    </BModal>
+    </GModal>
 </template>
-
-<style>
-.selection-dialog-modal .modal-body {
-    max-height: 50vh;
-    height: 50vh;
-    overflow-y: auto;
-}
-</style>

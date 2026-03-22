@@ -21,7 +21,7 @@
 
 import { faBurn, faColumns, faPlus, faTags, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
+import { BAlert, BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -46,6 +46,7 @@ import { getHistoryListFilters } from "./historyList";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
+import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -661,12 +662,11 @@ onMounted(async () => {
                 </GLink>
             </BAlert>
         </span>
-        <BOverlay
+        <GOverlay
             v-else
             id="history-list-overlay"
             :show="overlay"
-            class="h-100 d-flex flex-column history-list-overlay"
-            rounded="sm">
+            class="h-100 d-flex flex-column history-list-overlay">
             <HistoryCardList
                 :histories="historiesLoaded"
                 :shared-view="sharedView"
@@ -684,7 +684,7 @@ onMounted(async () => {
                 @on-history-card-click="onClick"
                 @updateFilter="updateFilterValue"
                 @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)" />
-        </BOverlay>
+        </GOverlay>
 
         <div class="d-flex mt-1 align-items-center">
             <div v-if="myView && selectedHistories.length" class="d-flex flex-gapx-1 w-100 position-absolute">

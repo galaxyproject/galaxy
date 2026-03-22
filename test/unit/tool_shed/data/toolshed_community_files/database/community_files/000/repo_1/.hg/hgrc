@@ -1,0 +1,9 @@
+[paths]
+default = .
+default-push = .
+[web]
+allow_push = iuc
+name = collection_column_join
+push_ssl = false
+[extensions]
+hgext.purge=

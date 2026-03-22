@@ -532,6 +532,6 @@ def _to_validator(app, validator_model: AnyValidatorModel) -> Validator:
         as_dict["tool_data_table"] = tool_data_table
     if "filename" in as_dict and app is not None:
         filename = as_dict.pop("filename")
-        as_dict["filename"] = f"{app.config.tool_data_path}/{filename}"
+        as_dict["filename"] = os.path.join(app.config.tool_data_path, filename)
 
     return validator_types[validator_type](**as_dict)

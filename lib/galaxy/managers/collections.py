@@ -508,8 +508,8 @@ class DatasetCollectionManager:
             flush=False,
             element_destination=element_destination,
             dataset_instance_attributes=dataset_instance_attributes,
+            target_user=trans.get_user(),
         )
-        new_hdca.copy_tags_from(target_user=trans.get_user(), source=source_hdca)
         if not copy_elements:
             parent.add_dataset_collection(new_hdca)
         trans.sa_session.commit()
