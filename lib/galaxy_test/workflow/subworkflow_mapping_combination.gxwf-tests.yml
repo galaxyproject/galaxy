@@ -1,12 +1,7 @@
 - doc: |
-    Parent sends list_a=[X,Y] into subworkflow's data input, triggering
-    parent-level map-over (2 invocations). Each invocation also receives
-    list_b=[P,Q] which triggers internal map-over of cat.
-    Discovery result: output is flat list (not list:list). The parent
-    mapping over list_a and the subworkflow's internal mapping over list_b
-    do NOT combine into nested output. The inner mapping produces list
-    output per subworkflow invocation, but the parent mapping doesn't
-    wrap that in an outer list.
+    Parent maps list_a over subworkflow data input, subworkflow maps
+    list_b internally. Output is flat list from the inner mapping axis,
+    not list:list. Two independent mapping sources do not stack.
   job:
     list_a:
       type: collection

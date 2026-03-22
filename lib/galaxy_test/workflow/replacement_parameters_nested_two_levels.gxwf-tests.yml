@@ -1,7 +1,6 @@
 - doc: |
-    Text parameter "my_prefix" passes through parent -> level1 -> level2
-    where it's substituted in output rename PJA. Verifies parameter
-    substitution works across two subworkflow boundaries.
+    Text parameter substitution works across two subworkflow boundaries.
+    "my_prefix" flows parent -> level1 -> level2 into a rename PJA.
   job:
     rename_text:
       value: my_prefix

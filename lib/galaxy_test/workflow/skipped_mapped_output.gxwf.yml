@@ -1,8 +1,8 @@
 class: GalaxyWorkflow
 doc: |
-  Test workflow output from a mapped conditional step where some collection
-  elements are skipped and others execute. The output collection should
-  contain both real datasets and null expression.json placeholders.
+  Mapped conditional step with mixed skip/execute elements. Output
+  collection preserves element ordering with real datasets at executed
+  positions and expression.json null placeholders at skipped positions.
 inputs:
   boolean_input_files:
     type: collection

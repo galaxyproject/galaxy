@@ -1,10 +1,7 @@
 - doc: |
-    Discovery test: when should_run=false, step1 is skipped producing
-    expression.json null. Does skip propagate through step2 and step3?
-    Hypothesis A: skip propagates, all outputs are expression.json null.
-    Hypothesis B: cat processes the null file literally, step2/3 produce
-    regular files containing "null" text.
-    Starting with hypothesis A (all expression.json).
+    Skip propagates through a 3-step data chain. When step1 is skipped,
+    step2 and step3 also produce expression.json null — tools do not
+    process the null placeholder as a literal file.
   job:
     input_file:
       type: File
@@ -32,7 +29,7 @@
       - that: has_text
         text: "null"
 - doc: |
-    Control: when should_run=true, all steps run normally.
+    All steps execute normally when should_run=true.
   job:
     input_file:
       type: File

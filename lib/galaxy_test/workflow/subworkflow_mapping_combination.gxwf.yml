@@ -1,9 +1,9 @@
 class: GalaxyWorkflow
 doc: |
-  Parent maps list_a over subworkflow (single_from_parent is data input,
-  receives one element per invocation). Subworkflow also receives list_b
-  as a collection and maps cat over it internally. Tests whether output
-  becomes list:list (outer=list_a, inner=list_b).
+  Parent-level mapping and subworkflow-internal mapping do not combine
+  into nested output. Consistent with collection_semantics.yml — implicit
+  mapping resolves the gap between provided and expected depth across
+  all inputs simultaneously, not per-input independently.
 inputs:
   list_a:
     type: collection

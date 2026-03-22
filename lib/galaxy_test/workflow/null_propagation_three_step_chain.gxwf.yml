@@ -1,8 +1,8 @@
 class: GalaxyWorkflow
 doc: |
-  Chain of 3 cat steps where the first is conditionally skipped.
-  Discovery test: does null expression.json propagate skip through
-  downstream data-input steps, or do they process it as a literal file?
+  Null/skip state propagates transitively through data-input chains.
+  When the first step is skipped, all downstream steps that receive
+  its output as data input also produce expression.json null.
 inputs:
   input_file:
     type: data

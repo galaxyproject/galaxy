@@ -1,6 +1,6 @@
 - doc: |
-    Test that a workflow output sourced from an always-skipped step (when=false)
-    produces a null expression.json dataset that is hidden.
+    Skipped step (when=false) produces a hidden expression.json null dataset
+    as its workflow output.
   job:
     input_file:
       type: File
@@ -17,8 +17,7 @@
       - that: has_text
         text: "null"
 - doc: |
-    Test that the same workflow with when=true executes the step and produces
-    real output with the original file type.
+    Executed step (when=true) produces a visible dataset with real content.
   job:
     input_file:
       type: File

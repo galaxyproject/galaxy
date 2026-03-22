@@ -1,7 +1,8 @@
 class: GalaxyWorkflow
 doc: |
-  Skipped step -> cat (data input) -> pick_value with fallback.
-  Tests whether pick_value sees the intermediate cat output as real or null.
+  Null propagation through data chain into pick_value. When skip state
+  propagates through an intermediate step, pick_value correctly
+  recognizes the propagated null and selects the fallback input.
 inputs:
   input_file:
     type: data

@@ -1,8 +1,8 @@
 class: GalaxyWorkflow
 doc: |
-  Test workflow output behavior when sourced from a conditionally-skipped
-  step without pick_value. Verifies that skipped steps produce expression.json
-  null outputs that are correctly recorded as workflow outputs.
+  Workflow output sourced from a conditionally-skipped step (no pick_value).
+  Skipped steps produce hidden expression.json null outputs that are
+  recorded as workflow outputs without error.
 inputs:
   input_file:
     type: data

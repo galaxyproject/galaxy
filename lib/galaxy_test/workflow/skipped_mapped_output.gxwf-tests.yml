@@ -1,7 +1,6 @@
 - doc: |
-    Test that a mapped conditional step with mixed true/false boolean values
-    produces an output collection where executed elements have real content
-    and skipped elements have expression.json null content.
+    Mapped conditional with mixed true/false: executed elements have real
+    content, skipped elements are expression.json null placeholders.
   job:
     boolean_input_files:
       type: collection

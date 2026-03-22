@@ -1,8 +1,6 @@
 - doc: |
-    Omit optional text param. Step1 receives null via NoReplacement,
-    outputs expression.json with null. Step2 deserializes that null,
-    passes it through, outputs expression.json null. Step3 same.
-    All three outputs should be expression.json containing null.
+    Omitted optional text param produces null at every hop in a 3-step
+    expression tool chain. All outputs are expression.json null.
   job: {}
   outputs:
     out_step1:
@@ -24,7 +22,7 @@
       - that: has_text
         text: "null"
 - doc: |
-    Provide text param. All three steps pass it through unchanged.
+    Provided text param passes through all three steps unchanged.
   job:
     optional_text:
       type: raw
