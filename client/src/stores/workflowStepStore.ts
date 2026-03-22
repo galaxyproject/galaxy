@@ -363,9 +363,10 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         );
 
         const inputConnections = inputStep.input_connections[connection.input.name];
+        const newInputConnections = { ...inputStep.input_connections };
 
         if (getStepExtraInputs.value(inputStep.id).find((input) => connection.input.name === input.name)) {
-            inputStep.input_connections[connection.input.name] = undefined;
+            newInputConnections[connection.input.name] = undefined;
         } else {
             if (Array.isArray(inputConnections)) {
                 const filtered = inputConnections.filter(
@@ -377,16 +378,16 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
                 );
 
                 if (filtered.length === 0) {
-                    del(inputStep.input_connections, connection.input.name);
+                    delete newInputConnections[connection.input.name];
                 } else {
-                    inputStep.input_connections[connection.input.name] = filtered;
+                    newInputConnections[connection.input.name] = filtered;
                 }
             } else {
-                del(inputStep.input_connections, connection.input.name);
+                delete newInputConnections[connection.input.name];
             }
         }
 
-        updateStep(inputStep);
+        updateStep({ ...inputStep, input_connections: newInputConnections });
     }
 
     const { deleteStepPosition, deleteStepTerminals } = useWorkflowStateStore(workflowId);

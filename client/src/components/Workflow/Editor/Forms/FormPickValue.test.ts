@@ -69,7 +69,16 @@ describe("FormPickValue", () => {
         });
 
         it("preserves mode from tool_state", () => {
-            const wrapper = mountPickValue(makeStep({ tool_state: { mode: "all_non_null", num_inputs: 3 } }));
+            const wrapper = mountPickValue(
+                makeStep({
+                    tool_state: { mode: "all_non_null", num_inputs: 3 },
+                    input_connections: {
+                        input_0: [{ id: 1, output_name: "output" }],
+                        input_1: [{ id: 2, output_name: "output" }],
+                        input_2: [{ id: 3, output_name: "output" }],
+                    },
+                }),
+            );
             const state = getLastEmittedState(wrapper);
             expect(state.mode).toBe("all_non_null");
             expect(state.num_inputs).toBe(3);
@@ -226,6 +235,12 @@ describe("FormPickValue", () => {
                     tool_state: {
                         mode: JSON.stringify("the_only_non_null"),
                         num_inputs: JSON.stringify(4),
+                    },
+                    input_connections: {
+                        input_0: [{ id: 1, output_name: "output" }],
+                        input_1: [{ id: 2, output_name: "output" }],
+                        input_2: [{ id: 3, output_name: "output" }],
+                        input_3: [{ id: 4, output_name: "output" }],
                     },
                 }),
             );

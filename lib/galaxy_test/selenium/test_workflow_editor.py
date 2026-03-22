@@ -1213,6 +1213,62 @@ steps:
         assert "picktag" in pjas["TagDatasetActionoutput"]["action_arguments"]["tags"]
 
     @selenium_test
+    def test_pick_value_compact_on_disconnect(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input_data: data
+steps:
+  branch_a:
+    tool_id: cat
+    in:
+      input1: input_data
+  branch_b:
+    tool_id: cat
+    in:
+      input1: input_data
+  branch_c:
+    tool_id: cat
+    in:
+      input1: input_data
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+      input_2: branch_c/out_file1
+""")
+        editor = self.components.workflow_editor
+        pick_node = editor.node._(label="pick")
+        # Verify initial state: 3 connected + 1 empty from grow-on-connect
+        self.assert_connected("branch_a#out_file1", "pick#input_0")
+        self.assert_connected("branch_b#out_file1", "pick#input_1")
+        self.assert_connected("branch_c#out_file1", "pick#input_2")
+        pick_node.input_terminal(name="input_3").wait_for_present()
+        # Disconnect middle input
+        self.workflow_editor_destroy_connection("pick#input_1")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # branch_b should no longer be connected
+        self.assert_not_connected("branch_b#out_file1", "pick#input_1")
+        # branch_c should have been compacted from input_2 to input_1
+        self.assert_connected("branch_a#out_file1", "pick#input_0")
+        self.assert_connected("branch_c#out_file1", "pick#input_1")
+        # Click pick node to mount FormPickValue watcher (triggers num_inputs shrink)
+        pick_node.wait_for_and_click()
+        pick_node.input_terminal(name="input_3").wait_for_absent_or_hidden()
+        # Save and verify connections and num_inputs were compacted
+        self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        pick_step = [s for s in workflow["steps"].values() if s["type"] == "pick_value"][0]
+        tool_state = json.loads(pick_step["tool_state"])
+        assert tool_state["num_inputs"] == 2
+        assert len(pick_step["input_connections"]) == 2
+        assert "input_0" in pick_step["input_connections"]
+        assert "input_1" in pick_step["input_connections"]
+
+    @selenium_test
     def test_editor_create_conditional_step(self):
         editor = self.components.workflow_editor
         self.workflow_create_new(annotation="simple when step definition")

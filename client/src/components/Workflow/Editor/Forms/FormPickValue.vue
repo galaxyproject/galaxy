@@ -66,6 +66,15 @@ function onChangePostJobActions(postJobActions: PostJobActions) {
     emit("onChangePostJobActions", postJobActions);
 }
 
+function countConnectedInputs(connections: Record<string, unknown>): number {
+    return Object.keys(connections).filter(
+        (k) =>
+            k.startsWith("input_") &&
+            connections[k] != null &&
+            (!Array.isArray(connections[k]) || (connections[k] as unknown[]).length > 0),
+    ).length;
+}
+
 // Watch connections: grow on connect, shrink on disconnect
 watch(
     () => props.step.input_connections,
@@ -82,13 +91,7 @@ watch(
 
         // Shrink or undo-of-shrink: sync num_inputs with actual connections
         if (connections) {
-            const connectedCount = Object.keys(connections).filter(
-                (k) =>
-                    k.startsWith("input_") &&
-                    connections[k] != null &&
-                    (!Array.isArray(connections[k]) || (connections[k] as unknown[]).length > 0),
-            ).length;
-            const desired = Math.max(2, connectedCount);
+            const desired = Math.max(2, countConnectedInputs(connections));
             if (desired !== state.num_inputs) {
                 state.num_inputs = desired;
                 emit("onChange", state);
@@ -100,6 +103,17 @@ watch(
 
 // Dummy initial emit (same pattern as FormInputCollection — resets initialChange guard)
 emit("onChange", cleanToolState());
+
+// Correct num_inputs if connections don't match state (e.g., compaction happened while unmounted)
+const connections = props.step.input_connections;
+if (connections) {
+    const desired = Math.max(2, countConnectedInputs(connections));
+    const state = cleanToolState();
+    if (desired !== state.num_inputs) {
+        state.num_inputs = desired;
+        emit("onChange", state);
+    }
+}
 </script>
 
 <template>
