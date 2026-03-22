@@ -334,6 +334,20 @@ class WorkflowsAPIController(
         :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
                                           by default.
         :type   instance:                 boolean
+
+        :param  clean:                    if true, strip stale keys from tool_state using tool
+                                          definitions. Applies to 'ga', 'format2', and
+                                          'format2_wrapped_yaml' styles. Default: false.
+        :type   clean:                    boolean
+
+        :param  clean_preserve:           comma-separated stale key categories to preserve
+                                          (not strip) when clean=true. Categories: bookkeeping,
+                                          stale-root-keys, stale-branch-data, unknown, runtime-leak.
+        :type   clean_preserve:           str
+
+        :param  clean_strip:              comma-separated stale key categories to strip when
+                                          clean=true. By default all categories are stripped.
+        :type   clean_strip:              str
         """
         instance = util.string_as_bool(kwd.get("instance", "false"))
         workflow_id = self.decode_id(workflow_id)
@@ -357,6 +371,9 @@ class WorkflowsAPIController(
         preserve_external_subworkflow_links = util.string_as_bool(
             kwd.get("preserve_external_subworkflow_links", "false")
         )
+        clean = util.string_as_bool(kwd.get("clean", "false"))
+        clean_preserve = [c.strip() for c in kwd.get("clean_preserve", "").split(",") if c.strip()]
+        clean_strip = [c.strip() for c in kwd.get("clean_strip", "").split(",") if c.strip()]
         ret_dict = self.workflow_contents_manager.workflow_to_dict(
             trans,
             stored_workflow,
@@ -365,6 +382,9 @@ class WorkflowsAPIController(
             history=history,
             instance_id=instance_id,
             preserve_external_subworkflow_links=preserve_external_subworkflow_links,
+            clean=clean,
+            clean_preserve=clean_preserve,
+            clean_strip=clean_strip,
         )
         if download_format == "json-download":
             sname = stored_workflow.name
