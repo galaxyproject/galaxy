@@ -44,7 +44,10 @@ from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions,
 )
-from galaxy.tool_util.verify import verify, verify_job_metadata
+from galaxy.tool_util.verify import (
+    verify,
+    verify_job_metadata,
+)
 from galaxy.tool_util.verify.interactor import prepare_request_params
 from galaxy.util import (
     asbool,

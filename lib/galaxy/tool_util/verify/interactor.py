@@ -64,7 +64,10 @@ from galaxy.util.hash_util import (
     memory_bound_hexdigest,
     parse_checksum_hash,
 )
-from . import verify
+from . import (
+    verify,
+    verify_job_metadata,
+)
 from ._types import (
     ExpandedToolInputs,
     ExpandedToolInputsJsonified,
@@ -75,7 +78,6 @@ from ._types import (
     ToolTestDescriptionDict,
     ValueStateRepresentationT,
 )
-from . import verify_job_metadata
 from .wait import wait_on
 
 log = getLogger(__name__)
