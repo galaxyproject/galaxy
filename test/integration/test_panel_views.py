@@ -203,6 +203,34 @@ class TestPanelViewsFromConfigIntegration(integration_util.IntegrationTestCase):
         verify_my_custom(index)
 
 
+class TestMyToolsPanelViewIntegration(integration_util.IntegrationTestCase):
+    framework_tool_and_types = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["default_panel_view"] = "my_panel"
+
+    def test_my_tools_panel_view(self):
+        tool_panels = self.galaxy_interactor.get("tool_panels")
+        tool_panels.raise_for_status()
+        tool_panels_json = tool_panels.json()
+        assert tool_panels_json["default_panel_view"] == "my_panel"
+        assert tool_panels_json["views"]["my_panel"]["view_type"] == "favorites"
+
+        my_panel = self.galaxy_interactor.get("tool_panels/my_panel")
+        my_panel.raise_for_status()
+        my_panel_json = my_panel.json()
+        assert list(my_panel_json.keys()) == ["favorites"]
+        assert my_panel_json["favorites"]["model_class"] == "ToolSection"
+        assert my_panel_json["favorites"]["name"] == "Favorites"
+        assert my_panel_json["favorites"]["tools"] == []
+
+        default_panel = self.galaxy_interactor.get("tool_panels/default_panel_view")
+        default_panel.raise_for_status()
+        assert default_panel.json() == my_panel_json
+
+
 def verify_my_custom(index):
     index.raise_for_status()
     index_panel = index.json()

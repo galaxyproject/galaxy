@@ -2,10 +2,26 @@ import { describe, expect, it } from "vitest";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { getWorkflowFilters } from "@/components/Workflow/List/workflowFilters";
+import Filtering, { contains } from "@/utils/filtering";
 
 describe("test filtering helpers to convert filters to filter text", () => {
     const MyWorkflowFilters = getWorkflowFilters("my");
     const PublishedWorkflowFilters = getWorkflowFilters("published");
+    const ToolTagFilters = new Filtering(
+        {
+            tag: {
+                type: "MultiTags",
+                handler: contains("tag", undefined, (value) => {
+                    const normalizedValue = String(value).trim().replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1");
+                    return /\s/.test(normalizedValue) ? `"${normalizedValue}"` : normalizedValue;
+                }),
+                menuItem: true,
+            },
+        },
+        undefined,
+        false,
+        false,
+    );
     it("conversion from filters to new filter text", async () => {
         const normalized = HistoryFilters.defaultFilters;
         expect(Object.keys(normalized).length).toBe(2);
@@ -64,6 +80,12 @@ describe("test filtering helpers to convert filters to filter text", () => {
         );
         delete filters["published"];
         expect(MyWorkflowFilters.getFilterText(filters, true)).toBe("name:name tag:tag1 tag:'tag2' tag:'name:tag3'");
+    });
+
+    it("quotes multi-word MultiTags values when a converter requires it", async () => {
+        expect(ToolTagFilters.getFilterText({ tag: ["data cleanup", "collection_ops"] })).toBe(
+            'tag:"data cleanup" tag:collection_ops',
+        );
     });
 });
 

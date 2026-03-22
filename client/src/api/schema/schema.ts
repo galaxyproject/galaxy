@@ -12448,7 +12448,7 @@ export interface components {
          * FavoriteObjectType
          * @enum {string}
          */
-        FavoriteObjectType: "tools";
+        FavoriteObjectType: "tools" | "tags" | "edam_operations" | "edam_topics";
         /** FavoriteObjectsSummary */
         FavoriteObjectsSummary: {
             /**
@@ -12456,6 +12456,29 @@ export interface components {
              * @description The name of the tools the user favored.
              */
             tools: string[];
+            /**
+             * Favorite tags
+             * @description The curated tool tags the user favored.
+             */
+            tags: string[];
+            /**
+             * Favorite EDAM operations
+             * @description The EDAM operation identifiers the user favored.
+             */
+            edam_operations: string[];
+            /**
+             * Favorite EDAM topics
+             * @description The EDAM topic identifiers the user favored.
+             */
+            edam_topics: string[];
+            /**
+             * Favorite order
+             * @description The persisted order of top-level favorite entries.
+             */
+            order: {
+                object_type: "tools" | "tags" | "edam_operations" | "edam_topics";
+                object_id: string;
+            }[];
         };
         /** FetchDataPayload */
         FetchDataPayload: {

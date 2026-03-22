@@ -81,17 +81,25 @@ describe("test helpers in tool searching utilities", () => {
             id: "__FILTER_FAILED_DATASETS__",
             help: "downstream",
             owner: "devteam",
+            tag: ["data cleanup", "collection_ops"],
         };
         const q = createWhooshQuery(settings);
 
         // OrGroup (at backend) on name, name_exact, description
         expect(q).toContain("name:(Filter) name_exact:(Filter) description:(Filter)");
         // AndGroup (explicit at frontend) on all other settings
-        expect(q).toContain("id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream) AND owner:(devteam)");
+        expect(q).toContain(
+            'id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream) AND owner:(devteam) AND tool_tags:("data cleanup") AND tool_tags:(collection_ops)',
+        );
         // Combined query results in:
         expect(q).toEqual(
-            "(name:(Filter) name_exact:(Filter) description:(Filter)) AND (id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream) AND owner:(devteam) AND )",
+            '(name:(Filter) name_exact:(Filter) description:(Filter)) AND (id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream) AND owner:(devteam) AND tool_tags:("data cleanup") AND tool_tags:(collection_ops))',
         );
+    });
+
+    it("builds tag-only whoosh queries without an empty leading clause", async () => {
+        expect(createWhooshQuery({ tag: ["data cleanup"] })).toEqual('(tool_tags:("data cleanup"))');
+        expect(createWhooshQuery({ section: '"Get Data"' })).toEqual('(section:("Get Data"))');
     });
 
     it("test tool search helper that searches for tools given keys", async () => {

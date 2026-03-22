@@ -1,5 +1,6 @@
 from galaxy.util.unittest_utils import transient_failure
 from .framework import (
+    playwright_only,
     selenium_test,
     SeleniumTestCase,
 )
@@ -66,6 +67,38 @@ class TestToolDiscoveryViewAnonymous(SeleniumTestCase):
         # Verify we've left the tools list view and the tool form is displayed
         tools_list._.wait_for_absent()
         self.screenshot("tools_list_navigated_to_tool")
+
+    @playwright_only("Validates /tools/list tag autocomplete behavior with Playwright backend.")
+    @selenium_test
+    def test_tools_list_tag_autocomplete_search(self):
+        self.home()
+        self.components.tool_panel.discover_tools_link.wait_for_and_click()
+
+        tools_list = self.components.tools_list
+        tools_list._.wait_for_visible()
+        tools_list.search_input.wait_for_and_send_keys("tag:Get")
+
+        autocomplete = self.page.locator('[data-description="search-autocomplete"]')
+        autocomplete.wait_for(state="visible")
+
+        suggestions = autocomplete.locator("button")
+        suggestion_count = suggestions.count()
+        matching_index = None
+        for index in range(suggestion_count):
+            if "Get Data" in (suggestions.nth(index).text_content() or ""):
+                matching_index = index
+                break
+
+        assert matching_index is not None, "Expected Get Data autocomplete suggestion to be present."
+        suggestions.nth(matching_index).click()
+
+        search_input = self.page.locator('.tools-list [data-description="filter text input"]')
+        self._wait_on(
+            lambda: search_input.input_value().strip() == 'tag:"Get Data"',
+            'tools/list search input to contain tag:"Get Data"',
+        )
+
+        tools_list.tool_card(tool_id="upload1").wait_for_visible()
 
 
 class TestToolDiscoveryViewLoggedIn(SeleniumTestCase):

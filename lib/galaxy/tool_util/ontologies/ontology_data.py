@@ -8,6 +8,8 @@ from typing import (
     Tuple,
 )
 
+import yaml
+
 from galaxy.tool_util.biotools import BiotoolsMetadataSource
 from galaxy.tool_util.parser import ToolSource
 from galaxy.tool_util_models.tool_source import XrefDict
@@ -31,6 +33,7 @@ def _read_ontology_data_text(filename: str) -> str:
 BIOTOOLS_MAPPING_FILENAME = "biotools_mappings.tsv"
 EDAM_OPERATION_MAPPING_FILENAME = "edam_operation_mappings.tsv"
 EDAM_TOPIC_MAPPING_FILENAME = "edam_topic_mappings.tsv"
+TOOL_TAG_MAPPING_FILENAME = "tool_tag_mappings.yml"
 
 BIOTOOLS_MAPPING_CONTENT = _read_ontology_data_text(BIOTOOLS_MAPPING_FILENAME)
 BIOTOOLS_MAPPING: Dict[str, List[str]] = defaultdict(list)
@@ -44,11 +47,18 @@ EDAM_OPERATION_MAPPING: Dict[str, List[str]] = _multi_dict_mapping(EDAM_OPERATIO
 EDAM_TOPIC_MAPPING_CONTENT = _read_ontology_data_text(EDAM_TOPIC_MAPPING_FILENAME)
 EDAM_TOPIC_MAPPING: Dict[str, List[str]] = _multi_dict_mapping(EDAM_TOPIC_MAPPING_CONTENT)
 
+TOOL_TAG_MAPPING_CONTENT = _read_ontology_data_text(TOOL_TAG_MAPPING_FILENAME)
+TOOL_TAG_MAPPING = cast(
+    Dict[str, List[str]],
+    (yaml.safe_load(TOOL_TAG_MAPPING_CONTENT) or {}).get("tool_tags", {}),
+)
+
 
 class OntologyData(NamedTuple):
     xrefs: List[XrefDict]
     edam_operations: Optional[List[str]]
     edam_topics: Optional[List[str]]
+    tool_tags: List[str]
 
 
 def biotools_reference(xrefs):
@@ -63,6 +73,17 @@ def legacy_biotools_external_reference(all_ids: List[str]) -> List[str]:
         if tool_id in BIOTOOLS_MAPPING:
             return BIOTOOLS_MAPPING[tool_id]
     return []
+
+
+def curated_tool_tags(all_ids: List[str]) -> List[str]:
+    seen = set()
+    tags: List[str] = []
+    for tool_id in all_ids:
+        for tag in TOOL_TAG_MAPPING.get(tool_id, []):
+            if tag not in seen:
+                seen.add(tag)
+                tags.append(tag)
+    return tags
 
 
 def expand_ontology_data(
@@ -104,4 +125,5 @@ def expand_ontology_data(
         xrefs,
         edam_operations,
         edam_topics,
+        curated_tool_tags(all_ids),
     )

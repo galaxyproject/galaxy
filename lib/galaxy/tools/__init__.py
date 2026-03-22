@@ -1541,19 +1541,15 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
         self.citations = self._parse_citations(tool_source)
         biotools_metadata_source = getattr(self.app, "biotools_metadata_source", None)
-        if biotools_metadata_source:
-            ontology_data = expand_ontology_data(
-                tool_source,
-                self.all_ids,
-                biotools_metadata_source,
-            )
-            self.xrefs = ontology_data.xrefs
-            self.edam_operations = ontology_data.edam_operations
-            self.edam_topics = ontology_data.edam_topics
-        else:
-            self.xrefs = []
-            self.edam_operations = None
-            self.edam_topics = None
+        ontology_data = expand_ontology_data(
+            tool_source,
+            self.all_ids,
+            biotools_metadata_source,
+        )
+        self.xrefs = ontology_data.xrefs
+        self.edam_operations = ontology_data.edam_operations
+        self.edam_topics = ontology_data.edam_topics
+        self.tool_tags = ontology_data.tool_tags
 
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths
@@ -2997,7 +2993,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             os.remove(temp_file)
         return tarball_archive
 
-    def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
+    def to_dict(self, trans, link_details=False, io_details=False, tool_help=False, include_tool_tags=True):
         """Returns dict of tool."""
 
         # Basic information
@@ -3006,6 +3002,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         tool_dict["icon"] = self.icon
         tool_dict["edam_operations"] = self.edam_operations
         tool_dict["edam_topics"] = self.edam_topics
+        if include_tool_tags:
+            tool_dict["tool_tags"] = self.tool_tags
         tool_dict["hidden"] = self.hidden
         tool_dict["is_workflow_compatible"] = self.is_workflow_compatible
         tool_dict["xrefs"] = self.xrefs

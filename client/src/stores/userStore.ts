@@ -6,19 +6,32 @@ import { useHashedUserId } from "@/composables/hashedUserId";
 import { useUserLocalStorageFromHashId } from "@/composables/userLocalStorageFromHashedId";
 import { useHistoryStore } from "@/stores/historyStore";
 import {
+    addFavoriteEdamOperationQuery,
+    addFavoriteEdamTopicQuery,
+    addFavoriteTagQuery,
     addFavoriteToolQuery,
+    type FavoriteOrderEntry,
+    type FavoriteSummary,
     getCurrentUser,
+    removeFavoriteEdamOperationQuery,
+    removeFavoriteEdamTopicQuery,
+    removeFavoriteTagQuery,
     removeFavoriteToolQuery,
     setCurrentThemeQuery,
+    updateFavoriteOrderQuery,
 } from "@/stores/users/queries";
 
-interface FavoriteTools {
+interface FavoriteObjects {
     tools: string[];
+    tags?: string[];
+    edam_operations?: string[];
+    edam_topics?: string[];
+    order?: FavoriteOrderEntry[];
 }
 
 interface Preferences {
     theme?: string;
-    favorites: FavoriteTools;
+    favorites: FavoriteObjects;
     [key: string]: unknown;
 }
 
@@ -67,11 +80,7 @@ export const useUserStore = defineStore("userStore", () => {
     });
 
     const currentFavorites = computed(() => {
-        if (currentPreferences.value?.favorites) {
-            return currentPreferences.value.favorites;
-        } else {
-            return { tools: [] };
-        }
+        return normalizeFavorites(currentPreferences.value?.favorites);
     });
 
     const matchesCurrentUsername = computed(() => {
@@ -131,21 +140,77 @@ export const useUserStore = defineStore("userStore", () => {
         if (!currentUser.value || currentUser.value.isAnonymous) {
             return;
         }
-        const tools = await addFavoriteToolQuery(currentUser.value.id, toolId);
-        setFavoriteTools(tools);
+        const favorites = await addFavoriteToolQuery(currentUser.value.id, toolId);
+        setFavorites(favorites);
     }
 
     async function removeFavoriteTool(toolId: string) {
         if (!currentUser.value || currentUser.value.isAnonymous) {
             return;
         }
-        const tools = await removeFavoriteToolQuery(currentUser.value.id, toolId);
-        setFavoriteTools(tools);
+        const favorites = await removeFavoriteToolQuery(currentUser.value.id, toolId);
+        setFavorites(favorites);
     }
 
-    function setFavoriteTools(tools: string[]) {
+    async function addFavoriteTag(tag: string) {
+        if (!currentUser.value || currentUser.value.isAnonymous) {
+            return;
+        }
+        const favorites = await addFavoriteTagQuery(currentUser.value.id, tag);
+        setFavorites(favorites);
+    }
+
+    async function removeFavoriteTag(tag: string) {
+        if (!currentUser.value || currentUser.value.isAnonymous) {
+            return;
+        }
+        const favorites = await removeFavoriteTagQuery(currentUser.value.id, tag);
+        setFavorites(favorites);
+    }
+
+    async function addFavoriteEdamOperation(operationId: string) {
+        if (!currentUser.value || currentUser.value.isAnonymous) {
+            return;
+        }
+        const favorites = await addFavoriteEdamOperationQuery(currentUser.value.id, operationId);
+        setFavorites(favorites);
+    }
+
+    async function removeFavoriteEdamOperation(operationId: string) {
+        if (!currentUser.value || currentUser.value.isAnonymous) {
+            return;
+        }
+        const favorites = await removeFavoriteEdamOperationQuery(currentUser.value.id, operationId);
+        setFavorites(favorites);
+    }
+
+    async function addFavoriteEdamTopic(topicId: string) {
+        if (!currentUser.value || currentUser.value.isAnonymous) {
+            return;
+        }
+        const favorites = await addFavoriteEdamTopicQuery(currentUser.value.id, topicId);
+        setFavorites(favorites);
+    }
+
+    async function removeFavoriteEdamTopic(topicId: string) {
+        if (!currentUser.value || currentUser.value.isAnonymous) {
+            return;
+        }
+        const favorites = await removeFavoriteEdamTopicQuery(currentUser.value.id, topicId);
+        setFavorites(favorites);
+    }
+
+    async function reorderFavorites(order: FavoriteOrderEntry[]) {
+        if (!currentUser.value || currentUser.value.isAnonymous) {
+            return;
+        }
+        const favorites = await updateFavoriteOrderQuery(currentUser.value.id, order);
+        setFavorites(favorites);
+    }
+
+    function setFavorites(favorites: Partial<FavoriteSummary>) {
         if (currentPreferences.value) {
-            currentPreferences.value.favorites.tools = tools;
+            currentPreferences.value.favorites = normalizeFavorites(favorites);
         }
     }
 
@@ -171,11 +236,64 @@ export const useUserStore = defineStore("userStore", () => {
     function processUserPreferences(user: RegisteredUser): Preferences {
         // Favorites are returned as a JSON string by the API
         const favorites =
-            typeof user.preferences.favorites === "string" ? JSON.parse(user.preferences.favorites) : { tools: [] };
+            typeof user.preferences.favorites === "string"
+                ? normalizeFavorites(JSON.parse(user.preferences.favorites))
+                : normalizeFavorites(user.preferences.favorites as Partial<FavoriteSummary> | undefined);
         return {
             ...user.preferences,
             favorites,
         };
+    }
+
+    function normalizeFavorites(favorites?: Partial<FavoriteSummary> | null): FavoriteSummary {
+        const normalized = {
+            tools: favorites?.tools ?? [],
+            tags: favorites?.tags ?? [],
+            edam_operations: favorites?.edam_operations ?? [],
+            edam_topics: favorites?.edam_topics ?? [],
+            order: [] as FavoriteOrderEntry[],
+        };
+        const validObjectIdsByType = {
+            tools: new Set(normalized.tools),
+            tags: new Set(normalized.tags),
+            edam_operations: new Set(normalized.edam_operations),
+            edam_topics: new Set(normalized.edam_topics),
+        };
+        const seen = new Set<string>();
+        const order = favorites?.order ?? [];
+
+        for (const entry of order) {
+            const objectType = entry?.object_type;
+            const objectId = entry?.object_id;
+            const entryKey = `${objectType}:${objectId}`;
+            if (
+                objectType &&
+                objectId &&
+                objectType in validObjectIdsByType &&
+                validObjectIdsByType[objectType as keyof typeof validObjectIdsByType].has(objectId) &&
+                !seen.has(entryKey)
+            ) {
+                seen.add(entryKey);
+                normalized.order.push({ object_type: objectType, object_id: objectId });
+            }
+        }
+
+        const appendMissing = (object_type: FavoriteOrderEntry["object_type"], object_ids: string[]) => {
+            for (const object_id of object_ids) {
+                const entryKey = `${object_type}:${object_id}`;
+                if (!seen.has(entryKey)) {
+                    seen.add(entryKey);
+                    normalized.order.push({ object_type, object_id });
+                }
+            }
+        };
+
+        appendMissing("tools", normalized.tools);
+        appendMissing("tags", normalized.tags);
+        appendMissing("edam_operations", normalized.edam_operations);
+        appendMissing("edam_topics", normalized.edam_topics);
+
+        return normalized;
     }
 
     return {
@@ -195,7 +313,14 @@ export const useUserStore = defineStore("userStore", () => {
         setCurrentTheme,
         setListViewPreference,
         addFavoriteTool,
+        addFavoriteTag,
+        addFavoriteEdamOperation,
+        addFavoriteEdamTopic,
         removeFavoriteTool,
+        removeFavoriteTag,
+        removeFavoriteEdamOperation,
+        removeFavoriteEdamTopic,
+        reorderFavorites,
         addRecentTool,
         clearRecentTools,
         $reset,

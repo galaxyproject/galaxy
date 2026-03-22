@@ -25,8 +25,13 @@ function focus() {
     inputRef.value?.focus();
 }
 
+function getInputElement() {
+    return inputRef.value;
+}
+
 defineExpose({
     focus,
+    getInputElement,
 });
 </script>
 

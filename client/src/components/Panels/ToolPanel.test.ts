@@ -70,11 +70,16 @@ describe("ToolPanel", () => {
      *                              mock an error for the default view as well
      * @returns wrapper
      */
-    async function createWrapper(errorView: string = "", failDefault: boolean = false) {
+    async function createWrapper(
+        errorView: string = "",
+        failDefault: boolean = false,
+        captureToolsRequest?: (url: URL) => void,
+    ) {
         server.use(
             http.untyped.get("/api/tools", ({ request }) => {
                 const url = new URL(request.url);
-                if (url.searchParams.get("in_panel") === "False") {
+                captureToolsRequest?.(url);
+                if (url.searchParams.get("in_panel")?.toLowerCase() === "false") {
                     return HttpResponse.json(toolsList);
                 }
                 return HttpResponse.json([]);
@@ -234,5 +239,15 @@ describe("ToolPanel", () => {
         const formatted = count < 1000 ? `${count}` : `${Math.floor(count / 1000)}k+`;
         const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
         expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
+    });
+
+    it("does not request tool tags during default tool panel startup", async () => {
+        let toolsRequestUrl: URL | undefined;
+        await createWrapper("", false, (url) => {
+            toolsRequestUrl = url;
+        });
+
+        expect(toolsRequestUrl?.searchParams.get("in_panel")).toBe("false");
+        expect(toolsRequestUrl?.searchParams.get("include_tool_tags")).toBeNull();
     });
 });

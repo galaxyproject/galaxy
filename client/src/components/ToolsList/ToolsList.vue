@@ -9,7 +9,7 @@ import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore
 import { type ListViewMode, useUserStore } from "@/stores/userStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 
-import { createWhooshQuery, FAVORITES_KEYS } from "../Panels/utilities";
+import { buildToolTagClause, createWhooshQuery, FAVORITES_KEYS } from "../Panels/utilities";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
@@ -20,17 +20,16 @@ import ToolsListTable from "./ToolsListTable.vue";
 
 interface Props {
     name?: string;
-    section?: string;
     ontology?: string;
     id?: string;
     owner?: string;
     help?: string;
+    tag?: string | string[];
     search?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     name: "",
-    section: "",
     ontology: "",
     id: "",
     owner: "",
@@ -49,20 +48,124 @@ const toolStore = useToolStore();
 const { loading } = storeToRefs(toolStore);
 
 // Filtering Classes and Definitions
-const sectionNames = toolStore.sectionDatalist("default").map((option: { value: string; text: string }) => option.text);
 const ontologyList = computed(() =>
     toolStore.sectionDatalist("ontology:edam_topics").concat(toolStore.sectionDatalist("ontology:edam_operations")),
 );
-const validFilters = computed<Record<string, ValidFilter<string>>>(() => {
+const tagAutocompleteValues = computed(() =>
+    [...new Set(Object.values(toolStore.toolsById).flatMap((tool) => tool.tool_tags || []))].sort((left, right) =>
+        left.localeCompare(right),
+    ),
+);
+
+function normalizeToolTagValue(tag: string | string[]) {
+    return String(tag)
+        .trim()
+        .replace(/^"(.*)"$/, "$1")
+        .replace(/^'(.*)'$/, "$1");
+}
+
+function quoteToolTagValue(tag: string | string[]): string | string[] {
+    const normalizedValue = normalizeToolTagValue(tag);
+    return /\s/.test(normalizedValue) ? `"${normalizedValue.replace(/"/g, '\\"')}"` : normalizedValue;
+}
+
+function normalizeInlineFilterValue(value: string) {
+    const normalized = value.trim().replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1");
+    return /[\s,]/.test(normalized) ? `"${normalized.replace(/"/g, '\\"')}"` : normalized;
+}
+
+function buildInlineWhooshClause(key: string, value: string) {
+    const normalizedValue = normalizeInlineFilterValue(value);
+
+    if (key === "tag") {
+        return buildToolTagClause(value);
+    }
+    if (key === "ontology") {
+        if (value.includes("operation")) {
+            return `edam_operations:(${normalizedValue})`;
+        }
+        if (value.includes("topic")) {
+            return `edam_topics:(${normalizedValue})`;
+        }
+    }
+    if (key === "id") {
+        return `id_exact:(${normalizedValue})`;
+    }
+    if (key === "name") {
+        return `(name:(${normalizedValue}) name_exact:(${normalizedValue}) description:(${normalizedValue}))`;
+    }
+
+    return `${key}:(${normalizedValue})`;
+}
+
+type InlineFilterClause = {
+    key: string;
+    value: string;
+};
+
+function parseInlineFilterClauses(searchText: string) {
+    const clauses: InlineFilterClause[] = [];
+    const filterClause = /(^|\s)((tag|ontology|id|owner|help|name):(?:"([^"]*)"|'([^']*)'|([^\s"']+)))/g;
+    let consumedText = "";
+    let cursor = 0;
+    let match;
+
+    while ((match = filterClause.exec(searchText)) !== null) {
+        const [fullMatch, leadingWhitespace = "", , key = "", quotedDouble, quotedSingle, unquotedValue] = match;
+        const clauseStart = match.index + leadingWhitespace.length;
+        const clauseLength = fullMatch.length - leadingWhitespace.length;
+        const value = quotedDouble ?? quotedSingle ?? unquotedValue;
+
+        if (value) {
+            clauses.push({ key, value });
+        }
+
+        consumedText += searchText.slice(cursor, clauseStart);
+        consumedText += " ".repeat(clauseLength);
+        cursor = clauseStart + clauseLength;
+    }
+
+    if (clauses.length === 0) {
+        return null;
+    }
+
+    consumedText += searchText.slice(cursor);
+    const remainder = consumedText.replace(/\s+/g, " ").trim();
+
+    return {
+        remainder,
+        clauses,
+    };
+}
+
+function hasExplicitBooleanQuery(searchText: string) {
+    return /\b(?:AND|OR|NOT)\b/.test(searchText);
+}
+
+function translateInlineStructuredSearch(searchText: string) {
+    return searchText.replace(
+        /(^|\s)((tag|ontology|id|owner|help|name):(?:"([^"]*)"|'([^']*)'|([^\s"']+)))/g,
+        (_fullMatch, leadingWhitespace = "", _clause, key = "", quotedDouble, quotedSingle, unquotedValue) => {
+            const value = quotedDouble ?? quotedSingle ?? unquotedValue;
+            return `${leadingWhitespace}${buildInlineWhooshClause(key, value)}`;
+        },
+    );
+}
+
+function buildMixedStructuredWhooshQuery(searchText: string) {
+    const parsed = parseInlineFilterClauses(searchText);
+    if (!parsed || !parsed.remainder) {
+        return null;
+    }
+
+    const translatedClauses = parsed.clauses.map(({ key, value }) => buildInlineWhooshClause(key, value));
+    const filtersClause = translatedClauses.length > 1 ? `(${translatedClauses.join(" AND ")})` : translatedClauses[0];
+    return `(${parsed.remainder}) AND (${filtersClause})`;
+}
+
+const validFilters = computed<Record<string, ValidFilter<string | string[]>>>(() => {
     return {
         name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
-        section: {
-            placeholder: "section",
-            type: String,
-            handler: contains("section"),
-            datalist: sectionNames,
-            menuItem: true,
-        },
         ontology: {
             placeholder: "EDAM ontology",
             type: String,
@@ -73,6 +176,12 @@ const validFilters = computed<Record<string, ValidFilter<string>>>(() => {
         id: { placeholder: "id", type: String, handler: contains("id"), menuItem: true },
         owner: { placeholder: "repository owner", type: String, handler: contains("owner"), menuItem: true },
         help: { placeholder: "help text", type: String, handler: contains("help"), menuItem: true },
+        tag: {
+            placeholder: "tag",
+            type: "MultiTags",
+            handler: contains("tag", undefined, quoteToolTagValue),
+            menuItem: false,
+        },
     };
 });
 // TODO: We need to use double quotes as opposed to the default single quotes in the Filtering class
@@ -81,16 +190,63 @@ const validFilters = computed<Record<string, ValidFilter<string>>>(() => {
 // See: https://whoosh.readthedocs.io/en/latest/querylang.html#query
 // For now, I've changed the `quoteStrings` param to `false` to avoid issues with the quotes, and added
 // a "hint" to the `FilterMenu` help text.
-const ToolFilters = computed<Filtering<string>>(() => new Filtering(validFilters.value, undefined, false, false));
+const ToolFilters = computed<Filtering<string | string[]>>(
+    () => new Filtering(validFilters.value, undefined, false, false),
+);
+
+function normalizePropsToFilterSettings(routeProps: Props): FilterSettings {
+    const filters: FilterSettings = {};
+    const stringFilters: Array<keyof Pick<Props, "name" | "ontology" | "id" | "owner" | "help">> = [
+        "name",
+        "ontology",
+        "id",
+        "owner",
+        "help",
+    ];
+
+    for (const key of stringFilters) {
+        const value = routeProps[key];
+        if (value) {
+            filters[key] = value;
+        }
+    }
+
+    const tags = Array.isArray(routeProps.tag) ? routeProps.tag.filter(Boolean) : routeProps.tag ? [routeProps.tag] : [];
+    if (tags.length > 0) {
+        filters.tag = tags;
+    }
+
+    return filters;
+}
+
+function normalizeFilterSettings(settings: FilterSettings): FilterSettings {
+    const normalized: FilterSettings = { ...settings };
+
+    if (Array.isArray(normalized.tag)) {
+        const tags = normalized.tag.filter(Boolean).map(normalizeToolTagValue);
+        if (tags.length > 0) {
+            normalized.tag = tags;
+        } else {
+            delete normalized.tag;
+        }
+    } else {
+        delete normalized.tag;
+    }
+
+    return normalized;
+}
 
 /** The filters derived from the `filterText` via the `Filtering` class. */
 const filterSettings = computed<FilterSettings>(() =>
-    Object.fromEntries(ToolFilters.value.getFiltersForText(filterText.value)),
+    normalizeFilterSettings(Object.fromEntries(ToolFilters.value.getFiltersForText(filterText.value)) as FilterSettings),
 );
 
 // `FilterMenu` Component Props
 const showAdvanced = ref(false);
-const filterText = ref(ToolFilters.value.applyFiltersToText(props, "") || props.search);
+const initialFilters = normalizePropsToFilterSettings(props);
+const filterText = ref(
+    ToolFilters.value.applyFiltersToText(initialFilters as Record<string, string | string[]>, "") || props.search,
+);
 const toolFilterMenu = ref<InstanceType<typeof FilterMenu> | null>(null);
 const initialFocusDone = ref(false);
 
@@ -108,42 +264,66 @@ watch(
 
 const showFavorites = computed(() => FAVORITES_KEYS.includes(filterText.value.trim()));
 const favoritesButtonTitle = computed(() => (showFavorites.value ? "Hide favorite tools" : "Show favorite tools"));
+const translatedBooleanWhooshQuery = computed(() =>
+    hasExplicitBooleanQuery(filterText.value) ? translateInlineStructuredSearch(filterText.value.trim()) : null,
+);
+const mixedStructuredWhooshQuery = computed(() =>
+    translatedBooleanWhooshQuery.value ? null : buildMixedStructuredWhooshQuery(filterText.value.trim()),
+);
+const structuredFilterText = computed(() =>
+    Object.keys(filterSettings.value).length
+        ? ToolFilters.value.applyFiltersToText(filterSettings.value as Record<string, string | string[]>, "").trim()
+        : "",
+);
+const shouldPreserveRawSearchText = computed(
+    () =>
+        (translatedBooleanWhooshQuery.value || mixedStructuredWhooshQuery.value) &&
+        structuredFilterText.value !== filterText.value.trim(),
+);
 
 /** The backend whoosh query based on the current filters (if they can be derived from the text;
  * otherwise the raw search text itself). */
 const whooshQuery = computed(() =>
-    Object.keys(filterSettings.value).length ? createWhooshQuery(filterSettings.value) : filterText.value.trim(),
+    translatedBooleanWhooshQuery.value ||
+    mixedStructuredWhooshQuery.value ||
+    (Object.keys(filterSettings.value).length ? createWhooshQuery(filterSettings.value) : filterText.value.trim()),
 );
 
 /** The tools loaded from the store based on the `whooshQuery`. */
 const itemsLoaded = computed<Tool[]>(() => Object.values(toolStore.getToolsById(whooshQuery.value)));
 
 /** There is currently an active `owner:` filter */
-const hasOwnerFilter = computed(() =>
-    Boolean(ToolFilters.value.getFilterValue(filterText.value, "owner")?.replace(/^"(.*)"$/, "$1")),
-);
+const hasOwnerFilter = computed(() => {
+    const ownerFilter = ToolFilters.value.getFilterValue(filterText.value, "owner");
+    return typeof ownerFilter === "string" && Boolean(ownerFilter.replace(/^"(.*)"$/, "$1"));
+});
 
 // As soon as we have filters creating the whoosh query, or a raw search text, push search to router
 watch(
     () => whooshQuery.value,
     async (newQuery) => {
-        const routerParams: { path: string; query?: FilterSettings } = { path: "/tools/list" };
-        if (Object.keys(filterSettings.value).length) {
-            routerParams.query = filterSettings.value;
+        const routerParams: { path: string; query?: Record<string, string | string[]> } = { path: "/tools/list" };
+        if (shouldPreserveRawSearchText.value) {
+            routerParams.query = { search: filterText.value.trim() };
+        } else if (Object.keys(filterSettings.value).length) {
+            routerParams.query = Object.fromEntries(
+                Object.entries(filterSettings.value).filter(([, value]) => value !== undefined),
+            ) as Record<string, string | string[]>;
         } else if (newQuery) {
-            routerParams.query = { search: newQuery };
+            routerParams.query = { search: filterText.value.trim() };
         }
         router.push(routerParams);
+        await searchTools(newQuery);
     },
 );
 
 // The component mounts with the whooshQuery already generated; perform fetch!
-searchTools();
-async function searchTools() {
-    await toolStore.fetchTools(whooshQuery.value);
+searchTools(whooshQuery.value);
+async function searchTools(query: string) {
+    await toolStore.fetchTools(query, { includeToolTags: true });
 }
 
-function applyFilter(filter: string, value: string) {
+function applyFilter(filter: string, value: string | string[]) {
     filterText.value = ToolFilters.value.setFilterValue(filterText.value, filter, value);
 }
 
@@ -183,6 +363,8 @@ function onToggleView(newView: ListViewMode) {
                     :debounce-delay="400"
                     :filter-text.sync="filterText"
                     :filter-class="ToolFilters"
+                    :autocomplete-values="tagAutocompleteValues"
+                    autocomplete-prefix="tag:"
                     has-help
                     :loading="loading"
                     :show-advanced.sync="showAdvanced">
@@ -198,14 +380,21 @@ function onToggleView(newView: ListViewMode) {
                                 <ul>
                                     <li>
                                         <i>
-                                            Clicking on the Section, Repo or Owner labels in the Search Results will
-                                            activate the according filter.
+                                            Clicking on the Ontology, Owner, or Tag labels in the search results will
+                                            activate the matching filter.
                                         </i>
                                     </li>
                                     <li>
                                         <i>
                                             To find exact matches, you need to use double quotes (e.g.:
                                             <code>"Get Data"</code>) around the search term.
+                                        </i>
+                                    </li>
+                                    <li>
+                                        <i>
+                                            You can write explicit boolean tag expressions directly in the search bar,
+                                            for example <code>tag:collection_ops OR tag:data_cleanup</code>. Typing
+                                            <code>tag:</code> will also suggest known curated tags.
                                         </i>
                                     </li>
                                 </ul>
@@ -215,8 +404,6 @@ function onToggleView(newView: ListViewMode) {
                             <dl>
                                 <dt><code>name</code></dt>
                                 <dd>The tool name (stored as tool.name + tool.description in the XML)</dd>
-                                <dt><code>section</code></dt>
-                                <dd>The tool section is based on the default tool panel view</dd>
                                 <dt><code>ontology</code></dt>
                                 <dd>
                                     This is the EDAM ontology term that is associated with the tool. Example inputs:
@@ -231,6 +418,13 @@ function onToggleView(newView: ListViewMode) {
                                     , this <i>owner</i> filter allows you to search for tools from a specific ToolShed
                                     repository <b>owner</b>.
                                 </dd>
+                                <dt><code>tag</code></dt>
+                                <dd>
+                                    A curated tool tag. Type it directly in the search bar, for example
+                                    <code>tag:foo</code>, or use boolean expressions such as
+                                    <code>tag:foo OR tag:bar</code>. Multi-word tags should be quoted, for example
+                                    <code>tag:"data cleanup"</code>.
+                                </dd>
                                 <dt><code>help text</code></dt>
                                 <dd>
                                     This is like a keyword search: you can search for keywords that might exist in a
@@ -238,6 +432,17 @@ function onToggleView(newView: ListViewMode) {
                                     <i>"genome, RNA, minimap"</i>
                                 </dd>
                             </dl>
+                            <p>Examples:</p>
+                            <ul>
+                                <li>
+                                    Match tools tagged with either collection work or cleanup:
+                                    <code>tag:collection_ops OR tag:data_cleanup</code>
+                                </li>
+                                <li>
+                                    Match a multi-word tag exactly:
+                                    <code>tag:"data cleanup"</code>
+                                </li>
+                            </ul>
                         </div>
                     </template>
                 </FilterMenu>

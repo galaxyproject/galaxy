@@ -382,7 +382,10 @@ export default class Filtering<T> {
                         newFilterText += `is:${key}`;
                     }
                 } else if (this.validFilters[key]?.type == "MultiTags" && Array.isArray(value) && value.length > 0) {
-                    newFilterText += `${value.map((v) => `${this.toAliasKey(key)}${v}`).join(" ")}`;
+                    const convertedValues = value
+                        .map((v) => this.getConvertedValue(key, v, backendFormatted))
+                        .filter((v) => v !== undefined) as T[];
+                    newFilterText += `${convertedValues.map((v) => `${this.toAliasKey(key)}${v}`).join(" ")}`;
                 } else if (this.quoteStrings && String(value).includes(" ")) {
                     newFilterText += `${this.toAliasKey(key)}'${value}'`;
                 } else {
