@@ -217,8 +217,8 @@ defineExpose({ triggerImport });
 
                         <TrsTool
                             :trs-tool="item.data"
-                            @onImport="(versionId: string) => onVersionSelected(item.data, versionId)"
-                            @onSelect="(versionId: string) => onVersionSelected(item.data, versionId)" />
+                            @onImport="onVersionSelected(item.data, $event)"
+                            @onSelect="onVersionSelected(item.data, $event)" />
                     </BCard>
                 </template>
 
