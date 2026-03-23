@@ -40,6 +40,7 @@ from galaxy.web.framework.base import walk_controller_modules
 
 if TYPE_CHECKING:
     from starlette.background import BackgroundTask
+    from starlette.routing import BaseRoute
     from starlette.types import (
         Receive,
         Scope,
@@ -245,14 +246,14 @@ def add_request_id_middleware(app: FastAPI):
     app.add_middleware(RawContextMiddleware, plugins=(RequestIdPlugin(force_new_uuid=True),))
 
 
-def build_route_name_index(app: FastAPI) -> dict[str, list]:
+def build_route_name_index(app: FastAPI) -> dict[str, list["BaseRoute"]]:
     """Build a name -> [route] index for O(1) route lookup.
 
     Routes are immutable after app startup, so this index is built once
     and reused for all subsequent requests. For most route names there
     is exactly one candidate, making lookups O(1) instead of O(n).
     """
-    index: dict[str, list] = {}
+    index: dict[str, list[BaseRoute]] = {}
     for route in app.routes:
         name = getattr(route, "name", None)
         if name:
