@@ -14,6 +14,33 @@ from playwright.sync_api import (
     ElementHandle,
     JSHandle,
 )
+from selenium.webdriver.common.keys import Keys
+
+# Map Selenium Key unicode constants to Playwright key names
+_SELENIUM_KEY_TO_PLAYWRIGHT = {
+    Keys.CONTROL: "Control",
+    Keys.COMMAND: "Meta",
+    Keys.META: "Meta",
+    Keys.SHIFT: "Shift",
+    Keys.ALT: "Alt",
+    Keys.ENTER: "Enter",
+    Keys.RETURN: "Enter",
+    Keys.ESCAPE: "Escape",
+    Keys.BACKSPACE: "Backspace",
+    Keys.DELETE: "Delete",
+    Keys.TAB: "Tab",
+    Keys.SPACE: " ",
+    Keys.ARROW_DOWN: "ArrowDown",
+    Keys.ARROW_UP: "ArrowUp",
+    Keys.ARROW_LEFT: "ArrowLeft",
+    Keys.ARROW_RIGHT: "ArrowRight",
+    Keys.HOME: "Home",
+    Keys.END: "End",
+    Keys.PAGE_UP: "PageUp",
+    Keys.PAGE_DOWN: "PageDown",
+}
+
+_SELENIUM_MODIFIERS = {Keys.CONTROL, Keys.COMMAND, Keys.META, Keys.SHIFT, Keys.ALT}
 
 if TYPE_CHECKING:
     from .has_playwright_driver import HasPlaywrightDriver
@@ -69,23 +96,43 @@ class PlaywrightElement:
         """
         Send keys to the element (type text).
 
-        Uses focus() + cursor-to-end to match Selenium's send_keys behavior
-        of appending text. Playwright's click() positions cursor at click
-        point (center of element), which would insert text mid-content.
+        Translates Selenium Keys constants to Playwright keyboard actions.
+        Modifier keys (Control, Command, etc.) combine with the next key
+        as a keyboard shortcut (e.g. Keys.CONTROL, "a" -> "Control+a").
         """
-        text = "".join(str(v) for v in value)
         self._element.focus()
-        # setSelectionRange is not supported on email, number, date, etc. inputs
-        # per the HTML spec. For those types, use the End key to move cursor to end.
-        input_type = self._element.evaluate("el => (el.type || '').toLowerCase()")
-        no_selection_range_types = {"email", "number", "date", "month", "week", "time", "datetime-local"}
-        if input_type in no_selection_range_types:
-            self._element.press("End")
+        # Flatten all args into a single character stream
+        all_chars = "".join(str(v) for v in value)
+        has_special = any(c in _SELENIUM_KEY_TO_PLAYWRIGHT for c in all_chars)
+        if not has_special:
+            # setSelectionRange is not supported on email, number, date, etc. inputs
+            # per the HTML spec. For those types, use the End key to move cursor to end.
+            input_type = self._element.evaluate("el => (el.type || '').toLowerCase()")
+            no_selection_range_types = {"email", "number", "date", "month", "week", "time", "datetime-local"}
+            if input_type in no_selection_range_types:
+                self._element.press("End")
+            else:
+                self._element.evaluate(
+                    "el => { if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length) }"
+                )
+            self._element.type(all_chars)
         else:
-            self._element.evaluate(
-                "el => { if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length) }"
-            )
-        self._element.type(text)
+            modifiers: list[str] = []
+            for char in all_chars:
+                pw_key = _SELENIUM_KEY_TO_PLAYWRIGHT.get(char)
+                if pw_key and char in _SELENIUM_MODIFIERS:
+                    modifiers.append(pw_key)
+                elif pw_key:
+                    combo = "+".join(modifiers + [pw_key])
+                    self._element.press(combo)
+                    modifiers.clear()
+                else:
+                    if modifiers:
+                        combo = "+".join(modifiers + [char])
+                        self._element.press(combo)
+                        modifiers.clear()
+                    else:
+                        self._element.type(char)
 
     def clear(self) -> None:
         """

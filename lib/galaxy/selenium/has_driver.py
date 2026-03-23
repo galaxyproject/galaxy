@@ -173,6 +173,10 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         self.driver.get(url)
 
+    def refresh(self) -> None:
+        """Reload the current page."""
+        self.driver.refresh()
+
     def re_get_with_query_params(self, params_str: str):
         driver = self.driver
         new_url = driver.current_url

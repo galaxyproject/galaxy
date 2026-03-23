@@ -315,6 +315,10 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         self.page.goto(url)
 
+    def refresh(self) -> None:
+        """Reload the current page."""
+        self.page.reload()
+
     def re_get_with_query_params(self, params_str: str):
         """Add query parameters to current URL and reload."""
         current_url = self.page.url
@@ -773,7 +777,10 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def _hover(self, element: ElementHandle) -> None:
         """Internal implementation of hover."""
-        element.hover()
+        # force=True bypasses actionability checks that fail when overlapping
+        # UI elements (e.g. delete-terminal-button) intercept pointer events.
+        # Hover is non-destructive so this is safe.
+        element.hover(force=True)
 
     def move_to_and_click(self, element: WebElementProtocol) -> None:
         """
@@ -788,8 +795,8 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
     def _move_to_and_click(self, element: ElementHandle) -> None:
         """Internal implementation of move_to_and_click."""
-        element.hover()
-        element.click()
+        element.hover(force=True)
+        element.click(force=True)
 
     def drag_and_drop(self, source: WebElementProtocol, target: WebElementProtocol) -> None:
         """
@@ -807,23 +814,18 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
         """
         Internal implementation of drag and drop.
 
-        Uses JavaScript to simulate drag and drop events.
+        Creates a real DataTransfer via evaluate_handle so setData/getData
+        work across the full drag event sequence (unlike synthetic DragEvents
+        where Chrome restricts getData to return empty).
         """
-        self.page.evaluate(
-            """
-            (elements) => {
-                const [source, target] = elements;
-                const dataTransfer = new DataTransfer();
-                const dragstart = new DragEvent('dragstart', { dataTransfer, bubbles: true });
-                const dragover = new DragEvent('dragover', { dataTransfer, bubbles: true });
-                const drop = new DragEvent('drop', { dataTransfer, bubbles: true });
-                source.dispatchEvent(dragstart);
-                target.dispatchEvent(dragover);
-                target.dispatchEvent(drop);
-            }
-            """,
-            [source, target],
-        )
+        dt = self.page.evaluate_handle("() => new DataTransfer()")
+        source.dispatch_event("pointerdown")
+        source.dispatch_event("dragstart", {"dataTransfer": dt})
+        target.dispatch_event("dragenter", {"dataTransfer": dt})
+        target.dispatch_event("dragover", {"dataTransfer": dt})
+        target.dispatch_event("drop", {"dataTransfer": dt})
+        source.dispatch_event("dragend", {"dataTransfer": dt})
+        source.dispatch_event("pointerup")
 
     def action_chains(self):
         """

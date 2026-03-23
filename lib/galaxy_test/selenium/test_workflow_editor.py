@@ -2,7 +2,11 @@ import json
 from typing import (
     cast,
     Optional,
+    TYPE_CHECKING,
 )
+
+if TYPE_CHECKING:
+    from galaxy.selenium.has_playwright_driver import HasPlaywrightDriver
 
 import yaml
 from selenium.webdriver.common.action_chains import ActionChains
@@ -58,7 +62,6 @@ CHIPSEQ_COLUMNS = [
 class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions):
     ensure_registered = True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_basics(self):
         editor = self.components.workflow_editor
@@ -81,7 +84,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
 
         self.screenshot("workflow_editor_center_pane_maximized")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_edit_annotation(self):
         editor = self.components.workflow_editor
@@ -98,7 +100,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.workflow_index_open_with_name(name)
         self.assert_wf_annotation_is(new_annotation)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_edit_name(self):
         name = self.create_and_wait_for_new_workflow_in_editor()
@@ -110,7 +111,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.workflow_index_open_with_name(new_name)
         self.assert_wf_name_is(name)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_edit_license(self):
         editor = self.components.workflow_editor
@@ -124,7 +124,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         self.workflow_index_open_with_name(name)
         assert "MIT" in self.workflow_editor_license_text()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_parameter_regex_validation(self):
         editor = self.components.workflow_editor
@@ -154,7 +153,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         element = workflow_run.run_error.wait_for_present()
         assert "input must start with moocow" in element.text
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_int_parameter_minimum_validation(self):
         editor = self.components.workflow_editor
@@ -181,7 +179,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         # in parameter validators
         assert "Value ('3') must fulfill (4 <= value <= +infinity)" in element.text, element.text
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_float_parameter_maximum_validation(self):
         editor = self.components.workflow_editor
@@ -206,7 +203,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         # friendly.
         assert "Value ('3.2') must fulfill (-infinity <= value <= 3.14)" in element.text, element.text
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_optional_select_data_field(self):
         editor = self.components.workflow_editor
@@ -235,7 +231,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         tool_state = json.loads(workflow["steps"]["0"]["tool_state"])
         assert tool_state["select_single"] == ""
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_data_input(self):
         editor = self.components.workflow_editor
@@ -260,7 +255,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         data_input_node.wait_for_absent()
         self.screenshot("workflow_editor_data_input_deleted")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_collection_input(self):
         editor = self.components.workflow_editor
@@ -326,7 +320,6 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows, UsesWorkflowAssertions
         assert control["type"] == "element_identifier"
         assert control["optional"] is True
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_data_column_input_editing(self):
         self.open_in_workflow_editor("""
@@ -351,12 +344,11 @@ steps:
         self.set_text_element(columns, "4\n5\n6")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
-        self.driver.refresh()
+        self.refresh()
         node.title.wait_for_and_click()
         textarea_columns = columns.wait_for_visible()
         assert textarea_columns.get_attribute("value") == "4\n5\n6"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_integer_input(self):
         editor = self.components.workflow_editor
@@ -382,7 +374,6 @@ steps:
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_parameter_input_deleted")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_non_data_connections(self):
         self.open_in_workflow_editor("""
@@ -436,7 +427,6 @@ steps:
         )
         self.assert_connected("input_int#output", "tool_exec#inttest")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_non_data_map_over_carried_through(self):
         # Use auto_layout=false, which prevents placing any
@@ -466,7 +456,6 @@ steps:
         self.workflow_editor_connect("text_input_step#out_file1", "collection_input#input1")
         self.assert_connected("text_input_step#out_file1", "collection_input#input1")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_connecting_display_in_upload_false_connections(self):
         self.open_in_workflow_editor("""
@@ -481,7 +470,6 @@ steps:
         self.workflow_editor_connect("step1#qname_input_sorted_bam_output", "step2#input5")
         self.assert_connected("step1#qname_input_sorted_bam_output", "step2#input5")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_existing_connections(self):
         self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -504,7 +492,6 @@ steps:
         )
         self.assert_connected("input1#output", "first_cat#input1")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_reconnecting_nodes(self):
         name = self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -518,14 +505,12 @@ steps:
         self.workflow_index_open_with_name(name)
         self.assert_connected("input1#output", "first_cat#input1")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rendering_output_collection_connections(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_OUTPUT_COLLECTION)
         self.workflow_editor_maximize_center_pane()
         self.screenshot("workflow_editor_output_collections")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_simple_mapping_connections(self):
         self.open_in_workflow_editor(WORKFLOW_SIMPLE_MAPPING)
@@ -539,14 +524,12 @@ steps:
         self.workflow_editor_connect("input1#output", "cat#input1")
         self.assert_input_mapped("cat#input1")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rendering_simple_nested_workflow(self):
         self.open_in_workflow_editor(WORKFLOW_NESTED_SIMPLE)
         self.workflow_editor_maximize_center_pane()
         self.screenshot("workflow_editor_simple_nested")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_best_practices_input_label(self):
         editor = self.components.workflow_editor
@@ -596,7 +579,6 @@ steps:
         self.assert_connected(rule_output, random_lines_input)
         self.assert_input_mapped(random_lines_input)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_rendering_rules_workflow_2(self):
         self.open_in_workflow_editor(WORKFLOW_WITH_RULES_2)
@@ -645,7 +627,6 @@ steps:
         # to a list:list, so there should be no mapping anymore even after connected.
         self.assert_input_not_mapped(copy_list_input)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_save_as(self):
         name = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -656,7 +637,6 @@ steps:
 
         self.components.workflow_editor.save_as_activity.wait_for_and_click()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_tool_upgrade(self):
         workflow_populator = self.workflow_populator
@@ -690,7 +670,6 @@ steps:
         workflow = self.workflow_populator.download_workflow(workflow_id)
         assert workflow["steps"]["0"]["tool_version"] == "0.1+galaxy6"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_tool_upgrade_all_tools(self):
         editor = self.components.workflow_editor
@@ -707,7 +686,6 @@ steps:
         version = node.get_attribute("data-version")
         assert version == "0.2"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_tool_upgrade_message(self):
         workflow_populator = self.workflow_populator
@@ -719,7 +697,6 @@ steps:
         self.components.workflow_editor.modal_button_continue.wait_for_and_click()
         self.assert_workflow_has_changes_and_save()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_subworkflow_tool_upgrade_message(self):
         workflow_populator = self.workflow_populator
@@ -755,7 +732,6 @@ steps:
         element.wait_for_and_send_keys(Keys.BACKSPACE)
         element.wait_for_and_send_keys(value)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_change_datatype(self):
         self.open_in_workflow_editor("""
@@ -791,7 +767,6 @@ steps:
         # Assert connection is valid
         self.assert_connected("create_2#out_file1", "checksum#input")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_change_datatype_post_job_action_lost_regression(self):
         self.open_in_workflow_editor("""
@@ -814,7 +789,6 @@ steps:
         node.wait_for_and_click()
         self.assert_connected("create_2#out_file1", "metadata_bam#input_bam")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_change_datatype_in_subworkflow(self):
         self.open_in_workflow_editor("""
@@ -870,7 +844,6 @@ steps:
         node = editor.node._(label="create_2")
         node.wait_for_and_click()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_duplicate_node(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -913,7 +886,6 @@ steps:
         assert len(source_step["post_job_actions"]) == len(cloned_step["post_job_actions"]) == 4
         assert source_step["post_job_actions"] == cloned_step["post_job_actions"]
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_embed_workflow(self):
         self.setup_subworkflow()
@@ -954,7 +926,6 @@ steps:
         assert subworkflow_step["input_connections"]["input1"]["input_subworkflow_step_id"] == 0
         return child_workflow_name
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_insert_steps(self):
         steps_to_insert = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -971,11 +942,10 @@ steps:
 
     def _download_current_workflow(self):
         self.sleep_for(self.wait_types.DATABASE_OPERATION)
-        workflow_id = self.driver.current_url.split("id=")[1]
+        workflow_id = self.current_url.split("id=")[1]
         workflow = self.workflow_populator.download_workflow(workflow_id)
         return workflow
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_create_conditional_step(self):
         editor = self.components.workflow_editor
@@ -1005,13 +975,13 @@ steps:
         # Assert no when input before making step conditional
         conditional_node.input_terminal(name="when").wait_for_absent()
         conditional_toggle = editor.step_when.wait_for_present()
-        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        self.move_to_and_click(conditional_toggle)
         # Toggling conditional should cause when input to appear
         conditional_node.input_terminal(name="when").wait_for_present()
-        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        self.move_to_and_click(conditional_toggle)
         # Toggling conditional should cause when input to disappear
         conditional_node.input_terminal(name="when").wait_for_absent()
-        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        self.move_to_and_click(conditional_toggle)
         conditional_node.input_terminal(name="when").wait_for_present()
         # Output connection should be invalid, as output from conditional step is potentially null
         self.assert_connection_invalid("conditional_step#out_file1", "downstream_step#input1")
@@ -1026,6 +996,7 @@ steps:
         param_type_element = editor.param_type_form.wait_for_present()
         self.switch_param_type(param_type_element, "Text")
         self.assert_connection_invalid("param_input#output", "conditional_step#when")
+        editor.node_inspector_close.wait_for_and_click()
         self.workflow_editor_destroy_connection("conditional_step#when")
         # Make sure the when input is still shown
         conditional_node.input_terminal(name="when").wait_for_present()
@@ -1057,11 +1028,18 @@ steps:
         self.assert_workflow_has_changes_and_save()
 
     def switch_param_type(self, element, param_type):
-        self.action_chains().move_to_element(element).click().pause(1).send_keys(param_type).pause(1).send_keys(
-            Keys.ENTER
-        ).perform()
+        if self.backend_type == "playwright":
+            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+            element.click()
+            self.sleep_for(self.wait_types.UX_RENDER)
+            pw_driver.page.keyboard.type(param_type)
+            self.sleep_for(self.wait_types.UX_RENDER)
+            pw_driver.page.keyboard.press("Enter")
+        else:
+            self.action_chains().move_to_element(element).click().pause(1).send_keys(param_type).pause(1).send_keys(
+                Keys.ENTER
+            ).perform()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_invalid_tool_state(self):
         workflow_populator = self.workflow_populator
@@ -1072,7 +1050,6 @@ steps:
         self.assert_modal_has_text("Using default: '1'")
         self.screenshot("workflow_editor_invalid_state")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_missing_tools(self):
         workflow_populator = self.workflow_populator
@@ -1146,7 +1123,6 @@ steps:
         output_connector.send_keys(Keys.SPACE)
         assert self.driver.switch_to.active_element.text == "No compatible input found in workflow"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_insert_input_handling(self):
         self.open_in_workflow_editor("""class: GalaxyWorkflow
@@ -1165,7 +1141,6 @@ steps:
         node.input_terminal(name="datasets_1|input").wait_for_present()
         self.assert_workflow_has_changes_and_save()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_workflow_output_handling(self):
         self.open_in_workflow_editor(
@@ -1237,7 +1212,6 @@ steps:
         # should not show error
         editor.duplicate_label_error(output="out_file1").wait_for_absent()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_map_over_output_indicator(self):
         self.open_in_workflow_editor("""
@@ -1261,7 +1235,6 @@ steps:
         self.workflow_editor_destroy_connection("filter#how|filter_source")
         self.assert_node_output_is("filter#output_filtered", "list")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_place_comments(self):
         editor = self.components.workflow_editor
@@ -1277,12 +1250,12 @@ steps:
         editor.tool_bar.toggle_italic.wait_for_and_click()
         editor.tool_bar.color(color="pink").wait_for_and_click()
         editor.tool_bar.font_size.wait_for_and_click()
-        self.action_chains().send_keys(Keys.LEFT * 5).send_keys(Keys.RIGHT).perform()
+        self.send_keys_to_page(Keys.LEFT * 5 + Keys.RIGHT)
 
         # place text comment
         self.mouse_drag(from_element=canvas, from_offset=(-200, -200), to_offset=(400, 110))
 
-        self.action_chains().send_keys("Hello World").perform()
+        self.send_keys_to_page("Hello World")
 
         # check if all options were applied
         comment_content: WebElementProtocol = editor.comment.text_inner.wait_for_visible()
@@ -1306,7 +1279,7 @@ steps:
         editor.tool_bar.tool(tool="markdown_comment").wait_for_and_click()
         editor.tool_bar.color(color="lime").wait_for_and_click()
         self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 220))
-        self.action_chains().send_keys("# Hello World").perform()
+        self.send_keys_to_page("# Hello World")
 
         editor.tool_bar.tool(tool="pointer").wait_for_and_click()
 
@@ -1327,7 +1300,7 @@ steps:
         editor.tool_bar.tool(tool="frame_comment").wait_for_and_click()
         editor.tool_bar.color(color="blue").wait_for_and_click()
         self.mouse_drag(from_element=canvas, from_offset=(-200, -150), to_offset=(400, 300))
-        self.action_chains().send_keys("My Frame").perform()
+        self.send_keys_to_page("My Frame")
 
         title: WebElementProtocol = editor.comment.frame_title.wait_for_visible()
         assert title.text == "My Frame"
@@ -1345,10 +1318,10 @@ steps:
         editor.tool_bar.tool(tool="freehand_pen").wait_for_and_click()
         editor.tool_bar.color(color="green").wait_for_and_click()
         editor.tool_bar.line_thickness.wait_for_and_click()
-        self.action_chains().send_keys(Keys.RIGHT * 20).perform()
+        self.send_keys_to_page(Keys.RIGHT * 20)
 
         editor.tool_bar.smoothing.wait_for_and_click()
-        self.action_chains().send_keys(Keys.RIGHT * 10).perform()
+        self.send_keys_to_page(Keys.RIGHT * 10)
 
         self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 200))
 
@@ -1356,7 +1329,7 @@ steps:
 
         editor.tool_bar.color(color="black").wait_for_and_click()
         editor.tool_bar.line_thickness.wait_for_and_click()
-        self.action_chains().send_keys(Keys.LEFT * 20).perform()
+        self.send_keys_to_page(Keys.LEFT * 20)
         self.mouse_drag(from_element=canvas, from_offset=(-100, -100), via_offsets=[(100, 200)], to_offset=(-200, 30))
 
         # test bulk remove freehand
@@ -1365,7 +1338,7 @@ steps:
 
         # place another freehand comment and test eraser
         editor.tool_bar.line_thickness.wait_for_and_click()
-        self.action_chains().send_keys(Keys.RIGHT * 20).perform()
+        self.send_keys_to_page(Keys.RIGHT * 20)
         editor.tool_bar.color(color="orange").wait_for_and_click()
 
         self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 200))
@@ -1374,7 +1347,7 @@ steps:
 
         # delete by clicking
         editor.tool_bar.tool(tool="freehand_eraser").wait_for_and_click()
-        self.action_chains().move_to_element(freehand_comment_a).click().perform()
+        self.move_to_and_click(freehand_comment_a)
 
         editor.comment.freehand_comment.wait_for_absent()
 
@@ -1393,7 +1366,6 @@ steps:
 
         editor.comment.freehand_comment.wait_for_absent()
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_snapping(self):
         editor = self.components.workflow_editor
@@ -1407,11 +1379,11 @@ steps:
         # activate snapping and set it to max (200)
         editor.tool_bar.tool(tool="toggle_snap").wait_for_and_click()
         editor.tool_bar.snapping_distance.wait_for_and_click()
-        self.action_chains().send_keys(Keys.RIGHT * 10).perform()
+        self.send_keys_to_page(Keys.RIGHT * 10)
 
         # move the node a bit
         tool_node = editor.node._(label="tool_node").wait_for_present()
-        self.action_chains().move_to_element(tool_node).click_and_hold().move_by_offset(12, 3).release().perform()
+        self.mouse_drag(from_element=tool_node, to_offset=(12, 3))
 
         # check if editor position is snapped
         top, left = self.get_node_position("tool_node")
@@ -1421,7 +1393,7 @@ steps:
 
         # move the node a bit more
         tool_node = editor.node._(label="tool_node").wait_for_present()
-        self.action_chains().move_to_element(tool_node).click_and_hold().move_by_offset(207, -181).release().perform()
+        self.mouse_drag(from_element=tool_node, to_offset=(207, -181))
 
         # check if editor position is snapped
         top, left = self.get_node_position("tool_node")
@@ -1429,7 +1401,6 @@ steps:
         assert top % 200 == 0
         assert left % 200 == 0
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_editor_selection(self):
         editor = self.components.workflow_editor
@@ -1447,7 +1418,7 @@ steps:
 
         # select the node
         editor.node_inspector_close.wait_for_and_click()
-        self.action_chains().move_to_element(tool_node).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+        self.shift_click(tool_node)
         self.sleep_for(self.wait_types.UX_RENDER)
 
         assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 step") != -1
@@ -1544,11 +1515,14 @@ steps:
 
         return (int(width_stripped), int(height_stripped))
 
+    @retry_assertion_during_transitions
     def assert_node_output_is(self, label: str, output_type: str, subcollection_type: Optional[str] = None):
         editor = self.components.workflow_editor
         node_label, output_name = label.split("#")
         node = editor.node._(label=node_label)
         node.wait_for_present()
+        # Dismiss any stale tooltip before hovering so retry gets fresh text
+        self.click_center()
         output_element = node.output_terminal(name=output_name).wait_for_visible()
         self.hover_over(output_element)
         element = self.components._.tooltip_inner.wait_for_present()
@@ -1581,7 +1555,14 @@ steps:
 
     def assert_connected(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_visible()
+        # SVG <g> elements are considered "hidden" by Playwright even when
+        # rendered, so use wait_for_present instead of wait_for_visible
+        # with the Playwright backend.
+        connector = self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id)
+        if self._driver_impl.backend_type == "playwright":
+            connector.wait_for_present()
+        else:
+            connector.wait_for_visible()
 
     def assert_connection_invalid(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
@@ -1595,10 +1576,24 @@ steps:
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
         self.workflow_index_open()
         self.workflow_index_open_with_name(name)
+        self.workflow_editor_dismiss_state_upgrade_modal()
         if auto_layout:
             self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
             self.sleep_for(self.wait_types.UX_RENDER)
         return name
+
+    def workflow_editor_dismiss_state_upgrade_modal(self):
+        """Dismiss the StateUpgradeModal if it appears when opening a workflow.
+
+        This Bootstrap Vue modal intercepts pointer events and blocks clicks
+        on the workflow editor canvas. Wait briefly for it to potentially
+        appear, then dismiss if present.
+        """
+        editor = self.components.workflow_editor
+        self.sleep_for(self.wait_types.UX_RENDER)
+        if not editor.state_modal_body.is_absent:
+            editor.modal_button_continue.wait_for_and_click()
+            editor.state_modal_body.wait_for_absent()
 
     def workflow_editor_destroy_connection(self, sink):
         editor = self.components.workflow_editor
@@ -1637,7 +1632,19 @@ steps:
 
     def move_center_of_canvas(self, xoffset=0, yoffset=0):
         _canvas = self.find_element_by_id("canvas-container")
-        assert self.backend_type == "selenium"
-        canvas = cast(WebElement, _canvas)
-        chains = ActionChains(self.driver)
-        chains.click_and_hold(canvas).move_by_offset(xoffset=xoffset, yoffset=yoffset).release().perform()
+        if self.backend_type == "playwright":
+            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+            page = pw_driver.page
+            handle = pw_driver._unwrap_element(_canvas)
+            box = handle.bounding_box()
+            assert box is not None
+            cx = box["x"] + box["width"] / 2
+            cy = box["y"] + box["height"] / 2
+            page.mouse.move(cx, cy)
+            page.mouse.down()
+            page.mouse.move(cx + xoffset, cy + yoffset)
+            page.mouse.up()
+        else:
+            canvas = cast(WebElement, _canvas)
+            chains = ActionChains(self.driver)
+            chains.click_and_hold(canvas).move_by_offset(xoffset=xoffset, yoffset=yoffset).release().perform()

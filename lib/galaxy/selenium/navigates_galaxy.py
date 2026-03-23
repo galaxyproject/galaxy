@@ -31,8 +31,15 @@ import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 
+from .playwright_element import (
+    _SELENIUM_KEY_TO_PLAYWRIGHT,
+    _SELENIUM_MODIFIERS,
+)
+
 if TYPE_CHECKING:
     from selenium.webdriver.remote.webdriver import WebDriver
+
+    from .has_playwright_driver import HasPlaywrightDriver
 
 from galaxy.navigation.components import (
     Component,
@@ -115,6 +122,15 @@ class NullTourCallback:
         pass
 
 
+def _exception_indicates_playwright_timeout(e):
+    try:
+        from playwright._impl._errors import TimeoutError as PlaywrightTimeoutError
+
+        return isinstance(e, PlaywrightTimeoutError)
+    except ImportError:
+        return False
+
+
 def exception_seems_to_indicate_transition(e):
     """True if exception seems to indicate the page state is transitioning.
 
@@ -125,14 +141,16 @@ def exception_seems_to_indicate_transition(e):
     cause of the exception. The methods that follow use it to allow retrying actions during
     transitions.
 
-    Currently the two kinds of exceptions that we say may indicate a transition are
-    StaleElement exceptions (a DOM element grabbed at one step is no longer available)
-    and "not clickable" exceptions (so perhaps a popup modal is blocking a click).
+    Currently the kinds of exceptions that we say may indicate a transition are
+    StaleElement exceptions (a DOM element grabbed at one step is no longer available),
+    "not clickable" exceptions (so perhaps a popup modal is blocking a click), and
+    Playwright TimeoutErrors (element not yet present/visible during a transition).
     """
     return (
         exception_indicates_stale_element(e)
         or exception_indicates_not_clickable(e)
         or exception_indicates_click_intercepted(e)
+        or _exception_indicates_playwright_timeout(e)
     )
 
 
@@ -281,7 +299,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             NotImplementedError: If using Selenium backend
         """
         if self._driver_impl.backend_type == "playwright":
-            return self._driver_impl.page  # type: ignore[attr-defined]
+            return cast("HasPlaywrightDriver", self._driver_impl).page
         else:
             raise NotImplementedError("Functionality cannot be run with Selenium yet.")
 
@@ -1415,13 +1433,33 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         source_element = self.find_element_by_selector(f"#{source_id}")
         sink_element = self.find_element_by_selector(f"#{sink_id}")
-        ac = self.action_chains()
-        ac = ac.move_to_element(source_element).click_and_hold()
+
         if screenshot_partial:
-            ac = ac.move_by_offset(10, 10)
-            ac.perform()
-            self.sleep_for(self.wait_types.UX_RENDER)
-            self.screenshot(screenshot_partial)
+            if self._driver_impl.backend_type == "playwright":
+                pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+                page = pw_driver.page
+                source_handle = pw_driver._unwrap_element(source_element)
+                source_box = source_handle.bounding_box()
+                assert source_box is not None
+                page.mouse.move(
+                    source_box["x"] + source_box["width"] / 2,
+                    source_box["y"] + source_box["height"] / 2,
+                )
+                page.mouse.down()
+                page.mouse.move(
+                    source_box["x"] + source_box["width"] / 2 + 10,
+                    source_box["y"] + source_box["height"] / 2 + 10,
+                )
+                self.sleep_for(self.wait_types.UX_RENDER)
+                self.screenshot(screenshot_partial)
+                page.mouse.up()
+            else:
+                ac = self.action_chains()
+                ac = ac.move_to_element(source_element).click_and_hold()
+                ac = ac.move_by_offset(10, 10)
+                ac.perform()
+                self.sleep_for(self.wait_types.UX_RENDER)
+                self.screenshot(screenshot_partial)
         self.drag_and_drop(source_element, sink_element)
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
@@ -3020,6 +3058,47 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.wait_for_and_click_selector(search_selector)
         self.wait_for_selector_visible("#gtn-screen")
 
+    def shift_click(self, element: WebElementProtocol) -> None:
+        """Shift-click an element. Works with both Selenium and Playwright."""
+        if self._driver_impl.backend_type == "playwright":
+            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+            pw_driver._unwrap_element(element).click(modifiers=["Shift"])
+        else:
+            self.action_chains().move_to_element(element).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+
+    def send_keys_to_page(self, *value: str) -> None:
+        """Send keys to the currently focused element / page.
+
+        Replaces action_chains().send_keys(...).perform() with a backend-agnostic impl.
+        Accepts Selenium Keys constants and plain text, matching PlaywrightElement.send_keys semantics.
+        """
+        if self._driver_impl.backend_type == "playwright":
+            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+            page = pw_driver.page
+            all_chars = "".join(str(v) for v in value)
+            has_special = any(c in _SELENIUM_KEY_TO_PLAYWRIGHT for c in all_chars)
+            if not has_special:
+                page.keyboard.type(all_chars)
+            else:
+                modifiers: list[str] = []
+                for char in all_chars:
+                    pw_key = _SELENIUM_KEY_TO_PLAYWRIGHT.get(char)
+                    if pw_key and char in _SELENIUM_MODIFIERS:
+                        modifiers.append(pw_key)
+                    elif pw_key:
+                        combo = "+".join(modifiers + [pw_key])
+                        page.keyboard.press(combo)
+                        modifiers.clear()
+                    else:
+                        if modifiers:
+                            combo = "+".join(modifiers + [char])
+                            page.keyboard.press(combo)
+                            modifiers.clear()
+                        else:
+                            page.keyboard.type(char)
+        else:
+            self.action_chains().send_keys(*value).perform()
+
     def mouse_drag(
         self,
         from_element: WebElementProtocol,
@@ -3028,18 +3107,51 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         to_offset=(0, 0),
         via_offsets: Optional[list[tuple[int, int]]] = None,
     ):
-        chain = self.action_chains().move_to_element(from_element).move_by_offset(*from_offset)
-        chain = chain.click_and_hold().pause(self.wait_length(self.wait_types.UX_RENDER))
+        if self._driver_impl.backend_type == "playwright":
+            pw_driver = cast("HasPlaywrightDriver", self._driver_impl)
+            page = pw_driver.page
+            pause_ms = int(self.wait_length(self.wait_types.UX_RENDER) * 1000)
 
-        if via_offsets is not None:
-            for offset in via_offsets:
-                chain = chain.move_by_offset(*offset).pause(self.wait_length(self.wait_types.UX_RENDER))
+            from_box = pw_driver._unwrap_element(from_element).bounding_box()
+            assert from_box is not None
+            cx = from_box["x"] + from_box["width"] / 2 + from_offset[0]
+            cy = from_box["y"] + from_box["height"] / 2 + from_offset[1]
 
-        if to_element is not None:
-            chain = chain.move_to_element(to_element)
+            page.mouse.move(cx, cy)
+            page.mouse.down()
+            page.wait_for_timeout(pause_ms)
 
-        chain = chain.move_by_offset(*to_offset).pause(self.wait_length(self.wait_types.UX_RENDER)).release()
-        chain.perform()
+            if via_offsets is not None:
+                for offset in via_offsets:
+                    cx += offset[0]
+                    cy += offset[1]
+                    page.mouse.move(cx, cy)
+                    page.wait_for_timeout(pause_ms)
+
+            if to_element is not None:
+                to_box = pw_driver._unwrap_element(to_element).bounding_box()
+                assert to_box is not None
+                cx = to_box["x"] + to_box["width"] / 2
+                cy = to_box["y"] + to_box["height"] / 2
+
+            cx += to_offset[0]
+            cy += to_offset[1]
+            page.mouse.move(cx, cy)
+            page.wait_for_timeout(pause_ms)
+            page.mouse.up()
+        else:
+            chain = self.action_chains().move_to_element(from_element).move_by_offset(*from_offset)
+            chain = chain.click_and_hold().pause(self.wait_length(self.wait_types.UX_RENDER))
+
+            if via_offsets is not None:
+                for offset in via_offsets:
+                    chain = chain.move_by_offset(*offset).pause(self.wait_length(self.wait_types.UX_RENDER))
+
+            if to_element is not None:
+                chain = chain.move_to_element(to_element)
+
+            chain = chain.move_by_offset(*to_offset).pause(self.wait_length(self.wait_types.UX_RENDER)).release()
+            chain.perform()
 
 
 class NotLoggedInException(SeleniumTimeoutException):
