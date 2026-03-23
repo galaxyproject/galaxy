@@ -177,10 +177,10 @@ async function eventBuild(openModal = false) {
         collectionModalShow.value = true;
     } else {
         emit("uploaded", uploadedHistoryItemsOk.value);
+        counterRunning.value = 0;
+        eventReset();
+        emit("dismiss");
     }
-    counterRunning.value = 0;
-    eventReset();
-    emit("dismiss");
 }
 
 /** Queue is done */
@@ -592,6 +592,7 @@ defineExpose({
             :extended-collection-type="{}"
             :selected-items="selectedItemsForModal"
             :show.sync="collectionModalShow"
-            default-hide-source-items />
+            default-hide-source-items
+            @on-hide="emit('dismiss')" />
     </div>
 </template>

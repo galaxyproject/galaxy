@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheckCircle, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BLink, BModal } from "bootstrap-vue";
+import { BAlert, BLink } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { type CreateNewCollectionPayload, type HDCASummary, type HistoryItemSummary, isHDCA } from "@/api";
@@ -16,6 +16,7 @@ import { stateIsTerminal } from "@/utils/utils";
 import type { CollectionBuilderType } from "../Collections/common/buildCollectionModal";
 import type { SupportedPairedOrPairedBuilderCollectionTypes } from "./common/useCollectionCreator";
 
+import GModal from "../BaseComponents/GModal.vue";
 import ListCollectionCreator from "./ListCollectionCreator.vue";
 import PairCollectionCreator from "./PairCollectionCreator.vue";
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
@@ -205,17 +206,13 @@ defineExpose({ redrawCreator });
 
 <template>
     <component
-        :is="props.notModal ? 'div' : BModal"
+        :is="props.notModal ? 'div' : GModal"
         id="collection-creator-modal"
-        v-model="localShowToggle"
-        :busy="(fromSelection && isFetchingItems) || creatingCollection"
-        modal-class="ui-modal collection-creator-modal"
-        :hide-footer="!createdCollection && !createCollectionError"
-        ok-only
-        :ok-title="localize('Exit')"
-        ok-variant="secondary"
-        @hidden="resetCreator">
-        <template v-slot:modal-header>
+        :show.sync="localShowToggle"
+        size="medium"
+        fixed-height
+        @close="resetCreator">
+        <template v-slot:header>
             <Heading class="w-100" size="sm">
                 <div class="d-flex justify-content-between unselectable w-100">
                     <div>{{ modalTitle }}</div>
@@ -312,15 +309,3 @@ defineExpose({ redrawCreator });
             @on-cancel="hideCreator" />
     </component>
 </template>
-
-<style lang="scss">
-/** NOTE: Not using `<style scoped> here because these classes are
-`BModal` `body-class` and `content-class` and don't seem to work
-with scoped */
-.collection-creator-modal {
-    .modal-dialog {
-        width: 85%;
-        max-width: 100%;
-    }
-}
-</style>
