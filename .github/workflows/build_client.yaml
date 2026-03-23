@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: ${{ steps.node-version.outputs.version }}
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
         with:
           package_json_file: 'galaxy root/package.json'
       - name: get client commit

@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: ${{ steps.node-version.outputs.version }}
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
       - run: pnpm install --frozen-lockfile
         working-directory: client
       - name: Run ESLint
