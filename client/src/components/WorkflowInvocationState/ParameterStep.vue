@@ -34,6 +34,10 @@ function hasValidId(
     return value.id !== null && value.id !== undefined && typeof value.id === "string";
 }
 
+function isInputParameter(value: InvocationStepTypes): value is InvocationInputParameter {
+    return "parameter_value" in value;
+}
+
 function dataStepLabel(input: InvocationStepTypes): string {
     if ("label" in input && input.label) {
         return input.label;
@@ -59,12 +63,17 @@ function dataStepLabel(input: InvocationStepTypes): string {
                 :item-src="item.src"
                 :data-label="dataStepLabel(item)" />
             <div v-else-if="isData(item) && !hasValidId(item)" class="text-muted">Dataset with no ID</div>
-            <i v-else-if="item.parameter_value === null || item.parameter_value === undefined" class="text-muted">
+            <i
+                v-else-if="
+                    isInputParameter(item) && (item.parameter_value === null || item.parameter_value === undefined)
+                "
+                class="text-muted">
                 No value provided
             </i>
-            <span v-else>
+            <span v-else-if="isInputParameter(item)">
                 {{ item.parameter_value }}
             </span>
+            <span v-else class="text-muted">Unsupported input/output value</span>
         </template>
     </GTable>
 </template>
