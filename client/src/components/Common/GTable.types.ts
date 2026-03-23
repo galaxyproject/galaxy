@@ -9,6 +9,9 @@ export type SortOrder = "asc" | "desc";
 /** Table field alignment options */
 export type FieldAlignment = "left" | "center" | "right";
 
+/** Shared class value shape used by row/cell class bindings */
+export type TableClassValue = string | readonly string[] | Record<string, boolean>;
+
 /** Table field definition */
 export interface TableField {
     /** Unique key for the field (matches data property name) */
@@ -18,11 +21,11 @@ export interface TableField {
     /** Whether the column is sortable */
     sortable?: boolean;
     /** Custom CSS classes for the column */
-    class?: string;
+    class?: TableClassValue;
     /** Custom CSS classes for the header cell */
     headerClass?: string;
     /** Custom CSS classes for data cells */
-    cellClass?: string;
+    cellClass?: TableClassValue;
     /** Column alignment */
     align?: FieldAlignment;
     /** Width of the column (CSS value) */
