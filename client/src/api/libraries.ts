@@ -89,7 +89,9 @@ export async function getFolderContents(
         rethrowSimple(error);
     }
 
-    return data;
+    // Cast needed -- openapi-typescript-helpers Readable<T> widens tuples
+    // https://github.com/openapi-ts/openapi-typescript/issues/2632
+    return data as LibraryFolderContentsIndexResult;
 }
 
 export function isLibraryFolder(item: AnyLibraryFolderItem | Record<string, unknown>): item is FolderLibraryFolderItem {
