@@ -1809,10 +1809,10 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
     try:
         verify_job_metadata(
             job_stdio,
-            stdout_assertions=getattr(testdef, "stdout", None),
-            stderr_assertions=getattr(testdef, "stderr", None),
-            command_assertions=getattr(testdef, "command", None),
-            command_version_assertions=getattr(testdef, "command_version", None),
+            stdout_assertions=testdef.stdout,
+            stderr_assertions=testdef.stderr,
+            command_assertions=testdef.command_line,
+            command_version_assertions=testdef.command_version,
         )
     except AssertionError as err:
         register_exception(err)
