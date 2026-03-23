@@ -2,11 +2,13 @@
 
 import logging
 import time
+from functools import partial
 from typing import (
     Any,
     Optional,
 )
 
+import anyio
 from fastapi import Body
 
 from galaxy.exceptions import ConfigurationError
@@ -154,16 +156,20 @@ class AgentAPI:
             # Save chat exchange for feedback tracking if requested or if job_id provided
             if bool(save_exchange) or job_id:
                 if job_id:
-                    job = self.job_manager.get_accessible_job(trans, job_id)
+                    job = await anyio.to_thread.run_sync(partial(self.job_manager.get_accessible_job, trans, job_id))
                     if job:
-                        existing = self.chat_manager.get(trans, job.id)
+                        existing = await anyio.to_thread.run_sync(partial(self.chat_manager.get, trans, job.id))
                         if not existing:
-                            exchange = self.chat_manager.create(trans, job.id, response.content)
+                            exchange = await anyio.to_thread.run_sync(
+                                partial(self.chat_manager.create, trans, job.id, response.content)
+                            )
                             response.metadata["exchange_id"] = exchange.id
                 elif trans.user:
                     # Create general chat exchange for non-job error analysis
                     result = {"response": response.content, "agent_response": response.model_dump()}
-                    exchange = self.chat_manager.create_general_chat(trans, query, result, "error_analysis")
+                    exchange = await anyio.to_thread.run_sync(
+                        partial(self.chat_manager.create_general_chat, trans, query, result, "error_analysis")
+                    )
                     response.metadata["exchange_id"] = exchange.id
 
             return response
@@ -200,7 +206,9 @@ class AgentAPI:
             # Save chat exchange for feedback tracking if requested
             if bool(save_exchange) and trans.user:
                 result = {"response": response.content, "agent_response": response.model_dump()}
-                exchange = self.chat_manager.create_general_chat(trans, query, result, "custom_tool")
+                exchange = await anyio.to_thread.run_sync(
+                    partial(self.chat_manager.create_general_chat, trans, query, result, "custom_tool")
+                )
                 response.metadata["exchange_id"] = exchange.id
 
             return response

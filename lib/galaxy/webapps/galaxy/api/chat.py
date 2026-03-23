@@ -5,6 +5,7 @@ API Controller providing Chat functionality
 import json
 import logging
 import time
+from functools import partial
 from typing import (
     Annotated,
     Any,
@@ -12,6 +13,7 @@ from typing import (
     Union,
 )
 
+import anyio
 from fastapi import (
     Body,
     Path,
@@ -59,8 +61,10 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 # Keep OpenAI as a fallback option
 try:
     import openai
+    from openai import AsyncOpenAI
 except ImportError:
     openai = None  # type: ignore[assignment]
+    AsyncOpenAI = None  # type: ignore[assignment,misc]
 
 log = logging.getLogger(__name__)
 
@@ -152,9 +156,9 @@ class ChatAPI:
         job = None
         if job_id:
             # Job-based chat - check for existing responses (unless regenerate requested)
-            job = self.job_manager.get_accessible_job(trans, job_id)
+            job = await anyio.to_thread.run_sync(partial(self.job_manager.get_accessible_job, trans, job_id))
             if job and not regenerate:
-                existing_response = self.chat_manager.get(trans, job.id)
+                existing_response = await anyio.to_thread.run_sync(partial(self.chat_manager.get, trans, job.id))
                 if existing_response and existing_response.messages[0]:
                     return ChatResponse(
                         response=existing_response.messages[0].message,
@@ -176,7 +180,9 @@ class ChatAPI:
 
                 # If we have an exchange_id, ALWAYS load conversation history from database (source of truth)
                 if exchange_id:
-                    db_history = self.chat_manager.get_chat_history(trans, exchange_id, format_for_pydantic_ai=False)
+                    db_history = await anyio.to_thread.run_sync(
+                        partial(self.chat_manager.get_chat_history, trans, exchange_id, format_for_pydantic_ai=False)
+                    )
                     if db_history:
                         full_context["conversation_history"] = db_history
                     else:
@@ -197,13 +203,15 @@ class ChatAPI:
                 self._ensure_ai_configured()
                 # For legacy, use context_type from query_context if it exists
                 context_type = query_context.get("context_type") if isinstance(query_context, dict) else None
-                answer = self._get_ai_response(query_text, trans, context_type)
+                answer = await self._get_ai_response(query_text, trans, context_type)
                 result["response"] = answer
 
             # Save chat exchange to database
             if job:
                 # Job-based chat
-                exchange = self.chat_manager.create(trans, job.id, str(result["response"]))
+                exchange = await anyio.to_thread.run_sync(
+                    partial(self.chat_manager.create, trans, job.id, str(result["response"]))
+                )
                 result["exchange_id"] = exchange.id
             elif trans.user:
                 # Use the exchange_id we already extracted at the beginning
@@ -217,7 +225,9 @@ class ChatAPI:
                         "agent_response": agent_resp.model_dump() if agent_resp else None,
                     }
                     message_content = json.dumps(conversation_data)
-                    self.chat_manager.add_message(trans, exchange_id, message_content)
+                    await anyio.to_thread.run_sync(
+                        partial(self.chat_manager.add_message, trans, exchange_id, message_content)
+                    )
                     result["exchange_id"] = exchange_id
                 else:
                     # Create new exchange for first message
@@ -227,7 +237,9 @@ class ChatAPI:
                         "response": result.get("response", ""),
                         "agent_response": agent_resp.model_dump() if agent_resp else None,
                     }
-                    exchange = self.chat_manager.create_general_chat(trans, query_text, storable_result, agent_type)
+                    exchange = await anyio.to_thread.run_sync(
+                        partial(self.chat_manager.create_general_chat, trans, query_text, storable_result, agent_type)
+                    )
                     result["exchange_id"] = exchange.id
 
             result["processing_time"] = time.time() - start_time
@@ -421,7 +433,7 @@ class ChatAPI:
         if self.config.ai_api_key is None:
             raise ConfigurationError("AI API key is not configured for this instance.")
 
-    def _get_ai_response(self, query: str, trans: ProvidesUserContext, context_type: Optional[str] = None) -> str:
+    async def _get_ai_response(self, query: str, trans: ProvidesUserContext, context_type: Optional[str] = None) -> str:
         """Get response from AI using pydantic-ai Agent"""
         system_prompt = self._get_system_prompt()
         username = trans.user.username if trans.user else "Anonymous User"
@@ -432,8 +444,8 @@ class ChatAPI:
             full_system_prompt = f"{system_prompt}\n\nYou will address the user as {username}"
             agent: Agent[None, str] = Agent(model_name, system_prompt=full_system_prompt)
 
-            # Get response from the agent
-            result = agent.run_sync(query)
+            # Get response from the agent (async)
+            result = await agent.run(query)
             return result.output
         except UnexpectedModelBehavior as e:
             log.error(f"Unexpected model behavior: {e}")
@@ -442,10 +454,10 @@ class ChatAPI:
             log.error(f"Error using pydantic-ai Agent: {e}")
             # Try fallback to direct OpenAI if available
             if openai is not None:
-                return self._call_openai_directly(query, system_prompt, username)
+                return await self._call_openai_directly(query, system_prompt, username)
             raise
 
-    def _call_openai_directly(self, query: str, system_prompt: str, username: str) -> str:
+    async def _call_openai_directly(self, query: str, system_prompt: str, username: str) -> str:
         """Direct OpenAI API call as fallback"""
         try:
             messages: list[dict[str, str]] = [
@@ -456,7 +468,8 @@ class ChatAPI:
                 },
                 {"role": "user", "content": query},
             ]
-            response = openai.chat.completions.create(
+            client = AsyncOpenAI()
+            response = await client.chat.completions.create(
                 model=self.config.ai_model,
                 messages=messages,  # type: ignore[arg-type]
             )
