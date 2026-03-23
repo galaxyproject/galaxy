@@ -12,10 +12,12 @@ import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 type InvocationStepTypes = InvocationInput | InvocationInputParameter | InvocationOutput | InvocationOutputCollection;
 
-const props = defineProps<{
+interface Props {
     parameters: InvocationStepTypes[];
     styledTable?: boolean;
-}>();
+}
+
+const props = defineProps<Props>();
 
 const fields: TableField[] = [
     { key: "label", label: "Label" },
@@ -25,11 +27,13 @@ const fields: TableField[] = [
 function isData(value: unknown): value is InvocationInput | InvocationOutput | InvocationOutputCollection {
     return typeof value === "object" && value !== null && "src" in value;
 }
+
 function hasValidId(
     value: InvocationInput | InvocationOutput | InvocationOutputCollection,
 ): value is typeof value & { id: string } {
     return value.id !== null && value.id !== undefined && typeof value.id === "string";
 }
+
 function dataStepLabel(input: InvocationStepTypes): string {
     if ("label" in input && input.label) {
         return input.label;
