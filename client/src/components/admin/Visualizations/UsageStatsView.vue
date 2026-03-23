@@ -48,7 +48,7 @@
                     <h5 class="mb-0">Usage by Visualization</h5>
                 </template>
 
-                <div v-if="Object.keys(stats.stats).length === 0" class="text-center text-muted py-3">
+                <div v-if="!hasStats" class="text-center text-muted py-3">
                     No usage data available for the selected period.
                 </div>
                 <div v-else>
@@ -61,7 +61,7 @@
                         </div>
                         <div class="d-flex align-items-center">
                             <b-progress class="mr-3" style="width: 100px; height: 20px">
-                                <b-progress-bar :value="getPercentage(count as number)" :max="100" />
+                                <b-progress-bar :value="getPercentage(Number(count))" :max="100" />
                             </b-progress>
                             <b-badge variant="primary">{{ count }}</b-badge>
                         </div>
@@ -88,50 +88,45 @@ import Heading from "@/components/Common/Heading.vue";
 
 interface Props {
     loading?: boolean;
-    stats?: UsageStats;
+    stats: UsageStats;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    loading: false,
-    stats: () => ({ days: 30, stats: {} }) as UsageStats,
-});
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "refresh"): void;
 }>();
 
-const hasStats = computed(() => {
-    return props.stats && typeof props.stats.stats === "object" && Object.keys(props.stats.stats).length > 0;
-});
-
-const totalUsage = computed(() => {
-    if (!hasStats.value) {
-        return 0;
-    }
-    return Object.values(props.stats.stats).reduce((sum, count) => sum + count, 0);
-});
-
-const activeVisualizations = computed(() => {
-    if (!hasStats.value) {
-        return 0;
-    }
-    return Object.keys(props.stats.stats).length;
-});
-
-const sortedStats = computed(() => {
-    if (!hasStats.value) {
+function getStatsRecord(): Record<string, number> {
+    const raw = props.stats.stats;
+    if (!raw) {
         return {};
     }
-    const entries = Object.entries(props.stats.stats);
-    entries.sort((a, b) => (b[1] as number) - (a[1] as number));
+    const result: Record<string, number> = {};
+    for (const [k, v] of Object.entries(raw)) {
+        result[k] = Number(v);
+    }
+    return result;
+}
+
+const hasStats = computed(() => Object.keys(getStatsRecord()).length > 0);
+
+const totalUsage = computed(() => {
+    const rec = getStatsRecord();
+    return Object.values(rec).reduce((sum, count) => sum + count, 0);
+});
+
+const activeVisualizations = computed(() => Object.keys(getStatsRecord()).length);
+
+const sortedStats = computed(() => {
+    const rec = getStatsRecord();
+    const entries = Object.entries(rec);
+    entries.sort((a, b) => b[1] - a[1]);
     return Object.fromEntries(entries);
 });
 
 const maxUsage = computed(() => {
-    if (!hasStats.value) {
-        return 0;
-    }
-    const values = Object.values(props.stats.stats) as number[];
+    const values = Object.values(getStatsRecord());
     return values.length > 0 ? Math.max(...values) : 0;
 });
 
