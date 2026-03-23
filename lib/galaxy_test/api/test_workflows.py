@@ -1945,6 +1945,85 @@ steps:
         downloaded_workflow = self._download_workflow(uploaded_workflow_id, style="format2")
         assert downloaded_workflow["class"] == "GalaxyWorkflow"
 
+    def test_export_format2_comments(self):
+        # Build a native workflow with comments
+        workflow = self.workflow_populator.load_workflow("test_comments_format2")
+        workflow["comments"] = [
+            {
+                "id": 0,
+                "type": "text",
+                "position": [100, 200],
+                "size": [200, 50],
+                "color": "blue",
+                "data": {"text": "Check adapters", "size": 2, "bold": True},
+            },
+            {
+                "id": 1,
+                "type": "markdown",
+                "position": [300, 50],
+                "size": [400, 300],
+                "color": "none",
+                "data": {"text": "# Preprocessing\nQuality filtering."},
+            },
+            {
+                "id": 2,
+                "type": "frame",
+                "position": [50, 50],
+                "size": [700, 500],
+                "color": "green",
+                "data": {"title": "Main Steps"},
+                "child_steps": [0],
+                "child_comments": [0, 1],
+            },
+            {
+                "id": 3,
+                "type": "freehand",
+                "position": [600, 100],
+                "size": [50, 50],
+                "color": "red",
+                "data": {"thickness": 3, "line": [[610, 110], [620, 120], [630, 130]]},
+            },
+        ]
+        uploaded_workflow_id = self.workflow_populator.create_workflow(workflow)
+
+        # Verify native export preserves comments
+        native = self._download_workflow(uploaded_workflow_id)
+        assert "comments" in native
+        assert len(native["comments"]) == 4
+        native_text = [c for c in native["comments"] if c["type"] == "text"][0]
+        assert native_text["data"]["text"] == "Check adapters"
+
+        # Verify format2 export converts comments
+        fmt2 = self._download_workflow(uploaded_workflow_id, style="format2")
+        assert "comments" in fmt2
+        comments = fmt2["comments"]
+        assert isinstance(comments, list)
+        assert len(comments) == 4
+
+        # Text comment: data fields should be flattened to top level
+        text_c = [c for c in comments if c["type"] == "text"][0]
+        assert text_c["text"] == "Check adapters"
+        assert text_c["text_size"] == 2
+        assert text_c["bold"] is True
+        assert "data" not in text_c
+
+        # Markdown comment
+        md_c = [c for c in comments if c["type"] == "markdown"][0]
+        assert "# Preprocessing" in md_c["text"]
+
+        # Frame: child_steps/child_comments renamed to contains_steps/contains_comments
+        frame_c = [c for c in comments if c["type"] == "frame"][0]
+        assert frame_c["title"] == "Main Steps"
+        assert "contains_steps" in frame_c
+        assert "contains_comments" in frame_c
+        assert "child_steps" not in frame_c
+        assert "child_comments" not in frame_c
+
+        # Freehand
+        fh_c = [c for c in comments if c["type"] == "freehand"][0]
+        assert fh_c["thickness"] == 3
+        assert len(fh_c["line"]) == 3
+
     def test_export_editor(self):
         uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export")
         downloaded_workflow = self._download_workflow(uploaded_workflow_id, style="editor")

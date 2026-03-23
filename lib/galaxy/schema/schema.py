@@ -1435,6 +1435,11 @@ class HistorySummary(Model, WithModelClass):
     tags: TagCollection
     update_time: datetime = UpdateTimeField
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
+    purge_task: Optional["AsyncTaskResultSummary"] = Field(
+        None,
+        title="Purge Task",
+        description="Summary of the async task purging datasets in this history. Only present when purge is performed via a background task.",
+    )
 
 
 class HistoryActiveContentCounts(Model):
@@ -3994,6 +3999,13 @@ class AsyncTaskResultSummary(Model):
         title="Queue of task being done derived from Celery AsyncResult",
     )
 
+
+HistorySummary.model_rebuild()
+HistoryDetailed.model_rebuild()
+CustomHistoryView.model_rebuild()
+ArchivedHistorySummary.model_rebuild()
+ArchivedHistoryDetailed.model_rebuild()
+CustomArchivedHistoryView.model_rebuild()
 
 ToolRequestIdField = Field(title="ID", description="Encoded ID of the role")
 

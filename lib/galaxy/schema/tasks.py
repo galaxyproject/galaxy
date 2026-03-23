@@ -139,6 +139,10 @@ class PurgeDatasetsTaskRequest(Model):
     dataset_ids: list[int]
 
 
+class PurgeHistoryDatasetsTaskRequest(Model):
+    history_id: int
+
+
 class TaskState(str, Enum):
     """Enum representing the possible states of a task."""
 

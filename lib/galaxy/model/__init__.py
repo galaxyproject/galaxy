@@ -1845,8 +1845,21 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 if obj.name not in out_data:
                     out_collections[obj.name] = obj.dataset_collection_instance
                 # else this is a mapped over output
-        if not exclude_implicit_outputs:
-            out_collections.update([(obj.name, obj.dataset_collection) for obj in self.output_dataset_collections])
+        if exclude_implicit_outputs:
+            # Include implicit output dataset collections only when they represent
+            # a tool's collection output (name not in out_data). Exclude shared DCs
+            # for mapped dataset outputs (name in out_data) which have N precreated
+            # elements where only the current job's element is initialized.
+            for implicit_obj in self.output_dataset_collections:
+                if implicit_obj.name not in out_data:
+                    out_collections[implicit_obj.name] = implicit_obj.dataset_collection
+        else:
+            out_collections.update(
+                [
+                    (implicit_obj.name, implicit_obj.dataset_collection)
+                    for implicit_obj in self.output_dataset_collections
+                ]
+            )
         return IoDicts(inp_data, out_data, out_collections)
 
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
@@ -4730,14 +4743,16 @@ class Dataset(Base, StorableObject, Serializable):
 
     def full_delete(self):
         """Remove the file and extra files, marks deleted and purged"""
-        # os.unlink( self.file_name )
         try:
             self.object_store.delete(self)
         except galaxy.exceptions.ObjectNotFound:
             pass
         if (rel_path := self._extra_files_rel_path) is not None:
             if self.object_store.exists(self, extra_dir=rel_path, dir_only=True):
-                self.object_store.delete(self, entire_dir=True, extra_dir=rel_path, dir_only=True)
+                try:
+                    self.object_store.delete(self, entire_dir=True, extra_dir=rel_path, dir_only=True)
+                except galaxy.exceptions.ObjectNotFound:
+                    pass
         # TODO: purge metadata files
         self.deleted = True
         self.purged = True
