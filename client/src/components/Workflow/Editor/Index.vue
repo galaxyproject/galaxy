@@ -16,19 +16,23 @@
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
         <SaveChangesModal :nav-url.sync="navUrl" :show-modal.sync="showSaveChangesModal" @on-proceed="onNavigate" />
-        <b-modal
-            v-model="showSaveAsModal"
+        <GModal
+            :show.sync="showSaveAsModal"
+            confirm
+            size="small"
             title="Save As a New Workflow"
-            ok-title="Save"
-            cancel-title="Cancel"
-            @ok="doSaveAs(false)">
-            <b-form-group label="Name">
-                <b-form-input v-model="saveAsName" />
-            </b-form-group>
-            <b-form-group label="Annotation">
-                <b-form-textarea v-model="saveAsAnnotation" />
-            </b-form-group>
-        </b-modal>
+            ok-text="Save"
+            @ok="doSaveAs"
+            @cancel="resetSaveAs">
+            <GForm @submit.native.prevent="doSaveAs">
+                <GFormLabel title="Name">
+                    <GFormInput v-model="saveAsName" />
+                </GFormLabel>
+                <GFormLabel title="Annotation">
+                    <b-form-textarea v-model="saveAsAnnotation" />
+                </GFormLabel>
+            </GForm>
+        </GModal>
         <ActivityBar
             ref="activityBar"
             :default-activities="workflowActivities"
@@ -290,6 +294,10 @@ import StateUpgradeModal from "./StateUpgradeModal.vue";
 import WorkflowAttributes from "./WorkflowAttributes.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+import GForm from "@/components/BaseComponents/Form/GForm.vue";
+import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
+import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
 import SearchPanel from "@/components/Panels/SearchPanel.vue";
@@ -322,6 +330,10 @@ export default {
         BDropdown,
         BDropdownText,
         BDropdownDivider,
+        GForm,
+        GFormLabel,
+        GFormInput,
+        GModal,
     },
     props: {
         workflowId: {
@@ -926,6 +938,8 @@ export default {
             if (!this.saveAsName && !this.nameValidate()) {
                 return;
             }
+            this.onWorkflowMessage("Saving workflow", "progress");
+
             const rename_name = this.saveAsName ?? `SavedAs_${this.name}`;
             const rename_annotation = this.saveAsAnnotation ?? "";
 
@@ -943,10 +957,16 @@ export default {
                         this.hideModal();
                     },
                 });
+            } finally {
+                this.resetSaveAs();
             }
         },
         onSaveAs() {
             this.showSaveAsModal = true;
+        },
+        resetSaveAs() {
+            this.saveAsName = null;
+            this.saveAsAnnotation = null;
         },
         async createNewWorkflow() {
             await this.saveOrCreate();
