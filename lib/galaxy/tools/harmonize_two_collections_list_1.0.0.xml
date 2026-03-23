@@ -2,8 +2,11 @@
       name="Harmonize two collections"
       version="1.0.0"
       tool_type="harmonize_list">
-    <description></description>
+    <description>to match identifiers and order</description>
     <type class="HarmonizeTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <edam_operations>
@@ -209,36 +212,70 @@
 Synopsis
 ========
 
-Harmonize 2 collections: Inputs are 2 collections. Outputs are 2 collections with:
-- Same identifiers (identifiers which are specific to one or the other are removed)
-- Identifiers are in the same order
+Harmonizes two collections so they contain the same element identifiers in the same order.
 
-=======
-Example
-=======
+===========
+Description
+===========
 
-If the inputs are::
+This tool takes two collections and produces two output collections that share exactly the same set of identifiers in the same order. It performs two operations:
 
- Collection1: [Horse123] 
-              [Donkey543] 
-              [Mule176]
+1. **Intersection** — any identifier that appears in only one of the two input collections is removed from both outputs.
+2. **Reordering** — the output elements follow the order of the **first** input collection.
 
- Collection2: [Horse] 
-              [Mule176] 
-              [Donkey543]
-The tool will output::
+This is useful when two collections were produced by independent analyses and you need to pair them element-wise for a downstream tool. Without harmonization, mismatched identifiers or different ordering would cause errors.
 
- Collection1: [Donkey543] 
-              [Mule176]
+The two input collections do not need to have the same collection type. For example, you can harmonize a ``list`` with a ``list:paired`` — each output preserves the type of its corresponding input.
 
- Collection2: [Donkey543] 
-              [Mule176]
+========
+Examples
+========
+
+**Keep only shared identifiers**
+
+Given two collections with partially overlapping identifiers::
+
+ Collection 1 (reference order):
+
+   sampleA  →  Dataset 1
+   sampleB  →  Dataset 2
+   sampleC  →  Dataset 3
+
+ Collection 2 (different order, extra element):
+
+   sampleD  →  Dataset 4
+   sampleC  →  Dataset 5
+   sampleA  →  Dataset 6
+
+Output 1 (from Collection 1, matching order preserved)::
+
+   sampleA  →  Dataset 1
+   sampleC  →  Dataset 3
+
+Output 2 (from Collection 2, reordered to match Collection 1)::
+
+   sampleA  →  Dataset 6
+   sampleC  →  Dataset 5
+
+``sampleB`` and ``sampleD`` are removed because they are not present in both collections.
+
+-------
+
+**No matching identifiers**
+
+If the two collections share no identifiers at all, both outputs will be empty collections.
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/harmonize.svg
+  :alt: Harmonize two collections to match identifiers and order
+  :width: 620
 
 -------
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
      ]]></help>
 </tool>

@@ -4490,6 +4490,15 @@ class HarmonizeTool(DatabaseOperationTool):
     require_terminal_states = False
     require_dataset_ok = False
 
+    def check_inputs_ready(self, input_datasets, input_dataset_collections, security):
+        # input2 is optional — drop it from the collection check when not provided
+        filtered_collections = {
+            key: pairs
+            for key, pairs in input_dataset_collections.items()
+            if key != "input2" or any(hdca is not None for hdca, _ in pairs)
+        }
+        super().check_inputs_ready(input_datasets, filtered_collections, security)
+
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca1 = incoming["input1"]
         hdca2 = incoming.get("input2")
