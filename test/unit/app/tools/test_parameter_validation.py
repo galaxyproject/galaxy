@@ -5,6 +5,7 @@ from galaxy.model import (
     History,
     HistoryDatasetAssociation,
 )
+from galaxy.tools.parameters.basic import ParameterValueError
 from galaxy.util import galaxy_directory
 from .util import BaseParameterTestCase
 
@@ -415,3 +416,15 @@ class TestParameterValidation(BaseParameterTestCase):
         p.validate("select id from job where id = 1;")
         with self.assertRaises(ValueError):
             p.validate("not sql")
+
+    def test_integer_to_python_raises_parameter_value_error(self):
+        p = self._parameter_for(xml='<param name="num" type="integer" value="10" />')
+        assert p.to_python(42, self.app) == 42
+        with self.assertRaises(ParameterValueError):
+            p.to_python(None, self.app)
+
+    def test_float_to_python_raises_parameter_value_error(self):
+        p = self._parameter_for(xml='<param name="num" type="float" value="1.0" />')
+        assert p.to_python(3.14, self.app) == 3.14
+        with self.assertRaises(ParameterValueError):
+            p.to_python(None, self.app)
