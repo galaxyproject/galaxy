@@ -245,6 +245,21 @@ def add_request_id_middleware(app: FastAPI):
     app.add_middleware(RawContextMiddleware, plugins=(RequestIdPlugin(force_new_uuid=True),))
 
 
+def build_route_name_index(app: FastAPI) -> dict[str, list]:
+    """Build a name -> [route] index for O(1) route lookup.
+
+    Routes are immutable after app startup, so this index is built once
+    and reused for all subsequent requests. For most route names there
+    is exactly one candidate, making lookups O(1) instead of O(n).
+    """
+    index: dict[str, list] = {}
+    for route in app.routes:
+        name = getattr(route, "name", None)
+        if name:
+            index.setdefault(name, []).append(route)
+    return index
+
+
 def include_all_package_routers(app: FastAPI, package_name: str):
     responses: dict[Union[int, str], dict[str, Any]] = {
         "4XX": {

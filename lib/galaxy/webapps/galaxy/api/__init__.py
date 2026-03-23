@@ -211,7 +211,6 @@ def get_required_user(
 class UrlBuilder:
     def __init__(self, request: Request):
         self.request = request
-        self._route_cache: dict[tuple[str, frozenset[str]], Any] = {}
 
     def __call__(self, name: str, **path_params):
         qualified = path_params.pop("qualified", False)
@@ -224,7 +223,7 @@ class UrlBuilder:
                 else:
                     url = str(self.request.url_for(name, **path_params))
             else:
-                url = self._url_path_for_cached(name, **path_params)
+                url = self._url_path_for(name, **path_params)
             if query_params:
                 url = f"{url}?{urlencode(query_params)}"
             return url
@@ -234,24 +233,23 @@ class UrlBuilder:
                 path_params.update(query_params)
             return web.url_for(name, **path_params)
 
-    def _url_path_for_cached(self, name: str, **path_params) -> str:
-        """Cached version of app.url_path_for that avoids repeated linear route scans.
+    def _url_path_for(self, name: str, **path_params) -> str:
+        """O(1) route lookup using the app's pre-built name index.
 
-        The cache key includes both the route name and the frozenset of parameter
-        names, because multiple routes can share a name yet expect different parameters.
+        The index is built once at startup in initialize_fast_app and maps
+        route names to their route objects, replacing Starlette's O(n)
+        linear scan with a direct dict lookup.
         """
-        cache_key = (name, frozenset(path_params))
-        cached_route = self._route_cache.get(cache_key)
-        if cached_route is not None:
-            return cached_route.url_path_for(name, **path_params)
-        for route in self.request.app.routes:
-            try:
-                url = route.url_path_for(name, **path_params)
-                self._route_cache[cache_key] = route
-                return url
-            except NoMatchFound:
-                pass
-        raise NoMatchFound(name, path_params)
+        candidates = self.request.app.state.route_name_index.get(name)
+        if candidates is not None:
+            for route in candidates:
+                try:
+                    return route.url_path_for(name, **path_params)
+                except NoMatchFound:
+                    pass
+            raise NoMatchFound(name, path_params)
+        # Fallback for names not in the index (e.g. Mount sub-routes)
+        return self.request.app.url_path_for(name, **path_params)
 
 
 class GalaxyASGIRequest(GalaxyAbstractRequest):

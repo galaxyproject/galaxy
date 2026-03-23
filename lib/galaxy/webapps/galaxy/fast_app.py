@@ -24,6 +24,7 @@ from galaxy.webapps.base.api import (
     add_exception_handler,
     add_raw_context_middlewares,
     add_request_id_middleware,
+    build_route_name_index,
     GalaxyFileResponse,
     include_all_package_routers,
 )
@@ -214,6 +215,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
     include_tus(app, gx_app)
+    app.state.route_name_index = build_route_name_index(app)
     app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()
