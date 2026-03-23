@@ -2,7 +2,7 @@
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BAlert, BCard, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
