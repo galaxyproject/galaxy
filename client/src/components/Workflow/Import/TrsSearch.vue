@@ -12,7 +12,7 @@ import { Services } from "@/components/Workflow/services";
 import { useMarkdown } from "@/composables/markdown";
 import { withPrefix } from "@/utils/redirect";
 
-import type { TrsSelection } from "./types";
+import type { TrsSelection, TrsTool as TrsToolData } from "./types";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
@@ -25,11 +25,13 @@ const emit = defineEmits<{
     (e: "input-valid", valid: boolean): void;
 }>();
 
-type TrsSearchData = {
+type TrsSearchData = TrsToolData;
+
+type TrsSearchRow = {
     id: string;
     name: string;
     description: string;
-    [key: string]: unknown;
+    data: TrsSearchData;
 };
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
@@ -41,13 +43,13 @@ const fields: TableField[] = [
 ];
 
 const query = ref("");
-const results: Ref<TrsSearchData[]> = ref([]);
+const results: Ref<TrsToolData[]> = ref([]);
 const trsServer = ref("");
 const loading = ref(false);
 const importing = ref(false);
 const trsSelection: Ref<TrsSelection | null> = ref(null);
 const errorMessage: Ref<string | null> = ref(null);
-const selectedTool = ref<TrsSearchData | null>(null);
+const selectedTool = ref<TrsToolData | null>(null);
 const selectedVersion = ref<string | undefined>(undefined);
 
 const hasErrorMessage = computed(() => {
@@ -101,7 +103,7 @@ function onTrsSelectionError(message: string) {
     errorMessage.value = message;
 }
 
-function showRowDetails({ event, toggleDetails }: RowClickEvent<TrsSearchData>) {
+function showRowDetails({ event, toggleDetails }: RowClickEvent<TrsSearchRow>) {
     if ((event.target as Node | undefined)?.nodeName !== "A") {
         toggleDetails();
     }
@@ -120,7 +122,7 @@ function computeItems(items: TrsSearchData[]) {
 
 const router = useRouter();
 
-function onVersionSelected(toolData: TrsSearchData, versionId: string) {
+function onVersionSelected(toolData: TrsToolData, versionId: string) {
     selectedTool.value = toolData;
     selectedVersion.value = versionId;
 }
@@ -215,8 +217,8 @@ defineExpose({ triggerImport });
 
                         <TrsTool
                             :trs-tool="item.data"
-                            @onImport="(versionId) => onVersionSelected(item.data, versionId)"
-                            @onSelect="(versionId) => onVersionSelected(item.data, versionId)" />
+                            @onImport="(versionId: string) => onVersionSelected(item.data, versionId)"
+                            @onSelect="(versionId: string) => onVersionSelected(item.data, versionId)" />
                     </BCard>
                 </template>
 
