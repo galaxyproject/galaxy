@@ -114,7 +114,7 @@ class QuotaManager:
         except ValueError:
             return False
 
-    def rename_quota(self, quota, params) -> Optional[str]:
+    def rename_quota(self, quota: Quota, params) -> Optional[str]:
         stmt = select(Quota).where(and_(Quota.name == params.name, Quota.id != quota.id)).limit(1)
         if not params.name:
             raise ActionInputError("Enter a valid name.")
@@ -132,7 +132,7 @@ class QuotaManager:
             else:
                 return None
 
-    def manage_users_and_groups_for_quota(self, quota, params, decode_id=None) -> Optional[str]:
+    def manage_users_and_groups_for_quota(self, quota: Quota, params, decode_id=None) -> Optional[str]:
         if quota.default:
             raise ActionInputError("Default quotas cannot be associated with specific users and groups.")
         else:
@@ -158,7 +158,7 @@ class QuotaManager:
             else:
                 return None
 
-    def edit_quota(self, quota, params) -> Optional[str]:
+    def edit_quota(self, quota: Quota, params) -> Optional[str]:
         if params.amount.lower() in ("unlimited", "none", "no limit"):
             new_amount = None
         else:
@@ -184,7 +184,7 @@ class QuotaManager:
             else:
                 return None
 
-    def set_quota_default(self, quota, params) -> Optional[str]:
+    def set_quota_default(self, quota: Quota, params) -> Optional[str]:
         if params.default != "no" and params.default not in model.DefaultQuotaAssociation.types.__members__.values():
             raise ActionInputError("Enter a valid default type.")
         else:
@@ -199,7 +199,7 @@ class QuotaManager:
                 self.sa_session.commit()
             return message
 
-    def unset_quota_default(self, quota, params=None) -> Optional[str]:
+    def unset_quota_default(self, quota: Quota, params=None) -> Optional[str]:
         message = None
         if quota.default:
             message = f"Quota '{quota.name}' is no longer the default for {quota.default[0].type} users."
