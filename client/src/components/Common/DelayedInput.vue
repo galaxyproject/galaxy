@@ -38,7 +38,7 @@ const queryInput = ref<string>();
 const queryTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 const titleClear = ref("Clear Search (esc)");
 const titleAdvanced = ref("Toggle Advanced Search");
-const toolInput = ref<HTMLInputElement | null>(null);
+const toolInput = ref<InstanceType<typeof GFormInput> | null>(null);
 
 function clearTimer() {
     if (queryTimer.value) {
