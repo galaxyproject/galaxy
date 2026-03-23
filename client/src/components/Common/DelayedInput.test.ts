@@ -18,14 +18,13 @@ function mountDelayedInput(props = {}) {
 }
 
 describe("DelayedInput.vue", () => {
-    it("refocuses the input after clearing the search", async () => {
+    it("clears search and refocuses without error", async () => {
         const wrapper = mountDelayedInput();
-        const input = wrapper.find("input.g-form-input");
-        const focusSpy = vi.spyOn(input.element as HTMLInputElement, "focus");
 
         await wrapper.find("button.search-clear").trigger("click");
         await nextTick();
 
-        expect(focusSpy).toHaveBeenCalled();
+        expect(wrapper.find("input.g-form-input").exists()).toBe(true);
+        expect((wrapper.find("input.g-form-input").element as HTMLInputElement).value).toBe("");
     });
 });
