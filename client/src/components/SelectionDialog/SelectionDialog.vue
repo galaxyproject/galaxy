@@ -298,7 +298,7 @@ defineExpose({
                     </template>
 
                     <template v-slot:cell(__select_icon__)="data">
-                        <FontAwesomeIcon :icon="selectionIcon(data.item._rowVariant)" />
+                        <FontAwesomeIcon :icon="selectionIcon(data.item.selectionState)" />
                     </template>
 
                     <template v-slot:cell(label)="data">
