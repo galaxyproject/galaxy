@@ -194,7 +194,7 @@
                             <p class="mb-2 text-muted">
                                 Total size: {{ bytesToString(stagingStatus.total_size, true, 2) }}
                             </p>
-                            <div v-if="stagingStatus.staged_visualizations.length > 0" class="mt-3">
+                            <div v-if="stagingStatus.staged_visualizations?.length" class="mt-3">
                                 <h6>Staged Visualizations:</h6>
                                 <div class="staged-viz-list" style="max-height: 200px; overflow-y: auto">
                                     <div
@@ -317,7 +317,7 @@ const usageStats = ref<UsageStats>({ days: 30, stats: {} } as UsageStats);
 
 const stagingLoading = ref(false);
 const stagingStatus = ref<StagingStatus | null>(null);
-const stagedNames = computed(() => stagingStatus.value?.staged_visualizations.map((v) => v.name) ?? []);
+const stagedNames = computed(() => stagingStatus.value?.staged_visualizations?.map((v) => v.name) ?? []);
 
 const showInstallModal = ref(false);
 const selectedVisualization = ref<AvailableVisualization | null>(null);

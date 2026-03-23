@@ -37,20 +37,16 @@
                     </div>
                 </div>
 
-                <div v-if="visualization.metadata?.description" class="mb-2">
-                    <p class="text-muted mb-1">{{ visualization.metadata.description }}</p>
+                <div v-if="meta?.description" class="mb-2">
+                    <p class="text-muted mb-1">{{ meta.description }}</p>
                 </div>
 
-                <div v-if="visualization.metadata" class="small text-muted">
+                <div v-if="meta" class="small text-muted">
                     <div class="d-flex flex-wrap">
-                        <span v-if="visualization.metadata.author" class="mr-3">
-                            <strong>Author:</strong> {{ visualization.metadata.author }}
-                        </span>
-                        <span v-if="visualization.metadata.license" class="mr-3">
-                            <strong>License:</strong> {{ visualization.metadata.license }}
-                        </span>
-                        <span v-if="visualization.metadata.homepage" class="mr-3">
-                            <a :href="visualization.metadata.homepage" target="_blank" rel="noopener">
+                        <span v-if="meta.author" class="mr-3"> <strong>Author:</strong> {{ meta.author }} </span>
+                        <span v-if="meta.license" class="mr-3"> <strong>License:</strong> {{ meta.license }} </span>
+                        <span v-if="meta.homepage" class="mr-3">
+                            <a :href="meta.homepage" target="_blank" rel="noopener">
                                 Homepage
                                 <FontAwesomeIcon :icon="faExternalLinkAlt" size="sm" />
                             </a>
@@ -58,22 +54,14 @@
                     </div>
                 </div>
 
-                <div
-                    v-if="
-                        visualization.metadata?.dependencies &&
-                        Object.keys(visualization.metadata.dependencies).length > 0
-                    "
-                    class="mt-2">
+                <div v-if="meta?.dependencies && Object.keys(meta.dependencies).length > 0" class="mt-2">
                     <b-button v-b-toggle="`deps-${visualization.id}`" variant="link" size="sm" class="p-0 text-info">
                         <FontAwesomeIcon :icon="faCaretRight" fixed-width />
-                        Dependencies ({{ Object.keys(visualization.metadata.dependencies).length }})
+                        Dependencies ({{ Object.keys(meta.dependencies).length }})
                     </b-button>
                     <b-collapse :id="`deps-${visualization.id}`" class="mt-2">
                         <div class="small">
-                            <div
-                                v-for="(version, dep) in visualization.metadata.dependencies"
-                                :key="`dep-${dep}`"
-                                class="mb-1">
+                            <div v-for="(version, dep) in meta.dependencies" :key="`dep-${dep}`" class="mb-1">
                                 <code>{{ dep }}@{{ version }}</code>
                             </div>
                         </div>
@@ -129,12 +117,10 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div v-if="visualization.metadata" class="mb-2">
+                        <div v-if="meta" class="mb-2">
                             <strong>Package Metadata:</strong>
                             <br />
-                            <pre class="small bg-light p-2 rounded">{{
-                                JSON.stringify(visualization.metadata, null, 2)
-                            }}</pre>
+                            <pre class="small bg-light p-2 rounded">{{ JSON.stringify(meta, null, 2) }}</pre>
                         </div>
                     </div>
                 </div>
@@ -199,6 +185,15 @@ import { bytesToString } from "@/utils/utils";
 import type { Visualization } from "./services";
 import { getPackageVersions } from "./services";
 
+interface PackageMetadata {
+    description?: string;
+    author?: string;
+    license?: string;
+    homepage?: string;
+    dependencies?: Record<string, string>;
+    [key: string]: unknown;
+}
+
 interface Props {
     visualization: Visualization;
     loadingActions?: Record<string, boolean>;
@@ -207,8 +202,10 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     loadingActions: () => ({}),
-    stagedNames: () => [],
+    stagedNames: () => [] as string[],
 });
+
+const meta = computed(() => (props.visualization.metadata as PackageMetadata | null) ?? null);
 
 const emit = defineEmits<{
     (e: "toggle", visualization: Visualization): void;
@@ -250,7 +247,7 @@ async function openUpdateModal() {
     loadingVersions.value = true;
     try {
         const result = await getPackageVersions(props.visualization.package);
-        availableVersions.value = result.versions;
+        availableVersions.value = result.versions ?? [];
     } catch {
         // Fall back to manual text input if version fetch fails
         availableVersions.value = [];
