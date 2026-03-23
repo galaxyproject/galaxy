@@ -34,7 +34,7 @@
                 <div class="small">
                     <a
                         v-if="packageData.links?.homepage"
-                        :href="packageData.links.homepage"
+                        :href="String(packageData.links.homepage)"
                         target="_blank"
                         rel="noopener"
                         class="mr-3">
@@ -42,7 +42,7 @@
                     </a>
                     <a
                         v-if="packageData.links?.repository"
-                        :href="packageData.links.repository"
+                        :href="String(packageData.links.repository)"
                         target="_blank"
                         rel="noopener">
                         Repository <FontAwesomeIcon :icon="faExternalLinkAlt" size="sm" />
