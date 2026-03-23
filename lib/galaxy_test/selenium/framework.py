@@ -19,10 +19,6 @@ from typing import (
 
 import requests
 import yaml
-from gxformat2 import (
-    convert_and_import_workflow,
-    ImporterGalaxyInterface,
-)
 from requests.models import Response
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
@@ -72,7 +68,6 @@ from galaxy_test.base.env import (
 from galaxy_test.base.populators import (
     load_data_dict,
     stage_inputs,
-    YamlContentT,
 )
 from galaxy_test.base.testcase import FunctionalTestCase
 
@@ -1501,9 +1496,7 @@ class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, pop
         return create_response
 
 
-class SeleniumSessionWorkflowPopulator(
-    SeleniumSessionGetPostMixin, populators.BaseWorkflowPopulator, ImporterGalaxyInterface
-):
+class SeleniumSessionWorkflowPopulator(SeleniumSessionGetPostMixin, populators.BaseWorkflowPopulator):
     """Implementation of BaseWorkflowPopulator backed by bioblend."""
 
     def __init__(self, selenium_context: GalaxySeleniumContext):
@@ -1521,10 +1514,6 @@ class SeleniumSessionWorkflowPopulator(
         upload_response = self._post("workflows", data=data)
         upload_response.raise_for_status()
         return upload_response.json()
-
-    def upload_yaml_workflow(self, yaml_content: YamlContentT, **kwds) -> str:
-        workflow = convert_and_import_workflow(yaml_content, galaxy_interface=self, **kwds)
-        return workflow["id"]
 
 
 __all__ = ("retry_during_transitions",)

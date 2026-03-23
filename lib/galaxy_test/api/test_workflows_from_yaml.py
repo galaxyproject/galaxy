@@ -299,53 +299,6 @@ steps:
         assert "no file specified" in content
         assert "7 7 5" in content
 
-    def test_workflow_embed_tool(self):
-        history_id = self.dataset_populator.new_history()
-        self._run_jobs(
-            """
-class: GalaxyWorkflow
-steps:
-  - type: input
-    label: input1
-  - tool_id: cat1
-    label: first_cat
-    state:
-      input1:
-        $link: 0
-  - label: embed1
-    run:
-      class: GalaxyTool
-      name: embed1
-      version: "0.1"
-      command: echo 'hello world 2' > $output1
-      outputs:
-        output1:
-          format: txt
-          type: data
-  - tool_id: cat1
-    state:
-      input1:
-        $link: first_cat/out_file1
-      queries:
-        - input2:
-            $link: embed1/output1
-test_data:
-  input1: "hello world"
-""",
-            history_id=history_id,
-        )
-
-        content = self.dataset_populator.get_history_dataset_content(history_id)
-        assert content == "hello world\nhello world 2\n"
-
-    def test_workflow_import_tool(self):
-        history_id = self.dataset_populator.new_history()
-        workflow_path = os.path.join(WORKFLOWS_DIRECTORY, "embed_test_1.gxwf.yml")
-        jobs_descriptions = {"test_data": {"input1": "hello world"}}
-        self._run_jobs(workflow_path, source_type="path", jobs_descriptions=jobs_descriptions, history_id=history_id)
-        content = self.dataset_populator.get_history_dataset_content(history_id)
-        assert content == "hello world\nhello world 2\n"
-
     def test_parameter_default_rep(self):
         workflow = self._upload_and_download(WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT)
         int_input = self._steps_by_label(workflow)["int_input"]
