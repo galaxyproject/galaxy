@@ -88,11 +88,17 @@ class GalaxyFileResponse(FileResponse):
         background: Optional["BackgroundTask"] = None,
         filename: Optional[str] = None,
         stat_result: Optional[os.stat_result] = None,
-        method: Optional[str] = None,
         content_disposition_type: str = "attachment",
     ) -> None:
         super().__init__(
-            path, status_code, headers, media_type, background, filename, stat_result, method, content_disposition_type
+            path=path,
+            status_code=status_code,
+            headers=headers,
+            media_type=media_type,
+            background=background,
+            filename=filename,
+            stat_result=stat_result,
+            content_disposition_type=content_disposition_type,
         )
         self.headers["accept-ranges"] = "bytes"
         self.xsendfile = self.nginx_x_accel_redirect_base or self.apache_xsendfile

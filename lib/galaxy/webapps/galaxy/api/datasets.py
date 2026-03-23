@@ -290,7 +290,7 @@ class FastAPIDatasets:
         assert isinstance(display_data, IOBase)
         file_name = getattr(display_data, "name", None)
         assert file_name
-        return GalaxyFileResponse(file_name, headers=headers, method=request.method)
+        return GalaxyFileResponse(file_name, headers=headers)
 
     @router.get(
         "/api/histories/{history_id}/contents/{history_content_id}/display",
@@ -374,7 +374,7 @@ class FastAPIDatasets:
         if isinstance(display_data, IOBase):
             file_name = getattr(display_data, "name", None)
             if file_name:
-                return GalaxyFileResponse(file_name, headers=headers, method=request.method)
+                return GalaxyFileResponse(file_name, headers=headers)
         elif isinstance(display_data, ZipstreamWrapper):
             return StreamingResponse(display_data.response(), headers=headers)
         elif isinstance(display_data, bytes):
