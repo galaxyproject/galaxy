@@ -4,7 +4,7 @@ import { computed, defineComponent, h, provide, ref, watch } from "vue";
 
 export interface TabRegistration {
     title?: string;
-    titleRenderer?: () => VNode[];
+    titleRenderer?: () => VNode[] | undefined;
     disabled?: boolean;
     id?: string;
     buttonId?: string;
