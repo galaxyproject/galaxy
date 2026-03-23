@@ -81,9 +81,7 @@ class TestAdminApp(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_toolshed_repo_install_settings")
         self.sleep_for(self.wait_types.UX_TRANSITION)
-        ok_button = self.find_element_by_xpath(
-            "//*[@id='repo-install-settings___BV_modal_footer_']/button[contains(., 'OK')]"
-        )
+        ok_button = self.find_element_by_selector("#repo-install-settings .g-modal-confirm-buttons button:last-child")
         ok_button.click()
         self.sleep_for(self.wait_types.REPO_INSTALL)
         installed_only = self.find_element_by_xpath("//span[contains(. ,'Installed Only')]/../../input")

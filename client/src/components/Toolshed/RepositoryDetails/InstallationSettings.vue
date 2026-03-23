@@ -1,10 +1,12 @@
 <template>
-    <b-modal id="repo-install-settings" v-model="modalShow" :static="modalStatic" @ok="onOk" @hide="onHide">
-        <template v-slot:modal-header>
-            <h2 class="title m-0 h-sm">
-                {{ modalTitle }}
-            </h2>
-        </template>
+    <GModal
+        id="repo-install-settings"
+        :show.sync="modalShow"
+        size="small"
+        :title="modalTitle"
+        confirm
+        @ok="onOk"
+        @close="onHide">
         <div class="description mb-1">
             {{ repo.long_description || repo.description }}
         </div>
@@ -20,7 +22,9 @@
                 </option>
             </datalist>
         </b-form-group>
-        <b-link variant="primary" @click="onAdvanced"> {{ advancedTitle }} advanced settings. </b-link>
+        <Heading separator size="sm" :collapse="advancedShow ? 'open' : 'closed'" @click="onAdvanced">
+            {{ advancedTitle }} advanced settings
+        </Heading>
         <GCollapse v-model="advancedShow" class="mt-2">
             <b-card>
                 <b-form-group
@@ -46,18 +50,18 @@
                 </b-form-group>
             </b-card>
         </GCollapse>
-    </b-modal>
+    </GModal>
 </template>
 <script>
 import { GalaxyApi } from "@/api";
 import { useConfig } from "@/composables/config";
 
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 export default {
-    components: {
-        GCollapse,
-    },
+    components: { GCollapse, GModal, Heading },
     props: {
         repo: {
             type: Object,
@@ -78,10 +82,6 @@ export default {
         currentPanel: {
             type: Object,
             default: null,
-        },
-        modalStatic: {
-            type: Boolean,
-            default: false,
         },
     },
     setup() {
