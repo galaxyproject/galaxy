@@ -1,12 +1,9 @@
 <tool id="__HARMONIZELISTS__"
       name="Harmonize two collections"
-      version="1.1.0"
+      version="1.0.0"
       tool_type="harmonize_list">
-    <description>to match identifiers and order</description>
+    <description></description>
     <type class="HarmonizeTool" module="galaxy.tools" />
-    <macros>
-        <import>model_operation_macros.xml</import>
-    </macros>
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <edam_operations>
@@ -14,11 +11,11 @@
     </edam_operations>
     <inputs>
         <param type="data_collection" collection_type="list,list:paired" name="input1" label="Input Collection with good order" />
-        <param type="data_collection" collection_type="list,list:paired" name="input2" label="Input Collection to order" optional="true" />
+        <param type="data_collection" collection_type="list,list:paired" name="input2" label="Input Collection to order" />
     </inputs>
     <outputs>
-        <collection name="output1" format_source="input1" type_source="input1" label="${input1.name} (harmonized)" />
-        <collection name="output2" format_source="input2" type_source="input2" label="Harmonized output 2" />
+        <collection name="output1" format_source="input1" type_source="input1" label="${input1.name} (harmonized with ${input2.name})" />
+        <collection name="output2" format_source="input2" type_source="input2" label="${input2.name} (harmonized with ${input1.name})" />
     </outputs>
     <tests>
         <test>
@@ -205,72 +202,6 @@
                 </element>
             </output_collection>
         </test>
-        <!-- test optional input2 not provided with list type -->
-        <test>
-            <param name="input1">
-                <collection type="list">
-                    <element name="element_1" value="simple_line_alternative.txt" />
-                    <element name="element_2" value="simple_line.txt" />
-                </collection>
-            </param>
-            <output_collection name="output1" type="list" count="2">
-                <element name="element_1">
-                    <assert_contents>
-                        <has_text_matching expression="^This is a different line of text.\n$" />
-                    </assert_contents>
-                </element>
-                <element name="element_2">
-                    <assert_contents>
-                        <has_text_matching expression="^This is a line of text.\n$" />
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="output2" type="list" count="2">
-                <element name="element_1" ftype="expression.json">
-                    <assert_contents>
-                        <has_text text="null" />
-                    </assert_contents>
-                </element>
-                <element name="element_2" ftype="expression.json">
-                    <assert_contents>
-                        <has_text text="null" />
-                    </assert_contents>
-                </element>
-            </output_collection>
-        </test>
-        <!-- test optional input2 not provided with list:paired type -->
-        <test>
-            <param name="input1">
-                <collection type="list:paired">
-                    <element name="sample_1">
-                        <collection type="paired">
-                            <element name="forward" value="1.fastqsanger" ftype="fastqsanger" />
-                            <element name="reverse" value="1.fastqsanger" ftype="fastqsanger" />
-                        </collection>
-                    </element>
-                </collection>
-            </param>
-            <output_collection name="output1" type="list:paired" count="1">
-                <element name="sample_1">
-                    <element name="forward" ftype="fastqsanger" />
-                    <element name="reverse" ftype="fastqsanger" />
-                </element>
-            </output_collection>
-            <output_collection name="output2" type="list:paired" count="1">
-                <element name="sample_1">
-                    <element name="forward" ftype="expression.json">
-                        <assert_contents>
-                            <has_text text="null" />
-                        </assert_contents>
-                    </element>
-                    <element name="reverse" ftype="expression.json">
-                        <assert_contents>
-                            <has_text text="null" />
-                        </assert_contents>
-                    </element>
-                </element>
-            </output_collection>
-        </test>
     </tests>
     <help><![CDATA[
 
@@ -278,97 +209,36 @@
 Synopsis
 ========
 
-Harmonizes two collections so they contain the same element identifiers in the same order.
+Harmonize 2 collections: Inputs are 2 collections. Outputs are 2 collections with:
+- Same identifiers (identifiers which are specific to one or the other are removed)
+- Identifiers are in the same order
 
-===========
-Description
-===========
+=======
+Example
+=======
 
-This tool takes two collections and produces two output collections that share exactly the same set of identifiers in the same order. It performs two operations:
+If the inputs are::
 
-1. **Intersection** — any identifier that appears in only one of the two input collections is removed from both outputs.
-2. **Reordering** — the output elements follow the order of the **first** input collection.
+ Collection1: [Horse123] 
+              [Donkey543] 
+              [Mule176]
 
-This is useful when two collections were produced by independent analyses and you need to pair them element-wise for a downstream tool. Without harmonization, mismatched identifiers or different ordering would cause errors.
-
-The two input collections do not need to have the same collection type. For example, you can harmonize a ``list`` with a ``list:paired`` — each output preserves the type of its corresponding input.
-
-**Optional second collection**
-
-If the second collection is not provided (optional), the tool will:
-
-- Output1: A copy of the first collection (all elements preserved)
-- Output2: Same structure and identifiers as the first collection, but all datasets are replaced with expression.json null datasets
-
-========
-Examples
-========
-
-**Keep only shared identifiers**
-
-Given two collections with partially overlapping identifiers::
-
- Collection 1 (reference order):
-
-   sampleA  →  Dataset 1
-   sampleB  →  Dataset 2
-   sampleC  →  Dataset 3
-
- Collection 2 (different order, extra element):
-
-   sampleD  →  Dataset 4
-   sampleC  →  Dataset 5
-   sampleA  →  Dataset 6
-
-Output 1 (from Collection 1, matching order preserved)::
-
-   sampleA  →  Dataset 1
-   sampleC  →  Dataset 3
-
-Output 2 (from Collection 2, reordered to match Collection 1)::
-
-   sampleA  →  Dataset 6
-   sampleC  →  Dataset 5
-
-``sampleB`` and ``sampleD`` are removed because they are not present in both collections.
-
--------
-
-**No matching identifiers**
-
-If the two collections share no identifiers at all, both outputs will be empty collections.
-
--------
-
-**Optional mode (no second collection)**
-
-If only Collection 1 is provided::
-
- Collection 1: [Horse123]
-               [Donkey543]
-               [Mule176]
-
+ Collection2: [Horse] 
+              [Mule176] 
+              [Donkey543]
 The tool will output::
 
- Output 1: [Horse123]
-           [Donkey543]
-           [Mule176]
+ Collection1: [Donkey543] 
+              [Mule176]
 
- Output 2: [Horse123] (null)
-           [Donkey543] (null)
-           [Mule176] (null)
-
--------
-
-.. image:: ${static_path}/images/tools/collection_ops/harmonize.svg
-  :alt: Harmonize two collections to match identifiers and order
-  :width: 620
+ Collection2: [Donkey543] 
+              [Mule176]
 
 -------
 
 .. class:: infomark
 
-@QUOTA_USAGE_NOTE@
+This tool will create new history datasets from your collection but your quota usage will not increase.
 
-    ]]></help>
+     ]]></help>
 </tool>

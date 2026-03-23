@@ -63,6 +63,7 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.types.sample_sheet_workbook import _sample_sheet_to_list_collection_type
+from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
@@ -4490,11 +4491,14 @@ class HarmonizeTool(DatabaseOperationTool):
     require_dataset_ok = False
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
-        # Get the 2 input collections
         hdca1 = incoming["input1"]
-        hdca2 = incoming["input2"]
-        # Get the elements of both collections
+        hdca2 = incoming.get("input2")
         elements1 = hdca1.collection.elements
+
+        if hdca2 is None:
+            self._produce_outputs_with_optional_nulls(trans, output_collections, hdca1, elements1, history)
+            return
+
         elements2 = hdca2.collection.elements
         # Put elements in dictionary with identifiers:
         old_elements1_dict = {}
@@ -4544,6 +4548,75 @@ class HarmonizeTool(DatabaseOperationTool):
         # Create outputs:
         output_with_selected_identifiers(old_elements1_dict, "output1")
         output_with_selected_identifiers(old_elements2_dict, "output2")
+
+    def _produce_outputs_with_optional_nulls(self, trans, output_collections, hdca1, elements1, history):
+        """When input2 is not provided, output1 is a copy of input1 and output2
+        mirrors input1's structure but with expression.json null datasets."""
+        object_store_populator = ObjectStorePopulator(trans.app, trans.user)
+        collection_type = hdca1.collection.collection_type
+
+        # Build output1 as a copy of input1
+        new_elements1 = {}
+        new_rows1 = {}
+        for element in elements1:
+            dce_object = element.element_object
+            identifier = element.element_identifier
+            if element.is_collection:
+                copied_dataset = dce_object.copy(flush=False)
+            else:
+                copied_dataset = dce_object.copy(copy_tags=dce_object.tags, flush=False)
+            new_elements1[identifier] = copied_dataset
+            new_rows1[identifier] = element.columns
+        self._add_datasets_to_history(history, new_elements1.values())
+        output_collections.create_collection(
+            self.outputs["output1"],
+            "output1",
+            elements=new_elements1,
+            propagate_hda_tags=False,
+            rows=new_rows1,
+            column_definitions=hdca1.collection.column_definitions,
+        )
+
+        # Build output2 mirroring input1's structure with null expression.json datasets
+        null_hda = self._create_null_dataset(trans, history, object_store_populator)
+        new_elements2 = {}
+        for element in elements1:
+            identifier = element.element_identifier
+            dce_object = element.element_object
+            if element.is_collection:
+                # Sub-collection (e.g. paired) — create matching structure with null datasets
+                new_elements2[identifier] = self._create_null_subcollection(dce_object, null_hda)
+            else:
+                new_elements2[identifier] = null_hda
+        self._add_datasets_to_history(history, [null_hda])
+        output_collections.create_collection(
+            self.outputs["output2"],
+            "output2",
+            collection_type=collection_type,
+            elements=new_elements2,
+            propagate_hda_tags=False,
+        )
+
+    def _create_null_dataset(self, trans, history, object_store_populator):
+        """Create a new HDA with expression.json null content (skipped marker)."""
+        null_hda = HistoryDatasetAssociation(
+            extension="expression.json",
+            create_dataset=True,
+            sa_session=trans.sa_session,
+            history=history,
+        )
+        null_hda.set_skipped(object_store_populator, replace_dataset=False)
+        return null_hda
+
+    def _create_null_subcollection(self, source_collection, null_hda):
+        """Recursively create a sub-collection structure mirroring source_collection but with null datasets."""
+        sub_elements = {}
+        for dce in source_collection.elements:
+            if dce.is_collection:
+                sub_elements[dce.element_identifier] = self._create_null_subcollection(dce.element_object, null_hda)
+            else:
+                sub_elements[dce.element_identifier] = null_hda
+        return {"src": "new_collection", "collection_type": source_collection.collection_type, "elements": sub_elements}
 
 
 class RelabelFromFileTool(DatabaseOperationTool):

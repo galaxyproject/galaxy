@@ -1,0 +1,57 @@
+- doc: |
+    Test harmonize with both collections provided - should produce intersection.
+  job:
+    required_collection:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: sample_a
+          class: File
+          contents: "content_a"
+        - identifier: sample_b
+          class: File
+          contents: "content_b"
+        - identifier: sample_c
+          class: File
+          contents: "content_c"
+    optional_collection:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: sample_b
+          class: File
+          contents: "other_b"
+        - identifier: sample_a
+          class: File
+          contents: "other_a"
+  outputs:
+    nested_output1:
+      class: Collection
+      collection_type: list:list
+      element_count: 2
+    nested_output2:
+      class: Collection
+      collection_type: list:list
+      element_count: 2
+- doc: |
+    Test harmonize with optional collection not provided - output2 should have null datasets.
+  job:
+    required_collection:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: sample_a
+          class: File
+          contents: "content_a"
+        - identifier: sample_b
+          class: File
+          contents: "content_b"
+  outputs:
+    nested_output1:
+      class: Collection
+      collection_type: list:list
+      element_count: 2
+    nested_output2:
+      class: Collection
+      collection_type: list:list
+      element_count: 2
