@@ -261,7 +261,11 @@ defineExpose({
                     :loading="props.isBusy"
                     :show-advanced.sync="showAdvancedSearch" />
 
-                <DataDialogSearch v-else v-model="filter" :title="props.searchTitle || props.title" />
+                <DataDialogSearch
+                    v-else
+                    :value="filter"
+                    :title="props.searchTitle || props.title"
+                    @input="filter = $event" />
             </div>
         </template>
         <slot name="helper" />
