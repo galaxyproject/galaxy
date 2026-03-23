@@ -1172,7 +1172,14 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
     @property
     def visible_tool_versions(self):
-        return [tool.version for tool in self.tool_versions if not tool.hidden]
+        if not self.lineage:
+            return []
+        visible_versions = []
+        for lineage_version in self.lineage.get_versions():
+            tool = self.app.tool_cache.get_tool_by_id(lineage_version.id)
+            if tool and not tool.hidden:
+                visible_versions.append(tool.version)
+        return visible_versions
 
     @property
     def is_latest_version(self):
