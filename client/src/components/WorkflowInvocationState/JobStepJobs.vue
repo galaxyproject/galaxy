@@ -5,25 +5,26 @@ import { computed, ref, watch } from "vue";
 
 import type { JobBaseModel } from "@/api/jobs";
 import type { TableField } from "@/components/Common/GTable.types";
+import { getJobDuration } from "@/components/JobInformation/utilities";
 
-import { getJobDuration } from "../JobInformation/utilities";
-
-import GButton from "../BaseComponents/GButton.vue";
-import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
-import GModal from "../BaseComponents/GModal.vue";
-import Heading from "../Common/Heading.vue";
-import JobDetails from "../JobInformation/JobDetails.vue";
-import JobState from "../JobStates/JobState.vue";
-import UtcDate from "../UtcDate.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import GTable from "@/components/Common/GTable.vue";
+import Heading from "@/components/Common/Heading.vue";
+import JobDetails from "@/components/JobInformation/JobDetails.vue";
+import JobState from "@/components/JobStates/JobState.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
-const props = defineProps<{
+interface Props {
     jobs: JobBaseModel[];
     invocationId: string;
     currentPage: number;
     sortDesc: boolean;
     perPage: number;
-}>();
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "update:current-page", value: number): void;
@@ -64,8 +65,8 @@ const viewedJobIndex = computed<number | null>({
     },
 });
 
-function jobClicked(job: JobBaseModel) {
-    viewedJob.value = job;
+function jobClicked(event: { item: JobBaseModel }) {
+    viewedJob.value = event.item;
     showModal.value = true;
 }
 
@@ -114,18 +115,18 @@ watch(
 <template>
     <div>
         <GTable
-            class="job-step-jobs"
-            :current-page="props.currentPage"
-            :items="props.jobs"
-            :fields="fields"
-            striped
-            hover
             clickable-rows
-            :sort-by="'update_time'"
-            :sort-desc="props.sortDesc"
+            hover
+            striped
+            class="job-step-jobs"
+            sort-by="update_time"
+            :current-page="props.currentPage"
+            :fields="fields"
+            :items="props.jobs"
             :local-sorting="false"
             :per-page="props.perPage"
-            @row-click="({ item }) => jobClicked(item)"
+            :sort-desc="props.sortDesc"
+            @row-click="jobClicked($event)"
             @sort-changed="onSort">
             <template v-slot:cell(id)="data">
                 <div
@@ -186,6 +187,7 @@ watch(
                     </div>
                 </div>
             </template>
+
             <JobDetails v-if="viewedJob" :job-id="viewedJob.id" :invocation-id="invocationId" />
         </GModal>
     </div>
