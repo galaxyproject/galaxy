@@ -106,6 +106,51 @@ class DiffSeverity(Enum):
     BENIGN = "benign"
 
 
+@dataclass(frozen=True)
+class BenignArtifact:
+    reason: str
+    proven_by: list[str] = field(default_factory=list)
+
+
+class KnownBenignArtifacts:
+    ALL_NONE_SECTION_OMITTED = BenignArtifact(
+        reason="all-None section omitted by format2 export",
+        proven_by=[
+            "lib/galaxy_test/api/test_wf_conversion_artifacts.py::TestWfConversionArtifacts::test_absent_allnone_section"
+        ],
+    )
+    EMPTY_REPEAT_OMITTED = BenignArtifact(
+        reason="empty repeat/list omitted by format2 export",
+        proven_by=[
+            "lib/galaxy_test/api/test_wf_conversion_artifacts.py::TestWfConversionArtifacts::test_absent_empty_repeat_safe_template",
+            "lib/galaxy_test/api/test_tool_execute.py::test_optional_repeats_with_mins_filled_id",
+        ],
+    )
+    CONNECTION_ONLY_SECTION_OMITTED = BenignArtifact(
+        reason="connection-only section omitted (connections in 'in' block)",
+        proven_by=[
+            "lib/galaxy_test/api/test_wf_conversion_artifacts.py::TestWfConversionArtifacts::test_connection_only_section_omitted"
+        ],
+    )
+    MULTI_SELECT_NORMALIZED = BenignArtifact(
+        reason="multiple-select scalar normalized to list",
+        proven_by=[
+            "lib/galaxy_test/api/test_wf_conversion_artifacts.py::TestWfConversionArtifacts::test_multiple_select_list_form"
+        ],
+    )
+    MULTI_SELECT_COLLAPSED = BenignArtifact(
+        reason="multiple-select list collapsed to scalar",
+        proven_by=["lib/galaxy_test/api/test_tool_execute.py::test_multi_select_as_list"],
+    )
+    MULTI_SELECT_REPRESENTATION = BenignArtifact(
+        reason="multiple-select representation difference",
+        proven_by=[
+            "lib/galaxy_test/api/test_wf_conversion_artifacts.py::TestWfConversionArtifacts::test_multiple_select_list_form",
+            "lib/galaxy_test/api/test_tool_execute.py::test_multi_select_as_list",
+        ],
+    )
+
+
 @dataclass
 class StepDiff:
     step_path: str
@@ -115,11 +160,11 @@ class StepDiff:
     description: str
     original_value: Any | None = None
     roundtrip_value: Any | None = None
-    benign_reason: str | None = None
+    benign_artifact: BenignArtifact | None = None
 
     def format_line(self, verbose: bool = False) -> str:
         tag = f"[{self.severity.value}] " if self.severity == DiffSeverity.BENIGN else ""
-        suffix = f" ({self.benign_reason})" if verbose and self.benign_reason else ""
+        suffix = f" ({self.benign_artifact.reason})" if verbose and self.benign_artifact else ""
         return f"  {tag}{self.step_path}: {self.description}{suffix}"
 
 
@@ -174,27 +219,27 @@ def _is_connection_only_dict(d) -> bool:
     return True
 
 
-def _classify_missing_value(orig_val: Any) -> tuple[DiffSeverity, str | None]:
+def _classify_missing_value(orig_val: Any) -> tuple[DiffSeverity, BenignArtifact | None]:
     """Classify a value present in original but missing in roundtripped."""
     if isinstance(orig_val, dict):
         if _is_all_none_dict(orig_val):
-            return DiffSeverity.BENIGN, "all-None section omitted by format2 export"
+            return DiffSeverity.BENIGN, KnownBenignArtifacts.ALL_NONE_SECTION_OMITTED
         if _is_empty_container_dict(orig_val):
-            return DiffSeverity.BENIGN, "empty repeat/list omitted by format2 export"
+            return DiffSeverity.BENIGN, KnownBenignArtifacts.EMPTY_REPEAT_OMITTED
         if _is_connection_only_dict(orig_val):
-            return DiffSeverity.BENIGN, "connection-only section omitted (connections in 'in' block)"
+            return DiffSeverity.BENIGN, KnownBenignArtifacts.CONNECTION_ONLY_SECTION_OMITTED
     return DiffSeverity.ERROR, None
 
 
-def _classify_value_mismatch(orig_val: Any, after_val: Any) -> tuple[DiffSeverity, str | None]:
+def _classify_value_mismatch(orig_val: Any, after_val: Any) -> tuple[DiffSeverity, BenignArtifact | None]:
     """Classify a value mismatch — some are benign multiple-select representation differences."""
     if _is_multiple_select_equivalent(orig_val, after_val):
         if isinstance(after_val, list) and not isinstance(orig_val, list):
-            return DiffSeverity.BENIGN, "multiple-select scalar normalized to list"
+            return DiffSeverity.BENIGN, KnownBenignArtifacts.MULTI_SELECT_NORMALIZED
         elif isinstance(orig_val, list) and not isinstance(after_val, list):
-            return DiffSeverity.BENIGN, "multiple-select list collapsed to scalar"
+            return DiffSeverity.BENIGN, KnownBenignArtifacts.MULTI_SELECT_COLLAPSED
         else:
-            return DiffSeverity.BENIGN, "multiple-select representation difference"
+            return DiffSeverity.BENIGN, KnownBenignArtifacts.MULTI_SELECT_REPRESENTATION
     return DiffSeverity.ERROR, None
 
 
@@ -262,7 +307,7 @@ def compare_tool_state(orig: dict, after: dict, path: str = "", step_path: str =
         elif key not in after:
             if orig_val in (None, "null", []) or _is_connection_marker(orig_val):
                 continue
-            severity, reason = _classify_missing_value(orig_val)
+            severity, artifact = _classify_missing_value(orig_val)
             diffs.append(
                 StepDiff(
                     step_path=step_path,
@@ -271,7 +316,7 @@ def compare_tool_state(orig: dict, after: dict, path: str = "", step_path: str =
                     severity=severity,
                     description=f"present in original ({orig_val!r}), missing in roundtripped",
                     original_value=orig_val,
-                    benign_reason=reason,
+                    benign_artifact=artifact,
                 )
             )
         elif isinstance(orig_val, dict) and isinstance(after_val, dict):
@@ -279,7 +324,7 @@ def compare_tool_state(orig: dict, after: dict, path: str = "", step_path: str =
         elif isinstance(orig_val, list) and isinstance(after_val, list):
             diffs.extend(_compare_list_state(orig_val, after_val, key_path, step_path))
         elif not _values_equivalent(orig_val, after_val):
-            severity, reason = _classify_value_mismatch(orig_val, after_val)
+            severity, artifact = _classify_value_mismatch(orig_val, after_val)
             diffs.append(
                 StepDiff(
                     step_path=step_path,
@@ -289,7 +334,7 @@ def compare_tool_state(orig: dict, after: dict, path: str = "", step_path: str =
                     description=f"{orig_val!r} != {after_val!r}",
                     original_value=orig_val,
                     roundtrip_value=after_val,
-                    benign_reason=reason,
+                    benign_artifact=artifact,
                 )
             )
     return diffs
@@ -326,7 +371,7 @@ def _compare_list_state(orig: list, after: list, path: str, step_path: str = "")
         if isinstance(o, dict) and isinstance(a, dict):
             diffs.extend(compare_tool_state(o, a, item_path, step_path))
         elif not _values_equivalent(o, a):
-            severity, reason = _classify_value_mismatch(o, a)
+            severity, artifact = _classify_value_mismatch(o, a)
             diffs.append(
                 StepDiff(
                     step_path=step_path,
@@ -336,7 +381,7 @@ def _compare_list_state(orig: list, after: list, path: str, step_path: str = "")
                     description=f"{o!r} != {a!r}",
                     original_value=o,
                     roundtrip_value=a,
-                    benign_reason=reason,
+                    benign_artifact=artifact,
                 )
             )
     return diffs
