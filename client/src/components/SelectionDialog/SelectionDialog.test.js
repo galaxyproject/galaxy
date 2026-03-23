@@ -1,9 +1,9 @@
 import { createLocalVue, mount } from "@vue/test-utils";
-import { BTable } from "bootstrap-vue";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import DataDialogSearch from "./DataDialogSearch.vue";
 import SelectionDialog from "./SelectionDialog.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 const mockOptions = {
     callback: () => {},
@@ -24,10 +24,10 @@ describe("SelectionDialog.vue", () => {
 
     it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
         expect(wrapper.find("[data-description='selection dialog spinner']").exists()).toBeTruthy();
-        expect(wrapper.findComponent(BTable).exists()).toBeFalsy();
+        expect(wrapper.findComponent(GTable).exists()).toBeFalsy();
         await wrapper.setProps({ optionsShow: true });
         expect(wrapper.find("[data-description='selection dialog spinner']").exists()).toBeFalsy();
-        expect(wrapper.findComponent(BTable).exists()).toBeTruthy();
+        expect(wrapper.findComponent(GTable).exists()).toBeTruthy();
     });
 
     it("loads header correctly", async () => {
