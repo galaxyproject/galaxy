@@ -213,15 +213,18 @@ function formatRows() {
 
     hasValue.value = selectionModel.value.count() > 0 || selectedDirectories.value.length > 0;
     for (const item of items.value) {
-        let _rowVariant = "active";
+        let selectionState: SelectionState = SELECTION_STATES.UNSELECTED;
         if (item.isLeaf || !fileMode.value) {
-            _rowVariant = selectionModel.value.exists(item.id) ? "success" : "default";
+            selectionState = selectionModel.value.exists(item.id)
+                ? SELECTION_STATES.SELECTED
+                : SELECTION_STATES.UNSELECTED;
         }
         // if directory
         else if (!item.isLeaf) {
-            _rowVariant = getIcon(isDirectorySelected(item.id), item.url);
+            selectionState = getIcon(isDirectorySelected(item.id), item.url);
         }
-        Vue.set(item, "_rowVariant", _rowVariant);
+        Vue.set(item, "selectionState", selectionState);
+        Vue.set(item, "class", selectionState === SELECTION_STATES.SELECTED ? "table-success" : undefined);
     }
     allSelected.value = checkIfAllSelected();
     if (urlTracker.current.value?.url) {

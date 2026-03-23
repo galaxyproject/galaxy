@@ -59,7 +59,7 @@ vi.mock("@/composables/config", () => ({
 const { server, http } = useServerMock();
 
 interface RowElement extends SelectionItem, Element {
-    _rowVariant: SelectionState;
+    selectionState: SelectionState;
 }
 
 function paramsToKey(query: {
@@ -164,7 +164,7 @@ describe("FilesDialog, file mode", () => {
         utils.expectNumberOfSelectedItemsToBe(filesInResponse.length);
 
         await utils.applyToEachFile((item) => {
-            expect(item._rowVariant).toBe(SELECTION_STATES.SELECTED);
+            expect(item.selectionState).toBe(SELECTION_STATES.SELECTED);
         });
 
         utils.expectOkButtonEnabled();
@@ -198,7 +198,7 @@ describe("FilesDialog, file mode", () => {
 
         // ensure that it has "mixed" status icon
         const directory = utils.findRenderedDirectory(targetDirectoryId);
-        expect(directory._rowVariant).toBe(SELECTION_STATES.MIXED);
+        expect(directory.selectionState).toBe(SELECTION_STATES.MIXED);
     });
 
     it("should be able to unselect a sub-directory keeping the rest selected", async () => {
@@ -211,12 +211,12 @@ describe("FilesDialog, file mode", () => {
         // unselect subfolder
         await utils.clickOn(utils.findRenderedDirectory(subSubDirectoryId));
         // directory should be unselected
-        expect(utils.findRenderedDirectory(subSubDirectoryId)._rowVariant).toBe(SELECTION_STATES.UNSELECTED);
+        expect(utils.findRenderedDirectory(subSubDirectoryId).selectionState).toBe(SELECTION_STATES.UNSELECTED);
         // selectAllIcon should be unselected
         utils.expectSelectAllIconStatusToBe(SELECTION_STATES.UNSELECTED);
         await utils.navigateBack();
         await utils.navigateBack();
-        expect(utils.findRenderedDirectory(directoryId)._rowVariant).toBe(SELECTION_STATES.MIXED);
+        expect(utils.findRenderedDirectory(directoryId).selectionState).toBe(SELECTION_STATES.MIXED);
     });
 
     it("should select all on 'toggleSelectAll' event", async () => {
@@ -230,7 +230,7 @@ describe("FilesDialog, file mode", () => {
         utils.expectAllRenderedItemsSelected();
         await utils.navigateBack();
         const rootNode = utils.findRenderedDirectory(rootId);
-        expect(rootNode._rowVariant).toBe(SELECTION_STATES.SELECTED);
+        expect(rootNode.selectionState).toBe(SELECTION_STATES.SELECTED);
     });
 
     it("should show ftp helper only in ftp directory", async () => {
@@ -442,12 +442,14 @@ class Utils {
 
     expectAllRenderedItemsSelected() {
         this.getRenderedRows().forEach((item) => {
-            expect(item._rowVariant).toBe(SELECTION_STATES.SELECTED);
+            expect(item.selectionState).toBe(SELECTION_STATES.SELECTED);
         });
     }
 
     expectNumberOfSelectedItemsToBe(number: number) {
-        const selectedItems = this.getRenderedRows().filter((item) => item._rowVariant === SELECTION_STATES.SELECTED);
+        const selectedItems = this.getRenderedRows().filter(
+            (item) => item.selectionState === SELECTION_STATES.SELECTED,
+        );
         expect(selectedItems.length).toBe(number);
     }
 
