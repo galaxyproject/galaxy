@@ -14,10 +14,10 @@
 
                 <GButton
                     v-if="canImportHistory"
-                    v-b-modal:copy-history-modal
                     color="blue"
                     title="Import this history"
-                    data-description="import history button">
+                    data-description="import history button"
+                    @click="showCopyModal = true">
                     <FontAwesomeIcon :icon="faFileImport" />
                     Import this history
                 </GButton>
@@ -38,7 +38,7 @@
             @view-collection="onViewCollection" />
         <HistoryPanel v-else :history="history" filterable @view-collection="onViewCollection" />
 
-        <CopyModal id="copy-history-modal" :history="history" @ok="copyOkay" />
+        <CopyModal :history="history" :show-modal.sync="showCopyModal" @ok="copyOkay" />
     </div>
 </template>
 
@@ -79,6 +79,7 @@ export default {
             faFileImport,
             selectedCollections: [],
             copySuccess: false,
+            showCopyModal: false,
         };
     },
     computed: {
