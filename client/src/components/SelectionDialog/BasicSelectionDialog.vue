@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, type Ref, ref } from "vue";
 
+import type { TableField } from "@/components/Common/GTable.types";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -40,13 +41,13 @@ const modalShow = ref(true);
 const optionsShow = ref(false);
 const showTime = ref(false);
 
-const fields = computed(() => {
-    const fields = [{ key: "label" }];
+const fields = computed<TableField[]>(() => {
+    const fields = [{ key: "label", label: "Name" }];
     if (props.detailsKey) {
-        fields.push({ key: "details" });
+        fields.push({ key: "details", label: "Details" });
     }
     if (showTime.value) {
-        fields.push({ key: "time" });
+        fields.push({ key: "time", label: "Time" });
     }
     return fields;
 });

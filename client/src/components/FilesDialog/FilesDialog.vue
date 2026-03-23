@@ -11,6 +11,7 @@ import {
     type FilterFileSourcesOptions,
     type RemoteEntry,
 } from "@/api/remoteFiles";
+import type { TableField } from "@/components/Common/GTable.types";
 import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
 import {
     type ItemsProvider,
@@ -87,14 +88,14 @@ const selectAllIcon = ref<SelectionState>(SELECTION_STATES.UNSELECTED);
 const urlTracker = useUrlTracker<SelectionItem & { parentPage?: number }>({ root: undefined });
 const totalItems = ref(0);
 
-const fields = computed(() => {
+const fields = computed<TableField[]>(() => {
     const fields = [];
-    fields.push({ key: "label" });
+    fields.push({ key: "label", label: "Name" });
     if (showDetails.value) {
-        fields.push({ key: "details" });
+        fields.push({ key: "details", label: "Details" });
     }
     if (showTime.value) {
-        fields.push({ key: "time" });
+        fields.push({ key: "time", label: "Time" });
     }
     return fields;
 });

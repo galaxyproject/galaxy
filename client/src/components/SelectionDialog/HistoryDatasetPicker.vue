@@ -3,6 +3,7 @@ import { faHdd } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref, set } from "vue";
 
 import { GalaxyApi, type HDASummary, type HistorySortByLiteral, type HistorySummary } from "@/api";
+import type { TableField } from "@/components/Common/GTable.types";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
 import {
     type ItemsProvider,
@@ -69,7 +70,8 @@ const okButtonText = computed(() => {
         return `${props.actionButtonText} ${selected.value.length} dataset${selected.value.length > 1 ? "s" : ""}`;
     }
 });
-const fields = computed(() => {
+
+const fields = computed<TableField[]>(() => {
     if (datasetsVisible.value) {
         return [
             { key: "label", label: "Name", sortable: true },
