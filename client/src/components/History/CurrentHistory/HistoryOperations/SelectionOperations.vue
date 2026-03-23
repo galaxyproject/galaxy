@@ -14,25 +14,19 @@
                     >{{ localize("With") }} {{ numSelected }} {{ localize("selected...") }}</span
                 >
             </b-dropdown-text>
-            <b-dropdown-item v-if="canUnhideSelection" v-b-modal:show-selected-content data-description="unhide option">
+            <b-dropdown-item v-if="canUnhideSelection" data-description="unhide option" @click="unhideSelected">
                 <span v-localize>Unhide</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="canHideSelection" v-b-modal:hide-selected-content data-description="hide option">
+            <b-dropdown-item v-if="canHideSelection" data-description="hide option" @click="hideSelected">
                 <span v-localize>Hide</span>
             </b-dropdown-item>
-            <b-dropdown-item
-                v-if="canUndeleteSelection"
-                v-b-modal:restore-selected-content
-                data-description="undelete option">
+            <b-dropdown-item v-if="canUndeleteSelection" data-description="undelete option" @click="undeleteSelected">
                 <span v-localize>Undelete</span>
             </b-dropdown-item>
-            <b-dropdown-item
-                v-if="canDeleteSelection"
-                v-b-modal:delete-selected-content
-                data-description="delete option">
+            <b-dropdown-item v-if="canDeleteSelection" data-description="delete option" @click="deleteSelected">
                 <span v-localize>Delete</span>
             </b-dropdown-item>
-            <b-dropdown-item v-b-modal:purge-selected-content data-description="purge option">
+            <b-dropdown-item v-if="canPurgeSelection" data-description="purge option" @click="purgeSelected">
                 <span v-localize>Delete (permanently)</span>
             </b-dropdown-item>
             <b-dropdown-divider v-if="showBuildOptions" />
@@ -68,42 +62,6 @@
             </b-dropdown-item>
         </b-dropdown>
 
-        <b-modal
-            id="hide-selected-content"
-            :title="localize('Hide Selected Content?')"
-            title-tag="h2"
-            @ok="hideSelected">
-            <p v-localize>Really hide {{ numSelected }} content items?</p>
-        </b-modal>
-        <b-modal
-            id="show-selected-content"
-            :title="localize('Show Selected Content?')"
-            title-tag="h2"
-            @ok="unhideSelected">
-            <p v-localize>Really show {{ numSelected }} content items?</p>
-        </b-modal>
-        <b-modal
-            id="delete-selected-content"
-            :title="localize('Delete Selected Content?')"
-            title-tag="h2"
-            @ok="deleteSelected">
-            <p v-localize>Really delete {{ numSelected }} content items?</p>
-        </b-modal>
-        <b-modal
-            id="restore-selected-content"
-            :title="localize('Restore Selected Content?')"
-            title-tag="h2"
-            @ok="undeleteSelected">
-            <p v-localize>Really restore {{ numSelected }} content items?</p>
-        </b-modal>
-        <b-modal
-            id="purge-selected-content"
-            :title="localize('Purge Selected Content?')"
-            title-tag="h2"
-            @ok="purgeSelected">
-            <p v-localize>Permanently delete {{ numSelected }} content items?</p>
-            <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
-        </b-modal>
         <b-modal
             id="change-dbkey-of-selected-content"
             title="Change Database/Build?"
@@ -185,6 +143,7 @@ import {
 import { DatatypesProvider, DbKeyProvider } from "@/components/providers";
 import { StatelessTags } from "@/components/Tags";
 import { useConfig } from "@/composables/config";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
 
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
@@ -209,7 +168,9 @@ export default {
     },
     setup() {
         const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
+        const { confirm } = useConfirmDialog();
+
+        return { config, confirm, isConfigLoaded };
     },
     data: function () {
         return {
@@ -237,6 +198,10 @@ export default {
         /** @returns {Boolean} */
         canDeleteSelection() {
             return this.areAllSelectedActive || (this.isAnyDeletedStateAllowed && !this.areAllSelectedDeleted);
+        },
+        /** @returns {Boolean} */
+        canPurgeSelection() {
+            return this.contentSelection.size === 0 || this.isQuerySelection || !this.areAllSelectedPurged;
         },
         /** @returns {Boolean} */
         canUndeleteSelection() {
@@ -333,21 +298,43 @@ export default {
                 this.$router.push(`/collection/new_list?advanced=${advanced}`);
             }
         },
-        // Selected content manipulation, hide/show/delete/purge
+        // Selected content manipulation, hide/show/delete/purge (using the confirm dialog)
+        async confirmAndRun(operation, message, options = {}) {
+            if (await this.confirm(message, options)) {
+                this.runOnSelection(operation);
+            }
+        },
         hideSelected() {
-            this.runOnSelection(hideSelectedContent);
+            return this.confirmAndRun(hideSelectedContent, `Really hide ${this.numSelected} content items?`, {
+                title: "Hide Selected Content?",
+                okText: "Hide",
+            });
         },
         unhideSelected() {
-            this.runOnSelection(unhideSelectedContent);
+            return this.confirmAndRun(unhideSelectedContent, `Really show ${this.numSelected} content items?`, {
+                title: "Show Selected Content?",
+                okText: "Show",
+            });
         },
         deleteSelected() {
-            this.runOnSelection(deleteSelectedContent);
+            return this.confirmAndRun(deleteSelectedContent, `Really delete ${this.numSelected} content items?`, {
+                title: "Delete Selected Content?",
+                okText: "Delete",
+                okColor: "red",
+            });
         },
         undeleteSelected() {
-            this.runOnSelection(undeleteSelectedContent);
+            return this.confirmAndRun(undeleteSelectedContent, `Really restore ${this.numSelected} content items?`, {
+                title: "Restore Selected Content?",
+                okText: "Restore",
+            });
         },
         purgeSelected() {
-            this.runOnSelection(purgeSelectedContent);
+            return this.confirmAndRun(purgeSelectedContent, `Really purge ${this.numSelected} content items?`, {
+                title: "Purge Selected Content?",
+                okText: "Purge",
+                okColor: "red",
+            });
         },
         changeDbkeyOfSelected() {
             this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedDbKey.id });

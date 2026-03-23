@@ -3,11 +3,17 @@ import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 
 import SelectionOperations from "./SelectionOperations.vue";
+
+vi.mock("@/composables/confirmDialog", () => ({
+    useConfirmDialog: () => ({
+        confirm: vi.fn().mockResolvedValue(true),
+    }),
+}));
 
 const localVue = getLocalVue();
 
@@ -145,7 +151,7 @@ describe("History Selection Operations", () => {
                 expect(wrapper.find(option).exists()).toBe(false);
             });
 
-            it("should display 'permanently delete' option always", async () => {
+            it("should display 'permanently delete' option unless all selected items are purged", async () => {
                 const option = getMenuSelectorFor("purge");
                 expect(wrapper.find(option).exists()).toBe(true);
                 await wrapper.setProps({ filterText: "deleted:any visible:any" });
