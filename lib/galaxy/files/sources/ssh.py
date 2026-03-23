@@ -1,3 +1,4 @@
+from io import StringIO
 from typing import (
     Optional,
     Union,
@@ -7,6 +8,9 @@ try:
     from fsspec.implementations.sftp import SFTPFileSystem
 except ImportError:
     SFTPFileSystem = None
+from paramiko.ecdsakey import ECDSAKey
+from paramiko.ed25519key import Ed25519Key
+from paramiko.rsakey import RSAKey
 
 from galaxy.files.models import FilesSourceRuntimeContext
 from galaxy.files.sources._fsspec import (
@@ -57,16 +61,29 @@ class SshFilesSource(FsspecFilesSource[SshFileSourceTemplateConfiguration, SshFi
             raise self.required_package_exception
 
         config = context.config
-        # config.pkey is an Optional[str] (raw private-key content). Passing a
-        # non-None string to paramiko's SSHClient.connect() makes it attempt
-        # public-key auth with a str instead of a PKey object, which raises
-        # AttributeError.  Until proper key-object parsing is implemented, skip
-        # pkey when the value is absent.
-        pkey: Optional[str] = config.pkey if config.pkey and config.pkey != "None" else None
+        pkey = None
+        password = config.passwd
+        if config.pkey:
+            # pkey arrives here as space separated single line string
+            # simple replacement of " " by "\n" does not work since
+            # the `-----BEGIN ...-----` and `-----END` lines also
+            # contain spaces
+            import re
+            m = re.match(r"^\s*(-+[^-]+-+) (.+) (-+[^-]+-+)\s*$", config.pkey)
+            pk = m.group(1) + "\n" + "\n".join(m.group(2).split()) + "\n" + m.group(3)
+            # https://github.com/paramiko/paramiko/issues/1303#issuecomment-428658371
+            for pkey_class in (RSAKey, ECDSAKey, Ed25519Key):
+                try:
+                    with StringIO(pk) as pkeyf:
+                        pkey = pkey_class.from_private_key(pkeyf, password=config.passwd)
+                        password = None
+                except Exception as e:
+                    pass
+
         fs = SFTPFileSystem(
             host=config.host,
             username=config.user,
-            password=config.passwd,
+            password=password,
             pkey=pkey,
             port=config.port,
             timeout=config.timeout,

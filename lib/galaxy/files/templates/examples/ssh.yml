@@ -43,3 +43,8 @@
       optional: true
       help: |
         Password to connect to SSH server with.
+    pkey:
+      label: SSH private key
+      optional: true
+      help: |
+        Private key to be used. For encrypted keys the given password is used to decrypt.
