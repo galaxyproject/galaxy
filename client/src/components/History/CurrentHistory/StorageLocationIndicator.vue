@@ -54,7 +54,7 @@ function toggleSelectPreferredStore() {
 <template>
     <div class="storage-location-indicator">
         <BButton
-            v-g-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             class="ui-link"
             :title="storageLocationButtonTitle"
             :disabled="isAnonymous"

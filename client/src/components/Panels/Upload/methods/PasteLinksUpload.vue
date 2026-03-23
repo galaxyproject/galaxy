@@ -278,7 +278,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                         <div class="d-flex align-items-center">
                             <BFormInput
                                 v-model="item.url"
-                                v-g-tooltip.hover.noninteractive
+                                v-g-tooltip.hover
                                 size="sm"
                                 :state="isValidUrl(item.url)"
                                 :title="getUrlValidationMessage(item.url)"
@@ -355,7 +355,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <!-- Actions column -->
                     <template v-slot:cell(actions)="{ item }">
                         <GButton
-                            v-g-tooltip.hover.noninteractive
+                            v-g-tooltip.hover
                             class="remove-btn"
                             color="red"
                             outline

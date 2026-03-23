@@ -30,7 +30,7 @@ function onItemSelection(item: DbKey) {
 
 <template>
     <SingleItemSelector
-        v-g-tooltip.hover.noninteractive
+        v-g-tooltip.hover
         collection-name="References"
         :title="tooltip"
         :items="dbKeys"

@@ -10,10 +10,7 @@ const emit = defineEmits(["stop-flagging"]);
 
 <template>
     <BBadge class="form-input-changed-input-badge" pill size="sm">
-        <span
-            v-localize
-            v-g-tooltip.hover.noninteractive
-            title="This input has a different value than in the original run">
+        <span v-localize v-g-tooltip.hover title="This input has a different value than in the original run">
             Changed Input
         </span>
         <GButton

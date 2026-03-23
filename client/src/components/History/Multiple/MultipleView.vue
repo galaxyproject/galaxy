@@ -115,7 +115,7 @@ function showRecent() {
 
             <div class="d-flex justify-content-between">
                 <div>
-                    <BButtonGroup v-g-tooltip.hover.noninteractive :title="showRecentTitle">
+                    <BButtonGroup v-g-tooltip.hover :title="showRecentTitle">
                         <BButton
                             size="sm"
                             data-description="show recent histories"
@@ -128,7 +128,7 @@ function showRecent() {
                         </BButton>
                     </BButtonGroup>
                     <BButton
-                        v-g-tooltip.hover.noninteractive
+                        v-g-tooltip.hover
                         :title="localize('Open modal to select/deselect histories')"
                         size="sm"
                         data-description="open select histories modal"

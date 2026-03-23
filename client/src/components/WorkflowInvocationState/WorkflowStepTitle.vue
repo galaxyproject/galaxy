@@ -88,7 +88,7 @@ watch(
 <template>
     <span>
         {{ title }}
-        <span v-g-tooltip.noninteractive.hover.v-danger :title="hoverError">
+        <span v-g-tooltip.hover.v-danger :title="hoverError">
             <FontAwesomeIcon v-if="hoverError" class="text-danger" :icon="faExclamationCircle" />
         </span>
     </span>

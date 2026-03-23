@@ -6,7 +6,6 @@
  *   Placement: .top (default), .bottom, .left, .right, .topright
  *   Trigger:   .hover (default), .focus
  *   Content:   .html (innerHTML instead of textContent)
- *   Compat:    .noninteractive, .nofade (accepted, no-op — all tooltips are noninteractive)
  *   Styling:   .v-danger
  *
  * Value forms:

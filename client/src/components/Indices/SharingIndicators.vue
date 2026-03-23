@@ -21,7 +21,7 @@ const props = defineProps<SharingIndicatorsProps>();
     <span v-else>
         <BButton
             v-if="props.object.published"
-            v-g-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             class="sharing-indicator-published"
             size="sm"
             variant="link"
@@ -31,7 +31,7 @@ const props = defineProps<SharingIndicatorsProps>();
         </BButton>
         <BButton
             v-if="props.object.importable"
-            v-g-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             class="sharing-indicator-importable"
             size="sm"
             variant="link"
@@ -41,7 +41,7 @@ const props = defineProps<SharingIndicatorsProps>();
         </BButton>
         <BButton
             v-if="props.object.shared"
-            v-g-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             class="sharing-indicator-shared"
             size="sm"
             variant="link"

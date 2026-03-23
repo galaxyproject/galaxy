@@ -555,7 +555,7 @@ const groupIndicators = computed(() => (group: ServiceCredentialGroupResponse): 
                     <template v-if="!currentServiceCredentialsGroup?.id">
                         <BBadge
                             v-if="props.serviceDefinition.optional"
-                            v-g-tooltip.hover.noninteractive
+                            v-g-tooltip.hover
                             pill
                             title="This service is optional. You may choose not to provide credentials for it."
                             variant="secondary"
@@ -564,7 +564,7 @@ const groupIndicators = computed(() => (group: ServiceCredentialGroupResponse): 
                         </BBadge>
                         <BBadge
                             v-else
-                            v-g-tooltip.hover.noninteractive
+                            v-g-tooltip.hover
                             pill
                             title="This service is required. The tool may not function properly without providing credentials for it."
                             :variant="currentServiceCredentialsGroup ? 'success' : 'warning'"

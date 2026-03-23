@@ -1,6 +1,6 @@
 <template>
     <BButton
-        v-g-tooltip.noninteractive="tooltipOptions"
+        v-g-tooltip="tooltipOptions"
         class="border-0 m-1 px-1 py-0"
         :class="{ active, 'cell-button-hide': !show }"
         :title="title"

@@ -130,7 +130,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
         </BButtonGroup>
         <BButton
             v-if="props.showViewCreateOptions && props.isPopulated"
-            v-g-tooltip.bottom.hover.noninteractive
+            v-g-tooltip.bottom.hover
             class="d-flex flex-gapx-1 align-items-center"
             title="View currently selected"
             :pressed="props.workflowTab === 'view'"
@@ -142,7 +142,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
              that has a single builder exposed, or source is dataset(s). -->
         <template v-if="props.showViewCreateOptions && sourceIsCollection && !hasSingleAvailableCollectionBuilderType">
             <BDropdown
-                v-g-tooltip.bottom.hover.noninteractive
+                v-g-tooltip.bottom.hover
                 class="d-flex"
                 data-description="upload"
                 :title="createTitle"
@@ -158,7 +158,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             </BDropdown>
             <BButton
                 v-if="props.workflowTab === 'create'"
-                v-g-tooltip.bottom.hover.noninteractive
+                v-g-tooltip.bottom.hover
                 title="Hide Collection Creator"
                 variant="link"
                 @click="emit('update:workflow-tab', '')">
@@ -168,7 +168,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
         </template>
         <BButton
             v-else-if="props.showViewCreateOptions && sourceIsCollection"
-            v-g-tooltip.bottom.hover.noninteractive
+            v-g-tooltip.bottom.hover
             class="d-flex flex-gapx-1 align-items-center"
             data-description="upload"
             :title="createTitle"
@@ -179,7 +179,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
         </BButton>
         <template v-else-if="props.showViewCreateOptions && !sourceIsCollection">
             <BButton
-                v-g-tooltip.bottom.hover.noninteractive
+                v-g-tooltip.bottom.hover
                 class="d-flex flex-gapx-1 align-items-center"
                 data-description="upload"
                 :title="createTitle"
@@ -189,7 +189,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
                 <span v-localize>Upload</span>
             </BButton>
             <BButton
-                v-g-tooltip.bottom.hover.noninteractive
+                v-g-tooltip.bottom.hover
                 class="d-flex flex-gapx-1 align-items-center"
                 data-description="upload-beta"
                 title="Try our new upload experience"

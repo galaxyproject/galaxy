@@ -30,7 +30,7 @@ function isPathActive(path: RawLocation): boolean {
                 <BLink
                     v-if="item.to && !isPathActive(item.to)"
                     :key="index"
-                    v-g-tooltip.hover.bottom.noninteractive
+                    v-g-tooltip.hover.bottom
                     :title="`Go back to ${localize(item.title)}`"
                     :to="item.to"
                     class="breadcrumb-heading-header-active">

@@ -684,7 +684,7 @@ defineExpose({
                                     <BFormCheckbox
                                         v-if="showSelectAll"
                                         :id="`g-table-select-all-${props.id}`"
-                                        v-g-tooltip.hover.noninteractive
+                                        v-g-tooltip.hover
                                         :disabled="selectAllDisabled"
                                         :checked="allSelected"
                                         :indeterminate="indeterminateSelected"
@@ -753,7 +753,7 @@ defineExpose({
                                     <td v-if="selectable" class="g-table-select-column">
                                         <BFormCheckbox
                                             :id="`${getRowId(props.id, getGlobalIndex(paginatedIndex))}-select`"
-                                            v-g-tooltip.hover.noninteractive
+                                            v-g-tooltip.hover
                                             :checked="isRowSelected(getGlobalIndex(paginatedIndex))"
                                             title="Select for bulk actions"
                                             @click.stop
@@ -779,7 +779,7 @@ defineExpose({
                                             ">
                                             <FontAwesomeIcon
                                                 v-if="getStatusIcon(item, getGlobalIndex(paginatedIndex))"
-                                                v-g-tooltip.hover.noninteractive
+                                                v-g-tooltip.hover
                                                 v-bind="getIconProps(item, getGlobalIndex(paginatedIndex))"
                                                 fixed-width />
                                         </template>
@@ -798,7 +798,7 @@ defineExpose({
                                     <td v-if="props.actions" class="g-table-actions-column">
                                         <slot name="actions" :item="item" :index="getGlobalIndex(paginatedIndex)">
                                             <BDropdown
-                                                v-g-tooltip.hover.noninteractive
+                                                v-g-tooltip.hover
                                                 no-caret
                                                 right
                                                 title="More actions"

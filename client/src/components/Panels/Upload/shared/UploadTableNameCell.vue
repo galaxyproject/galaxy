@@ -31,7 +31,7 @@ function handleBlur() {
 
 <template>
     <BFormInput
-        v-g-tooltip.hover.noninteractive
+        v-g-tooltip.hover
         :value="value"
         size="sm"
         :state="state"

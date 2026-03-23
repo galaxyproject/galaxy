@@ -42,7 +42,7 @@ function updateDeferred(value: boolean) {
 <template>
     <div class="d-flex align-items-center">
         <BFormCheckbox
-            v-g-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             :checked="spaceToTab"
             size="sm"
             :class="{ 'mr-2': showPosix || showDeferred }"
@@ -52,7 +52,7 @@ function updateDeferred(value: boolean) {
         </BFormCheckbox>
         <BFormCheckbox
             v-if="showPosix"
-            v-g-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             :checked="toPosixLines"
             size="sm"
             :class="{ 'mr-2': showDeferred }"
@@ -62,7 +62,7 @@ function updateDeferred(value: boolean) {
         </BFormCheckbox>
         <BFormCheckbox
             v-if="showDeferred"
-            v-g-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             :checked="deferred"
             size="sm"
             title="Galaxy will store a reference and fetch data only when needed by a tool"

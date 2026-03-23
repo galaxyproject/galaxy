@@ -51,7 +51,7 @@ function handleToggleDeferred() {
         <span class="options-title">Upload Settings</span>
         <div class="d-flex align-items-center">
             <BFormCheckbox
-                v-g-tooltip.hover.noninteractive
+                v-g-tooltip.hover
                 :checked="allSpaceToTab"
                 :indeterminate="spaceToTabIndeterminate"
                 size="sm"
@@ -62,7 +62,7 @@ function handleToggleDeferred() {
             </BFormCheckbox>
             <BFormCheckbox
                 v-if="showPosix"
-                v-g-tooltip.hover.noninteractive
+                v-g-tooltip.hover
                 :checked="allToPosixLines"
                 :indeterminate="toPosixLinesIndeterminate"
                 size="sm"
@@ -73,7 +73,7 @@ function handleToggleDeferred() {
             </BFormCheckbox>
             <BFormCheckbox
                 v-if="showDeferred"
-                v-g-tooltip.hover.noninteractive
+                v-g-tooltip.hover
                 :checked="allDeferred"
                 :indeterminate="deferredIndeterminate"
                 size="sm"

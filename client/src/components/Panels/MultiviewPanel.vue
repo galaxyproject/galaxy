@@ -120,7 +120,7 @@ function userTitle(title: string) {
             <section v-if="!showAdvanced">
                 <BButtonGroup
                     v-if="route.path === '/histories/view_multiple'"
-                    v-g-tooltip.hover.noninteractive.bottom
+                    v-g-tooltip.hover.bottom
                     class="w-100 mt-2"
                     :aria-label="pinRecentTitle"
                     :title="pinRecentTitle">

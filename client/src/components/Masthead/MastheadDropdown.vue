@@ -40,7 +40,7 @@ defineProps({
 </script>
 
 <template>
-    <BNavItemDropdown :id="id" ref="dropdown" v-g-tooltip.noninteractive.hover.bottom :title="tooltip ?? ''" right>
+    <BNavItemDropdown :id="id" ref="dropdown" v-g-tooltip.hover.bottom :title="tooltip ?? ''" right>
         <template v-if="icon" v-slot:button-content>
             <span class="sr-only">{{ tooltip || id }}</span>
             <FontAwesomeIcon fixed-width :icon="icon" />

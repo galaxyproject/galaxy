@@ -24,7 +24,7 @@ function handleNavigate(index: number | undefined) {
             <button
                 v-if="idx < items.length - 1"
                 :key="`link-${idx}`"
-                v-g-tooltip.hover.noninteractive
+                v-g-tooltip.hover
                 class="breadcrumb-link"
                 :title="`Navigate to ${item.title}`"
                 @click="handleNavigate(item.index)">

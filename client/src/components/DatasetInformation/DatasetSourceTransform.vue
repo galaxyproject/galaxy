@@ -72,7 +72,7 @@ function actionLongDescription(transformAction: DatasetTransform) {
             <ul>
                 <li v-for="(transformAction, index) in transform" :key="index">
                     <span
-                        v-g-tooltip.hover.noninteractive.nofade.bottom
+                        v-g-tooltip.hover.bottom
                         :title="actionLongDescription(transformAction)"
                         class="dataset-source-transform-element"
                         :data-transform-action="transformAction.action">

@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 <template>
     <BButton
-        v-g-tooltip.noninteractive.hover
+        v-g-tooltip.hover
         class="back-to-top"
         :class="{ show: props.offset > 100 }"
         :title="props.offset > 100 ? 'Scroll To Top' : ''"

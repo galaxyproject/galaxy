@@ -379,7 +379,7 @@ watch(operationMessage, () => {
                 </a>
                 or
                 <a
-                    v-g-tooltip.noninteractive.hover
+                    v-g-tooltip.hover
                     title="Note that this might produce inaccurate results"
                     href="javascript:void(0)"
                     class="ui-link"

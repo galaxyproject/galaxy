@@ -60,7 +60,7 @@ function handleHistorySelected(history: { id: string }) {
             <TargetHistoryLink :target-history-id="targetHistoryId" :target-history-caption="historyCaption" />
             <a
                 v-if="canChangeHistory"
-                v-g-tooltip.hover.noninteractive
+                v-g-tooltip.hover
                 href="#"
                 class="change-history-link ml-2"
                 :title="changeLinkTooltip"

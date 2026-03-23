@@ -11,7 +11,7 @@
             <div class="float-right d-flex flex-gapx-1">
                 <b-button
                     v-if="!disableSimpleForm"
-                    v-g-tooltip.hover.noninteractive
+                    v-g-tooltip.hover
                     variant="link"
                     class="text-decoration-none"
                     title="Use simplified run form instead"

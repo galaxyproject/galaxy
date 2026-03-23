@@ -59,7 +59,7 @@ function onKeydown(event: KeyboardEvent) {
 
 <template>
     <div
-        v-g-tooltip.topright.hover.noninteractive
+        v-g-tooltip.topright.hover
         :class="['tool-panel-label', 'tool-panel-divider', { 'tool-panel-label-clickable': isCollapsible }]"
         :tabindex="isCollapsible ? 0 : undefined"
         :title="description"
