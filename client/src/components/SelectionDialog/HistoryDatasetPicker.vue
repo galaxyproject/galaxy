@@ -129,12 +129,13 @@ function formatRows() {
 
     for (const item of items.value) {
         if (item.isLeaf) {
-            const _rowVariant =
+            const selectionState =
                 selected.value.findIndex((i) => i.id === item.id) !== -1
                     ? SELECTION_STATES.SELECTED
                     : SELECTION_STATES.UNSELECTED;
 
-            set(item, "_rowVariant", _rowVariant);
+            set(item, "selectionState", selectionState);
+            set(item, "class", selectionState === SELECTION_STATES.SELECTED ? "table-success" : undefined);
         }
     }
 
