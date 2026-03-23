@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { BTable } from "bootstrap-vue";
-
 import type {
     InvocationInput,
     InvocationInputParameter,
     InvocationOutput,
     InvocationOutputCollection,
 } from "@/api/invocations";
+import type { TableField } from "@/components/Common/GTable.types";
 
+import GTable from "@/components/Common/GTable.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 type InvocationStepTypes = InvocationInput | InvocationInputParameter | InvocationOutput | InvocationOutputCollection;
@@ -16,6 +16,11 @@ const props = defineProps<{
     parameters: InvocationStepTypes[];
     styledTable?: boolean;
 }>();
+
+const fields: TableField[] = [
+    { key: "label", label: "Label" },
+    { key: "parameter_value", label: "Value" },
+];
 
 function isData(value: unknown): value is InvocationInput | InvocationOutput | InvocationOutputCollection {
     return typeof value === "object" && value !== null && "src" in value;
@@ -37,13 +42,12 @@ function dataStepLabel(input: InvocationStepTypes): string {
 </script>
 
 <template>
-    <BTable
-        small
-        :outlined="props.styledTable"
-        :striped="props.styledTable"
-        :borderless="props.styledTable"
-        :fields="['label', 'parameter_value']"
-        :items="props.parameters">
+    <GTable
+        compact
+        :bordered="props.styledTable"
+        :fields="fields"
+        :items="props.parameters"
+        :striped="props.styledTable">
         <template v-slot:cell(parameter_value)="{ item }">
             <GenericHistoryItem
                 v-if="isData(item) && hasValidId(item)"
@@ -58,5 +62,5 @@ function dataStepLabel(input: InvocationStepTypes): string {
                 {{ item.parameter_value }}
             </span>
         </template>
-    </BTable>
+    </GTable>
 </template>
