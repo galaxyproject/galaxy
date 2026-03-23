@@ -10,7 +10,7 @@
         <div v-if="showEntryPoints">
             <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
         </div>
-        <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
+        <GModal :show.sync="showError" size="medium" :title="errorTitle | l" fixed-height>
             <b-alert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
             </b-alert>
@@ -21,7 +21,7 @@
             <small class="text-muted">
                 <pre>{{ errorContentPretty }}</pre>
             </small>
-        </b-modal>
+        </GModal>
         <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
         <ToolCard
             v-if="showForm"
@@ -132,6 +132,7 @@ import {
     waitForToolRequest,
 } from "./services";
 
+import GModal from "../BaseComponents/GModal.vue";
 import ToolRecommendation from "../ToolRecommendation.vue";
 import ToolCard from "./ToolCard.vue";
 import ToolFormTags from "./ToolFormTags.vue";
@@ -155,6 +156,7 @@ export default {
         ToolFormTags,
         ToolRecommendation,
         Heading,
+        GModal,
     },
     props: {
         id: {
