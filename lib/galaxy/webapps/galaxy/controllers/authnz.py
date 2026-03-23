@@ -53,8 +53,7 @@ class OIDC(BaseUIController):
             provider_label = trans.app.authnz_manager.oidc_backends_config.get(authnz.provider, {}).get(
                 "label", authnz.provider
             )
-            if provider_label != authnz.provider:
-                token_info["provider_label"] = provider_label
+            token_info["provider_label"] = provider_label
 
             # Try to extract expiration from id_token if available
             if authnz.extra_data and "id_token" in authnz.extra_data:
