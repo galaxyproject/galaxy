@@ -2,8 +2,7 @@
     <div>
         <b-breadcrumb v-if="dataTable && !loading" id="breadcrumb" :items="breadcrumbItems" />
         <Alert :message="message" :variant="status" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" status="info" />
+        <Alert v-if="loading" message="Waiting for data" status="info" />
         <Alert
             v-else-if="dataTable && !dataTable['data'].length"
             message="There are currently no entries in this tool data table."
@@ -40,9 +39,7 @@
 </template>
 
 <script>
-import axios from "axios";
-
-import { getAppRoot } from "@/onload/loadConfig";
+import { GalaxyApi } from "@/api";
 
 import Alert from "@/components/Alert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
@@ -61,7 +58,6 @@ export default {
     data() {
         return {
             dataTable: {},
-            viewOnly: false,
             message: "",
             status: "",
             loading: true,
@@ -86,37 +82,42 @@ export default {
             ];
         },
     },
-    created() {
-        axios
-            .get(`${getAppRoot()}data_manager/tool_data_table_info?table_name=${this.name}`)
-            .then((response) => {
-                this.dataTable = response.data.dataTable;
-                this.viewOnly = response.data.viewOnly;
-                this.message = response.data.message;
-                this.status = response.data.status;
-                this.loading = false;
-            })
-            .catch((error) => {
-                console.error(error);
-            });
+    async created() {
+        const { data, error } = await GalaxyApi().GET("/api/tool_data/{table_name}", {
+            params: { path: { table_name: this.name } },
+        });
+        if (error) {
+            this.message = error.err_msg || "Failed to load tool data table.";
+            this.status = "error";
+        } else {
+            this.dataTable = {
+                name: data.name,
+                columns: data.columns,
+                data: data.fields,
+            };
+        }
+        this.loading = false;
     },
     methods: {
         fields(columns) {
             return columns.map((elem, index) => ({ key: index.toString(), label: elem }));
         },
-        reload() {
-            axios
-                .get(`${getAppRoot()}data_manager/reload_tool_data_tables?table_name=${this.dataTableName}`)
-                .then((response) => {
-                    if (response.data.dataTable) {
-                        this.dataTable = response.data.dataTable;
-                    }
-                    this.message = response.data.message;
-                    this.status = response.data.status;
-                })
-                .catch((error) => {
-                    console.error(error);
-                });
+        async reload() {
+            const { data, error } = await GalaxyApi().GET("/api/tool_data/{table_name}/reload", {
+                params: { path: { table_name: this.dataTableName } },
+            });
+            if (error) {
+                this.message = error.err_msg || "Failed to reload tool data table.";
+                this.status = "error";
+            } else {
+                this.dataTable = {
+                    name: data.name,
+                    columns: data.columns,
+                    data: data.fields,
+                };
+                this.message = `Reloaded data table '${data.name}'.`;
+                this.status = "done";
+            }
         },
     },
 };
