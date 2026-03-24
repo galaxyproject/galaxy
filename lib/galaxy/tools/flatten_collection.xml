@@ -2,7 +2,7 @@
       name="Flatten collection"
       version="1.0.0"
       tool_type="flatten_collection">
-    <description></description>
+    <description>to a simple list</description>
     <type class="FlattenTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
@@ -48,23 +48,81 @@
 Synopsis
 ========
 
-Flattens nested collection into a simple list.
+Flattens a nested collection into a simple list.
 
 ===========
 Description
 ===========
 
-This tool takes nested collections such as a list of lists or a list of dataset pairs and produces a flat list from the inputs. It effectively "flattens" the hierarchy. The collection identifiers are merged together (using "_" as default) to create new collection identifiers in the flattened result:
+This tool takes a nested collection — such as a list of lists (``list:list``), a list of dataset pairs (``list:paired``), or even deeper structures — and collapses it into a single flat ``list``. Every dataset in the hierarchy becomes a top-level element in the output.
+
+Because the hierarchy is removed, the element identifiers from each nesting level are joined together to form new unique names. By default the separator is an underscore (``_``), but you can choose a colon (``:``) or dash (``-``) instead.
+
+========
+Examples
+========
+
+**Flatten a list of pairs**
+
+A ``list:paired`` collection with two samples::
+
+ list:paired: "Sequencing reads"
+
+   sample1/
+     forward  →  reads_R1.fastq
+     reverse  →  reads_R2.fastq
+   sample2/
+     forward  →  reads_R1.fastq
+     reverse  →  reads_R2.fastq
+
+After flattening with separator ``_``::
+
+ list: "Sequencing reads (flattened)"
+
+   sample1_forward  →  reads_R1.fastq
+   sample1_reverse  →  reads_R2.fastq
+   sample2_forward  →  reads_R1.fastq
+   sample2_reverse  →  reads_R2.fastq
+
+-------
+
+**Flatten a list of lists**
+
+A ``list:list`` collection::
+
+ list:list: "Batches"
+
+   batch1/
+     Dataset 1
+     Dataset 2
+   batch2/
+     Dataset 3
+
+After flattening::
+
+ list: "Batches (flattened)"
+
+   batch1_Dataset 1
+   batch1_Dataset 2
+   batch2_Dataset 3
+
+-------
+
+**Choosing a different separator**
+
+With separator set to ``-`` instead of ``_``, the same example would produce ``batch1-Dataset 1``, ``batch1-Dataset 2``, etc.
+
+-------
 
 .. image:: ${static_path}/images/tools/collection_ops/flatten.svg
+  :alt: Flatten a nested collection into a simple list
   :width: 500
-  :alt: Flattening operation
 
-----
+-------
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
-     ]]></help>
+    ]]></help>
 </tool>

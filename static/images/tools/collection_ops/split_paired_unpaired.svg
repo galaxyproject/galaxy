@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 280" width="680" height="280">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="110%" height="110%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feComponentTransfer in="blur">
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+  </defs>
+
+  <!-- Left: mixed input collection -->
+  <rect x="10" y="10" width="220" height="260" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="120" y="28" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#333">list : paired_or_unpaired</text>
+
+  <!-- Paired element: sample1 -->
+  <rect x="22" y="38" width="196" height="70" rx="6" ry="6" fill="#e8f0e3" stroke="#aaa" stroke-width="0.7"/>
+  <text x="120" y="54" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#555">sample1 (paired)</text>
+
+  <rect x="34" y="60" width="172" height="18" rx="3" ry="3" fill="#fef3e2" stroke="#d4760a" stroke-width="0.7"/>
+  <text x="120" y="73" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#d4760a">forward</text>
+
+  <rect x="34" y="82" width="172" height="18" rx="3" ry="3" fill="#f0e8f5" stroke="#7b4fa0" stroke-width="0.7"/>
+  <text x="120" y="95" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#7b4fa0">reverse</text>
+
+  <!-- Unpaired element: sample2 -->
+  <rect x="22" y="116" width="196" height="28" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="120" y="135" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample2 (unpaired)</text>
+
+  <!-- Unpaired element: sample3 -->
+  <rect x="22" y="152" width="196" height="28" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="120" y="171" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample3 (unpaired)</text>
+
+  <text x="120" y="210" text-anchor="middle" font-family="sans-serif" font-size="10" font-style="italic" fill="#999">mixed paired + unpaired</text>
+
+  <!-- Arrow -->
+  <line x1="245" y1="130" x2="410" y2="130" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="328" y="120" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#555">Split</text>
+
+  <!-- Right top: paired output -->
+  <rect x="430" y="10" width="230" height="105" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="545" y="28" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#333">Paired output</text>
+
+  <rect x="442" y="38" width="206" height="60" rx="6" ry="6" fill="#e8f0e3" stroke="#aaa" stroke-width="0.7"/>
+  <text x="545" y="54" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#555">sample1</text>
+
+  <rect x="454" y="60" width="182" height="14" rx="3" ry="3" fill="#fef3e2" stroke="#d4760a" stroke-width="0.7"/>
+  <text x="545" y="71" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#d4760a">forward</text>
+
+  <rect x="454" y="78" width="182" height="14" rx="3" ry="3" fill="#f0e8f5" stroke="#7b4fa0" stroke-width="0.7"/>
+  <text x="545" y="89" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#7b4fa0">reverse</text>
+
+  <!-- Right bottom: unpaired output -->
+  <rect x="430" y="135" width="230" height="105" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="545" y="153" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="bold" fill="#333">Unpaired output</text>
+
+  <rect x="442" y="163" width="206" height="26" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="545" y="181" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample2</text>
+
+  <rect x="442" y="195" width="206" height="26" rx="4" ry="4" fill="#fff" stroke="#aaa" stroke-width="0.7"/>
+  <text x="545" y="213" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample3</text>
+
+</svg>
