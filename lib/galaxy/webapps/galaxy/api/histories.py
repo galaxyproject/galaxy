@@ -796,6 +796,12 @@ class FastAPIHistories:
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> WorkflowExtractionSummary:
+        """Creates a summary of the jobs, datasets and dataset collections in the history
+        that can be used to extract a workflow from the history.
+
+        Returns the list of jobs with their associated input/output datasets, plus any
+        implicit collections, which can be used to select steps for workflow extraction.
+        """
         return self.service.create_workflow_extraction_summary(history_id, trans)
 
     @router.post(
@@ -808,6 +814,12 @@ class FastAPIHistories:
         payload: WorkflowExtractionPayload = Body(...),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> WorkflowExtractionResult:
+        """Extracts a workflow from a history based on the selected jobs and datasets provided in the payload.
+
+        Takes the job IDs, dataset HIDs, and dataset collection HIDs along with a workflow name,
+        and constructs a new stored workflow capturing the provenance of those steps.
+        Returns the ID of the newly created workflow.
+        """
         history = self.service.manager.get_accessible(history_id, trans.user, current_history=trans.history)
 
         stored_workflow = extract_workflow(

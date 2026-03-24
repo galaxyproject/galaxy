@@ -2764,7 +2764,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Extract a workflow from a history. */
+        /**
+         * Extract a workflow from a history.
+         * @description Extracts a workflow from a history based on the selected jobs and datasets provided in the payload.
+         *
+         *     Takes the job IDs, dataset HIDs, and dataset collection HIDs along with a workflow name,
+         *     and constructs a new stored workflow capturing the provenance of those steps.
+         *     Returns the ID of the newly created workflow.
+         */
         post: operations["extract_workflow_from_history_api_histories__history_id__extract_workflow_post"];
         delete?: never;
         options?: never;
@@ -2779,7 +2786,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Return jobs and dataset summary for extracting a workflow from a history. */
+        /**
+         * Return jobs and dataset summary for extracting a workflow from a history.
+         * @description Creates a summary of the jobs, datasets and dataset collections in the history
+         *     that can be used to extract a workflow from the history.
+         *
+         *     Returns the list of jobs with their associated input/output datasets, plus any
+         *     implicit collections, which can be used to select steps for workflow extraction.
+         */
         get: operations["extraction_summary_api_histories__history_id__extraction_summary_get"];
         put?: never;
         post?: never;
