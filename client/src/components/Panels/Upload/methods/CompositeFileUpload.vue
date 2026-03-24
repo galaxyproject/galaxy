@@ -6,10 +6,15 @@ import { computed, ref, watch } from "vue";
 import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
 import type { ExtensionDetails } from "@/composables/uploadConfigurations";
-import { useUploadQueue } from "@/composables/uploadQueue";
+import {
+    buildPreparedUploadWithOptions,
+    createFileUploadItem,
+    createPastedUploadItem,
+    createUrlUploadItem,
+} from "@/utils/upload";
 import { mapToCompositeFileUpload } from "@/utils/upload/itemMappers";
 
-import type { UploadMethodComponent, UploadMethodConfig } from "../types";
+import type { PreparedUpload, UploadMethodComponent, UploadMethodConfig } from "../types";
 import type { CompositeFileItem, CompositeSlot } from "../types/uploadItem";
 
 import UploadTableDbKeyCell from "../shared/UploadTableDbKeyCell.vue";
@@ -30,7 +35,6 @@ const emit = defineEmits<{
     (e: "ready", ready: boolean): void;
 }>();
 
-const uploadQueue = useUploadQueue();
 const { compositeExtensions, listDbKeys, configurationsReady, defaultDbKey } = useUploadDefaults();
 
 const compositeItems = ref<CompositeFileItem[]>([]);
@@ -146,20 +150,68 @@ function clearAll() {
     clearStaging();
 }
 
-function startUpload() {
+function prepareUpload(): PreparedUpload | null {
     const item = currentItem.value;
     if (!item) {
-        return;
+        return null;
     }
 
-    const queueItem = mapToCompositeFileUpload(item, props.targetHistoryId);
-    uploadQueue.enqueue([queueItem]);
+    const uploadItem = mapToCompositeFileUpload(item, props.targetHistoryId);
+    const baseOptions = {
+        dbkey: uploadItem.dbkey,
+        ext: uploadItem.extension,
+        space_to_tab: uploadItem.spaceToTab,
+        to_posix_lines: uploadItem.toPosixLines,
+        deferred: false,
+    };
 
+    const apiItems = uploadItem.slots
+        .filter((slot) => slot.src !== "files" || !!slot.file)
+        .map((slot) => {
+            const slotOptions = {
+                name: slot.slotName,
+                ...baseOptions,
+            };
+
+            if (slot.src === "files") {
+                return createFileUploadItem(slot.file!, uploadItem.targetHistoryId, {
+                    ...slotOptions,
+                    size: slot.fileSize ?? slot.file!.size,
+                });
+            }
+
+            if (slot.src === "url") {
+                return createUrlUploadItem(slot.url ?? "", uploadItem.targetHistoryId, {
+                    ...slotOptions,
+                    size: slot.fileSize ?? 0,
+                });
+            }
+
+            return createPastedUploadItem(slot.content ?? "", uploadItem.targetHistoryId, {
+                ...slotOptions,
+                size: slot.fileSize ?? (slot.content ?? "").length,
+            });
+        });
+
+    if (apiItems.length === 0) {
+        return null;
+    }
+
+    return buildPreparedUploadWithOptions([uploadItem], undefined, {
+        apiItems,
+        uploadOptions: {
+            composite: true,
+            compositeName: uploadItem.name,
+        },
+    });
+}
+
+function reset() {
     compositeItems.value = [];
     clearStaging();
 }
 
-defineExpose<UploadMethodComponent>({ startUpload });
+defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 </script>
 
 <template>

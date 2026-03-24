@@ -3,6 +3,7 @@
  * These types represent items in various stages of the upload lifecycle.
  */
 
+import type { HistoryContentSource } from "@/api/datasets";
 import type { FetchDatasetHash } from "@/api/tools";
 import type { UploadMethod } from "@/components/Panels/Upload/types";
 
@@ -123,3 +124,60 @@ export interface UploadState {
 
 /** Upload item with state tracking (used in active upload queue) */
 export type UploadItem = NewUploadItem & UploadState;
+
+/** Sources returned for uploaded history contents. */
+export type UploadedDatasetSource = Extract<HistoryContentSource, "hda" | "hdca">;
+
+/**
+ * Validates a UI upload item before submission.
+ * Returns an error message if invalid, undefined if valid.
+ */
+export function validateUploadItem(item: NewUploadItem): string | undefined {
+    switch (item.uploadMode) {
+        case "local-file":
+            if (!item.fileData) {
+                return `No file selected for "${item.name}"`;
+            }
+            if (item.fileData.size === 0) {
+                return `File "${item.name}" is empty`;
+            }
+            break;
+
+        case "paste-content":
+            if (!item.content || item.content.trim().length === 0) {
+                return `No content provided for "${item.name}"`;
+            }
+            break;
+
+        case "paste-links":
+        case "remote-files":
+            if (!item.url || item.url.trim().length === 0) {
+                return `No URL provided for "${item.name}"`;
+            }
+            break;
+
+        case "data-library":
+            if (!item.lddaId) {
+                return `No library dataset ID provided for "${item.name}"`;
+            }
+            break;
+
+        default:
+            return `Unknown upload mode: ${(item as NewUploadItem).uploadMode}`;
+    }
+    return undefined;
+}
+
+/**
+ * Represents a dataset that was successfully uploaded.
+ */
+export interface UploadedDataset {
+    /** Unique identifier for the dataset. */
+    id: string;
+    /** Display name of the dataset. */
+    name: string;
+    /** History item ID (sequential index). */
+    hid?: number;
+    /** Type of dataset: history dataset (hda) or history dataset collection (hdca). */
+    src: UploadedDatasetSource;
+}

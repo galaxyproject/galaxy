@@ -8,9 +8,9 @@ import { computed } from "vue";
 import type { BaseUploadItem } from "@/components/Panels/Upload/types/uploadItem";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 
-export function useUploadDefaults() {
+export function useUploadDefaults(formats?: string[]) {
     const { configOptions, effectiveExtensions, compositeExtensions, listDbKeys, ready } =
-        useUploadConfigurations(undefined);
+        useUploadConfigurations(formats);
 
     const defaultExtension = computed(() => configOptions.value?.defaultExtension || "auto");
     const defaultDbKey = computed(() => configOptions.value?.defaultDbKey || "?");

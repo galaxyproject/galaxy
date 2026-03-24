@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
 import { onMounted, type Ref, ref, watch } from "vue";
 import Vue from "vue";
 
+import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
+import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import { useUrlTracker } from "@/composables/urlTracker";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -20,7 +23,7 @@ type Record = SelectionItem;
 
 interface Props {
     allowUpload?: boolean;
-    callback?: (results: Array<Record>) => void;
+    callback?: (results: Record[] | DataOption[]) => void;
     filterOkState?: boolean;
     filterByTypeIds?: string[];
     format?: string;
@@ -28,6 +31,8 @@ interface Props {
     multiple?: boolean;
     title?: string;
     history: string;
+    /** Optional formats to constrain the upload modal */
+    uploadModalFormats?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -39,6 +44,7 @@ const props = withDefaults(defineProps<Props>(), {
     library: true,
     multiple: false,
     title: "",
+    uploadModalFormats: undefined,
 });
 
 const emit = defineEmits<{
@@ -48,6 +54,7 @@ const emit = defineEmits<{
 }>();
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
+const { openUploadModal } = useUploadMethodModal();
 
 const errorMessage = ref("");
 const filter = ref("");
@@ -125,7 +132,7 @@ function onClick(record: Record) {
 function onOk() {
     const results = model.finalize();
     modalShow.value = false;
-    props.callback(results);
+    props.callback?.(results);
     emit("onOk", results);
 }
 
@@ -135,7 +142,7 @@ function onOpen(record: Record) {
 }
 
 /** Called when user decides to upload new data */
-function onUpload() {
+function onLegacyUpload() {
     const propsData = {
         multiple: props.multiple,
         format: props.format,
@@ -145,6 +152,21 @@ function onUpload() {
     };
     openGlobalUploadModal(propsData);
     modalShow.value = false;
+    emit("onUpload");
+}
+
+async function onBetaUpload() {
+    const result = await openUploadModal({
+        formats: props.uploadModalFormats,
+        multiple: props.multiple,
+        hideTips: true,
+    });
+    modalShow.value = false;
+    if (!result.cancelled) {
+        const uploadedOptions = result.toDataOptions();
+        props.callback?.(uploadedOptions);
+        emit("onOk", uploadedOptions);
+    }
     emit("onUpload");
 }
 
@@ -207,9 +229,13 @@ watch(
         @onOpen="onOpen"
         @onUndo="load()">
         <template v-slot:buttons>
-            <GButton v-if="allowUpload" size="small" @click="onUpload">
+            <GButton v-if="allowUpload" size="small" class="mr-1" @click="onLegacyUpload">
                 <FontAwesomeIcon :icon="faUpload" />
                 Upload
+            </GButton>
+            <GButton v-if="allowUpload" size="small" title="Try our new upload experience" @click="onBetaUpload">
+                <FontAwesomeIcon :icon="faUpload" />
+                <span v-localize>New upload<BBadge variant="warning" class="ml-1">Beta</BBadge></span>
             </GButton>
         </template>
     </SelectionDialog>

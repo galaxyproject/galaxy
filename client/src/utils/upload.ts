@@ -52,8 +52,9 @@ import {
     guessInitialFilterType,
     guessNameForPair,
 } from "@/components/Collections/pairing";
+import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import type { UploadRowModel } from "@/components/Upload/model";
-import type { SupportedCollectionType } from "@/composables/upload/collectionTypes";
+import type { SupportedCollectionType, UploadCollectionConfig } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -1004,6 +1005,39 @@ export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatas
         const errorMessage = errorMessageAsString(err);
         config.error?.(errorMessage);
     }
+}
+
+/**
+ * Determines if an upload item is compatible with the Fetch API (i.e., can be included in the payload).
+ * Items with uploadMode "data-library" are not compatible because they are copied from the data library and require a different handling approach.
+ */
+export function isFetchApiCompatible(item: NewUploadItem): boolean {
+    return item.uploadMode !== "data-library";
+}
+
+/**
+ * Builds a PreparedUpload object from UI upload items.
+ */
+export function buildPreparedUpload(items: NewUploadItem[], collectionConfig?: UploadCollectionConfig): PreparedUpload {
+    return buildPreparedUploadWithOptions(items, collectionConfig);
+}
+
+interface PreparedUploadBuildOptions {
+    apiItems?: ApiUploadItem[];
+    uploadOptions?: PreparedUpload["uploadOptions"];
+}
+
+export function buildPreparedUploadWithOptions(
+    items: NewUploadItem[],
+    collectionConfig?: UploadCollectionConfig,
+    options?: PreparedUploadBuildOptions,
+): PreparedUpload {
+    return {
+        apiItems: options?.apiItems ?? items.filter(isFetchApiCompatible).map((item) => toApiUploadItem(item)),
+        collectionConfig,
+        uploadItems: items,
+        uploadOptions: options?.uploadOptions,
+    };
 }
 
 /**

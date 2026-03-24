@@ -4,6 +4,7 @@ import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useTargetHistoryUploadState } from "@/composables/history/useTargetHistoryUploadState";
+import { useUploadSubmission } from "@/composables/upload/useUploadSubmission";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import type { UploadMethod, UploadMethodComponent } from "./types";
@@ -24,6 +25,8 @@ const props = defineProps<Props>();
 const router = useRouter();
 const uploadMethodRef = ref<UploadMethodComponent | null>(null);
 const canUpload = ref(false);
+
+const { submitPreparedUpload } = useUploadSubmission();
 
 const historyStore = useHistoryStore();
 const { currentHistoryId } = storeToRefs(historyStore);
@@ -75,7 +78,13 @@ function handleStart() {
     if (!canStartUpload.value) {
         return;
     }
-    uploadMethodRef.value?.startUpload();
+    const prepared = uploadMethodRef.value?.prepareUpload();
+    if (!prepared) {
+        return;
+    }
+    // Fire-and-forget: progress is tracked in uploadState, visible in the progress view
+    void submitPreparedUpload(targetHistoryId.value, prepared);
+    uploadMethodRef.value?.reset?.();
     router.push("/upload/progress");
 }
 

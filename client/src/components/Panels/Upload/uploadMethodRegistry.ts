@@ -11,11 +11,13 @@ import {
     faSitemap,
     faTable,
 } from "@fortawesome/free-solid-svg-icons";
-import { computed, type ComputedRef, defineAsyncComponent } from "vue";
+import { computed, type ComputedRef, defineAsyncComponent, type Ref } from "vue";
 
+import { useConfig } from "@/composables/config";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 
 import type { UploadMethod, UploadMethodConfig } from "./types";
+import type { UploadModalConfig } from "./uploadModalTypes";
 
 export const uploadMethodRegistry: Record<UploadMethod, UploadMethodConfig> = {
     "local-file": {
@@ -202,4 +204,28 @@ export function useAllUploadMethods(): ComputedRef<UploadMethodConfig[]> {
     return computed(() =>
         Object.values(uploadMethodRegistry).filter((method) => !method.requiresAdvancedMode || advancedMode.value),
     );
+}
+
+/**
+ * Reactive list of upload methods filtered by modal config and Galaxy config requirements.
+ */
+export function useFilteredUploadMethods(config: Ref<UploadModalConfig>): ComputedRef<UploadMethodConfig[]> {
+    const allMethods = useAllUploadMethods();
+    const { config: galaxyConfig, isConfigLoaded } = useConfig();
+
+    return computed(() => {
+        const allowedMethods = config.value.allowedMethods;
+
+        return allMethods.value.filter((method) => {
+            if (allowedMethods && !allowedMethods.some((allowedMethod) => allowedMethod === method.id)) {
+                return false;
+            }
+
+            if (!isConfigLoaded.value || !method.requiresConfig) {
+                return true;
+            }
+
+            return method.requiresConfig.every((configKey) => Boolean(galaxyConfig.value[configKey]));
+        });
+    });
 }

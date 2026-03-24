@@ -46,6 +46,15 @@ export interface UploadFileListItem extends UploadListItemBase {
 /** Union of all upload list UI items */
 export type UploadListItem = UploadBatchListItem | UploadFileListItem;
 
+/**
+ * Subset of the upload state API used by upload tracking utilities.
+ * Provides only the functions needed for tracking and managing upload progress.
+ */
+export type UploadStateTrackingApi = Pick<
+    ReturnType<typeof useUploadState>,
+    "addBatch" | "addUploadItem" | "getBatch" | "setStatus" | "updateProgress" | "setError"
+>;
+
 /** Collection batch state tracking */
 export interface CollectionBatchState {
     /** Unique batch identifier */

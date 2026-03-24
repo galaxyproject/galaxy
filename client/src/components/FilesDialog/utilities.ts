@@ -57,3 +57,10 @@ export function sortFileSources(a: SelectionItem, b: SelectionItem): number {
     }
     return a.label.localeCompare(b.label);
 }
+
+/**
+ * Normalize SelectionDialog's Model.finalize() return value (single item or array) into an array.
+ */
+export function selectionToArray(selection: SelectionItem | SelectionItem[]): SelectionItem[] {
+    return Array.isArray(selection) ? selection : selection ? [selection] : [];
+}

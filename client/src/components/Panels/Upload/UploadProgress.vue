@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
-import { useUploadQueue } from "@/composables/uploadQueue";
+import { useUploadBatchOperations } from "@/composables/upload/useUploadBatchOperations";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 import { getUploadRootBreadcrumb } from "./uploadBreadcrumb";
@@ -12,7 +12,7 @@ import UploadFileRow from "./UploadFileRow.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 
-const uploadQueue = useUploadQueue();
+const uploadBatchOperations = useUploadBatchOperations();
 const uploadState = useUploadState();
 const { orderedUploadItems, batchesWithProgress, standaloneUploads, activeItems, hasCompleted } = uploadState;
 
@@ -43,17 +43,17 @@ function toggleBatch(batchId: string) {
 }
 
 function onClearCompleted() {
-    uploadQueue.clearCompleted();
+    uploadBatchOperations.clearCompleted();
     cleanupExpandedBatches();
 }
 
 function onClearAll() {
-    uploadQueue.clearAll();
+    uploadBatchOperations.clearAll();
     cleanupExpandedBatches();
 }
 
 async function retryBatch(batchId: string) {
-    await uploadQueue.retryCollectionCreation(batchId);
+    await uploadBatchOperations.retryCollectionCreation(batchId);
 }
 
 const uploadItemCount = computed(() => {

@@ -1,5 +1,9 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
+import type { UploadCollectionConfig } from "@/composables/upload/collectionTypes";
+import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
+import type { ApiUploadItem } from "@/utils/upload";
+
 export type UploadMethod =
     | "local-file"
     | "paste-content"
@@ -100,6 +104,38 @@ export interface UploadMethodConfig {
     tips?: string[];
 }
 
+/**
+ * Upload data prepared by an upload method component, ready for API submission.
+ * Returned by `UploadMethodComponent.prepareUpload()` and consumed by `useUploadSubmission`.
+ */
+export interface PreparedUpload {
+    /** Items formatted for the Galaxy upload API. */
+    apiItems: ApiUploadItem[];
+    /** Optional dataset collection configuration for atomic collection creation. */
+    collectionConfig?: UploadCollectionConfig;
+    /** Items used for progress tracking in the upload state store. */
+    uploadItems?: NewUploadItem[];
+    /** Optional upload behavior flags forwarded to uploadDatasets. */
+    uploadOptions?: {
+        /** Treat multiple API items as one composite dataset. */
+        composite?: boolean;
+        /** Display name for the composite dataset. */
+        compositeName?: string;
+    };
+}
+
+/**
+ * Interface that upload method components must implement to be used in the upload panel.
+ */
 export interface UploadMethodComponent {
-    startUpload: () => void;
+    /**
+     * Returns prepared upload data for API submission, or null when there is
+     * nothing to upload (e.g. no files selected or no content entered).
+     */
+    prepareUpload: () => PreparedUpload | null;
+    /**
+     * Clears transient UI state without remounting the component.
+     * Called by the modal when it reopens so stale input is not carried over.
+     */
+    reset?: () => void;
 }
