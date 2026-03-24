@@ -53,8 +53,14 @@ def get_displayable_roles(session, trans_user, user_is_admin, security_agent):
     return roles
 
 
-def get_private_role_user_emails_dict(session) -> dict[int, str]:
-    """Return a mapping of private role ids to user emails."""
+def get_private_role_user_emails_dict(session, role_ids: set[int] | None = None) -> dict[int, str]:
+    """Return a mapping of private role ids to user emails.
+
+    If role_ids is provided, only return mappings for roles in that set,
+    avoiding a full table scan on large instances.
+    """
     stmt = select(UserRoleAssociation.role_id, User.email).join(Role).join(User).where(Role.type == Role.types.PRIVATE)
+    if role_ids is not None:
+        stmt = stmt.where(UserRoleAssociation.role_id.in_(role_ids))
     roleid_email_tuples = session.execute(stmt).all()
     return dict(roleid_email_tuples)
