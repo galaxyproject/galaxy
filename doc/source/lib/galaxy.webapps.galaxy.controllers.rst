@@ -57,14 +57,6 @@ galaxy.webapps.galaxy.controllers.dataset module
    :undoc-members:
    :show-inheritance:
 
-galaxy.webapps.galaxy.controllers.error module
-----------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.error
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.webapps.galaxy.controllers.forms module
 ----------------------------------------------
 
