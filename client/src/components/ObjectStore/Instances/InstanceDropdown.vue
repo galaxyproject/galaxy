@@ -2,8 +2,9 @@
 import { computed } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { Toast } from "@/composables/toast";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
-import { rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { UserConcreteObjectStore } from "./types";
 
@@ -29,7 +30,8 @@ async function onRemove() {
     });
 
     if (error) {
-        rethrowSimple(error);
+        Toast.error(errorMessageAsString(error, "Failed to remove instance."), "Failed to remove instance");
+        return;
     }
 
     emit("entryRemoved");
