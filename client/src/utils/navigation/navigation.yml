@@ -11,8 +11,8 @@ _:  # global stuff
   selectors:
     center_panel: '#center'
     editable_text: '.editable-text'
-    tooltip_balloon: '.tooltip'
-    tooltip_inner: .tooltip-inner
+    tooltip_balloon: '.tooltip, .g-tooltip-d'
+    tooltip_inner: '.tooltip-inner, .g-tooltip-d-inner'
     left_panel: '#left'
     left_panel_drag: '.flex-panel.left .drag-handle'
     left_panel_collapse: '.collapse-button.left'

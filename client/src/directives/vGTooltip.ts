@@ -61,14 +61,6 @@ const TOOLTIP_STYLES = `
 .g-tooltip-d.g-tooltip-danger {
     background-color: var(--color-red-700, #dc3545);
 }
-.g-tooltip-d .tooltip-inner {
-    background-color: transparent;
-    color: inherit;
-    padding: 0;
-    text-align: inherit;
-    max-width: none;
-    border-radius: 0;
-}
 .g-tooltip-d .g-tooltip-d-arrow,
 .g-tooltip-d .g-tooltip-d-arrow::before {
     position: absolute;
@@ -163,15 +155,15 @@ function createTooltipEl(isDanger: boolean): { tooltipEl: HTMLElement; arrowEl: 
     injectStyles();
     const tooltipEl = document.createElement("div");
     tooltipEl.setAttribute("role", "tooltip");
-    // "tooltip" class matches bootstrap-vue's rendered element for Selenium selector compat
-    tooltipEl.className = "tooltip g-tooltip-d";
+    // "g-tooltip-d" handles the new Selenium selector compat
+    tooltipEl.className = "g-tooltip-d";
     if (isDanger) {
         tooltipEl.classList.add("g-tooltip-danger");
     }
 
-    // "tooltip-inner" matches bootstrap-vue's inner element for Selenium selector compat
+    // "g-tooltip-d-inner" handles the new Selenium selector compat
     const contentEl = document.createElement("div");
-    contentEl.className = "tooltip-inner";
+    contentEl.className = "g-tooltip-d-inner";
     tooltipEl.appendChild(contentEl);
 
     const arrowEl = document.createElement("div");
