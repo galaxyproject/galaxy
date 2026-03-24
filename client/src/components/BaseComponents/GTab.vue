@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, inject, onBeforeUnmount, onMounted, ref, useSlots, watch } from "vue";
+import { computed, inject, onBeforeUnmount, onMounted, ref, useSlots, watch } from "vue";
 
 import type { TabRegistration, TabsContext } from "./GTabs.vue";
 
@@ -54,17 +54,10 @@ const shouldRender = computed(() => {
     return hasBeenActive.value;
 });
 
-function titleRenderer() {
-    if (slots.title) {
-        return slots.title();
-    }
-    return props.title ? [h("span", props.title)] : [];
-}
-
 function buildRegistration(): TabRegistration {
     return {
         title: props.title,
-        titleRenderer,
+        titleRenderer: slots.title ? () => slots.title!() : undefined,
         disabled: props.disabled,
         id: props.id,
         buttonId: props.buttonId,
@@ -112,7 +105,7 @@ onBeforeUnmount(() => {
         v-show="isActive"
         :id="id"
         class="tab-pane"
-        :class="{ active: isActive, show: isActive }"
+        :class="{ active: isActive, show: isActive, 'card-body': context.tabsCard }"
         role="tabpanel">
         <slot />
     </div>
