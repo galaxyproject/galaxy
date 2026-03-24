@@ -10,23 +10,23 @@
             title="Information about when the history export was generated is included in the job details. Additionally, if there are issues with export, the job details may help figure out the underlying problem or communicate issues to your Galaxy administrator.">
             (<b-link class="show-job-link" href="#" @click="showDetails">view job details</b-link>)
         </i>
-        <BModal v-model="details" modal-class="job-information-modal" scrollable ok-only hide-header>
+        <GModal title="History Export Job" size="medium" :show.sync="details" data-description="job information modal">
             <JobInformation :job-id="historyExport.job_id" :include-times="true" />
-        </BModal>
+        </GModal>
     </span>
 </template>
 
 <script>
 import { faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BModal } from "bootstrap-vue";
 
 import { copy } from "@/utils/clipboard";
 
+import GModal from "../BaseComponents/GModal.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
 
 export default {
-    components: { BModal, JobInformation, FontAwesomeIcon },
+    components: { GModal, JobInformation, FontAwesomeIcon },
     props: {
         historyExport: {
             type: Object,
