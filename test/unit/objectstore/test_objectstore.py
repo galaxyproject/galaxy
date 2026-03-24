@@ -6,7 +6,10 @@ from tempfile import (
     mkdtemp,
     mkstemp,
 )
-from unittest.mock import patch
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 from uuid import uuid4
 
 import pytest
@@ -512,6 +515,15 @@ def test_distributed_store_with_cache_targets():
     for config_str in [get_example("distributed_s3.yml")]:
         with TestConfig(config_str) as (_, object_store):
             assert len(object_store.cache_targets()) == 2
+
+
+def test_distributed_store_start_propagates_to_backends():
+    with TestConfig(DISTRIBUTED_TEST_CONFIG) as (_, object_store):
+        for backend in object_store.backends.values():
+            backend.start = MagicMock()
+        object_store.start()
+        for backend in object_store.backends.values():
+            backend.start.assert_called_once()
 
 
 HIERARCHICAL_MUST_HAVE_UNIFIED_QUOTA_SOURCE = """<?xml version="1.0"?>
