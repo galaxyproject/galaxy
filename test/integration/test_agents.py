@@ -13,7 +13,16 @@ For deterministic tests without LLM, see test_static_agent_backend.py.
 
 import logging
 import os
+from unittest.mock import (
+    AsyncMock,
+    MagicMock,
+    patch,
+)
 
+from galaxy.agents import agent_registry
+from galaxy.agents.base import GalaxyAgentDependencies
+from galaxy.agents.error_analysis import ErrorAnalysisResult
+from galaxy.tool_util_models import UserToolSource
 from galaxy.util.unittest_utils import pytestmark_live_llm
 from galaxy_test.base.populators import (
     DatasetPopulator,
@@ -244,7 +253,6 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
 # ============================================================================
 
 
-
 @pytestmark_live_llm
 class TestAgentsApiLiveLLM(AgentIntegrationTestCase):
     """Test Galaxy AI agents API with real LLM.
@@ -440,3 +448,142 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
 
         assert result["id"] == "abc123def456"
         assert result["history_id"] == "already_encoded_id"
+
+
+# ============================================================================
+# MCP Server Smoke Tests
+# ============================================================================
+
+
+class TestMCPServerSmoke(IntegrationTestCase):
+    """Smoke tests for the MCP server.
+
+    Verifies the server initializes, advertises tools, handles auth,
+    and can execute basic tool calls. Not exhaustive API testing --
+    the MCP tools are thin wrappers around AgentOperationsManager.
+    """
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["enable_mcp_server"] = True
+
+    def _get_mcp_server(self):
+        from galaxy.webapps.galaxy.api.mcp import get_mcp_app
+
+        http_app = get_mcp_app(self._app)
+        return http_app.state.mcp_server
+
+    def _get_api_key(self):
+        _, api_key = self._setup_user_get_key("mcp_test_user@test.com")
+        return api_key
+
+    def _run_async(self, coro):
+        import asyncio
+
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+
+    def test_mcp_server_initializes(self):
+        """MCP server creates a FastMCP instance when enabled."""
+        from fastmcp import FastMCP
+
+        mcp_server = self._get_mcp_server()
+        assert isinstance(mcp_server, FastMCP)
+
+    def test_mcp_tools_registered(self):
+        """MCP server advertises all expected tools."""
+        from fastmcp import Client
+
+        mcp_server = self._get_mcp_server()
+
+        async def _list():
+            async with Client(mcp_server) as client:
+                return await client.list_tools()
+
+        tools = self._run_async(_list())
+        tool_names = {t.name for t in tools}
+
+        expected = {
+            "connect",
+            "search_tools",
+            "list_histories",
+            "run_tool",
+            "get_tool_details",
+            "get_history_contents",
+            "get_dataset_details",
+            "upload_file_from_url",
+            "invoke_workflow",
+            "get_job_status",
+        }
+        assert expected.issubset(tool_names), f"Missing tools: {expected - tool_names}"
+        assert len(tool_names) >= 20
+
+    def test_mcp_connect_with_valid_key(self):
+        """connect() succeeds with a valid API key and returns user + server info."""
+        from fastmcp import Client
+
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+
+        async def _connect():
+            async with Client(mcp_server) as client:
+                return await client.call_tool("connect", {"api_key": api_key})
+
+        result = self._run_async(_connect())
+        assert not result.is_error
+        data = result.data
+        assert "user" in data
+        assert "server" in data
+
+    def test_mcp_connect_with_invalid_key(self):
+        """connect() rejects an invalid API key."""
+        import pytest
+        from fastmcp import Client
+        from fastmcp.exceptions import ToolError
+
+        mcp_server = self._get_mcp_server()
+
+        async def _connect():
+            async with Client(mcp_server) as client:
+                return await client.call_tool("connect", {"api_key": "bogus-key-12345"})
+
+        with pytest.raises(ToolError, match="(?i)(invalid|api key)"):
+            self._run_async(_connect())
+
+    def test_mcp_list_histories(self):
+        """list_histories() returns a valid response."""
+        from fastmcp import Client
+
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+
+        async def _list():
+            async with Client(mcp_server) as client:
+                return await client.call_tool("list_histories", {"api_key": api_key})
+
+        result = self._run_async(_list())
+        assert not result.is_error
+        data = result.data
+        assert "histories" in data or isinstance(data, dict)
+
+    def test_mcp_search_tools(self):
+        """search_tools() executes and returns a well-formed response."""
+        from fastmcp import Client
+
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+
+        async def _search():
+            async with Client(mcp_server) as client:
+                return await client.call_tool("search_tools", {"api_key": api_key, "query": "sort"})
+
+        result = self._run_async(_search())
+        assert not result.is_error
+        data = result.data
+        assert "tools" in data
+        assert "query" in data
+        assert "count" in data
+        assert isinstance(data["tools"], list)

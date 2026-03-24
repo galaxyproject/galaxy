@@ -429,6 +429,7 @@ def get_mcp_app(gx_app):
             return ops_manager.get_user()
 
     mcp_app = mcp.http_app()
+    mcp_app.state.mcp_server = mcp
 
     logger.info("MCP server initialized with 27 tools (Streamable HTTP)")
     return mcp_app
