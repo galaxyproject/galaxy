@@ -83,7 +83,6 @@ class AgentRegistry:
 
     def list_agent_info(self) -> list[dict]:
         return [self.get_agent_info(agent_type) for agent_type in self._agents.keys()]
-<<<<<<< HEAD
 
 
 def build_default_registry(config=None) -> AgentRegistry:
