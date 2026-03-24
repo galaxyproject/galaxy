@@ -223,7 +223,7 @@ class UrlBuilder:
                 else:
                     url = str(self.request.url_for(name, **path_params))
             else:
-                url = self.request.app.url_path_for(name, **path_params)
+                url = self._url_path_for(name, **path_params)
             if query_params:
                 url = f"{url}?{urlencode(query_params)}"
             return url
@@ -232,6 +232,24 @@ class UrlBuilder:
             if query_params:
                 path_params.update(query_params)
             return web.url_for(name, **path_params)
+
+    def _url_path_for(self, name: str, **path_params) -> str:
+        """O(1) route lookup using the app's pre-built name index.
+
+        The index is built once at startup in initialize_fast_app and maps
+        route names to their route objects, replacing Starlette's O(n)
+        linear scan with a direct dict lookup.
+        """
+        candidates = self.request.app.state.route_name_index.get(name)
+        if candidates is not None:
+            for route in candidates:
+                try:
+                    return route.url_path_for(name, **path_params)
+                except NoMatchFound:
+                    pass
+            raise NoMatchFound(name, path_params)
+        # Fallback for names not in the index (e.g. Mount sub-routes)
+        return self.request.app.url_path_for(name, **path_params)
 
 
 class GalaxyASGIRequest(GalaxyAbstractRequest):
