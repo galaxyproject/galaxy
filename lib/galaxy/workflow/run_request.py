@@ -589,6 +589,10 @@ def workflow_run_config_to_request(
 
     replacement_dict = run_config.replacement_dict
     for name, value in replacement_dict.items():
+        if not isinstance(value, str):
+            raise exceptions.RequestParameterInvalidException(
+                f"Replacement parameter '{name}' must be a string, got {type(value).__name__}"
+            )
         add_parameter(
             name=name,
             value=value,
