@@ -24877,7 +24877,6 @@ export interface components {
             /**
              * Dataset ID
              * @description The encoded ID of the dataset created to store this artifact
-             * @example 0123456789ABCDEF
              */
             dataset_id: string;
             /**
@@ -24888,7 +24887,6 @@ export interface components {
             /**
              * History ID
              * @description The encoded ID of the history where the dataset was created
-             * @example 0123456789ABCDEF
              */
             history_id: string;
             /**
@@ -26941,7 +26939,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": unknown;
+                };
             };
             /** @description Request Error */
             "4XX": {
