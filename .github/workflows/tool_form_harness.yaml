@@ -28,7 +28,7 @@ on:
 env:
   GALAXY_CONFIG_GALAXY_URL_PREFIX: '/galaxypf'
   GALAXY_TEST_E2E_TOOL_TESTS: '1'
-  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_TEST_SELENIUM_RETRIES: 1
   GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 1

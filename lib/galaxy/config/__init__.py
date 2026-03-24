@@ -291,7 +291,7 @@ class BaseAppConfiguration(HasDynamicProperties):
         old_prefixes = (
             f"{old_dialect}:",
             f"{old_dialect}+",
-        )  # check for postgres://foo and postgres+driver//foo
+        )  # check for postgres://foo and postgres+driver://foo
         offset = len(old_dialect)
         keys = ("database_connection", "install_database_connection")
         for key in keys:
