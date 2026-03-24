@@ -4016,11 +4016,16 @@ class ToolRequestState(str, Enum):
     FAILED = "failed"
 
 
+class ToolRequestStateMessage(Model):
+    err_msg: str
+    err_data: Optional[dict[str, Any]] = None
+
+
 class ToolRequestModel(Model):
     id: EncodedDatabaseIdField = ToolRequestIdField
     request: dict[str, Any]
     state: ToolRequestState
-    state_message: Optional[str]
+    state_message: Optional[ToolRequestStateMessage] = None
 
 
 class ToolRequestJobReference(Model):

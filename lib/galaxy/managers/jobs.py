@@ -40,6 +40,7 @@ from galaxy.exceptions import (
     ConfigDoesNotAllowException,
     InconsistentDatabase,
     ItemAccessibilityException,
+    MessageException,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException,
@@ -60,6 +61,7 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.users import UserManager
 from galaxy.model import (
+    DynamicTool,
     ImplicitCollectionJobs,
     ImplicitCollectionJobsJobAssociation,
     Job,
@@ -79,6 +81,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.credentials import CredentialsContext
 from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
@@ -86,6 +89,7 @@ from galaxy.schema.schema import (
 from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
     QueueJobs,
+    RequestUser,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import (
@@ -2119,8 +2123,12 @@ class JobSubmitter:
     def materialize_request_for(
         self, trans: WorkRequestContext, hda: model.HistoryDatasetAssociation
     ) -> MaterializeDatasetInstanceTaskRequest:
+        if trans.user is None:
+            raise RequestParameterInvalidException(
+                "Materialization of URL-sourced inputs requires an authenticated user"
+            )
         return MaterializeDatasetInstanceTaskRequest(
-            user=trans.async_request_user,
+            user=RequestUser(user_id=trans.user.id),
             history_id=trans.history.id,
             source="hda",
             content=hda.id,
@@ -2181,6 +2189,8 @@ class JobSubmitter:
     def queue_jobs(self, tool: Tool, request: QueueJobs) -> None:
         tool_request: ToolRequest = self._tool_request(request.tool_request_id)
         sa_session = self.app.model.context
+        if request.dynamic_tool_id:
+            tool.dynamic_tool = sa_session.get(DynamicTool, request.dynamic_tool_id)
         try:
             request_context = self._context(tool_request, request)
             target_history = request_context.history
@@ -2194,31 +2204,50 @@ class JobSubmitter:
                 # here we just created the datasets - lets just materialize them in place
                 # and avoid extra and confusing input copies
                 self.hda_manager.materialize(materialize_request, sa_session(), in_place=True)
-            tool.handle_input_async(
+            if request.data_manager_mode:
+                tool_request.request["__data_manager_mode"] = request.data_manager_mode
+            credentials_context = (
+                CredentialsContext(root=cast(Any, request.credentials_context)) if request.credentials_context else None
+            )
+            execution_tracker = tool.handle_input_async(
                 request_context,
                 tool_request,
                 tool_state,
                 history=target_history,
                 use_cached_job=use_cached_jobs,
                 rerun_remap_job_id=rerun_remap_job_id,
+                preferred_object_store_id=request.preferred_object_store_id,
+                credentials_context=credentials_context,
             )
+            if request.tags:
+                execution_tracker.apply_tags(request_context.tag_handler, request_context.user, request.tags)
+            if request.send_email_notification:
+                execution_tracker.apply_email_action(request_context.user)
             tool_request.state = ToolRequest.states.SUBMITTED
             sa_session.add(tool_request)
             sa_session.commit()
         except Exception as e:
             log.exception("Problem validating tool state after request created")
             tool_request.state = ToolRequest.states.FAILED
-            tool_request.state_message = str(e)
+            state_message: dict = {"err_msg": str(e)}
+            if isinstance(e, MessageException) and e.extra_error_info:
+                if "err_data" in e.extra_error_info:
+                    state_message["err_data"] = e.extra_error_info["err_data"]
+            tool_request.state_message = cast(Any, state_message)
             sa_session.add(tool_request)
             sa_session.commit()
 
     def _context(self, tool_request: ToolRequest, request: QueueJobs) -> WorkRequestContext:
-        user = self.user_manager.by_id(request.user.user_id)
+        user = self.user_manager.by_id(request.user.user_id) if request.user.user_id else None
         target_history = tool_request.history
+        galaxy_session = None
+        if request.user.galaxy_session_id:
+            galaxy_session = self.app.model.context.get(model.GalaxySession, request.user.galaxy_session_id)
         trans = WorkRequestContext(
             self.app,
             user,
             history=target_history,
+            galaxy_session=galaxy_session,
         )
         return trans
 

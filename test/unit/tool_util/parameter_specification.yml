@@ -1247,11 +1247,11 @@ gx_data:
    - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd}]}
    - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd, map_over_type: paired}]}
    - parameter: {__class__: "Batch", values: [{src: dce, id: abcdabcd, map_over_type: null}]}
+   - parameter: {src: dce, id: abcdabcd}
   request_invalid:
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    # map_over_type only valid on hdca/dce, not hda/ldda
    - parameter: {__class__: "Batch", values: [{src: hda, id: abcdabcd, map_over_type: paired}]}
-   - parameter: {src: dce, id: abcdabcd}
    - parameter: {src: hda, id: 7}
    - parameter: {src: hdca, id: abcdabcd}
    - parameter: null
@@ -1287,6 +1287,7 @@ gx_data:
    - parameter: {__class__: "Batch", values: [{src: dce, id: 5, map_over_type: paired}]}
    - parameter: {src: hda, id: 5}
    - parameter: {src: hda, id: 0}
+   - parameter: {src: dce, id: 5}
   request_internal_dereferenced_invalid:
    # the difference between request internal and request internal dereferenced is that these have been converted
    # to datasets.
