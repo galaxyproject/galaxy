@@ -9,6 +9,7 @@ from tempfile import (
 )
 from typing import (
     cast,
+    Literal,
     Optional,
     Union,
 )
@@ -77,6 +78,11 @@ from galaxy.schema.tasks import (
     WriteHistoryTo,
 )
 from galaxy.schema.types import LatestLiteral
+from galaxy.schema.workflows import (
+    WorkflowExtractionJob,
+    WorkflowExtractionOutput,
+    WorkflowExtractionSummary,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.util import restore_text
@@ -90,6 +96,7 @@ from galaxy.webapps.galaxy.services.base import (
 )
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
+from galaxy.workflow.extract import summarize
 
 log = logging.getLogger(__name__)
 
@@ -750,6 +757,102 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             self.manager.purge(history, preserve_owner_update_time=preserve_owner_update_time)
         history = self.manager.archive_history(history, archive_export_id=archive_export_id)
         return self._serialize_archived_history(trans, history)
+
+    def create_workflow_extraction_summary(
+        self,
+        history_id: DecodedDatabaseIdField,
+        trans: ProvidesHistoryContext,
+    ) -> WorkflowExtractionSummary:
+        history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
+        jobs, warnings = summarize(trans, history)
+
+        def serialize_output(content) -> WorkflowExtractionOutput:
+            return WorkflowExtractionOutput.model_validate(
+                {
+                    "id": content.id,
+                    "hid": content.hid,
+                    "name": content.name,
+                    "state": content.state,
+                    "deleted": content.deleted,
+                    "history_content_type": content.history_content_type,
+                }
+            )
+
+        def input_step_type(outputs: list[WorkflowExtractionOutput]) -> Literal["input_dataset", "input_collection"]:
+            if outputs and outputs[0].history_content_type == "dataset_collection":
+                return "input_collection"
+            return "input_dataset"
+
+        jobs_list = []
+        for job, datasets in jobs.items():
+            is_fake = getattr(job, "is_fake", False)
+            outputs = [serialize_output(data) for _, data in datasets]
+            checked = any(not data.deleted for _, data in datasets)
+
+            if is_fake:
+                # FakeJob / DatasetCollectionCreationJob: input with no creating tool.
+                jobs_list.append(
+                    WorkflowExtractionJob(
+                        id=None,
+                        step_type=input_step_type(outputs),
+                        tool_name=getattr(job, "name", None),
+                        tool_id=None,
+                        tool_version=None,
+                        checked=checked,
+                        tool_version_warning=None,
+                        outputs=outputs,
+                    )
+                )
+            else:
+                tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
+                if tool is None:
+                    # Tool missing
+                    continue
+                if not tool.is_workflow_compatible:
+                    # Not a workflow step (e.g. upload, data fetch) — treat as input.
+                    jobs_list.append(
+                        WorkflowExtractionJob(
+                            id=None,
+                            step_type=input_step_type(outputs),
+                            tool_name=tool.name,
+                            tool_id=None,
+                            tool_version=None,
+                            checked=checked,
+                            tool_version_warning=None,
+                            outputs=outputs,
+                        )
+                    )
+                else:
+                    tool_version_warning = (
+                        (
+                            f'Dataset was created with tool version "{job.tool_version}", '
+                            f'but workflow extraction will use version "{tool.version}".'
+                        )
+                        if tool.version != job.tool_version
+                        else None
+                    )
+                    jobs_list.append(
+                        WorkflowExtractionJob.model_validate(
+                            {
+                                "id": job.id,
+                                "step_type": "tool",
+                                "tool_name": tool.name,
+                                "tool_id": job.tool_id,
+                                "tool_version": job.tool_version,
+                                "checked": checked,
+                                "tool_version_warning": tool_version_warning,
+                                "outputs": outputs,
+                            }
+                        )
+                    )
+
+        return WorkflowExtractionSummary.model_validate(
+            {
+                "history_id": history.id,
+                "warnings": list(warnings),
+                "jobs": jobs_list,
+            }
+        )
 
     def _ensure_export_record_can_be_associated_with_history_archival(
         self, history_id: int, export_record: model.StoreExportAssociation
