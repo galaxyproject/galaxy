@@ -44,7 +44,10 @@ from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions,
 )
-from galaxy.tool_util.verify import verify
+from galaxy.tool_util.verify import (
+    verify,
+    verify_job_metadata,
+)
 from galaxy.tool_util.verify.interactor import prepare_request_params
 from galaxy.util import (
     asbool,
@@ -894,6 +897,9 @@ class RunsToolTests(NavigatesGalaxyMixin):
         if deferred:
             self.sleep_for(self.wait_types.UX_RENDER)
             for key, value in deferred:
+                expanded_id = key.replace("|", "-")
+                if self.components.tool_form.parameter_div(parameter=expanded_id).is_absent:
+                    continue
                 self._set_tool_form_value(key, value, required_filenames)
 
         for key, value in data_params:
@@ -1048,10 +1054,27 @@ class RunsToolTests(NavigatesGalaxyMixin):
     def _verify_tool_test_outputs(
         self, test_def: dict, history_id: str, tool_id: str, pre_job_ids: set, dataset_populator
     ):
-
+        expect_failure = test_def.get("expect_failure", False)
         outputs = test_def.get("outputs", [])
         output_collections = test_def.get("output_collections", [])
-        if not outputs and not output_collections:
+        expect_num_outputs = test_def.get("expect_num_outputs")
+        expect_exit_code = test_def.get("expect_exit_code")
+        stdout_assertions = test_def.get("stdout")
+        stderr_assertions = test_def.get("stderr")
+        command_assertions = test_def.get("command")
+        command_version_assertions = test_def.get("command_version")
+        has_work = (
+            outputs
+            or output_collections
+            or expect_failure
+            or expect_num_outputs is not None
+            or expect_exit_code is not None
+            or stdout_assertions
+            or stderr_assertions
+            or command_assertions
+            or command_version_assertions
+        )
+        if not has_work:
             return
 
         def _find_new_job(driver=None):
@@ -1064,9 +1087,47 @@ class RunsToolTests(NavigatesGalaxyMixin):
         new_job = self._wait_on(_find_new_job, "tool job to appear in history")
         assert new_job is not None
         job_id = new_job["id"]
+
+        has_job_checks = (
+            expect_exit_code is not None
+            or stdout_assertions
+            or stderr_assertions
+            or command_assertions
+            or command_version_assertions
+        )
+
+        if expect_failure:
+            dataset_populator.wait_for_job(job_id, assert_ok=False)
+            job_details = dataset_populator.get_job_details(job_id, full=has_job_checks).json()
+            assert job_details["state"] == "error", f"Expected job to fail but state is '{job_details['state']}'"
+            if has_job_checks:
+                verify_job_metadata(
+                    job_details,
+                    expect_exit_code,
+                    stdout_assertions,
+                    stderr_assertions,
+                    command_assertions,
+                    command_version_assertions,
+                )
+            return
+
         dataset_populator.wait_for_job(job_id, assert_ok=True)
+        if has_job_checks:
+            job_details = dataset_populator.get_job_details(job_id, full=True).json()
+            verify_job_metadata(
+                job_details,
+                expect_exit_code,
+                stdout_assertions,
+                stderr_assertions,
+                command_assertions,
+                command_version_assertions,
+            )
 
         all_job_outputs = dataset_populator.job_outputs(job_id)
+
+        if expect_num_outputs is not None:
+            actual_count = len([o for o in all_job_outputs if "dataset" in o])
+            assert actual_count == int(expect_num_outputs), f"Expected {expect_num_outputs} outputs, got {actual_count}"
 
         if outputs:
             output_id_by_name = {o["name"]: o["dataset"]["id"] for o in all_job_outputs if "dataset" in o}
@@ -1083,6 +1144,20 @@ class RunsToolTests(NavigatesGalaxyMixin):
                     wait=False,
                 )
                 verify(output_name, output_content, output_def.get("attributes", {}))
+                primary_datasets = output_def.get("attributes", {}).get("primary_datasets", {})
+                for designation, (_primary_outfile, primary_attribs) in primary_datasets.items():
+                    primary_key = f"__new_primary_file_{output_name}|{designation}__"
+                    assert primary_key in output_id_by_name, (
+                        f"Discovered dataset '{designation}' not found for output '{output_name}': "
+                        f"{list(output_id_by_name.keys())}"
+                    )
+                    primary_content = dataset_populator.get_history_dataset_content(
+                        history_id,
+                        dataset_id=output_id_by_name[primary_key],
+                        type="bytes",
+                        wait=False,
+                    )
+                    verify(designation, primary_content, primary_attribs)
 
         if output_collections:
             collection_id_by_name = {
