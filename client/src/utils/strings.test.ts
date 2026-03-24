@@ -12,7 +12,7 @@ describe("capitalizeFirstLetter", () => {
     });
 
     it("returns empty string for undefined input", () => {
-        expect(capitalizeFirstLetter(undefined as unknown as string)).toBe("");
+        expect(capitalizeFirstLetter(undefined)).toBe("");
     });
 
     it("returns empty string for null input", () => {
