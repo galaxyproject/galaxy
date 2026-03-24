@@ -46,6 +46,7 @@ from galaxy.model import (
     Job,
     User,
 )
+from galaxy.model.orm.now import now
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import check_caches
@@ -168,6 +169,9 @@ def purge_history_datasets(
     user = history.user
     if user:
         user.calculate_and_set_disk_usage(object_store)
+        if not request.preserve_owner_update_time:
+            user.update_time = now()
+            sa_session.commit()
     # Remove underlying dataset files from object store
     dataset_manager.purge_datasets(PurgeDatasetsTaskRequest(dataset_ids=dataset_ids))
 
