@@ -141,6 +141,7 @@ class PurgeDatasetsTaskRequest(Model):
 
 class PurgeHistoryDatasetsTaskRequest(Model):
     history_id: int
+    preserve_owner_update_time: bool = False
 
 
 class TaskState(str, Enum):
