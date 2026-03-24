@@ -54,17 +54,10 @@ const shouldRender = computed(() => {
     return hasBeenActive.value;
 });
 
-function titleRenderer() {
-    if (slots.title) {
-        return slots.title();
-    }
-    return undefined;
-}
-
 function buildRegistration(): TabRegistration {
     return {
         title: props.title,
-        titleRenderer,
+        titleRenderer: slots.title ? () => slots.title!() : undefined,
         disabled: props.disabled,
         id: props.id,
         buttonId: props.buttonId,
