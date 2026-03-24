@@ -8,7 +8,7 @@ import {
     faExchangeAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton, BCollapse } from "bootstrap-vue";
+import { BBadge, BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
@@ -26,6 +26,7 @@ import CollectionDescription from "./Collection/CollectionDescription.vue";
 import ContentExpirationIndicator from "./ContentExpirationIndicator.vue";
 import ContentOptions from "./ContentOptions.vue";
 import DatasetDetails from "./Dataset/DatasetDetails.vue";
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const router = useRouter();
@@ -437,17 +438,17 @@ function unexpandedClick(event: Event) {
                 @tag-click="onTagClick" />
         </span>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
-        <BCollapse :visible="expandDataset" class="px-2 pb-2">
+        <GCollapse v-slot="{ contentActive }" :visible="expandDataset" class="px-2 pb-2">
             <div v-if="item.accessible === false">You are not allowed to access this dataset</div>
             <DatasetDetails
-                v-else-if="expandDataset && item.id"
+                v-else-if="contentActive && item.id"
                 :id="item.id"
                 :writable="writable"
                 :show-highlight="(isHistoryItem && filterable) || addHighlightBtn"
                 :item-urls="itemUrls"
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
-        </BCollapse>
+        </GCollapse>
         <slot name="sub_items" :sub-items-visible="subItemsVisible" />
     </div>
 </template>

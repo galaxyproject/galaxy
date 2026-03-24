@@ -94,11 +94,10 @@ describe("MarkdownContainer", () => {
         await wrapper.setProps({ content: `generate_galaxy_version(collapse="${collapse}")` });
         const link = wrapper.find("a");
         expect(link.text()).toBe(collapse);
-        const container = wrapper.find(".collapse");
-        expect(container.attributes("style")).toBe("display: none;");
+        const container = wrapper.find(".g-collapse");
+        expect(container.classes()).not.toContain("g-collapse-open");
         await link.trigger("click");
-        // After click, style attribute is removed
-        expect(container.attributes("style")).toBeFalsy();
+        expect(container.classes()).toContain("g-collapse-open");
     });
 
     it("Renders time stamp", async () => {
