@@ -210,7 +210,6 @@ defineExpose({ redrawCreator });
         id="collection-creator-modal"
         :show.sync="localShowToggle"
         size="medium"
-        fixed-height
         @close="resetCreator">
         <template v-slot:header>
             <Heading class="w-100" size="sm">

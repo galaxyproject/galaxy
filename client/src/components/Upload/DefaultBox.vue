@@ -538,7 +538,7 @@ defineExpose({
                     <span v-localize>Start</span>
                 </GButton>
                 <GButton
-                    v-if="isCollection"
+                    v-if="isCollection && !collectionModalShow"
                     id="btn-build"
                     :size="size"
                     :disabled="!enableBuild"
