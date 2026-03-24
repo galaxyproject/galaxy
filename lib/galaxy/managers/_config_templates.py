@@ -296,8 +296,9 @@ def update_template_instance(
     payload: UpdateInstancePayload,
     template: Template,
 ):
-    validate_specified_datatypes_variables(payload.variables or {}, template)
-    validate_no_extra_variables_defined(payload.variables or {}, template)
+    if payload.variables is not None:
+        validate_specified_datatypes_variables(payload.variables, template)
+        validate_no_extra_variables_defined(payload.variables, template)
     if payload.name is not None:
         template_instance.name = payload.name
     if payload.description is not None:
