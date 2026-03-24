@@ -61,6 +61,14 @@ const TOOLTIP_STYLES = `
 .g-tooltip-d.g-tooltip-danger {
     background-color: var(--color-red-700, #dc3545);
 }
+.g-tooltip-d .tooltip-inner {
+    background-color: transparent;
+    color: inherit;
+    padding: 0;
+    text-align: inherit;
+    max-width: none;
+    border-radius: 0;
+}
 .g-tooltip-d .g-tooltip-d-arrow,
 .g-tooltip-d .g-tooltip-d-arrow::before {
     position: absolute;
