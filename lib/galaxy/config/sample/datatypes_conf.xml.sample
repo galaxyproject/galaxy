@@ -609,6 +609,7 @@
     </datatype>
     <datatype extension="interval_index" type="galaxy.datatypes.binary:Binary" subclass="true"/>
     <datatype extension="odgi" type="galaxy.datatypes.binary:Binary" subclass="true" description="Genomic variation graphs self index used by odgi." display_in_upload="true"/>
+    <datatype extension="taf.gz" type="galaxy.datatypes.binary:Binary" subclass="true" description="Compressed Transposed Alignment Format" display_in_upload="true" description_url="https://github.com/ComparativeGenomicsToolkit/taffy/blob/main/docs/taf_format.md"/>
     <datatype extension="vg" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" description="Genomic variation graphs." display_in_upload="true"/>
     <datatype extension="vg.loci" type="galaxy.datatypes.binary:Binary" subclass="true" description="VG loci index mapping graph positions to locus identifiers." description_url="https://github.com/vgteam/vg/wiki/File-Types#sample-information-formats" display_in_upload="true"/>
     <datatype extension="vg.dist" type="galaxy.datatypes.binary:Binary" subclass="true" description="VG distance index storing minimum distances between graph positions." description_url="https://github.com/vgteam/vg/wiki/File-Types#miscellaneous-formats" display_in_upload="true"/>
@@ -783,6 +784,7 @@
     <datatype extension="strider" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="supermatcher" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="syco" type="galaxy.datatypes.data:Text" subclass="true"/>
+    <datatype extension="taf" type="galaxy.datatypes.data:Text" subclass="true" description="Transposed Alignment Format. The first line of a .taf file begins with #taf. This word is followed by white-space-separated 'variable:value' pairs. There should be no white space surrounding the ':'." display_in_upload="true" description_url="https://github.com/ComparativeGenomicsToolkit/taffy/blob/main/docs/taf_format.md"/>
     <datatype extension="textsearch" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="vectorstrip" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="wobble" type="galaxy.datatypes.data:Text" subclass="true"/>
