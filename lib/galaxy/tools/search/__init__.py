@@ -177,6 +177,10 @@ class ToolPanelViewSearch:
             # Help text parsed from the tool XML
             "help": TEXT(field_boost=config.tool_help_boost, analyzer=analysis.StemmingAnalyzer()),
             "labels": KEYWORD(field_boost=float(config.tool_label_boost)),
+            "tool_tags": TEXT(
+                field_boost=float(config.tool_label_boost),
+                analyzer=analysis.KeywordAnalyzer(lowercase=True, commas=True),
+            ),
         }
 
         if config.tool_enable_ngram_search:
@@ -317,6 +321,8 @@ class ToolPanelViewSearch:
             add_doc_kwds["stub"] = unicodify(tool.id)
         if tool.labels:
             add_doc_kwds["labels"] = unicodify(" ".join(tool.labels))
+        if tool.tool_tags:
+            add_doc_kwds["tool_tags"] = unicodify(",".join(tool.tool_tags))
         if index_help:
             raw_help = tool.raw_help
             if raw_help:
@@ -356,6 +362,7 @@ class ToolPanelViewSearch:
             "owner",
             "help",
             "labels",
+            "tool_tags",
             "stub",
         ]
         self.parser = MultifieldParser(

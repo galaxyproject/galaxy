@@ -46,6 +46,10 @@ interface Props {
     hasClearBtn?: boolean;
     /** Triggers the loading icon */
     loading?: boolean;
+    /** Optional values to offer as inline autocomplete suggestions in the main search field */
+    autocompleteValues?: string[];
+    /** Prefix that activates inline autocomplete suggestions */
+    autocompletePrefix?: string;
     /** Default `linked`: filters react to current `filterText` */
     menuType?: "linked" | "separate" | "standalone";
     /** A `BackendFilterError` if provided */
@@ -61,6 +65,8 @@ const props = withDefaults(defineProps<Props>(), {
     placeholder: "search for items",
     debounceDelay: 500,
     filterText: "",
+    autocompleteValues: () => [],
+    autocompletePrefix: "",
     menuType: "linked",
     showAdvanced: false,
     searchError: undefined,
@@ -209,6 +215,8 @@ function updateFilterText(newFilterText: string) {
             :delay="props.debounceDelay"
             :loading="props.loading"
             :show-advanced="props.showAdvanced"
+            :autocomplete-values="props.autocompleteValues"
+            :autocomplete-prefix="props.autocompletePrefix"
             enable-advanced
             :placeholder="props.placeholder"
             @change="updateFilterText"

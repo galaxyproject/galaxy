@@ -6,26 +6,28 @@ import axios, { type AxiosResponse } from "axios";
 import { defineStore } from "pinia";
 import Vue, { computed, type Ref, ref, shallowRef } from "vue";
 
-import {
-    MY_PANEL_VIEW_DESCRIPTION,
-    MY_PANEL_VIEW_ID,
-    MY_PANEL_VIEW_NAME,
-    MY_PANEL_VIEW_TYPE,
-} from "@/components/Panels/panelViews";
+import { MY_PANEL_VIEW_DESCRIPTION, MY_PANEL_VIEW_ID, MY_PANEL_VIEW_NAME, MY_PANEL_VIEW_TYPE } from "@/components/Panels/panelViews";
 import { FAVORITES_KEYS, filterTools, type types_to_icons } from "@/components/Panels/utilities";
 import { parseHelpForSummary } from "@/components/ToolsList/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
+export type FilterValue = string | string[] | undefined;
+
 export interface FilterSettings {
-    [key: string]: string | undefined;
+    [key: string]: FilterValue;
     name?: string;
     section?: string;
     ontology?: string;
     id?: string;
     owner?: string;
     help?: string;
+    tag?: string[];
+}
+
+export interface FetchToolsOptions {
+    includeToolTags?: boolean;
 }
 
 export interface Panel {
@@ -47,6 +49,7 @@ export interface Tool {
     labels: string[];
     edam_operations: string[];
     edam_topics: string[];
+    tool_tags?: string[];
     hidden: "" | boolean;
     is_workflow_compatible: boolean;
     xrefs: string[];
@@ -96,11 +99,9 @@ export type ToolHelpData = {
     summary?: string;
 };
 
-const MY_PANEL_VIEW_SECTION_ID = "favorites";
-
 const MY_PANEL_VIEW: Panel = {
     id: MY_PANEL_VIEW_ID,
-    model_class: "StaticToolPanelView",
+    model_class: "MyToolsToolPanelView",
     name: MY_PANEL_VIEW_NAME,
     description: MY_PANEL_VIEW_DESCRIPTION,
     view_type: MY_PANEL_VIEW_TYPE,
@@ -113,6 +114,7 @@ export const useToolStore = defineStore("toolStore", () => {
     const loading = ref(false);
     const panels = ref<Record<string, Panel>>({});
     const searchWorker = ref<Worker | undefined>(undefined);
+    const toolTagsLoaded = ref(false);
     const toolsById = shallowRef<Record<string, Tool>>({});
     const toolResults = ref<Record<string, string[]>>({});
     const toolSections = ref<Record<string, Record<string, ToolPanelItem>>>({});
@@ -209,17 +211,6 @@ export const useToolStore = defineStore("toolStore", () => {
         if (!panelView || toolSections.value[panelView]) {
             return;
         }
-        if (panelView === MY_PANEL_VIEW_ID) {
-            saveToolSections(panelView, {
-                [MY_PANEL_VIEW_SECTION_ID]: {
-                    model_class: "ToolSection",
-                    id: MY_PANEL_VIEW_SECTION_ID,
-                    name: "Favorites",
-                    tools: [],
-                },
-            });
-            return;
-        }
         try {
             loading.value = true;
             const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
@@ -255,7 +246,8 @@ export const useToolStore = defineStore("toolStore", () => {
         }
     }
 
-    async function fetchTools(q?: string) {
+    async function fetchTools(q?: string, options: FetchToolsOptions = {}) {
+        const includeToolTags = Boolean(options.includeToolTags);
         try {
             loading.value = true;
             // Backend search
@@ -268,10 +260,15 @@ export const useToolStore = defineStore("toolStore", () => {
                 }
             }
 
-            // Fetch all tools by IDs if not already fetched
-            if (Object.keys(toolsById.value).length === 0) {
-                const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=False`);
-                saveAllTools(data as Tool[]);
+            // Fetch all tools by IDs if not already fetched, or rehydrate once with curated tags when needed.
+            if (Object.keys(toolsById.value).length === 0 || (includeToolTags && !toolTagsLoaded.value)) {
+                const { data } = await axios.get(`${getAppRoot()}api/tools`, {
+                    params: {
+                        in_panel: false,
+                        ...(includeToolTags ? { include_tool_tags: true } : {}),
+                    },
+                });
+                saveAllTools(data as Tool[], { includeToolTags });
             }
         } catch (e) {
             rethrowSimple(e);
@@ -316,14 +313,21 @@ export const useToolStore = defineStore("toolStore", () => {
         }
     }
 
-    function saveAllTools(toolsData: Tool[]) {
+    function saveAllTools(toolsData: Tool[], options: FetchToolsOptions = {}) {
         toolsById.value = toolsData.reduce(
             (acc, item) => {
-                acc[item.id] = item;
+                const existingItem = toolsById.value[item.id];
+                const nextItem = { ...item };
+                if (!options.includeToolTags && toolTagsLoaded.value && existingItem?.tool_tags && !item.tool_tags) {
+                    nextItem.tool_tags = existingItem.tool_tags;
+                }
+                acc[item.id] = nextItem;
                 return acc;
             },
             {} as Record<string, Tool>,
         );
+        toolTagsLoaded.value =
+            toolTagsLoaded.value || options.includeToolTags || toolsData.some((item) => item.tool_tags !== undefined);
     }
 
     function saveToolSections(panelView: string, newPanel: { [id: string]: ToolPanelItem }) {
@@ -378,6 +382,7 @@ export const useToolStore = defineStore("toolStore", () => {
         searchWorker,
         sectionDatalist,
         setPanel,
+        toolTagsLoaded,
         toolsById,
         toolSections,
     };

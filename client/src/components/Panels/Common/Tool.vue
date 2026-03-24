@@ -13,11 +13,13 @@ interface Props {
     tool: ToolType;
     hideName?: boolean;
     showFavoriteButton?: boolean;
+    showDragHandle?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     hideName: false,
     showFavoriteButton: false,
+    showDragHandle: false,
 });
 
 const emit = defineEmits<{
@@ -41,14 +43,19 @@ function onClick(evt: MouseEvent) {
 
 <template>
     <div class="toolTitle">
-        <a v-if="props.tool.disabled" :data-tool-id="props.tool.id" class="title-link name text-muted tool-link">
+        <a
+            v-if="props.tool.disabled"
+            :class="['title-link', 'name', 'text-muted', 'tool-link', { 'favorite-top-level-drag-target': props.showDragHandle }]"
+            :data-tool-id="props.tool.id"
+            :data-description="props.showDragHandle ? 'favorite-top-level-drag-target' : null">
             <span v-if="!props.hideName">{{ props.tool.name }}</span>
             <span class="description">{{ props.tool.description }}</span>
         </a>
         <a
             v-else
-            class="title-link cursor-pointer tool-link"
+            :class="['title-link', 'cursor-pointer', 'tool-link', { 'favorite-top-level-drag-target': props.showDragHandle }]"
             :data-tool-id="props.tool.id"
+            :data-description="props.showDragHandle ? 'favorite-top-level-drag-target' : null"
             :href="toolLink"
             :target="toolTarget"
             :title="props.tool.help"
@@ -64,12 +71,14 @@ function onClick(evt: MouseEvent) {
             <span v-if="!props.hideName" class="name font-weight-bold">{{ props.tool.name }}</span>
             <span class="description">{{ props.tool.description }}</span>
         </a>
-        <ToolFavoriteButton
-            v-if="props.showFavoriteButton || isFavorite"
-            :id="props.tool.id"
-            :class="['tool-favorite-button', { 'tool-favorite-button-hover': isFavorite }]"
-            :data-tool-id="props.tool.id"
-            color="grey" />
+        <div v-if="props.showFavoriteButton || isFavorite" class="toolTitleActions">
+            <ToolFavoriteButton
+                v-if="props.showFavoriteButton || isFavorite"
+                :id="props.tool.id"
+                :class="['tool-favorite-button', { 'tool-favorite-button-hover': isFavorite }]"
+                :data-tool-id="props.tool.id"
+                color="grey" />
+        </div>
     </div>
 </template>
 
@@ -81,9 +90,16 @@ function onClick(evt: MouseEvent) {
 }
 .tool-link {
     flex: 1 1 auto;
+    min-width: 0;
+}
+.toolTitleActions {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.25rem;
+    margin-left: auto;
 }
 .tool-favorite-button {
-    margin-left: 0.25rem;
+    margin-left: 0;
 }
 .tool-favorite-button-hover {
     opacity: 0;
@@ -105,5 +121,12 @@ function onClick(evt: MouseEvent) {
     opacity: 1;
     transition-delay: 0s;
     pointer-events: auto;
+}
+.favorite-top-level-drag-target {
+    cursor: grab;
+    user-select: none;
+}
+.favorite-top-level-drag-target:active {
+    cursor: grabbing;
 }
 </style>

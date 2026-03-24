@@ -437,12 +437,56 @@ class FavoriteObject(Model):
     )
 
 
-class FavoriteObjectsSummary(Model):
-    tools: list[str] = Field(default=..., title="Favorite tools", description="The name of the tools the user favored.")
-
-
 class FavoriteObjectType(str, Enum):
     tools = "tools"
+    tags = "tags"
+    edam_operations = "edam_operations"
+    edam_topics = "edam_topics"
+
+
+class FavoriteOrderItem(Model):
+    object_type: FavoriteObjectType = Field(
+        default=..., title="Favorite object type", description="The type of favorite object in the ordered favorites list."
+    )
+    object_id: str = Field(
+        default=..., title="Favorite object ID", description="The ID of the favorite object in the ordered favorites list."
+    )
+
+
+class FavoriteOrderPayload(Model):
+    order: list[FavoriteOrderItem] = Field(
+        default_factory=list,
+        title="Favorite order",
+        description="The complete ordered list of top-level favorite entries.",
+    )
+
+
+class FavoriteObjectsSummary(Model):
+    tools: list[str] = Field(
+        default_factory=list,
+        title="Favorite tools",
+        description="The name of the tools the user favored.",
+    )
+    tags: list[str] = Field(
+        default_factory=list,
+        title="Favorite tags",
+        description="The curated tool tags the user favored.",
+    )
+    edam_operations: list[str] = Field(
+        default_factory=list,
+        title="Favorite EDAM operations",
+        description="The EDAM operation identifiers the user favored.",
+    )
+    edam_topics: list[str] = Field(
+        default_factory=list,
+        title="Favorite EDAM topics",
+        description="The EDAM topic identifiers the user favored.",
+    )
+    order: list[FavoriteOrderItem] = Field(
+        default_factory=list,
+        title="Favorite order",
+        description="The persisted order of top-level favorite tools and favorite sections.",
+    )
 
 
 class DeletedCustomBuild(Model):

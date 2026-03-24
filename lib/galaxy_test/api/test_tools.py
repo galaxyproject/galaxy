@@ -151,6 +151,26 @@ class TestToolsApi(ApiTestCase, TestsTools):
         get_response = get(url, payload).json()
         assert "Grep1" in get_response
 
+    @skip_without_tool("__FILTER_EMPTY_DATASETS__")
+    @skip_without_tool("liftOver1")
+    def test_search_curated_tool_tags(self):
+        single_tag_response = self._get("tools", data=dict(q="tool_tags:(data_cleanup)")).json()
+        assert set(single_tag_response) == {"__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"}
+
+        multiword_tag_response = self._get("tools", data=dict(q='tool_tags:"data cleanup"')).json()
+        assert set(multiword_tag_response) == {"__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"}
+
+        or_response = self._get("tools", data=dict(q="tool_tags:(data_cleanup OR genome_coordinates)")).json()
+        assert set(or_response) == {"__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__", "liftOver1"}
+
+        and_response = self._get("tools", data=dict(q="tool_tags:(collection_ops AND dataset_collections)")).json()
+        assert set(and_response) == {
+            "__UNZIP_COLLECTION__",
+            "__ZIP_COLLECTION__",
+            "__FILTER_FAILED_DATASETS__",
+            "__FILTER_EMPTY_DATASETS__",
+        }
+
     def test_no_panel_index(self):
         index = self._get("tools", data=dict(in_panel=False))
         tools_index = index.json()
@@ -158,6 +178,14 @@ class TestToolsApi(ApiTestCase, TestsTools):
         # returned.
         tool_ids = [_["id"] for _ in tools_index]
         assert "upload1" in tool_ids
+        assert "tool_tags" not in tools_index[0]
+
+    def test_no_panel_index_include_tool_tags(self):
+        index = self._get("tools", data=dict(in_panel=False, include_tool_tags=True))
+        tools_index = index.json()
+        tool_ids = [_["id"] for _ in tools_index]
+        assert "upload1" in tool_ids
+        assert "tool_tags" in tools_index[0]
 
     @skip_without_tool("test_sam_to_bam_conversions")
     def test_requirements(self):
