@@ -123,6 +123,9 @@ Visualizations Updates
 ===========================================================
 
 .. visualizations
+* Bump tiffviewer visualization to v0.0.4
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 22168`_
 * Selenium test cases for IGV
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 21034`_
@@ -226,6 +229,9 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
+* Include missing tools in stock_tool_paths
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 22181`_
 * Update qiskit interactive tool
   (thanks to `@thepineapplepirate <https://github.com/thepineapplepirate>`__).
   `Pull Request 21948`_
