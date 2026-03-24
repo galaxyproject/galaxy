@@ -83,7 +83,7 @@ class FastAPIProxy:
         # This is to prevent the server from hanging indefinitely
         timeout = httpx.Timeout(10.0, connect=60.0)
 
-        client = httpx.AsyncClient(timeout=timeout)
+        client = await anyio.to_thread.run_sync(partial(httpx.AsyncClient, timeout=timeout))
         try:
             response = await self._handle_redirects_validation(request, url, trans, headers, client)
 
