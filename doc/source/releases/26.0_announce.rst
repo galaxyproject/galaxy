@@ -25,6 +25,16 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
 
+Admin Notes
+===========================================================
+
+**Galaxy is now exclusively licensed under the MIT License**
+  Galaxy has completed its transition from the Academic Free License (AFL) to the
+  `MIT License <https://github.com/galaxyproject/galaxy/pull/16970>`__.
+  All prior contributions have been re-licensed under MIT with contributor approval.
+  This resolves long-standing compatibility concerns for downstream Linux distribution
+  packagers (e.g., Debian) and simplifies licensing for all Galaxy Python sub-packages.
+
 Configuration Changes
 ===========================================================
 
