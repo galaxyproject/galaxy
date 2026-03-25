@@ -61,6 +61,7 @@ class PersonalNotificationCategory(str, Enum):
 
     message = "message"
     new_shared_item = "new_shared_item"
+    tool_request = "tool_request"
     # TODO: enable this and create content model when we have a hook for completed workflows
     # workflow_execution_completed = "workflow_execution_completed"
 
@@ -115,6 +116,36 @@ class NewSharedItemNotificationContent(Model):
     slug: str = Field(..., title="Slug", description="The slug of the shared item. Used for the link to the item.")
 
 
+class ToolRequestNotificationContent(Model):
+    category: Literal[PersonalNotificationCategory.tool_request] = PersonalNotificationCategory.tool_request
+    tool_name: str = Field(..., title="Tool name", description="The name of the requested tool.")
+    tool_url: Optional[str] = Field(
+        None, title="Tool URL", description="Homepage or repository URL for the requested tool."
+    )
+    description: str = Field(
+        ..., title="Description", description="Short description of the tool and its scientific use case."
+    )
+    scientific_domain: Optional[str] = Field(
+        None, title="Scientific domain", description="The scientific domain for the requested tool."
+    )
+    requested_version: Optional[str] = Field(
+        None, title="Requested version", description="The version of the tool being requested."
+    )
+    conda_available: Optional[bool] = Field(
+        None, title="Conda available", description="Whether a Conda package for this tool is available."
+    )
+    test_data_available: Optional[bool] = Field(
+        None, title="Test data available", description="Whether test data for this tool is available."
+    )
+    requester_name: str = Field(..., title="Requester name", description="The name of the person requesting the tool.")
+    requester_email: Optional[str] = Field(
+        None, title="Requester email", description="The email address of the requester for follow-up."
+    )
+    requester_affiliation: Optional[str] = Field(
+        None, title="Requester affiliation", description="The affiliation/lab of the requester."
+    )
+
+
 NotificationContentField = Field(
     default=...,
     discriminator="category",
@@ -126,6 +157,7 @@ AnyUserNotificationContent = Annotated[
     Union[
         MessageNotificationContent,
         NewSharedItemNotificationContent,
+        ToolRequestNotificationContent,
     ],
     NotificationContentField,
 ]
