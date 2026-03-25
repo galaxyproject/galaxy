@@ -84,7 +84,6 @@ const showTime = ref(true);
 const showDetails = ref(true);
 const isBusy = ref(false);
 const showFTPHelper = ref(false);
-const selectAllIcon = ref<SelectionState>(SELECTION_STATES.UNSELECTED);
 const urlTracker = useUrlTracker<SelectionItem & { parentPage?: number }>({ root: undefined });
 const totalItems = ref(0);
 
@@ -227,9 +226,6 @@ function formatRows() {
         Vue.set(item, "class", selectionState === SELECTION_STATES.SELECTED ? "table-success" : undefined);
     }
     allSelected.value = checkIfAllSelected();
-    if (urlTracker.current.value?.url) {
-        selectAllIcon.value = getIcon(allSelected.value, urlTracker.current.value.url);
-    }
 }
 
 function isDirectorySelected(directoryId: string): boolean {
@@ -484,8 +480,8 @@ onMounted(() => {
         :modal-show="modalShow"
         :multiple="multiple"
         :options-show="optionsShow"
-        :select-all-variant="selectAllIcon"
-        :show-select-icon="undoShow && multiple"
+        :all-selected="allSelected"
+        :selectable="undoShow && multiple"
         :undo-show="undoShow"
         :watch-on-page-changes="false"
         @onCancel="() => (modalShow = false)"
