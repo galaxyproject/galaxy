@@ -1,11 +1,8 @@
 """Thin CLI entry point for galaxy-workflow-clean-stale-state."""
 
-import sys
-
 from .._cli_common import (
-    add_common_args,
-    add_populate_args,
-    add_stale_key_args,
+    build_base_parser,
+    cli_main,
 )
 from ..clean import (
     CleanOptions,
@@ -14,16 +11,12 @@ from ..clean import (
 
 
 def build_parser():
-    import argparse
-
-    parser = argparse.ArgumentParser(
+    parser = build_base_parser(
         prog="galaxy-workflow-clean-stale-state",
         description="Strip stale tool_state keys from native Galaxy workflows.",
+        stale_key_mode="clean",
+        workflow_path_help="Path to native .ga file or directory (auto-detected)",
     )
-    add_common_args(parser)
-    add_populate_args(parser)
-    add_stale_key_args(parser, mode="clean")
-    parser.add_argument("workflow_path", help="Path to native .ga file or directory (auto-detected)")
     parser.add_argument(
         "--output-template",
         metavar="TEMPLATE",
@@ -52,9 +45,7 @@ def build_parser():
 
 
 def main(argv=None):
-    args = build_parser().parse_args(argv)
-    options = CleanOptions.from_namespace(args)
-    sys.exit(run_clean(options))
+    cli_main(build_parser(), CleanOptions, run_clean, argv)
 
 
 if __name__ == "__main__":

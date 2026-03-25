@@ -1,11 +1,8 @@
 """Thin CLI entry point for galaxy-workflow-validate."""
 
-import sys
-
 from .._cli_common import (
-    add_common_args,
-    add_populate_args,
-    add_stale_key_args,
+    build_base_parser,
+    cli_main,
 )
 from ..validate import (
     run_validate,
@@ -14,16 +11,11 @@ from ..validate import (
 
 
 def build_parser():
-    import argparse
-
-    parser = argparse.ArgumentParser(
+    parser = build_base_parser(
         prog="galaxy-workflow-validate",
         description="Validate workflow tool_state against tool definitions.",
+        stale_key_mode="validate",
     )
-    add_common_args(parser)
-    add_populate_args(parser)
-    add_stale_key_args(parser, mode="validate")
-    parser.add_argument("workflow_path", help="Path to .ga/.gxwf.yml file or directory (auto-detected)")
     parser.add_argument("--strict", action="store_true", help="Treat skips (missing tool defs) as failures")
     parser.add_argument("--summary", action="store_true", help="Show only summary counts")
     parser.add_argument("--connections", action="store_true", help="Validate inter-step connection type compatibility")
@@ -47,9 +39,7 @@ def build_parser():
 
 
 def main(argv=None):
-    args = build_parser().parse_args(argv)
-    options = ValidateOptions.from_namespace(args)
-    sys.exit(run_validate(options))
+    cli_main(build_parser(), ValidateOptions, run_validate, argv)
 
 
 if __name__ == "__main__":

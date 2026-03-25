@@ -4,7 +4,6 @@ Strips stale tool_state keys from native .ga workflows by comparing
 keys against current tool input definitions.
 """
 
-import argparse
 import copy
 import difflib
 import json
@@ -18,8 +17,10 @@ from typing import (
     Optional,
 )
 
-from pydantic import BaseModel
-
+from ._cli_common import (
+    setup_tool_info,
+    ToolCacheOptions,
+)
 from galaxy.tool_util.parameters import (
     ConditionalParameterModel,
     RepeatParameterModel,
@@ -120,23 +121,13 @@ def strip_bookkeeping_from_workflow(workflow_dict: NativeWorkflowDict) -> None:
 # -- Options model --
 
 
-class CleanOptions(BaseModel):
-    workflow_path: str
-    tool_source_cache_dir: Optional[str] = None
-    verbose: bool = False
-    populate_cache: bool = False
-    tool_source: str = "auto"
+class CleanOptions(ToolCacheOptions):
     output_template: Optional[str] = None
     diff: bool = False
     report_json: Optional[str] = None
     report_markdown: Optional[str] = None
     preserve: List[str] = []
     strip: List[str] = []
-
-    @classmethod
-    def from_namespace(cls, args: argparse.Namespace) -> "CleanOptions":
-        fields = set(cls.model_fields)
-        return cls(**{k: v for k, v in vars(args).items() if k in fields})
 
 
 # -- Intermediate result (for single-workflow cleaning before wrapping) --
@@ -591,24 +582,13 @@ def run_clean(options: CleanOptions) -> int:
     """Run clean pipeline. Returns exit code."""
     import sys
 
-    from ._cli_common import setup_logging
-    from .cache import (
-        build_tool_info,
-        populate_cache,
-    )
-
-    setup_logging(options.verbose)
-    tool_info = build_tool_info(options.tool_source_cache_dir)
+    tool_info = setup_tool_info(options)
 
     try:
         policy = StaleKeyPolicy.for_clean(options.preserve, options.strip)
     except (InvalidCategoryError, ConflictingCategoryError) as e:
         print(f"Error: {e}", file=sys.stderr)
         return 2
-
-    if options.populate_cache:
-        populate_cache(tool_info, options.workflow_path, source=options.tool_source)
-        print()
 
     is_dir = os.path.isdir(options.workflow_path)
 

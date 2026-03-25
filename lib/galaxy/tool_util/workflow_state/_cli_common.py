@@ -1,6 +1,17 @@
-"""Shared argparse helpers for workflow_state CLI scripts."""
+"""Shared argparse helpers and base options for workflow_state CLI scripts."""
 
+import argparse
 import logging
+import sys
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
+
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from .toolshed_tool_info import ToolShedGetToolInfo
 
 
 def add_common_args(parser):
@@ -78,3 +89,58 @@ def add_stale_key_args(parser, mode="validate"):
 def setup_logging(verbose: bool):
     """Configure logging based on --verbose flag."""
     logging.basicConfig(level=logging.DEBUG if verbose else logging.WARNING)
+
+
+class ToolCacheOptions(BaseModel):
+    """Base options shared by all workflow_state CLI tools."""
+
+    workflow_path: str
+    tool_source_cache_dir: Optional[str] = None
+    verbose: bool = False
+    populate_cache: bool = False
+    tool_source: str = "auto"
+
+    @classmethod
+    def from_namespace(cls, args: argparse.Namespace) -> "ToolCacheOptions":
+        fields = set(cls.model_fields)
+        return cls(**{k: v for k, v in vars(args).items() if k in fields})
+
+
+def build_base_parser(
+    prog: str,
+    description: str,
+    stale_key_mode: Optional[str] = None,
+    workflow_path_help: str = "Path to .ga/.gxwf.yml file or directory",
+) -> argparse.ArgumentParser:
+    """Build an argparse parser with the common workflow_state CLI args."""
+    parser = argparse.ArgumentParser(prog=prog, description=description)
+    add_common_args(parser)
+    add_populate_args(parser)
+    if stale_key_mode:
+        add_stale_key_args(parser, mode=stale_key_mode)
+    parser.add_argument("workflow_path", help=workflow_path_help)
+    return parser
+
+
+def cli_main(parser: argparse.ArgumentParser, options_cls, run_fn, argv=None):
+    """Parse args, build options, run, exit — the shared CLI main pattern."""
+    args = parser.parse_args(argv)
+    options = options_cls.from_namespace(args)
+    sys.exit(run_fn(options))
+
+
+def setup_tool_info(options: ToolCacheOptions) -> "ToolShedGetToolInfo":
+    """Configure logging, build tool info, optionally populate cache."""
+    from .cache import (
+        build_tool_info,
+        populate_cache,
+    )
+
+    setup_logging(options.verbose)
+    tool_info = build_tool_info(options.tool_source_cache_dir)
+
+    if options.populate_cache:
+        populate_cache(tool_info, options.workflow_path, source=options.tool_source)
+        print("", file=sys.stderr)
+
+    return tool_info

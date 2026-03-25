@@ -1,10 +1,8 @@
 """Thin CLI entry point for galaxy-workflow-roundtrip-validate."""
 
-import sys
-
 from .._cli_common import (
-    add_common_args,
-    add_populate_args,
+    build_base_parser,
+    cli_main,
 )
 from ..roundtrip import (
     RoundTripValidateOptions,
@@ -13,15 +11,11 @@ from ..roundtrip import (
 
 
 def build_parser():
-    import argparse
-
-    parser = argparse.ArgumentParser(
+    parser = build_base_parser(
         prog="galaxy-workflow-roundtrip-validate",
         description="Validate native→format2→native round-trip for Galaxy workflows.",
+        workflow_path_help="Path to native .ga file or directory (auto-detected)",
     )
-    add_common_args(parser)
-    add_populate_args(parser)
-    parser.add_argument("workflow_path", help="Path to native .ga file or directory (auto-detected)")
     parser.add_argument(
         "--strip-bookkeeping",
         action="store_true",
@@ -46,9 +40,7 @@ def build_parser():
 
 
 def main(argv=None):
-    args = build_parser().parse_args(argv)
-    options = RoundTripValidateOptions.from_namespace(args)
-    sys.exit(run_roundtrip_validate(options))
+    cli_main(build_parser(), RoundTripValidateOptions, run_roundtrip_validate, argv)
 
 
 if __name__ == "__main__":

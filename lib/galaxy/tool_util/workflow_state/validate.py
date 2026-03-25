@@ -4,7 +4,6 @@ Validates a workflow's tool_state against tool definitions.
 Supports both native .ga and format2 .gxwf.yml workflows.
 """
 
-import argparse
 import logging
 import os
 import sys
@@ -13,8 +12,10 @@ from typing import (
     Optional,
 )
 
-from pydantic import BaseModel
-
+from ._cli_common import (
+    setup_tool_info,
+    ToolCacheOptions,
+)
 from ._report_models import (
     ConnectionValidationReport,
     SingleValidationReport,
@@ -49,12 +50,7 @@ StepResult = ValidationStepResult
 # -- Options model --
 
 
-class ValidateOptions(BaseModel):
-    workflow_path: str
-    tool_source_cache_dir: Optional[str] = None
-    verbose: bool = False
-    populate_cache: bool = False
-    tool_source: str = "auto"
+class ValidateOptions(ToolCacheOptions):
     strict: bool = False
     summary: bool = False
     connections: bool = False
@@ -62,11 +58,6 @@ class ValidateOptions(BaseModel):
     report_markdown: Optional[str] = None
     allow: List[str] = []
     deny: List[str] = []
-
-    @classmethod
-    def from_namespace(cls, args: argparse.Namespace) -> "ValidateOptions":
-        fields = set(cls.model_fields)
-        return cls(**{k: v for k, v in vars(args).items() if k in fields})
 
 
 # -- Domain logic --
@@ -541,23 +532,12 @@ def _run_connection_validation(options: ValidateOptions, tool_info) -> int:
 
 def run_validate(options: ValidateOptions) -> int:
     """Run validation pipeline. Returns exit code."""
-    from ._cli_common import setup_logging
-    from .cache import (
-        build_tool_info,
-        populate_cache,
-    )
-
-    setup_logging(options.verbose)
-    tool_info = build_tool_info(options.tool_source_cache_dir)
+    tool_info = setup_tool_info(options)
     try:
         policy = StaleKeyPolicy.for_validate(options.allow, options.deny)
     except (InvalidCategoryError, ConflictingCategoryError) as e:
         print(f"Error: {e}", file=sys.stderr)
         return 2
-
-    if options.populate_cache:
-        populate_cache(tool_info, options.workflow_path, source=options.tool_source)
-        print()
 
     is_dir = os.path.isdir(options.workflow_path)
 

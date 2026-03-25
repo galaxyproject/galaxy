@@ -1,11 +1,8 @@
 """Thin CLI entry point for galaxy-workflow-export-format2."""
 
-import sys
-
 from .._cli_common import (
-    add_common_args,
-    add_populate_args,
-    add_stale_key_args,
+    build_base_parser,
+    cli_main,
 )
 from ..export_format2 import (
     ExportOptions,
@@ -14,16 +11,12 @@ from ..export_format2 import (
 
 
 def build_parser():
-    import argparse
-
-    parser = argparse.ArgumentParser(
+    parser = build_base_parser(
         prog="galaxy-workflow-export-format2",
         description="Export native Galaxy workflow (.ga) to format2 with schema-aware state blocks.",
+        stale_key_mode="export",
+        workflow_path_help="Path to native .ga workflow file",
     )
-    add_common_args(parser)
-    add_populate_args(parser)
-    add_stale_key_args(parser, mode="export")
-    parser.add_argument("workflow_path", help="Path to native .ga workflow file")
     parser.add_argument("--output", "-o", help="Output file (default: stdout)")
     parser.add_argument(
         "--json",
@@ -41,9 +34,7 @@ def build_parser():
 
 
 def main(argv=None):
-    args = build_parser().parse_args(argv)
-    options = ExportOptions.from_namespace(args)
-    sys.exit(run_export(options))
+    cli_main(build_parser(), ExportOptions, run_export, argv)
 
 
 if __name__ == "__main__":

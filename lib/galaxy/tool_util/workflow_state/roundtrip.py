@@ -4,7 +4,6 @@ Provides comparison, classification, and full round-trip validation
 functions used by both the CLI tools and the test harness.
 """
 
-import argparse
 import copy
 import json
 import logging
@@ -30,8 +29,11 @@ from gxformat2.to_native import (
     ensure_native,
     to_native,
 )
-from pydantic import BaseModel
 
+from ._cli_common import (
+    setup_tool_info,
+    ToolCacheOptions,
+)
 from ._types import GetToolInfo
 from .convert import (
     ConversionValidationFailure,
@@ -1072,21 +1074,11 @@ def roundtrip_validate(
 # -- Options model --
 
 
-class RoundTripValidateOptions(BaseModel):
-    workflow_path: str
-    tool_source_cache_dir: str | None = None
-    verbose: bool = False
-    populate_cache: bool = False
-    tool_source: str = "auto"
+class RoundTripValidateOptions(ToolCacheOptions):
     strip_bookkeeping: bool = False
     strict: bool = False
     output_native: str | None = None
     output_format2: str | None = None
-
-    @classmethod
-    def from_namespace(cls, args: argparse.Namespace) -> "RoundTripValidateOptions":
-        fields = set(cls.model_fields)
-        return cls(**{k: v for k, v in vars(args).items() if k in fields})
 
 
 def _is_passing(result: RoundTripValidationResult, strict: bool) -> bool:
@@ -1144,18 +1136,7 @@ def format_validation_text(
 
 def run_roundtrip_validate(options: RoundTripValidateOptions) -> int:
     """Run round-trip validation pipeline. Returns exit code."""
-    from ._cli_common import setup_logging
-    from .cache import (
-        build_tool_info,
-        populate_cache,
-    )
-
-    setup_logging(options.verbose)
-    tool_info = build_tool_info(options.tool_source_cache_dir)
-
-    if options.populate_cache:
-        populate_cache(tool_info, options.workflow_path, source=options.tool_source)
-        print("", file=sys.stderr)
+    tool_info = setup_tool_info(options)
 
     is_dir = os.path.isdir(options.workflow_path)
 
