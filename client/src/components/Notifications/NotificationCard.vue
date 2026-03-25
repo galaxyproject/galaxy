@@ -7,6 +7,7 @@ import {
     faInbox,
     faRetweet,
     faTrash,
+    faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
@@ -61,14 +62,20 @@ function handleMessageClick(event: MouseEvent) {
 const title = computed(() => {
     if (props.notification.category === "new_shared_item") {
         return `${sharedItemType.value} shared with you by ${props.notification.content.owner_name}`;
+    } else if (props.notification.category === "tool_request") {
+        return `Tool Request: ${props.notification.content.tool_name}`;
     } else {
         return props.notification.content.subject;
     }
 });
 
 const titleIcon = computed(() => {
+    const iconMap: Record<string, unknown> = {
+        new_shared_item: faRetweet,
+        tool_request: faWrench,
+    };
     return {
-        icon: props.notification.category === "new_shared_item" ? faRetweet : faInbox,
+        icon: iconMap[props.notification.category] ?? faInbox,
         class: `text-${notificationVariant.value}`,
     };
 });
@@ -175,6 +182,46 @@ function markNotificationAsSeen() {
                 </BLink>
                 <em>{{ props.notification.content.item_type }}</em
                 >{{ " " }}<span> with you.</span>
+            </template>
+            <template v-else-if="props.notification.category === 'tool_request'">
+                <dl class="mb-0">
+                    <template v-if="props.notification.content.description">
+                        <dt>Description</dt>
+                        <dd>{{ props.notification.content.description }}</dd>
+                    </template>
+                    <template v-if="props.notification.content.tool_url">
+                        <dt>URL</dt>
+                        <dd>
+                            <BLink :href="props.notification.content.tool_url" target="_blank">
+                                {{ props.notification.content.tool_url }}
+                                <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width size="sm" />
+                            </BLink>
+                        </dd>
+                    </template>
+                    <template v-if="props.notification.content.scientific_domain">
+                        <dt>Scientific domain</dt>
+                        <dd>{{ props.notification.content.scientific_domain }}</dd>
+                    </template>
+                    <template v-if="props.notification.content.requested_version">
+                        <dt>Version</dt>
+                        <dd>{{ props.notification.content.requested_version }}</dd>
+                    </template>
+                    <template v-if="props.notification.content.requester_name">
+                        <dt>Requested by</dt>
+                        <dd>
+                            {{ props.notification.content.requester_name }}
+                            <span v-if="props.notification.content.requester_affiliation">
+                                ({{ props.notification.content.requester_affiliation }})
+                            </span>
+                            <span v-if="props.notification.content.requester_email">
+                                &mdash;
+                                <BLink :href="`mailto:${props.notification.content.requester_email}`">
+                                    {{ props.notification.content.requester_email }}
+                                </BLink>
+                            </span>
+                        </dd>
+                    </template>
+                </dl>
             </template>
             <template v-else>
                 <span

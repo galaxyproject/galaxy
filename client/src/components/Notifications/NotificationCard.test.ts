@@ -6,7 +6,11 @@ import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
-import { generateMessageNotification, generateNewSharedItemNotification } from "@/components/Notifications/test-utils";
+import {
+    generateMessageNotification,
+    generateNewSharedItemNotification,
+    generateToolRequestNotification,
+} from "@/components/Notifications/test-utils";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
 import NotificationCard from "@/components/Notifications/NotificationCard.vue";
@@ -136,5 +140,24 @@ describe("Notifications categories", () => {
         await nextTick();
 
         expect(spyOnUpdateNotification).toHaveBeenCalledTimes(1);
+    });
+
+    it("tool_request notification shows tool name in title and details in description", async () => {
+        const notification = generateToolRequestNotification();
+
+        const wrapper = await mountComponent(NotificationCard, {
+            notification,
+        });
+
+        // Title should include the tool name
+        expect(wrapper.text()).toContain(notification.content.tool_name);
+
+        // Description area should show tool request details
+        const descriptionArea = wrapper.find(`#g-card-description-${notification.id}`);
+        expect(descriptionArea.text()).toContain(notification.content.description);
+        expect(descriptionArea.text()).toContain(notification.content.scientific_domain);
+        expect(descriptionArea.text()).toContain(notification.content.requested_version);
+        expect(descriptionArea.text()).toContain(notification.content.requester_name);
+        expect(descriptionArea.text()).toContain(notification.content.requester_affiliation);
     });
 });
