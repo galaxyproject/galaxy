@@ -24,7 +24,8 @@ const filter = ref("");
 const showAdvanced = ref(false);
 const showSelectModal = ref(false);
 const initialLoaded = ref(false);
-const displayCount = ref(4);
+const DISPLAY_INCREMENT = 4;
+const displayCount = ref(DISPLAY_INCREMENT);
 
 const { currentUser } = storeToRefs(useUserStore());
 const { histories, currentHistory, historiesLoading } = storeToRefs(useHistoryStore());
@@ -63,7 +64,7 @@ const canLoadMore = computed(() => {
 });
 
 function loadMore() {
-    displayCount.value += 4;
+    displayCount.value += DISPLAY_INCREMENT;
 }
 
 // On mounted, wait for history store to load, then set `initialLoaded` to true
@@ -113,8 +114,8 @@ const showRecentTitle = computed(() => {
     }
 });
 
-/** Reset to _default_ state; showing 4 latest updated histories */
 function showRecent() {
+    displayCount.value = DISPLAY_INCREMENT;
     historyStore.clearPinnedHistories();
     Toast.info(
         `Showing the ${displayCount.value} most recently updated histories. Pin histories to this view by clicking on Select Histories.`,
