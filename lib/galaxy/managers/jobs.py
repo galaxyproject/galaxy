@@ -1702,22 +1702,56 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
         else:
             raise RequestParameterInvalidException(f"Invalid job source type {job_source_type} found.")
 
-    job_summaries = {}
-    implicit_collection_jobs_summaries = {}
+    job_summaries: dict[int, JobsSummary] = {}
+    implicit_collection_jobs_summaries: dict[int, JobsSummary] = {}
 
-    for job_id in job_ids:
-        job_summaries[job_id] = summarize_jobs_to_dict(sa_session, sa_session.get(Job, job_id))
-    for implicit_collection_jobs_id in implicit_collection_job_ids:
-        implicit_collection_jobs_summaries[implicit_collection_jobs_id] = summarize_jobs_to_dict(
-            sa_session, sa_session.get(model.ImplicitCollectionJobs, implicit_collection_jobs_id)
+    if job_ids:
+        stmt = select(Job.id, Job.state).where(Job.id.in_(job_ids))
+        for job_id, job_state in sa_session.execute(stmt):
+            job_summaries[job_id] = {
+                "populated_state": "ok",
+                "states": {job_state: 1},
+                "model": "Job",
+                "id": job_id,
+            }
+    if implicit_collection_job_ids:
+        stmt = select(ImplicitCollectionJobs.id, ImplicitCollectionJobs.populated_state).where(
+            ImplicitCollectionJobs.id.in_(implicit_collection_job_ids)
         )
+        populated_icj_ids = []
+        for icj_id, populated_state in sa_session.execute(stmt):
+            implicit_collection_jobs_summaries[icj_id] = {
+                "id": icj_id,
+                "populated_state": populated_state,
+                "model": "ImplicitCollectionJobs",
+                "states": {},
+            }
+            if populated_state == "ok":
+                populated_icj_ids.append(icj_id)
+        if populated_icj_ids:
+            join = ImplicitCollectionJobsJobAssociation.table.join(Job)
+            stmt = (
+                select(
+                    ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id,
+                    Job.state,
+                    func.count(),
+                )
+                .select_from(join)
+                .where(ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id.in_(populated_icj_ids))
+                .group_by(
+                    ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id,
+                    Job.state,
+                )
+            )
+            for icj_id, state, count in sa_session.execute(stmt):
+                implicit_collection_jobs_summaries[icj_id]["states"][state] = count
 
     rval = []
     for job_source_id, job_source_type in zip(job_source_ids, job_source_types):
         if job_source_type == "Job":
-            rval.append(job_summaries[job_source_id])
+            rval.append(job_summaries.get(job_source_id))
         elif job_source_type == "ImplicitCollectionJobs":
-            rval.append(implicit_collection_jobs_summaries[job_source_id])
+            rval.append(implicit_collection_jobs_summaries.get(job_source_id))
         else:
             invocation_state = workflow_invocation_states[job_source_id]
             invocation_job_summaries = []
