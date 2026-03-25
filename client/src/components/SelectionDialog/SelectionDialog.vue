@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BLink, BPagination, BSpinner } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { RowClickEvent, TableField } from "@/components/Common/GTable.types";
-import { type ItemsProvider, SELECTION_STATES, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
+import { type ItemsProvider, SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 import type Filtering from "@/utils/filtering";
 
 import type { SelectionItem } from "./selectionTypes";
@@ -20,7 +19,6 @@ import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue"
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const LABEL_FIELD: TableField = { key: "label", label: "Name", sortable: true };
-const SELECT_ICON_FIELD: TableField = { key: "__select_icon__", label: "", sortable: false };
 
 interface Props {
     disableOk?: boolean;
@@ -39,8 +37,8 @@ interface Props {
     multiple?: boolean;
     optionsShow?: boolean;
     undoShow?: boolean;
-    selectAllVariant?: SelectionState;
-    showSelectIcon?: boolean;
+    selectable?: boolean;
+    allSelected?: boolean;
     title?: string;
     searchTitle?: string;
     okButtonText?: string;
@@ -65,8 +63,8 @@ const props = withDefaults(defineProps<Props>(), {
     multiple: false,
     optionsShow: false,
     undoShow: false,
-    selectAllVariant: SELECTION_STATES.UNSELECTED,
-    showSelectIcon: false,
+    selectable: false,
+    allSelected: undefined,
     title: "",
     searchTitle: undefined,
     okButtonText: "Select",
@@ -87,6 +85,7 @@ const filter = ref("");
 const currentPage = ref(1);
 const perPage = ref(25);
 const showAdvancedSearch = ref(false);
+const selectedItems = ref<number[]>([]);
 
 const providerRequestId = ref(0);
 const providerItems = ref<SelectionItem[]>([]);
@@ -107,11 +106,22 @@ const fieldDetails = computed<TableField[]>(() => {
     if (fields.length === 0) {
         fields.unshift(LABEL_FIELD);
     }
-    if (props.showSelectIcon) {
-        fields.unshift(SELECT_ICON_FIELD);
-    }
     return fields;
 });
+
+/**
+ * Sync selectedItems based on item classes/selection state.
+ * Updates the selected items array whenever the items change.
+ */
+function syncSelectedItems() {
+    selectedItems.value = tableItems.value
+        .map((item, index) => {
+            const hasClass = (item as any)?.class === "table-success";
+            const isSelected = (item as any)?.selectionState === SELECTION_STATES.SELECTED;
+            return hasClass || isSelected ? index : -1;
+        })
+        .filter((index) => index !== -1);
+}
 
 const tableItems = computed(() => {
     return usingProvider.value ? providerItems.value : props.items;
@@ -144,21 +154,16 @@ function onSortChanged(newSortBy: string, newSortDesc: boolean) {
 
 function onRowClick(event: RowClickEvent<SelectionItem>) {
     emit("onClick", event.item);
+    syncSelectedItems();
 }
 
 function onOpen(item: SelectionItem) {
     emit("onOpen", item);
 }
 
-function selectionIcon(variant?: string) {
-    switch (variant) {
-        case SELECTION_STATES.SELECTED:
-            return faCheckSquare;
-        case SELECTION_STATES.MIXED:
-            return faMinusSquare;
-        default:
-            return faSquare;
-    }
+function onSelectAll() {
+    emit("onSelectAll");
+    syncSelectedItems();
 }
 
 /** Format time stamp */
@@ -287,20 +292,12 @@ defineExpose({
                     :local-filtering="!usingProvider"
                     :local-sorting="!usingProvider"
                     :per-page="perPage"
-                    @sort-changed="onSortChanged"
-                    @row-click="onRowClick">
-                    <template v-slot:head(__select_icon__)="">
-                        <FontAwesomeIcon
-                            class="select-checkbox cursor-pointer"
-                            title="Check to select all datasets"
-                            :icon="selectionIcon(selectAllVariant)"
-                            @click="$emit('onSelectAll')" />
-                    </template>
-
-                    <template v-slot:cell(__select_icon__)="data">
-                        <FontAwesomeIcon :icon="selectionIcon(data.item.selectionState)" />
-                    </template>
-
+                    :selectable="props.selectable"
+                    :selected-items="selectedItems"
+                    :show-select-all="props.selectable"
+                    @row-click="onRowClick"
+                    @select-all="onSelectAll"
+                    @sort-changed="onSortChanged">
                     <template v-slot:cell(label)="data">
                         <div style="cursor: pointer">
                             <pre
