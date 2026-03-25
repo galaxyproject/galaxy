@@ -193,13 +193,13 @@ class TestStaticAgent:
         ]
         agent = self._make_agent("router", rules)
         response = await agent.process("test")
-        assert response.metadata.get("static_backend") is True
+        assert response.metadata.static_backend is True
 
     @pytest.mark.asyncio
     async def test_fallback_also_has_metadata_flag(self):
         agent = self._make_agent("router", [])
         response = await agent.process("test")
-        assert response.metadata.get("static_backend") is True
+        assert response.metadata.static_backend is True
 
     @pytest.mark.asyncio
     async def test_defaults_applied(self):

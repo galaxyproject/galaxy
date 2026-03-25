@@ -105,10 +105,17 @@ def extract_usage_info(result: Any) -> dict[str, int]:
         return {}
     try:
         usage = result.usage()
+
+        def _safe_int(val: Any, default: int = 0) -> int:
+            try:
+                return int(val) if val is not None else default
+            except (TypeError, ValueError):
+                return default
+
         return {
-            "input_tokens": getattr(usage, "input_tokens", 0),
-            "output_tokens": getattr(usage, "output_tokens", 0),
-            "total_tokens": getattr(usage, "total_tokens", 0),
+            "input_tokens": _safe_int(getattr(usage, "input_tokens", None)),
+            "output_tokens": _safe_int(getattr(usage, "output_tokens", None)),
+            "total_tokens": _safe_int(getattr(usage, "total_tokens", None)),
         }
     except Exception:
         return {}
@@ -484,8 +491,9 @@ class BaseGalaxyAgent(ABC):
 
         # Map known agent_data keys to typed ResponseMetadata fields
         if agent_data:
-            if "tool_yaml" in agent_data:
-                kwargs["tool_yaml"] = agent_data["tool_yaml"]
+            for key in ("agents_used", "execution_type", "requires", "tool_id", "tool_yaml"):
+                if key in agent_data:
+                    kwargs[key] = agent_data[key]
 
         return ResponseMetadata(**kwargs)
 
