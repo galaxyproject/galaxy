@@ -496,7 +496,7 @@ function onLabelToggle(labelId: string) {
             </GButton>
         </div>
 
-        <ToolRequestForm v-model:show="showToolRequestForm" />
+        <ToolRequestForm :show.sync="showToolRequestForm" />
 
         <div class="unified-panel-body">
             <div class="toolMenuContainer">

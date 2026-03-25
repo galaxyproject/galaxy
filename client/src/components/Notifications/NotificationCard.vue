@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import {
     faCheck,
     faClock,
@@ -16,7 +17,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import type { UserNotification } from "@/api/notifications";
-import type { CardAction } from "@/components/Common/GCard.types";
+import type { CardAction, TitleIcon } from "@/components/Common/GCard.types";
 import { useMarkdown } from "@/composables/markdown";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { absPath } from "@/utils/redirect";
@@ -69,8 +70,8 @@ const title = computed(() => {
     }
 });
 
-const titleIcon = computed(() => {
-    const iconMap: Record<string, unknown> = {
+const titleIcon = computed<TitleIcon>(() => {
+    const iconMap: Record<string, IconDefinition> = {
         new_shared_item: faRetweet,
         tool_request: faWrench,
     };
