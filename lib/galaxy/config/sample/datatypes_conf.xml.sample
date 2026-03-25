@@ -784,7 +784,7 @@
     <datatype extension="strider" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="supermatcher" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="syco" type="galaxy.datatypes.data:Text" subclass="true"/>
-    <datatype extension="taf" type="galaxy.datatypes.data:Text" subclass="true" description="Transposed Alignment Format. The first line of a .taf file begins with #taf. This word is followed by white-space-separated 'variable:value' pairs. There should be no white space surrounding the ':'." display_in_upload="true" description_url="https://github.com/ComparativeGenomicsToolkit/taffy/blob/main/docs/taf_format.md"/>
+    <datatype extension="taf" auto_compressed_types="gz" type="galaxy.datatypes.data:Text" subclass="true" description="Transposed Alignment Format. The first line of a .taf file begins with #taf. This word is followed by white-space-separated 'variable:value' pairs. There should be no white space surrounding the ':'." display_in_upload="true" description_url="https://github.com/ComparativeGenomicsToolkit/taffy/blob/main/docs/taf_format.md"/>
     <datatype extension="textsearch" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="vectorstrip" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="wobble" type="galaxy.datatypes.data:Text" subclass="true"/>
