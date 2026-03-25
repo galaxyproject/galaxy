@@ -15,8 +15,8 @@ from pydantic import (
 from typing_extensions import TypedDict
 
 from galaxy.exceptions import (
-    ConfigurationError,
     InconsistentDatabase,
+    InternalServerError,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException,
@@ -279,9 +279,7 @@ def prepare_environment_from_root(
             if secret_value:
                 environment[e_name] = secret_value
             else:
-                raise ConfigurationError(
-                    f"Secret vault key {template_secret.vault_key} not found for environment entry {e_name} and no default provided. This secret is required to be set in the vault for the template to function. Please set this secret in the vault or provide a default value in the template definition."
-                )
+                raise InternalServerError(f"Failed to retrieve {template_secret.vault_key} from vault")
         elif e_type == "variable":
             template_variable = cast(TemplateEnvironmentVariable, environment_entry)
             variable_value = os.environ.get(template_variable.variable)
@@ -290,8 +288,8 @@ def prepare_environment_from_root(
             if variable_value:
                 environment[e_name] = variable_value
             else:
-                raise ConfigurationError(
-                    f"Environment variable {template_variable.variable} not found for environment entry {e_name} and no default provided. This variable is required to be set in the environment for the template to function. Please set this variable in the environment or provide a default value in the template definition."
+                raise InternalServerError(
+                    f"Environment variable {template_variable.variable} not found and no default provided. Please set this variable in the environment or provide a default value in the template definition."
                 )
         else:
             raise Exception(f"Unknown environment entry type detected [{e_type}]")

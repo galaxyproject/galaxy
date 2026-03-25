@@ -17,7 +17,7 @@ from requests.exceptions import HTTPError
 from yaml import safe_load
 
 from galaxy.exceptions import (
-    ConfigurationError,
+    InternalServerError,
     MessageException,
     RequestParameterInvalidException,
     RequestParameterMissingException,
@@ -800,7 +800,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         entries: list[TemplateEnvironmentEntry] = [
             TemplateEnvironmentVariable(type="variable", name="myvar", variable=missing_var)
         ]
-        with pytest.raises(ConfigurationError) as exc_info:
+        with pytest.raises(InternalServerError) as exc_info:
             prepare_environment_from_root(entries, self.app.vault, self.app)
         assert missing_var in str(exc_info.value)
 
@@ -809,7 +809,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         entries: list[TemplateEnvironmentEntry] = [
             TemplateEnvironmentSecret(type="secret", name="mysec", vault_key="nonexistent/missing_key")
         ]
-        with pytest.raises(ConfigurationError) as exc_info:
+        with pytest.raises(InternalServerError) as exc_info:
             prepare_environment_from_root(entries, self.app.vault, self.app)
         assert "nonexistent/missing_key" in str(exc_info.value)
 

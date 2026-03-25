@@ -15,8 +15,8 @@ from pydantic import (
 )
 
 from galaxy.exceptions import (
-    ConfigurationError,
     Conflict,
+    InternalServerError,
     ItemOwnershipException,
     MessageException,
     ObjectNotFound,
@@ -647,7 +647,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         if oauth2_configuration is not None:
             try:
                 environment = prepare_environment_from_root(template.environment, self._app_vault, self._app_config)
-            except ConfigurationError as e:
+            except InternalServerError as e:
                 log.exception(
                     f"Problem preparing environment for template {template_id} version {template_version} - Reason: {str(e)}"
                 )
