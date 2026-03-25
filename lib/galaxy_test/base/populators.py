@@ -855,6 +855,11 @@ class BaseDatasetPopulator(BasePopulator):
         ]
         return active_jobs
 
+    def build_for_rerun(self, job_id: str, **kwd) -> dict[str, Any]:
+        response = self._get(f"jobs/{job_id}/build_for_rerun", kwd or None)
+        response.raise_for_status()
+        return response.json()
+
     def cancel_job(self, job_id: str) -> Response:
         return self._delete(f"jobs/{job_id}")
 
@@ -1743,11 +1748,17 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(put_response)
         return put_response.json()
 
+    def hide_dataset(self, dataset_id: str) -> dict[str, Any]:
+        return self.update_dataset(dataset_id, {"visible": False})
+
     def update_dataset_collection(self, dataset_collection_id: str, update_payload: dict[str, Any]):
         update_url = f"dataset_collections/{dataset_collection_id}"
         put_response = self._put(update_url, update_payload, json=True)
         api_asserts.assert_status_code_is_ok(put_response)
         return put_response.json()
+
+    def hide_dataset_collection(self, dataset_collection_id: str) -> dict[str, Any]:
+        return self.update_dataset_collection(dataset_collection_id, {"visible": False})
 
     def get_histories(self):
         history_index_response = self._get("histories")

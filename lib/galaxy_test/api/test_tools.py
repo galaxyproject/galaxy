@@ -1086,10 +1086,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             }
             response = self._run("galaxy_json_sleep", history_id, inputs, assert_ok=True)
             output = response["outputs"][0]
-            response = self._put(
-                f"histories/{history_id}/contents/datasets/{output['id']}", data={"visible": False}, json=True
-            )
-            response.raise_for_status()
+            self.dataset_populator.hide_dataset(output["id"])
             output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, wait=False)
             assert not output_details["visible"]
             output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, wait=True)
