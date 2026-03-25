@@ -41,6 +41,22 @@ export interface ChatHistoryItem {
     feedback?: number | null;
 }
 
+export interface ExchangeMessage {
+    role: string;
+    content?: string | null;
+    timestamp?: string | null;
+    task_id?: string | null;
+    agent_type?: string | null;
+    agent_response?: components["schemas"]["AgentResponse"] | null;
+    feedback?: number | null;
+    dataset_ids?: string[] | null;
+    stdout?: string;
+    stderr?: string;
+    artifacts?: unknown[];
+    success?: boolean;
+    metadata?: Record<string, unknown>;
+}
+
 export interface ExecutionState {
     status: "pending" | "initialising" | "installing" | "fetching" | "running" | "submitting" | "completed" | "error";
     stdout: string;

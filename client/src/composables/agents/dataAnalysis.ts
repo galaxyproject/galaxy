@@ -72,16 +72,16 @@ export function useDataAnalysisAgent(
             .filter((entry): entry is DataOption => entry !== null && Boolean(entry));
     });
 
-    const selectedDatasetsFormData = computed<{ values: Array<DataOption> } | null>({
+    const selectedDatasetsFormData = computed<{ values: Array<DataOption> } | undefined>({
         get() {
             if (selectedDatasets.value.length === 0) {
-                return null;
+                return undefined;
             }
             const selected = datasetOptions.value.filter((dataset) => selectedDatasets.value.includes(dataset.id));
             return { values: selected };
         },
         set(value) {
-            if (value === null) {
+            if (value === undefined) {
                 selectedDatasets.value = [];
             } else {
                 selectedDatasets.value = value.values.map((dataset) => dataset.id);

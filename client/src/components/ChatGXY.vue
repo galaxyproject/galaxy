@@ -12,7 +12,7 @@ import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getAgentIcon } from "./ChatGXY/agentTypes";
-import type { ChatHistoryItem, ChatMessage } from "./ChatGXY/types";
+import type { ChatHistoryItem, ChatMessage, ExchangeMessage } from "./ChatGXY/types";
 import {
     applyCollapseState,
     escapeHtml,
@@ -291,7 +291,7 @@ async function fetchConversation(exchangeId: string): Promise<boolean> {
     const rebuiltMessages: ChatMessage[] = [];
     let currentTurnAssistant: ChatMessage | null = null;
 
-    for (const [index, msg] of fullConversation.entries()) {
+    for (const [index, msg] of (fullConversation as unknown as ExchangeMessage[]).entries()) {
         if (msg.role === "execution_result") {
             if (msg.task_id) {
                 deliveredTaskIds.add(String(msg.task_id));
@@ -312,7 +312,7 @@ async function fetchConversation(exchangeId: string): Promise<boolean> {
         const message: ChatMessage = {
             id: `hist-${msg.role}-${exchangeId}-${index}`,
             role: msg.role as "user" | "assistant",
-            content: msg.content,
+            content: msg.content || "",
             timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
             feedback: null,
         };
@@ -323,7 +323,7 @@ async function fetchConversation(exchangeId: string): Promise<boolean> {
             continue;
         }
 
-        message.agentType = msg.agent_response?.agent_type || msg.agent_type;
+        message.agentType = msg.agent_response?.agent_type || msg.agent_type || undefined;
         message.confidence = msg.agent_response?.confidence || "medium";
         message.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
 
@@ -375,24 +375,25 @@ async function fetchConversation(exchangeId: string): Promise<boolean> {
         applyCollapseState(message);
 
         if (currentTurnAssistant && isDataAnalysisMessage(currentTurnAssistant) && isDataAnalysisMessage(message)) {
-            const history = currentTurnAssistant.collapsedHistory ? [...currentTurnAssistant.collapsedHistory] : [];
+            const turnAssistant = currentTurnAssistant;
+            const history = turnAssistant.collapsedHistory ? [...turnAssistant.collapsedHistory] : [];
             message.isCollapsed = true;
             history.push(message);
-            currentTurnAssistant.collapsedHistory = history;
-            updateMessageOutputsFromArtifacts(currentTurnAssistant, message.artifacts);
-            currentTurnAssistant.generatedPlots = [
-                ...(currentTurnAssistant.generatedPlots || []),
+            turnAssistant.collapsedHistory = history;
+            updateMessageOutputsFromArtifacts(turnAssistant, message.artifacts);
+            turnAssistant.generatedPlots = [
+                ...(turnAssistant.generatedPlots || []),
                 ...(message.generatedPlots || []).filter(
-                    (entry) => !(currentTurnAssistant.generatedPlots || []).includes(entry),
+                    (entry) => !(turnAssistant.generatedPlots || []).includes(entry),
                 ),
             ];
-            currentTurnAssistant.generatedFiles = [
-                ...(currentTurnAssistant.generatedFiles || []),
+            turnAssistant.generatedFiles = [
+                ...(turnAssistant.generatedFiles || []),
                 ...(message.generatedFiles || []).filter(
-                    (entry) => !(currentTurnAssistant.generatedFiles || []).includes(entry),
+                    (entry) => !(turnAssistant.generatedFiles || []).includes(entry),
                 ),
             ];
-            applyLatestAssistantState(currentTurnAssistant, message);
+            applyLatestAssistantState(turnAssistant, message);
             continue;
         }
 
