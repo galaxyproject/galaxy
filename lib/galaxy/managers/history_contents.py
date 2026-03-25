@@ -45,6 +45,7 @@ from galaxy.managers import (
     tools,
 )
 from galaxy.managers.job_connections import JobConnectionsManager
+from galaxy.model import batch_fetch_job_state_summaries
 from galaxy.schema import ValueFilterQueryParams
 from galaxy.schema.tasks import (
     CopyDatasetsPayload,
@@ -496,7 +497,12 @@ class HistoryContentsManager(base.SortableManager):
             .options(joinedload(component_class.annotations))
         )
         result = self._session().scalars(stmt).unique()
-        return {row.id: row for row in result}
+        id_map = {row.id: row for row in result}
+        if id_map and component_class is model.HistoryDatasetCollectionAssociation:
+            summaries = batch_fetch_job_state_summaries(self._session(), list(id_map.keys()))
+            for hdca_id, hdca in id_map.items():
+                hdca._job_state_summary = summaries.get(hdca_id)
+        return id_map
 
 
 class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
