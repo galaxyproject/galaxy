@@ -1702,8 +1702,8 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
         else:
             raise RequestParameterInvalidException(f"Invalid job source type {job_source_type} found.")
 
-    job_summaries: dict[int, Optional[JobsSummary]] = {}
-    implicit_collection_jobs_summaries: dict[int, Optional[JobsSummary]] = {}
+    job_summaries: dict[int, JobsSummary] = {}
+    implicit_collection_jobs_summaries: dict[int, JobsSummary] = {}
 
     if job_ids:
         stmt = select(Job.id, Job.state).where(Job.id.in_(job_ids))
