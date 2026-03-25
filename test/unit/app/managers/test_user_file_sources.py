@@ -480,6 +480,26 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert user_file_source_showed.variables
         assert user_file_source_showed.variables["var1"] == "newval"
 
+    def test_hide_without_variables_update_on_required_variable_template(self, tmp_path):
+        self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_variable",
+            template_version=0,
+            variables={"var1": "requiredval"},
+            secrets={},
+        )
+        user_file_source = self._create_instance(create_payload)
+
+        hide = UpdateInstancePayload(hidden=True)
+        self._modify(user_file_source, hide)
+
+        user_file_source_showed = self.manager.show(self.trans, user_file_source.uuid)
+        assert user_file_source_showed.hidden
+        assert user_file_source_showed.variables
+        assert user_file_source_showed.variables["var1"] == "requiredval"
+
     def test_hide(self, tmp_path):
         user_file_source = self._init_and_create_simple(tmp_path)
 

@@ -1,6 +1,4 @@
-from typing import (
-    Optional,
-)
+from typing import Optional
 
 from yaml import safe_load
 
@@ -149,6 +147,26 @@ class TestUserObjectStoreTestCase(BaseTestCase):
         user_object_store_showed = self.manager.show(self.trans, user_object_store.uuid)
         assert user_object_store_showed.variables
         assert user_object_store_showed.variables["var1"] == "newval"
+
+    def test_hide_without_variables_update_on_required_variable_template(self, tmp_path):
+        self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_variable",
+            template_version=0,
+            variables={"var1": "requiredval"},
+            secrets={},
+        )
+        user_object_store = self._create_instance(create_payload)
+
+        hide = UpdateInstancePayload(hidden=True)
+        self._modify(user_object_store, hide)
+
+        user_object_store_showed = self.manager.show(self.trans, user_object_store.uuid)
+        assert user_object_store_showed.hidden
+        assert user_object_store_showed.variables
+        assert user_object_store_showed.variables["var1"] == "requiredval"
 
     def test_update_errors_on_extra_variables(self, tmp_path):
         self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))
