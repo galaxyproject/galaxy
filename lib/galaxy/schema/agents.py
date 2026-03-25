@@ -240,6 +240,7 @@ class ResponseMetadata(BaseModel):
         default=None, description="List of dataset IDs used in the agent's response"
     )
     error: Optional[str] = Field(default=None, description="Error message if any error occurred during processing")
+    exchange_id: Optional[str] = Field(default=None, description="Chat exchange ID for feedback tracking")
     executed_task: Optional[ExecutionTask] = Field(
         default=None, description="Record of the previously executed Pyodide task, used for refinement"
     )

@@ -21666,6 +21666,11 @@ export interface components {
              * @description Error message if any error occurred during processing
              */
             error?: string | null;
+            /**
+             * Exchange Id
+             * @description Chat exchange ID for feedback tracking
+             */
+            exchange_id?: string | null;
             /** @description Record of the previously executed Pyodide task, used for refinement */
             executed_task?: components["schemas"]["ExecutionTask"] | null;
             /** @description Result of the Pyodide execution */
