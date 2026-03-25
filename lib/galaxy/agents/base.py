@@ -546,7 +546,6 @@ class BaseGalaxyAgent(ABC):
             if ctx.deps.get_agent is None:
                 raise RuntimeError("get_agent not configured in dependencies")
 
-
             target_agent = ctx.deps.get_agent(agent_type, ctx.deps)
 
             full_query = query
