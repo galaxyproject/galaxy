@@ -27,7 +27,7 @@ jobs:
         test-install-client: ['galaxy_api', 'standalone']
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
