@@ -5129,6 +5129,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tool_request_form": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a tool installation request to the instance admins.
+         * @description Submit a request for a new tool to be installed on this Galaxy instance.
+         *
+         *     Sends a notification to all admin users with the submitted request details.
+         *     Requires the notification system and tool request form to be enabled in the configuration.
+         */
+        post: operations["submit_tool_request_api_tool_request_form_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tool_requests/{id}": {
         parameters: {
             query?: never;
@@ -19269,6 +19292,7 @@ export interface components {
             content:
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["ToolRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Expiration time
@@ -19357,6 +19381,7 @@ export interface components {
             content:
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["ToolRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create time
@@ -20354,7 +20379,7 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item";
+        PersonalNotificationCategory: "message" | "new_shared_item" | "tool_request";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -23513,6 +23538,62 @@ export interface components {
             state: components["schemas"]["ToolRequestState"];
             state_message?: components["schemas"]["ToolRequestStateMessage"] | null;
         };
+        /**
+         * ToolRequestFormData
+         * @description The data submitted with the Tool Request Form.
+         */
+        ToolRequestFormData: {
+            /**
+             * Conda available
+             * @description Whether a Conda package for this tool is available.
+             */
+            conda_available?: boolean | null;
+            /**
+             * Description
+             * @description Short description of the tool and its scientific use case.
+             */
+            description: string;
+            /**
+             * Requested version
+             * @description The version of the tool being requested.
+             */
+            requested_version?: string | null;
+            /**
+             * Requester affiliation
+             * @description The affiliation/lab of the requester.
+             */
+            requester_affiliation?: string | null;
+            /**
+             * Requester email
+             * @description The email address of the requester for follow-up.
+             */
+            requester_email?: string | null;
+            /**
+             * Requester name
+             * @description The name of the person requesting the tool.
+             */
+            requester_name: string;
+            /**
+             * Scientific domain
+             * @description The scientific domain for the requested tool.
+             */
+            scientific_domain?: string | null;
+            /**
+             * Test data available
+             * @description Whether test data for this tool is available.
+             */
+            test_data_available?: boolean | null;
+            /**
+             * Tool name
+             * @description The name of the requested tool.
+             */
+            tool_name: string;
+            /**
+             * Tool URL
+             * @description Homepage or repository URL for the requested tool.
+             */
+            tool_url?: string | null;
+        };
         /** ToolRequestImplicitCollectionReference */
         ToolRequestImplicitCollectionReference: {
             /**
@@ -23555,6 +23636,64 @@ export interface components {
             };
             state: components["schemas"]["ToolRequestState"];
             state_message?: components["schemas"]["ToolRequestStateMessage"] | null;
+        };
+        /** ToolRequestNotificationContent */
+        ToolRequestNotificationContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_request";
+            /**
+             * Conda available
+             * @description Whether a Conda package for this tool is available.
+             */
+            conda_available?: boolean | null;
+            /**
+             * Description
+             * @description Short description of the tool and its scientific use case.
+             */
+            description: string;
+            /**
+             * Requested version
+             * @description The version of the tool being requested.
+             */
+            requested_version?: string | null;
+            /**
+             * Requester affiliation
+             * @description The affiliation/lab of the requester.
+             */
+            requester_affiliation?: string | null;
+            /**
+             * Requester email
+             * @description The email address of the requester for follow-up.
+             */
+            requester_email?: string | null;
+            /**
+             * Requester name
+             * @description The name of the person requesting the tool.
+             */
+            requester_name: string;
+            /**
+             * Scientific domain
+             * @description The scientific domain for the requested tool.
+             */
+            scientific_domain?: string | null;
+            /**
+             * Test data available
+             * @description Whether test data for this tool is available.
+             */
+            test_data_available?: boolean | null;
+            /**
+             * Tool name
+             * @description The name of the requested tool.
+             */
+            tool_name: string;
+            /**
+             * Tool URL
+             * @description Homepage or repository URL for the requested tool.
+             */
+            tool_url?: string | null;
         };
         /**
          * ToolRequestState
@@ -24161,6 +24300,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "tool_request": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -24563,6 +24709,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "tool_request": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -24592,7 +24745,8 @@ export interface components {
              */
             content:
                 | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewSharedItemNotificationContent"];
+                | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["ToolRequestNotificationContent"];
             /**
              * Create time
              * Format: date-time
@@ -42253,6 +42407,49 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ToolLandingRequest"];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    submit_tool_request_api_tool_request_form_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolRequestFormData"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {

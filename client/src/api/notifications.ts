@@ -28,7 +28,26 @@ export interface MessageNotificationCreateRequest extends NotificationCreateRequ
     notification: MessageNotificationCreateData;
 }
 
-export type UserNotification = MessageNotification | SharedItemNotification;
+export interface ToolRequestNotificationContent {
+    category: "tool_request";
+    tool_name: string;
+    tool_url?: string;
+    description: string;
+    scientific_domain?: string;
+    requested_version?: string;
+    conda_available?: boolean;
+    test_data_available?: boolean;
+    requester_name: string;
+    requester_email?: string;
+    requester_affiliation?: string;
+}
+
+export interface ToolRequestNotification extends BaseUserNotification {
+    category: "tool_request";
+    content: ToolRequestNotificationContent;
+}
+
+export type UserNotification = MessageNotification | SharedItemNotification | ToolRequestNotification;
 
 export type NotificationChanges = components["schemas"]["UserNotificationUpdateRequest"];
 
