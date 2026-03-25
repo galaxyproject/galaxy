@@ -37,11 +37,11 @@ def _postgres_remove():
 
 
 def _postgres_install(engine):
-    """postgres trigger installation sql"""
+    """PostgreSQL trigger installation SQL"""
 
     sql = []
 
-    # postgres trigger function template
+    # PostgreSQL trigger function template
     # need to make separate functions purely because the incoming history_id field name will be
     # different for different source tables. There may be a fancier way to dynamically choose
     # between incoming fields, but having 2 triggers fns seems straightforward
@@ -82,50 +82,46 @@ def _postgres_install(engine):
             $BODY$
         """
 
-    def statement_trigger_def(source_table, id_field, operation, when="AFTER", function_keyword="FUNCTION"):
+    def trigger_def(source_table: str, id_field: str, operation: str, version: int, when: str = "AFTER") -> str:
         fn = f"{fn_prefix}_{id_field}"
-
-        # Postgres supports many triggers per operation/table so the label can
+        # PostgreSQL supports many triggers per operation/table so the label can
         # be indicative of what's happening
         label = f"history_audit_by_{id_field}"
         trigger_name = get_trigger_name(label, operation, when, statement=True)
-
-        return f"""
-            CREATE TRIGGER {trigger_name}
-            {when} {operation} ON {source_table}
-            REFERENCING NEW TABLE AS new_table
-            FOR EACH STATEMENT EXECUTE {function_keyword} {fn}();
-        """
-
-    def row_trigger_def(source_table, id_field, operation, when="AFTER", function_keyword="FUNCTION"):
-        fn = f"{fn_prefix}_{id_field}"
-
-        label = f"history_audit_by_{id_field}"
-        trigger_name = get_trigger_name(label, operation, when, statement=True)
-
-        return f"""
-            CREATE TRIGGER {trigger_name}
-            {when} {operation} ON {source_table}
-            FOR EACH ROW
-            WHEN (NEW.{id_field} IS NOT NULL)
-            EXECUTE {function_keyword} {fn}();
-        """
+        # In the syntax of CREATE TRIGGER, the keywords FUNCTION and PROCEDURE are equivalent,
+        # but the referenced function must in any case be a function, not a procedure.
+        # The use of the keyword PROCEDURE here is historical and deprecated (https://www.postgresql.org/docs/11/sql-createtrigger.html).
+        function_keyword = "FUNCTION" if version >= 11 else "PROCEDURE"
+        create_or_replace = "CREATE OR REPLACE" if version >= 14 else "CREATE"
+        if version >= 10 and when == "AFTER":
+            return f"""
+                {create_or_replace} TRIGGER {trigger_name}
+                AFTER {operation}
+                ON {source_table}
+                REFERENCING NEW TABLE AS new_table
+                FOR EACH STATEMENT
+                EXECUTE {function_keyword} {fn}();
+            """
+        else:
+            return f"""
+                {create_or_replace} TRIGGER {trigger_name}
+                {when} {operation}
+                ON {source_table}
+                FOR EACH ROW
+                WHEN (NEW.{id_field} IS NOT NULL)
+                EXECUTE {function_keyword} {fn}();
+            """
 
     # pick row or statement triggers depending on postgres version
     version = engine.dialect.server_version_info[0]
-    trigger_fn = statement_trigger_fn if version > 10 else row_trigger_fn
-    trigger_def = statement_trigger_def if version > 10 else row_trigger_def
-    # In the syntax of CREATE TRIGGER, the keywords FUNCTION and PROCEDURE are equivalent,
-    # but the referenced function must in any case be a function, not a procedure.
-    # The use of the keyword PROCEDURE here is historical and deprecated (https://www.postgresql.org/docs/11/sql-createtrigger.html).
-    function_keyword = "FUNCTION" if version > 10 else "PROCEDURE"
+    trigger_fn = statement_trigger_fn if version >= 10 else row_trigger_fn
 
     for id_field in ["history_id", "id"]:
         sql.append(trigger_fn(id_field))
 
     for source_table, id_field in trigger_config.items():
         for operation in ["UPDATE", "INSERT"]:
-            sql.append(trigger_def(source_table, id_field, operation, function_keyword=function_keyword))
+            sql.append(trigger_def(source_table, id_field, operation, version))
 
     return sql
 

@@ -24,16 +24,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        db: ['postgresql', 'sqlite']
-        postgresql-version: ['17']
+        db: ['postgresql']
+        postgresql-version: ['9.6', '10', '11', '14', '18']
         python-version: ['3.10']
         include:
-          - db: postgresql
-            postgresql-version: '9.6'
+          - db: sqlite
             python-version: '3.10'
     services:
       postgres:
-        image: postgres:${{ matrix.postgresql-version }}
+        image: ${{ matrix.db == 'postgresql' && format('postgres:{0}', matrix.postgresql-version) || '' }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
