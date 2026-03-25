@@ -60,13 +60,15 @@ export default {
             type: Boolean,
         },
     },
+    setup() {
+        return { purify };
+    },
     data() {
         return {
             maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
         };
     },
     methods: {
-        purify,
         updateValue(value) {
             this.$emit("update:changedValue", value);
         },
