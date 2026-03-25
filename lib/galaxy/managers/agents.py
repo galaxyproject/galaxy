@@ -4,19 +4,21 @@ import logging
 import mimetypes
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 from urllib.parse import urlencode
 
 try:
-    from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+    from itsdangerous import (
+        BadSignature,
+        SignatureExpired,
+        URLSafeTimedSerializer,
+    )
 
     HAS_ITSDANGEROUS = True
 except ImportError:  # pragma: no cover - optional dependency guard
     HAS_ITSDANGEROUS = False
-    URLSafeTimedSerializer = None  # type: ignore[assignment]
+    URLSafeTimedSerializer = None
 
 from galaxy.agents import GalaxyAgentDependencies
 from galaxy.agents.registry import AgentRegistry
@@ -27,6 +29,7 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
+
 log = logging.getLogger(__name__)
 
 
@@ -158,7 +161,7 @@ class AgentService:
         trans: ProvidesUserContext,
         dataset_id: str,
         token: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         if self._dataset_token_signer is None:
             raise ConfigurationError(
                 "Pyodide dataset download tokens are not configured. Install 'itsdangerous' and configure id_secret."

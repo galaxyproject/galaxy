@@ -323,6 +323,9 @@ class BaseGalaxyAgent(ABC):
 
     async def _run_with_retry(self, prompt: str, max_retries: int = 3, base_delay: float = 1.0):
         """Run the agent, with exponential backoff for retries."""
+        if self.agent is None:
+            raise RuntimeError(f"{self.__class__.__name__} does not use pydantic-ai (USE_PYDANTIC_AGENT is False)")
+
         last_exception = None
 
         # Get model settings from config

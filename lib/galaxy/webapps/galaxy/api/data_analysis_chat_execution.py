@@ -125,7 +125,9 @@ class DataAnalysisChatExecutionAPI:
         """Persist results from client-side Pyodide execution and trigger follow-up reasoning."""
 
         try:
-            return await self.data_analysis_chat_execution_manager.submit_pyodide_result(exchange_id, payload, trans, user)
+            return await self.data_analysis_chat_execution_manager.submit_pyodide_result(
+                exchange_id, payload, trans, user
+            )
         except ObjectNotFound:
             return {"message": "Chat exchange not found"}
 
@@ -140,7 +142,9 @@ class DataAnalysisChatExecutionAPI:
         """Stream a history dataset referenced by a signed execution token."""
 
         try:
-            prepared_download = self.data_analysis_chat_datasets_manager.prepare_download(trans, user, dataset_id, token)
+            prepared_download = self.data_analysis_chat_datasets_manager.prepare_download(
+                trans, user, dataset_id, token
+            )
         except RequestParameterMissingException as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
         except ItemAccessibilityException as exc:

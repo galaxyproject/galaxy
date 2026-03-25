@@ -163,14 +163,14 @@ class AgentAPI:
                             exchange = await anyio.to_thread.run_sync(
                                 partial(self.chat_manager.create, trans, job.id, response.content)
                             )
-                            response.metadata["exchange_id"] = exchange.id
+                            response.metadata["exchange_id"] = exchange.id  # type: ignore[index]
                 elif trans.user:
                     # Create general chat exchange for non-job error analysis
                     result = {"response": response.content, "agent_response": response.model_dump()}
                     exchange = await anyio.to_thread.run_sync(
                         partial(self.chat_manager.create_general_chat, trans, query, result, "error_analysis")
                     )
-                    response.metadata["exchange_id"] = exchange.id
+                    response.metadata["exchange_id"] = exchange.id  # type: ignore[index]
 
             return response
 
@@ -209,7 +209,7 @@ class AgentAPI:
                 exchange = await anyio.to_thread.run_sync(
                     partial(self.chat_manager.create_general_chat, trans, query, result, "custom_tool")
                 )
-                response.metadata["exchange_id"] = exchange.id
+                response.metadata["exchange_id"] = exchange.id  # type: ignore[index]
 
             return response
 

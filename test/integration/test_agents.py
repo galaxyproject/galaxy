@@ -26,7 +26,6 @@ This module contains two test suites:
     export GALAXY_TEST_ENABLE_LIVE_LLM=1
 """
 
-import json
 import logging
 import os
 from unittest.mock import (
@@ -36,7 +35,7 @@ from unittest.mock import (
 )
 
 from galaxy.agents import (
-    agent_registry,
+    build_default_registry,
     GalaxyAgentDependencies,
 )
 from galaxy.agents.error_analysis import ErrorAnalysisResult
@@ -83,7 +82,7 @@ def _create_deps_with_mock_model(self, trans, user):
         config=self.config,
         job_manager=self.job_manager,
         toolbox=toolbox,
-        get_agent=agent_registry.get_agent,
+        get_agent=build_default_registry().get_agent,
         model_factory=lambda: MagicMock(),
     )
 
@@ -155,7 +154,9 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         self._assert_status_code_is_ok(response)
         data = response.json()
         assert data.get("dataset_ids") == [dataset_id]
-        assert data.get("agent_response", {}).get("metadata", {}).get("execution", {}).get("stdout") == "analysis complete"
+        assert (
+            data.get("agent_response", {}).get("metadata", {}).get("execution", {}).get("stdout") == "analysis complete"
+        )
 
         exchange_id = data.get("exchange_id")
         assert exchange_id is not None
@@ -167,10 +168,7 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         assistant_messages = [msg for msg in history if msg.get("role") == "assistant"]
         assert assistant_messages
         assert any(
-            msg.get("agent_response", {}).get("metadata", {})
-            .get("execution", {})
-            .get("stdout")
-            == "analysis complete"
+            msg.get("agent_response", {}).get("metadata", {}).get("execution", {}).get("stdout") == "analysis complete"
             for msg in history
             if msg.get("role") == "assistant"
         )

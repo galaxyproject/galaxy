@@ -10,12 +10,18 @@ from __future__ import annotations
 import json
 import logging
 import time
-from typing import Any, Optional
+from typing import (
+    Any,
+    Optional,
+)
 
 from galaxy.managers.agents import AgentService
 from galaxy.managers.chat import ChatManager
 from galaxy.managers.collections_util import api_payload_to_create_params
-from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.model import User
 from galaxy.schema.schema import PyodideResultPayload
 from galaxy.util.pyodide import merge_execution_metadata
@@ -56,7 +62,9 @@ class ChatExecutionService:
         # Best effort: aggregate artifact datasets into a collection for convenience.
         if artifacts_payload:
             try:
-                collection_info = self._create_artifact_collection(trans, artifacts_payload, metadata.get("original_query"))
+                collection_info = self._create_artifact_collection(
+                    trans, artifacts_payload, metadata.get("original_query")
+                )
                 if collection_info:
                     metadata["artifacts_collection"] = collection_info
             except Exception as exc:  # pragma: no cover - best effort logging
@@ -119,7 +127,7 @@ class ChatExecutionService:
         query_text = original_query
         if not query_text:
             for entry in reversed(conversation_history):
-                if entry.get("role") == "user" and entry.get("content"):
+                if isinstance(entry, dict) and entry.get("role") == "user" and entry.get("content"):
                     query_text = entry.get("content")
                     break
         if not query_text:
@@ -140,11 +148,10 @@ class ChatExecutionService:
                 agent_type=agent_type_to_use,
             )
         except Exception as exc:
-            log.error(
+            log.exception(
                 "Failed to generate follow-up after Pyodide execution for exchange %s: %s",
                 exchange_id,
                 exc,
-                exc_info=True,
             )
             return {
                 "message": "Execution result stored",
@@ -260,8 +267,8 @@ class ChatExecutionService:
         )
         trans.sa_session.flush()
         return {
-            "id": trans.security.encode_id(collection_instance.id),
-            "name": collection_instance.name,
+            "id": trans.security.encode_id(collection_instance.id),  # type: ignore[attr-defined]
+            "name": collection_instance.name,  # type: ignore[attr-defined]
             "elements": len(element_identifiers),
         }
 
@@ -276,7 +283,7 @@ class ChatExecutionService:
                 try:
                     dumped = model_dump()
                 except TypeError:
-                    dumped = model_dump  # type: ignore[assignment]
+                    dumped = model_dump
                 if isinstance(dumped, dict):
                     normalized.append(dumped)
                 continue

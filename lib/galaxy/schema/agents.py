@@ -5,8 +5,6 @@ Pydantic schemas for AI agent responses and requests.
 from enum import Enum
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
@@ -90,7 +88,7 @@ class AnalysisStep(BaseModel):
 
     type: AnalysisStepType = Field(description="Type of analysis step")
     content: str = Field(description="Content of the step")
-    requirements: Optional[List[str]] = Field(
+    requirements: Optional[list[str]] = Field(
         default=None, description="Any requirements or dependencies for this step"
     )
     status: Optional[AnalysisStepStatus] = Field(default=None, description="Current status of this step")
@@ -139,8 +137,8 @@ class ExecutionResult(BaseModel):
     task_id: Optional[str] = Field(default=None, description="Identifier of the task that produced this result")
     stdout: str = Field(default="", description="Captured standard output")
     stderr: str = Field(default="", description="Captured standard error")
-    artifacts: List[Artifact] = Field(default_factory=list, description="Artifacts generated during execution")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional execution metadata")
+    artifacts: list[Artifact] = Field(default_factory=list, description="Artifacts generated during execution")
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Additional execution metadata")
     success: bool = Field(default=True, description="Whether execution completed successfully")
 
 
@@ -172,7 +170,7 @@ class PyodideFile(BaseModel):
     id: str = Field(description="Unique identifier for the file")
     name: Optional[str] = Field(default=None, description="Human-readable name of the file")
     size: Optional[int] = Field(default=None, description="Size of the file in bytes")
-    aliases: List[str] = Field(default_factory=list, description="List of alternative names or aliases for the file")
+    aliases: list[str] = Field(default_factory=list, description="List of alternative names or aliases for the file")
     url: Optional[str] = Field(default=None, description="URL to fetch the file content from")
     mime_type: Optional[str] = Field(default=None, description="MIME type of the file")
 
@@ -184,12 +182,12 @@ class PyodideTask(BaseModel):
     action: str = Field(description="Action to perform, e.g. 'ExecutePythonInBrowser'")
     code: str = Field(description="Python code to execute in the browser")
     original_code: Optional[str] = Field(default=None, description="Original (unsanitized) Python code")
-    packages: List[str] = Field(default_factory=list, description="List of Python packages required for execution")
-    files: List[PyodideFile] = Field(
+    packages: list[str] = Field(default_factory=list, description="List of Python packages required for execution")
+    files: list[PyodideFile] = Field(
         default_factory=list, description="List of Pyodide files to be made available during execution"
     )
     timeout_ms: int = Field(default=120000, description="Execution timeout in milliseconds")
-    alias_map: Dict[str, str] = Field(
+    alias_map: dict[str, str] = Field(
         default_factory=dict, description="Mapping of dataset IDs to human-readable aliases"
     )
     config: Optional[PyodideTaskConfig] = Field(
@@ -203,16 +201,16 @@ class DatasetDescriptor(BaseModel):
     id: str = Field(description="Encoded dataset ID")
     name: Optional[str] = Field(default=None, description="Human-readable dataset name")
     size: Optional[int] = Field(default=None, description="Dataset size in bytes")
-    aliases: List[str] = Field(default_factory=list, description="Alternative names for this dataset")
+    aliases: list[str] = Field(default_factory=list, description="Alternative names for this dataset")
     path: Optional[str] = Field(default=None, description="Server-side file path (not exposed to client)")
 
 
 class PyodideContext(BaseModel):
     """Context stored alongside a pending Pyodide task, used to process the execution result."""
 
-    alias_map: Dict[str, str] = Field(default_factory=dict, description="Mapping of dataset IDs to aliases")
-    datasets: List[DatasetDescriptor] = Field(default_factory=list, description="Datasets available for execution")
-    requirements: List[str] = Field(default_factory=list, description="Python packages required for execution")
+    alias_map: dict[str, str] = Field(default_factory=dict, description="Mapping of dataset IDs to aliases")
+    datasets: list[DatasetDescriptor] = Field(default_factory=list, description="Datasets available for execution")
+    requirements: list[str] = Field(default_factory=list, description="Python packages required for execution")
 
 
 class ExecutionTask(BaseModel):
@@ -220,25 +218,25 @@ class ExecutionTask(BaseModel):
 
     task_id: Optional[str] = Field(default=None, description="Identifier of the executed task")
     code: str = Field(default="", description="Python code that was executed")
-    requirements: List[str] = Field(default_factory=list, description="Packages used during execution")
-    datasets: List[DatasetDescriptor] = Field(default_factory=list, description="Datasets used during execution")
-    alias_map: Dict[str, str] = Field(default_factory=dict, description="Dataset alias map used during execution")
+    requirements: list[str] = Field(default_factory=list, description="Packages used during execution")
+    datasets: list[DatasetDescriptor] = Field(default_factory=list, description="Datasets used during execution")
+    alias_map: dict[str, str] = Field(default_factory=dict, description="Dataset alias map used during execution")
     timeout_seconds: Optional[int] = Field(default=None, description="Execution timeout in seconds")
 
 
 class ResponseMetadata(BaseModel):
     """Additional metadata for agent responses."""
 
-    analysis_steps: Optional[List[AnalysisStep]] = Field(
+    analysis_steps: Optional[list[AnalysisStep]] = Field(
         default=None, description="Detailed reasoning steps taken by the agent"
     )
-    artifacts: Optional[List[UploadedArtifact]] = Field(
+    artifacts: Optional[list[UploadedArtifact]] = Field(
         default=None, description="Artifacts generated during the agent's processing"
     )
     completion_state: Optional[str] = Field(
         default=None, description="Completion state of the response: 'complete', 'pending', or 'error'"
     )
-    datasets_used: Optional[List[EncodedDatabaseIdField]] = Field(
+    datasets_used: Optional[list[EncodedDatabaseIdField]] = Field(
         default=None, description="List of dataset IDs used in the agent's response"
     )
     error: Optional[str] = Field(default=None, description="Error message if any error occurred during processing")
@@ -246,10 +244,10 @@ class ResponseMetadata(BaseModel):
         default=None, description="Record of the previously executed Pyodide task, used for refinement"
     )
     execution: Optional[ExecutionResult] = Field(default=None, description="Result of the Pyodide execution")
-    expected_files: Optional[List[str]] = Field(default=None, description="File outputs expected by the analysis plan")
-    expected_plots: Optional[List[str]] = Field(default=None, description="Plot outputs expected by the analysis plan")
+    expected_files: Optional[list[str]] = Field(default=None, description="File outputs expected by the analysis plan")
+    expected_plots: Optional[list[str]] = Field(default=None, description="Plot outputs expected by the analysis plan")
     fallback: Optional[bool] = Field(default=None, description="Whether this is a fallback response")
-    files: Optional[List[str]] = Field(default=None, description="List of file names generated by the agent")
+    files: Optional[list[str]] = Field(default=None, description="List of file names generated by the agent")
     handoff_info: Optional[HandoffInfo] = Field(default=None, description="Information about handoff between agents")
     input_tokens: Optional[int] = Field(default=None, description="Input token count for this response")
     is_complete: Optional[bool] = Field(
@@ -261,7 +259,7 @@ class ResponseMetadata(BaseModel):
     output_tokens: Optional[int] = Field(default=None, description="Output token count for this response")
     planner: Optional[str] = Field(default=None, description="Planner used to generate the analysis plan")
     planning_error: Optional[str] = Field(default=None, description="Error message from the planning phase")
-    plots: Optional[List[str]] = Field(default=None, description="List of plot URLs generated by the agent")
+    plots: Optional[list[str]] = Field(default=None, description="List of plot URLs generated by the agent")
     pyodide_context: Optional[PyodideContext] = Field(
         default=None, description="Context required to process the Pyodide execution result on the next turn"
     )

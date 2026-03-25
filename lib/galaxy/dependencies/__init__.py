@@ -335,6 +335,7 @@ class ConditionalDependencies:
 
     def check_magicattr(self):
         return self.check_dspy_ai()
+
     def check_weasyprint(self):
         # See notes in ./conditional-requirements.txt for more information.
         return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"

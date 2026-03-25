@@ -2,8 +2,11 @@
 
 import json
 import logging
-from datetime import datetime, timezone
 import time
+from datetime import (
+    datetime,
+    timezone,
+)
 from functools import partial
 from typing import (
     Annotated,
@@ -15,10 +18,8 @@ from typing import (
 import anyio
 from fastapi import (
     Body,
-    HTTPException,
     Path,
     Query,
-    status,
 )
 from pydantic import Field
 
@@ -28,10 +29,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.agents import AgentService
 from galaxy.managers.chat import ChatManager
-from galaxy.managers.context import (
-    ProvidesHistoryContext,
-    ProvidesUserContext
-)
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
 from galaxy.model import User
 from galaxy.schema.agents import AgentResponse
@@ -93,6 +91,7 @@ JobIdPathParam = Annotated[
     DecodedDatabaseIdField,
     Path(title="Job ID", description="The Job ID the chat exchange is linked to."),
 ]
+
 
 @router.cbv
 class ChatAPI:
@@ -536,8 +535,8 @@ class ChatAPI:
         pyodide_task = metadata.get("pyodide_task")
         if not isinstance(pyodide_task, dict) or not pyodide_task:
             return
-        status = metadata.get("pyodide_status") or "pending"
-        if status not in (None, "pending"):
+        pyodide_status = metadata.get("pyodide_status") or "pending"
+        if pyodide_status not in (None, "pending"):
             return
         reference = metadata.get("pyodide_started_at")
         started_at = self._parse_iso_datetime(reference) if isinstance(reference, str) else None
@@ -564,10 +563,8 @@ class ChatAPI:
             return None
 
     def _ensure_pyodide_completion_state(self, metadata: dict[str, Any]) -> None:
-        if not isinstance(metadata, dict):
-            return
-        status = metadata.get("pyodide_status")
-        if status in ("completed", "error", "timeout"):
+        pyodide_status = metadata.get("pyodide_status")
+        if pyodide_status in ("completed", "error", "timeout"):
             return
         execution = metadata.get("execution")
         if isinstance(execution, dict):
@@ -656,7 +653,7 @@ class ChatAPI:
         self,
         query: str,
         agent_type: str,
-        trans: ProvidesHistoryContext,
+        trans: ProvidesUserContext,
         user: User,
         job=None,
         context: Optional[dict[str, Any]] = None,

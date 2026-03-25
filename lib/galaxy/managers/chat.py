@@ -97,9 +97,7 @@ class ChatManager:
                 ),
                 "agent_type": agent_type,
                 "agent_response": response_data.get("agent_response") if isinstance(response_data, dict) else None,
-                "dataset_ids": response_data.get("dataset_ids", [])
-                if isinstance(response_data, dict)
-                else [],
+                "dataset_ids": response_data.get("dataset_ids", []) if isinstance(response_data, dict) else [],
             }
         message_content = json.dumps(conversation_data)
 
@@ -274,14 +272,16 @@ class ChatManager:
 
                 role = data.get("role", None)
                 if role is not None and role == "execution_result":
-                    messages.append({
-                        "role": "execution_result",
-                        "stdout": data.get("stdout", ""),
-                        "stderr": data.get("stderr", ""),
-                        "artifacts": data.get("artifacts", []),
-                        "success": data.get("success"),
-                        "task_id": data.get("task_id"),
-                    })
+                    messages.append(
+                        {
+                            "role": "execution_result",
+                            "stdout": data.get("stdout", ""),
+                            "stderr": data.get("stderr", ""),
+                            "artifacts": data.get("artifacts", []),
+                            "success": data.get("success"),
+                            "task_id": data.get("task_id"),
+                        }
+                    )
                     continue
 
                 # Add user message

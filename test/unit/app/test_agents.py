@@ -145,8 +145,8 @@ class TestAgentUnitMocked:
             response = await agent.process("Create a test tool")
 
             assert response.confidence.value in ["high", "medium"]
-            assert response.metadata["tool_id"] == "test-tool"
-            assert response.metadata["method"] == "structured"
+            assert response.metadata.model_dump().get("tool_id") == "test-tool"
+            assert response.metadata.method == "structured"
 
     @pytest.mark.asyncio
     async def test_custom_tool_agent_requires_structured_output(self):
@@ -158,8 +158,8 @@ class TestAgentUnitMocked:
         response = await agent.process("Create a BWA-MEM tool")
 
         # Should return capability error, not attempt fallback
-        assert response.metadata.get("error") == "model_capability"
-        assert response.metadata.get("requires") == "structured_output"
+        assert response.metadata.error == "model_capability"
+        assert response.metadata.model_dump().get("requires") == "structured_output"
         assert "structured output" in response.content.lower()
         assert response.confidence.value == "low"
 
@@ -335,7 +335,7 @@ class TestAgentUnitMocked:
 
             # Should not orchestrate, just return single agent response
             assert response.agent_type == "orchestrator"
-            assert response.metadata.get("agents_used") == ["error_analysis"]
+            assert response.metadata.model_dump().get("agents_used") == ["error_analysis"]
             assert "memory limits" in response.content
 
     @pytest.mark.asyncio
@@ -380,7 +380,7 @@ class TestAgentUnitMocked:
 
             # Verify orchestration occurred
             assert response.agent_type == "orchestrator"
-            assert response.metadata.get("execution_type") == "sequential"
+            assert response.metadata.model_dump().get("execution_type") == "sequential"
             assert "memory issues" in response.content
             assert "custom tool" in response.content.lower()
 
@@ -428,7 +428,7 @@ class TestAgentUnitMocked:
 
             # Verify parallel execution
             assert response.agent_type == "orchestrator"
-            assert response.metadata.get("execution_type") == "parallel"
+            assert response.metadata.model_dump().get("execution_type") == "parallel"
             assert "Error diagnosis" in response.content
             assert "Custom tool" in response.content
 
@@ -511,9 +511,9 @@ class TestAgentUnitLiveLLM:
         response = await agent.process("Create a simple echo tool")
 
         assert response.confidence in ["high", "medium"]
-        assert "tool_id" in response.metadata
-        assert "tool_yaml" in response.metadata
-        assert response.metadata["method"] == "structured"
+        assert response.metadata.model_dump().get("tool_id") is not None
+        assert response.metadata.tool_yaml is not None
+        assert response.metadata.method == "structured"
 
     @pytest.mark.asyncio
     async def test_custom_tool_agent_with_deepseek(self):
@@ -524,9 +524,9 @@ class TestAgentUnitLiveLLM:
         response = await agent.process("Create a simple echo tool")
 
         # DeepSeek should use fallback
-        assert response.metadata["method"] == "simple_template"
-        assert "tool_id" in response.metadata
-        assert "tool_yaml" in response.metadata
+        assert response.metadata.method == "simple_template"
+        assert response.metadata.model_dump().get("tool_id") is not None
+        assert response.metadata.tool_yaml is not None
 
 
 @pytestmark_live_llm

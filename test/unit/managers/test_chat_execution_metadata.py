@@ -1,8 +1,10 @@
+from typing import Any
+
 from galaxy.util.pyodide import merge_execution_metadata
 
 
 def test_merge_execution_metadata_prefers_pyodide_context_descriptors():
-    metadata = {
+    metadata: dict[str, Any] = {
         "pyodide_task": {
             "task_id": "t1",
             "code": "print('hi')",
@@ -36,12 +38,14 @@ def test_merge_execution_metadata_prefers_pyodide_context_descriptors():
 
 
 def test_merge_execution_metadata_fallback_from_files_creates_descriptors_not_files():
-    metadata = {
+    metadata: dict[str, Any] = {
         "pyodide_task": {
             "task_id": "t2",
             "code": "print('hi')",
             "packages": ["pandas"],
-            "files": [{"id": "ds2", "url": "https://example", "name": "y.tsv", "mime_type": "text/tab-separated-values"}],
+            "files": [
+                {"id": "ds2", "url": "https://example", "name": "y.tsv", "mime_type": "text/tab-separated-values"}
+            ],
         }
     }
     merge_execution_metadata(
@@ -61,7 +65,7 @@ def test_merge_execution_metadata_fallback_from_files_creates_descriptors_not_fi
 
 
 def test_merge_execution_metadata_infers_plots_and_files_from_artifacts_when_missing():
-    metadata = {
+    metadata: dict[str, Any] = {
         "pyodide_task": {
             "task_id": "t3",
             "code": "print('hi')",
