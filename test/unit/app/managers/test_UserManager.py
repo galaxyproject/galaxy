@@ -397,7 +397,9 @@ class TestUserDeserializer(BaseTestCase):
         self.log("username should be updatable")
         new_name = "double-plus-good"
         self.deserializer.deserialize(user, {"username": new_name}, trans=self.trans)
-        assert self.user_manager.by_id(user.id).username == new_name
+        new_user = self.user_manager.by_id(user.id)
+        assert new_user is not None
+        assert new_user.username == new_name
 
 
 # =============================================================================

@@ -1611,16 +1611,39 @@ def size_to_bytes(size, binary: bool = False):
     4096
     >>> size_to_bytes('1 MB', binary=True)
     1048576
+    >>> size_to_bytes('4 KiB')
+    4096
+    >>> size_to_bytes('1 MiB')
+    1048576
+    >>> size_to_bytes('1 kibibytes')
+    1024
     """
     base = 1024 if binary else 1000
     # The following number regexp is based on https://stackoverflow.com/questions/385558/extract-float-double-value/385597#385597
-    size_re = re.compile(r"(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$")
+    # The multiple group matches SI units (B, kB, MB, GB, TB, PB, EB and long forms kilobytes etc.)
+    # and IEC units (KiB, MiB, GiB, TiB, PiB, EiB and long forms kibibytes etc.).
+    size_re = re.compile(
+        r"(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*"
+        r"(?P<multiple>"
+        r"k(?:ibibytes?|ilobytes?|ib|b)?"
+        r"|m(?:ebibytes?|egabytes?|ib|b)?"
+        r"|g(?:ibibytes?|igabytes?|ib|b)?"
+        r"|t(?:ebibytes?|erabytes?|ib|b)?"
+        r"|p(?:ebibytes?|etabytes?|ib|b)?"
+        r"|e(?:xbibytes?|xabytes?|ib|b)?"
+        r"|bytes?"
+        r"|b"
+        r")?$"
+    )
     size_match = size_re.match(size.lower())
     if size_match is None:
         raise ValueError(f"Could not parse string '{size}'")
     number = float(size_match.group("number"))
     multiple = size_match.group("multiple")
-    if multiple == "" or multiple.startswith("b"):
+    # IEC units (e.g. KiB, MiB, kibibytes) always use base 1024
+    if multiple and "ib" in multiple:
+        base = 1024
+    if not multiple or multiple.startswith("b"):
         return int(number)
     elif multiple.startswith("k"):
         return int(number * base)
