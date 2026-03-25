@@ -142,7 +142,13 @@ class OmeroFileSource(BaseFilesSource[OmeroFileSourceTemplateConfiguration, Omer
             )
 
         try:
-            conn.c.enableKeepAlive(60)
+            client = conn.c
+            if client is None:
+                raise AuthenticationFailed(
+                    f"Connected to OMERO server at {context.config.host}:{context.config.port}, "
+                    "but no active OMERO client session was established."
+                )
+            client.enableKeepAlive(60)
             yield conn
         finally:
             conn.close()
