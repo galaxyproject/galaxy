@@ -15,8 +15,10 @@ from pydantic import (
 )
 
 from galaxy.exceptions import (
+    ConfigurationError,
     Conflict,
     ItemOwnershipException,
+    MessageException,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException,
@@ -643,7 +645,13 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         oauth2_configuration = get_oauth2_config_or_none(template)
         oauth2_scope = None
         if oauth2_configuration is not None:
-            environment = prepare_environment_from_root(template.environment, self._app_vault, self._app_config)
+            try:
+                environment = prepare_environment_from_root(template.environment, self._app_vault, self._app_config)
+            except ConfigurationError as e:
+                log.exception(
+                    f"Problem preparing environment for template {template_id} version {template_version} - Reason: {str(e)}"
+                )
+                raise MessageException("Problem with template configuration - Please contact your administrator.")
             user_details = user.config_template_details()
             oauth2_client_pair_obj, oauth2_scope = read_oauth2_info_from_configuration(
                 template.configuration, user_details, environment
