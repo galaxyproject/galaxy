@@ -7,6 +7,7 @@ import {
     faInbox,
     faRetweet,
     faTrash,
+    faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
@@ -63,19 +64,21 @@ const title = computed(() => {
         return `${sharedItemType.value} shared with you by ${props.notification.content.owner_name}`;
     } else if (props.notification.category === "storage_operation") {
         return props.notification.content.subject;
+    } else if (props.notification.category === "tool_request") {
+        return `Tool Request: ${props.notification.content.tool_name}`;
     } else {
         return props.notification.content.subject;
     }
 });
 
 const titleIcon = computed(() => {
+    const iconMap: Record<string, unknown> = {
+        new_shared_item: faRetweet,
+        storage_operation: faHourglassHalf,
+        tool_request: faWrench,
+    };
     return {
-        icon:
-            props.notification.category === "new_shared_item"
-                ? faRetweet
-                : props.notification.category === "storage_operation"
-                  ? faHourglassHalf
-                  : faInbox,
+        icon: iconMap[props.notification.category] ?? faInbox,
         class: `text-${notificationVariant.value}`,
     };
 });
@@ -207,6 +210,46 @@ function markNotificationAsSeen() {
                     @click="markNotificationAsSeen()">
                     Open storage operation run status
                 </BLink>
+            </template>
+            <template v-else-if="props.notification.category === 'tool_request'">
+                <dl class="mb-0">
+                    <template v-if="props.notification.content.description">
+                        <dt>Description</dt>
+                        <dd>{{ props.notification.content.description }}</dd>
+                    </template>
+                    <template v-if="props.notification.content.tool_url">
+                        <dt>URL</dt>
+                        <dd>
+                            <BLink :href="props.notification.content.tool_url" target="_blank">
+                                {{ props.notification.content.tool_url }}
+                                <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width size="sm" />
+                            </BLink>
+                        </dd>
+                    </template>
+                    <template v-if="props.notification.content.scientific_domain">
+                        <dt>Scientific domain</dt>
+                        <dd>{{ props.notification.content.scientific_domain }}</dd>
+                    </template>
+                    <template v-if="props.notification.content.requested_version">
+                        <dt>Version</dt>
+                        <dd>{{ props.notification.content.requested_version }}</dd>
+                    </template>
+                    <template v-if="props.notification.content.requester_name">
+                        <dt>Requested by</dt>
+                        <dd>
+                            {{ props.notification.content.requester_name }}
+                            <span v-if="props.notification.content.requester_affiliation">
+                                ({{ props.notification.content.requester_affiliation }})
+                            </span>
+                            <span v-if="props.notification.content.requester_email">
+                                &mdash;
+                                <BLink :href="`mailto:${props.notification.content.requester_email}`">
+                                    {{ props.notification.content.requester_email }}
+                                </BLink>
+                            </span>
+                        </dd>
+                    </template>
+                </dl>
             </template>
             <template v-else>
                 <span
