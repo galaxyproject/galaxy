@@ -85,15 +85,6 @@ const fields = computed<TableField[]>(() => {
         ];
     }
 });
-const selectAllIcon = computed(() => {
-    if (allSelected.value) {
-        return SELECTION_STATES.SELECTED;
-    } else if (selected.value.length > 0) {
-        return SELECTION_STATES.MIXED;
-    } else {
-        return SELECTION_STATES.UNSELECTED;
-    }
-});
 
 function historyEntryToRecord(entry: HistorySummary): HistoryRecord {
     const result: HistoryRecord = {
@@ -314,12 +305,12 @@ function onCancel() {
         :modal-show="modalShow"
         :file-mode="false"
         :multiple="true"
-        :select-all-variant="selectAllIcon"
+        :all-selected="allSelected"
+        :selectable="datasetsVisible"
         :items="items"
         :undo-show="datasetsVisible"
         :total-items="totalItems"
         :items-provider="itemsProvider"
-        :show-select-icon="datasetsVisible"
         :folder-icon="faHdd"
         :is-busy="loading"
         :search-title="searchTitle"
