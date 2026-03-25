@@ -143,15 +143,20 @@ class TestFormat2SubworkflowEdgeCases:
         ), f"Expected 2 dots in prefix for 3-level nesting, got {create_2_results[0].step}"
 
     def test_string_run_ref_does_not_crash(self):
-        """A step with run as a string (external ref) should be silently skipped."""
+        """A step with run as a base64 external ref should resolve and not crash."""
+        import base64
+        import json
+
+        sub_wf = {"class": "GalaxyWorkflow", "inputs": {}, "steps": [], "outputs": {}}
+        b64_url = "base64://" + base64.b64encode(json.dumps(sub_wf).encode()).decode()
         wf = {
             "class": "GalaxyWorkflow",
             "inputs": {},
             "steps": [
-                {"run": "https://example.com/subworkflow.gxwf.yml", "in": {}},
+                {"run": b64_url, "in": {}},
             ],
         }
-        # Should not raise — external refs are skipped
+        # Should resolve the base64 ref and find no tool steps inside
         validate_workflow_format2(wf, GET_TOOL_INFO)
         results = _validate_format2(wf, GET_TOOL_INFO)
         assert len(results) == 0

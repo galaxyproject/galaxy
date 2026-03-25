@@ -24,6 +24,7 @@ from galaxy.tool_util_models.parameters import (
     LabelValue,
     SectionParameterModel,
 )
+from gxformat2.normalized import NormalizedNativeStep
 from galaxy.util.topsort import CycleError
 from .connection_test_fixtures import (
     make_collection_input,
@@ -33,6 +34,7 @@ from .connection_test_fixtures import (
     make_input_step,
     make_native_workflow,
     make_parsed_tool,
+    make_subworkflow_step,
     make_tool_step,
     MockGetToolInfo,
 )
@@ -40,17 +42,26 @@ from .connection_test_fixtures import (
 # -- _parse_connections tests --
 
 
+def _step_with_connections(input_connections=None):
+    """Build a minimal NormalizedNativeStep with given input_connections."""
+    return NormalizedNativeStep(
+        id=0,
+        type="tool",
+        input_connections=input_connections or {},
+    )
+
+
 class TestParseConnections:
     def test_empty(self):
-        result = _parse_connections({"input_connections": {}})
+        result = _parse_connections(_step_with_connections({}))
         assert result == {}
 
     def test_no_input_connections_key(self):
-        result = _parse_connections({})
+        result = _parse_connections(_step_with_connections())
         assert result == {}
 
     def test_single_connection(self):
-        step = {"input_connections": {"input1": {"id": 0, "output_name": "output"}}}
+        step = _step_with_connections({"input1": {"id": 0, "output_name": "output"}})
         result = _parse_connections(step)
         assert "input1" in result
         assert len(result["input1"]) == 1
@@ -58,14 +69,14 @@ class TestParseConnections:
         assert result["input1"][0].output_name == "output"
 
     def test_multiple_connections_to_same_input(self):
-        step = {
-            "input_connections": {
+        step = _step_with_connections(
+            {
                 "input1": [
                     {"id": 0, "output_name": "output"},
                     {"id": 1, "output_name": "out2"},
                 ]
             }
-        }
+        )
         result = _parse_connections(step)
         assert len(result["input1"]) == 2
         assert result["input1"][0].source_step == "0"
@@ -73,14 +84,14 @@ class TestParseConnections:
         assert result["input1"][1].output_name == "out2"
 
     def test_nested_state_path(self):
-        step = {"input_connections": {"cond|inner_param": {"id": 0, "output_name": "output"}}}
+        step = _step_with_connections({"cond|inner_param": {"id": 0, "output_name": "output"}})
         result = _parse_connections(step)
         assert "cond|inner_param" in result
 
-    def test_default_output_name(self):
-        step = {"input_connections": {"input1": {"id": 0}}}
+    def test_output_name_passthrough(self):
+        step = _step_with_connections({"input1": {"id": 0, "output_name": "custom_out"}})
         result = _parse_connections(step)
-        assert result["input1"][0].output_name == "output"
+        assert result["input1"][0].output_name == "custom_out"
 
 
 # -- _collect_inputs tests --
@@ -537,13 +548,10 @@ class TestBuildWorkflowGraph:
 
     def test_subworkflow_step_preserves_connections(self):
         tool_info = MockGetToolInfo()
+        inner_wf = make_native_workflow()
         wf = make_native_workflow(
             make_input_step("data_input"),
-            {
-                "type": "subworkflow",
-                "input_connections": {"input1": {"id": 0, "output_name": "output"}},
-                "subworkflow": {"steps": {}},
-            },
+            make_subworkflow_step(inner_wf, input_connections={"input1": {"id": 0, "output_name": "output"}}),
         )
         graph = build_workflow_graph(wf, tool_info)
         assert graph.steps["1"].step_type == "subworkflow"
@@ -570,7 +578,7 @@ class TestBuildWorkflowGraph:
         assert graph.sorted_step_ids.index("0") < graph.sorted_step_ids.index("1")
 
     def test_empty_workflow(self):
-        graph = build_workflow_graph({"steps": {}}, MockGetToolInfo())
+        graph = build_workflow_graph(make_native_workflow(), MockGetToolInfo())
         assert len(graph.steps) == 0
         assert len(graph.sorted_step_ids) == 0
 

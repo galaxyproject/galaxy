@@ -96,7 +96,11 @@ class MockGetToolInfo:
 
 def make_native_workflow(*steps):
     """Build a minimal native workflow dict from step defs."""
-    return {"steps": {str(i): s for i, s in enumerate(steps)}}
+    return {
+        "a_galaxy_workflow": "true",
+        "format-version": "0.1",
+        "steps": {str(i): s for i, s in enumerate(steps)},
+    }
 
 
 def make_tool_step(tool_id, input_connections=None, tool_state=None):

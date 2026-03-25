@@ -1,14 +1,14 @@
 from typing import (
     cast,
     Optional,
+    Union,
 )
 
-from gxformat2.model import (
-    get_native_step_type,
-    pop_connect_from_step_dict,
-    setup_connected_values,
-    steps_as_list,
+from gxformat2.normalized import (
+    NormalizedFormat2,
+    NormalizedWorkflowStep,
 )
+from gxformat2.to_format2 import ensure_format2
 
 from galaxy.tool_util.parameters import (
     ConditionalParameterModel,
@@ -23,65 +23,58 @@ from galaxy.tool_util.parameters import (
     WorkflowStepToolState,
 )
 from ._types import (
-    Format2StepDict,
     Format2WorkflowDict,
     GetToolInfo,
     ToolInputs,
 )
 
 
-def validate_workflow_format2(workflow_dict: Format2WorkflowDict, get_tool_info: GetToolInfo):
-    steps = steps_as_list(workflow_dict)
-    for step in steps:
-        step_type = get_native_step_type(step)
-        if step_type == "subworkflow":
-            run = step.get("run")
-            if isinstance(run, dict):
-                validate_workflow_format2(run, get_tool_info)
+def validate_workflow_format2(workflow: Union[Format2WorkflowDict, NormalizedFormat2], get_tool_info: GetToolInfo):
+    nf2 = ensure_format2(workflow, expand=True) if not isinstance(workflow, NormalizedFormat2) else workflow
+    for step in nf2.steps:
+        if step.is_subworkflow_step:
+            if isinstance(step.run, NormalizedFormat2):
+                validate_workflow_format2(step.run, get_tool_info)
             continue
         validate_step_format2(step, get_tool_info)
 
 
-def validate_step_format2(step_dict: Format2StepDict, get_tool_info: GetToolInfo):
-    step_type = get_native_step_type(step_dict)
-    if step_type != "tool":
+def validate_step_format2(step: NormalizedWorkflowStep, get_tool_info: GetToolInfo):
+    if not step.is_tool_step:
         return
-    tool_id = cast(str, step_dict.get("tool_id"))
-    tool_version: Optional[str] = cast(Optional[str], step_dict.get("tool_version"))
+    tool_id = step.tool_id
+    if not tool_id:
+        return
+    tool_version: Optional[str] = step.tool_version
     parsed_tool = get_tool_info.get_tool_info(tool_id, tool_version)
     if parsed_tool is not None:
-        validate_step_against(step_dict, parsed_tool)
+        validate_step_against(step, parsed_tool)
 
 
-def validate_step_against(step_dict: Format2StepDict, parsed_tool: ToolInputs):
+def validate_step_against(step: NormalizedWorkflowStep, parsed_tool: ToolInputs):
     source_tool_state_model = WorkflowStepToolState.parameter_model_for(parsed_tool.inputs)
     linked_tool_state_model = WorkflowStepLinkedToolState.parameter_model_for(parsed_tool.inputs)
-    contains_format2_state = "state" in step_dict
-    contains_native_state = "tool_state" in step_dict
-    if contains_format2_state:
+    state = dict(step.state) if step.state else {}
+
+    if state:
         assert source_tool_state_model
-        source_tool_state_model.model_validate(step_dict["state"])
-    if not contains_native_state:
-        if not contains_format2_state:
-            step_dict["state"] = {}
-        # setup links and then validate against model...
-        linked_step = merge_inputs(step_dict, parsed_tool)
-        linked_tool_state_model.model_validate(linked_step["state"])
+        source_tool_state_model.model_validate(state)
 
+    # Build connect dict from step.in_ (connections already resolved by normalization)
+    connect: dict = {}
+    for step_input in step.in_:
+        if step_input.id and step_input.source:
+            src = step_input.source
+            connect[step_input.id] = src if isinstance(src, list) else [src]
 
-def merge_inputs(step_dict: Format2StepDict, parsed_tool: ToolInputs) -> Format2StepDict:
-    connect = pop_connect_from_step_dict(step_dict)
-    step_dict = setup_connected_values(step_dict, connect)
-    tool_inputs = parsed_tool.inputs
-
-    state_at_level = step_dict["state"]
-
-    for tool_input in tool_inputs:
-        _merge_into_state(connect, tool_input, state_at_level)
+    # Merge connections into state for linked validation
+    linked_state = dict(state)
+    for tool_input in parsed_tool.inputs:
+        _merge_into_state(connect, tool_input, linked_state)
 
     for key in connect:
         raise Exception(f"Failed to find parameter definition matching workflow linked key {key}")
-    return step_dict
+    linked_tool_state_model.model_validate(linked_state)
 
 
 def _merge_into_state(

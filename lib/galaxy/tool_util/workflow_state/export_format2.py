@@ -1,9 +1,10 @@
 """Export native Galaxy workflows to format2 with schema-aware state blocks.
 
-gxformat2's from_galaxy_native() handles structural conversion (step ordering,
-labels, connections) but produces tool_state as opaque JSON strings because it
-has no tool definitions. This module replaces those with clean `state` dicts
-using convert_state_to_format2(), falling back to tool_state on failure.
+gxformat2's to_format2() handles structural conversion (step ordering,
+labels, connections). When given a state_encode_to_format2 callback via
+ConversionOptions, it also converts tool_state to clean `state` dicts
+using tool definitions. This module wires that callback with stale key
+policy, strict mode, and per-step status tracking.
 """
 
 import argparse
@@ -15,18 +16,21 @@ from dataclasses import (
     dataclass,
     field,
 )
+from typing import (
+    Any,
+)
 
+from gxformat2.normalized import NormalizedFormat2
+from gxformat2.options import ConversionOptions
 from pydantic import BaseModel
 
 from ._types import (
-    Format2WorkflowDict,
     GetToolInfo,
     NativeWorkflowDict,
 )
-from .convert import convert_state_to_format2
-from .roundtrip import (
-    ensure_export_defaults,
-    find_matching_native_step,
+from .convert import (
+    ConversionValidationFailure,
+    convert_state_to_format2,
 )
 from .stale_keys import (
     classify_stale_keys,
@@ -52,8 +56,12 @@ class StepExportStatus:
 
 @dataclass
 class ExportResult:
-    format2_dict: Format2WorkflowDict
+    format2: NormalizedFormat2
     steps: list[StepExportStatus] = field(default_factory=list)
+
+    @property
+    def format2_dict(self) -> dict:
+        return self.format2.to_dict()
 
     @property
     def all_converted(self) -> bool:
@@ -78,86 +86,39 @@ def export_workflow_to_format2(
 ) -> ExportResult:
     """Export native workflow as format2 with schema-aware state blocks.
 
-    Structural conversion (step ordering, labels, connections) is delegated
-    to gxformat2's from_galaxy_native(). We only replace tool_state with
-    clean state + in blocks per tool step.
-
-    In best-effort mode (default), steps that fail conversion keep their
-    tool_state. In strict mode, any failure raises.
-
-    If policy is provided, steps with denied stale key categories are skipped.
+    Conversion happens inside to_format2() via the state_encode_to_format2
+    callback. Steps where conversion fails keep their tool_state (best-effort)
+    unless strict=True.
     """
-    from gxformat2.export import from_galaxy_native
+    from gxformat2.to_format2 import to_format2
 
     if _format(workflow_dict) != "native":
         raise ValueError("export_workflow_to_format2 requires a native (.ga) workflow")
 
+    step_statuses: list[StepExportStatus] = []
+    callback = _make_export_callback(get_tool_info, step_statuses, strict=strict, policy=policy)
+
     native_copy = copy.deepcopy(workflow_dict)
-    ensure_export_defaults(native_copy)
-    format2_dict = from_galaxy_native(native_copy)
+    options = ConversionOptions(state_encode_to_format2=callback)
+    format2_model = to_format2(native_copy, options=options)
 
-    steps: list[StepExportStatus] = []
-    _replace_states(format2_dict, workflow_dict, get_tool_info, steps, strict, policy=policy)
-
-    return ExportResult(format2_dict=format2_dict, steps=steps)
+    return ExportResult(format2=format2_model, steps=step_statuses)
 
 
-def _replace_states(
-    format2_dict: dict,
-    native_workflow: dict,
+def _make_export_callback(
     get_tool_info: GetToolInfo,
-    steps: list[StepExportStatus],
-    strict: bool,
-    path_prefix: str = "",
+    step_statuses: list[StepExportStatus],
+    strict: bool = False,
     policy: StaleKeyPolicy | None = None,
 ):
-    """Replace tool_state with converted state in format2 steps."""
-    format2_steps = format2_dict.get("steps", [])
-    if isinstance(format2_steps, list):
-        steps_iter = list(enumerate(format2_steps))
-    else:
-        steps_iter = list(format2_steps.items())
+    """Build a state_encode_to_format2 callback with policy checking and status tracking."""
 
-    num_inputs = len(format2_dict.get("inputs", {}))
+    def _convert(native_step: dict) -> dict[str, Any] | None:
+        tool_id = native_step.get("tool_id")
+        step_label = native_step.get("label") or str(native_step.get("id", "?"))
 
-    for step_key, format2_step in steps_iter:
-        native_step_id = step_key + num_inputs if isinstance(step_key, int) else step_key
-        step_label = f"{path_prefix}{native_step_id}"
-
-        # Subworkflow — recurse into run: block
-        if "run" in format2_step and isinstance(format2_step["run"], dict):
-            native_step = find_matching_native_step(native_workflow, format2_step, native_step_id)
-            if native_step and "subworkflow" in native_step:
-                _replace_states(
-                    format2_step["run"],
-                    native_step["subworkflow"],
-                    get_tool_info,
-                    steps,
-                    strict,
-                    path_prefix=f"{step_label}.",
-                    policy=policy,
-                )
-            continue
-
-        # Non-tool steps
-        if not format2_step.get("tool_id") and "tool_state" not in format2_step:
-            continue
-
-        native_step = find_matching_native_step(native_workflow, format2_step, native_step_id)
-        tool_id = format2_step.get("tool_id")
-
-        if native_step is None:
-            status = StepExportStatus(
-                step_id=step_label,
-                step_label=format2_step.get("label"),
-                tool_id=tool_id,
-                converted=False,
-                error="No matching native step found",
-            )
-            steps.append(status)
-            if strict:
-                raise ExportError(f"Step {step_label}: {status.error}")
-            continue
+        if not tool_id:
+            return None
 
         # Check stale key policy before conversion
         if policy and policy.denied:
@@ -168,39 +129,36 @@ def _replace_states(
                     denied, _ = policy.filter(stale)
                     if denied:
                         cats = ", ".join(sorted({sk.category.value for sk in denied}))
-                        steps.append(
+                        step_statuses.append(
                             StepExportStatus(
                                 step_id=step_label,
-                                step_label=format2_step.get("label"),
+                                step_label=native_step.get("label"),
                                 tool_id=tool_id,
                                 converted=False,
                                 error=f"Denied stale key categories: {cats}",
                             )
                         )
-                        continue
+                        return None
             except Exception:
                 pass  # classification failure shouldn't block conversion
 
         try:
             f2_state = convert_state_to_format2(native_step, get_tool_info)
-            format2_step.pop("tool_state", None)
-            format2_step["state"] = f2_state.state
-            if f2_state.inputs:
-                format2_step["in"] = {k: {"source": v} for k, v in f2_state.inputs.items() if v != "placeholder"}
-            steps.append(
+            step_statuses.append(
                 StepExportStatus(
                     step_id=step_label,
-                    step_label=format2_step.get("label"),
+                    step_label=native_step.get("label"),
                     tool_id=tool_id,
                     converted=True,
                 )
             )
-        except Exception as e:
+            return f2_state.state
+        except ConversionValidationFailure as e:
             error_msg = str(e)
-            steps.append(
+            step_statuses.append(
                 StepExportStatus(
                     step_id=step_label,
-                    step_label=format2_step.get("label"),
+                    step_label=native_step.get("label"),
                     tool_id=tool_id,
                     converted=False,
                     error=error_msg,
@@ -209,6 +167,24 @@ def _replace_states(
             if strict:
                 raise ExportError(f"Step {step_label}: {error_msg}") from e
             log.debug("Step %s: conversion failed, keeping tool_state: %s", step_label, error_msg)
+            return None
+        except Exception as e:
+            error_msg = str(e)
+            step_statuses.append(
+                StepExportStatus(
+                    step_id=step_label,
+                    step_label=native_step.get("label"),
+                    tool_id=tool_id,
+                    converted=False,
+                    error=error_msg,
+                )
+            )
+            if strict:
+                raise ExportError(f"Step {step_label}: {error_msg}") from e
+            log.debug("Step %s: conversion failed, keeping tool_state: %s", step_label, error_msg)
+            return None
+
+    return _convert
 
 
 class ExportError(Exception):
@@ -295,7 +271,7 @@ def format_diff(original_format2: dict, converted_format2: dict, workflow_path: 
 
 def run_export(options: ExportOptions) -> int:
     """Run export pipeline. Returns exit code."""
-    from gxformat2.export import from_galaxy_native
+    from gxformat2.to_format2 import to_format2
 
     from ._cli_common import setup_logging
     from .cache import (
@@ -330,9 +306,9 @@ def run_export(options: ExportOptions) -> int:
     if options.diff:
         # Generate naive format2 for comparison
         naive_copy = copy.deepcopy(workflow)
-        ensure_export_defaults(naive_copy)
-        naive_format2 = from_galaxy_native(naive_copy)
-        diff_text = format_diff(naive_format2, result.format2_dict, options.workflow_path)
+        naive_model = to_format2(naive_copy)
+        naive_dict = naive_model.to_dict()
+        diff_text = format_diff(naive_dict, result.format2_dict, options.workflow_path)
         if diff_text:
             print(diff_text, end="")
         else:

@@ -197,35 +197,31 @@ def _validate_native(
 
 
 def _validate_format2(workflow_dict: dict, get_tool_info: GetToolInfo, prefix: str = "") -> List[ValidationStepResult]:
-    from gxformat2.model import (
-        get_native_step_type,
-        steps_as_list,
-    )
+    from gxformat2.normalized import NormalizedFormat2
+    from gxformat2.to_format2 import ensure_format2
 
     results: List[ValidationStepResult] = []
-    steps = steps_as_list(workflow_dict)
-    for i, step_dict in enumerate(steps):
+    nf2 = ensure_format2(workflow_dict, expand=True)
+    for i, step in enumerate(nf2.steps):
         step_label = f"{prefix}{i}" if prefix else str(i)
-        step_type = get_native_step_type(step_dict)
 
-        if step_type == "subworkflow":
-            run = step_dict.get("run")
-            if isinstance(run, dict):
-                sub_results = _validate_format2(run, get_tool_info, prefix=f"{step_label}.")
+        if step.is_subworkflow_step:
+            if isinstance(step.run, NormalizedFormat2):
+                sub_results = _validate_format2(step.run, get_tool_info, prefix=f"{step_label}.")
                 results.extend(sub_results)
             continue
 
-        if step_type != "tool":
+        if not step.is_tool_step:
             continue
 
-        tool_id = step_dict.get("tool_id")
-        tool_version = step_dict.get("tool_version")
+        tool_id = step.tool_id
+        tool_version = step.tool_version
 
         if not tool_id:
             continue
 
         try:
-            validate_step_format2(step_dict, get_tool_info)
+            validate_step_format2(step, get_tool_info)
             results.append(
                 ValidationStepResult(
                     step=step_label,

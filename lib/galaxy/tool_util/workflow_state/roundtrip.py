@@ -19,11 +19,17 @@ from typing import (
     Any,
 )
 
-from gxformat2.converter import (
-    ImportOptions,
-    python_to_workflow,
+from gxformat2.normalized import (
+    NormalizedNativeStep,
+    NormalizedNativeWorkflow,
 )
-from gxformat2.export import from_galaxy_native
+from gxformat2.options import ConversionOptions
+from gxformat2.schema.native import NativeInputConnection
+from gxformat2.to_format2 import to_format2
+from gxformat2.to_native import (
+    ensure_native,
+    to_native,
+)
 from pydantic import BaseModel
 
 from ._types import GetToolInfo
@@ -434,78 +440,19 @@ def _values_equivalent(a: Any, b: Any) -> bool:
     return False
 
 
-def compare_connections(
-    orig_connections: dict, after_connections: dict, step_path: str = "", path: str = ""
+def _compare_step_visual(
+    orig_step: NormalizedNativeStep, after_step: NormalizedNativeStep, step_path: str
 ) -> list[StepDiff]:
-    """Compare input_connections dicts for topology equivalence."""
-    diffs: list[StepDiff] = []
-    all_keys = set(list(orig_connections.keys()) + list(after_connections.keys()))
-    for key in sorted(all_keys):
-        key_path = f"{path}.input_connections.{key}" if path else f"input_connections.{key}"
-        if key not in orig_connections:
-            diffs.append(
-                StepDiff(
-                    step_path=step_path,
-                    key_path=key_path,
-                    diff_type=DiffType.CONNECTION_MISMATCH,
-                    severity=DiffSeverity.ERROR,
-                    description="missing in original",
-                )
-            )
-        elif key not in after_connections:
-            diffs.append(
-                StepDiff(
-                    step_path=step_path,
-                    key_path=key_path,
-                    diff_type=DiffType.CONNECTION_MISMATCH,
-                    severity=DiffSeverity.ERROR,
-                    description="missing in roundtripped",
-                )
-            )
-        else:
-            orig_val = orig_connections[key]
-            after_val = after_connections[key]
-            if not isinstance(orig_val, list):
-                orig_val = [orig_val]
-            if not isinstance(after_val, list):
-                after_val = [after_val]
-            if len(orig_val) != len(after_val):
-                diffs.append(
-                    StepDiff(
-                        step_path=step_path,
-                        key_path=key_path,
-                        diff_type=DiffType.CONNECTION_MISMATCH,
-                        severity=DiffSeverity.ERROR,
-                        description=f"{len(orig_val)} connections vs {len(after_val)}",
-                        original_value=orig_val,
-                        roundtrip_value=after_val,
-                    )
-                )
-            else:
-                for i, (o, a) in enumerate(zip(orig_val, after_val)):
-                    if isinstance(o, dict) and isinstance(a, dict):
-                        if o.get("id") != a.get("id") or o.get("output_name") != a.get("output_name"):
-                            diffs.append(
-                                StepDiff(
-                                    step_path=step_path,
-                                    key_path=f"{key_path}[{i}]",
-                                    diff_type=DiffType.CONNECTION_MISMATCH,
-                                    severity=DiffSeverity.ERROR,
-                                    description=f"{o} != {a}",
-                                    original_value=o,
-                                    roundtrip_value=a,
-                                )
-                            )
-    return diffs
-
-
-def _compare_step_visual(orig_step: dict, after_step: dict, step_path: str) -> list[StepDiff]:
     """Compare visual/layout fields of two workflow steps."""
     diffs: list[StepDiff] = []
 
-    orig_pos = orig_step.get("position", {})
-    after_pos = after_step.get("position", {})
-    if orig_pos.get("left") != after_pos.get("left") or orig_pos.get("top") != after_pos.get("top"):
+    orig_pos = orig_step.position
+    after_pos = after_step.position
+    orig_left = orig_pos.left if orig_pos else None
+    orig_top = orig_pos.top if orig_pos else None
+    after_left = after_pos.left if after_pos else None
+    after_top = after_pos.top if after_pos else None
+    if orig_left != after_left or orig_top != after_top:
         diffs.append(
             StepDiff(
                 step_path=step_path,
@@ -518,23 +465,21 @@ def _compare_step_visual(orig_step: dict, after_step: dict, step_path: str) -> l
             )
         )
 
-    orig_label = orig_step.get("label")
-    after_label = after_step.get("label")
-    if orig_label != after_label:
+    if orig_step.label != after_step.label:
         diffs.append(
             StepDiff(
                 step_path=step_path,
                 key_path="label",
                 diff_type=DiffType.LABEL_MISMATCH,
                 severity=DiffSeverity.ERROR,
-                description=f"{orig_label!r} != {after_label!r}",
-                original_value=orig_label,
-                roundtrip_value=after_label,
+                description=f"{orig_step.label!r} != {after_step.label!r}",
+                original_value=orig_step.label,
+                roundtrip_value=after_step.label,
             )
         )
 
-    orig_ann = orig_step.get("annotation", "")
-    after_ann = after_step.get("annotation", "")
+    orig_ann = orig_step.annotation or ""
+    after_ann = after_step.annotation or ""
     if orig_ann != after_ann:
         diffs.append(
             StepDiff(
@@ -581,18 +526,17 @@ def classify_error(e: Exception) -> FailureClass:
 
 
 def roundtrip_native_step(
-    step: dict,
+    step: NormalizedNativeStep,
     step_id: str,
     get_tool_info: GetToolInfo,
 ) -> StepResult:
     """Try to convert a single native step to format2 state."""
-    tool_id = step.get("tool_id")
-    step_type = step.get("type", "tool")
+    tool_id = step.tool_id
 
-    if step_type == "subworkflow":
+    if step.is_subworkflow_step:
         return _roundtrip_subworkflow_step(step, step_id, get_tool_info)
 
-    if step_type != "tool" or not tool_id:
+    if not step.is_tool_step or not tool_id:
         return StepResult(step_id=step_id, tool_id=tool_id, success=True)
 
     try:
@@ -609,12 +553,12 @@ def roundtrip_native_step(
 
 
 def _roundtrip_subworkflow_step(
-    step: dict,
+    step: NormalizedNativeStep,
     step_id: str,
     get_tool_info: GetToolInfo,
 ) -> StepResult:
     """Recurse into a subworkflow step, validating/converting nested tool steps."""
-    subworkflow = step.get("subworkflow")
+    subworkflow = step.subworkflow
     if not subworkflow:
         return StepResult(
             step_id=step_id,
@@ -638,15 +582,16 @@ def _roundtrip_subworkflow_step(
 
 
 def roundtrip_native_workflow(
-    workflow_dict: dict,
+    workflow: "NormalizedNativeWorkflow | dict",
     get_tool_info: GetToolInfo,
     workflow_name: str = "",
 ) -> RoundTripResult:
     """Round-trip a native workflow: try converting each tool step to format2."""
+    if not isinstance(workflow, NormalizedNativeWorkflow):
+        workflow = ensure_native(workflow)
     result = RoundTripResult(workflow_name=workflow_name, direction="native_to_format2")
-    steps = workflow_dict.get("steps", {})
 
-    for step_id, step in steps.items():
+    for step_id, step in workflow.steps.items():
         step_result = roundtrip_native_step(step, step_id, get_tool_info)
         result.step_results.append(step_result)
 
@@ -684,26 +629,28 @@ def full_roundtrip_native(
     return conversion_result, result.diffs
 
 
-def _build_step_id_mapping(orig_workflow: dict, after_workflow: dict) -> dict[str, str | None]:
+def _build_step_id_mapping(
+    orig_workflow: NormalizedNativeWorkflow, after_workflow: NormalizedNativeWorkflow
+) -> dict[str, str | None]:
     """Build a mapping from original step IDs to after step IDs using label+type matching.
 
     Falls back to positional ID matching when labels are absent or non-unique.
     """
-    orig_steps = orig_workflow.get("steps", {})
-    after_steps = after_workflow.get("steps", {})
+    orig_steps = orig_workflow.steps
+    after_steps = after_workflow.steps
     mapping: dict[str, str | None] = {}
     used_after_ids: set[str] = set()
 
     # First pass: match by label+type (strongest signal)
     for orig_id, orig_step in orig_steps.items():
-        label = orig_step.get("label")
+        label = orig_step.label
         if not label:
             continue
-        step_type = orig_step.get("type", "tool")
+        step_type = orig_step.type_
         for after_id, after_step in after_steps.items():
             if after_id in used_after_ids:
                 continue
-            if after_step.get("label") == label and after_step.get("type", "tool") == step_type:
+            if after_step.label == label and after_step.type_ == step_type:
                 mapping[orig_id] = after_id
                 used_after_ids.add(after_id)
                 break
@@ -714,7 +661,7 @@ def _build_step_id_mapping(orig_workflow: dict, after_workflow: dict) -> dict[st
             continue
         after_step = after_steps.get(orig_id)
         if after_step and orig_id not in used_after_ids:
-            if after_step.get("type", "tool") == orig_step.get("type", "tool"):
+            if after_step.type_ == orig_step.type_:
                 mapping[orig_id] = orig_id
                 used_after_ids.add(orig_id)
 
@@ -722,14 +669,12 @@ def _build_step_id_mapping(orig_workflow: dict, after_workflow: dict) -> dict[st
     unmatched_orig = {oid: orig_steps[oid] for oid in orig_steps if oid not in mapping}
     unmatched_after = {aid: after_steps[aid] for aid in after_steps if aid not in used_after_ids}
     for orig_id, orig_step in unmatched_orig.items():
-        tool_id = orig_step.get("tool_id")
-        step_type = orig_step.get("type", "tool")
+        tool_id = orig_step.tool_id
+        step_type = orig_step.type_
         if not tool_id:
             continue
         candidates = [
-            aid
-            for aid, astep in unmatched_after.items()
-            if astep.get("tool_id") == tool_id and astep.get("type", "tool") == step_type
+            aid for aid, astep in unmatched_after.items() if astep.tool_id == tool_id and astep.type_ == step_type
         ]
         if len(candidates) == 1:
             mapping[orig_id] = candidates[0]
@@ -744,7 +689,11 @@ def _build_step_id_mapping(orig_workflow: dict, after_workflow: dict) -> dict[st
     return mapping
 
 
-def compare_workflow_steps(orig_workflow: dict, after_workflow: dict, path_prefix: str = "") -> list[StepDiff]:
+def compare_workflow_steps(
+    orig_workflow: NormalizedNativeWorkflow,
+    after_workflow: NormalizedNativeWorkflow,
+    path_prefix: str = "",
+) -> list[StepDiff]:
     """Compare steps between original and roundtripped workflows, recursing into subworkflows.
 
     Matches steps by label+type rather than step ID to handle gxformat2 step reordering.
@@ -752,8 +701,7 @@ def compare_workflow_steps(orig_workflow: dict, after_workflow: dict, path_prefi
     all_diffs: list[StepDiff] = []
     id_mapping = _build_step_id_mapping(orig_workflow, after_workflow)
 
-    for orig_id, orig_step in orig_workflow.get("steps", {}).items():
-        step_type = orig_step.get("type", "tool")
+    for orig_id, orig_step in orig_workflow.steps.items():
         step_path = f"{path_prefix}step {orig_id}" if not path_prefix else f"{path_prefix}/step {orig_id}"
 
         after_id = id_mapping.get(orig_id)
@@ -769,11 +717,11 @@ def compare_workflow_steps(orig_workflow: dict, after_workflow: dict, path_prefi
             )
             continue
 
-        after_step = after_workflow["steps"][after_id]
+        after_step = after_workflow.steps[after_id]
 
-        if step_type == "subworkflow":
-            orig_sub = orig_step.get("subworkflow", {})
-            after_sub = after_step.get("subworkflow", {})
+        if orig_step.is_subworkflow_step:
+            orig_sub = orig_step.subworkflow
+            after_sub = after_step.subworkflow
             if not after_sub:
                 all_diffs.append(
                     StepDiff(
@@ -787,7 +735,7 @@ def compare_workflow_steps(orig_workflow: dict, after_workflow: dict, path_prefi
                 continue
             sub_diffs = compare_workflow_steps(orig_sub, after_sub, path_prefix=f"{step_path}:subworkflow/")
             all_diffs.extend(sub_diffs)
-        elif step_type == "tool":
+        elif orig_step.is_tool_step:
             all_diffs.extend(_compare_steps_with_id_mapping(orig_step, after_step, id_mapping, step_path))
 
         all_diffs.extend(_compare_step_visual(orig_step, after_step, step_path))
@@ -798,34 +746,39 @@ def compare_workflow_steps(orig_workflow: dict, after_workflow: dict, path_prefi
 
 
 def _compare_steps_with_id_mapping(
-    orig_step: dict, after_step: dict, id_mapping: dict[str, str | None], step_path: str
+    orig_step: NormalizedNativeStep,
+    after_step: NormalizedNativeStep,
+    id_mapping: dict[str, str | None],
+    step_path: str,
 ) -> list[StepDiff]:
     """Compare two tool steps, remapping connection step IDs to account for reordering."""
     diffs: list[StepDiff] = []
     for key in ["tool_id", "tool_version"]:
-        if orig_step.get(key) != after_step.get(key):
+        orig_val = getattr(orig_step, key)
+        after_val = getattr(after_step, key)
+        if orig_val != after_val:
             diffs.append(
                 StepDiff(
                     step_path=step_path,
                     key_path=key,
                     diff_type=DiffType.VALUE_MISMATCH,
                     severity=DiffSeverity.ERROR,
-                    description=f"{orig_step.get(key)!r} != {after_step.get(key)!r}",
-                    original_value=orig_step.get(key),
-                    roundtrip_value=after_step.get(key),
+                    description=f"{orig_val!r} != {after_val!r}",
+                    original_value=orig_val,
+                    roundtrip_value=after_val,
                 )
             )
 
-    orig_ts = orig_step.get("tool_state")
-    after_ts = after_step.get("tool_state")
+    orig_ts = orig_step.tool_state
+    after_ts = after_step.tool_state
     if orig_ts and after_ts:
-        orig_parsed = json.loads(orig_ts) if isinstance(orig_ts, str) else orig_ts
-        after_parsed = json.loads(after_ts) if isinstance(after_ts, str) else after_ts
-        diffs.extend(compare_tool_state(orig_parsed, after_parsed, step_path=step_path))
+        diffs.extend(compare_tool_state(orig_ts, after_ts, step_path=step_path))
 
-    orig_ic = orig_step.get("input_connections", {})
-    after_ic = after_step.get("input_connections", {})
-    diffs.extend(_compare_connections_with_id_mapping(orig_ic, after_ic, id_mapping, step_path=step_path))
+    diffs.extend(
+        _compare_connections_with_id_mapping(
+            orig_step.input_connections, after_step.input_connections, id_mapping, step_path=step_path
+        )
+    )
 
     return diffs
 
@@ -840,12 +793,16 @@ def _compare_connections_with_id_mapping(
     """Compare input_connections, remapping step IDs via id_mapping before comparison."""
     reverse_map = {v: k for k, v in id_mapping.items() if v is not None}
 
-    def _remap_connection(conn: dict) -> dict:
-        after_id = conn.get("id")
-        orig_id = reverse_map.get(str(after_id))
-        if orig_id is not None:
-            return {**conn, "id": int(orig_id)}
-        return conn
+    def _conn_id(conn) -> int:
+        return conn.id if isinstance(conn, NativeInputConnection) else conn.get("id")
+
+    def _conn_output(conn) -> str:
+        return conn.output_name if isinstance(conn, NativeInputConnection) else conn.get("output_name")
+
+    def _remap_id(conn) -> int:
+        cid = _conn_id(conn)
+        orig_id = reverse_map.get(str(cid))
+        return int(orig_id) if orig_id is not None else cid
 
     diffs: list[StepDiff] = []
     all_keys = set(list(orig_connections.keys()) + list(after_connections.keys()))
@@ -874,11 +831,6 @@ def _compare_connections_with_id_mapping(
         else:
             orig_val = orig_connections[key]
             after_val = after_connections[key]
-            if not isinstance(orig_val, list):
-                orig_val = [orig_val]
-            if not isinstance(after_val, list):
-                after_val = [after_val]
-            after_val = [_remap_connection(c) if isinstance(c, dict) else c for c in after_val]
             if len(orig_val) != len(after_val):
                 diffs.append(
                     StepDiff(
@@ -893,25 +845,25 @@ def _compare_connections_with_id_mapping(
                 )
             else:
                 for i, (o, a) in enumerate(zip(orig_val, after_val)):
-                    if isinstance(o, dict) and isinstance(a, dict):
-                        if o.get("id") != a.get("id") or o.get("output_name") != a.get("output_name"):
-                            diffs.append(
-                                StepDiff(
-                                    step_path=step_path,
-                                    key_path=f"{key_path}[{i}]",
-                                    diff_type=DiffType.CONNECTION_MISMATCH,
-                                    severity=DiffSeverity.ERROR,
-                                    description=f"{o} != {a}",
-                                    original_value=o,
-                                    roundtrip_value=a,
-                                )
+                    remapped_id = _remap_id(a)
+                    if _conn_id(o) != remapped_id or _conn_output(o) != _conn_output(a):
+                        diffs.append(
+                            StepDiff(
+                                step_path=step_path,
+                                key_path=f"{key_path}[{i}]",
+                                diff_type=DiffType.CONNECTION_MISMATCH,
+                                severity=DiffSeverity.ERROR,
+                                description=f"{o} != {a}",
+                                original_value=o,
+                                roundtrip_value=a,
                             )
+                        )
     return diffs
 
 
 def compare_comments(
-    orig_workflow: dict,
-    after_workflow: dict,
+    orig_workflow: NormalizedNativeWorkflow,
+    after_workflow: NormalizedNativeWorkflow,
     path_prefix: str = "",
     id_mapping: dict[str, str | None] | None = None,
 ) -> list[StepDiff]:
@@ -920,8 +872,8 @@ def compare_comments(
     Comments are matched by content rather than id, since reimport may renumber ids.
     child_steps references are remapped through id_mapping to account for step reordering.
     """
-    orig_comments = orig_workflow.get("comments", [])
-    after_comments = after_workflow.get("comments", [])
+    orig_comments = [c.model_dump(by_alias=True) if hasattr(c, "model_dump") else c for c in orig_workflow.comments]
+    after_comments = [c.model_dump(by_alias=True) if hasattr(c, "model_dump") else c for c in after_workflow.comments]
     diffs: list[StepDiff] = []
     prefix = f"{path_prefix}comments" if not path_prefix else f"{path_prefix}/comments"
 
@@ -988,50 +940,6 @@ def _comment_sort_key(comment: dict) -> tuple:
 
 
 # -- Shared helpers for format2 export --
-
-
-def ensure_export_defaults(workflow_dict: dict):
-    """Ensure steps have label/annotation fields required by gxformat2 export, recursing into subworkflows."""
-    for step in workflow_dict.get("steps", {}).values():
-        step.setdefault("label", None)
-        step.setdefault("annotation", "")
-        if step.get("type") == "subworkflow" and "subworkflow" in step:
-            ensure_export_defaults(step["subworkflow"])
-
-
-def find_matching_native_step(native_workflow: dict, format2_step: dict, format2_index) -> dict | None:
-    """Find the native step matching a format2 step by label+tool_id, then index.
-
-    Prefers label+tool_id matching to handle step ID reordering (e.g., gxformat2
-    moving inputs before tools in subworkflows). Falls back to index only if the
-    step at that index has a compatible tool_id. Does NOT fall back to tool_id-only
-    matching — for workflows with duplicate tools that would silently match the
-    wrong step.
-    """
-    native_steps = native_workflow.get("steps", {})
-    tool_id = format2_step.get("tool_id")
-    label = format2_step.get("label")
-
-    # Prefer label+tool_id match
-    if label:
-        for step in native_steps.values():
-            if step.get("label") == label and step.get("tool_id") == tool_id:
-                return step
-
-    # Fall back to index, but only if tool_id matches
-    step_id = str(format2_index)
-    if step_id in native_steps:
-        candidate = native_steps[step_id]
-        if candidate.get("tool_id") == tool_id:
-            return candidate
-        log.debug(
-            "Step %s: index match has tool_id %r, expected %r — skipping",
-            format2_index,
-            candidate.get("tool_id"),
-            tool_id,
-        )
-
-    return None
 
 
 # -- Round-trip validation (CLI-facing) --
@@ -1134,33 +1042,30 @@ def roundtrip_validate(
         clean_stale_state(workflow_dict, get_tool_info)
 
     workflow_name = os.path.basename(workflow_path) if workflow_path else ""
+    orig_model = ensure_native(workflow_dict)
 
     # Per-step conversion (validates each tool step can be converted)
-    step_result = roundtrip_native_workflow(workflow_dict, get_tool_info, workflow_name)
+    step_result = roundtrip_native_workflow(orig_model, get_tool_info, workflow_name)
     result.conversion_result = step_result
     if not step_result.success:
         return result
 
     # Forward: native → format2 with schema-aware state conversion
     native_copy = copy.deepcopy(workflow_dict)
-    ensure_export_defaults(native_copy)
-    convert_cb = make_convert_tool_state(get_tool_info)
-    format2_dict = from_galaxy_native(native_copy, convert_tool_state=convert_cb)
-    result.format2_dict = format2_dict
+    forward_options = ConversionOptions(state_encode_to_format2=make_convert_tool_state(get_tool_info))
+    format2_model = to_format2(native_copy, options=forward_options)
+    result.format2_dict = format2_model.to_dict()
 
-    # Reverse: format2 → native with schema-aware encoding
+    # Reverse: format2 → native with schema-aware encoding (pass model directly)
     try:
-        import_options = ImportOptions()
-        import_options.native_state_encoder = make_encode_tool_state(get_tool_info)
-        native_prime = python_to_workflow(
-            copy.deepcopy(format2_dict), galaxy_interface=None, import_options=import_options
-        )
+        reverse_options = ConversionOptions(state_encode_to_native=make_encode_tool_state(get_tool_info))
+        native_prime = to_native(format2_model, options=reverse_options)
     except Exception as e:
         result.error = f"Reimport failed: {e}"
         return result
 
-    result.reimported_dict = native_prime
-    result.diffs = compare_workflow_steps(workflow_dict, native_prime)
+    result.reimported_dict = native_prime.to_dict()
+    result.diffs = compare_workflow_steps(orig_model, native_prime)
     return result
 
 

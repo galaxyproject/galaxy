@@ -20,19 +20,25 @@ from galaxy.tool_util.parameters import (
     ToolParameterT,
     validate_explicit_conditional_test_value,
 )
-from galaxy.tool_util_models import ParsedTool
 from galaxy.tool_util_models.parameters import SectionParameterModel
 from ._types import (
     Format2StateDict,
     GetToolInfo,
-    NativeStepDict,
     ToolInputs,
 )
 from ._walker import (
     SKIP_VALUE,
     walk_native_state,
 )
+from ._util import (
+    coerce_select_value,
+    is_connected_or_runtime,
+    is_replacement_param,
+)
 from .validation_native import (
+    StepLike,
+    _step_as_dict,
+    _step_input_connections,
     get_parsed_tool_for_native_step,
     native_tool_state,
     validate_native_step_against,
@@ -52,12 +58,12 @@ class ConversionValidationFailure(Exception):
     pass
 
 
-def convert_state_to_format2(native_step_dict: NativeStepDict, get_tool_info: GetToolInfo) -> Format2State:
-    parsed_tool = get_parsed_tool_for_native_step(native_step_dict, get_tool_info)
-    return convert_state_to_format2_using(native_step_dict, parsed_tool)
+def convert_state_to_format2(native_step: StepLike, get_tool_info: GetToolInfo) -> Format2State:
+    parsed_tool = get_parsed_tool_for_native_step(native_step, get_tool_info)
+    return convert_state_to_format2_using(native_step, parsed_tool)
 
 
-def convert_state_to_format2_using(native_step_dict: NativeStepDict, parsed_tool: Optional[ToolInputs]) -> Format2State:
+def convert_state_to_format2_using(native_step: StepLike, parsed_tool: Optional[ToolInputs]) -> Format2State:
     """Create a "clean" gxformat2 workflow tool state from a native workflow step.
 
     gxformat2 does not know about tool specifications so it cannot reason about the native
@@ -76,12 +82,12 @@ def convert_state_to_format2_using(native_step_dict: NativeStepDict, parsed_tool
     if parsed_tool is None:
         raise ConversionValidationFailure("Could not resolve tool inputs")
     try:
-        validate_native_step_against(native_step_dict, parsed_tool)
+        validate_native_step_against(native_step, parsed_tool)
     except Exception:
         raise ConversionValidationFailure(
             "Failed to validate native step - not going to convert a tool state that isn't understood"
         )
-    result = _convert_valid_state_to_format2(native_step_dict, parsed_tool)
+    result = _convert_valid_state_to_format2(native_step, parsed_tool)
     try:
         _validate_converted_result(result, parsed_tool)
     except Exception:
@@ -133,7 +139,7 @@ def _state_has_replacement_params(state) -> bool:
         for v in state:
             if _state_has_replacement_params(v):
                 return True
-    elif isinstance(state, str) and _is_replacement_param(state):
+    elif isinstance(state, str) and is_replacement_param(state):
         return True
     return False
 
@@ -171,30 +177,30 @@ def _inject_connected_value(state: dict, connection_path: str):
     target[leaf] = {"__class__": "ConnectedValue"}
 
 
-def _convert_valid_state_to_format2(native_step_dict: NativeStepDict, parsed_tool: ToolInputs) -> Format2State:
+def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInputs) -> Format2State:
     format2_in: Format2InputsDictT = {}
-    root_tool_state = native_tool_state(native_step_dict)
-    input_connections = native_step_dict.get("input_connections", {})
+    root_tool_state = native_tool_state(native_step)
+    input_connections = _step_input_connections(native_step)
 
     def convert_leaf(tool_input: ToolParameterT, value: Any, state_path: str):
         parameter_type = tool_input.parameter_type
 
         if parameter_type in ["gx_data", "gx_data_collection"]:
-            if state_path in input_connections or _is_connected_value(value):
+            if state_path in input_connections or is_connected_or_runtime(value):
                 format2_in[state_path] = "placeholder"
             elif isinstance(value, dict) and value.get("__class__") == "RuntimeValue":
                 format2_in[state_path] = "placeholder"
             return SKIP_VALUE
 
         if parameter_type == "gx_rules":
-            if value is not None and not _is_connected_value(value):
+            if value is not None and not is_connected_or_runtime(value):
                 if isinstance(value, str):
                     value = json.loads(value)
                 return value
             return SKIP_VALUE
 
         # Scalar types
-        if _is_connected_value(value):
+        if is_connected_or_runtime(value):
             format2_in[state_path] = "placeholder"
             return SKIP_VALUE
         if state_path in input_connections:
@@ -204,7 +210,7 @@ def _convert_valid_state_to_format2(native_step_dict: NativeStepDict, parsed_too
             return _convert_scalar_value(parameter_type, tool_input.name, value, tool_input)
         return SKIP_VALUE
 
-    format2_state = walk_native_state(native_step_dict, parsed_tool.inputs, root_tool_state, convert_leaf)
+    format2_state = walk_native_state(_step_as_dict(native_step), parsed_tool.inputs, root_tool_state, convert_leaf)
     return Format2State(
         **{
             "state": format2_state,
@@ -216,14 +222,14 @@ def _convert_valid_state_to_format2(native_step_dict: NativeStepDict, parsed_too
 def _convert_scalar_value(parameter_type: str, parameter_name: str, value, tool_input: ToolParameterT):
     """Convert a native scalar value to format2 representation."""
     if parameter_type == "gx_integer":
-        if _is_replacement_param(value):
+        if is_replacement_param(value):
             return value
         try:
             return int(value)
         except (ValueError, TypeError):
             raise Exception(f"Failed to convert integer value {value!r} for {parameter_name}")
     elif parameter_type == "gx_float":
-        if _is_replacement_param(value):
+        if is_replacement_param(value):
             return value
         try:
             return float(value)
@@ -237,10 +243,10 @@ def _convert_scalar_value(parameter_type: str, parameter_name: str, value, tool_
             if isinstance(value, str):
                 return value.split(",") if value else []
             elif isinstance(value, list):
-                return [_coerce_select_value(v) for v in value]
-        return _coerce_select_value(value)
+                return [coerce_select_value(v) for v in value]
+        return coerce_select_value(value)
     elif parameter_type == "gx_data_column":
-        if _is_replacement_param(value):
+        if is_replacement_param(value):
             return value
         from galaxy.tool_util_models.parameters import DataColumnParameterModel
 
@@ -257,28 +263,6 @@ def _convert_scalar_value(parameter_type: str, parameter_name: str, value, tool_
     else:
         # gx_text, gx_color, gx_hidden, gx_drill_down, etc.
         return value
-
-
-def _coerce_select_value(value) -> str:
-    """Coerce a select value to string for format2 output.
-
-    Native tool_state may store select values as int (after JSON decode) or bool.
-    """
-    if isinstance(value, bool):
-        return str(value).lower()
-    if isinstance(value, str):
-        return value
-    return str(value)
-
-
-def _is_connected_value(value) -> bool:
-    return isinstance(value, dict) and value.get("__class__") in ("ConnectedValue", "RuntimeValue")
-
-
-def _is_replacement_param(value) -> bool:
-    if not isinstance(value, str):
-        return False
-    return "${" in value or "#{" in value
 
 
 def _coerce_bool(value) -> bool:
@@ -310,7 +294,7 @@ def _reverse_format2_values(tool_inputs: List[ToolParameterT], state: dict) -> d
     input_map = {inp.name: inp for inp in tool_inputs}
     result = {}
     for key, value in state.items():
-        if _is_connected_value(value):
+        if is_connected_or_runtime(value):
             result[key] = value
             continue
         tool_input = input_map.get(key)
@@ -323,7 +307,7 @@ def _reverse_format2_values(tool_inputs: List[ToolParameterT], state: dict) -> d
 
 def _reverse_value(tool_input: ToolParameterT, value: Any) -> Any:
     """Reverse a single format2 value to native form using its tool input definition."""
-    if _is_connected_value(value):
+    if is_connected_or_runtime(value):
         return value
     parameter_type = tool_input.parameter_type
 

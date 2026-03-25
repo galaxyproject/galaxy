@@ -169,7 +169,7 @@ class TestMultiDataReduction:
 
 class TestEndToEnd:
     def test_empty_workflow(self):
-        result = validate_connections({"steps": {}}, MockGetToolInfo())
+        result = validate_connections(make_native_workflow(), MockGetToolInfo())
         assert result.valid
         assert len(result.step_results) == 0
 

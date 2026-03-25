@@ -4,7 +4,6 @@ Extracts typed input/output/connection information from a workflow dict
 and produces a graph of ResolvedSteps in topological order.
 """
 
-import json
 import logging
 from dataclasses import (
     dataclass,
@@ -15,7 +14,15 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
+
+from gxformat2.normalized import (
+    normalized_native,
+    NormalizedNativeStep,
+    NormalizedNativeWorkflow,
+)
+from gxformat2.schema.native import NativeStepType
 
 from galaxy.tool_util.parameters import ToolParameterT
 from galaxy.tool_util_models.tool_outputs import (
@@ -27,10 +34,8 @@ from galaxy.tool_util_models.tool_outputs import (
     ToolOutputText,
 )
 from galaxy.util.topsort import topsort
-from ._types import (
-    GetToolInfo,
-    NativeStepDict,
-)
+from ._types import GetToolInfo
+from ._util import step_tool_state
 
 log = logging.getLogger(__name__)
 
@@ -95,27 +100,29 @@ class WorkflowGraph:
 
 
 def build_workflow_graph(
-    workflow_dict: dict,
+    workflow: Union[NormalizedNativeWorkflow, dict],
     get_tool_info: GetToolInfo,
 ) -> WorkflowGraph:
-    """Build a typed workflow graph from a native workflow dict."""
+    """Build a typed workflow graph from a native workflow dict or model."""
+    if isinstance(workflow, dict):
+        workflow = normalized_native(workflow)
+
     steps: Dict[str, ResolvedStep] = {}
-    raw_steps = workflow_dict.get("steps", {})
-
-    for step_id, step_def in raw_steps.items():
-        step_id_str = str(step_id)
-        step_type = step_def.get("type", "tool")
-
-        if step_type in ("data_input", "data_collection_input", "parameter_input"):
-            resolved = _resolve_input_step(step_id_str, step_def)
-        elif step_type == "tool":
-            resolved = _resolve_tool_step(step_id_str, step_def, get_tool_info)
-        elif step_type == "subworkflow":
-            resolved = _resolve_subworkflow_step(step_id_str, step_def, get_tool_info)
-        elif step_type == "pause":
+    for step_id_str, step in workflow.steps.items():
+        if step.type_ in (
+            NativeStepType.data_input,
+            NativeStepType.data_collection_input,
+            NativeStepType.parameter_input,
+        ):
+            resolved = _resolve_input_step(step_id_str, step)
+        elif step.type_ == NativeStepType.tool:
+            resolved = _resolve_tool_step(step_id_str, step, get_tool_info)
+        elif step.type_ == NativeStepType.subworkflow:
+            resolved = _resolve_subworkflow_step(step_id_str, step, get_tool_info)
+        elif step.type_ == NativeStepType.pause:
             resolved = ResolvedStep(step_id=step_id_str, tool_id=None, step_type="pause")
         else:
-            resolved = ResolvedStep(step_id=step_id_str, tool_id=None, step_type=step_type)
+            resolved = ResolvedStep(step_id=step_id_str, tool_id=None, step_type=step.type_.value)
 
         steps[step_id_str] = resolved
 
@@ -123,12 +130,12 @@ def build_workflow_graph(
     return WorkflowGraph(steps=steps, sorted_step_ids=sorted_ids)
 
 
-def _resolve_input_step(step_id: str, step_def: NativeStepDict) -> ResolvedStep:
+def _resolve_input_step(step_id: str, step: NormalizedNativeStep) -> ResolvedStep:
     """Resolve a data_input, data_collection_input, or parameter_input step."""
-    step_type = step_def.get("type", "tool")
-    tool_state = _get_tool_state(step_def)
+    step_type = step.type_.value
+    tool_state = step.tool_state
 
-    if step_type == "data_input":
+    if step.type_ == NativeStepType.data_input:
         output = ResolvedOutput(name="output", type="data")
         return ResolvedStep(
             step_id=step_id,
@@ -137,8 +144,8 @@ def _resolve_input_step(step_id: str, step_def: NativeStepDict) -> ResolvedStep:
             outputs={"output": output},
         )
 
-    elif step_type == "data_collection_input":
-        collection_type = tool_state.get("collection_type", "list") if tool_state else "list"
+    elif step.type_ == NativeStepType.data_collection_input:
+        collection_type = tool_state.get("collection_type", "list")
         output = ResolvedOutput(
             name="output",
             type="collection",
@@ -153,7 +160,7 @@ def _resolve_input_step(step_id: str, step_def: NativeStepDict) -> ResolvedStep:
         )
 
     else:  # parameter_input
-        param_type = tool_state.get("parameter_type", "text") if tool_state else "text"
+        param_type = tool_state.get("parameter_type", "text")
         output = ResolvedOutput(name="output", type=param_type)
         return ResolvedStep(
             step_id=step_id,
@@ -165,36 +172,34 @@ def _resolve_input_step(step_id: str, step_def: NativeStepDict) -> ResolvedStep:
 
 def _resolve_tool_step(
     step_id: str,
-    step_def: NativeStepDict,
+    step: NormalizedNativeStep,
     get_tool_info: GetToolInfo,
 ) -> ResolvedStep:
     """Resolve a tool step using its ParsedTool definition."""
-    tool_id = step_def.get("tool_id")
-    tool_version = step_def.get("tool_version")
-    connections = _parse_connections(step_def)
+    connections = _parse_connections(step)
 
     inputs: Dict[str, ResolvedInput] = {}
     outputs: Dict[str, ResolvedOutput] = {}
 
-    if tool_id:
+    if step.tool_id:
         try:
-            parsed_tool = get_tool_info.get_tool_info(tool_id, tool_version)
+            parsed_tool = get_tool_info.get_tool_info(step.tool_id, step.tool_version)
             if parsed_tool:
-                tool_state = _get_tool_state(step_def)
+                tool_state = step_tool_state(step)
                 inputs = _collect_inputs(parsed_tool.inputs, tool_state)
                 outputs = _collect_outputs(parsed_tool.outputs)
                 _resolve_rules_collection_types(outputs, tool_state)
-        except (KeyError, ValueError, json.JSONDecodeError) as e:
-            log.debug("Could not resolve tool %s: %s", tool_id, e)
+        except (KeyError, ValueError) as e:
+            log.debug("Could not resolve tool %s: %s", step.tool_id, e)
         except Exception:
-            log.warning("Unexpected error resolving tool %s", tool_id, exc_info=True)
+            log.warning("Unexpected error resolving tool %s", step.tool_id, exc_info=True)
 
-    if step_def.get("when") and "when" in connections:
+    if step.when and "when" in connections:
         inputs["when"] = ResolvedInput(name="when", state_path="when", type="boolean")
 
     return ResolvedStep(
         step_id=step_id,
-        tool_id=tool_id,
+        tool_id=step.tool_id,
         step_type="tool",
         inputs=inputs,
         outputs=outputs,
@@ -202,25 +207,23 @@ def _resolve_tool_step(
     )
 
 
-def _resolve_subworkflow_step(step_id: str, step_def: NativeStepDict, get_tool_info: GetToolInfo) -> ResolvedStep:
+def _resolve_subworkflow_step(step_id: str, step: NormalizedNativeStep, get_tool_info: GetToolInfo) -> ResolvedStep:
     """Resolve a subworkflow step by recursively building the inner workflow graph."""
-    connections = _parse_connections(step_def)
+    connections = _parse_connections(step)
 
     inner_graph = None
     output_map: Dict[str, Tuple[str, str]] = {}
     inputs: Dict[str, ResolvedInput] = {}
 
-    subworkflow = step_def.get("subworkflow")
-    if subworkflow and isinstance(subworkflow, dict):
+    if step.subworkflow is not None:
         try:
-            inner_graph = build_workflow_graph(subworkflow, get_tool_info)
-            output_map = _build_subworkflow_output_map(subworkflow)
-            # Synthesize inputs from inner graph's input steps
+            inner_graph = build_workflow_graph(step.subworkflow, get_tool_info)
+            output_map = _build_subworkflow_output_map(step.subworkflow)
             inputs = _synthesize_subworkflow_inputs(connections, inner_graph)
         except Exception:
             log.warning("Failed to build inner graph for subworkflow step %s", step_id, exc_info=True)
 
-    if step_def.get("when") and "when" in connections:
+    if step.when and "when" in connections:
         inputs["when"] = ResolvedInput(name="when", state_path="when", type="boolean")
 
     return ResolvedStep(
@@ -268,55 +271,38 @@ def _input_from_inner_step(inner_step: ResolvedStep, input_path: str) -> Resolve
         return ResolvedInput(name=input_path, state_path=input_path, type="data")
 
 
-def _build_subworkflow_output_map(subworkflow_dict: dict) -> Dict[str, Tuple[str, str]]:
+def _build_subworkflow_output_map(subworkflow: NormalizedNativeWorkflow) -> Dict[str, Tuple[str, str]]:
     """Build mapping from external output name to (inner_step_id, inner_output_name).
 
     Scans inner workflow steps for workflow_outputs declarations.
     The label (or fallback "{step_id}:{output_name}") becomes the externally visible name.
     """
     output_map: Dict[str, Tuple[str, str]] = {}
-    for step_id, step_def in subworkflow_dict.get("steps", {}).items():
-        for wo in step_def.get("workflow_outputs", []):
-            inner_output_name = wo.get("output_name")
-            if not inner_output_name:
+    for step_id, step in subworkflow.steps.items():
+        for wo in step.workflow_outputs:
+            if not wo.output_name:
                 continue
-            external_name = wo.get("label") or f"{step_id}:{inner_output_name}"
-            output_map[external_name] = (str(step_id), inner_output_name)
+            external_name = wo.label or f"{step_id}:{wo.output_name}"
+            output_map[external_name] = (str(step_id), wo.output_name)
     return output_map
 
 
-def _get_tool_state(step_def: NativeStepDict) -> Optional[dict]:
-    tool_state = step_def.get("tool_state")
-    if isinstance(tool_state, str):
-        try:
-            tool_state = json.loads(tool_state)
-        except (json.JSONDecodeError, TypeError):
-            return None
-    return tool_state
-
-
-def _parse_connections(step_def: NativeStepDict) -> Dict[str, List[ConnectionRef]]:
-    """Parse input_connections from a step dict."""
+def _parse_connections(step: NormalizedNativeStep) -> Dict[str, List[ConnectionRef]]:
+    """Parse input_connections from a normalized step."""
     result: Dict[str, List[ConnectionRef]] = {}
-    input_connections = step_def.get("input_connections", {})
-
-    for state_path, conn_info in input_connections.items():
-        if not isinstance(conn_info, list):
-            conn_info = [conn_info]
+    for state_path, conns in step.input_connections.items():
         refs = []
-        for conn in conn_info:
-            if isinstance(conn, dict) and "id" in conn:
-                subwf_step_id = conn.get("input_subworkflow_step_id")
-                refs.append(
-                    ConnectionRef(
-                        source_step=str(conn["id"]),
-                        output_name=conn.get("output_name", "output"),
-                        input_subworkflow_step_id=str(subwf_step_id) if subwf_step_id is not None else None,
-                    )
+        for conn in conns:
+            subwf_step_id = conn.input_subworkflow_step_id
+            refs.append(
+                ConnectionRef(
+                    source_step=str(conn.id),
+                    output_name=conn.output_name,
+                    input_subworkflow_step_id=str(subwf_step_id) if subwf_step_id is not None else None,
                 )
+            )
         if refs:
             result[state_path] = refs
-
     return result
 
 
@@ -365,13 +351,10 @@ def _collect_inputs(
 
         elif param.parameter_type == "gx_conditional":
             cond_state = tool_state.get(param.name, {}) if tool_state else {}
-            if isinstance(cond_state, str):
-                try:
-                    cond_state = json.loads(cond_state)
-                except (json.JSONDecodeError, TypeError):
-                    cond_state = {}
+            if not isinstance(cond_state, dict):
+                cond_state = {}
 
-            active_case = cond_state.get("__current_case__") if isinstance(cond_state, dict) else None
+            active_case = cond_state.get("__current_case__")
             whens = getattr(param, "whens", [])
 
             if active_case is not None:
@@ -394,19 +377,13 @@ def _collect_inputs(
         elif param.parameter_type == "gx_repeat":
             inner_params = getattr(param, "parameters", [])
             repeat_instances = tool_state.get(param.name, []) if tool_state else []
-            if isinstance(repeat_instances, str):
-                try:
-                    repeat_instances = json.loads(repeat_instances)
-                except (json.JSONDecodeError, TypeError):
-                    repeat_instances = []
-            if isinstance(repeat_instances, list) and repeat_instances:
+            if not isinstance(repeat_instances, list):
+                repeat_instances = []
+            if repeat_instances:
                 # Walk each repeat instance with indexed prefix: name_0, name_1, ...
                 for idx, instance_state in enumerate(repeat_instances):
-                    if isinstance(instance_state, str):
-                        try:
-                            instance_state = json.loads(instance_state)
-                        except (json.JSONDecodeError, TypeError):
-                            instance_state = {}
+                    if not isinstance(instance_state, dict):
+                        instance_state = {}
                     indexed_prefix = f"{param.name}_{idx}" if prefix is None else f"{prefix}|{param.name}_{idx}"
                     result.update(_collect_inputs(inner_params, instance_state, prefix=indexed_prefix))
             else:
@@ -415,11 +392,8 @@ def _collect_inputs(
 
         elif param.parameter_type == "gx_section":
             section_state = tool_state.get(param.name, {}) if tool_state else {}
-            if isinstance(section_state, str):
-                try:
-                    section_state = json.loads(section_state)
-                except (json.JSONDecodeError, TypeError):
-                    section_state = {}
+            if not isinstance(section_state, dict):
+                section_state = {}
             inner_params = getattr(param, "parameters", [])
             result.update(_collect_inputs(inner_params, section_state, prefix=state_path))
 
