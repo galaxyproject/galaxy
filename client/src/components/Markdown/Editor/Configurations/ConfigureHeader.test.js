@@ -85,7 +85,6 @@ describe("ConfigureHeader.vue", () => {
         const wrapper = mountComponent({ hasChanged: true });
         const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
         await cancelBtn.trigger("click");
-        await wrapper.vm.$nextTick();
         expect(wrapper.emitted("ok")).toBeTruthy();
         expect(wrapper.emitted("cancel")).toBeFalsy();
     });
@@ -97,7 +96,6 @@ describe("ConfigureHeader.vue", () => {
         const wrapper = mountComponent({ hasChanged: true });
         const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
         await cancelBtn.trigger("click");
-        await wrapper.vm.$nextTick();
         expect(wrapper.emitted("cancel")).toBeTruthy();
         expect(wrapper.emitted("ok")).toBeFalsy();
     });
@@ -109,7 +107,6 @@ describe("ConfigureHeader.vue", () => {
         const wrapper = mountComponent({ hasChanged: true });
         const cancelBtn = wrapper.findAllComponents(CellButton).at(1);
         await cancelBtn.trigger("click");
-        await wrapper.vm.$nextTick();
         expect(wrapper.emitted("ok")).toBeFalsy();
         expect(wrapper.emitted("cancel")).toBeFalsy();
     });
