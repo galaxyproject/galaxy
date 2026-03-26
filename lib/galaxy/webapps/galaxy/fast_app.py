@@ -15,6 +15,7 @@ from slowapi import (
 )
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from starlette.datastructures import MutableHeaders
 from starlette.middleware.cors import CORSMiddleware
 from tuspyserver import create_tus_router
 
@@ -116,14 +117,28 @@ class GalaxyCORSMiddleware(CORSMiddleware):
         return config_allows_origin(origin, self.config)
 
 
+class XFrameOptionsMiddleware:
+    def __init__(self, app, x_frame_options: str):
+        self.app = app
+        self.x_frame_options = x_frame_options
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_with_header(message):
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                headers.append("X-Frame-Options", self.x_frame_options)
+            await send(message)
+
+        await self.app(scope, receive, send_with_header)
+
+
 def add_galaxy_middleware(app: FastAPI, gx_app):
     if x_frame_options := gx_app.config.x_frame_options:
-
-        @app.middleware("http")
-        async def add_x_frame_options(request: Request, call_next):
-            response = await call_next(request)
-            response.headers["X-Frame-Options"] = x_frame_options
-            return response
+        app.add_middleware(XFrameOptionsMiddleware, x_frame_options=x_frame_options)
 
     GalaxyFileResponse.nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
     GalaxyFileResponse.apache_xsendfile = gx_app.config.apache_xsendfile
