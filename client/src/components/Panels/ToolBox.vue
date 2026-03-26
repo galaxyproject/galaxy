@@ -44,6 +44,7 @@ const { openGlobalUploadModal } = useGlobalUploadModal();
 const { routeToTool } = useToolRouting();
 
 const showToolRequestForm = ref(false);
+const toolRequestForm = ref<InstanceType<typeof ToolRequestForm> | null>(null);
 const showRequestToolButton = computed(
     () => !props.workflow && isConfigLoaded.value && config.value?.enable_tool_request_form && !isAnonymous.value,
 );
@@ -424,6 +425,11 @@ function onToggle() {
     showSections.value = !showSections.value;
 }
 
+function openToolRequestForm() {
+    showToolRequestForm.value = true;
+    toolRequestForm.value?.open();
+}
+
 /** Stores the localStorage state of collapsed labels for the favorites and recents sections in the `My Tools` panel. */
 const collapsedLabels = computed(() => {
     if (props.favoritesDefault) {
@@ -486,17 +492,13 @@ function onLabelToggle(labelId: string) {
             </section>
         </div>
         <div v-if="showRequestToolButton" class="px-2 pb-2">
-            <GButton
-                size="small"
-                class="w-100"
-                data-description="request tool button"
-                @click="showToolRequestForm = true">
+            <GButton size="small" class="w-100" data-description="request tool button" @click="openToolRequestForm">
                 <FontAwesomeIcon :icon="faWrench" class="mr-1" />
                 {{ localize("Request a Tool") }}
             </GButton>
         </div>
 
-        <ToolRequestForm :show.sync="showToolRequestForm" />
+        <ToolRequestForm ref="toolRequestForm" v-model:show="showToolRequestForm" />
 
         <div class="unified-panel-body">
             <div class="toolMenuContainer">

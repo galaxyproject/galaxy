@@ -46,6 +46,17 @@ describe("ToolRequestForm", () => {
         vi.restoreAllMocks();
     });
 
+    it("opens the dialog when show changes to true after mount", async () => {
+        const wrapper = await mountForm(false);
+
+        expect((wrapper.find("dialog").element as HTMLDialogElement).open).toBe(false);
+
+        await wrapper.setProps({ show: true });
+        await flushPromises();
+
+        expect((wrapper.find("dialog").element as HTMLDialogElement).open).toBe(true);
+    });
+
     it("renders form inputs inside the modal", async () => {
         const wrapper = await mountForm(true);
         expect(wrapper.find("#tool-request-name").exists()).toBe(true);
