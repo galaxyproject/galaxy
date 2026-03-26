@@ -36,6 +36,20 @@ def build_parser():
         metavar="FILE",
         help="Write the intermediate format2 workflow for inspection",
     )
+    parser.add_argument(
+        "--report-json",
+        nargs="?",
+        const="-",
+        metavar="FILE",
+        help="Write JSON report (- for stdout)",
+    )
+    parser.add_argument(
+        "--report-markdown",
+        nargs="?",
+        const="-",
+        metavar="FILE",
+        help="Write Markdown report (- for stdout)",
+    )
     return parser
 
 

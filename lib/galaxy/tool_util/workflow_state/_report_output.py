@@ -60,7 +60,7 @@ def emit_reports(
     has_explicit_report = options.report_json is not None or options.report_markdown is not None
 
     if options.report_json is not None:
-        serialized = json.dumps(json_data.model_dump(by_alias=True), indent=2)
+        serialized = json.dumps(json_data.model_dump(by_alias=True, mode="json"), indent=2)
         write_output(serialized, options.report_json)
 
     if options.report_markdown is not None:

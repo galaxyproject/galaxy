@@ -9,10 +9,6 @@ import json
 import logging
 import os
 import sys
-from dataclasses import (
-    dataclass,
-    field,
-)
 from enum import Enum
 from typing import (
     Any,
@@ -29,17 +25,38 @@ from gxformat2.to_native import (
     ensure_native,
     to_native,
 )
+from pydantic import (
+    BaseModel,
+    computed_field,
+    ConfigDict,
+    Field,
+)
 
 from ._cli_common import (
     setup_tool_info,
     ToolCacheOptions,
 )
+from ._report_models import (
+    CleanStepResult,
+    TreeReportBase,
+)
+from ._report_output import emit_reports
 from ._types import GetToolInfo
+from .clean import (
+    clean_stale_state,
+    strip_bookkeeping_from_workflow,
+)
 from .convert import (
     ConversionValidationFailure,
     convert_state_to_format2,
     make_convert_tool_state,
     make_encode_tool_state,
+)
+from .validation import _format
+from .workflow_tools import load_workflow
+from .workflow_tree import (
+    discover_workflows,
+    load_workflow_safe,
 )
 
 log = logging.getLogger(__name__)
@@ -61,21 +78,19 @@ class FailureClass(Enum):
     OTHER = "other"
 
 
-@dataclass
-class StepResult:
+class StepResult(BaseModel):
     step_id: str
-    tool_id: str | None
+    tool_id: str | None = None
     success: bool
     failure_class: FailureClass | None = None
     error: str | None = None
-    diffs: list[str] = field(default_factory=list)
+    diffs: list[str] = Field(default_factory=list)
 
 
-@dataclass
-class RoundTripResult:
+class RoundTripResult(BaseModel):
     workflow_name: str
     direction: str  # "native_to_format2" or "format2_to_native"
-    step_results: list[StepResult] = field(default_factory=list)
+    step_results: list[StepResult] = Field(default_factory=list)
 
     @property
     def success(self) -> bool:
@@ -114,10 +129,11 @@ class DiffSeverity(Enum):
     BENIGN = "benign"
 
 
-@dataclass(frozen=True)
-class BenignArtifact:
+class BenignArtifact(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     reason: str
-    proven_by: list[str] = field(default_factory=list)
+    proven_by: list[str] = Field(default_factory=list)
 
 
 class KnownBenignArtifacts:
@@ -159,8 +175,7 @@ class KnownBenignArtifacts:
     )
 
 
-@dataclass
-class StepDiff:
+class StepDiff(BaseModel):
     step_path: str
     key_path: str
     diff_type: DiffType
@@ -631,16 +646,25 @@ def full_roundtrip_native(
     return conversion_result, result.diffs
 
 
+class StepIdMappingResult(BaseModel):
+    """Result of step ID matching between original and roundtripped workflows."""
+
+    mapping: dict[str, str | None] = Field(default_factory=dict)
+    match_methods: dict[str, str] = Field(default_factory=dict)
+
+
 def _build_step_id_mapping(
     orig_workflow: NormalizedNativeWorkflow, after_workflow: NormalizedNativeWorkflow
-) -> dict[str, str | None]:
+) -> StepIdMappingResult:
     """Build a mapping from original step IDs to after step IDs using label+type matching.
 
     Falls back to positional ID matching when labels are absent or non-unique.
+    Returns both the mapping and the match method used for each step.
     """
     orig_steps = orig_workflow.steps
     after_steps = after_workflow.steps
     mapping: dict[str, str | None] = {}
+    match_methods: dict[str, str] = {}
     used_after_ids: set[str] = set()
 
     # First pass: match by label+type (strongest signal)
@@ -654,6 +678,7 @@ def _build_step_id_mapping(
                 continue
             if after_step.label == label and after_step.type_ == step_type:
                 mapping[orig_id] = after_id
+                match_methods[orig_id] = "label+type"
                 used_after_ids.add(after_id)
                 break
 
@@ -665,6 +690,7 @@ def _build_step_id_mapping(
         if after_step and orig_id not in used_after_ids:
             if after_step.type_ == orig_step.type_:
                 mapping[orig_id] = orig_id
+                match_methods[orig_id] = "same-id"
                 used_after_ids.add(orig_id)
 
     # Third pass: match remaining by tool_id+type (handles unlabeled steps that shifted position)
@@ -680,6 +706,7 @@ def _build_step_id_mapping(
         ]
         if len(candidates) == 1:
             mapping[orig_id] = candidates[0]
+            match_methods[orig_id] = "tool_id"
             used_after_ids.add(candidates[0])
             del unmatched_after[candidates[0]]
 
@@ -687,21 +714,31 @@ def _build_step_id_mapping(
     for orig_id in orig_steps:
         if orig_id not in mapping:
             mapping[orig_id] = None
+            match_methods[orig_id] = "unmatched"
 
-    return mapping
+    return StepIdMappingResult(mapping=mapping, match_methods=match_methods)
+
+
+class ComparisonResult(BaseModel):
+    """Result of comparing two workflows: diffs + the step ID mapping used."""
+
+    diffs: list[StepDiff] = Field(default_factory=list)
+    step_id_mapping: StepIdMappingResult = Field(default_factory=StepIdMappingResult)
 
 
 def compare_workflow_steps(
     orig_workflow: NormalizedNativeWorkflow,
     after_workflow: NormalizedNativeWorkflow,
     path_prefix: str = "",
-) -> list[StepDiff]:
+) -> ComparisonResult:
     """Compare steps between original and roundtripped workflows, recursing into subworkflows.
 
     Matches steps by label+type rather than step ID to handle gxformat2 step reordering.
+    Returns diffs and the step ID mapping used for comparison.
     """
     all_diffs: list[StepDiff] = []
-    id_mapping = _build_step_id_mapping(orig_workflow, after_workflow)
+    id_mapping_result = _build_step_id_mapping(orig_workflow, after_workflow)
+    id_mapping = id_mapping_result.mapping
 
     for orig_id, orig_step in orig_workflow.steps.items():
         step_path = f"{path_prefix}step {orig_id}" if not path_prefix else f"{path_prefix}/step {orig_id}"
@@ -735,8 +772,8 @@ def compare_workflow_steps(
                     )
                 )
                 continue
-            sub_diffs = compare_workflow_steps(orig_sub, after_sub, path_prefix=f"{step_path}:subworkflow/")
-            all_diffs.extend(sub_diffs)
+            sub_result = compare_workflow_steps(orig_sub, after_sub, path_prefix=f"{step_path}:subworkflow/")
+            all_diffs.extend(sub_result.diffs)
         elif orig_step.is_tool_step:
             all_diffs.extend(_compare_steps_with_id_mapping(orig_step, after_step, id_mapping, step_path))
 
@@ -744,7 +781,7 @@ def compare_workflow_steps(
 
     all_diffs.extend(compare_comments(orig_workflow, after_workflow, path_prefix, id_mapping))
 
-    return all_diffs
+    return ComparisonResult(diffs=all_diffs, step_id_mapping=id_mapping_result)
 
 
 def _compare_steps_with_id_mapping(
@@ -953,15 +990,17 @@ def _comment_sort_key(comment: dict) -> tuple:
 # -- Round-trip validation (CLI-facing) --
 
 
-@dataclass
-class RoundTripValidationResult:
+class RoundTripValidationResult(BaseModel):
     """Result of validating a workflow's native→format2→native round-trip."""
 
     workflow_path: str
-    format2_dict: dict | None = None
-    reimported_dict: dict | None = None
+    format2_dict: dict | None = Field(default=None, exclude=True)
+    reimported_dict: dict | None = Field(default=None, exclude=True)
     conversion_result: RoundTripResult | None = None
     diffs: list[StepDiff] | None = None
+    step_id_mapping: StepIdMappingResult | None = None
+    stale_clean_results: list[CleanStepResult] | None = None
+    original_dict: dict | None = Field(default=None, exclude=True)
     error: str | None = None
 
     @property
@@ -1035,19 +1074,15 @@ def roundtrip_validate(
     before conversion — these are keys left behind by older tool versions
     or Galaxy serialization bugs that would otherwise cause validation failures.
     """
-    from .clean import (
-        clean_stale_state,
-        strip_bookkeeping_from_workflow,
-    )
-
     result = RoundTripValidationResult(workflow_path=workflow_path)
+    result.original_dict = copy.deepcopy(workflow_dict)
 
-    if strip_bookkeeping:
+    if strip_bookkeeping or clean_stale:
         strip_bookkeeping_from_workflow(workflow_dict)
 
     if clean_stale:
-        strip_bookkeeping_from_workflow(workflow_dict)
-        clean_stale_state(workflow_dict, get_tool_info)
+        clean_result = clean_stale_state(workflow_dict, get_tool_info)
+        result.stale_clean_results = list(clean_result.step_results)
 
     workflow_name = os.path.basename(workflow_path) if workflow_path else ""
     orig_model = ensure_native(workflow_dict)
@@ -1073,8 +1108,55 @@ def roundtrip_validate(
         return result
 
     result.reimported_dict = native_prime.to_dict()
-    result.diffs = compare_workflow_steps(orig_model, native_prime)
+    comparison = compare_workflow_steps(orig_model, native_prime)
+    result.diffs = comparison.diffs
+    result.step_id_mapping = comparison.step_id_mapping
     return result
+
+
+# -- Report models --
+
+
+class RoundTripTreeReport(TreeReportBase):
+    """Tree-level report for roundtrip validation across a directory."""
+
+    options: dict[str, Any] = Field(default_factory=dict)
+    results: list[RoundTripValidationResult] = Field(default_factory=list)
+
+    def _workflow_results(self) -> list:
+        return self.results
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def summary(self) -> dict[str, int]:
+        ok = fail = error = benign_only = 0
+        for r in self.results:
+            status = r.status
+            if status == "ok":
+                if r.benign_diffs:
+                    benign_only += 1
+                else:
+                    ok += 1
+            elif status == "error":
+                error += 1
+            else:
+                fail += 1
+        return {"clean": ok, "benign_only": benign_only, "fail": fail, "error": error}
+
+    def format_summary_line(self) -> str:
+        s = self.summary
+        total = sum(s.values())
+        return (
+            f"Summary: {s['clean']} clean, {s['benign_only']} benign, "
+            f"{s['fail']} fail, {s['error']} error (total {total} workflows)"
+        )
+
+
+class SingleRoundTripReport(BaseModel):
+    """JSON shape for single-file roundtrip validation."""
+
+    workflow: str
+    result: RoundTripValidationResult
 
 
 # -- Options model --
@@ -1085,6 +1167,8 @@ class RoundTripValidateOptions(ToolCacheOptions):
     strict: bool = False
     output_native: str | None = None
     output_format2: str | None = None
+    report_json: str | None = None
+    report_markdown: str | None = None
 
 
 def _is_passing(result: RoundTripValidationResult, strict: bool) -> bool:
@@ -1101,30 +1185,34 @@ def _is_passing(result: RoundTripValidationResult, strict: bool) -> bool:
 # -- Formatters --
 
 
+def _format_conversion_failures(result: RoundTripValidationResult, prefix: str = "  ") -> list[str]:
+    """Format conversion failure details for a single result."""
+    lines: list[str] = []
+    if result.status == "conversion_fail" and result.conversion_result:
+        for sr in result.conversion_result.step_results:
+            if not sr.success:
+                fc = sr.failure_class.value if sr.failure_class else "unknown"
+                lines.append(f"{prefix}step {sr.step_id} ({sr.tool_id}): [{fc}] {sr.error}")
+    return lines
+
+
 def format_validation_text(
     results: list[RoundTripValidationResult],
     verbose: bool = False,
     strict: bool = False,
 ) -> str:
-    lines = []
+    lines: list[str] = []
     ok_count = sum(1 for r in results if _is_passing(r, strict))
     fail_count = len(results) - ok_count
 
     for r in results:
-        if strict:
-            lines.append(r.summary_line)
-        else:
-            lines.append(r.summary_line)
-        if verbose and r.status == "conversion_fail" and r.conversion_result:
-            for sr in r.conversion_result.step_results:
-                if not sr.success:
-                    fc = sr.failure_class.value if sr.failure_class else "unknown"
-                    lines.append(f"  step {sr.step_id} ({sr.tool_id}): [{fc}] {sr.error}")
-        if verbose and r.diffs:
-            for d in r.diffs:
+        lines.append(r.summary_line)
+        if verbose:
+            lines.extend(_format_conversion_failures(r))
+            for d in r.diffs or []:
                 lines.append(d.format_line(verbose=verbose))
-        if verbose and r.error:
-            lines.append(f"  {r.error}")
+            if r.error:
+                lines.append(f"  {r.error}")
 
     lines.append("---")
     ok_clean = sum(1 for r in results if _is_passing(r, strict) and not r.benign_diffs)
@@ -1137,6 +1225,34 @@ def format_validation_text(
     return "\n".join(lines)
 
 
+def format_roundtrip_markdown(report: RoundTripTreeReport) -> str:
+    """Render a roundtrip tree report as Markdown."""
+    s = report.summary
+    total = sum(s.values())
+    lines = [
+        f"# Roundtrip Validation: {report.root}",
+        "",
+        f"**{total} workflows:** {s['clean']} clean, {s['benign_only']} benign, "
+        f"{s['fail']} fail, {s['error']} error",
+        "",
+    ]
+    for r in report.results:
+        status_tag = r.status.upper()
+        benign = len(r.benign_diffs)
+        error_count = len(r.error_diffs)
+        detail = ""
+        if benign:
+            detail += f" ({benign} benign)"
+        if error_count:
+            detail += f" ({error_count} errors)"
+        lines.append(f"- **{r.workflow_path}**: {status_tag}{detail}")
+        for line in _format_conversion_failures(r, prefix="  - "):
+            lines.append(line)
+        for d in r.error_diffs:
+            lines.append(f"  - {d.step_path}: {d.description}")
+    return "\n".join(lines) + "\n"
+
+
 # -- Entry point --
 
 
@@ -1144,18 +1260,13 @@ def run_roundtrip_validate(options: RoundTripValidateOptions) -> int:
     """Run round-trip validation pipeline. Returns exit code."""
     tool_info = setup_tool_info(options)
 
-    is_dir = os.path.isdir(options.workflow_path)
-
-    if is_dir:
+    if os.path.isdir(options.workflow_path):
         return _run_tree_validation(options, tool_info)
     else:
         return _run_single_validation(options, tool_info)
 
 
-def _run_single_validation(options: "RoundTripValidateOptions", tool_info) -> int:
-    from .validation import _format
-    from .workflow_tools import load_workflow
-
+def _run_single_validation(options: RoundTripValidateOptions, tool_info) -> int:
     workflow = load_workflow(options.workflow_path)
     if _format(workflow) != "native":
         print("Error: round-trip validation requires a native .ga workflow", file=sys.stderr)
@@ -1168,7 +1279,6 @@ def _run_single_validation(options: "RoundTripValidateOptions", tool_info) -> in
         strip_bookkeeping=options.strip_bookkeeping,
     )
 
-    # Write intermediate artifacts if requested
     if options.output_format2 and result.format2_dict:
         _write_json(result.format2_dict, options.output_format2)
         print(f"Format2 written to {options.output_format2}", file=sys.stderr)
@@ -1177,17 +1287,22 @@ def _run_single_validation(options: "RoundTripValidateOptions", tool_info) -> in
         _write_json(result.reimported_dict, options.output_native)
         print(f"Reimported native written to {options.output_native}", file=sys.stderr)
 
-    print(format_validation_text([result], verbose=options.verbose, strict=options.strict))
+    text = format_validation_text([result], verbose=options.verbose, strict=options.strict)
+    json_data = SingleRoundTripReport(workflow=options.workflow_path, result=result)
+    tree_report = RoundTripTreeReport(root=options.workflow_path, results=[result])
+
+    emit_reports(
+        options=options,
+        json_data=json_data,
+        markdown_formatter=format_roundtrip_markdown,
+        markdown_report=tree_report,
+        text_content=text,
+        stderr_summary=result.summary_line,
+    )
     return 0 if _is_passing(result, options.strict) else 1
 
 
-def _run_tree_validation(options: "RoundTripValidateOptions", tool_info) -> int:
-    from .validation import _format
-    from .workflow_tree import (
-        discover_workflows,
-        load_workflow_safe,
-    )
-
+def _run_tree_validation(options: RoundTripValidateOptions, tool_info) -> int:
     workflows = discover_workflows(options.workflow_path, include_format2=False)
     results: list[RoundTripValidationResult] = []
 
@@ -1213,7 +1328,21 @@ def _run_tree_validation(options: "RoundTripValidateOptions", tool_info) -> int:
         )
         results.append(result)
 
-    print(format_validation_text(results, verbose=options.verbose, strict=options.strict))
+    text = format_validation_text(results, verbose=options.verbose, strict=options.strict)
+    tree_report = RoundTripTreeReport(
+        root=options.workflow_path,
+        options={"strict": options.strict, "strip_bookkeeping": options.strip_bookkeeping},
+        results=results,
+    )
+
+    emit_reports(
+        options=options,
+        json_data=tree_report,
+        markdown_formatter=format_roundtrip_markdown,
+        markdown_report=tree_report,
+        text_content=text,
+        stderr_summary=tree_report.format_summary_line(),
+    )
 
     has_failures = any(not _is_passing(r, options.strict) for r in results)
     return 1 if has_failures else 0

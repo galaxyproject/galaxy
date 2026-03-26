@@ -398,7 +398,7 @@ class TestComparison:
         after = {"param": "world"}
         diffs = compare_tool_state(orig, after)
         assert len(diffs) == 1
-        assert "param" in diffs[0]
+        assert diffs[0].key_path == "param"
 
 
 def _assert_roundtrip_passes(result: RoundTripResult):
