@@ -83,7 +83,6 @@
     <tool file="filters/mergeCols.xml" />
     <tool file="filters/convert_characters.xml" />
     <tool file="filters/CreateInterval.xml" />
-    <tool file="filters/cutWrapper.xml" />
     <tool file="filters/changeCase.xml" />
     <tool file="filters/pasteWrapper.xml" />
     <tool file="filters/remove_beginning.xml" />
