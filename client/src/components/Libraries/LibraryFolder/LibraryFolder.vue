@@ -330,6 +330,9 @@ export default {
             required: false,
         },
     },
+    setup() {
+        return { purify };
+    },
     data() {
         return {
             ...initialFolderState(),
@@ -349,8 +352,6 @@ export default {
                 faTimes,
                 faUnlock,
                 faUsers,
-                // Utilities
-                purify,
                 // Data
                 currentPage: 1,
                 sortBy: "name",
@@ -396,7 +397,6 @@ export default {
         this.getFolder(this.folder_id, this.page);
     },
     methods: {
-        purify,
         getFolder(folder_id, page) {
             this.currentFolderId = folder_id;
             this.currentPage = page;
