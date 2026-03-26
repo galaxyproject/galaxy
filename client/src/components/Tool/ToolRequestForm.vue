@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { BAlert, BFormGroup, BFormInput, BFormTextarea } from "bootstrap-vue";
+import { BAlert, BFormGroup, BFormInput, BFormSelect, BFormTextarea } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { submitToolRequest } from "@/api/toolRequestForm";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GModal from "@/components/BaseComponents/GModal.vue";
-import FormElement from "@/components/Form/FormElement.vue";
 
 const props = defineProps<{
     show: boolean;
@@ -170,19 +169,29 @@ async function submit() {
             </BFormGroup>
 
             <div class="d-flex gap-3 mb-3">
-                <FormElement
-                    id="tool-request-conda"
-                    v-model="condaAvailable"
-                    title="Conda package available?"
-                    type="boolean"
-                    :disabled="submitting" />
+                <BFormGroup label="Conda package available?" label-for="tool-request-conda" class="flex-fill mb-0">
+                    <BFormSelect
+                        id="tool-request-conda"
+                        v-model="condaAvailable"
+                        :options="[
+                            { value: null, text: 'Not specified' },
+                            { value: true, text: 'Yes' },
+                            { value: false, text: 'No' },
+                        ]"
+                        :disabled="submitting" />
+                </BFormGroup>
 
-                <FormElement
-                    id="tool-request-test-data"
-                    v-model="testDataAvailable"
-                    title="Test data available?"
-                    type="boolean"
-                    :disabled="submitting" />
+                <BFormGroup label="Test data available?" label-for="tool-request-test-data" class="flex-fill mb-0">
+                    <BFormSelect
+                        id="tool-request-test-data"
+                        v-model="testDataAvailable"
+                        :options="[
+                            { value: null, text: 'Not specified' },
+                            { value: true, text: 'Yes' },
+                            { value: false, text: 'No' },
+                        ]"
+                        :disabled="submitting" />
+                </BFormGroup>
             </div>
 
             <h6 v-localize class="font-weight-bold mb-2 mt-3">Requester Information</h6>
