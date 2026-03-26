@@ -54,12 +54,11 @@ defineExpose({ confirm });
             {{ message }}
         </BAlert>
         <template v-slot:footer>
-            <div class="button-container">
-                <GButton class="confirm-button" data-description="confirm dialog cancel" @click="handleResponse(false)">
+            <div class="confirm-dialog-button-container">
+                <GButton data-description="confirm dialog cancel" @click="handleResponse(false)">
                     {{ currentOptions.cancelText }}
                 </GButton>
                 <GButton
-                    class="confirm-button"
                     :color="currentOptions.okColor"
                     data-description="confirm dialog ok"
                     @click="handleResponse(true)">
@@ -72,13 +71,9 @@ defineExpose({ confirm });
 </template>
 
 <style scoped lang="scss">
-.button-container {
+.confirm-dialog-button-container {
     display: flex;
-    width: 100%;
-    gap: 0.5rem;
-}
-
-.confirm-button {
-    flex: 1;
+    justify-content: flex-end;
+    gap: var(--spacing-2);
 }
 </style>
