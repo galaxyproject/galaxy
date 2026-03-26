@@ -23,18 +23,19 @@ describe("useConfirmDialog", () => {
                 }),
         } as ConfirmDialogInstance);
 
+        let confirm: ReturnType<typeof useConfirmDialog>["confirm"] = () => Promise.resolve(null);
+
         const CallerComponent = defineComponent({
             setup() {
-                const { confirm } = useConfirmDialog();
-                return { confirm };
+                ({ confirm } = useConfirmDialog());
+                return {};
             },
             template: "<div />",
         });
 
         const wrapper = mount(CallerComponent as object, { localVue });
-        const vm = wrapper.vm as typeof wrapper.vm & ReturnType<typeof useConfirmDialog>;
 
-        const promise = vm.confirm("Are you sure?");
+        const promise = confirm("Are you sure?");
 
         wrapper.destroy(); // triggers onUnmounted → controller.abort()
 
