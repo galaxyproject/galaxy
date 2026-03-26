@@ -44,7 +44,6 @@ const { openUploadModal } = useUploadMethodModal();
 const { routeToTool } = useToolRouting();
 
 const showToolRequestForm = ref(false);
-const toolRequestForm = ref<InstanceType<typeof ToolRequestForm> | null>(null);
 const showRequestToolButton = computed(
     () => !props.workflow && isConfigLoaded.value && config.value?.enable_tool_request_form && !isAnonymous.value,
 );
@@ -388,7 +387,6 @@ function onToggle() {
 
 function openToolRequestForm() {
     showToolRequestForm.value = true;
-    toolRequestForm.value?.open();
 }
 
 /**
@@ -459,7 +457,7 @@ function onLabelToggle(labelId: string) {
             </GButton>
         </div>
 
-        <ToolRequestForm ref="toolRequestForm" v-model:show="showToolRequestForm" />
+        <ToolRequestForm :show.sync="showToolRequestForm" />
 
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
