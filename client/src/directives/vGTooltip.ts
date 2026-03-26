@@ -24,7 +24,7 @@ import {
     shift,
 } from "@floating-ui/dom";
 import purify from "dompurify";
-import type { DirectiveOptions, VNode } from "vue";
+import type { ObjectDirective, VNode } from "vue";
 
 import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, useDelayedAction } from "@/utils/tooltipTiming";
 
@@ -334,7 +334,7 @@ function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipSta
     }
 }
 
-export const vGTooltip: DirectiveOptions = {
+export const vGTooltip: ObjectDirective<HTMLElement> = {
     inserted(el, binding, vnode) {
         const modifiers = binding.modifiers || {};
         const isDanger = !!modifiers["v-danger"];
