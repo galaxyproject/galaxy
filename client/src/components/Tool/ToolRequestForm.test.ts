@@ -46,15 +46,15 @@ describe("ToolRequestForm", () => {
         vi.restoreAllMocks();
     });
 
-    it("opens the dialog when show changes to true after mount", async () => {
+    it("show=false means modal is not open, show=true means modal is open", async () => {
         const wrapper = await mountForm(false);
 
-        expect((wrapper.find("dialog").element as HTMLDialogElement).open).toBe(false);
+        expect(wrapper.findComponent(GModal).props("show")).toBe(false);
 
         await wrapper.setProps({ show: true });
         await flushPromises();
 
-        expect((wrapper.find("dialog").element as HTMLDialogElement).open).toBe(true);
+        expect(wrapper.findComponent(GModal).props("show")).toBe(true);
     });
 
     it("renders form inputs inside the modal", async () => {
