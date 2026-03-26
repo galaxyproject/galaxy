@@ -1,4 +1,3 @@
-import json
 from typing import (
     Any,
     cast,
@@ -6,10 +5,7 @@ from typing import (
     Union,
 )
 
-from gxformat2.normalized import (
-    NormalizedNativeStep,
-    NormalizedNativeWorkflow,
-)
+from gxformat2.normalized import NormalizedNativeWorkflow
 
 from galaxy.tool_util.parameters import (
     SelectParameterModel,
@@ -18,69 +14,28 @@ from galaxy.tool_util.parameters import (
 from galaxy.tool_util_models import ParsedTool
 from ._types import (
     GetToolInfo,
-    NativeStepDict,
-    NativeToolStateDict,
     NativeWorkflowDict,
     ToolInputs,
 )
 from ._util import (
+    StepLike,
     coerce_select_value,
     is_connected_or_runtime,
     is_replacement_param,
+    step_input_connections,
+    step_tool_id,
+    step_tool_state,
+    step_tool_version,
 )
 from ._walker import (
     SKIP_VALUE,
     walk_native_state,
 )
 
-StepLike = Union[NormalizedNativeStep, NativeStepDict]
-
-
-def _step_tool_id(step: StepLike) -> Optional[str]:
-    if isinstance(step, NormalizedNativeStep):
-        return step.tool_id
-    return cast(Optional[str], step.get("tool_id"))
-
-
-def _step_tool_version(step: StepLike) -> Optional[str]:
-    if isinstance(step, NormalizedNativeStep):
-        return step.tool_version
-    return cast(Optional[str], step.get("tool_version"))
-
-
-def _step_tool_state(step: StepLike) -> dict:
-    """Get parsed tool_state dict from a step (model or raw dict).
-
-    Always decodes double-encoded values — the model parses the outer JSON
-    but per-value strings like '"8"' still need decoding.
-    """
-    if isinstance(step, NormalizedNativeStep):
-        tool_state = dict(step.tool_state)
-    else:
-        tool_state = step.get("tool_state")
-        assert tool_state is not None
-        if isinstance(tool_state, str):
-            tool_state = json.loads(tool_state)
-    _decode_double_encoded_values(tool_state)
-    return tool_state
-
-
-def _step_input_connections(step: StepLike) -> dict:
-    if isinstance(step, NormalizedNativeStep):
-        return step.input_connections
-    return step.get("input_connections", {})
-
-
-def _step_as_dict(step: StepLike) -> NativeStepDict:
-    """Get a raw dict suitable for walk_native_state."""
-    if isinstance(step, NormalizedNativeStep):
-        return step.to_dict()
-    return step
-
 
 def validate_native_step_against(step: StepLike, parsed_tool: ToolInputs):
-    tool_state = _step_tool_state(step)
-    input_connections = _step_input_connections(step)
+    tool_state = step_tool_state(step)
+    input_connections = step_input_connections(step)
 
     def merge_and_validate(tool_input: ToolParameterT, value: Any, state_path: str):
         parameter_type = tool_input.parameter_type
@@ -146,26 +101,13 @@ def validate_native_step_against(step: StepLike, parsed_tool: ToolInputs):
         return SKIP_VALUE
 
     walk_native_state(
-        _step_as_dict(step),
+        input_connections,
         parsed_tool.inputs,
         tool_state,
         merge_and_validate,
         check_unknown_keys=True,
         allow_root_level_duplicates=True,
     )
-
-
-def _decode_double_encoded_values(state: dict):
-    """Decode per-value JSON strings in a double-encoded native tool_state dict."""
-    for key, value in list(state.items()):
-        if isinstance(value, str):
-            try:
-                decoded = json.loads(value)
-                state[key] = decoded
-            except (json.JSONDecodeError, TypeError):
-                pass  # genuinely a string value
-        if isinstance(state[key], dict):
-            _decode_double_encoded_values(state[key])
 
 
 # -- Public utilities --
@@ -178,10 +120,10 @@ def validate_step_native(step: StepLike, get_tool_info: GetToolInfo):
 
 
 def get_parsed_tool_for_native_step(step: StepLike, get_tool_info: GetToolInfo) -> Optional[ParsedTool]:
-    tool_id = _step_tool_id(step)
+    tool_id = step_tool_id(step)
     if not tool_id:
         return None
-    tool_version = _step_tool_version(step)
+    tool_version = step_tool_version(step)
     return get_tool_info.get_tool_info(tool_id, tool_version)
 
 
@@ -202,12 +144,12 @@ def validate_workflow_native(
                 validate_step_native(step_def, get_tool_info)
 
 
-def native_tool_state(step: StepLike) -> NativeToolStateDict:
-    return _step_tool_state(step)
+def native_tool_state(step: StepLike) -> dict:
+    return step_tool_state(step)
 
 
 def native_connections_for(step: StepLike, parameter: ToolParameterT, prefix: Optional[str]):
     parameter_name = parameter.name
     state_path = parameter_name if prefix is None else f"{prefix}|{parameter_name}"
-    input_connections = _step_input_connections(step)
-    return input_connections.get(state_path)
+    connections = step_input_connections(step)
+    return connections.get(state_path)

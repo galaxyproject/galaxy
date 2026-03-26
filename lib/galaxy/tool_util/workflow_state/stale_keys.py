@@ -32,6 +32,7 @@ from ._types import (
     NativeStepDict,
     ToolInputs,
 )
+from ._util import decode_double_encoded_values
 from ._walker import (
     _NATIVE_BOOKKEEPING_KEYS,
     _test_value_matches_discriminator,
@@ -88,7 +89,7 @@ def classify_stale_keys(
             tool_state = json.loads(tool_state_raw)
         except (json.JSONDecodeError, TypeError):
             return []
-        _decode_nested(tool_state)
+        decode_double_encoded_values(tool_state)
     elif isinstance(tool_state_raw, dict):
         tool_state = tool_state_raw
     else:
@@ -96,19 +97,6 @@ def classify_stale_keys(
     result: list[StaleKey] = []
     _classify_recursive(tool_state, list(parsed_tool.inputs), result, prefix="")
     return result
-
-
-def _decode_nested(state: dict):
-    """Decode JSON-encoded values in place for classification."""
-    for key, value in list(state.items()):
-        if isinstance(value, str):
-            try:
-                decoded = json.loads(value)
-                state[key] = decoded
-            except (json.JSONDecodeError, TypeError):
-                pass
-        if isinstance(state[key], dict):
-            _decode_nested(state[key])
 
 
 def _classify_recursive(

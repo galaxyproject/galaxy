@@ -874,8 +874,14 @@ def compare_comments(
     Comments are matched by content rather than id, since reimport may renumber ids.
     child_steps references are remapped through id_mapping to account for step reordering.
     """
-    orig_comments = [c.model_dump(by_alias=True) if hasattr(c, "model_dump") else c for c in orig_workflow.comments]
-    after_comments = [c.model_dump(by_alias=True) if hasattr(c, "model_dump") else c for c in after_workflow.comments]
+    orig_comments = [
+        c.model_dump(by_alias=True, exclude_none=True) if hasattr(c, "model_dump") else c
+        for c in orig_workflow.comments
+    ]
+    after_comments = [
+        c.model_dump(by_alias=True, exclude_none=True) if hasattr(c, "model_dump") else c
+        for c in after_workflow.comments
+    ]
     diffs: list[StepDiff] = []
     prefix = f"{path_prefix}comments" if not path_prefix else f"{path_prefix}/comments"
 
@@ -924,7 +930,7 @@ def _normalize_comment(comment: dict, id_mapping: dict[str, str | None] | None =
         val = normalized.get(key)
         if isinstance(val, (list, tuple)):
             normalized[key] = list(val)
-    if "child_steps" in normalized:
+    if "child_steps" in normalized and normalized["child_steps"] is not None:
         if id_mapping:
             reverse_map = {int(v): int(k) for k, v in id_mapping.items() if v is not None}
             normalized["child_steps"] = sorted(

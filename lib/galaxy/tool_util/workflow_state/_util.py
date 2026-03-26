@@ -1,5 +1,73 @@
 """Shared utility functions for workflow_state internals."""
 
+import json
+from typing import (
+    cast,
+    Optional,
+    Union,
+)
+
+from gxformat2.normalized import NormalizedNativeStep
+
+from ._types import NativeStepDict
+
+StepLike = Union[NormalizedNativeStep, NativeStepDict]
+
+
+def step_tool_id(step: StepLike) -> Optional[str]:
+    if isinstance(step, NormalizedNativeStep):
+        return step.tool_id
+    return cast(Optional[str], step.get("tool_id"))
+
+
+def step_tool_version(step: StepLike) -> Optional[str]:
+    if isinstance(step, NormalizedNativeStep):
+        return step.tool_version
+    return cast(Optional[str], step.get("tool_version"))
+
+
+def step_tool_state(step: StepLike) -> dict:
+    """Get parsed tool_state dict from a step (model or raw dict).
+
+    Always decodes double-encoded values — the model parses the outer JSON
+    but per-value strings like '"8"' still need decoding.
+    """
+    if isinstance(step, NormalizedNativeStep):
+        tool_state = dict(step.tool_state)
+    else:
+        tool_state = step.get("tool_state")
+        assert tool_state is not None
+        if isinstance(tool_state, str):
+            tool_state = json.loads(tool_state)
+    decode_double_encoded_values(tool_state)
+    return tool_state
+
+
+def step_input_connections(step: StepLike) -> dict:
+    if isinstance(step, NormalizedNativeStep):
+        return step.input_connections
+    return step.get("input_connections", {})
+
+
+def step_as_dict(step: StepLike) -> NativeStepDict:
+    """Get a raw dict from a step (model or raw dict)."""
+    if isinstance(step, NormalizedNativeStep):
+        return step.to_dict()
+    return step
+
+
+def decode_double_encoded_values(state: dict):
+    """Decode per-value JSON strings in a double-encoded native tool_state dict."""
+    for key, value in list(state.items()):
+        if isinstance(value, str):
+            try:
+                decoded = json.loads(value)
+                state[key] = decoded
+            except (json.JSONDecodeError, TypeError):
+                pass  # genuinely a string value
+        if isinstance(state[key], dict):
+            decode_double_encoded_values(state[key])
+
 
 def coerce_select_value(value) -> str:
     """Coerce a select value to string for comparison against option values.

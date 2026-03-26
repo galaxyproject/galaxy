@@ -19,8 +19,6 @@ Format2WorkflowDict = Dict[str, Any]
 AnyWorkflowDict = Union[NativeWorkflowDict, Format2WorkflowDict]
 WorkflowFormat = Literal["gxformat2", "native"]
 NativeStepDict = Dict[str, Any]
-Format2StepDict = Dict[str, Any]
-NativeToolStateDict = Dict[str, Any]
 Format2StateDict = Dict[str, Any]
 
 

@@ -31,16 +31,15 @@ from ._walker import (
     walk_native_state,
 )
 from ._util import (
+    StepLike,
     coerce_select_value,
     is_connected_or_runtime,
     is_replacement_param,
+    step_input_connections,
+    step_tool_state,
 )
 from .validation_native import (
-    StepLike,
-    _step_as_dict,
-    _step_input_connections,
     get_parsed_tool_for_native_step,
-    native_tool_state,
     validate_native_step_against,
 )
 
@@ -179,8 +178,8 @@ def _inject_connected_value(state: dict, connection_path: str):
 
 def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInputs) -> Format2State:
     format2_in: Format2InputsDictT = {}
-    root_tool_state = native_tool_state(native_step)
-    input_connections = _step_input_connections(native_step)
+    root_tool_state = step_tool_state(native_step)
+    input_connections = step_input_connections(native_step)
 
     def convert_leaf(tool_input: ToolParameterT, value: Any, state_path: str):
         parameter_type = tool_input.parameter_type
@@ -210,7 +209,7 @@ def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInpu
             return _convert_scalar_value(parameter_type, tool_input.name, value, tool_input)
         return SKIP_VALUE
 
-    format2_state = walk_native_state(_step_as_dict(native_step), parsed_tool.inputs, root_tool_state, convert_leaf)
+    format2_state = walk_native_state(input_connections, parsed_tool.inputs, root_tool_state, convert_leaf)
     return Format2State(
         **{
             "state": format2_state,
@@ -244,6 +243,8 @@ def _convert_scalar_value(parameter_type: str, parameter_name: str, value, tool_
                 return value.split(",") if value else []
             elif isinstance(value, list):
                 return [coerce_select_value(v) for v in value]
+            else:
+                return [coerce_select_value(value)]
         return coerce_select_value(value)
     elif parameter_type == "gx_data_column":
         if is_replacement_param(value):

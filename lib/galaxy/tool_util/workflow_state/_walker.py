@@ -27,7 +27,6 @@ from galaxy.tool_util.parameters import (
     validate_explicit_conditional_test_value,
 )
 from galaxy.tool_util_models.parameters import SectionParameterModel
-from ._types import NativeStepDict
 
 
 def _collect_all_parameter_names(tool_inputs: List[ToolParameterT]) -> frozenset:
@@ -76,7 +75,7 @@ _NATIVE_BOOKKEEPING_KEYS = frozenset(
 
 
 def walk_native_state(
-    step: NativeStepDict,
+    input_connections: dict,
     tool_inputs: List[ToolParameterT],
     state: dict,
     leaf_callback,  # (tool_input: ToolParameterT, value: Any, state_path: str) -> Any | _SkipValue
@@ -134,7 +133,7 @@ def walk_native_state(
             else:
                 all_params = [conditional.test_parameter] + list(target_when.parameters)
             nested = walk_native_state(
-                step,
+                input_connections,
                 all_params,
                 conditional_state,
                 leaf_callback,
@@ -159,7 +158,6 @@ def walk_native_state(
                         raise Exception(f"Invalid repeat state found {value!r} for repeat {parameter_name}")
                 else:
                     raise Exception(f"Invalid repeat state found {value!r} for repeat {parameter_name}")
-            input_connections = step.get("input_connections", {})
             repeat_instance_connects = repeat_inputs_to_array(state_path, input_connections)
             max_instances = max(len(repeat_state), len(repeat_instance_connects))
             while len(repeat_state) < max_instances:
@@ -168,7 +166,7 @@ def walk_native_state(
             for i, instance in enumerate(repeat_state):
                 instance_prefix = f"{state_path}_{i}"
                 nested = walk_native_state(
-                    step,
+                    input_connections,
                     repeat.parameters,
                     instance,
                     leaf_callback,
@@ -187,7 +185,7 @@ def walk_native_state(
                     raise Exception(f"Invalid section state found {value!r} for section {parameter_name}")
                 continue
             nested = walk_native_state(
-                step,
+                input_connections,
                 section.parameters,
                 section_state,
                 leaf_callback,
