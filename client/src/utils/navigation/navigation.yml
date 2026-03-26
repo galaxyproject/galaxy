@@ -640,15 +640,15 @@ registration:
 
 window_manager:
   selectors:
-    _: '.scratchbook-window'
-    title: '.scratchbook-window .scratchbook-window-title'
-    close_button: '.scratchbook-window .scratchbook-window-close'
-    header: '.scratchbook-window .scratchbook-window-header'
-    body: '.scratchbook-window .scratchbook-window-body'
-    iframe: '.scratchbook-window iframe'
-    focused: '.scratchbook-window.focused'
-    focused_title: '.scratchbook-window.focused .scratchbook-window-title'
-    focus_overlay: '.scratchbook-window .iframe-focus-overlay'
+    _: '.window-manager-window'
+    title: '.window-manager-window .window-manager-window-title'
+    close_button: '.window-manager-window .window-manager-window-close'
+    header: '.window-manager-window .window-manager-window-header'
+    body: '.window-manager-window .window-manager-window-body'
+    iframe: '.window-manager-window iframe'
+    focused: '.window-manager-window.focused'
+    focused_title: '.window-manager-window.focused .window-manager-window-title'
+    focus_overlay: '.window-manager-window .iframe-focus-overlay'
 
 tool_form:
   selectors:

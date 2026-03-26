@@ -320,7 +320,7 @@ async function deleteCurrentChat() {
     }
 }
 
-function popOutToScratchbook() {
+function popOutToWindowManager() {
     const Galaxy = getGalaxyInstance();
     const path = currentChatId.value ? `/chatgxy/${currentChatId.value}` : "/chatgxy";
     const url = `${path}?compact=true`;
@@ -349,7 +349,7 @@ function popOutToScratchbook() {
                 <button
                     class="btn btn-sm btn-outline-primary"
                     title="Open in floating window"
-                    @click="popOutToScratchbook">
+                    @click="popOutToWindowManager">
                     <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                 </button>
             </div>

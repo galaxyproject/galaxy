@@ -43,7 +43,7 @@
             <BroadcastsOverlay />
             <DragGhost />
             <template v-if="showMasthead">
-                <ScratchbookWindow v-for="win in windowManagerStore.windows" :key="win.id" :window="win" />
+                <WindowManagerWindow v-for="win in windowManagerStore.windows" :key="win.id" :window="win" />
             </template>
             <TourRunner v-if="currentTour?.id" :key="currentTour.id" :tour-id="currentTour.id" />
         </template>
@@ -74,16 +74,16 @@ import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import DragGhost from "@/components/DragGhost.vue";
 import Masthead from "@/components/Masthead/Masthead.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
-import ScratchbookWindow from "@/components/Scratchbook/ScratchbookWindow.vue";
 import TourRunner from "@/components/Tour/TourRunner.vue";
 import UploadModal from "@/components/Upload/UploadModal.vue";
+import WindowManagerWindow from "@/components/WindowManager/WindowManagerWindow.vue";
 
 export default {
     components: {
         Alert,
         DragGhost,
         Masthead,
-        ScratchbookWindow,
+        WindowManagerWindow,
         Toast,
         ConfirmDialog,
         UploadModal,

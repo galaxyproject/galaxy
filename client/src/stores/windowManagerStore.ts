@@ -5,7 +5,7 @@ import { ref } from "vue";
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 
-const STORAGE_KEY = "galaxy-scratchbook-windows";
+const STORAGE_KEY = "galaxy-window-manager-windows";
 
 export interface WindowState {
     id: string;

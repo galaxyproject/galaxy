@@ -163,38 +163,43 @@ onBeforeUnmount(() => {
 
 <template>
     <div
-        class="scratchbook-window"
+        class="window-manager-window"
         :class="{ focused: isFocused, maximized: window.maximized, minimized: window.minimized }"
         :style="windowStyle"
         @mousedown="onFocus">
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-        <div class="scratchbook-window-header" @mousedown.left="window.minimized ? onMinimize() : onDragStart($event)">
-            <span class="scratchbook-window-title">{{ window.title }}</span>
+        <div
+            class="window-manager-window-header"
+            @mousedown.left="window.minimized ? onMinimize() : onDragStart($event)">
+            <span class="window-manager-window-title">{{ window.title }}</span>
             <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-            <div class="scratchbook-window-controls" @mousedown.stop>
-                <button class="scratchbook-window-btn" aria-label="Minimize" @click="onMinimize">&#8722;</button>
-                <button class="scratchbook-window-btn" aria-label="Maximize" @click="onMaximize">
+            <div class="window-manager-window-controls" @mousedown.stop>
+                <button class="window-manager-window-btn" aria-label="Minimize" @click="onMinimize">&#8722;</button>
+                <button class="window-manager-window-btn" aria-label="Maximize" @click="onMaximize">
                     <span v-if="window.maximized">&#9724;</span>
                     <span v-else>&#9723;</span>
                 </button>
-                <button class="scratchbook-window-btn scratchbook-window-close" aria-label="Close" @click="onClose">
+                <button
+                    class="window-manager-window-btn window-manager-window-close"
+                    aria-label="Close"
+                    @click="onClose">
                     &#10005;
                 </button>
             </div>
         </div>
         <template v-if="!window.minimized">
-            <div class="scratchbook-window-body">
+            <div class="window-manager-window-body">
                 <iframe :src="iframeSrc" :title="window.title" />
                 <div v-if="!isFocused" class="iframe-focus-overlay" @mousedown="onFocus" />
             </div>
             <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-            <div v-if="!window.maximized" class="scratchbook-resize-handle" @mousedown.left="onResizeStart" />
+            <div v-if="!window.maximized" class="window-manager-resize-handle" @mousedown.left="onResizeStart" />
         </template>
     </div>
 </template>
 
 <style scoped lang="scss">
-.scratchbook-window {
+.window-manager-window {
     position: fixed;
     display: flex;
     flex-direction: column;
@@ -213,14 +218,14 @@ onBeforeUnmount(() => {
     &.minimized {
         border-radius: 0.25rem 0.25rem 0 0;
 
-        .scratchbook-window-header {
+        .window-manager-window-header {
             cursor: pointer;
             border-bottom: none;
         }
     }
 }
 
-.scratchbook-window-header {
+.window-manager-window-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -231,7 +236,7 @@ onBeforeUnmount(() => {
     user-select: none;
 }
 
-.scratchbook-window-title {
+.window-manager-window-title {
     font-weight: 600;
     font-size: 0.875rem;
     color: var(--color-grey-900);
@@ -241,13 +246,13 @@ onBeforeUnmount(() => {
     flex: 1;
 }
 
-.scratchbook-window-controls {
+.window-manager-window-controls {
     display: flex;
     gap: 0.25rem;
     margin-left: 0.5rem;
 }
 
-.scratchbook-window-btn {
+.window-manager-window-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -267,13 +272,13 @@ onBeforeUnmount(() => {
         color: var(--color-grey-900);
     }
 
-    &.scratchbook-window-close:hover {
+    &.window-manager-window-close:hover {
         background: var(--color-red-100);
         color: var(--color-red-600);
     }
 }
 
-.scratchbook-window-body {
+.window-manager-window-body {
     flex: 1;
     position: relative;
     overflow: hidden;
@@ -291,7 +296,7 @@ onBeforeUnmount(() => {
     z-index: 1;
 }
 
-.scratchbook-resize-handle {
+.window-manager-resize-handle {
     position: absolute;
     right: 0;
     bottom: 0;
