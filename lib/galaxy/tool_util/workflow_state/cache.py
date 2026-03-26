@@ -22,7 +22,7 @@ from .toolshed_tool_info import (
 
 log = logging.getLogger(__name__)
 
-
+# TODO: move all the imports to the top of the file please.
 # -- Options models --
 
 

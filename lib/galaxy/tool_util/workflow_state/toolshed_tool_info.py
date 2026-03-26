@@ -44,6 +44,7 @@ GALAXY_URL_ENV_VAR = "GALAXY_URL"
 DEFAULT_GALAXY_URL = "https://usegalaxy.org"
 
 
+# TODO: is there code is galaxy.util to do this?
 def parse_toolshed_tool_id(tool_id: str) -> Optional[Tuple[str, str, Optional[str]]]:
     """Parse a toolshed tool_id into (toolshed_url, trs_tool_id, tool_version).
 

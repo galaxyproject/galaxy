@@ -121,6 +121,7 @@ def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs):
         linked_model = WorkflowStepLinkedToolState.parameter_model_for(parsed_tool.inputs)
         linked_model.model_validate(linked_state)
     except Exception as e:
+        # TODO: no - remove this and discuss with me (@jmchilton) what breaks please.
         # If the only errors are ConnectedValue type mismatches, that's a model gap not a conversion error
         error_str = str(e)
         if "ConnectedValue" in error_str:
@@ -129,6 +130,7 @@ def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs):
             raise
 
 
+# TODO: this needs to be state aware please.
 def _state_has_replacement_params(state) -> bool:
     """Check if any value in a (possibly nested) state dict is a replacement parameter."""
     if isinstance(state, dict):
@@ -144,6 +146,7 @@ def _state_has_replacement_params(state) -> bool:
     return False
 
 
+# TODO: what is the closest piece of code to this in the gxformat2 codebase - we should reuse that please.
 def _inject_connected_value(state: dict, connection_path: str):
     """Inject a ConnectedValue marker into a structured state dict.
 
@@ -384,6 +387,7 @@ def _test_value_matches(test_value, discriminator) -> bool:
 # -- Callback factories for gxformat2 protocol --
 
 
+# TODO: update these docs strings against the latest gxformat2 please
 def make_convert_tool_state(get_tool_info: GetToolInfo):
     """Create a convert_tool_state callback for gxformat2's from_galaxy_native().
 

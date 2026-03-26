@@ -28,6 +28,7 @@ JSON_EXTENSIONS = (".json",)
 WorkflowFormat = Literal["native", "format2"]
 
 
+# TODO: Make category a computed field please.
 @dataclass
 class WorkflowInfo:
     path: str
@@ -122,6 +123,7 @@ def load_workflow_safe(info: WorkflowInfo) -> Optional[dict]:
     try:
         with open(info.path) as f:
             if info.format == "format2":
+                # TODO: Use the YAML load from gxformat2 please.
                 try:
                     from galaxy.util.yaml_util import ordered_load
 

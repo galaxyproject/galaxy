@@ -4,6 +4,8 @@ Validates each connection's type compatibility, resolves step map-over
 states, and computes output collection types during topological traversal.
 """
 
+# TODO: Give this type a name and reuse Dict[str, Dict[str, CollectionTypeOrSentinel]]
+
 from dataclasses import (
     dataclass,
     field,
@@ -429,9 +431,6 @@ def _resolve_collection_type_source(
     return ct
 
 
-# -- Type conversion helpers --
-
-
 def _output_to_type(output: ResolvedOutput) -> CollectionTypeOrSentinel:
     """Convert a ResolvedOutput to a CollectionTypeOrSentinel."""
     if output.type == "collection":
@@ -458,9 +457,6 @@ def _type_description(t: CollectionTypeOrSentinel) -> str:
         return "collection (any type)"
     assert isinstance(t, CollectionTypeDescription)
     return f"collection<{t.collection_type}>"
-
-
-# -- Pydantic report conversion --
 
 
 def _sentinel_to_collection_type(t: CollectionTypeOrSentinel) -> Optional[str]:

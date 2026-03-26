@@ -354,6 +354,7 @@ def _collect_inputs(
             if not isinstance(cond_state, dict):
                 cond_state = {}
 
+            # TODO: definitely don't do this - we shouldn't be using __current_case__ anywhere in this code.
             active_case = cond_state.get("__current_case__")
             whens = getattr(param, "whens", [])
 
@@ -452,6 +453,7 @@ def _resolve_rules_collection_types(
             continue
 
         try:
+            # TODO: Move this to the top
             from galaxy.util.rules_dsl import RuleSet
 
             rule_set = RuleSet(rules_dict)

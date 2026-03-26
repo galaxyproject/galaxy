@@ -182,6 +182,7 @@ def _classify_conditional(
             active_when = when
 
     if active_when is None:
+        # TODO: We shouldn't be using __current_case__ anywhere in this code. We have abstractions for this or a walker?
         recorded_case = cond_state.get("__current_case__")
         if isinstance(recorded_case, int) and 0 <= recorded_case < len(conditional.whens):
             active_when = conditional.whens[recorded_case]

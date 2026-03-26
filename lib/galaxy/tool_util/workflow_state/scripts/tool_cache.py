@@ -1,5 +1,7 @@
 """Thin CLI entry point for galaxy-tool-cache."""
 
+import argparse
+
 from .._cli_common import (
     add_common_args,
     add_tool_source_arg,
@@ -22,8 +24,6 @@ from ..cache import (
 
 
 def build_parser():
-    import argparse
-
     parser = argparse.ArgumentParser(
         prog="galaxy-tool-cache",
         description="Manage local cache of ToolShed tool metadata for workflow validation.",

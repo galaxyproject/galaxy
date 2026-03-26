@@ -19,6 +19,7 @@ def build_parser():
     parser.add_argument("--strict", action="store_true", help="Treat skips (missing tool defs) as failures")
     parser.add_argument("--summary", action="store_true", help="Show only summary counts")
     parser.add_argument("--connections", action="store_true", help="Validate inter-step connection type compatibility")
+    # TODO: make --report-json and --report-markdown injectable via something in _cli_common and reuse in other scripts
     parser.add_argument(
         "--report-json",
         nargs="?",

@@ -1,7 +1,7 @@
 """Shared tree walker for native Galaxy workflow tool state.
 
 Handles the recursive traversal of native tool state dicts, including:
-- Conditional branch selection (with __current_case__ fallback)
+- Conditional branch selection
 - Repeat instance expansion from input_connections
 - Section/container JSON string decoding
 - Unknown key checking for validation
@@ -74,6 +74,7 @@ _NATIVE_BOOKKEEPING_KEYS = frozenset(
 )
 
 
+# TODO: Come up with a read type of leaf_callback
 def walk_native_state(
     input_connections: dict,
     tool_inputs: List[ToolParameterT],
@@ -203,6 +204,8 @@ def walk_native_state(
     return output
 
 
+# TODO: we need to be much more targetted here I think - can we let those exceptions bubble up on IWC
+# workflows?
 def as_dict(value) -> Optional[dict]:
     if isinstance(value, dict):
         return value

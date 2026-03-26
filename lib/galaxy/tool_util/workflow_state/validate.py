@@ -495,10 +495,12 @@ def format_connection_markdown(report: ConnectionValidationReport) -> str:
 
 def _run_connection_validation(options: ValidateOptions, tool_info) -> int:
     """Run connection validation and print results."""
+    # TODO: move this to the top
     from .connection_validation import validate_connections_report
 
     is_dir = os.path.isdir(options.workflow_path)
     if is_dir:
+        # TODO: Move this to the top
         from .workflow_tree import (
             discover_workflows,
             load_workflow_safe,
@@ -540,6 +542,10 @@ def run_validate(options: ValidateOptions) -> int:
 
     is_dir = os.path.isdir(options.workflow_path)
 
+    # TODO: This feels like asymetric - we should do the single or multiple dance with
+    # between state and connection validation in some symmetric way. My guess is we should
+    # do the tree walking out here and push the connection check lower into whatever we use
+    # validate each workflow individually.
     if is_dir:
         report = validate_tree(options.workflow_path, tool_info, policy=policy)
         exit_code = _emit_tree_results(options, report)

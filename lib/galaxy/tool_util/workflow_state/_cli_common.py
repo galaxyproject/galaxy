@@ -131,6 +131,7 @@ def cli_main(parser: argparse.ArgumentParser, options_cls, run_fn, argv=None):
 
 def setup_tool_info(options: ToolCacheOptions) -> "ToolShedGetToolInfo":
     """Configure logging, build tool info, optionally populate cache."""
+    # TODO: Move this to the top
     from .cache import (
         build_tool_info,
         populate_cache,
