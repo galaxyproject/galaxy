@@ -1915,9 +1915,9 @@ steps:
         """
         editor = self.components.workflow_editor
         self.sleep_for(self.wait_types.UX_RENDER)
-        if not editor.state_upgrade_modal.is_absent:
-            editor.modal_button_continue.wait_for_and_click()
-            editor.state_upgrade_modal.wait_for_absent()
+        if editor.state_upgrade_modal.is_displayed:
+            editor.state_upgrade_modal_close.wait_for_and_click()
+            editor.state_upgrade_modal.wait_for_absent_or_hidden()
 
     def workflow_editor_destroy_connection(self, sink):
         editor = self.components.workflow_editor
