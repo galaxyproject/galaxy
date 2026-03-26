@@ -268,8 +268,8 @@ onBeforeUnmount(() => {
     }
 
     &.scratchbook-window-close:hover {
-        background: var(--color-red-100, #fee2e2);
-        color: var(--color-red-600, #dc2626);
+        background: var(--color-red-100);
+        color: var(--color-red-600);
     }
 }
 
