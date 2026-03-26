@@ -1,7 +1,10 @@
 <tool id="__SAMPLE_SHEET_TO_TABULAR__"
       name="Sample sheet to tabular"
       version="1.0.0">
-  <description></description>
+  <description>to extract sample sheet metadata as a table</description>
+  <macros>
+      <import>model_operation_macros.xml</import>
+  </macros>
   <edam_operations>
     <edam_operation>operation_3359</edam_operation>
   </edam_operations>
@@ -45,13 +48,81 @@ cp '$out_config' '$output'
 Synopsis
 ========
 
-Takes a sample sheet dataset collection and converts the sample sheet metadata into a tabular dataset.
+Exports the metadata from a sample sheet collection as a tab-separated table.
 
-The output is a tab-separated file where each row corresponds to an element in the sample sheet collection.
-The first column contains the element identifier, followed by columns for each metadata field defined in the sample sheet.
+========================
+What is a sample sheet?
+========================
 
-When "Include column headers" is enabled, the first row will contain the column names, with "element_identifier"
-as the first column followed by the names from the sample sheet column definitions.
+A sample sheet is a special type of Galaxy collection that pairs each dataset with structured metadata — such as replicate number, treatment condition, or tissue type. It works like a regular list collection but with an attached spreadsheet of per-sample information.
+
+===========
+Description
+===========
+
+This tool reads the column definitions and row values from a sample sheet collection and writes them to a tabular dataset. The first column is always the element identifier (sample name). The remaining columns match the metadata fields defined in the sample sheet. The datasets in the collection are not affected — only the metadata is extracted.
+
+When **Include column headers** is enabled, the first row will contain the column names, with ``element_identifier`` as the first column followed by the names from the sample sheet column definitions.
+
+You can customize how special values are represented in the output using the replacement parameters for null values, empty strings, and boolean values.
+
+========
+Examples
+========
+
+**Basic extraction (without headers)**
+
+Given a sample sheet with three samples and two metadata columns (``replicate`` of type int, ``treatment`` of type string)::
+
+ Sample Sheet: "RNA-seq experiment"
+
+   sample1.fastq  |  replicate=1, treatment="control"
+   sample2.fastq  |  replicate=2, treatment="treated"
+   sample3.fastq  |  replicate=3, treatment="control"
+
+The output tabular file contains::
+
+ sample1    1    control
+ sample2    2    treated
+ sample3    3    control
+
+-------
+
+**With headers enabled**
+
+Enabling **Include column headers** adds a header row::
+
+ element_identifier    replicate    treatment
+ sample1               1            control
+ sample2               2            treated
+ sample3               3            control
+
+-------
+
+**Replacement parameters**
+
+If some metadata values are null or boolean, you can control their text representation:
+
+- *Replace 'null' values with*: converts missing values (default: empty string, or use ``-`` or ``NA``)
+- *Replace boolean 'true'/'false' values with*: controls how booleans are written (default: ``TRUE`` / ``FALSE``)
+
+For example, with null replacement set to ``NA``::
+
+ element_identifier    replicate    is_paired
+ sample1               1            TRUE
+ sample2               NA           FALSE
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/sample_sheet_to_tabular.svg
+  :alt: Sample sheet to tabular dataset
+  :width: 500
+
+-------
+
+.. class:: infomark
+
+This tool creates a new tabular dataset (not a collection operation), so normal quota usage applies.
 
   ]]></help>
 </tool>
