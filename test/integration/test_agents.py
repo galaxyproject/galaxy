@@ -567,7 +567,7 @@ class TestMCPServerSmoke(IntegrationTestCase):
         result = self._run_async(_list())
         assert not result.is_error
         data = result.data
-        assert "histories" in data or isinstance(data, dict)
+        assert "histories" in data
 
     def test_mcp_search_tools(self):
         """search_tools() executes and returns a well-formed response."""

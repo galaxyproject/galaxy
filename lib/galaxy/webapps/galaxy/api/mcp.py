@@ -28,6 +28,7 @@ logging.getLogger("docket.worker").setLevel(logging.WARNING)
 
 def get_mcp_url_builder(fallback_base_url: str):
     """Get a URL builder, using the current HTTP request if available."""
+    # Private API -- no public alternative for request-aware URL building in fastmcp yet
     from fastmcp.server.http import _current_http_request
 
     from galaxy.webapps.galaxy.api import UrlBuilder
@@ -431,5 +432,5 @@ def get_mcp_app(gx_app):
     mcp_app = mcp.http_app()
     mcp_app.state.mcp_server = mcp
 
-    logger.info("MCP server initialized with 27 tools (Streamable HTTP)")
+    logger.info("MCP server initialized (Streamable HTTP)")
     return mcp_app

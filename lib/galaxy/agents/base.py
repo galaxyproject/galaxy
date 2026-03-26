@@ -298,7 +298,7 @@ class BaseGalaxyAgent(ABC):
                 )
 
                 if not is_retryable or attempt == max_retries:
-                    raise e
+                    raise
 
                 delay = base_delay * (2**attempt) + random.uniform(0, 0.5)
 
