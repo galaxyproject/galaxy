@@ -1,4 +1,4 @@
-"""Thin CLI entry point for galaxy-workflow-roundtrip-validate."""
+"""Thin CLI entry point for gxwf-roundtrip-validate."""
 
 from .._cli_common import (
     build_base_parser,
@@ -12,7 +12,7 @@ from ..roundtrip import (
 
 def build_parser():
     parser = build_base_parser(
-        prog="galaxy-workflow-roundtrip-validate",
+        prog="gxwf-roundtrip-validate",
         description="Validate native→format2→native round-trip for Galaxy workflows.",
         workflow_path_help="Path to native .ga file or directory (auto-detected)",
     )

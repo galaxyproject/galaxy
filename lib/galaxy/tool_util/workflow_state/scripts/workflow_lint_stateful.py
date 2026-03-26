@@ -1,25 +1,35 @@
-"""Thin CLI entry point for gxwf-state-validate."""
+"""Thin CLI entry point for gxwf-lint-stateful."""
 
 from .._cli_common import (
     build_base_parser,
     cli_main,
 )
-from ..validate import (
-    run_validate,
-    ValidateOptions,
+from ..lint_stateful import (
+    LintStatefulOptions,
+    run_lint_stateful,
 )
 
 
 def build_parser():
     parser = build_base_parser(
-        prog="gxwf-state-validate",
-        description="Validate workflow tool_state against tool definitions.",
+        prog="gxwf-lint-stateful",
+        description="Lint Galaxy workflows: structural checks + tool state validation.",
         stale_key_mode="validate",
     )
     parser.add_argument("--strict", action="store_true", help="Treat skips (missing tool defs) as failures")
     parser.add_argument("--summary", action="store_true", help="Show only summary counts")
     parser.add_argument("--connections", action="store_true", help="Validate inter-step connection type compatibility")
-    # TODO: make --report-json and --report-markdown injectable via something in _cli_common and reuse in other scripts
+    parser.add_argument(
+        "--skip-best-practices",
+        action="store_true",
+        default=False,
+        help="Skip best practice checks (annotation, creator, license, step metadata)",
+    )
+    parser.add_argument(
+        "--training-topic",
+        required=False,
+        help="If this is a training workflow, specify a training topic",
+    )
     parser.add_argument(
         "--report-json",
         nargs="?",
@@ -40,7 +50,7 @@ def build_parser():
 
 
 def main(argv=None):
-    cli_main(build_parser(), ValidateOptions, run_validate, argv)
+    cli_main(build_parser(), LintStatefulOptions, run_lint_stateful, argv)
 
 
 if __name__ == "__main__":

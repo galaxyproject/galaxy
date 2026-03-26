@@ -5,6 +5,12 @@ import os
 import pytest
 
 from galaxy.tool_util.workflow_state.scripts.tool_cache import build_parser
+from galaxy.tool_util.workflow_state.scripts.workflow_lint_stateful import (
+    build_parser as build_lint_stateful_parser,
+)
+from galaxy.tool_util.workflow_state.scripts.workflow_to_native_stateful import (
+    build_parser as build_to_native_parser,
+)
 from galaxy.tool_util.workflow_state.toolshed_tool_info import (
     _cache_key,
     CacheIndex,
@@ -420,3 +426,86 @@ class TestGalaxySource:
         result = _add_tool(tool_info, "param_value_from_file", "0.1.0", source="galaxy")
         assert result is True
         assert tool_info.has_cached("param_value_from_file", "0.1.0")
+
+
+# --- gxwf-to-native-stateful CLI parser ---
+
+
+class TestToNativeStatefulCLIParser:
+    def test_basic(self):
+        parser = build_to_native_parser()
+        args = parser.parse_args(["test.gxwf.yml"])
+        assert args.workflow_path == "test.gxwf.yml"
+
+    def test_output(self):
+        parser = build_to_native_parser()
+        args = parser.parse_args(["test.gxwf.yml", "-o", "output.ga"])
+        assert args.output == "output.ga"
+
+    def test_strict(self):
+        parser = build_to_native_parser()
+        args = parser.parse_args(["test.gxwf.yml", "--strict"])
+        assert args.strict is True
+
+    def test_populate_cache(self):
+        parser = build_to_native_parser()
+        args = parser.parse_args(["test.gxwf.yml", "--populate-cache", "--tool-source", "galaxy"])
+        assert args.populate_cache is True
+        assert args.tool_source == "galaxy"
+
+    def test_verbose(self):
+        parser = build_to_native_parser()
+        args = parser.parse_args(["-v", "test.gxwf.yml"])
+        assert args.verbose is True
+
+
+# --- gxwf-lint-stateful CLI parser ---
+
+
+class TestLintStatefulCLIParser:
+    def test_basic(self):
+        parser = build_lint_stateful_parser()
+        args = parser.parse_args(["test.ga"])
+        assert args.workflow_path == "test.ga"
+
+    def test_strict(self):
+        parser = build_lint_stateful_parser()
+        args = parser.parse_args(["test.ga", "--strict"])
+        assert args.strict is True
+
+    def test_skip_best_practices(self):
+        parser = build_lint_stateful_parser()
+        args = parser.parse_args(["test.ga", "--skip-best-practices"])
+        assert args.skip_best_practices is True
+
+    def test_training_topic(self):
+        parser = build_lint_stateful_parser()
+        args = parser.parse_args(["test.ga", "--training-topic", "assembly"])
+        assert args.training_topic == "assembly"
+
+    def test_connections(self):
+        parser = build_lint_stateful_parser()
+        args = parser.parse_args(["test.ga", "--connections"])
+        assert args.connections is True
+
+    def test_report_json(self):
+        parser = build_lint_stateful_parser()
+        args = parser.parse_args(["test.ga", "--report-json", "out.json"])
+        assert args.report_json == "out.json"
+
+    def test_report_markdown_stdout(self):
+        parser = build_lint_stateful_parser()
+        args = parser.parse_args(["test.ga", "--report-markdown"])
+        assert args.report_markdown == "-"
+
+    def test_stale_key_policy(self):
+        parser = build_lint_stateful_parser()
+        args = parser.parse_args(["test.ga", "--allow", "bookkeeping", "--deny", "stale-root-keys"])
+        assert args.allow == ["bookkeeping"]
+        assert args.deny == ["stale-root-keys"]
+
+    def test_populate_cache(self):
+        parser = build_lint_stateful_parser()
+        args = parser.parse_args(["test.ga", "--populate-cache", "--tool-source", "galaxy"])
+        assert args.populate_cache is True
+        assert args.tool_source == "galaxy"

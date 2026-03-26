@@ -1,4 +1,4 @@
-"""Thin CLI entry point for galaxy-workflow-clean-stale-state."""
+"""Thin CLI entry point for gxwf-state-clean."""
 
 from .._cli_common import (
     build_base_parser,
@@ -12,7 +12,7 @@ from ..clean import (
 
 def build_parser():
     parser = build_base_parser(
-        prog="galaxy-workflow-clean-stale-state",
+        prog="gxwf-state-clean",
         description="Strip stale tool_state keys from native Galaxy workflows.",
         stale_key_mode="clean",
         workflow_path_help="Path to native .ga file or directory (auto-detected)",

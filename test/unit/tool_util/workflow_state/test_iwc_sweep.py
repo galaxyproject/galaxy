@@ -21,10 +21,12 @@ from galaxy.tool_util.workflow_state.cache import (
     populate_cache,
 )
 from galaxy.tool_util.workflow_state.clean import clean_stale_state
-from gxformat2.normalized import ensure_native
 
 from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
+from galaxy.tool_util.workflow_state.lint_stateful import run_structural_lint
 from galaxy.tool_util.workflow_state.roundtrip import roundtrip_validate
+from galaxy.tool_util.workflow_state.to_native_stateful import convert_to_native_stateful
+from galaxy.tool_util.workflow_state.validate import validate_workflow_cli
 from galaxy.tool_util.workflow_state.validation_native import validate_workflow_native
 from galaxy.tool_util.workflow_state.workflow_tools import load_workflow
 from galaxy.tool_util_models import ParsedTool
@@ -114,3 +116,35 @@ class TestIWCSweepRoundtrip:
         workflow = load_workflow(wf_path)
         result = roundtrip_validate(workflow, tool_info, workflow_path=wf_path)
         assert result.ok, f"Roundtrip failed for {wf_path}: {result.error or result.error_diffs}"
+
+
+@skip_unless_environ(IWC_ENV)
+class TestIWCSweepToNativeStateful:
+    """convert_to_native_stateful on every IWC .ga exported to format2 first."""
+
+    @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
+    def test_to_native_stateful(self, wf_path, tool_info, tmp_path):
+        workflow = ensure_native(wf_path)
+        f2_result = export_workflow_to_format2(workflow, tool_info)
+        # Write format2 to temp file so convert_to_native_stateful can load it
+        import json
+
+        f2_path = str(tmp_path / "workflow.gxwf.yml")
+        with open(f2_path, "w") as f:
+            json.dump(f2_result.format2_dict, f, indent=2)
+        result = convert_to_native_stateful(f2_path, tool_info)
+        assert result.native is not None
+        assert result.native_dict.get("a_galaxy_workflow") == "true"
+
+
+@skip_unless_environ(IWC_ENV)
+class TestIWCSweepLintStateful:
+    """run_structural_lint + validate_workflow_cli on every IWC .ga workflow."""
+
+    @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
+    def test_lint_stateful(self, wf_path, tool_info):
+        workflow_dict = load_workflow(wf_path)
+        lint_ctx = run_structural_lint(workflow_dict)
+        assert lint_ctx is not None
+        results, precheck = validate_workflow_cli(workflow_dict, tool_info)
+        assert results is not None
