@@ -1023,7 +1023,7 @@ workflow_editor:
     select_datatype:
       type: xpath
       selector: >
-        //li[@class="multiselect__element"]//span[text()="${datatype}"]
+        //div[@data-label='Change datatype']//li[contains(@class,"multiselect__element")]//span[normalize-space()="${datatype}"]
     add_tags_button:
       type: xpath
       selector: >

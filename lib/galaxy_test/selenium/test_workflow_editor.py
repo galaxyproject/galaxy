@@ -760,7 +760,9 @@ steps:
         save_button.wait_for_and_click()
         # Will trigger confirmation modal
         self.components.confirm_dialog.ok_button.wait_for_and_click()
+        self.components.confirm_dialog._.wait_for_absent_or_hidden()
         # Make connection valid again
+        editor.configure_output(output="out_file1").wait_for_and_click()
         editor.change_datatype.wait_for_and_click()
         editor.select_datatype_text_search.wait_for_and_send_keys("tabular")
         editor.select_datatype(datatype="tabular").wait_for_and_click()
