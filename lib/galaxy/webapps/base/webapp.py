@@ -200,7 +200,7 @@ class WebApplication(base.WebApplication):
                 directories=paths, module_directory=galaxy_app.config.template_cache_path, collection_size=500
             )
 
-    def handle_controller_exception(self, e, trans, method, **kwargs):
+    def handle_controller_exception(self, e, trans, method, kwargs):
         if not isinstance(e, HTTPException):
             # We're still logging too much here but at least it's not logging webob.exc.HTTPFound and friends
             log.debug(f"Encountered exception in controller method: {method}", exc_info=True)
