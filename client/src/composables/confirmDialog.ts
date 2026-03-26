@@ -40,11 +40,6 @@ export interface ConfirmDialogOptions {
      */
     cancelText?: string;
     /**
-     * Footer button size: 'small', 'medium, 'large'
-     * @default undefined (medium)
-     */
-    buttonSize?: ComponentSize;
-    /**
      * An AbortSignal that cancels the dialog when aborted.
      * Injected automatically by `useConfirmDialog` on caller unmount.
      */
