@@ -17,6 +17,7 @@ export function useAccessibleHover(
     const isHovering = ref(false);
     let previousElement: HTMLElement | null = null;
     const enterDelay = useDelayedAction(options?.showDelayMs ?? DEFAULT_TOOLTIP_HOVER_DELAY_MS);
+    const focusHandler = options?.delayFocusEnter ? enterWithDelay : enter;
 
     function enter() {
         enterDelay.clear();
@@ -53,7 +54,7 @@ export function useAccessibleHover(
             if (previousElement) {
                 exit();
                 previousElement.removeEventListener("mouseenter", enterWithDelay);
-                previousElement.removeEventListener("focus", enter);
+                previousElement.removeEventListener("focus", focusHandler);
                 previousElement.removeEventListener("mouseleave", exit);
                 previousElement.removeEventListener("blur", exit);
                 previousElement.removeEventListener("keydown", keydown);
@@ -61,7 +62,7 @@ export function useAccessibleHover(
 
             if (element) {
                 element.addEventListener("mouseenter", enterWithDelay);
-                element.addEventListener("focus", options?.delayFocusEnter ? enterWithDelay : enter);
+                element.addEventListener("focus", focusHandler);
                 element.addEventListener("mouseleave", exit);
                 element.addEventListener("blur", exit);
                 element.addEventListener("keydown", keydown);
