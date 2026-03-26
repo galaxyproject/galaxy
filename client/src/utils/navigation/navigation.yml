@@ -1185,7 +1185,7 @@ admin:
       filter_link_by_tool: '.job-filter-link-tool-id[data-tool-id="${tool_id}"]'
       filter_link_by_handler: '.job-filter-link-handler[data-handler="${handler}"]'
       filter_link_by_runner: '.job-filter-link-runner[data-runner="${runner}"]'
-      filter_query: '.index-filter-query'
+      filter_query: '#job-search .search-query'
 
   toolshed:
     selectors:

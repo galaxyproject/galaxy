@@ -128,7 +128,11 @@
             :table-caption="runningTableCaption"
             :no-items-message="runningNoJobsMessage"
             :loading="loading"
-            :busy="busy">
+            :busy="busy"
+            @tool-clicked="(toolId) => appendTagFilter('tool', toolId)"
+            @runner-clicked="(runner) => appendTagFilter('runner', runner)"
+            @handler-clicked="(handler) => appendTagFilter('handler', handler)"
+            @user-clicked="(user) => appendTagFilter('user', user)">
             <template v-slot:head(selected)>
                 <b-form-checkbox
                     v-model="allSelected"
@@ -191,15 +195,19 @@ export default {
         const filter = ref("");
         const showAdvanced = ref(false);
 
-        const filterClass = new Filtering({
-            user: { placeholder: "user email", type: String, handler: contains("user"), menuItem: true },
-            handler: { placeholder: "handler", type: String, handler: contains("handler"), menuItem: true },
-            runner: { placeholder: "job runner", type: String, handler: contains("runner"), menuItem: true },
-            tool: { placeholder: "tool id", type: String, handler: contains("tool"), menuItem: true },
-        });
+        const filterClass = new Filtering(
+            {
+                user: { placeholder: "user email", type: String, handler: contains("user"), menuItem: true },
+                handler: { placeholder: "handler", type: String, handler: contains("handler"), menuItem: true },
+                runner: { placeholder: "job runner", type: String, handler: contains("runner"), menuItem: true },
+                tool: { placeholder: "tool id", type: String, handler: contains("tool"), menuItem: true },
+            },
+            undefined,
+            false,
+        );
 
         function appendTagFilter(filterName, filterVal) {
-            filter.value = filterClass.setFilterValue(filter.value, filterName, filterVal.toLowerCase());
+            filter.value = filterClass.setFilterValue(filter.value, filterName, `'${filterVal}'`);
         }
 
         return {
