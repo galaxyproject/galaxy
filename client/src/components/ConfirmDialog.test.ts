@@ -1,10 +1,8 @@
-import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { nextTick } from "vue";
 
 import ConfirmDialog from "./ConfirmDialog.vue";
-
-const localVue = getLocalVue();
 
 type ConfirmDialogVM = InstanceType<typeof ConfirmDialog>;
 
@@ -13,7 +11,7 @@ describe("ConfirmDialog", () => {
     let vm: ConfirmDialogVM;
 
     beforeEach(() => {
-        wrapper = mount(ConfirmDialog as object, { localVue, attachTo: document.body });
+        wrapper = mount(ConfirmDialog as object, { attachTo: document.body });
         vm = wrapper.vm as unknown as ConfirmDialogVM;
     });
 
@@ -24,29 +22,25 @@ describe("ConfirmDialog", () => {
 
     it("resolves true when OK is clicked", async () => {
         const promise = vm.confirm("Are you sure?");
-        await localVue.nextTick();
         await wrapper.find('[data-description="confirm dialog ok"]').trigger("click");
         expect(await promise).toBe(true);
     });
 
     it("resolves false when Cancel is clicked", async () => {
         const promise = vm.confirm("Are you sure?");
-        await localVue.nextTick();
         await wrapper.find('[data-description="confirm dialog cancel"]').trigger("click");
         expect(await promise).toBe(false);
     });
 
     it("resolves null when dialog is dismissed (closed without choosing)", async () => {
         const promise = vm.confirm("Are you sure?");
-        await localVue.nextTick();
         wrapper.find("dialog").element.dispatchEvent(new Event("close"));
-        await localVue.nextTick();
         expect(await promise).toBe(null);
     });
 
     it("renders message and respects custom options", async () => {
         vm.confirm("Delete this item?", { title: "Confirm deletion", okText: "Delete" });
-        await localVue.nextTick();
+        await nextTick();
         const dialogText = wrapper.find("dialog").text();
         expect(dialogText).toContain("Delete this item?");
         expect(dialogText).toContain("Confirm deletion");
@@ -55,7 +49,6 @@ describe("ConfirmDialog", () => {
 
     it("resolves first pending promise as false on concurrent call", async () => {
         const first = vm.confirm("First message");
-        await localVue.nextTick();
         const second = vm.confirm("Second message");
         expect(await first).toBe(false);
         // resolve second cleanly
@@ -66,7 +59,6 @@ describe("ConfirmDialog", () => {
     it("resolves false when abort signal fires", async () => {
         const controller = new AbortController();
         const promise = vm.confirm("Are you sure?", { signal: controller.signal });
-        await localVue.nextTick();
         controller.abort();
         expect(await promise).toBe(false);
     });
