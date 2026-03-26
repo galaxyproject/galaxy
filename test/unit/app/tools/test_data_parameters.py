@@ -49,8 +49,8 @@ class TestDataToolParameter(BaseParameterTestCase):
         assert field["options"]["hda"][0]["name"] == "hda1"
 
     def test_field_display_hidden_hdas_only_if_selected(self):
-        hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
-        hda2 = MockHistoryDatasetAssociation(name="hda2", id=2)
+        hda1 = self._new_hda(name="hda1")
+        hda2 = self._new_hda(name="hda2")
         hda1.visible = False
         hda2.visible = False
         self.stub_active_datasets(hda1, hda2)
@@ -59,8 +59,8 @@ class TestDataToolParameter(BaseParameterTestCase):
         assert field["options"]["hda"][0]["name"] == "(hidden) hda2"
 
     def test_field_display_deleted_hdas_only_if_selected(self):
-        hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
-        hda2 = MockHistoryDatasetAssociation(name="hda2", id=2)
+        hda1 = self._new_hda(name="hda1")
+        hda2 = self._new_hda(name="hda2")
         hda1.visible = False
         hda2.deleted = True
         self.stub_active_datasets(hda1, hda2)
@@ -141,10 +141,13 @@ class TestDataToolParameter(BaseParameterTestCase):
         self.stub_active_datasets(hda1)
         assert hda1 == self.param.get_initial_value(self.trans, {}), hda1
 
-    def _new_hda(self):
+    def _new_hda(self, name="Test Dataset"):
         hda = model.HistoryDatasetAssociation()
         hda.visible = True
+        hda.name = name
+        hda.extension = "txt"
         hda.dataset = model.Dataset()
+        hda.dataset.state = model.Dataset.states.OK
         session = self.app.model.context
         session.add(hda)
         session.commit()
@@ -184,8 +187,8 @@ class TestDataToolParameter(BaseParameterTestCase):
 
 
 class MockHistoryDatasetAssociation:
-    """Fake HistoryDatasetAssociation stubbed out for testing matching and
-    stuff like that.
+    """Fake HistoryDatasetAssociation that stubs find_conversion_destination
+    so conversion tests can run without a datatype registry.
     """
 
     def __init__(self, test_dataset=None, name="Test Dataset", id=1):
