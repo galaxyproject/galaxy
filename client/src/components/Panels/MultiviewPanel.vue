@@ -35,9 +35,9 @@ const pinnedHistoryCount = computed(() => {
 
 const pinRecentTitle = computed(() => {
     if (pinnedHistoryCount.value > 0) {
-        return localize("Reset selection to show 4 most recently updated histories instead");
+        return localize("Reset selection to show most recently updated histories instead");
     } else {
-        return localize("Currently showing 4 most recently updated histories in Multiview");
+        return localize("Currently showing most recently updated histories in Multiview");
     }
 });
 
@@ -70,11 +70,11 @@ async function createAndPin() {
     }
 }
 
-/** Reset to _default_ state; showing 4 latest updated histories */
+/** Reset to _default_ state; showing latest updated histories */
 function pinRecent() {
     historyStore.clearPinnedHistories();
     Toast.info(
-        "Showing the 4 most recently updated histories in Multiview. Pin histories to History Multiview by selecting them in the panel.",
+        "Showing the most recently updated histories in Multiview. Pin histories to History Multiview by selecting them in the panel.",
         "History Multiview",
     );
 }
