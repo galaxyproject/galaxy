@@ -53,7 +53,7 @@ class TestHistoryMultiView(SeleniumTestCase):
         self.prepare_multi_history_view(method)
         # The multi-history view is incredibly hard to navigate around (in UI and testing)
         # We just create a new history with the dropped element here.
-        drop_target = self.find_element_by_selector("div.history-picker-box.bottom-picker")
+        drop_target = self.find_element_by_selector("div.history-picker-box.select-picker")
         dataset_element = self.history_panel_wait_for_hid_state(list_of_list_source_hid, None).wait_for_visible()
         ac = self.action_chains()
         ac = ac.move_to_element(dataset_element).click_and_hold()
