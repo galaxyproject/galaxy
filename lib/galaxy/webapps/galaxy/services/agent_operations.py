@@ -5,7 +5,10 @@ Delegates to the Galaxy service layer for validation, permission checks, and pag
 """
 
 import logging
-from typing import Any
+from typing import (
+    Any,
+    Optional,
+)
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.hdas import HDAManager
@@ -50,21 +53,21 @@ class AgentOperationsManager:
     def __init__(self, app: MinimalManagerApp, trans: ProvidesUserContext):
         self.app = app
         self.trans = trans
-        self._tools_service = None
-        self._histories_service = None
-        self._jobs_service = None
-        self._datasets_service = None
-        self._workflows_service = None
-        self._invocations_service = None
-        self._hda_manager = None
-        self._dataset_collections_service = None
+        self._tools_service: Optional[Any] = None
+        self._histories_service: Optional[Any] = None
+        self._jobs_service: Optional[Any] = None
+        self._datasets_service: Optional[Any] = None
+        self._workflows_service: Optional[Any] = None
+        self._invocations_service: Optional[Any] = None
+        self._hda_manager: Optional[HDAManager] = None
+        self._dataset_collections_service: Optional[Any] = None
 
     def _encode_id(self, value: int) -> str:
         return self.trans.security.encode_id(value)
 
     def _search_toolbox(self, query: str) -> list[str]:
         panel_view = self.app.config.default_panel_view
-        return self.app.toolbox_search.search(q=query, panel_view=panel_view, config=self.app.config)
+        return self.app.toolbox_search.search(q=query, panel_view=panel_view, config=self.app.config)  # type: ignore[attr-defined]
 
     def _get_toolbox_tool(self, tool_id: str):
         return self.app.toolbox.get_tool(tool_id)
@@ -593,23 +596,20 @@ class AgentOperationsManager:
         test_cases = []
         if hasattr(tool, "tests") and tool.tests:
             for i, test in enumerate(tool.tests):
-                test_case = {
-                    "index": i,
-                    "inputs": {},
-                    "outputs": {},
-                }
+                inputs: dict[str, Any] = {}
+                outputs: dict[str, Any] = {}
                 if hasattr(test, "inputs"):
                     for name, value in test.inputs.items():
-                        test_case["inputs"][name] = str(value) if value is not None else None
+                        inputs[name] = str(value) if value is not None else None
 
                 if hasattr(test, "outputs"):
                     for output in test.outputs:
-                        test_case["outputs"][output.name] = {
+                        outputs[output.name] = {
                             "file": getattr(output, "file", None),
                             "value": getattr(output, "value", None),
                         }
 
-                test_cases.append(test_case)
+                test_cases.append({"index": i, "inputs": inputs, "outputs": outputs})
 
         return {
             "tool_id": tool_id,

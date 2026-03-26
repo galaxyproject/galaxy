@@ -191,7 +191,6 @@ class GalaxyAgentDependencies:
     workflow_manager: Optional["WorkflowsManager"] = None
     tool_cache: Optional["ToolCache"] = None
     toolbox: Optional["ToolBox"] = None
-    get_agent: Optional[Callable[[str, "GalaxyAgentDependencies"], "BaseGalaxyAgent"]] = None
     model_factory: Optional[Callable[[], Any]] = None
 
 
