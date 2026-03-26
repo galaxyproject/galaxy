@@ -2308,13 +2308,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
     def window_manager_window_count(self) -> int:
         """Return number of open scratchbook windows."""
-        return len(self.find_elements_by_selector(".scratchbook-window"))
+        return len(self.find_elements_by_selector(".window-manager-window"))
 
     def window_manager_wait_for_window_count(self, expected_count: int):
         """Wait until the expected number of scratchbook windows exist."""
 
         def check_count(driver=None):
-            count = len(self.find_elements_by_selector(".scratchbook-window"))
+            count = len(self.find_elements_by_selector(".window-manager-window"))
             return count == expected_count
 
         self._wait_on(check_count, f"window count to be {expected_count}")
@@ -2327,7 +2327,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             with self.scratchbook_frame(0):
                 self.wait_for_selector_visible(".dataset-view")
         """
-        iframes = self.find_elements_by_selector(".scratchbook-window iframe")
+        iframes = self.find_elements_by_selector(".window-manager-window iframe")
         assert len(iframes) > index, f"Expected at least {index + 1} scratchbook iframes, found {len(iframes)}"
         try:
             self.switch_to_frame(iframes[index])

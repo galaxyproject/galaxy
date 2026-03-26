@@ -4,6 +4,7 @@ import { ref } from "vue";
 
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
+import { addSearchParams } from "@/utils/url";
 
 const STORAGE_KEY = "galaxy-window-manager-windows";
 
@@ -42,10 +43,7 @@ export const useWindowManagerStore = defineStore("windowManager", () => {
     }
 
     function buildUrl(url: string): string {
-        let fullUrl = withPrefix(url);
-        fullUrl += fullUrl.includes("?") ? "&" : "?";
-        fullUrl += "hide_panels=true&hide_masthead=true";
-        return fullUrl;
+        return addSearchParams(withPrefix(url), { hide_panels: "true", hide_masthead: "true" });
     }
 
     function add(options: { title?: string; url: string; x?: number; y?: number; width?: number; height?: number }) {
@@ -82,6 +80,9 @@ export const useWindowManagerStore = defineStore("windowManager", () => {
     }
 
     function focus(id: string) {
+        if (focusedId.value === id) {
+            return;
+        }
         focusedId.value = id;
         const win = windows.value.find((w) => w.id === id);
         if (win) {
