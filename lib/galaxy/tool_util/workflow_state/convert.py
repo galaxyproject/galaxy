@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from typing import (
     Any,
     cast,
@@ -18,7 +19,6 @@ from galaxy.tool_util.parameters import (
     RepeatParameterModel,
     SelectParameterModel,
     ToolParameterT,
-    validate_explicit_conditional_test_value,
 )
 from galaxy.tool_util_models.parameters import SectionParameterModel
 from ._types import (
@@ -28,6 +28,8 @@ from ._types import (
 )
 from ._walker import (
     SKIP_VALUE,
+    select_which_when_format2,
+    walk_format2_state,
     walk_native_state,
 )
 from ._util import (
@@ -110,11 +112,11 @@ def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs):
     # Build a state dict with ConnectedValue markers for connected params
     linked_state = copy.deepcopy(result.state)
     for connection_path in result.inputs:
-        _inject_connected_value(linked_state, connection_path)
+        _inject_connected_value(parsed_tool.inputs, linked_state, connection_path)
 
     # Skip validation if state contains replacement parameters — these can't
     # pass Pydantic type validation (e.g., "${num}" for an integer field)
-    if _state_has_replacement_params(linked_state):
+    if _state_has_replacement_params(parsed_tool.inputs, linked_state):
         return
 
     try:
@@ -130,54 +132,108 @@ def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs):
             raise
 
 
-# TODO: this needs to be state aware please.
-def _state_has_replacement_params(state) -> bool:
-    """Check if any value in a (possibly nested) state dict is a replacement parameter."""
-    if isinstance(state, dict):
-        for v in state.values():
-            if _state_has_replacement_params(v):
-                return True
-    elif isinstance(state, list):
-        for v in state:
-            if _state_has_replacement_params(v):
-                return True
-    elif isinstance(state, str) and is_replacement_param(state):
-        return True
-    return False
+def _state_has_replacement_params(tool_inputs: List[ToolParameterT], state: dict) -> bool:
+    """Check if any leaf value in a format2 state dict is a replacement parameter.
+
+    Uses walk_format2_state to traverse only declared tool parameters,
+    avoiding false positives from opaque data structures (e.g. gx_rules blobs).
+    """
+    found = False
+
+    def check_leaf(tool_input: ToolParameterT, value: Any, state_path: str):
+        nonlocal found
+        if not found and isinstance(value, str) and is_replacement_param(value):
+            found = True
+        return SKIP_VALUE
+
+    walk_format2_state(tool_inputs, state, check_leaf)
+    return found
 
 
-# TODO: what is the closest piece of code to this in the gxformat2 codebase - we should reuse that please.
-def _inject_connected_value(state: dict, connection_path: str):
-    """Inject a ConnectedValue marker into a structured state dict.
+def _inject_connected_value(tool_inputs: List[ToolParameterT], state: dict, connection_path: str):
+    """Inject a ConnectedValue marker into a format2 state dict.
+
+    Uses tool_inputs to disambiguate path segments — a segment like
+    ``input_2`` is only treated as repeat index 2 of ``input`` if the
+    tool definition declares ``input`` as a repeat parameter.  Without
+    this, any parameter named ``foo_N`` would be misinterpreted.
 
     Connection paths use | as separator and _N for repeat indices.
     E.g., "queries_0|input2" → state["queries"][0]["input2"] = ConnectedValue
     E.g., "cond|param" → state["cond"]["param"] = ConnectedValue
     """
-    import re
-
     parts = connection_path.split("|")
     target = state
-    for _i, part in enumerate(parts[:-1]):
-        # Check for repeat index pattern: name_N
-        match = re.match(r"^(.+)_(\d+)$", part)
-        if match:
-            repeat_name = match.group(1)
-            repeat_idx = int(match.group(2))
-            if repeat_name not in target:
-                target[repeat_name] = []
-            arr = target[repeat_name]
+    current_inputs = tool_inputs
+
+    for part in parts[:-1]:
+        tool_input, repeat_idx = _resolve_path_segment(current_inputs, part)
+
+        if tool_input is not None and repeat_idx is not None:
+            # Repeat instance navigation
+            repeat = cast(RepeatParameterModel, tool_input)
+            if repeat.name not in target:
+                target[repeat.name] = []
+            arr = target[repeat.name]
             while len(arr) <= repeat_idx:
                 arr.append({})
             target = arr[repeat_idx]
-        else:
+            current_inputs = repeat.parameters
+        elif tool_input is not None:
+            # Conditional / section / other container navigation
             if part not in target:
                 target[part] = {}
             target = target[part]
+            param_type = tool_input.parameter_type
+            if param_type == "gx_conditional":
+                conditional = cast(ConditionalParameterModel, tool_input)
+                when = select_which_when_format2(conditional, target)
+                current_inputs = (
+                    ([conditional.test_parameter] + list(when.parameters)) if when else [conditional.test_parameter]
+                )
+            elif param_type == "gx_section":
+                section = cast(SectionParameterModel, tool_input)
+                current_inputs = section.parameters
+            else:
+                current_inputs = []
+        else:
+            # Unknown segment — navigate structurally as fallback
+            if part not in target:
+                target[part] = {}
+            target = target[part]
+            current_inputs = []
 
     # Set the leaf
     leaf = parts[-1]
     target[leaf] = {"__class__": "ConnectedValue"}
+
+
+def _resolve_path_segment(
+    tool_inputs: List[ToolParameterT], segment: str
+) -> "tuple[Optional[ToolParameterT], Optional[int]]":
+    """Resolve a flat_state_path segment against tool inputs.
+
+    Returns (tool_input, repeat_index).  For repeats, repeat_index is the
+    integer index; for non-repeats it is None.  If no matching input is
+    found, returns (None, None).
+    """
+    input_map = {inp.name: inp for inp in tool_inputs}
+
+    # Exact match takes priority — handles params like input_data_2
+    if segment in input_map:
+        return input_map[segment], None
+
+    # Try repeat decomposition: {name}_{index}
+    match = re.match(r"^(.+)_(\d+)$", segment)
+    if match:
+        repeat_name = match.group(1)
+        repeat_idx = int(match.group(2))
+        tool_input = input_map.get(repeat_name)
+        if tool_input is not None and tool_input.parameter_type == "gx_repeat":
+            return tool_input, repeat_idx
+
+    return None, None
+
 
 
 def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInputs) -> Format2State:
@@ -296,23 +352,12 @@ def encode_state_to_native(parsed_tool: ToolInputs, state: dict) -> Dict[str, An
 
 
 def _reverse_format2_values(tool_inputs: List[ToolParameterT], state: dict) -> dict:
-    """Recursively walk format2 state, reversing format2-specific conversions."""
-    input_map = {inp.name: inp for inp in tool_inputs}
-    result = {}
-    for key, value in state.items():
-        if is_connected_or_runtime(value):
-            result[key] = value
-            continue
-        tool_input = input_map.get(key)
-        if tool_input is None:
-            result[key] = value
-            continue
-        result[key] = _reverse_value(tool_input, value)
-    return result
+    """Walk format2 state with tool definitions, reversing format2-specific conversions."""
+    return walk_format2_state(tool_inputs, state, _reverse_leaf)
 
 
-def _reverse_value(tool_input: ToolParameterT, value: Any) -> Any:
-    """Reverse a single format2 value to native form using its tool input definition."""
+def _reverse_leaf(tool_input: ToolParameterT, value: Any, state_path: str) -> Any:
+    """Reverse a single format2 leaf value to native form."""
     if is_connected_or_runtime(value):
         return value
     parameter_type = tool_input.parameter_type
@@ -331,57 +376,7 @@ def _reverse_value(tool_input: ToolParameterT, value: Any) -> Any:
             return [str(v) for v in value]
         return str(value) if isinstance(value, int) else value
 
-    elif parameter_type == "gx_conditional":
-        if not isinstance(value, dict):
-            return value
-        conditional = cast(ConditionalParameterModel, tool_input)
-        target_when = _find_conditional_branch(conditional, value)
-        if target_when is None:
-            return value
-        all_params: List[ToolParameterT] = [conditional.test_parameter] + list(target_when.parameters)
-        return _reverse_format2_values(all_params, value)
-
-    elif parameter_type == "gx_section":
-        if not isinstance(value, dict):
-            return value
-        section = cast(SectionParameterModel, tool_input)
-        return _reverse_format2_values(section.parameters, value)
-
-    elif parameter_type == "gx_repeat":
-        if not isinstance(value, list):
-            return value
-        repeat = cast(RepeatParameterModel, tool_input)
-        return [
-            _reverse_format2_values(repeat.parameters, instance) for instance in value if isinstance(instance, dict)
-        ]
-
     return value
-
-
-def _find_conditional_branch(conditional: ConditionalParameterModel, state: dict):
-    """Find the matching ConditionalWhen for a format2 conditional state dict."""
-    test_param_name = conditional.test_parameter.name
-    test_value = state.get(test_param_name)
-    try:
-        test_value = validate_explicit_conditional_test_value(test_param_name, test_value)
-    except Exception:
-        return None
-    for when in conditional.whens:
-        if test_value is None and when.is_default_when:
-            return when
-        if test_value is not None and _test_value_matches(test_value, when.discriminator):
-            return when
-    return None
-
-
-def _test_value_matches(test_value, discriminator) -> bool:
-    if test_value == discriminator:
-        return True
-    if isinstance(test_value, bool) and isinstance(discriminator, str):
-        return str(test_value).lower() == discriminator
-    if isinstance(test_value, str) and isinstance(discriminator, bool):
-        return test_value.lower() == str(discriminator).lower()
-    return False
 
 
 # -- Callback factories for gxformat2 protocol --

@@ -1,13 +1,14 @@
-"""Shared tree walker for native Galaxy workflow tool state.
+"""Shared tree walkers for Galaxy workflow tool state.
 
-Handles the recursive traversal of native tool state dicts, including:
-- Conditional branch selection
-- Repeat instance expansion from input_connections
-- Section/container JSON string decoding
-- Unknown key checking for validation
+Two walkers for the two serialization formats:
 
-Used by both convert.py (building format2 state) and
-validation_native.py (merge + validate in one pass).
+- ``walk_native_state()`` — native (.ga) tool_state with double-encoding,
+  ``input_connections``-driven repeat sizing, bookkeeping key stripping, and
+  unknown-key checking.  Used by convert.py and validation_native.py.
+
+- ``walk_format2_state()`` — format2 (.gxwf.yml) structured state dicts.
+  Clean dicts/lists, no bookkeeping.  Used by convert.py for post-conversion
+  validation and reverse encoding.
 """
 
 import json
@@ -204,8 +205,13 @@ def walk_native_state(
     return output
 
 
-# TODO: we need to be much more targetted here I think - can we let those exceptions bubble up on IWC
-# workflows?
+# These json.loads() calls are safe because they are only called by the walker
+# for values the tool schema identifies as containers (conditional, section, repeat).
+# Container values in native tool_state are always JSON-encoded dicts or lists —
+# there is no ambiguity like there is for leaf values (where "2" could be the
+# string "2" or a JSON-encoded integer). Leaf values are never passed through
+# these functions; they go directly to the walker's leaf_callback for
+# type-aware handling.
 def as_dict(value) -> Optional[dict]:
     if isinstance(value, dict):
         return value
@@ -272,4 +278,99 @@ def _select_which_when_native(
         if when.is_default_when:
             return when
 
+    return None
+
+
+# -- Format2 state walker --
+
+
+def walk_format2_state(
+    tool_inputs: List[ToolParameterT],
+    state: dict,
+    leaf_callback,  # (tool_input: ToolParameterT, value: Any, state_path: str) -> Any | _SkipValue
+    prefix: Optional[str] = None,
+) -> dict:
+    """Walk a format2 structured state dict, calling leaf_callback for each leaf parameter.
+
+    Handles conditionals (branch selection via test value), repeats (list of
+    instance dicts), and sections (nested dicts).  No double-encoding, no
+    bookkeeping keys, no input_connections — format2 state is already clean.
+
+    Returns dict of {param_name: callback_result} for non-skipped leaves,
+    with nested dicts for conditionals/sections and lists for repeats.
+    """
+    output: dict = {}
+
+    input_map = {inp.name: inp for inp in tool_inputs}
+    for key, value in state.items():
+        tool_input = input_map.get(key)
+        if tool_input is None:
+            # Preserve keys not in tool definition — may be extra metadata,
+            # version-skew remnants, etc.  Only declared params get walked.
+            output[key] = value
+            continue
+        state_path = flat_state_path(key, prefix)
+        result = _walk_format2_value(tool_input, value, state_path, leaf_callback)
+        if not isinstance(result, _SkipValue):
+            output[key] = result
+
+    return output
+
+
+def _walk_format2_value(tool_input: ToolParameterT, value, state_path: str, leaf_callback):
+    """Recurse into a single format2 value guided by its tool input definition."""
+    parameter_type = tool_input.parameter_type
+
+    if parameter_type == "gx_conditional":
+        if not isinstance(value, dict):
+            return leaf_callback(tool_input, value, state_path)
+        conditional = cast(ConditionalParameterModel, tool_input)
+        # TODO: research whether select_which_when_format2 can be unified
+        # with _select_which_when_native — they are nearly identical but the
+        # native version has a default-when fallback pass.
+        target_when = select_which_when_format2(conditional, value)
+        if target_when is None:
+            all_params: List[ToolParameterT] = [conditional.test_parameter]
+        else:
+            all_params = [conditional.test_parameter] + list(target_when.parameters)
+        nested = walk_format2_state(all_params, value, leaf_callback, prefix=state_path)
+        return nested if nested else SKIP_VALUE
+
+    elif parameter_type == "gx_section":
+        if not isinstance(value, dict):
+            return leaf_callback(tool_input, value, state_path)
+        section = cast(SectionParameterModel, tool_input)
+        nested = walk_format2_state(section.parameters, value, leaf_callback, prefix=state_path)
+        return nested if nested else SKIP_VALUE
+
+    elif parameter_type == "gx_repeat":
+        if not isinstance(value, list):
+            return leaf_callback(tool_input, value, state_path)
+        repeat = cast(RepeatParameterModel, tool_input)
+        result_array = []
+        for i, instance in enumerate(value):
+            if not isinstance(instance, dict):
+                continue
+            instance_prefix = f"{state_path}_{i}"
+            nested = walk_format2_state(repeat.parameters, instance, leaf_callback, prefix=instance_prefix)
+            result_array.append(nested)
+        return result_array if result_array else SKIP_VALUE
+
+    else:
+        return leaf_callback(tool_input, value, state_path)
+
+
+def select_which_when_format2(conditional: ConditionalParameterModel, state: dict) -> Optional[ConditionalWhen]:
+    """Select the matching ConditionalWhen for a format2 conditional state dict."""
+    test_param_name = conditional.test_parameter.name
+    test_value = state.get(test_param_name)
+    try:
+        test_value = validate_explicit_conditional_test_value(test_param_name, test_value)
+    except Exception:
+        return None
+    for when in conditional.whens:
+        if test_value is None and when.is_default_when:
+            return when
+        if test_value is not None and _test_value_matches_discriminator(test_value, when.discriminator):
+            return when
     return None
