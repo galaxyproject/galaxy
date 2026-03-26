@@ -217,6 +217,7 @@ def _make_native_workflow(tool_id="create_2", tool_version="0.1.0", sleep_time=0
     """Build a minimal native .ga workflow with one tool step."""
     return {
         "a_galaxy_workflow": "true",
+        "format-version": "0.1",
         "steps": {
             "0": {
                 "tool_id": tool_id,
@@ -404,6 +405,7 @@ def _make_native_workflow_with_stale(stale_keys=None):
         state.update(stale_keys)
     return {
         "a_galaxy_workflow": "true",
+        "format-version": "0.1",
         "steps": {
             "0": {
                 "tool_id": "create_2",
@@ -586,7 +588,8 @@ class TestPopulateCacheForTree:
         wf2 = _make_native_workflow(tool_id="create_2", tool_version="0.1.0")
         _write_tree(tmp_path, {"wf1.ga": wf1, "wf2.ga": wf2})
 
-        from galaxy.tool_util.workflow_state.workflow_tools import extract_all_tools
+        from gxformat2.normalized import ensure_native
+
         from galaxy.tool_util.workflow_state.workflow_tree import (
             discover_workflows,
             load_workflow_safe,
@@ -597,8 +600,7 @@ class TestPopulateCacheForTree:
         for info in workflows:
             wf_dict = load_workflow_safe(info)
             if wf_dict is not None:
-                for tool_ref in extract_all_tools(wf_dict):
-                    all_tools.add(tool_ref)
+                all_tools.update(ensure_native(wf_dict).unique_tools)
 
         # Should be deduplicated to just 1 unique tool
         assert len(all_tools) == 1

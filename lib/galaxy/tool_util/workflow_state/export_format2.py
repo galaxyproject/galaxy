@@ -92,7 +92,7 @@ def export_workflow_to_format2(
     callback. Steps where conversion fails keep their tool_state (best-effort)
     unless strict=True.
     """
-    from gxformat2.to_format2 import to_format2
+    from gxformat2.normalized import to_format2
 
     if _format(workflow_dict) != "native":
         raise ValueError("export_workflow_to_format2 requires a native (.ga) workflow")
@@ -263,7 +263,7 @@ def format_diff(original_format2: dict, converted_format2: dict, workflow_path: 
 
 def run_export(options: ExportOptions) -> int:
     """Run export pipeline. Returns exit code."""
-    from gxformat2.to_format2 import to_format2
+    from gxformat2.normalized import to_format2
 
     tool_info = setup_tool_info(options)
 

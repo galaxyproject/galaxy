@@ -15,16 +15,14 @@ from typing import (
 )
 
 from gxformat2.normalized import (
+    ensure_native,
     NormalizedNativeStep,
     NormalizedNativeWorkflow,
+    to_format2,
+    to_native,
 )
 from gxformat2.options import ConversionOptions
 from gxformat2.schema.native import NativeInputConnection
-from gxformat2.to_format2 import to_format2
-from gxformat2.to_native import (
-    ensure_native,
-    to_native,
-)
 from pydantic import (
     BaseModel,
     computed_field,
@@ -1080,12 +1078,12 @@ def roundtrip_validate(
     if strip_bookkeeping or clean_stale:
         strip_bookkeeping_from_workflow(workflow_dict)
 
-    if clean_stale:
-        clean_result = clean_stale_state(workflow_dict, get_tool_info)
-        result.stale_clean_results = list(clean_result.step_results)
-
     workflow_name = os.path.basename(workflow_path) if workflow_path else ""
     orig_model = ensure_native(workflow_dict)
+
+    if clean_stale:
+        clean_result = clean_stale_state(orig_model, workflow_dict, get_tool_info)
+        result.stale_clean_results = list(clean_result.step_results)
 
     # Per-step conversion (validates each tool step can be converted)
     step_result = roundtrip_native_workflow(orig_model, get_tool_info, workflow_name)

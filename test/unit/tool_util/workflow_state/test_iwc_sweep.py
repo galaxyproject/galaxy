@@ -14,6 +14,8 @@ from typing import (
 
 import pytest
 
+from gxformat2.normalized import ensure_native
+
 from galaxy.tool_util.workflow_state.cache import (
     build_tool_info,
     populate_cache,
@@ -71,7 +73,8 @@ class TestIWCSweepValidateNative:
     @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
     def test_validate_native(self, wf_path, tool_info):
         workflow = load_workflow(wf_path)
-        clean_stale_state(workflow, tool_info)
+        normalized = ensure_native(workflow)
+        clean_stale_state(normalized, workflow, tool_info)
         validate_workflow_native(workflow, tool_info)
 
 
@@ -82,7 +85,8 @@ class TestIWCSweepClean:
     @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
     def test_clean(self, wf_path, tool_info):
         workflow = load_workflow(wf_path)
-        result = clean_stale_state(workflow, tool_info)
+        normalized = ensure_native(workflow)
+        result = clean_stale_state(normalized, workflow, tool_info)
         assert result is not None
 
 

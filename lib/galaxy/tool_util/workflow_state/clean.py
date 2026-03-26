@@ -17,6 +17,11 @@ from typing import (
     Optional,
 )
 
+from gxformat2.normalized import (
+    NormalizedNativeWorkflow,
+    ensure_native,
+)
+
 from ._cli_common import (
     setup_tool_info,
     ToolCacheOptions,
@@ -306,45 +311,52 @@ def strip_stale_keys(
 
 
 def clean_stale_state(
+    workflow: NormalizedNativeWorkflow,
     workflow_dict: NativeWorkflowDict,
     get_tool_info: GetToolInfo,
     prefix: str = "",
     policy: Optional[StaleKeyPolicy] = None,
 ) -> CleanResult:
-    """Clean stale keys from all steps in a native workflow dict (mutates in place)."""
+    """Clean stale keys from all steps in a native workflow dict (mutates in place).
+
+    Uses *workflow* (pre-normalized) for step navigation (tool_id, type
+    detection, subworkflow handling).  The raw *workflow_dict* is only
+    touched to mutate tool_state.  The normalized model's tool_state is
+    kept in sync with the raw dict after cleaning.
+    """
     result = CleanResult()
-    steps = workflow_dict.get("steps", {})
+    raw_steps = workflow_dict.get("steps", {})
 
-    for step_index, step_def in sorted(steps.items(), key=lambda x: int(x[0])):
-        step_label = f"{prefix}{step_index}" if prefix else str(step_index)
+    for step_id, step in sorted(workflow.steps.items(), key=lambda x: int(x[0])):
+        step_label = f"{prefix}{step_id}" if prefix else str(step_id)
 
-        if step_def.get("type") == "subworkflow" and "subworkflow" in step_def:
+        if step.is_subworkflow_step and step.subworkflow:
+            step_def = raw_steps.get(str(step_id), raw_steps.get(step_id, {}))
+            sub_dict = step_def.get("subworkflow", {}) if isinstance(step_def, dict) else {}
             sub_result = clean_stale_state(
-                step_def["subworkflow"], get_tool_info, prefix=f"{step_label}.", policy=policy
+                step.subworkflow,
+                sub_dict,
+                get_tool_info,
+                prefix=f"{step_label}.",
+                policy=policy,
             )
             result.merge(sub_result)
             continue
 
-        tool_id = step_def.get("tool_id")
-        if not tool_id:
+        if not step.tool_id:
             continue
 
-        tool_state = step_def.get("tool_state")
-        if not tool_state:
-            continue
-        if isinstance(tool_state, dict):
-            step_def["tool_state"] = json.dumps(tool_state)
-        elif not isinstance(tool_state, str):
+        if not step.tool_state:
             continue
 
         try:
-            parsed_tool = get_parsed_tool_for_native_step(step_def, get_tool_info)
+            parsed_tool = get_parsed_tool_for_native_step(step, get_tool_info)
         except Exception as e:
             result.step_results.append(
                 CleanStepResult(
                     step=step_label,
-                    tool_id=tool_id,
-                    version=step_def.get("tool_version"),
+                    tool_id=step.tool_id,
+                    version=step.tool_version,
                     skipped=True,
                     skip_reason=f"No tool definition: {e}",
                 )
@@ -355,15 +367,20 @@ def clean_stale_state(
             result.step_results.append(
                 CleanStepResult(
                     step=step_label,
-                    tool_id=tool_id,
-                    version=step_def.get("tool_version"),
+                    tool_id=step.tool_id,
+                    version=step.tool_version,
                     skipped=True,
                     skip_reason="No tool definition",
                 )
             )
             continue
 
+        step_def = raw_steps.get(str(step_id), raw_steps.get(step_id, {}))
         step_result = strip_stale_keys(step_def, parsed_tool, policy=policy)
+        # Keep normalized model in sync with the mutated raw dict
+        cleaned_state = step_def.get("tool_state")
+        if isinstance(cleaned_state, dict):
+            step.tool_state = cleaned_state
         step_result.step = step_label
         result.step_results.append(step_result)
 
@@ -425,7 +442,8 @@ def clean_tree(
             work_copy = wf_dict
 
         try:
-            result = clean_stale_state(work_copy, get_tool_info, policy=policy)
+            normalized = ensure_native(work_copy)
+            result = clean_stale_state(normalized, work_copy, get_tool_info, policy=policy)
         except Exception as e:
             report.results.append(
                 WorkflowCleanResult(
@@ -609,7 +627,8 @@ def _run_single(options: CleanOptions, tool_info, policy: StaleKeyPolicy) -> int
     else:
         work_copy = workflow
 
-    result = clean_stale_state(work_copy, tool_info, policy=policy)
+    normalized = ensure_native(work_copy)
+    result = clean_stale_state(normalized, work_copy, tool_info, policy=policy)
 
     if options.diff:
         cleaned_json = json.dumps(work_copy, indent=4) + "\n"

@@ -5,10 +5,10 @@ from typing import (
 )
 
 from gxformat2.normalized import (
+    ensure_format2,
     NormalizedFormat2,
     NormalizedWorkflowStep,
 )
-from gxformat2.to_format2 import ensure_format2
 
 from galaxy.tool_util.parameters import (
     ConditionalParameterModel,

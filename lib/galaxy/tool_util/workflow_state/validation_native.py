@@ -22,6 +22,7 @@ from ._util import (
     coerce_select_value,
     is_connected_or_runtime,
     is_replacement_param,
+    step_connected_paths,
     step_input_connections,
     step_tool_id,
     step_tool_state,
@@ -36,12 +37,13 @@ from ._walker import (
 def validate_native_step_against(step: StepLike, parsed_tool: ToolInputs):
     tool_state = step_tool_state(step)
     input_connections = step_input_connections(step)
+    connected = step_connected_paths(step)
 
     def merge_and_validate(tool_input: ToolParameterT, value: Any, state_path: str):
         parameter_type = tool_input.parameter_type
 
         # Merge: inject ConnectedValue for connected params
-        if state_path in input_connections and not isinstance(value, dict):
+        if state_path in connected and not isinstance(value, dict):
             value = {"__class__": "ConnectedValue"}
 
         # ConnectedValue/RuntimeValue: valid for any parameter type

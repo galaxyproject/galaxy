@@ -12,14 +12,12 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from gxformat2.normalized import ensure_native
+
 from .toolshed_tool_info import (
     DEFAULT_TOOLSHED_URL,
     parse_toolshed_tool_id,
     ToolShedGetToolInfo,
-)
-from .workflow_tools import (
-    extract_all_tools,
-    load_workflow,
 )
 
 log = logging.getLogger(__name__)
@@ -172,8 +170,8 @@ def populate_cache(tool_info: ToolShedGetToolInfo, path: str, source: str = "aut
 
 
 def _populate_cache_for_workflow(tool_info: ToolShedGetToolInfo, workflow_path: str, source: str = "auto"):
-    workflow = load_workflow(workflow_path)
-    tools = extract_all_tools(workflow)
+    workflow = ensure_native(workflow_path)
+    tools = workflow.unique_tools
 
     if not tools:
         print("No tools found in workflow.")
@@ -181,7 +179,7 @@ def _populate_cache_for_workflow(tool_info: ToolShedGetToolInfo, workflow_path: 
 
     print(f"Found {len(tools)} tool(s) in workflow:")
     ok, fail = 0, 0
-    for tool_id, tool_version in tools:
+    for tool_id, tool_version in sorted(tools):
         if add_tool(tool_info, tool_id, tool_version, source=source):
             ok += 1
         else:
@@ -202,8 +200,7 @@ def _populate_cache_for_tree(tool_info: ToolShedGetToolInfo, root: str, source: 
     for info in workflows:
         wf_dict = load_workflow_safe(info)
         if wf_dict is not None:
-            for tool_ref in extract_all_tools(wf_dict):
-                all_tools.add(tool_ref)
+            all_tools.update(ensure_native(wf_dict).unique_tools)
 
     if not all_tools:
         print(f"No tools found across {len(workflows)} workflow(s).")

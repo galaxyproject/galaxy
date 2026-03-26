@@ -12,10 +12,8 @@ from galaxy.tool_util.workflow_state.toolshed_tool_info import (
     parse_toolshed_tool_id,
     ToolShedGetToolInfo,
 )
-from galaxy.tool_util.workflow_state.workflow_tools import (
-    extract_toolshed_tools,
-    load_workflow,
-)
+from gxformat2.normalized import ensure_native
+from gxformat2.normalized._native import NormalizedNativeWorkflow
 
 # --- parse_toolshed_tool_id ---
 
@@ -211,82 +209,83 @@ class TestToolShedGetToolInfoCache:
         assert tool_info2.index.has(key)
 
 
-# --- extract_toolshed_tools ---
+# --- unique_tools (via NormalizedNativeWorkflow) ---
 
 IWC_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "workflows", "iwc")
 
 
-class TestExtractToolshedTools:
+def _toolshed_tools(workflow: NormalizedNativeWorkflow):
+    return [t for t in workflow.unique_tools if parse_toolshed_tool_id(t.tool_id)]
+
+
+class TestUniqueToolshedTools:
     def test_native_workflow(self):
-        workflow = {
-            "steps": {
-                "0": {"type": "data_input"},
-                "1": {
-                    "tool_id": "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0",
-                    "tool_version": "0.74+galaxy0",
-                },
-                "2": {
-                    "tool_id": "cat1",
-                    "tool_version": "1.0.0",
-                },
-            }
-        }
-        tools = extract_toolshed_tools(workflow)
-        assert len(tools) == 1
-        assert tools[0][0] == "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0"
-
-    def test_format2_workflow(self):
-        workflow = {
-            "steps": [
-                {"type": "data_input"},
-                {
-                    "tool_id": "toolshed.g2.bx.psu.edu/repos/iuc/multiqc/multiqc/1.11+galaxy1",
-                    "tool_version": "1.11+galaxy1",
-                },
-            ]
-        }
-        tools = extract_toolshed_tools(workflow)
-        assert len(tools) == 1
-
-    def test_subworkflow_recursion_native(self):
-        workflow = {
-            "steps": {
-                "0": {
-                    "type": "subworkflow",
-                    "subworkflow": {
-                        "steps": {
-                            "0": {
-                                "tool_id": "toolshed.g2.bx.psu.edu/repos/iuc/bwa/bwa/0.7.17",
-                                "tool_version": "0.7.17",
-                            }
-                        }
+        workflow = NormalizedNativeWorkflow.model_validate(
+            {
+                "steps": {
+                    "0": {"id": 0, "type": "data_input"},
+                    "1": {
+                        "id": 1,
+                        "tool_id": "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0",
+                        "tool_version": "0.74+galaxy0",
                     },
-                },
+                    "2": {"id": 2, "tool_id": "cat1", "tool_version": "1.0.0"},
+                }
             }
-        }
-        tools = extract_toolshed_tools(workflow)
+        )
+        tools = _toolshed_tools(workflow)
         assert len(tools) == 1
-        assert "bwa" in tools[0][0]
+        assert tools[0].tool_id == "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0"
+
+    def test_subworkflow_recursion(self):
+        workflow = NormalizedNativeWorkflow.model_validate(
+            {
+                "steps": {
+                    "0": {
+                        "id": 0,
+                        "type": "subworkflow",
+                        "subworkflow": {
+                            "steps": {
+                                "0": {
+                                    "id": 0,
+                                    "tool_id": "toolshed.g2.bx.psu.edu/repos/iuc/bwa/bwa/0.7.17",
+                                    "tool_version": "0.7.17",
+                                }
+                            }
+                        },
+                    },
+                }
+            }
+        )
+        tools = _toolshed_tools(workflow)
+        assert len(tools) == 1
+        assert "bwa" in tools[0].tool_id
 
     def test_deduplication(self):
-        workflow = {
-            "steps": {
-                "0": {
-                    "tool_id": "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0",
-                    "tool_version": "0.74+galaxy0",
-                },
-                "1": {
-                    "tool_id": "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0",
-                    "tool_version": "0.74+galaxy0",
-                },
+        workflow = NormalizedNativeWorkflow.model_validate(
+            {
+                "steps": {
+                    "0": {
+                        "id": 0,
+                        "tool_id": "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0",
+                        "tool_version": "0.74+galaxy0",
+                    },
+                    "1": {
+                        "id": 1,
+                        "tool_id": "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0",
+                        "tool_version": "0.74+galaxy0",
+                    },
+                }
             }
-        }
-        tools = extract_toolshed_tools(workflow)
+        )
+        tools = _toolshed_tools(workflow)
         assert len(tools) == 1
 
     def test_no_toolshed_tools(self):
-        workflow = {"steps": {"0": {"tool_id": "cat1", "tool_version": "1.0.0"}}}
-        tools = extract_toolshed_tools(workflow)
+        workflow = NormalizedNativeWorkflow.model_validate(
+            {"steps": {"0": {"id": 0, "tool_id": "cat1", "tool_version": "1.0.0"}}}
+        )
+        tools = _toolshed_tools(workflow)
         assert len(tools) == 0
 
     @pytest.mark.skipif(
@@ -294,10 +293,10 @@ class TestExtractToolshedTools:
         reason="IWC test workflows not available",
     )
     def test_iwc_repeat_masking(self):
-        workflow = load_workflow(os.path.join(IWC_DIR, "RepeatMasking-Workflow.ga"))
-        tools = extract_toolshed_tools(workflow)
+        workflow = ensure_native(os.path.join(IWC_DIR, "RepeatMasking-Workflow.ga"))
+        tools = _toolshed_tools(workflow)
         assert len(tools) == 2
-        tool_ids = [t[0] for t in tools]
+        tool_ids = [t.tool_id for t in tools]
         assert any("repeatmodeler" in tid for tid in tool_ids)
         assert any("repeatmasker" in tid for tid in tool_ids)
 

@@ -49,6 +49,13 @@ def step_input_connections(step: StepLike) -> dict:
     return step.get("input_connections", {})
 
 
+def step_connected_paths(step: StepLike) -> frozenset:
+    """State paths that have incoming connections (O(1) membership check)."""
+    if isinstance(step, NormalizedNativeStep):
+        return step.connected_paths
+    return frozenset(step.get("input_connections", {}).keys())
+
+
 def step_as_dict(step: StepLike) -> NativeStepDict:
     """Get a raw dict from a step (model or raw dict)."""
     if isinstance(step, NormalizedNativeStep):

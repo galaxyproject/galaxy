@@ -188,8 +188,7 @@ def _validate_native(
 
 
 def _validate_format2(workflow_dict: dict, get_tool_info: GetToolInfo, prefix: str = "") -> List[ValidationStepResult]:
-    from gxformat2.normalized import NormalizedFormat2
-    from gxformat2.to_format2 import ensure_format2
+    from gxformat2.normalized import ensure_format2, NormalizedFormat2
 
     results: List[ValidationStepResult] = []
     nf2 = ensure_format2(workflow_dict, expand=True)

@@ -35,6 +35,7 @@ from ._util import (
     coerce_select_value,
     is_connected_or_runtime,
     is_replacement_param,
+    step_connected_paths,
     step_input_connections,
     step_tool_state,
 )
@@ -180,12 +181,13 @@ def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInpu
     format2_in: Format2InputsDictT = {}
     root_tool_state = step_tool_state(native_step)
     input_connections = step_input_connections(native_step)
+    connected = step_connected_paths(native_step)
 
     def convert_leaf(tool_input: ToolParameterT, value: Any, state_path: str):
         parameter_type = tool_input.parameter_type
 
         if parameter_type in ["gx_data", "gx_data_collection"]:
-            if state_path in input_connections or is_connected_or_runtime(value):
+            if state_path in connected or is_connected_or_runtime(value):
                 format2_in[state_path] = "placeholder"
             elif isinstance(value, dict) and value.get("__class__") == "RuntimeValue":
                 format2_in[state_path] = "placeholder"
@@ -202,7 +204,7 @@ def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInpu
         if is_connected_or_runtime(value):
             format2_in[state_path] = "placeholder"
             return SKIP_VALUE
-        if state_path in input_connections:
+        if state_path in connected:
             format2_in[state_path] = "placeholder"
             return SKIP_VALUE
         if value is not None and value != "null":
