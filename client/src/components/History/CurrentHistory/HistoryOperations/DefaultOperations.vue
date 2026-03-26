@@ -44,7 +44,7 @@ async function runOperation(operation: () => Promise<unknown>) {
 <template>
     <section v-if="numItemsHidden || numItemsHidden || numItemsDeleted">
         <BDropdown
-            v-b-tooltip.hover.noninteractive
+            v-g-tooltip.hover
             no-caret
             size="sm"
             variant="link"

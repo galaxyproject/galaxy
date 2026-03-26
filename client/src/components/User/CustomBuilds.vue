@@ -97,7 +97,7 @@
 
                         <BButton
                             id="save"
-                            v-b-tooltip.bottom.hover
+                            v-g-tooltip.bottom.hover
                             type="submit"
                             variant="primary"
                             title="Create new build">

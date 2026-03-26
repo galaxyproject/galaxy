@@ -10,6 +10,13 @@ import Vue from "vue";
 Vue.config.productionTip = false;
 Vue.config.devtools = false;
 
+// Mock g-tooltip directive so components don't trigger "Failed to resolve directive" warnings
+Vue.directive("g-tooltip", {
+    bind(el: HTMLElement, binding: { value?: string }) {
+        el.setAttribute("data-mock-directive", binding.value || el.title || "");
+    },
+});
+
 // Mock hashedUserId and userLocalStorage by default
 vi.mock("@/composables/hashedUserId");
 vi.mock("@/composables/userLocalStorage");

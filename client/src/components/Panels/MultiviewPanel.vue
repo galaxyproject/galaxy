@@ -97,7 +97,7 @@ function userTitle(title: string) {
         <template v-slot:header-buttons>
             <BButtonGroup>
                 <BButton
-                    v-b-tooltip.bottom.hover
+                    v-g-tooltip.bottom.hover
                     data-description="create new history for multiview"
                     size="sm"
                     variant="link"
@@ -120,7 +120,7 @@ function userTitle(title: string) {
             <section v-if="!showAdvanced">
                 <BButtonGroup
                     v-if="route.path === '/histories/view_multiple'"
-                    v-b-tooltip.hover.noninteractive.bottom
+                    v-g-tooltip.hover.bottom
                     class="w-100 mt-2"
                     :aria-label="pinRecentTitle"
                     :title="pinRecentTitle">

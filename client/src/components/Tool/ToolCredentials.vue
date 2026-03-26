@@ -235,7 +235,7 @@ onMounted(async () => {
             <div v-if="!isAnonymous && currentServiceGroups" class="d-flex flex-wrap flex-gapx-1 flex-gapy-1">
                 <div v-for="csg in currentServiceGroups" :key="csg.serviceName" class="d-flex align-items-center">
                     <BBadge
-                        v-b-tooltip.hover
+                        v-g-tooltip.hover
                         :title="getBadgeTitle(csg)"
                         :variant="csg.isRequired ? 'primary' : 'secondary'">
                         <FontAwesomeIcon :icon="csg.groupName ? faCheck : faExclamation" fixed-width />

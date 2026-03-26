@@ -353,7 +353,7 @@ const removeTagsAction = computed(() => {
             <div class="node-output-buttons">
                 <button
                     v-if="showCalloutActiveOutput"
-                    v-b-tooltip
+                    v-g-tooltip
                     class="callout-terminal inline-icon-button mark-terminal"
                     :class="{ 'mark-terminal-active': workflowOutput }"
                     title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
@@ -363,7 +363,7 @@ const removeTagsAction = computed(() => {
                 </button>
                 <button
                     v-if="showCalloutVisible"
-                    v-b-tooltip
+                    v-g-tooltip
                     class="callout-terminal inline-icon-button mark-terminal"
                     :class="{ 'mark-terminal-visible': isVisible, 'mark-terminal-hidden': !isVisible }"
                     :title="visibleHint"
@@ -373,7 +373,7 @@ const removeTagsAction = computed(() => {
                 </button>
                 <span>
                     <span
-                        v-b-tooltip
+                        v-g-tooltip
                         :title="labelToolTipTitle"
                         class="d-inline-block rounded"
                         :class="labelClass"
@@ -386,7 +386,7 @@ const removeTagsAction = computed(() => {
 
             <div
                 v-if="addTagsAction.length > 0"
-                v-b-tooltip.left
+                v-g-tooltip.left
                 class="d-flex align-items-center overflow-x-hidden"
                 title="These tags will be added to the output dataset">
                 <FontAwesomeIcon :icon="faPlus" class="mr-1" />
@@ -395,7 +395,7 @@ const removeTagsAction = computed(() => {
 
             <div
                 v-if="removeTagsAction.length > 0"
-                v-b-tooltip.left
+                v-g-tooltip.left
                 class="d-flex align-items-center overflow-x-hidden"
                 title="These tags will be removed from the output dataset">
                 <FontAwesomeIcon :icon="faMinus" class="mr-1" />
@@ -406,7 +406,7 @@ const removeTagsAction = computed(() => {
         <DraggableWrapper
             :id="id"
             ref="terminalComponent"
-            v-b-tooltip.hover.noninteractive="!props.blank ? outputDetails : ''"
+            v-g-tooltip.hover="!props.blank ? outputDetails : ''"
             class="output-terminal prevent-zoom"
             :class="{ 'mapped-over': isMultiple, 'blank-output': props.blank }"
             :output-name="output.name"

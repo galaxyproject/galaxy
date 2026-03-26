@@ -4,7 +4,7 @@
             <Heading h2 separator bold size="sm">
                 <span v-localize>References</span>
                 <b-button
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     title="Copy all references as BibTeX"
                     style="cursor: pointer"
                     variant="link"
@@ -38,11 +38,11 @@
                 <template v-if="xref.type == 'bio.tools'">
                     bio.tools: {{ xref.value }} (<a :href="`https://bio.tools/${xref.value}`" target="_blank"
                         >bio.tools
-                        <FontAwesomeIcon v-b-tooltip.hover title="Visit bio.tools page" :icon="faExternalLinkAlt" /> </a
+                        <FontAwesomeIcon v-g-tooltip.hover title="Visit bio.tools page" :icon="faExternalLinkAlt" /> </a
                     >) (<a :href="`https://openebench.bsc.es/tool/${xref.value}`" target="_blank"
                         >OpenEBench
                         <FontAwesomeIcon
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             title="Visit OpenEBench page"
                             :icon="faExternalLinkAlt" /> </a
                     >)

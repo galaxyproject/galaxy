@@ -1,8 +1,8 @@
 <template>
     <div v-if="!multiple || !ordered" class="rule-column-selector">
         <div class="d-flex justify-content-end align-items-center">
-            <span v-b-tooltip.hover class="mr-auto help-text" :title="help">{{ label }}</span>
-            <div v-b-tooltip.hover class="mr-1" :title="title">
+            <span v-g-tooltip.hover class="mr-auto help-text" :title="help">{{ label }}</span>
+            <div v-g-tooltip.hover class="mr-1" :title="title">
                 <SelectBasic :value="target" :multiple="multiple" :options="columnOptions" @input="handleInput" />
             </div>
             <slot></slot>

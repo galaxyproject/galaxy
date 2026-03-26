@@ -3,7 +3,7 @@
         <b
             ><a class="generated-export-link" :href="link">{{ link }}</a></b
         >
-        <span v-b-tooltip.hover title="Copy export URL to your clipboard">
+        <span v-g-tooltip.hover title="Copy export URL to your clipboard">
             <FontAwesomeIcon class="copy-export-link" :icon="faLink" style="cursor: pointer" @click="copyUrl" />
         </span>
         <i

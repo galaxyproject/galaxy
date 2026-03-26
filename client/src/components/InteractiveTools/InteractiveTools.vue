@@ -138,7 +138,7 @@ onMounted(() => {
             <template v-slot:cell(actions)="{ item }">
                 <BButton
                     :id="createId('stop', item.id)"
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     variant="link"
                     class="p-0"
                     title="Stop this interactive tool"

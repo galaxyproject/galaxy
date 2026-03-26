@@ -855,7 +855,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <!-- Actions column -->
                     <template v-slot:cell(actions)="{ item }">
                         <button
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover
                             class="btn btn-link text-danger remove-btn"
                             title="Remove file from list"
                             @click="removeItem(item.id)">

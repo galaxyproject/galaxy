@@ -403,18 +403,13 @@ async function onCancel() {
             <div class="ml-auto d-flex align-items-center">
                 <BBadge
                     v-if="tabsDisabled"
-                    v-b-tooltip.hover.noninteractive
+                    v-g-tooltip.hover
                     class="mr-1"
                     :title="disabledTabTooltip"
                     variant="primary">
                     <FontAwesomeIcon :icon="faExclamation" />
                 </BBadge>
-                <BBadge
-                    v-if="isPolling"
-                    v-b-tooltip.hover.noninteractive
-                    class="mr-1"
-                    title="Polling for updates"
-                    variant="link">
+                <BBadge v-if="isPolling" v-g-tooltip.hover class="mr-1" title="Polling for updates" variant="link">
                     <FontAwesomeIcon :icon="faSpinner" spin />
                 </BBadge>
                 <GButton

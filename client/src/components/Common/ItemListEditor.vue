@@ -131,7 +131,7 @@ function resetForm() {
                 <div v-for="(item, index) in itemsCurrent" :key="index">
                     {{ item }}
                     <b-button
-                        v-b-tooltip.hover
+                        v-g-tooltip.hover
                         class="inline-icon-button"
                         variant="link"
                         size="sm"
@@ -140,7 +140,7 @@ function resetForm() {
                         <FontAwesomeIcon :icon="faEdit" />
                     </b-button>
                     <b-button
-                        v-b-tooltip.hover
+                        v-g-tooltip.hover
                         class="inline-icon-button"
                         variant="link"
                         size="sm"

@@ -153,7 +153,7 @@ function citationsToBibtexAsText() {
                     </BNav>
                     <BButton
                         v-if="outputFormat === outputFormats.CITATION"
-                        v-b-tooltip.hover
+                        v-g-tooltip.hover
                         title="Copy all references as APA"
                         variant="link"
                         size="sm"
@@ -163,7 +163,7 @@ function citationsToBibtexAsText() {
                     </BButton>
                     <div v-if="outputFormat === outputFormats.BIBTEX" class="bibtex-actions">
                         <BButton
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             title="Copy all references as BibTeX"
                             variant="link"
                             size="sm"
@@ -172,7 +172,7 @@ function citationsToBibtexAsText() {
                             <FontAwesomeIcon :icon="faCopy" />
                         </BButton>
                         <BButton
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             title="Download references as .bib file"
                             variant="link"
                             size="sm"

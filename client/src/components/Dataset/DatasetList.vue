@@ -338,7 +338,7 @@ onMounted(() => {
         <div class="d-flex mt-1 align-items-center mt-2">
             <div v-if="selectedItemIds.length > 0" class="d-flex gap-1 w-100 position-absolute">
                 <BButton
-                    v-b-tooltip.hover
+                    v-g-tooltip.hover
                     size="sm"
                     variant="primary"
                     :disabled="bulkDeleteOrRestoreLoading"

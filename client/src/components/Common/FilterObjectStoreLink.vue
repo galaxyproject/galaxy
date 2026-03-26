@@ -48,7 +48,7 @@ const selectionText = computed(() => {
             <ObjectStoreSelect :object-stores="objectStores" @select="onSelect" />
         </SelectModal>
         <b-link href="#" @click="showModal = true">{{ selectionText }}</b-link>
-        <span v-if="value" v-b-tooltip.hover title="Remove Filter">
+        <span v-if="value" v-g-tooltip.hover title="Remove Filter">
             <FontAwesomeIcon :icon="faTimes" @click="onSelect(undefined)" />
         </span>
     </span>

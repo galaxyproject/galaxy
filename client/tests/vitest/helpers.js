@@ -34,6 +34,7 @@ export function getLocalVue(instrumentLocalization = false) {
     localVue.use(localizationPlugin, l);
     localVue.use(vueRxShortcutPlugin);
     localVue.directive("b-tooltip", mockedDirective);
+    localVue.directive("g-tooltip", mockedDirective);
     localVue.directive("b-popover", mockedDirective);
     return localVue;
 }

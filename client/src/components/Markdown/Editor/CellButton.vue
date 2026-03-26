@@ -1,6 +1,6 @@
 <template>
     <BButton
-        v-b-tooltip.noninteractive="tooltipOptions"
+        v-g-tooltip="tooltipOptions"
         class="border-0 m-1 px-1 py-0"
         :class="{ active, 'cell-button-hide': !show }"
         :title="title"
@@ -15,11 +15,9 @@
 
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, VBTooltipPlugin } from "bootstrap-vue";
+import { BButton } from "bootstrap-vue";
 import type { IconDefinition } from "font-awesome-6";
-import Vue, { computed } from "vue";
-
-Vue.use(VBTooltipPlugin);
+import { computed } from "vue";
 
 const props = withDefaults(
     defineProps<{

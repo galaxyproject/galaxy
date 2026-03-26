@@ -174,7 +174,7 @@ function getCollapsedState(id: string): boolean | undefined {
 <template>
     <div v-if="isToolSection(props.category) && elems.length > 0" class="tool-panel-section">
         <div
-            v-b-tooltip.topright.hover.noninteractive
+            v-g-tooltip.topright.hover
             class="toolSectionTitle tool-panel-divider"
             :title="props.category.description || undefined">
             <a
@@ -190,7 +190,7 @@ function getCollapsedState(id: string): boolean | undefined {
                     <ToolPanelLinks v-if="props.category.links" :links="props.category.links" />
                     <button
                         v-if="props.hasFilterButton"
-                        v-b-tooltip.hover.noninteractive.bottom
+                        v-g-tooltip.hover.bottom
                         title="Show full section"
                         class="inline-icon-button"
                         @click.stop="emit('onFilter', `section:${props.category.name}`)">

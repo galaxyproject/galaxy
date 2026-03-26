@@ -10,14 +10,14 @@
                         <b-form-radio-group
                             v-if="!hasLabels"
                             v-model="editor"
-                            v-b-tooltip.hover.bottom
+                            v-g-tooltip.hover.bottom
                             button-variant="outline-primary"
                             buttons
                             size="sm"
                             title="Editor"
                             :options="editorOptions" />
                         <slot name="buttons" />
-                        <b-button v-b-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
+                        <b-button v-g-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
                             <FontAwesomeIcon :icon="faQuestion" />
                         </b-button>
                     </div>

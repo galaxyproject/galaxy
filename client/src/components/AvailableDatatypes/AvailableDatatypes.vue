@@ -60,7 +60,7 @@ const edamLink = (edamIRI: string) => `https://edamontology.github.io/edam-brows
                     :href="item.descriptionUrl">
                     {{ item.extension }}
                 </GLink>
-                <span v-else v-b-tooltip.hover :title="optionalString(item.description)">
+                <span v-else v-g-tooltip.hover :title="optionalString(item.description)">
                     {{ item.extension }}
                 </span>
             </template>

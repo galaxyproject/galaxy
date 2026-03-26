@@ -809,7 +809,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <template v-slot:cell(permission)="{ item }">
                         <span
                             v-if="item.entry && getPermissionIcon(getItemFolderEntry(item))"
-                            v-b-tooltip.hover
+                            v-g-tooltip.hover
                             class="mr-2 text-muted"
                             :title="getPermissionTitle(getItemFolderEntry(item))">
                             <FontAwesomeIcon :icon="getPermissionIcon(getItemFolderEntry(item))" />
@@ -894,7 +894,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 
                     <template v-slot:cell(actions)="{ item }">
                         <GButton
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover
                             class="remove-btn"
                             color="red"
                             outline

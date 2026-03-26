@@ -246,13 +246,13 @@ defineExpose({
                 <template v-slot:cell(user)="{ item }">
                     <span
                         v-if="urlTracker.isAtRoot.value && !item.isLeaf && item.url.startsWith(USER_FILE_PREFIX)"
-                        v-b-tooltip.hover.noninteractive
+                        v-g-tooltip.hover
                         title="You created this file source">
                         <FontAwesomeIcon :icon="faUser" class="text-primary" fixed-width />
                     </span>
                     <span
                         v-else-if="urlTracker.isAtRoot.value && !item.isLeaf"
-                        v-b-tooltip.hover.noninteractive
+                        v-g-tooltip.hover
                         title="This file source was created by an administrator and is globally available">
                         <FontAwesomeIcon :icon="faGlobe" class="text-primary" fixed-width />
                     </span>

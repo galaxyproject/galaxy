@@ -66,12 +66,7 @@ const isPolling = computed(() =>
         </div>
 
         <span v-if="props.graphStep">
-            <BBadge
-                v-if="isPolling"
-                v-b-tooltip.hover.noninteractive
-                class="mr-1"
-                title="Polling for updates"
-                variant="link">
+            <BBadge v-if="isPolling" v-g-tooltip.hover class="mr-1" title="Polling for updates" variant="link">
                 <FontAwesomeIcon :icon="faSpinner" spin />
             </BBadge>
 

@@ -108,7 +108,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             <BButton
                 v-for="(v, index) in props.variant"
                 :key="index"
-                v-b-tooltip.hover.bottom
+                v-g-tooltip.hover.bottom
                 :pressed="props.currentField === index"
                 :title="localize(v.tooltip)"
                 :style="v.icon === faFolder && v.multiple ? 'padding: 2px' : ''"
@@ -121,7 +121,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             </BButton>
             <BButton
                 v-if="props.canBrowse && !props.workflowRun"
-                v-b-tooltip.hover.bottom
+                v-g-tooltip.hover.bottom
                 :title="localize('Browse or Upload Datasets')"
                 @click="emit('on-browse')">
                 <FontAwesomeIcon v-if="props.loading" :icon="faSpinner" spin />
@@ -130,7 +130,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
         </BButtonGroup>
         <BButton
             v-if="props.showViewCreateOptions && props.isPopulated"
-            v-b-tooltip.bottom.hover.noninteractive
+            v-g-tooltip.bottom.hover
             class="d-flex flex-gapx-1 align-items-center"
             title="View currently selected"
             :pressed="props.workflowTab === 'view'"
@@ -142,7 +142,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
              that has a single builder exposed, or source is dataset(s). -->
         <template v-if="props.showViewCreateOptions && sourceIsCollection && !hasSingleAvailableCollectionBuilderType">
             <BDropdown
-                v-b-tooltip.bottom.hover.noninteractive
+                v-g-tooltip.bottom.hover
                 class="d-flex"
                 data-description="upload"
                 :title="createTitle"
@@ -158,7 +158,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             </BDropdown>
             <BButton
                 v-if="props.workflowTab === 'create'"
-                v-b-tooltip.bottom.hover.noninteractive
+                v-g-tooltip.bottom.hover
                 title="Hide Collection Creator"
                 variant="link"
                 @click="emit('update:workflow-tab', '')">
@@ -168,7 +168,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
         </template>
         <BButton
             v-else-if="props.showViewCreateOptions && sourceIsCollection"
-            v-b-tooltip.bottom.hover.noninteractive
+            v-g-tooltip.bottom.hover
             class="d-flex flex-gapx-1 align-items-center"
             data-description="upload"
             :title="createTitle"
@@ -179,7 +179,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
         </BButton>
         <template v-else-if="props.showViewCreateOptions && !sourceIsCollection">
             <BButton
-                v-b-tooltip.bottom.hover.noninteractive
+                v-g-tooltip.bottom.hover
                 class="d-flex flex-gapx-1 align-items-center"
                 data-description="upload"
                 :title="createTitle"
@@ -189,7 +189,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
                 <span v-localize>Upload</span>
             </BButton>
             <BButton
-                v-b-tooltip.bottom.hover.noninteractive
+                v-g-tooltip.bottom.hover
                 class="d-flex flex-gapx-1 align-items-center"
                 data-description="upload-beta"
                 title="Try our new upload experience"
