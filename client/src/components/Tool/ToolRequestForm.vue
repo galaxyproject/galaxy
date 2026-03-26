@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BAlert, BFormGroup, BFormInput, BFormTextarea } from "bootstrap-vue";
-import { ref } from "vue";
+import { nextTick, ref, watch } from "vue";
 
 import { submitToolRequest } from "@/api/toolRequestForm";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -15,6 +15,8 @@ const props = defineProps<{
 const emit = defineEmits<{
     (e: "update:show", value: boolean): void;
 }>();
+
+const modal = ref<InstanceType<typeof GModal> | null>(null);
 
 const toolName = ref("");
 const toolUrl = ref("");
@@ -51,6 +53,12 @@ function resetForm() {
 function close() {
     resetForm();
     emit("update:show", false);
+}
+
+async function open() {
+    emit("update:show", true);
+    await nextTick();
+    modal.value?.showModal();
 }
 
 async function submit() {
@@ -96,10 +104,24 @@ async function submit() {
         errorMessage.value = errorMessageAsString(e, "Failed to submit tool request. Please try again.");
     }
 }
+
+watch(
+    () => props.show,
+    async (show) => {
+        await nextTick();
+
+        if (show) {
+            modal.value?.showModal();
+        }
+    },
+);
+
+defineExpose({ open, close });
 </script>
 
 <template>
     <GModal
+        ref="modal"
         :show="props.show"
         title="Request a Tool"
         size="medium"
