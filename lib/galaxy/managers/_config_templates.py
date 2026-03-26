@@ -16,6 +16,7 @@ from typing_extensions import TypedDict
 
 from galaxy.exceptions import (
     InconsistentDatabase,
+    InternalServerError,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException,
@@ -277,6 +278,8 @@ def prepare_environment_from_root(
             secret_value = vault.read_secret(template_secret.vault_key) or template_secret.default
             if secret_value:
                 environment[e_name] = secret_value
+            else:
+                raise InternalServerError(f"Failed to retrieve {template_secret.vault_key} from vault")
         elif e_type == "variable":
             template_variable = cast(TemplateEnvironmentVariable, environment_entry)
             variable_value = os.environ.get(template_variable.variable)
@@ -284,6 +287,10 @@ def prepare_environment_from_root(
                 variable_value = template_variable.default
             if variable_value:
                 environment[e_name] = variable_value
+            else:
+                raise InternalServerError(
+                    f"Environment variable {template_variable.variable} not found and no default provided. Please set this variable in the environment or provide a default value in the template definition."
+                )
         else:
             raise Exception(f"Unknown environment entry type detected [{e_type}]")
 

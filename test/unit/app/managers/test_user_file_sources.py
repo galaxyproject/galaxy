@@ -6,6 +6,7 @@ from typing import (
 from unittest import SkipTest
 from uuid import uuid4
 
+import pytest
 from fs.osfs import OSFS
 
 try:
@@ -16,6 +17,8 @@ from requests.exceptions import HTTPError
 from yaml import safe_load
 
 from galaxy.exceptions import (
+    InternalServerError,
+    MessageException,
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
@@ -23,6 +26,7 @@ from galaxy.files import FileSourcesUserContext
 from galaxy.files.sources import dropbox
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.files.templates.examples import get_example
+from galaxy.managers._config_templates import prepare_environment_from_root
 from galaxy.managers.file_source_instances import (
     CreateInstancePayload,
     FileSourceInstancesManager,
@@ -43,7 +47,12 @@ from galaxy.model import (
 )
 from galaxy.schema.schema import OAuth2State
 from galaxy.util import config_templates
-from galaxy.util.config_templates import RawTemplateConfig
+from galaxy.util.config_templates import (
+    RawTemplateConfig,
+    TemplateEnvironmentEntry,
+    TemplateEnvironmentSecret,
+    TemplateEnvironmentVariable,
+)
 from .base import BaseTestCase
 
 SIMPLE_FILE_SOURCE_NAME = "myfilesource"
@@ -783,6 +792,35 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert status.template_settings.is_not_ok
         assert "Input should be a valid boolean" in status.template_settings.message
         assert status.connection is None
+
+    def test_environment_variable_missing_raises_configuration_error(self, tmp_path, monkeypatch):
+        self._init_managers(tmp_path)
+        missing_var = "GX_UNIT_TEST_SHOULD_NOT_BE_SET_XYZ123"
+        monkeypatch.delenv(missing_var, raising=False)
+        entries: list[TemplateEnvironmentEntry] = [
+            TemplateEnvironmentVariable(type="variable", name="myvar", variable=missing_var)
+        ]
+        with pytest.raises(InternalServerError) as exc_info:
+            prepare_environment_from_root(entries, self.app.vault, self.app)
+        assert missing_var in str(exc_info.value)
+
+    def test_vault_secret_missing_raises_configuration_error(self, tmp_path):
+        self._init_managers(tmp_path)
+        entries: list[TemplateEnvironmentEntry] = [
+            TemplateEnvironmentSecret(type="secret", name="mysec", vault_key="nonexistent/missing_key")
+        ]
+        with pytest.raises(InternalServerError) as exc_info:
+            prepare_environment_from_root(entries, self.app.vault, self.app)
+        assert "nonexistent/missing_key" in str(exc_info.value)
+
+    def test_oauth2_template_missing_env_raises_message_exception(self, tmp_path, monkeypatch):
+        self.init_user_in_database()
+        self._init_managers(tmp_path, safe_load(get_example("production_dropbox.yml")))
+        monkeypatch.delenv("GALAXY_DROPBOX_APP_CLIENT_ID", raising=False)
+        monkeypatch.delenv("GALAXY_DROPBOX_APP_CLIENT_SECRET", raising=False)
+        with pytest.raises(MessageException) as exc_info:
+            self.manager.template_oauth2(self.trans, "dropbox", 0)
+        assert "Please contact your administrator" in str(exc_info.value)
 
     def _init_invalid_upgrade_test_case(self, tmp_path) -> UserFileSourceModel:
         version_0 = home_directory_template(tmp_path)
