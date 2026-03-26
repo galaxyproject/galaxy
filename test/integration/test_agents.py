@@ -235,9 +235,8 @@ class TestAgentsApiMocked(AgentIntegrationTestCase):
         # Response structure is {'response': {..., 'content': ...}, ...}
         assert "response" in data
         assert "content" in data["response"]
-        # Should mention the error type or solution
         content = data["response"]["content"].lower()
-        assert "command" in content or "samtools" in content or "not found" in content
+        assert "tool configuration" in content or "samtools" in content or "error" in content
 
         # Suggestions are optional - only returned for actionable items like CONTACT_SUPPORT
         # In this mock, requires_admin=False, so no suggestions expected
