@@ -6,7 +6,7 @@
  * split buttons, dropup, no-caret, and menu/toggle class customization.
  */
 
-import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, provide, ref } from "vue";
 
 const props = withDefaults(
     defineProps<{
@@ -20,8 +20,6 @@ const props = withDefaults(
         right?: boolean;
         /** Hide the caret icon */
         noCaret?: boolean;
-        /** Prevent menu from flipping */
-        noFlip?: boolean;
         /** Drop direction */
         dropup?: boolean;
         dropleft?: boolean;
@@ -34,16 +32,12 @@ const props = withDefaults(
         toggleClass?: string | string[] | Record<string, boolean>;
         /** Extra classes for the dropdown menu */
         menuClass?: string | string[] | Record<string, boolean>;
-        /** Boundary for positioning */
-        boundary?: string;
         /** Disabled state */
         disabled?: boolean;
         /** ARIA role */
         role?: string;
         /** Lazy render menu content */
         lazy?: boolean;
-        /** Offset */
-        offset?: number | string;
     }>(),
     {
         text: undefined,
@@ -51,7 +45,6 @@ const props = withDefaults(
         size: undefined,
         right: false,
         noCaret: false,
-        noFlip: false,
         dropup: false,
         dropleft: false,
         dropright: false,
@@ -59,11 +52,9 @@ const props = withDefaults(
         split: false,
         toggleClass: undefined,
         menuClass: undefined,
-        boundary: undefined,
         disabled: false,
         role: undefined,
         lazy: false,
-        offset: undefined,
     },
 );
 
@@ -175,10 +166,6 @@ const shouldRenderMenu = computed(() => {
         return true;
     }
     return hasBeenOpened.value;
-});
-
-onMounted(() => {
-    // Clean up on mount if needed
 });
 
 onBeforeUnmount(() => {
