@@ -42,7 +42,6 @@ function onDownload(resource: string, extension = "") {
         v-g-tooltip.hover
         dropup
         no-caret
-        no-flip
         size="sm"
         variant="link"
         toggle-class="text-decoration-none"

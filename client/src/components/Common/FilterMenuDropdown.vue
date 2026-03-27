@@ -140,7 +140,6 @@ function setValue(val: FilterValue) {
                 class="w-100"
                 menu-class="w-100"
                 size="sm"
-                boundary="window"
                 :disabled="props.disabled"
                 :toggle-class="props.error ? 'text-danger' : ''">
                 <GDropdownItem href="#" @click="setValue(undefined)"><i>(any)</i></GDropdownItem>

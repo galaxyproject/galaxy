@@ -1,6 +1,6 @@
 <template>
     <section v-if="hasSelection && !isMultiViewItem">
-        <GDropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
+        <GDropdown text="Selection" size="sm" variant="primary" data-description="selected content menu">
             <template v-slot:button-content>
                 <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
                     {{ localize("All") }} <b>{{ totalItemsInQuery }}</b> {{ localize("selected") }}

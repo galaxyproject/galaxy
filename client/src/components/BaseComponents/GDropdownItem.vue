@@ -73,11 +73,20 @@ function onClick(event: MouseEvent) {
         :to="to"
         :target="target"
         :title="title"
+        :aria-disabled="disabled || undefined"
         role="menuitem"
         @click.native="onClick">
         <slot />
     </router-link>
-    <a v-else :class="classes" :href="href ?? '#'" :target="target" :title="title" role="menuitem" @click="onClick">
+    <a
+        v-else
+        :class="classes"
+        :href="href ?? '#'"
+        :target="target"
+        :title="title"
+        :aria-disabled="disabled || undefined"
+        role="menuitem"
+        @click="onClick">
         <slot />
     </a>
 </template>
