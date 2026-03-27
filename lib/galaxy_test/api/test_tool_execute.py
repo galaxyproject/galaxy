@@ -735,6 +735,31 @@ def test_null_to_text_tool_with_validation(required_tool: RequiredTool, tool_inp
     required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""})).assert_fails()
 
 
+@requires_tool_id("gx_text_optional_regex_validation")
+def test_optional_text_with_regex_validation(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    # absent param — legacy/21.01 resolve to value="" default, runtime skips regex for empty optional
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json(
+        {"parameter": None} if tool_input_format.is_request else {"parameter": ""}
+    )
+
+    # explicit null — all formats treat as "not provided" for optional
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": None}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
+
+    # explicit empty string — optional so runtime skips regex validation
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+    # valid value should pass all formats
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": "0.5"}))
+    execute.assert_has_single_job.with_output("output").with_contents_stripped("0.5")
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": "0.5"})
+
+    # invalid value should fail regardless of format
+    required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": "abc"})).assert_fails()
+
+
 @requires_tool_id("cat|cat1")
 def test_deferred_basic(required_tool: RequiredTool, target_history: TargetHistory):
     has_src_dict = target_history.with_deferred_dataset_for_test_file("1.bed", ext="bed")
