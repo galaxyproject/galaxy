@@ -1685,8 +1685,8 @@ class Taf(Text):
         """
         Determines wether the file is in taf format
 
-        The first line of a .taf file begins with #taf. This word is followed 
-        by white-space-separated 'variable:value' pairs. There should be no white 
+        The first line of a .taf file begins with #taf. This word is followed
+        by white-space-separated 'variable:value' pairs. There should be no white
         space surrounding the ':'.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
