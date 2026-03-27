@@ -318,6 +318,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
             requested_transform.append({"action": "to_posix_lines"})
         source_dict["requested_transform"] = requested_transform
         effective_state = "ok"
+        stdout: Optional[str] = None
         if not deferred and not error_message:
             in_place = item.get("in_place", default_in_place)
             purge_source = item.get("purge_source", True)
@@ -410,6 +411,9 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
             effective_state = "deferred"
             registry = upload_config.registry
             ext = sniff.guess_ext_from_file_name(name, registry=registry, requested_ext=requested_ext)
+        info = f"uploaded {ext} file"
+        if stdout:
+            info = f"{info}\n{stdout}"
         rval = {
             "name": name,
             "dbkey": dbkey,
@@ -417,7 +421,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
             "link_data_only": link_data_only,
             "sources": sources,
             "hashes": hashes,
-            "info": f"uploaded {ext} file",
+            "info": info,
             "state": effective_state,
         }
         if path:
