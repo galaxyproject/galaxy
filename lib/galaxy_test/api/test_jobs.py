@@ -2,7 +2,6 @@ import datetime
 import json
 import os
 import time
-import urllib.parse
 from operator import itemgetter
 from typing import Union
 from unittest import SkipTest
@@ -526,7 +525,7 @@ steps:
     @skip_without_tool("detect_errors_aggressive")
     def test_report_error_anon(self):
         with self._different_user(anon=True):
-            history_id = self._get(urllib.parse.urljoin(self.url, "history/current_history_json")).json()["id"]
+            history_id = self._get_current_history_id()
             self._run_error_report(history_id)
 
     def _run_error_report(self, history_id):

@@ -1,5 +1,4 @@
 import textwrap
-import urllib
 import zipfile
 from io import BytesIO
 from urllib.parse import quote
@@ -566,7 +565,7 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_anon_tag_permissions(self):
         with self._different_user(anon=True):
-            history_id = self._get(urllib.parse.urljoin(self.url, "history/current_history_json")).json()["id"]
+            history_id = self._get_current_history_id()
             hda_id = self.dataset_populator.new_dataset(history_id, content="abc", wait=True)["id"]
             payload = {
                 "item_id": hda_id,

@@ -178,6 +178,10 @@ class UsesApiTestCaseMixin:
             self.galaxy_interactor.api_key = original_interactor_key
             self.galaxy_interactor.cookies = original_cookies
 
+    def _get_current_history_id(self) -> str:
+        """Return the current session's history ID (works for anonymous users)."""
+        return self._get(urljoin(self.url, "history/current_history_json")).json()["id"]
+
     def _get(self, *args, **kwds):
         return self.galaxy_interactor.get(*args, **kwds)
 

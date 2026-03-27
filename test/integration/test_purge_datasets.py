@@ -113,6 +113,29 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
         assert not self._file_exists_on_disk(dataset_file1)
         assert not self._file_exists_on_disk(dataset_file2)
 
+    def test_purge_anonymous_history(self):
+        """Regression test for GALAXY-MAIN-4KSCZZZ00152B."""
+        with self._different_user(anon=True):
+            history_id = self._get_current_history_id()
+            hda = self.dataset_populator.new_dataset(history_id, wait=True)
+            hda_id = hda["id"]
+
+            dataset_file = self._get_underlying_dataset_on_disk(hda_id)
+            assert self._file_exists_on_disk(dataset_file)
+
+        # Purge via admin API (anonymous histories are only accessible to admins)
+        purge_response = self._delete(f"histories/{history_id}", data={"purge": True}, admin=True, json=True)
+        self._assert_status_code_is_ok(purge_response)
+        purge_result = purge_response.json()
+        assert purge_result["purged"]
+
+        # Wait for the celery purge task to finish
+        assert "purge_task" in purge_result
+        task_ok = self.dataset_populator.wait_on_task_id(purge_result["purge_task"]["id"])
+        assert task_ok
+
+        assert not self._file_exists_on_disk(dataset_file)
+
     def _get_underlying_dataset_on_disk(self, hda_id: str) -> Optional[str]:
         detailed_response = self._get(f"datasets/{hda_id}", admin=True).json()
         return detailed_response.get("file_name")
