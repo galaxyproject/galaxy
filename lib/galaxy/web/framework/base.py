@@ -98,7 +98,6 @@ class WebApplication:
         self.controllers = {}
         self.api_controllers = {}
         self.mapper = routes.Mapper()
-        self.clientside_routes = routes.Mapper(controller_scan=None, register=False)
         # FIXME: The following two options are deprecated and should be
         # removed.  Consult the Routes documentation.
         self.mapper.minimization = True
@@ -132,9 +131,6 @@ class WebApplication:
         """
         self.mapper.connect(route, **kwargs)
 
-    def add_client_route(self, route, controller="root"):
-        self.clientside_routes.connect(route, controller=controller, action="client")
-
     def set_transaction_factory(self, transaction_factory):
         """
         Use the callable `transaction_factory` to create the transaction
@@ -149,7 +145,6 @@ class WebApplication:
         """
         # Create/compile the regular expressions for route mapping
         self.mapper.create_regs(list(self.controllers.keys()))
-        self.clientside_routes.create_regs()
 
     def trace(self, **fields):
         if self.trace_logger:
@@ -212,8 +207,7 @@ class WebApplication:
 
     def handle_request(self, request_id, path_info, environ, start_response, body_renderer=None):
         # Map url using routes
-        client_match = self.clientside_routes.match(path_info, environ)
-        map_match = self.mapper.match(path_info, environ) or client_match
+        map_match = self.mapper.match(path_info, environ)
         if path_info.startswith("/api"):
             environ["is_api_request"] = True
             controllers = self.api_controllers
@@ -221,7 +215,10 @@ class WebApplication:
             environ["is_api_request"] = False
             controllers = self.controllers
         if map_match is None:
-            raise webob.exc.HTTPNotFound(f"No route for {path_info}")
+            if environ["is_api_request"]:
+                raise webob.exc.HTTPNotFound(f"No route for {path_info}")
+            # Unmatched non-API path: serve the SPA and let the Vue router handle it
+            map_match = {"controller": "root", "action": "client"}
         self.trace(path_info=path_info, map_match=map_match)
         # Setup routes
         rc = routes.request_config()
@@ -239,20 +236,7 @@ class WebApplication:
         trans.request_id = request_id
         rc.redirect = trans.response.send_redirect
         # Resolve mapping to controller/method
-        try:
-            # We don't use default methods if there's a clientside match for this route.
-            use_default = client_match is None
-            controller_name, controller, action, method = self._resolve_map_match(
-                map_match, path_info, controllers, use_default=use_default
-            )
-        except webob.exc.HTTPNotFound:
-            # Failed, let's check client routes
-            if not environ["is_api_request"] and client_match is not None:
-                controller_name, controller, action, method = self._resolve_map_match(
-                    client_match, path_info, controllers
-                )
-            else:
-                raise
+        controller_name, controller, action, method = self._resolve_map_match(map_match, path_info, controllers)
         trans.controller = controller_name
         trans.action = action
 

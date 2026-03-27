@@ -466,17 +466,16 @@ def get_webapp_global_conf():
 
 def wait_for_http_server(host, port, prefix=None, sleep_amount=0.1, sleep_tries=150):
     """Wait for an HTTP server to boot up."""
-    # Test if the server is up
+    # Use the API version endpoint for the health check since the root URL
+    # may not return 200 (e.g. when the client build is skipped).
     prefix = prefix or "/"
-    if not prefix.endswith("/"):
-        prefix = f"{prefix}/"
+    health_path = f"{prefix}api/version"
     for _ in range(sleep_tries):
-        # directly test the app, not the proxy
         if port and isinstance(port, str):
             port = int(port)
         conn = http.client.HTTPConnection(host, port)
         try:
-            conn.request("GET", prefix)
+            conn.request("GET", health_path)
             response = conn.getresponse()
             if response.status == 200:
                 break
