@@ -6,6 +6,7 @@ import { computed } from "vue";
 
 import type { HDADetailed } from "@/api";
 import { prependPath } from "@/utils/redirect";
+import { bytesToString } from "@/utils/utils";
 
 interface Props {
     item: HDADetailed;
@@ -27,6 +28,13 @@ const metaDownloadUrl = computed(() => {
 const downloadUrl = computed(() => {
     return prependPath(`api/datasets/${props.item.id}/display?to_ext=${props.item.extension}`);
 });
+const downloadTitle = computed(() => {
+    const size = props.item.file_size;
+    if (size) {
+        return `Download (${bytesToString(size)})`;
+    }
+    return "Download";
+});
 
 function onDownload(resource: string, extension = "") {
     emit("on-download", `${resource}${extension}`);
@@ -43,7 +51,7 @@ function onDownload(resource: string, extension = "") {
         size="sm"
         variant="link"
         toggle-class="text-decoration-none"
-        title="Download"
+        :title="downloadTitle"
         class="download-btn"
         data-description="dataset download">
         <template v-slot:button-content>
@@ -68,7 +76,7 @@ function onDownload(resource: string, extension = "") {
         v-else
         v-g-tooltip.hover
         class="download-btn px-1"
-        title="Download"
+        :title="downloadTitle"
         size="sm"
         variant="link"
         :href="downloadUrl"
