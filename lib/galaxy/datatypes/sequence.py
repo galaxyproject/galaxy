@@ -42,6 +42,7 @@ from galaxy.datatypes.sniff import (
 from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import (
     compression_utils,
+    iter_start_of_line,
     nice_size,
 )
 from galaxy.util.checkers import is_gzip
@@ -376,7 +377,7 @@ class Fasta(Sequence):
         data_lines = 0
         sequences = 0
         with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
-            for line in fh:
+            for line in iter_start_of_line(fh, 1):
                 if not line:
                     continue
                 elif line[0] == ">":
