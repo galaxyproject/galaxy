@@ -13,6 +13,7 @@ from galaxy.tool_util.verify.interactor import (
 )
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.driver.driver_util import GalaxyTestDriver
+from galaxy_test.driver.integration_util import ConfiguresDatabaseVault
 
 SKIPTEST = os.path.join(os.path.dirname(__file__), "known_broken_tools.txt")
 
@@ -60,9 +61,15 @@ def idfn(val: ToolTest):
     return f"{val.tool_id}/{val.tool_version}-{val.test_index}"
 
 
-class TestFrameworkTools(ApiTestCase):
+class TestFrameworkTools(ApiTestCase, ConfiguresDatabaseVault):
     conda_auto_init = True
     conda_auto_install = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        """Configure vault for credential testing."""
+        super().handle_galaxy_config_kwds(config)
+        cls._configure_database_vault(config)
 
     @pytest.mark.parametrize("testcase", cases(), ids=idfn)
     def test_tool(self, testcase: ToolTest):

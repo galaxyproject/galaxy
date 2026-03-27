@@ -18,6 +18,7 @@ from typing import (
 )
 
 from packaging.version import Version
+from pydantic import TypeAdapter
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
@@ -53,6 +54,7 @@ from galaxy.util import (
 )
 from .interface import (
     AssertionList,
+    DirectCredential,
     DrillDownDynamicOptions,
     DynamicOptions,
     InputSource,
@@ -819,6 +821,7 @@ def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
         expect_test_failure=string_as_bool(test_elem.get("expect_test_failure", False)),
         maxseconds=test_elem.get("maxseconds", None),
         value_state_representation="test_case_xml",
+        credentials=__parse_credentials_elems(test_elem),
     )
     _copy_to_dict_if_present(test_elem, rval, ["num_outputs"])
     return rval
@@ -1091,6 +1094,29 @@ def __parse_inputs_elems(test_elem, i) -> ToolSourceTestInputs:
         raw_inputs.append(__parse_param_elem(param_elem, i))
 
     return raw_inputs
+
+
+_direct_credential_adapter: TypeAdapter = TypeAdapter(List[DirectCredential])
+
+
+def __parse_credentials_elems(test_elem):
+    """
+    Parse credential definitions from test element.
+    Returns a list of DirectCredential dictionaries or None if no credentials are defined.
+    """
+    raw_list = []
+    for cred_elem in test_elem.findall("credentials"):
+        variables = [{"name": v.get("name"), "value": v.get("value")} for v in cred_elem.findall("variable")]
+        secrets = [{"name": s.get("name"), "value": s.get("value")} for s in cred_elem.findall("secret")]
+        raw: dict = {"name": cred_elem.get("name"), "variables": variables, "secrets": secrets}
+        version = cred_elem.get("version")
+        if version is not None:
+            raw["version"] = version
+        raw_list.append(raw)
+
+    if not raw_list:
+        return None
+    return _direct_credential_adapter.validate_python(raw_list)
 
 
 def _test_collection_def_dict(elem: Element) -> XmlTestCollectionDefDict:

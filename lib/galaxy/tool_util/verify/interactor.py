@@ -21,6 +21,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -46,6 +47,7 @@ from galaxy.tool_util.parameters import (
 )
 from galaxy.tool_util.parser.interface import (
     AssertionList,
+    DirectCredential,
     TestCollectionDef,
     TestCollectionOutputDef,
     TestSourceTestOutputColllection,
@@ -141,6 +143,7 @@ class ValidToolTestDict(TypedDict):
     required_files: NotRequired[RequiredFilesT]
     required_data_tables: NotRequired[RequiredDataTablesT]
     required_loc_files: NotRequired[RequiredLocFileT]
+    credentials: NotRequired[Optional[List[DirectCredential]]]
     error: Literal[False]
     tool_id: str
     tool_version: str
@@ -209,6 +212,14 @@ class RunToolResponse(NamedTuple):
     jobs: List[Dict[str, Any]]
 
 
+class ToolSubmissionResponse(NamedTuple):
+    inputs: Dict[str, Any]
+    tool_request_id: Optional[str]  # None for legacy submissions
+    submit_response_object: Dict[str, Any]  # raw validated response
+    is_legacy: bool
+    cleanup: Optional[Callable[[], None]] = None
+
+
 class InteractorStagingInterface(StagingInterface):
 
     def __init__(self, galaxy_interactor: "GalaxyInteractorApi", maxseconds: Optional[int], upload_async: bool) -> None:
@@ -239,6 +250,17 @@ class InteractorStagingInterface(StagingInterface):
     @property
     def use_fetch_api(self):
         return True
+
+
+def raise_for_status(response: Response) -> None:
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        try:
+            body = response.json()
+        except Exception:
+            body = response.text
+        raise requests.exceptions.HTTPError(f"{e} - Response body: {body}", response=response) from e
 
 
 class GalaxyInteractorApi:
@@ -692,13 +714,87 @@ class GalaxyInteractorApi:
             raise ValueError(f"Invalid `location` URL: `{location}`")
         return location
 
+    def _credential_api_call(self, method: str, path: str, data: Optional[Dict[str, Any]] = None) -> Any:
+        """Low-level helper: call a credential API endpoint, raise on error, return JSON."""
+        if method == "post":
+            response = self._post(path, data=data or {}, json=True)
+        elif method == "get":
+            response = self._get(path)
+        elif method == "delete":
+            response = self._delete(path)
+        else:
+            raise ValueError(f"Unsupported method: {method}")
+        raise_for_status(response)
+        return response.json()
+
+    def _create_test_credentials(
+        self, testdef: "ToolTestDescription"
+    ) -> Tuple[List[Dict[str, Any]], Optional[List[Dict[str, Any]]]]:
+        """Create vault credentials for a test and return (created_credentials, credentials_context)."""
+        if not testdef.credentials:
+            return [], None
+
+        user_id = self._credential_api_call("get", "whoami")["id"]
+        created_credentials = []
+        credentials_context_list = []
+
+        for cred in testdef.credentials:
+            credential_payload = {
+                "source_type": "tool",
+                "source_id": testdef.tool_id,
+                "source_version": testdef.tool_version or "1.0.0",
+                "service_credential": {
+                    "name": cred["name"],
+                    "version": cred.get("version", "1.0"),
+                    "group": {
+                        "name": f"test_group_{cred['name']}",
+                        "variables": cred.get("variables", []),
+                        "secrets": cred.get("secrets", []),
+                    },
+                },
+            }
+            created_cred = self._credential_api_call("post", f"users/{user_id}/credentials", data=credential_payload)
+            all_credentials = self._credential_api_call("get", f"users/{user_id}/credentials")
+
+            # Find user_credentials_id by matching the newly-created group id.
+            user_credentials_id = None
+            for user_cred in all_credentials:
+                if (
+                    user_cred["source_type"] == "tool"
+                    and user_cred["source_id"] == testdef.tool_id
+                    and user_cred.get("source_version") == (testdef.tool_version or "1.0.0")
+                ):
+                    for group in user_cred["groups"]:
+                        if group["id"] == created_cred["id"]:
+                            user_credentials_id = user_cred["id"]
+                            break
+                    if user_credentials_id:
+                        break
+
+            if not user_credentials_id:
+                raise RuntimeError(
+                    f"Failed to find user_credentials_id for created credential group {created_cred['id']}"
+                )
+
+            created_credentials.append({"user_credentials_id": user_credentials_id, "user_id": user_id})
+            credentials_context_list.append(
+                {
+                    "user_credentials_id": user_credentials_id,
+                    "name": cred["name"],
+                    "version": cred.get("version", "1.0"),
+                    "selected_group": {"id": created_cred["id"], "name": created_cred["name"]},
+                }
+            )
+
+        return created_credentials, credentials_context_list
+
     def run_tool(
         self,
         testdef: "ToolTestDescription",
         history_id: str,
         resource_parameters: Optional[Dict[str, Any]] = None,
         use_legacy_api: UseLegacyApiT = DEFAULT_USE_LEGACY_API,
-    ) -> RunToolResponse:
+    ) -> "ToolSubmissionResponse":
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
@@ -708,7 +804,9 @@ class GalaxyInteractorApi:
         if testdef.value_state_representation == "test_case_json":
             # Don't submit user / YAML tools to the old endpoint.
             submit_with_legacy_api = False
-
+        if testdef.credentials:
+            # Force legacy API for credential-bearing tests since /api/tools already supports credentials_context.
+            submit_with_legacy_api = True
         if submit_with_legacy_api:
             inputs_tree = testdef.inputs.copy()
             for key, value in inputs_tree.items():
@@ -766,6 +864,12 @@ class GalaxyInteractorApi:
                 inputs_tree[f"__job_resource|{key}"] = value
 
         submit_response = None
+
+        extra_data: Dict[str, Any] = {}
+        created_credentials, credentials_context = self._create_test_credentials(testdef)
+        if credentials_context is not None:
+            extra_data["credentials_context"] = dumps(credentials_context)
+
         for _ in range(DEFAULT_TOOL_TEST_WAIT):
             submit_response = self.__submit_tool(
                 history_id,
@@ -773,6 +877,7 @@ class GalaxyInteractorApi:
                 tool_input=inputs_tree,
                 tool_version=testdef.tool_version,
                 use_legacy_api=submit_with_legacy_api,
+                extra_data=extra_data,
             )
             if _are_tool_inputs_not_ready(submit_response):
                 print("Tool inputs not ready yet")
@@ -781,8 +886,36 @@ class GalaxyInteractorApi:
             else:
                 break
         submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
-        if not submit_with_legacy_api:
-            tool_request_id = submit_response_object["tool_request_id"]
+        tool_request_id = None if submit_with_legacy_api else submit_response_object.get("tool_request_id")
+
+        cleanup: Optional[Callable[[], None]] = None
+        if created_credentials:
+
+            def _cleanup_credentials():
+                for cred_info in created_credentials:
+                    try:
+                        self._credential_api_call(
+                            "delete", f"users/{cred_info['user_id']}/credentials/{cred_info['user_credentials_id']}"
+                        )
+                    except Exception as e:
+                        print(f"Warning: Failed to delete test credentials: {e}")
+
+            cleanup = _cleanup_credentials
+
+        return ToolSubmissionResponse(
+            inputs=inputs_tree,
+            tool_request_id=tool_request_id,
+            submit_response_object=submit_response_object,
+            is_legacy=submit_with_legacy_api,
+            cleanup=cleanup,
+        )
+
+    def resolve_tool_submission(self, submission: "ToolSubmissionResponse") -> RunToolResponse:
+        inputs_tree = submission.inputs
+        submit_response_object = submission.submit_response_object
+        if not submission.is_legacy:
+            tool_request_id = submission.tool_request_id
+            assert tool_request_id is not None
             successful = self.wait_on_tool_request(tool_request_id)
             if not successful:
                 request = self.get_tool_request(tool_request_id) or {}
@@ -791,17 +924,15 @@ class GalaxyInteractorApi:
                     inputs_tree,
                 )
             job_refs = self.jobs_for_tool_request(tool_request_id)
-            outputs = OutputsDict()
-            output_collections = {}
             if len(job_refs) != 1:
                 raise Exception(
                     f"Found incorrect number of jobs for tool request - was expecting a single job {job_refs}"
                 )
-            assert len(job_refs) == 1, job_refs
             job_id = job_refs[0]["id"]
             jobs = [self.__get_job(job_id).json()]
-            job_outputs = self.job_outputs(job_id)
-            for job_output in job_outputs:
+            outputs = OutputsDict()
+            output_collections: Dict[str, Any] = {}
+            for job_output in self.job_outputs(job_id):
                 if "dataset" in job_output:
                     outputs[job_output["name"]] = job_output["dataset"]
                 else:
@@ -1631,6 +1762,7 @@ def verify_tool(
     tool_execution_exception: Optional[Exception] = None
     input_staging_exc_info = None
     expected_failure_occurred = False
+    credential_cleanup: Optional[Callable[[], None]] = None
     begin_time = time.time()
     try:
         try:
@@ -1648,10 +1780,13 @@ def verify_tool(
             input_staging_exc_info = sys.exc_info()
             raise
         try:
-            tool_response = galaxy_interactor.run_tool(
+            submission = galaxy_interactor.run_tool(
                 testdef, test_history, resource_parameters=resource_parameters, use_legacy_api=use_legacy_api
             )
-            data_list, jobs, tool_inputs = tool_response.outputs, tool_response.jobs, tool_response.inputs
+            tool_inputs = submission.inputs
+            credential_cleanup = submission.cleanup
+            tool_response = galaxy_interactor.resolve_tool_submission(submission)
+            data_list, jobs = tool_response.outputs, tool_response.jobs
             data_collection_list = tool_response.output_collections
         except RunToolException as e:
             tool_inputs = e.inputs
@@ -1677,6 +1812,8 @@ def verify_tool(
                 job_output_exceptions = [e]
                 raise e
     finally:
+        if credential_cleanup:
+            credential_cleanup()
         if register_job_data is not None:
             end_time = time.time()
             job_data["time_seconds"] = end_time - begin_time
@@ -1909,6 +2046,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
     request: Optional[Dict[str, Any]] = None
     request_schema: Optional[Dict[str, Any]] = None
     request_unavailable_reason: Optional[str] = None
+    credentials: Optional[List[DirectCredential]] = None
 
     if not error_in_test_definition:
         processed_test_dict = cast(ValidToolTestDict, processed_dict)
@@ -1937,6 +2075,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
         request = processed_test_dict.get("request", None)
         request_schema = processed_test_dict.get("request_schema", None)
         request_unavailable_reason = processed_test_dict.get("request_unavailable_reason", None)
+        credentials = processed_test_dict.get("credentials", None)
     else:
         invalid_test_dict = cast(InvalidToolTestDict, processed_dict)
         maxseconds = DEFAULT_TOOL_TEST_WAIT
@@ -1970,6 +2109,7 @@ def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionD
         request_schema=request_schema,
         request_unavailable_reason=request_unavailable_reason,
         value_state_representation=value_state_representation,
+        credentials=credentials,
     )
 
 
@@ -2036,6 +2176,7 @@ class ToolTestDescription:
     output_collections: List[TestCollectionOutputDef]
     maxseconds: Optional[int]
     value_state_representation: ValueStateRepresentationT
+    credentials: Optional[List[DirectCredential]]
 
     @staticmethod
     def from_tool_source_dict(processed_test_dict: ToolTestDict) -> "ToolTestDescription":
@@ -2068,6 +2209,7 @@ class ToolTestDescription:
         self.tool_version = json_dict.get("tool_version")
         self.maxseconds = json_dict.get("maxseconds")
         self.value_state_representation = json_dict.get("value_state_representation", "test_case_xml")
+        self.credentials = json_dict.get("credentials")
 
     def test_data(self):
         """
@@ -2105,6 +2247,8 @@ class ToolTestDescription:
         }
         if self.maxseconds is not None:
             test_description_def["maxseconds"] = self.maxseconds
+        if self.credentials is not None:
+            test_description_def["credentials"] = self.credentials
         return ToolTestDescriptionDict(**test_description_def)
 
 

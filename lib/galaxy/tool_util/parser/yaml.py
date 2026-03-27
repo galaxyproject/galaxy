@@ -12,6 +12,7 @@ from typing import (
 )
 
 import packaging.version
+from pydantic import TypeAdapter
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parameters.convert import _select_which_when
@@ -41,6 +42,7 @@ from galaxy.util import listify
 from .interface import (
     AssertionDict,
     AssertionList,
+    DirectCredential,
     InputSource,
     PageSource,
     PagesSource,
@@ -424,7 +426,32 @@ def _parse_test(i: int, test_dict: dict) -> ToolSourceTest:
     test_dict["expect_failure"] = test_dict.get("expect_failure", False)
     test_dict["expect_test_failure"] = test_dict.get("expect_test_failure", False)
     test_dict["value_state_representation"] = "test_case_json"
+    test_dict["credentials"] = __parse_credentials_yaml(test_dict.get("credentials", None))
     return cast(ToolSourceTest, test_dict)
+
+
+_direct_credential_adapter: TypeAdapter = TypeAdapter(List[DirectCredential])
+
+
+def __parse_credentials_yaml(credentials_data) -> Optional[List[DirectCredential]]:
+    """
+    Parse credentials from YAML test definition.
+
+    Supports both list and dict formats:
+    - List: [{name: "cred1", variables: [...], secrets: [...]}]
+    - Dict: {cred1: {variables: [...], secrets: []}}
+    """
+    if not credentials_data:
+        return None
+
+    # Normalise both dict and list formats into a flat list of raw dicts.
+    if is_dict(credentials_data):
+        # {name: {variables: [], secrets: []}} → [{name: ..., variables: [], secrets: []}]
+        raw_list = [{"name": name, **cred_data} for name, cred_data in credentials_data.items()]
+    else:
+        raw_list = list(credentials_data)
+
+    return _direct_credential_adapter.validate_python(raw_list)
 
 
 def to_test_assert_list(assertions) -> AssertionList:

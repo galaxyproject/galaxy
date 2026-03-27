@@ -185,6 +185,7 @@ def _description_from_tool_source(
                 "maxseconds": maxseconds,
                 "error": False,
                 "value_state_representation": value_state_representation,
+                "credentials": raw_test_dict.get("credentials", None),
             }
         )
     except Exception:
