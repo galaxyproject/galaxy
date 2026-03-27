@@ -13,8 +13,8 @@ from typing import Any
 from pydantic_ai import Agent
 from pydantic_ai.tools import RunContext
 
+from galaxy.agents.operations import AgentOperationsManager
 from galaxy.exceptions import MalformedId
-from galaxy.webapps.galaxy.services.agent_operations import AgentOperationsManager
 from .base import (
     AgentType,
     BaseGalaxyAgent,

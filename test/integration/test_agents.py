@@ -180,8 +180,8 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
     """
 
     def _make_ops(self):
+        from galaxy.agents.operations import AgentOperationsManager
         from galaxy.managers.context import ProvidesUserContext
-        from galaxy.webapps.galaxy.services.agent_operations import AgentOperationsManager
 
         class MinimalTrans(ProvidesUserContext):
             def __init__(self, app):
