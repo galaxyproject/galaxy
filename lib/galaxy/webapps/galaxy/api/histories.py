@@ -68,6 +68,11 @@ from galaxy.schema.schema import (
     WriteStoreToPayload,
 )
 from galaxy.schema.types import LatestLiteral
+from galaxy.schema.workflows import (
+    WorkflowExtractionPayload,
+    WorkflowExtractionResult,
+    WorkflowExtractionSummary,
+)
 from galaxy.webapps.base.api import GalaxyFileResponse
 from galaxy.webapps.galaxy.api import (
     as_form,
@@ -85,6 +90,7 @@ from galaxy.webapps.galaxy.api.common import (
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
+from galaxy.workflow.extract import extract_workflow
 from .common import HistoryIDPathParam
 
 log = logging.getLogger(__name__)
@@ -780,3 +786,51 @@ class FastAPIHistories:
         """Sets a new slug to access this item by URL. The new slug must be unique."""
         self.service.shareable_service.set_slug(trans, history_id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.get(
+        "/api/histories/{history_id}/extraction_summary",
+        summary="Return jobs and dataset summary for extracting a workflow from a history.",
+    )
+    def extraction_summary(
+        self,
+        history_id: HistoryIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> WorkflowExtractionSummary:
+        """Creates a summary of the jobs, datasets and dataset collections in the history
+        that can be used to extract a workflow from the history.
+
+        Returns the list of jobs with their associated input/output datasets, plus any
+        implicit collections, which can be used to select steps for workflow extraction.
+        """
+        return self.service.create_workflow_extraction_summary(history_id, trans)
+
+    @router.post(
+        "/api/histories/{history_id}/extract_workflow",
+        summary="Extract a workflow from a history.",
+    )
+    def extract_workflow_from_history(
+        self,
+        history_id: HistoryIDPathParam,
+        payload: WorkflowExtractionPayload = Body(...),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> WorkflowExtractionResult:
+        """Extracts a workflow from a history based on the selected jobs and datasets provided in the payload.
+
+        Takes the job IDs, dataset HIDs, and dataset collection HIDs along with a workflow name,
+        and constructs a new stored workflow capturing the provenance of those steps.
+        Returns the ID of the newly created workflow.
+        """
+        history = self.service.manager.get_accessible(history_id, trans.user, current_history=trans.history)
+
+        stored_workflow = extract_workflow(
+            trans,
+            user=trans.user,
+            history=history,
+            job_ids=payload.job_ids,
+            dataset_ids=payload.dataset_hids,
+            dataset_collection_ids=payload.dataset_collection_hids,
+            workflow_name=payload.workflow_name,
+            dataset_names=payload.dataset_names,
+            dataset_collection_names=payload.dataset_collection_names,
+        )
+        return WorkflowExtractionResult.model_validate({"id": stored_workflow.id})

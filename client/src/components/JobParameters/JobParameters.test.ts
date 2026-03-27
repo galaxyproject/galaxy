@@ -4,21 +4,12 @@ import { createPinia } from "pinia";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
-import raw from "@/components/providers/test/json/Dataset.json";
 
 import paramResponse from "./parameters-response.json";
 
 import JobParameters from "./JobParameters.vue";
 
 const JOB_ID = "foo";
-const DatasetProvider: any = {
-    render() {
-        return this.$scopedSlots.default({
-            loading: false,
-            result: raw,
-        });
-    },
-};
 const pinia = createPinia();
 const { server, http } = useServerMock();
 
@@ -44,8 +35,7 @@ describe("JobParameters/JobParameters.vue", () => {
         const wrapper = mount(JobParameters as object, {
             propsData,
             stubs: {
-                DatasetProvider: DatasetProvider,
-                ContentItem: true,
+                GenericHistoryItem: true,
             },
             pinia,
         });
@@ -54,7 +44,7 @@ describe("JobParameters/JobParameters.vue", () => {
         const checkTableParameter = (
             element: Wrapper<any>,
             expectedTitle: string,
-            expectedValue: string | { hid: number; name: string },
+            expectedValue: string | { id: string; src: string },
             link?: string,
         ) => {
             const tds = element.findAll("td");
@@ -62,9 +52,9 @@ describe("JobParameters/JobParameters.vue", () => {
             if (typeof expectedValue === "string") {
                 expect(tds.at(1).text()).toContain(expectedValue);
             } else {
-                const contentItem = tds.at(1).find("contentitem-stub");
-                expect(contentItem.attributes("id")).toBe(`${expectedValue.hid}`);
-                expect(contentItem.attributes("name")).toBe(expectedValue.name);
+                const genericItem = tds.at(1).find("generichistoryitem-stub");
+                expect(genericItem.attributes("item-id")).toBe(expectedValue.id);
+                expect(genericItem.attributes("item-src")).toBe(expectedValue.src);
             }
             if (link) {
                 const a_element = tds.at(1).find("a");
@@ -80,7 +70,13 @@ describe("JobParameters/JobParameters.vue", () => {
         expect(elements.length).toBe(3);
 
         checkTableParameter(elements.at(0), "Add this value", "22", undefined);
-        checkTableParameter(elements.at(1), linkParam.text, { hid: raw.hid, name: raw.name }, undefined);
+        const firstVal = Array.isArray(linkParam.value) ? linkParam.value[0] : { id: "", src: "" };
+        checkTableParameter(
+            elements.at(1),
+            linkParam.text,
+            { id: firstVal?.id || "", src: firstVal?.src || "" },
+            undefined,
+        );
         checkTableParameter(elements.at(2), "Iterate?", "NO", undefined);
     });
 
@@ -94,8 +90,7 @@ describe("JobParameters/JobParameters.vue", () => {
             const wrapper = mount(JobParameters as object, {
                 propsData,
                 stubs: {
-                    DatasetProvider: DatasetProvider,
-                    ContentItem: true,
+                    GenericHistoryItem: true,
                 },
                 pinia,
             });

@@ -117,6 +117,11 @@ interface Props {
      */
     selected?: boolean;
 
+    /** When true, dims the card when it is not selected
+     * @default false
+     */
+    dimWhenUnselected?: boolean;
+
     /** Tooltip text for select checkbox
      * @default ""
      */
@@ -310,6 +315,7 @@ function onKeyDown(event: KeyboardEvent) {
             { 'g-card-current': current },
             { 'g-card-published': published },
             { 'g-card-clickable': props.clickable },
+            { 'g-card-dim': props.dimWhenUnselected && !props.selected },
             containerClass,
         ]"
         :tabindex="props.clickable ? 0 : undefined"
@@ -703,6 +709,14 @@ function onKeyDown(event: KeyboardEvent) {
     &.g-card-selected .g-card-content {
         background-color: $brand-light;
         border-color: $brand-primary;
+    }
+
+    &.g-card-dim .g-card-content {
+        filter: saturate(0.5);
+        opacity: 0.7;
+        transition:
+            filter 0.15s ease,
+            opacity 0.15s ease;
     }
 
     &.g-card-current .g-card-content {

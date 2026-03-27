@@ -88,6 +88,9 @@ onMounted(() => {
         dialog.value.addEventListener("close", onClose);
         dialog.value.addEventListener("open", onOpen);
     }
+    if (props.show) {
+        showModal();
+    }
 });
 
 onBeforeUnmount(() => {
