@@ -31,7 +31,6 @@ from ._types import (
     NativeStepDict,
     ToolInputs,
 )
-from ._util import decode_double_encoded_values
 from ._walker import (
     _NATIVE_BOOKKEEPING_KEYS,
     _select_which_when_native,
@@ -88,7 +87,8 @@ def classify_stale_keys(
             tool_state = json.loads(tool_state_raw)
         except (json.JSONDecodeError, TypeError):
             return []
-        decode_double_encoded_values(tool_state)
+        # No per-value decode — .ga export format values are already native
+        # Python types after the outer json.loads. See step_tool_state() comment.
     elif isinstance(tool_state_raw, dict):
         tool_state = tool_state_raw
     else:

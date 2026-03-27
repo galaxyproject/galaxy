@@ -29,8 +29,11 @@ def step_tool_version(step: StepLike) -> Optional[str]:
 def step_tool_state(step: StepLike) -> dict:
     """Get parsed tool_state dict from a step (model or raw dict).
 
-    Always decodes double-encoded values — the model parses the outer JSON
-    but per-value strings like '"8"' still need decoding.
+    The outer JSON decode is all that's needed — .ga export format
+    (nested=True) produces a single json.dumps of native Python types.
+    After one json.loads, all values (containers, leaves) are already
+    correct types. No per-value decode is needed or wanted — blind
+    json.loads on string values like "2" corrupts them (str→int).
     """
     if isinstance(step, NormalizedNativeStep):
         tool_state = dict(step.tool_state)
@@ -39,7 +42,6 @@ def step_tool_state(step: StepLike) -> dict:
         assert tool_state is not None
         if isinstance(tool_state, str):
             tool_state = json.loads(tool_state)
-    decode_double_encoded_values(tool_state)
     return tool_state
 
 
@@ -61,19 +63,6 @@ def step_as_dict(step: StepLike) -> NativeStepDict:
     if isinstance(step, NormalizedNativeStep):
         return step.to_dict()
     return step
-
-
-def decode_double_encoded_values(state: dict):
-    """Decode per-value JSON strings in a double-encoded native tool_state dict."""
-    for key, value in list(state.items()):
-        if isinstance(value, str):
-            try:
-                decoded = json.loads(value)
-                state[key] = decoded
-            except (json.JSONDecodeError, TypeError):
-                pass  # genuinely a string value
-        if isinstance(state[key], dict):
-            decode_double_encoded_values(state[key])
 
 
 def coerce_select_value(value) -> str:
