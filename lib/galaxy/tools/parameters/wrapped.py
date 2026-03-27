@@ -7,6 +7,7 @@ from typing import (
     Union,
 )
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
@@ -201,6 +202,13 @@ def process_key(incoming_key: str, incoming_value: Any, d: dict[str, Any]):
         # Section / Conditional
         input_name = key_parts[0]
         subdict = d.get(input_name, {})
+        if not isinstance(subdict, dict):
+            raise RequestParameterInvalidException(
+                f"Parameter '{incoming_key}' uses prefix '{input_name}' as a nested group, "
+                f"but '{input_name}' was already assigned the plain value {subdict}. "
+                f"Use the full prefixed parameter name (e.g. '<conditional_name>|<input_name>') "
+                f"instead of the unprefixed input name."
+            )
         d[input_name] = subdict
         process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
 
