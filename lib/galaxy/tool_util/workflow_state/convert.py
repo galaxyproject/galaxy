@@ -36,10 +36,13 @@ from ._util import (
     StepLike,
     coerce_select_value,
     is_connected_or_runtime,
-    is_replacement_param,
     step_connected_paths,
     step_input_connections,
     step_tool_state,
+)
+from .legacy_parameters import (
+    ReplacementClassification,
+    scan_native_state,
 )
 from .validation_native import (
     get_parsed_tool_for_native_step,
@@ -83,6 +86,15 @@ def convert_state_to_format2_using(native_step: StepLike, parsed_tool: Optional[
     """
     if parsed_tool is None:
         raise ConversionValidationFailure("Could not resolve tool inputs")
+
+    # Bail early if the native state uses legacy replacement parameters —
+    # we can't meaningfully convert or validate ${...} in typed fields.
+    tool_state = step_tool_state(native_step)
+    input_connections = step_input_connections(native_step)
+    scan = scan_native_state(list(parsed_tool.inputs), tool_state, input_connections)
+    if scan.classification == ReplacementClassification.YES:
+        raise ConversionValidationFailure("Step uses legacy replacement parameters — cannot convert to format2")
+
     try:
         validate_native_step_against(native_step, parsed_tool)
     except Exception:
@@ -114,11 +126,6 @@ def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs):
     for connection_path in result.inputs:
         _inject_connected_value(parsed_tool.inputs, linked_state, connection_path)
 
-    # Skip validation if state contains replacement parameters — these can't
-    # pass Pydantic type validation (e.g., "${num}" for an integer field)
-    if _state_has_replacement_params(parsed_tool.inputs, linked_state):
-        return
-
     try:
         linked_model = WorkflowStepLinkedToolState.parameter_model_for(parsed_tool.inputs)
         linked_model.model_validate(linked_state)
@@ -130,24 +137,6 @@ def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs):
             pass  # Known model completeness gap — connected values not accepted for all types
         else:
             raise
-
-
-def _state_has_replacement_params(tool_inputs: List[ToolParameterT], state: dict) -> bool:
-    """Check if any leaf value in a format2 state dict is a replacement parameter.
-
-    Uses walk_format2_state to traverse only declared tool parameters,
-    avoiding false positives from opaque data structures (e.g. gx_rules blobs).
-    """
-    found = False
-
-    def check_leaf(tool_input: ToolParameterT, value: Any, state_path: str):
-        nonlocal found
-        if not found and isinstance(value, str) and is_replacement_param(value):
-            found = True
-        return SKIP_VALUE
-
-    walk_format2_state(tool_inputs, state, check_leaf)
-    return found
 
 
 def _inject_connected_value(tool_inputs: List[ToolParameterT], state: dict, connection_path: str):
@@ -282,15 +271,11 @@ def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInpu
 def _convert_scalar_value(parameter_type: str, parameter_name: str, value, tool_input: ToolParameterT):
     """Convert a native scalar value to format2 representation."""
     if parameter_type == "gx_integer":
-        if is_replacement_param(value):
-            return value
         try:
             return int(value)
         except (ValueError, TypeError):
             raise Exception(f"Failed to convert integer value {value!r} for {parameter_name}")
     elif parameter_type == "gx_float":
-        if is_replacement_param(value):
-            return value
         try:
             return float(value)
         except (ValueError, TypeError):
@@ -308,8 +293,6 @@ def _convert_scalar_value(parameter_type: str, parameter_name: str, value, tool_
                 return [coerce_select_value(value)]
         return coerce_select_value(value)
     elif parameter_type == "gx_data_column":
-        if is_replacement_param(value):
-            return value
         from galaxy.tool_util_models.parameters import DataColumnParameterModel
 
         dc = cast(DataColumnParameterModel, tool_input)

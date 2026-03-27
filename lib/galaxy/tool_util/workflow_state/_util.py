@@ -89,13 +89,6 @@ def coerce_select_value(value) -> str:
     return str(value)
 
 
-def is_replacement_param(value) -> bool:
-    """Check if value is a legacy replacement parameter like ${num} or #{num}."""
-    if not isinstance(value, str):
-        return False
-    return "${" in value or "#{" in value
-
-
 def is_connected_or_runtime(value) -> bool:
     """Check if value is a ConnectedValue or RuntimeValue marker."""
     return isinstance(value, dict) and value.get("__class__") in ("ConnectedValue", "RuntimeValue")

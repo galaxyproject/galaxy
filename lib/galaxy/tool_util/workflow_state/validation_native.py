@@ -21,7 +21,6 @@ from ._util import (
     StepLike,
     coerce_select_value,
     is_connected_or_runtime,
-    is_replacement_param,
     step_connected_paths,
     step_input_connections,
     step_tool_id,
@@ -32,12 +31,22 @@ from ._walker import (
     SKIP_VALUE,
     walk_native_state,
 )
+from .legacy_parameters import (
+    ReplacementClassification,
+    scan_native_state,
+)
 
 
 def validate_native_step_against(step: StepLike, parsed_tool: ToolInputs):
     tool_state = step_tool_state(step)
     input_connections = step_input_connections(step)
     connected = step_connected_paths(step)
+
+    # Skip validation entirely if replacement parameters are present —
+    # these can't pass type validation (e.g., "${num}" for an integer field)
+    scan = scan_native_state(list(parsed_tool.inputs), tool_state, input_connections)
+    if scan.classification == ReplacementClassification.YES:
+        return
 
     def merge_and_validate(tool_input: ToolParameterT, value: Any, state_path: str):
         parameter_type = tool_input.parameter_type
@@ -61,13 +70,13 @@ def validate_native_step_against(step: StepLike, parsed_tool: ToolInputs):
         ]:
             pass
         elif parameter_type == "gx_integer":
-            if value is not None and value != "null" and not is_replacement_param(value):
+            if value is not None and value != "null":
                 try:
                     int(value)
                 except (ValueError, TypeError):
                     raise Exception(f"Invalid integer data found {value}")
         elif parameter_type == "gx_float":
-            if value is not None and value != "null" and not is_replacement_param(value):
+            if value is not None and value != "null":
                 try:
                     float(value)
                 except (ValueError, TypeError):
