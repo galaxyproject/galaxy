@@ -474,12 +474,11 @@ async function attemptCreate() {
     } else {
         listIdentifiers = pairedListIdentifiers();
     }
-    let confirmed = false;
+    let confirmed: boolean | null = false;
     if (listIdentifiers.length == 0) {
         confirmed = await confirm("Are you sure you want to create a list with no entries?", {
             title: "Create an empty list",
-            okTitle: "Create",
-            okVariant: "primary",
+            okText: "Create",
         });
         if (!confirmed) {
             return;

@@ -14,25 +14,19 @@
                     >{{ localize("With") }} {{ numSelected }} {{ localize("selected...") }}</span
                 >
             </b-dropdown-text>
-            <b-dropdown-item v-if="canUnhideSelection" v-b-modal:show-selected-content data-description="unhide option">
+            <b-dropdown-item v-if="canUnhideSelection" data-description="unhide option" @click="unhideSelected">
                 <span v-localize>Unhide</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="canHideSelection" v-b-modal:hide-selected-content data-description="hide option">
+            <b-dropdown-item v-if="canHideSelection" data-description="hide option" @click="hideSelected">
                 <span v-localize>Hide</span>
             </b-dropdown-item>
-            <b-dropdown-item
-                v-if="canUndeleteSelection"
-                v-b-modal:restore-selected-content
-                data-description="undelete option">
+            <b-dropdown-item v-if="canUndeleteSelection" data-description="undelete option" @click="undeleteSelected">
                 <span v-localize>Undelete</span>
             </b-dropdown-item>
-            <b-dropdown-item
-                v-if="canDeleteSelection"
-                v-b-modal:delete-selected-content
-                data-description="delete option">
+            <b-dropdown-item v-if="canDeleteSelection" data-description="delete option" @click="deleteSelected">
                 <span v-localize>Delete</span>
             </b-dropdown-item>
-            <b-dropdown-item v-b-modal:purge-selected-content data-description="purge option">
+            <b-dropdown-item v-if="canPurgeSelection" data-description="purge option" @click="purgeSelected">
                 <span v-localize>Delete (permanently)</span>
             </b-dropdown-item>
             <b-dropdown-divider v-if="showBuildOptions" />
@@ -44,19 +38,19 @@
                 <span v-localize>Build Dataset List</span>
             </b-dropdown-item>
             <b-dropdown-divider />
-            <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change database build">
+            <b-dropdown-item data-description="change database build" @click="showChangeDbKeyModal = true">
                 <span v-localize>Change Database/Build</span>
             </b-dropdown-item>
             <b-dropdown-item
                 v-if="isConfigLoaded && config.enable_celery_tasks"
-                v-b-modal:change-datatype-of-selected-content
-                data-description="change data type">
+                data-description="change data type"
+                @click="showChangeDatatypeModal = true">
                 <span v-localize>Change data type</span>
             </b-dropdown-item>
-            <b-dropdown-item v-b-modal:add-tags-to-selected-content data-description="add tags">
+            <b-dropdown-item data-description="add tags" @click="showAddTagsModal = true">
                 <span v-localize>Add tags</span>
             </b-dropdown-item>
-            <b-dropdown-item v-b-modal:remove-tags-from-selected-content data-description="remove tags">
+            <b-dropdown-item data-description="remove tags" @click="showRemoveTagsModal = true">
                 <span v-localize>Remove tags</span>
             </b-dropdown-item>
             <b-dropdown-divider v-if="showBuildOptions" />
@@ -68,48 +62,14 @@
             </b-dropdown-item>
         </b-dropdown>
 
-        <b-modal
-            id="hide-selected-content"
-            :title="localize('Hide Selected Content?')"
-            title-tag="h2"
-            @ok="hideSelected">
-            <p v-localize>Really hide {{ numSelected }} content items?</p>
-        </b-modal>
-        <b-modal
-            id="show-selected-content"
-            :title="localize('Show Selected Content?')"
-            title-tag="h2"
-            @ok="unhideSelected">
-            <p v-localize>Really show {{ numSelected }} content items?</p>
-        </b-modal>
-        <b-modal
-            id="delete-selected-content"
-            :title="localize('Delete Selected Content?')"
-            title-tag="h2"
-            @ok="deleteSelected">
-            <p v-localize>Really delete {{ numSelected }} content items?</p>
-        </b-modal>
-        <b-modal
-            id="restore-selected-content"
-            :title="localize('Restore Selected Content?')"
-            title-tag="h2"
-            @ok="undeleteSelected">
-            <p v-localize>Really restore {{ numSelected }} content items?</p>
-        </b-modal>
-        <b-modal
-            id="purge-selected-content"
-            :title="localize('Purge Selected Content?')"
-            title-tag="h2"
-            @ok="purgeSelected">
-            <p v-localize>Permanently delete {{ numSelected }} content items?</p>
-            <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
-        </b-modal>
-        <b-modal
-            id="change-dbkey-of-selected-content"
+        <GModal
+            :show.sync="showChangeDbKeyModal"
             title="Change Database/Build?"
-            title-tag="h2"
-            body-class="modal-with-selector"
-            @ok="changeDbkeyOfSelected">
+            confirm
+            size="small"
+            overflow-visible
+            @ok="changeDbkeyOfSelected"
+            @cancel="resetDbKey">
             <p v-localize>Select a new Database/Build for {{ numSelected }} items:</p>
             <DbKeyProvider v-slot="{ item: dbkeys, loading: loadingDbKeys }">
                 <SingleItemSelector
@@ -119,14 +79,16 @@
                     :current-item="selectedDbKey"
                     @update:selected-item="onSelectedDbKey" />
             </DbKeyProvider>
-        </b-modal>
-        <b-modal
-            id="change-datatype-of-selected-content"
+        </GModal>
+        <GModal
+            :show.sync="showChangeDatatypeModal"
             title="Change data type?"
-            title-tag="h2"
-            body-class="modal-with-selector"
+            confirm
+            size="small"
+            overflow-visible
             :ok-disabled="selectedDatatype == null"
-            @ok="changeDatatypeOfSelected">
+            @ok="changeDatatypeOfSelected"
+            @cancel="resetDatatype">
             <p v-localize>Select a new data type for {{ numSelected }} items:</p>
             <DatatypesProvider v-slot="{ item: datatypes, loading: loadingDatatypes }">
                 <SingleItemSelector
@@ -136,25 +98,31 @@
                     :current-item="selectedDatatype"
                     @update:selected-item="onSelectedDatatype" />
             </DatatypesProvider>
-        </b-modal>
-        <b-modal
-            id="add-tags-to-selected-content"
+        </GModal>
+        <GModal
+            :show.sync="showAddTagsModal"
             title="Add tags?"
-            title-tag="h2"
+            confirm
+            size="small"
             :ok-disabled="noTagsSelected"
-            @ok="addTagsToSelected">
+            @ok="addTagsToSelected"
+            @cancel="selectedTags = []">
             <p v-localize>Apply the following tags to {{ numSelected }} items:</p>
-            <StatelessTags v-model="selectedTags" class="tags" />
-        </b-modal>
-        <b-modal
-            id="remove-tags-from-selected-content"
+            <StatelessTags :key="showAddTagsModal" v-model="selectedTags" class="tags" />
+            <GTip class="mt-2" :tips="['Press Enter after typing each tag.']" />
+        </GModal>
+        <GModal
+            :show.sync="showRemoveTagsModal"
             title="Remove tags?"
-            title-tag="h2"
+            confirm
+            size="small"
             :ok-disabled="noTagsSelected"
-            @ok="removeTagsFromSelected">
+            @ok="removeTagsFromSelected"
+            @cancel="selectedTags = []">
             <p v-localize>Remove the following tags from {{ numSelected }} items:</p>
-            <StatelessTags v-model="selectedTags" class="tags" />
-        </b-modal>
+            <StatelessTags :key="showRemoveTagsModal" v-model="selectedTags" class="tags" />
+            <GTip :tips="['Press Enter after typing each tag.']" />
+        </GModal>
         <CollectionCreatorIndex
             v-if="collectionModalType"
             :history-id="history.id"
@@ -170,6 +138,8 @@
 </template>
 
 <script>
+import { ref } from "vue";
+
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import {
     addTagsToSelectedContent,
@@ -185,8 +155,11 @@ import {
 import { DatatypesProvider, DbKeyProvider } from "@/components/providers";
 import { StatelessTags } from "@/components/Tags";
 import { useConfig } from "@/composables/config";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
 
+import GModal from "@/components/BaseComponents/GModal.vue";
+import GTip from "@/components/BaseComponents/GTip.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
 import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
@@ -195,6 +168,8 @@ export default {
         CollectionCreatorIndex,
         DbKeyProvider,
         DatatypesProvider,
+        GModal,
+        GTip,
         SingleItemSelector,
         StatelessTags,
     },
@@ -209,15 +184,43 @@ export default {
     },
     setup() {
         const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
+        const { confirm } = useConfirmDialog();
+
+        // Modals for selection operations
+        const showChangeDbKeyModal = ref(false);
+        const showChangeDatatypeModal = ref(false);
+        const showAddTagsModal = ref(false);
+        const showRemoveTagsModal = ref(false);
+
+        const selectedDbKey = ref({ id: "?", text: "unspecified (?)" });
+        const selectedDatatype = ref({ id: "auto", text: "Auto-detect" });
+
+        function resetDbKey() {
+            selectedDbKey.value = { id: "?", text: "unspecified (?)" };
+        }
+        function resetDatatype() {
+            selectedDatatype.value = { id: "auto", text: "Auto-detect" };
+        }
+
+        return {
+            config,
+            confirm,
+            isConfigLoaded,
+            showChangeDbKeyModal,
+            showChangeDatatypeModal,
+            showAddTagsModal,
+            showRemoveTagsModal,
+            selectedDbKey,
+            selectedDatatype,
+            resetDbKey,
+            resetDatatype,
+        };
     },
     data: function () {
         return {
             collectionModalShow: false,
             collectionModalType: null,
             collectionSelection: undefined,
-            selectedDbKey: { id: "?", text: "unspecified (?)" },
-            selectedDatatype: { id: "auto", text: "Auto-detect" },
             selectedTags: [],
         };
     },
@@ -237,6 +240,10 @@ export default {
         /** @returns {Boolean} */
         canDeleteSelection() {
             return this.areAllSelectedActive || (this.isAnyDeletedStateAllowed && !this.areAllSelectedDeleted);
+        },
+        /** @returns {Boolean} */
+        canPurgeSelection() {
+            return this.contentSelection.size === 0 || this.isQuerySelection || !this.areAllSelectedPurged;
         },
         /** @returns {Boolean} */
         canUndeleteSelection() {
@@ -333,29 +340,51 @@ export default {
                 this.$router.push(`/collection/new_list?advanced=${advanced}`);
             }
         },
-        // Selected content manipulation, hide/show/delete/purge
+        // Selected content manipulation, hide/show/delete/purge (using the confirm dialog)
+        async confirmAndRun(operation, message, options = {}) {
+            if (await this.confirm(message, options)) {
+                this.runOnSelection(operation);
+            }
+        },
         hideSelected() {
-            this.runOnSelection(hideSelectedContent);
+            return this.confirmAndRun(hideSelectedContent, `Really hide ${this.numSelected} content items?`, {
+                title: "Hide Selected Content?",
+                okText: "Hide",
+            });
         },
         unhideSelected() {
-            this.runOnSelection(unhideSelectedContent);
+            return this.confirmAndRun(unhideSelectedContent, `Really show ${this.numSelected} content items?`, {
+                title: "Show Selected Content?",
+                okText: "Show",
+            });
         },
         deleteSelected() {
-            this.runOnSelection(deleteSelectedContent);
+            return this.confirmAndRun(deleteSelectedContent, `Really delete ${this.numSelected} content items?`, {
+                title: "Delete Selected Content?",
+                okText: "Delete",
+                okColor: "red",
+            });
         },
         undeleteSelected() {
-            this.runOnSelection(undeleteSelectedContent);
+            return this.confirmAndRun(undeleteSelectedContent, `Really restore ${this.numSelected} content items?`, {
+                title: "Restore Selected Content?",
+                okText: "Restore",
+            });
         },
         purgeSelected() {
-            this.runOnSelection(purgeSelectedContent);
+            return this.confirmAndRun(purgeSelectedContent, `Really purge ${this.numSelected} content items?`, {
+                title: "Purge Selected Content?",
+                okText: "Purge",
+                okColor: "red",
+            });
         },
         changeDbkeyOfSelected() {
             this.runOnSelection(changeDbkeyOfSelectedContent, { dbkey: this.selectedDbKey.id });
-            this.selectedDbKey = { id: "?" };
+            this.resetDbKey();
         },
         changeDatatypeOfSelected() {
             this.runOnSelection(changeDatatypeOfSelectedContent, { datatype: this.selectedDatatype.id });
-            this.selectedDatatype = { id: "auto", text: "Auto-detect" };
+            this.resetDatatype();
         },
         addTagsToSelected() {
             this.runOnSelection(addTagsToSelectedContent, { tags: this.selectedTags });
@@ -410,16 +439,3 @@ export default {
     },
 };
 </script>
-
-<style>
-.modal-with-selector {
-    overflow: initial;
-    min-height: 300px; /* To make room for the selector */
-}
-
-.subtle-header {
-    font-size: 0.74375rem;
-    color: #404862;
-    font-weight: normal;
-}
-</style>

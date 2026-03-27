@@ -1,80 +1,93 @@
-<script setup>
+<script setup lang="ts">
 import { faEye, faEyeSlash, faKey, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
+import type { APIKeyModel } from "@/api/users";
 import { getGalaxyInstance } from "@/app";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { errorMessageAsString } from "@/utils/simple-error";
 
-import svc from "./model/service";
+import services from "./model/service";
 
+import GCard from "@/components/Common/GCard.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-defineProps({
-    item: {
-        type: Object,
-        required: true,
-    },
-});
+const props = defineProps<{
+    item: APIKeyModel;
+}>();
 
 const emit = defineEmits(["getAPIKey"]);
 
+const { confirm } = useConfirmDialog();
+
 const currentUserId = getGalaxyInstance().user.id;
 
-const modal = ref(null);
 const hover = ref(false);
-const errorMessage = ref(null);
+const errorMessage = ref<string | null>(null);
 
-const toggleDeleteModal = () => {
-    modal.value.toggle();
-};
-const deleteKey = () => {
-    svc.deleteAPIKey(currentUserId)
-        .then(() => emit("getAPIKey"))
-        .catch((err) => (errorMessage.value = err.message));
-};
+async function attemptKeyDeletion() {
+    const confirmed = await confirm("Are you sure you want to delete this key?", {
+        title: "Delete API key",
+        okText: "Delete",
+        okIcon: faTrash,
+        okColor: "red",
+    });
+
+    if (confirmed) {
+        try {
+            await services.deleteAPIKey(currentUserId);
+            errorMessage.value = null;
+            emit("getAPIKey");
+        } catch (e) {
+            errorMessage.value = errorMessageAsString(e);
+        }
+    }
+}
 </script>
 
 <template>
-    <b-card title="Current API key">
-        <div class="d-flex justify-content-between w-100">
-            <div class="w-100">
-                <b-input-group class="w-100">
-                    <b-input-group-prepend>
-                        <b-input-group-text>
-                            <FontAwesomeIcon :icon="faKey" />
-                        </b-input-group-text>
-                    </b-input-group-prepend>
+    <GCard title="Current API key" content-class="p-3">
+        <template v-slot:description>
+            <div class="d-flex justify-content-between w-100">
+                <div class="w-100">
+                    <b-input-group class="w-100">
+                        <b-input-group-prepend>
+                            <b-input-group-text>
+                                <FontAwesomeIcon :icon="faKey" />
+                            </b-input-group-text>
+                        </b-input-group-prepend>
 
-                    <b-input
-                        :type="hover ? 'text' : 'password'"
-                        :value="item.key"
-                        disabled
-                        data-test-id="api-key-input" />
+                        <b-input
+                            :type="hover ? 'text' : 'password'"
+                            :value="props.item.key"
+                            disabled
+                            data-test-id="api-key-input" />
 
-                    <b-input-group-append>
-                        <b-input-group-text>
-                            <CopyToClipboard message="Key was copied to clipboard" :text="item.key" title="Copy key" />
-                        </b-input-group-text>
+                        <b-input-group-append>
+                            <b-input-group-text>
+                                <CopyToClipboard
+                                    message="Key was copied to clipboard"
+                                    :text="props.item.key"
+                                    title="Copy key" />
+                            </b-input-group-text>
 
-                        <b-button v-g-tooltip.hover title="Show/hide key" @click="hover = !hover">
-                            <FontAwesomeIcon :icon="hover ? faEyeSlash : faEye" />
-                        </b-button>
+                            <b-button v-g-tooltip.hover title="Show/hide key" @click="hover = !hover">
+                                <FontAwesomeIcon :icon="hover ? faEyeSlash : faEye" />
+                            </b-button>
 
-                        <b-button title="Delete api key" @click="toggleDeleteModal">
-                            <FontAwesomeIcon :icon="faTrash" />
-                        </b-button>
-                    </b-input-group-append>
-                </b-input-group>
-                <span class="small text-black-50">
-                    created on
-                    <UtcDate class="text-black-50 small" :date="item.create_time" mode="pretty" />
-                </span>
+                            <b-button title="Delete api key" @click="attemptKeyDeletion">
+                                <FontAwesomeIcon :icon="faTrash" />
+                            </b-button>
+                        </b-input-group-append>
+                    </b-input-group>
+                    <span class="small text-black-50">
+                        created on
+                        <UtcDate class="text-black-50 small" :date="props.item.create_time" mode="pretty" />
+                    </span>
+                </div>
             </div>
-        </div>
-
-        <b-modal ref="modal" title="Delete API key" size="md" @ok="deleteKey">
-            <p v-localize>Are you sure you want to delete this key?</p>
-        </b-modal>
-    </b-card>
+        </template>
+    </GCard>
 </template>

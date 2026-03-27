@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faCog } from "@fortawesome/free-solid-svg-icons";
+import { faBurn, faCog, faEyeSlash, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem, BModal } from "bootstrap-vue";
+import { BDropdown, BDropdownItem } from "bootstrap-vue";
 import { toRef } from "vue";
 
 import type { HistorySummaryExtended } from "@/api";
@@ -10,6 +10,7 @@ import {
     purgeAllDeletedContent,
     unhideAllHiddenContent,
 } from "@/components/History/model/crud";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
 
 interface Props {
@@ -20,18 +21,47 @@ const props = defineProps<Props>();
 
 const emit = defineEmits(["update:operation-running"]);
 
+const { confirm } = useConfirmDialog();
+
 const { numItemsDeleted, numItemsHidden } = useHistoryContentStats(toRef(props, "history"));
 
-function unhideAll() {
-    runOperation(() => unhideAllHiddenContent(props.history));
+async function unhideAll() {
+    const confirmed = await confirm("Really unhide all hidden datasets?", {
+        title: "Show Hidden Datasets",
+        okText: "Unhide",
+        okIcon: faEyeSlash,
+    });
+    if (confirmed) {
+        runOperation(() => unhideAllHiddenContent(props.history));
+    }
 }
 
-function deleteAllHidden() {
-    runOperation(() => deleteAllHiddenContent(props.history));
+async function deleteAllHidden() {
+    const confirmed = await confirm("Really delete all hidden datasets?", {
+        title: "Delete Hidden Datasets",
+        okText: "Delete",
+        okIcon: faTrash,
+        okColor: "red",
+    });
+    if (confirmed) {
+        runOperation(() => deleteAllHiddenContent(props.history));
+    }
 }
 
-function purgeAllDeleted() {
-    runOperation(() => purgeAllDeletedContent(props.history));
+async function purgeAllDeleted() {
+    const confirmed = await confirm(
+        "Really permanently delete all deleted datasets? Warning, this operation cannot be undone.",
+        {
+            title: "Permanently Delete Deleted Datasets",
+            okText: "Purge",
+            okIcon: faBurn,
+            okColor: "red",
+        },
+    );
+
+    if (confirmed) {
+        runOperation(() => purgeAllDeletedContent(props.history));
+    }
 }
 
 async function runOperation(operation: () => Promise<unknown>) {
@@ -58,31 +88,20 @@ async function runOperation(operation: () => Promise<unknown>) {
                 <FontAwesomeIcon :icon="faCog" />
             </template>
 
-            <BDropdownItem v-if="numItemsHidden" v-b-modal:show-all-hidden-content>
+            <BDropdownItem v-if="numItemsHidden" @click="unhideAll">
+                <FontAwesomeIcon :icon="faEyeSlash" />
                 <span v-localize>Unhide All Hidden Content</span>
             </BDropdownItem>
 
-            <BDropdownItem v-if="numItemsHidden" v-b-modal:delete-all-hidden-content>
+            <BDropdownItem v-if="numItemsHidden" @click="deleteAllHidden">
+                <FontAwesomeIcon :icon="faTrash" />
                 <span v-localize>Delete All Hidden Content</span>
             </BDropdownItem>
 
-            <BDropdownItem v-if="numItemsDeleted" v-b-modal:purge-all-deleted-content>
+            <BDropdownItem v-if="numItemsDeleted" @click="purgeAllDeleted">
+                <FontAwesomeIcon :icon="faBurn" />
                 <span v-localize>Purge All Deleted Content</span>
             </BDropdownItem>
         </BDropdown>
-
-        <BModal id="show-all-hidden-content" title="Show Hidden Datasets" title-tag="h2" @ok="unhideAll">
-            <p v-localize>Really unhide all hidden datasets?</p>
-        </BModal>
-
-        <BModal id="delete-all-hidden-content" title="Delete Hidden Datasets" title-tag="h2" @ok="deleteAllHidden">
-            <p v-localize>Really delete all hidden datasets?</p>
-        </BModal>
-
-        <BModal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
-            <p v-localize>Really permanently delete all deleted datasets?</p>
-
-            <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
-        </BModal>
     </section>
 </template>

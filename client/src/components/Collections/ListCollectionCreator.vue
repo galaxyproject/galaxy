@@ -247,12 +247,11 @@ async function attemptCreate() {
     const returnedElements = props.fromSelection ? workingElements.value : inListElements.value;
     atLeastOneElement.value = returnedElements.length > 0;
 
-    let confirmed = false;
+    let confirmed: boolean | null = false;
     if (!atLeastOneElement.value) {
         confirmed = await confirm("Are you sure you want to create a list with no datasets?", {
             title: "Create an empty list",
-            okTitle: "Create",
-            okVariant: "primary",
+            okText: "Create",
         });
     }
 

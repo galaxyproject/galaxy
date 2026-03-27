@@ -253,8 +253,9 @@ async function onBulkDelete() {
             Are you sure you want to delete ${totalSelected} workflows?`,
         {
             title: "Delete workflows",
-            okTitle: "Delete workflows",
-            okVariant: "danger",
+            okText: "Delete workflows",
+            okIcon: faTrash,
+            okColor: "red",
         },
     );
 
@@ -293,8 +294,8 @@ async function onBulkRestore() {
     const totalSelected = selectedWorkflowIds.value.length;
 
     const confirmed = await confirm(`Are you sure you want to restore ${totalSelected} workflows?`, {
-        okTitle: "Restore workflows",
-        okVariant: "primary",
+        okText: "Restore workflows",
+        okIcon: faTrashRestore,
     });
 
     if (confirmed) {

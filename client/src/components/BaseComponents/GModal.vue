@@ -42,6 +42,8 @@ const props = withDefaults(
         okDisabledTitle?: string;
         /** When false, keeps the modal open on "ok" */
         closeOnOk?: boolean;
+        /** Allows content to overflow the modal body (e.g. for dropdowns/selectors inside the modal) */
+        overflowVisible?: boolean;
     }>(),
     {
         id: undefined,
@@ -57,6 +59,7 @@ const props = withDefaults(
         okDisabled: false,
         okDisabledTitle: undefined,
         closeOnOk: true,
+        overflowVisible: false,
     },
 );
 
@@ -168,7 +171,12 @@ defineExpose({ showModal, hideModal });
 <template>
     <!-- This is a convenience shortcut for mouse-users to close the dialog, so disabling this warning is fine here -->
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions, vuejs-accessibility/click-events-have-key-events -->
-    <dialog :id="currentId" ref="dialog" class="g-dialog" :class="sizeClass" @click="onClickDialog">
+    <dialog
+        :id="currentId"
+        ref="dialog"
+        class="g-dialog"
+        :class="[sizeClass, { 'g-overflow-visible': props.overflowVisible }]"
+        @click="onClickDialog">
         <section>
             <header>
                 <Heading
@@ -237,6 +245,19 @@ defineExpose({ showModal, hideModal });
             max-height: 100%;
             display: flex;
             flex-direction: column;
+        }
+    }
+
+    &.g-overflow-visible {
+        overflow: visible;
+
+        section {
+            overflow: visible;
+        }
+
+        .g-modal-content {
+            overflow: visible;
+            max-height: none;
         }
     }
 

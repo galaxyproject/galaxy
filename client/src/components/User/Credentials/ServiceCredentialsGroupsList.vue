@@ -153,10 +153,9 @@ async function deleteGroup(groupToDelete: ServiceCredentialsGroupDetails): Promi
 
     const confirmed = await confirm(message, {
         title: "Delete credentials group",
-        okTitle: "Delete group",
-        okVariant: "danger",
-        cancelVariant: "outline-primary",
-        centered: true,
+        okText: "Delete group",
+        okColor: "red",
+        okIcon: faTrash,
     });
 
     if (confirmed && groupToDelete) {

@@ -338,12 +338,10 @@ async function onBulkDeleteOrPurge(purge: boolean = false) {
         `${hasPublished ? "Some of the selected histories are published and will be removed from public view. " : ""}
             Are you sure you want to ${purge ? "purge" : "delete"} ${totalSelected} histories?`,
         {
-            id: "bulk-delete-histories",
             title: purge ? "Purge histories" : "Delete histories",
-            okTitle: purge ? "Purge histories" : "Delete histories",
-            okVariant: "danger",
-            cancelVariant: "outline-primary",
-            centered: true,
+            okText: purge ? "Purge histories" : "Delete histories",
+            okColor: "red",
+            okIcon: purge ? faBurn : faTrash,
         },
     );
 
@@ -390,12 +388,9 @@ async function onBulkRestore() {
     const totalSelected = selectedHistories.value.length;
 
     const confirmed = await confirm(`Are you sure you want to restore ${totalSelected} histories?`, {
-        id: "bulk-restore-histories",
         title: "Restore histories",
-        okTitle: "Restore histories",
-        okVariant: "primary",
-        cancelVariant: "outline-primary",
-        centered: true,
+        okText: "Restore histories",
+        okIcon: faTrashRestore,
     });
 
     if (confirmed) {
@@ -486,12 +481,8 @@ async function onBulkOpenInMultiview() {
         However, the maximum number of histories allowed in multiview is ${MULTIVIEW_MAX_HISTORIES}.
         Do you want to proceed with opening the first ${MULTIVIEW_MAX_HISTORIES} histories?`,
             {
-                id: "bulk-open-multiview-histories",
                 title: `You can only open ${MULTIVIEW_MAX_HISTORIES} histories in multiview`,
-                okTitle: "Proceed",
-                okVariant: "primary",
-                cancelVariant: "outline-primary",
-                centered: true,
+                okText: "Proceed",
             },
         );
         if (!confirmed) {

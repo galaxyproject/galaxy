@@ -52,8 +52,9 @@ export function useDatasetTableActions(refreshList: () => Promise<void>) {
             `Are you sure you want to ${purge ? "purge" : "delete"} the dataset "${item.name}"?`,
             {
                 title: purge ? "Purge Dataset" : "Delete Dataset",
-                okTitle: purge ? "Purge" : "Delete",
-                okVariant: "danger",
+                okText: purge ? "Purge" : "Delete",
+                okColor: "red",
+                okIcon: purge ? faFire : faTrash,
             },
         );
 

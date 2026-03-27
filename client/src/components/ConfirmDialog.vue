@@ -1,0 +1,79 @@
+<script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert } from "bootstrap-vue";
+import { ref } from "vue";
+
+import { type ConfirmDialogOptions, DEFAULT_CONFIRM_OPTIONS } from "@/composables/confirmDialog";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+
+const show = ref(false);
+const message = ref("");
+const currentOptions = ref<ConfirmDialogOptions>({ ...DEFAULT_CONFIRM_OPTIONS });
+
+let resolveCallback: ((value: boolean | null) => void) | null = null;
+
+function confirm(msg: string, options: ConfirmDialogOptions = {}): Promise<boolean | null> {
+    // Resolve any pending dialog as false before showing a new one
+    resolveCallback?.(false);
+    resolveCallback = null;
+
+    message.value = msg;
+    currentOptions.value = { ...DEFAULT_CONFIRM_OPTIONS, ...options };
+
+    if (!show.value) {
+        show.value = true;
+    }
+
+    return new Promise((resolve) => {
+        resolveCallback = resolve;
+
+        options.signal?.addEventListener("abort", () => handleResponse(false), { once: true });
+    });
+}
+
+function handleResponse(isOk: boolean | null) {
+    resolveCallback?.(isOk);
+    resolveCallback = null;
+    show.value = false;
+}
+
+defineExpose({ confirm });
+</script>
+
+<template>
+    <GModal
+        id="galaxy-confirm-dialog"
+        footer
+        :show="show"
+        size="small"
+        :title="currentOptions.title"
+        @close="handleResponse(null)">
+        <BAlert class="mb-0" data-description="confirm dialog message" variant="info" show>
+            {{ message }}
+        </BAlert>
+        <template v-slot:footer>
+            <div class="confirm-dialog-button-container">
+                <GButton data-description="confirm dialog cancel" @click="handleResponse(false)">
+                    {{ currentOptions.cancelText }}
+                </GButton>
+                <GButton
+                    :color="currentOptions.okColor"
+                    data-description="confirm dialog ok"
+                    @click="handleResponse(true)">
+                    <FontAwesomeIcon v-if="currentOptions.okIcon" :icon="currentOptions.okIcon" fixed-width />
+                    {{ currentOptions.okText }}
+                </GButton>
+            </div>
+        </template>
+    </GModal>
+</template>
+
+<style scoped lang="scss">
+.confirm-dialog-button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-2);
+}
+</style>
