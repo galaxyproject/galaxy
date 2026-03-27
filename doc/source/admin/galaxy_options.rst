@@ -5529,11 +5529,19 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Configuration for AI inference services used by agents. Supports
-    per-agent model, temperature, and token settings. Agents inherit
-    from 'default' configuration, which itself falls back to global
-    ai_model/ai_api_key settings. Example: inference_services: {
-    default: { model: gpt-4o-mini, temperature: 0.7 } }
+    Configuration for AI inference services used by agents and
+    visualization plugins. Supports per-agent or per-plugin model,
+    temperature, max_tokens, api_key, api_base_url, and enabled
+    settings. Valid keys include agent types (e.g. router,
+    error_analysis) and plugin names (e.g. jupyterlite). Agents and
+    plugins inherit from 'default' configuration, which itself falls
+    back to global ai_model/ai_api_key settings. All agents are
+    enabled by default. Example: inference_services: { default: {
+    model: gpt-4o-mini, temperature: 0.7 }, custom_tool: { enabled:
+    false }, jupyterlite: { model: gpt-4o } } Set static_responses to
+    a YAML file path to replace all LLM calls with deterministic
+    responses for testing: inference_services: { static_responses:
+    test/integration/static_agents.yml }
 :Default: ``None``
 :Type: any
 
@@ -5649,6 +5657,21 @@
     <config_dir>.
 :Default: ``vault_conf.yml``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``vault_token_renewal_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time (in seconds) between Hashicorp Vault token renewal attempts.
+    Set to 0 to disable automatic token renewal (the default). When
+    enabled, a Celery Beat periodic task will call Vault's renew-self
+    endpoint at this interval. Recommended value: half the token TTL
+    (e.g. 1800 for a 1-hour TTL token). Requires Celery Beat to be
+    running.
+:Default: ``0``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
