@@ -1702,4 +1702,4 @@ class Taf(Text):
         if not first_line.startswith("#taf"):
             return False
         # Check for additional 'key:value' pairs in the #taf header
-        return re.search(r'[ \t]+\S+:\S+', first_line) is not None
+        return re.search(r"[ \t]+\S+:\S+", first_line) is not None
