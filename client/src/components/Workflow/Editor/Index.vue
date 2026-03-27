@@ -20,6 +20,7 @@
             :show.sync="showSaveAsModal"
             confirm
             size="small"
+            data-description="save-as-modal"
             title="Save As a New Workflow"
             ok-text="Save"
             @ok="doSaveAs"

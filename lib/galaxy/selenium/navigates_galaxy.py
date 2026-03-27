@@ -1952,6 +1952,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.workflows.rename_input.wait_for_visible().clear()
         self.components.workflows.rename_input.wait_for_and_send_keys(new_name)
         self.components.workflows.rename_input.wait_for_and_send_keys(Keys.ENTER)
+        self.wait_for_selector_absent_or_hidden(".g-modal")
 
     def workflow_delete_by_name(self, name):
         self.workflow_index_search_for(name)

@@ -636,6 +636,7 @@ steps:
         self.screenshot("workflow_editor_edit_menu")
 
         self.components.workflow_editor.save_as_activity.wait_for_and_click()
+        self.components.workflow_editor.save_as_modal_close.wait_for_and_click()
 
     @selenium_test
     def test_editor_tool_upgrade(self):
@@ -721,8 +722,10 @@ steps:
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
         self.assert_modal_has_text("Parameter 'inttest': an integer or workflow parameter is required")
         self.screenshot("workflow_editor_subworkflow_tool_upgrade")
-        self.components.workflow_editor.state_upgrade_modal_close.wait_for_and_click()
+        self.workflow_editor_dismiss_state_upgrade_modal()
         self.assert_workflow_has_changes_and_save()
+        # Ensure that the state upgrade modal is hidden by the end, to ensure AXE checks pass (no dialog should be present)
+        self.workflow_editor_dismiss_state_upgrade_modal()
 
     @staticmethod
     def set_text_element(element, value):
@@ -1373,6 +1376,7 @@ steps:
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
         self.assert_modal_has_text("Using default: '1'")
         self.screenshot("workflow_editor_invalid_state")
+        self.workflow_editor_dismiss_state_upgrade_modal()
 
     @selenium_test
     def test_missing_tools(self):
@@ -1391,6 +1395,7 @@ steps:
         self.components.workflows.edit_button.wait_for_and_click()
         self.assert_modal_has_text("Tool is not installed")
         self.screenshot("workflow_editor_missing_tool")
+        self.workflow_editor_dismiss_state_upgrade_modal()
 
     def tab_to(self, accessible_name, direction="forward"):
         for _ in range(100):
