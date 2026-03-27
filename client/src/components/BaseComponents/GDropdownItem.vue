@@ -45,14 +45,6 @@ const emit = defineEmits<{
 
 const hideDropdown = inject<() => void>("g-dropdown-hide", () => {});
 
-const tag = computed(() => {
-    if (props.to) {
-        return "router-link";
-    }
-    // Always use <a> like BDropdownItem — required for Selenium By.LINK_TEXT selectors
-    return "a";
-});
-
 const classes = computed(() => ({
     "dropdown-item": true,
     active: props.active,
@@ -65,8 +57,8 @@ function onClick(event: MouseEvent) {
         event.preventDefault();
         return;
     }
-    // Prevent href="#" anchor navigation for action items (non-router-link <a> tags)
-    if (tag.value === "a") {
+    // Prevent href="#" anchor navigation for action items
+    if (!props.to) {
         event.preventDefault();
     }
     emit("click", event);
@@ -75,16 +67,23 @@ function onClick(event: MouseEvent) {
 </script>
 
 <template>
-    <component
-        :is="tag"
+    <router-link
+        v-if="to"
         :class="classes"
         :to="to"
-        :href="to ? undefined : (href ?? '#')"
         :target="target"
         :title="title"
-        :disabled="disabled || undefined"
         role="menuitem"
-        @click="onClick">
+        @click.native="onClick">
         <slot />
-    </component>
+    </router-link>
+    <a v-else :class="classes" :href="href ?? '#'" :target="target" :title="title" role="menuitem" @click="onClick">
+        <slot />
+    </a>
 </template>
+
+<style scoped>
+.dropdown-item {
+    cursor: pointer;
+}
+</style>
