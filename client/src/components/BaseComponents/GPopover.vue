@@ -18,6 +18,7 @@
  */
 
 import {
+    arrow,
     autoUpdate,
     computePosition,
     type ComputePositionConfig,
@@ -74,7 +75,9 @@ const emit = defineEmits<{
 }>();
 
 const popoverEl = ref<HTMLDivElement>();
+const arrowEl = ref<HTMLDivElement>();
 const isVisible = ref(false);
+const actualPlacement = ref<Placement>("bottom");
 
 // Two-way binding: if show prop is provided, use it; otherwise manage internally
 const showState = computed({
@@ -135,17 +138,22 @@ function mapPlacement(p: string): Placement {
 }
 
 const popoverPosition = ref({ x: 0, y: 0 });
+const arrowPosition = ref<{ x?: number; y?: number }>({});
 let cleanupAutoUpdate: ReturnType<typeof autoUpdate> | null = null;
 
 function getConfig(): Partial<ComputePositionConfig> {
     const useAltBoundary = props.boundary === "window";
+    const middleware = [
+        offset(10),
+        flip({ altBoundary: useAltBoundary }),
+        shift({ altBoundary: useAltBoundary, padding: 5 }),
+    ];
+    if (arrowEl.value) {
+        middleware.push(arrow({ element: arrowEl.value }));
+    }
     return {
         placement: mapPlacement(props.placement),
-        middleware: [
-            offset(10),
-            flip({ altBoundary: useAltBoundary }),
-            shift({ altBoundary: useAltBoundary, padding: 5 }),
-        ],
+        middleware,
     };
 }
 
@@ -154,8 +162,12 @@ async function updatePosition() {
     if (!target || !popoverEl.value) {
         return;
     }
-    const { x, y } = await computePosition(target, popoverEl.value, getConfig());
-    popoverPosition.value = { x, y };
+    const result = await computePosition(target, popoverEl.value, getConfig());
+    popoverPosition.value = { x: result.x, y: result.y };
+    actualPlacement.value = result.placement;
+    if (result.middlewareData.arrow) {
+        arrowPosition.value = { x: result.middlewareData.arrow.x, y: result.middlewareData.arrow.y };
+    }
 }
 
 function showPopover() {
@@ -223,6 +235,22 @@ const parsedTriggers = computed(() => {
 });
 
 let activeListeners: Array<{ el: Element; event: string; handler: (e: Event) => void }> = [];
+let hoverHideTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function cancelHoverHide() {
+    if (hoverHideTimeout !== null) {
+        clearTimeout(hoverHideTimeout);
+        hoverHideTimeout = null;
+    }
+}
+
+function deferredHide() {
+    cancelHoverHide();
+    hoverHideTimeout = setTimeout(() => {
+        hidePopover();
+        hoverHideTimeout = null;
+    }, 100);
+}
 
 function setupListeners() {
     teardownListeners();
@@ -237,8 +265,11 @@ function setupListeners() {
     }
 
     if (parsedTriggers.value.has("hover")) {
-        const enterHandler = () => showPopover();
-        const leaveHandler = () => hidePopover();
+        const enterHandler = () => {
+            cancelHoverHide();
+            showPopover();
+        };
+        const leaveHandler = () => deferredHide();
         target.addEventListener("mouseenter", enterHandler);
         target.addEventListener("mouseleave", leaveHandler);
         activeListeners.push(
@@ -279,10 +310,13 @@ function setupListeners() {
         }
     }
 
-    // Keep popover open when hovering over it
+    // Keep popover open when hovering over it (bridges the offset gap)
     if (parsedTriggers.value.has("hover") && popoverEl.value) {
-        const popoverEnter = () => showPopover();
-        const popoverLeave = () => hidePopover();
+        const popoverEnter = () => {
+            cancelHoverHide();
+            showPopover();
+        };
+        const popoverLeave = () => deferredHide();
         popoverEl.value.addEventListener("mouseenter", popoverEnter);
         popoverEl.value.addEventListener("mouseleave", popoverLeave);
         activeListeners.push(
@@ -293,6 +327,7 @@ function setupListeners() {
 }
 
 function teardownListeners() {
+    cancelHoverHide();
     for (const { el, event, handler } of activeListeners) {
         el.removeEventListener(event, handler);
     }
@@ -334,9 +369,16 @@ defineExpose({
         v-show="showState"
         ref="popoverEl"
         class="popover b-popover"
-        :class="[customClass, `bs-popover-${placement}`]"
+        :class="[customClass, `bs-popover-${actualPlacement}`]"
         role="tooltip"
         :style="{ transform: `translate(${popoverPosition.x}px, ${popoverPosition.y}px)` }">
+        <div
+            ref="arrowEl"
+            class="arrow"
+            :style="{
+                left: arrowPosition.x != null ? `${arrowPosition.x}px` : '',
+                top: arrowPosition.y != null ? `${arrowPosition.y}px` : '',
+            }" />
         <div v-if="title || $slots.title" class="popover-header">
             <slot name="title">{{ title }}</slot>
         </div>
