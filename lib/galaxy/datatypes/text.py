@@ -1695,11 +1695,7 @@ class Taf(Text):
         True
         """
         try:
-            first_line = next(file_prefix.line_iterator(), "").strip()
+            first_line = next(file_prefix.line_iterator(), "")
         except Exception:
             return False
-        # Check for #taf in header
-        if not first_line.startswith("#taf"):
-            return False
-        # Check for additional 'key:value' pairs in the #taf header
-        return re.search(r"[ \t]+\S+:\S+", first_line) is not None
+        return re.search(r"^#taf([ \t]+\S+:\S+)+$", first_line) is not None
