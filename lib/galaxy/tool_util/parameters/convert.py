@@ -195,14 +195,14 @@ def strictify(relaxed_state: RelaxedRequestToolState, input_models: ToolParamete
                 if not parameter.optional:
                     # restore legacy behavior of allowing empty string implicit default
                     # for these non-optional inputs.
-                    tool_state[parameter_name] = ""
+                    tool_state[parameter_name] = parameter.default_value if parameter.default_value is not None else ""
                 else:
-                    tool_state[parameter_name] = None
+                    tool_state[parameter_name] = parameter.default_value
             else:
                 # legacy behavior of converting explicit None into implicit null. We should introduce
                 # a layer somewhere to deal with this behavior further up the stack and clean up these models.
                 if not parameter.optional and tool_state[parameter_name] is None:
-                    tool_state[parameter_name] = ""
+                    tool_state[parameter_name] = parameter.default_value if parameter.default_value is not None else ""
 
     def _strictify_parameters(tool_state: Dict[str, Any], input_models: ToolParameterBundle) -> None:
         for parameter in input_models.parameters:
@@ -399,14 +399,14 @@ def _fill_default_for(tool_state: Dict[str, Any], parameter: ToolParameterT) -> 
             if not parameter.optional:
                 # restore legacy behavior of allowing empty string implicit default
                 # for these non-optional inputs.
-                tool_state[parameter_name] = parameter.default_value or ""
+                tool_state[parameter_name] = parameter.default_value if parameter.default_value is not None else ""
             else:
-                tool_state[parameter_name] = parameter.default_value or None
+                tool_state[parameter_name] = parameter.default_value
         else:
             # legacy behavior of converting explicit None into implicit null. We should introduce
             # a layer somewhere to deal with this behavior further up the stack and clean up these models.
             if not parameter.optional and tool_state[parameter_name] is None:
-                tool_state[parameter_name] = parameter.default_value or ""
+                tool_state[parameter_name] = parameter.default_value if parameter.default_value is not None else ""
 
 
 def _initialize_section_state(parameter: SectionParameterModel, tool_state: Dict[str, Any]) -> Dict[str, Any]:

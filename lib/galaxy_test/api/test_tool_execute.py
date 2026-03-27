@@ -735,15 +735,58 @@ def test_null_to_text_tool_with_validation(required_tool: RequiredTool, tool_inp
     required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""})).assert_fails()
 
 
+@requires_tool_id("gx_text_optional_with_empty_default")
+def test_optional_text_with_empty_default(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
+    # absent — all formats resolve to value="" default
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+    # explicit null
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": None}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
+
+    # explicit empty string
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+    # provided value
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": "hello"}))
+    execute.assert_has_single_job.with_output("output").with_contents_stripped("hello")
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": "hello"})
+
+
 @requires_tool_id("gx_text_optional_regex_validation")
 def test_optional_text_with_regex_validation(required_tool: RequiredTool, tool_input_format: DescribeToolInputs):
-    # absent param — legacy/21.01 resolve to value="" default, runtime skips regex for empty optional
+    # absent — no value="" default so all formats treat as None
     execute = required_tool.execute().with_inputs(tool_input_format.when.any({}))
-    execute.assert_has_single_job.with_output("inputs_json").with_json(
-        {"parameter": None} if tool_input_format.is_request else {"parameter": ""}
-    )
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
 
-    # explicit null — all formats treat as "not provided" for optional
+    # explicit null
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": None}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
+
+    # explicit empty string — optional so skip regex validation, "" stays as ""
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+    # valid value
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": "0.5"}))
+    execute.assert_has_single_job.with_output("output").with_contents_stripped("0.5")
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": "0.5"})
+
+    # invalid value should fail regardless of format
+    required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": "abc"})).assert_fails()
+
+
+@requires_tool_id("gx_text_optional_with_empty_default_regex_validation")
+def test_optional_text_with_empty_default_with_regex_validation(
+    required_tool: RequiredTool, tool_input_format: DescribeToolInputs
+):
+    # absent — all formats resolve to value="" default
+    execute = required_tool.execute().with_inputs(tool_input_format.when.any({}))
+    execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
+
+    # explicit null
     execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": None}))
     execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": None})
 
@@ -751,7 +794,7 @@ def test_optional_text_with_regex_validation(required_tool: RequiredTool, tool_i
     execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": ""}))
     execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": ""})
 
-    # valid value should pass all formats
+    # valid value
     execute = required_tool.execute().with_inputs(tool_input_format.when.any({"parameter": "0.5"}))
     execute.assert_has_single_job.with_output("output").with_contents_stripped("0.5")
     execute.assert_has_single_job.with_output("inputs_json").with_json({"parameter": "0.5"})
