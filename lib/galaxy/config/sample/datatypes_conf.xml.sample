@@ -31,6 +31,7 @@
     <datatype extension="anvio_variability" type="galaxy.datatypes.tabular:TSV" display_in_upload="false" subclass="true" />
     <datatype extension="arff" type="galaxy.datatypes.text:Arff" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="paf" auto_compressed_types="gz" type="galaxy.datatypes.text:Paf" mimetype="text/plain" display_in_upload="true"/>
+    <datatype extension="taf" auto_compressed_types="gz" type="galaxy.datatypes.text:Taf" mimetype="text/plain"  display_in_upload="true" description="Transposed Alignment Format. The first line of a .taf file begins with #taf. This word is followed by white-space-separated 'variable:value' pairs. There should be no white space surrounding the ':'." description_url="https://github.com/ComparativeGenomicsToolkit/taffy/blob/main/docs/taf_format.md"/>
     <datatype extension="gfa1" auto_compressed_types="gz" type="galaxy.datatypes.text:Gfa1" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="gfa2" auto_compressed_types="gz" type="galaxy.datatypes.text:Gfa2" mimetype="text/plain" display_in_upload="true">
         <infer_from suffix="gfa" />
@@ -783,7 +784,6 @@
     <datatype extension="strider" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="supermatcher" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="syco" type="galaxy.datatypes.data:Text" subclass="true"/>
-    <datatype extension="taf" auto_compressed_types="gz" type="galaxy.datatypes.data:Text" subclass="true" description="Transposed Alignment Format. The first line of a .taf file begins with #taf. This word is followed by white-space-separated 'variable:value' pairs. There should be no white space surrounding the ':'." display_in_upload="true" description_url="https://github.com/ComparativeGenomicsToolkit/taffy/blob/main/docs/taf_format.md"/>
     <datatype extension="textsearch" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="vectorstrip" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="wobble" type="galaxy.datatypes.data:Text" subclass="true"/>
@@ -1413,6 +1413,7 @@
     <sniffer type="galaxy.datatypes.tabular:Pileup"/>
     <sniffer type="galaxy.datatypes.tabular:Psl"/>
     <sniffer type="galaxy.datatypes.text:Paf"/>
+    <sniffer type="galaxy.datatypes.text:Taf"/>
     <sniffer type="galaxy.datatypes.interval:Interval"/>
     <sniffer type="galaxy.datatypes.tabular:FourDNPairs"/>
     <sniffer type="galaxy.datatypes.tabular:FourDNPairsam"/>
