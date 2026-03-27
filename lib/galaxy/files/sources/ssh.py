@@ -12,6 +12,7 @@ from paramiko.ecdsakey import ECDSAKey
 from paramiko.ed25519key import Ed25519Key
 from paramiko.rsakey import RSAKey
 
+from galaxy.exceptions import AuthenticationFailed
 from galaxy.files.models import FilesSourceRuntimeContext
 from galaxy.files.sources._fsspec import (
     CacheOptionsDictType,
@@ -77,8 +78,9 @@ class SshFilesSource(FsspecFilesSource[SshFileSourceTemplateConfiguration, SshFi
         password = config.passwd
         if config.pkey:
             pkey = _parse_private_key(config.pkey, config.passwd)
-            if pkey is not None:
-                password = None
+            if pkey is None:
+                raise AuthenticationFailed("Invalid or unsupported SSH private key provided.")
+            password = None
 
         fs = SFTPFileSystem(
             host=config.host,
