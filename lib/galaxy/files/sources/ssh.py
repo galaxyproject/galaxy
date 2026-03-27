@@ -1,16 +1,21 @@
 from io import StringIO
 from typing import (
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
 try:
     from fsspec.implementations.sftp import SFTPFileSystem
+    from paramiko.ecdsakey import ECDSAKey
+    from paramiko.ed25519key import Ed25519Key
+    from paramiko.rsakey import RSAKey
 except ImportError:
     SFTPFileSystem = None
-from paramiko.ecdsakey import ECDSAKey
-from paramiko.ed25519key import Ed25519Key
-from paramiko.rsakey import RSAKey
+    if TYPE_CHECKING:
+        from paramiko.ecdsakey import ECDSAKey
+        from paramiko.ed25519key import Ed25519Key
+        from paramiko.rsakey import RSAKey
 
 from galaxy.exceptions import AuthenticationFailed
 from galaxy.files.models import FilesSourceRuntimeContext
