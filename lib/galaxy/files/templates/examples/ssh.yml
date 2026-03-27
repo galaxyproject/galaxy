@@ -8,6 +8,7 @@
     host: "{{ variables.host }}"
     user: "{{ variables.user }}"
     passwd: "{{ secrets.password }}"
+    pkey: "{{ secrets.pkey }}"
     port: "{{ variables.port }}"
     path: "{{ variables.path }}"
     writable: "{{ variables.writable }}"
@@ -46,5 +47,6 @@
     pkey:
       label: SSH private key
       optional: true
+      multiline: true
       help: |
         Private key to be used. For encrypted keys the given password is used to decrypt.

@@ -18,6 +18,7 @@ export interface FormEntry {
     optional?: boolean;
     help?: string | null;
     type: string;
+    area?: boolean;
     value?: any;
     validators?: TemplateVariableValidator[];
 }
@@ -37,7 +38,8 @@ export function metadataFormEntryDescription(what: string): FormEntry {
         name: "_meta_description",
         label: "Description",
         optional: true,
-        type: "textarea",
+        type: "text",
+        area: true,
         help: `Provide some notes to yourself about this ${what} - perhaps to remind you how it is configured, where it stores the data, etc..`,
     };
 }
@@ -54,6 +56,7 @@ export function templateVariableFormEntry(variable: TemplateVariable, variableVa
         const defaultValue = variable.default ?? "";
         return {
             type: "text",
+            area: variable.multiline || false,
             value: variableValue == undefined ? defaultValue : variableValue,
             ...common_fields,
         };
@@ -87,7 +90,8 @@ export function templateSecretFormEntry(secret: TemplateSecret): FormEntry {
     return {
         name: secret.name,
         label: secret.label ?? secret.name,
-        type: "password",
+        type: secret.multiline ? "text" : "password",
+        area: secret.multiline || false,
         help: markup(secret.help || "", true),
         value: "",
         optional: secret.optional || false,

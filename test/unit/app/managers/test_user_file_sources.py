@@ -629,6 +629,20 @@ class TestFileSourcesTestCase(BaseTestCase):
         self.manager.purge_instance(self.trans, user_file_source.uuid)
         self._assert_secret_absent(user_file_source, "sec1")
 
+    def test_create_multiline_secret(self, tmp_path):
+        self._init_managers(tmp_path, simple_vault_template(tmp_path))
+        multiline_secret = "line1\nline2\nline3"
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_vault",
+            template_version=0,
+            variables={},
+            secrets={"sec1": multiline_secret},
+        )
+        user_file_source = self._create_instance(create_payload)
+        self._assert_secret_is(user_file_source, "sec1", multiline_secret)
+
     def test_update_secret(self, tmp_path):
         self._init_managers(tmp_path, simple_vault_template(tmp_path))
         user_file_source = self._create_instance(SIMPLE_VAULT_CREATE_PAYLOAD)
@@ -636,6 +650,14 @@ class TestFileSourcesTestCase(BaseTestCase):
         update = UpdateInstanceSecretPayload(secret_name="sec1", secret_value="newvalue")
         self._modify(user_file_source, update)
         self._assert_secret_is(user_file_source, "sec1", "newvalue")
+
+    def test_update_secret_preserves_multiline_value(self, tmp_path):
+        self._init_managers(tmp_path, simple_vault_template(tmp_path))
+        user_file_source = self._create_instance(SIMPLE_VAULT_CREATE_PAYLOAD)
+        multiline_secret = "line1\nline2\nline3"
+        update = UpdateInstanceSecretPayload(secret_name="sec1", secret_value=multiline_secret)
+        self._modify(user_file_source, update)
+        self._assert_secret_is(user_file_source, "sec1", multiline_secret)
 
     def test_cannot_update_invalid_secret(self, tmp_path):
         self._init_managers(tmp_path, simple_vault_template(tmp_path))

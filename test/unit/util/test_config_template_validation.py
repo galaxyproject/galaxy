@@ -99,6 +99,14 @@ def test_variable_typing_string():
     assert isinstance(e, RequestParameterInvalidException)
 
 
+def test_variable_typing_multiline_string():
+    template = _template_with_variable(
+        TemplateVariableString(name="test_var", help=None, type="string", multiline=True)
+    )
+    instance = _test_instance_with_variables({"test_var": "line1\nline2"})
+    validate_secrets_and_variables(instance, template)
+
+
 def test_variable_typing_boolean():
     template = _template_with_variable(TemplateVariableBoolean(name="test_var", help=None, type="boolean"))
     instance = _test_instance_with_variables({"test_var": False})
