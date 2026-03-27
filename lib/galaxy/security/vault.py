@@ -98,7 +98,7 @@ class NullVault(Vault):
 
 
 class HashicorpVault(Vault):
-    def __init__(self, config):
+    def __init__(self, config, token_renewal_enabled=False):
         if not hvac:
             raise InvalidVaultConfigException(
                 "Hashicorp vault library 'hvac' is not available. Make sure hvac is installed."
@@ -106,6 +106,41 @@ class HashicorpVault(Vault):
         self.vault_address = config.get("vault_address")
         self.vault_token = config.get("vault_token")
         self.client = hvac.Client(url=self.vault_address, token=self.vault_token)
+        if token_renewal_enabled:
+            self._check_token_renewable()
+
+    def _check_token_renewable(self):
+        try:
+            token_info = self.client.auth.token.lookup_self()
+            data = token_info.get("data", {})
+            renewable = data.get("renewable", False)
+            ttl = data.get("ttl", 0)
+            if not renewable:
+                log.error(
+                    "Hashicorp Vault token is not renewable, but vault_token_renewal_interval is set. "
+                    "The token will expire and cannot be renewed. "
+                    "Generate a renewable token with: vault token create -policy=<policy> -ttl=1h -explicit-max-ttl=720h -renewable"
+                )
+            elif ttl > 0:
+                log.info("Hashicorp Vault token is renewable (TTL: %ds).", ttl)
+            else:
+                log.info("Hashicorp Vault token is renewable (no TTL).")
+        except Exception:
+            log.exception("Failed to look up Hashicorp Vault token info.")
+
+    def renew_token(self):
+        """Renew the Vault token. Intended to be called periodically by a Celery Beat task."""
+        result = self.client.auth.token.renew_self()
+        auth_data = result.get("auth", {})
+        new_ttl = auth_data.get("lease_duration", 0)
+        renewable = auth_data.get("renewable", False)
+        if not renewable:
+            log.error(
+                "Hashicorp Vault token is no longer renewable (max TTL likely reached). "
+                "A new token must be configured."
+            )
+        else:
+            log.debug("Hashicorp Vault token renewed successfully (new TTL: %ds).", new_ttl)
 
     def read_secret(self, key: str) -> Optional[str]:
         try:
@@ -114,9 +149,24 @@ class HashicorpVault(Vault):
         except hvac.exceptions.InvalidPath:
             log.exception(f"Failed to read secret from Hashicorp Vault at key: {key}")
             return None
+        except hvac.exceptions.Forbidden:
+            log.error(
+                "Permission denied reading secret at key: %s. "
+                "The Vault token may have expired. Check token renewal configuration.",
+                key,
+            )
+            return None
 
     def write_secret(self, key: str, value: str) -> None:
-        self.client.secrets.kv.v2.create_or_update_secret(path=key, secret={"value": value})
+        try:
+            self.client.secrets.kv.v2.create_or_update_secret(path=key, secret={"value": value})
+        except hvac.exceptions.Forbidden:
+            log.error(
+                "Permission denied writing secret at key: %s. "
+                "The Vault token may have expired. Check token renewal configuration.",
+                key,
+            )
+            raise
 
     def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()
@@ -258,7 +308,8 @@ class VaultFactory:
     def from_vault_type(app, vault_type: Optional[str], cfg: dict) -> Vault:
         vault: Vault
         if vault_type == "hashicorp":
-            vault = HashicorpVault(cfg)
+            token_renewal_enabled = app.config.vault_token_renewal_interval > 0
+            vault = HashicorpVault(cfg, token_renewal_enabled=token_renewal_enabled)
         elif vault_type == "database":
             vault = DatabaseVault(app.model.context, cfg)
         else:
@@ -277,3 +328,20 @@ class VaultFactory:
 
 def is_vault_configured(vault: Vault) -> bool:
     return not isinstance(vault, NullVault)
+
+
+def _unwrap_vault(vault: Vault) -> Vault:
+    """Unwrap decorator layers to get the underlying vault implementation."""
+    while hasattr(vault, "vault"):
+        vault = vault.vault
+    return vault
+
+
+def renew_vault_token_if_needed(vault: Vault) -> None:
+    """Renew the Hashicorp Vault token if the vault is a HashicorpVault.
+
+    Intended to be called from a Celery Beat periodic task.
+    """
+    inner = _unwrap_vault(vault)
+    if isinstance(inner, HashicorpVault):
+        inner.renew_token()

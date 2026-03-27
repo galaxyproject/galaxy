@@ -51,6 +51,7 @@ grpcio==1.78.0
 grpcio-status==1.78.0
 h11==0.16.0
 html5rdf==1.2.1
+hvac==2.4.0
 idna==3.11
 importlib-metadata==8.7.1 ; python_full_version < '3.12'
 iniconfig==2.3.0

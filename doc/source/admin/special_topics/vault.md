@@ -49,6 +49,33 @@ vault_address: http://localhost:8200
 vault_token: vault_application_token
 ```
 
+### Token Renewal
+
+Galaxy supports automatic renewal of Hashicorp Vault tokens via a Celery Beat periodic task. This is the recommended approach for production deployments using renewable tokens with a short TTL.
+
+On startup, Galaxy checks whether the configured token is renewable and logs a warning if it is not.
+
+To enable automatic renewal, set `vault_token_renewal_interval` in `galaxy.yml`:
+
+```yaml
+galaxy:
+  vault_token_renewal_interval: 1800  # renew every 30 minutes
+```
+
+This requires Celery Beat to be running. The periodic task calls Vault's `renew-self` endpoint at the configured interval.
+
+**Recommended token creation for production use:**
+
+Create a renewable token with a short TTL but a long max TTL:
+
+```bash
+vault token create -policy=galaxy -ttl=1h -explicit-max-ttl=720h -renewable
+```
+
+This creates a token that must be renewed every hour, but can be renewed for up to 30 days. Set `vault_token_renewal_interval` to half the TTL (e.g. 1800 for a 1-hour TTL).
+
+If the token is not renewable, Galaxy logs a warning at startup but continues to operate normally. If renewal fails at runtime, the Celery task will retry at the next scheduled interval.
+
 ## Vault configuration for database
 
 ```yaml
