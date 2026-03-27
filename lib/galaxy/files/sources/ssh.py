@@ -22,6 +22,18 @@ from galaxy.files.sources._fsspec import (
 from galaxy.util.config_templates import TemplateExpansion
 
 
+def _parse_private_key(private_key: str, password: Optional[str]):
+    # Paramiko cannot autodetect the key type, so try the supported key classes.
+    for pkey_class in (RSAKey, ECDSAKey, Ed25519Key):
+        try:
+            with StringIO(private_key) as pkey_file:
+                return pkey_class.from_private_key(pkey_file, password=password)
+        except Exception:
+            continue
+
+    return None
+
+
 class SshFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
     host: Union[str, TemplateExpansion]
     user: Optional[Union[str, TemplateExpansion]] = None
@@ -64,21 +76,9 @@ class SshFilesSource(FsspecFilesSource[SshFileSourceTemplateConfiguration, SshFi
         pkey = None
         password = config.passwd
         if config.pkey:
-            # pkey arrives here as space separated single line string
-            # simple replacement of " " by "\n" does not work since
-            # the `-----BEGIN ...-----` and `-----END` lines also
-            # contain spaces
-            import re
-            m = re.match(r"^\s*(-+[^-]+-+) (.+) (-+[^-]+-+)\s*$", config.pkey)
-            pk = m.group(1) + "\n" + "\n".join(m.group(2).split()) + "\n" + m.group(3)
-            # https://github.com/paramiko/paramiko/issues/1303#issuecomment-428658371
-            for pkey_class in (RSAKey, ECDSAKey, Ed25519Key):
-                try:
-                    with StringIO(pk) as pkeyf:
-                        pkey = pkey_class.from_private_key(pkeyf, password=config.passwd)
-                        password = None
-                except Exception as e:
-                    pass
+            pkey = _parse_private_key(config.pkey, config.passwd)
+            if pkey is not None:
+                password = None
 
         fs = SFTPFileSystem(
             host=config.host,
