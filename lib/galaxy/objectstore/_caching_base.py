@@ -119,6 +119,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         # Now pull in the file
         file_ok = self._download(rel_path)
         if file_ok:
+            self._refresh_cache_file_timestamp(rel_path)
             fix_permissions(self.config, self._get_cache_path(rel_path_dir))
         else:
             unlink(self._get_cache_path(rel_path), ignore_errors=True)
@@ -357,6 +358,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                     if source_file != cache_file and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
+                        self._refresh_cache_file_timestamp(rel_path)
                     fix_permissions(self.config, cache_file)
                 except OSError:
                     log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
@@ -384,6 +386,12 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
     def _start_cache_monitor_if_needed(self):
         if self.enable_cache_monitor:
             self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
+
+    def _refresh_cache_file_timestamp(self, rel_path: str) -> None:
+        """Make freshly staged cache files look newly accessed to cache eviction."""
+        cache_file = self._get_cache_path(rel_path)
+        if os.path.exists(cache_file):
+            os.utime(cache_file, None)
 
     def _get_remote_size(self, rel_path: str) -> int:
         raise NotImplementedError()
