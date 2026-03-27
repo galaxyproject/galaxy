@@ -46,3 +46,9 @@ function onClick(event: MouseEvent) {
         <slot />
     </button>
 </template>
+
+<style scoped>
+.dropdown-item {
+    cursor: pointer;
+}
+</style>
