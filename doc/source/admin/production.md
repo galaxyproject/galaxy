@@ -63,13 +63,13 @@ To configure Galaxy, set `database_connection` in Galaxy's config file, `config/
 An example database URL with username and password:
 
 ```
-postgresql://username:password@localhost/mydatabase
+postgresql+psycopg://username:password@localhost/mydatabase
 ```
 
 It's worth noting that some platforms (for example, Debian/Ubuntu) store database sockets in a directory other than the database engine's default. If you're connecting to a database server on the same host as the Galaxy server and the socket is in a non-standard location, you'll need to use these custom arguments (this is the default for Debian/Ubuntu, change as necessary for your installation):
 
 ```
-postgresql:///mydatabase?host=/var/run/postgresql
+postgresql+psycopg:///mydatabase?host=/var/run/postgresql
 ```
 
 For more hints on available options for the database URL, see the [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls).

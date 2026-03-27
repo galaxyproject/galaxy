@@ -10,7 +10,6 @@ import datetime
 import inspect
 import logging
 import os
-import re
 import string
 import sys
 import time
@@ -18,9 +17,11 @@ import uuid
 from collections import namedtuple
 from functools import partial
 
-import psycopg2
-from psycopg2.extras import NamedTupleCursor
-from sqlalchemy.engine.url import make_url
+from sqlalchemy import (
+    bindparam,
+    create_engine,
+    text,
+)
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 sys.path.insert(1, os.path.join(galaxy_root, "lib"))
@@ -339,17 +340,17 @@ class PurgesHDAs:
              metadata_file_events
           AS (INSERT INTO cleanup_event_metadata_file_association
                           (create_time, cleanup_event_id, metadata_file_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM deleted_metadata_file_ids),
              icda_events
           AS (INSERT INTO cleanup_event_icda_association
                           (create_time, cleanup_event_id, icda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM deleted_icda_ids),
              icda_hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, hda_id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, hda_id
                      FROM deleted_icda_ids)"""
 
     @property
@@ -401,14 +402,7 @@ class RequiresDiskUsageRecalculation:
             statements = calculate_user_disk_usage_statements(user_id, quota_source_map)
 
             for sql, args in statements:
-                sql = sql.replace("%", "%%")
-                sql = re.sub(r"\:([\w]+)", r"%(\1)s", sql)
-                new_args = {}
-                for key, val in args.items():
-                    if isinstance(val, list):
-                        val = tuple(val)
-                    new_args[key] = val
-                self._update(sql, new_args, add_event=False)
+                self._update(sql, args, add_event=False)
 
             self.log.info("recalculate_disk_usage user_id %i", user_id)
 
@@ -481,7 +475,7 @@ class UpdateHDAPurgedFlag(Action):
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW(), %(event_id)s, id
+                   SELECT NOW(), :event_id, id
                      FROM purged_hda_ids)
       SELECT id AS purged_hda_id
         FROM purged_hda_ids
@@ -501,12 +495,12 @@ class DeleteUserlessHistories(Action):
                       SET deleted = true{update_time_sql}
                     WHERE user_id is null
                           AND NOT deleted
-                          AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          AND update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                 RETURNING id),
              history_events
           AS (INSERT INTO cleanup_event_history_association
                           (create_time, cleanup_event_id, history_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM deleted_history_ids)
       SELECT id AS deleted_history_id
         FROM deleted_history_ids
@@ -526,7 +520,7 @@ class DeleteInactiveUsers(Action):
           AS (     UPDATE galaxy_user
                       SET deleted = true{update_time_sql}
                     WHERE NOT active{force_retry_sql}
-                          AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          AND update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                 RETURNING id),
              deleted_job_ids
           AS (     UPDATE job
@@ -539,7 +533,7 @@ class DeleteInactiveUsers(Action):
              user_events
           AS (INSERT INTO cleanup_event_user_association
                           (create_time, cleanup_event_id, user_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM deleted_user_ids)
       SELECT deleted_user_ids.id AS deleted_user_id,
              deleted_job_ids.id AS deleted_job_id
@@ -568,7 +562,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
           AS (     UPDATE galaxy_user
                       SET purged = true{update_time_sql}
                     WHERE deleted{force_retry_sql}
-                          AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          AND update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                 RETURNING id),
              deleted_uga_ids
           AS (DELETE FROM user_group_association
@@ -595,7 +589,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
              user_events
           AS (INSERT INTO cleanup_event_user_association
                           (create_time, cleanup_event_id, user_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_user_ids),
              purged_history_ids
           AS (     UPDATE history
@@ -608,7 +602,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
              history_events
           AS (INSERT INTO cleanup_event_history_association
                           (create_time, cleanup_event_id, history_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_history_ids),
              purged_hda_ids
           AS (     UPDATE history_dataset_association
@@ -621,7 +615,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_hda_ids),
              {purge_hda_dependencies_sql}
       SELECT purged_user_ids.id AS purged_user_id,
@@ -679,7 +673,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
         sql = """
             UPDATE galaxy_user
                SET disk_usage = 0
-             WHERE id IN %(user_ids)s
+             WHERE id IN :user_ids
         """
         user_ids = sorted(self.__zero_disk_usage_user_ids)
         args = {"user_ids": tuple(user_ids)}
@@ -704,7 +698,7 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
                           email = encode(digest(email || '{epoch_time}', 'sha1'), 'hex'),
                           username = encode(digest(username || '{epoch_time}', 'sha1'), 'hex'){update_time_sql}
                     WHERE deleted{force_retry_sql}
-                          AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          AND update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                 RETURNING id),
              deleted_uga_ids
           AS (DELETE FROM user_group_association
@@ -731,7 +725,7 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
              user_events
           AS (INSERT INTO cleanup_event_user_association
                           (create_time, cleanup_event_id, user_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_user_ids),
              purged_history_ids
           AS (     UPDATE history
@@ -744,7 +738,7 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
              history_events
           AS (INSERT INTO cleanup_event_history_association
                           (create_time, cleanup_event_id, history_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_history_ids),
              purged_hda_ids
           AS (     UPDATE history_dataset_association
@@ -757,7 +751,7 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_hda_ids),
              {purge_hda_dependencies_sql}
       SELECT purged_user_ids.id AS purged_user_id,
@@ -820,13 +814,13 @@ class PurgeDeletedHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalc
           AS (     UPDATE history_dataset_association
                       SET purged = true, deleted = true{update_time_sql}
                     WHERE deleted{force_retry_sql}
-                          AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          AND update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                 RETURNING id,
                           history_id),
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_hda_ids),
              {purge_hda_dependencies_sql}
       SELECT purged_hda_ids.id AS purged_hda_id,
@@ -868,14 +862,14 @@ class PurgeOldHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalculat
                       SET purged = true, deleted = true{update_time_sql}
                     FROM dataset
                     WHERE history_dataset_association.dataset_id = dataset.id AND
-                          dataset.create_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          dataset.create_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                           {force_retry_sql} {object_store_id_sql}
                 RETURNING history_dataset_association.id,
                           history_id),
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_hda_ids),
              {purge_hda_dependencies_sql}
       SELECT purged_hda_ids.id AS purged_hda_id,
@@ -912,13 +906,13 @@ class PurgeHistorylessHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRe
                       SET purged = true, deleted = true{update_time_sql}
                      FROM dataset
                     WHERE history_id IS NULL{force_retry_sql}{object_store_id_sql}
-                          AND history_dataset_association.update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          AND history_dataset_association.update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                 RETURNING history_dataset_association.id as id,
                           history_dataset_association.history_id as history_id),
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_hda_ids),
              {purge_hda_dependencies_sql}
       SELECT purged_hda_ids.id AS purged_hda_id,
@@ -957,13 +951,13 @@ class PurgeErrorHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalcul
                      FROM dataset
                     WHERE history_dataset_association.dataset_id = dataset.id{force_retry_sql}{object_store_id_sql}
                           AND dataset.state = 'error'
-                          AND history_dataset_association.update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          AND history_dataset_association.update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                 RETURNING history_dataset_association.id as id,
                           history_dataset_association.history_id as history_id),
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_hda_ids),
              {purge_hda_dependencies_sql}
       SELECT purged_hda_ids.id AS purged_hda_id,
@@ -1002,13 +996,13 @@ class PurgeHDAsOfPurgedHistories(PurgesHDAs, RequiresDiskUsageRecalculation, Act
                      FROM history
                     WHERE history_dataset_association.history_id = history.id{force_retry_sql}
                           AND history.purged
-                          AND history.update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          AND history.update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                 RETURNING history_dataset_association.id as id,
                           history_dataset_association.history_id as history_id),
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_hda_ids),
              {purge_hda_dependencies_sql}
       SELECT purged_hda_ids.id AS purged_hda_id,
@@ -1041,13 +1035,13 @@ class PurgeDeletedHistories(PurgesHDAs, RequiresDiskUsageRecalculation, Action):
           AS (     UPDATE history
                       SET purged = true{update_time_sql}
                     WHERE deleted{force_retry_sql}
-                          AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          AND update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                 RETURNING id,
                           user_id),
              history_events
           AS (INSERT INTO cleanup_event_history_association
                           (create_time, cleanup_event_id, history_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_history_ids),
              purged_hda_ids
           AS (     UPDATE history_dataset_association
@@ -1060,7 +1054,7 @@ class PurgeDeletedHistories(PurgesHDAs, RequiresDiskUsageRecalculation, Action):
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_hda_ids),
              {purge_hda_dependencies_sql}
       SELECT purged_history_ids.id AS purged_history_id,
@@ -1100,12 +1094,12 @@ class DeleteExportedHistories(Action):
                      FROM job_export_history_archive
                     WHERE job_export_history_archive.dataset_id = dataset.id
                           AND NOT deleted {object_store_id_sql}
-                          AND dataset.update_time <= (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          AND dataset.update_time <= (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                 RETURNING dataset.id),
              dataset_events
           AS (INSERT INTO cleanup_event_dataset_association
                           (create_time, cleanup_event_id, dataset_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM deleted_dataset_ids)
       SELECT id AS deleted_dataset_id
         FROM deleted_dataset_ids
@@ -1130,19 +1124,19 @@ class DeleteDatasets(Action):
                             (SELECT true
                                FROM library_dataset_dataset_association
                               WHERE (NOT deleted
-                                     OR update_time >= (NOW() AT TIME ZONE 'utc' - interval '%(days)s days'))
+                                     OR update_time >= (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day')))
                                     AND dataset.id = dataset_id)
                           AND NOT EXISTS
                             (SELECT true
                                FROM history_dataset_association
                               WHERE (NOT purged
-                                     OR update_time >= (NOW() AT TIME ZONE 'utc' - interval '%(days)s days'))
+                                     OR update_time >= (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day')))
                                     AND dataset.id = dataset_id)
                 RETURNING id),
              dataset_events
           AS (INSERT INTO cleanup_event_dataset_association
                           (create_time, cleanup_event_id, dataset_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM deleted_dataset_ids)
       SELECT id
         FROM deleted_dataset_ids
@@ -1160,14 +1154,14 @@ class PurgeDatasets(RemovesDatasets, Action):
           AS (     UPDATE dataset
                       SET purged = true{update_time_sql}
                     WHERE deleted{force_retry_sql}{object_store_id_sql}
-                          AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          AND update_time < (NOW() AT TIME ZONE 'utc' - (:days * interval '1 day'))
                 RETURNING id,
                           uuid,
                           object_store_id),
              dataset_events
           AS (INSERT INTO cleanup_event_dataset_association
                           (create_time, cleanup_event_id, dataset_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                   SELECT NOW() AT TIME ZONE 'utc', :event_id, id
                      FROM purged_dataset_ids)
       SELECT id AS purged_dataset_id,
              uuid AS purged_dataset_uuid,
@@ -1214,16 +1208,13 @@ class Cleanup:
     @property
     def conn(self):
         if self.__conn is None:
-            url = make_url(self.config.database_connection)
-            log.info(f"Connecting to database with URL: {url}")
-            args = url.translate_connect_args(username="user")
-            args.update(url.query)
-            assert url.get_dialect().name == "postgresql", "This script can only be used with PostgreSQL."
-            self.__conn = psycopg2.connect(cursor_factory=NamedTupleCursor, **args)
-            # TODO: is this per session or cursor?
+            engine = create_engine(self.config.database_connection)
+            log.info(f"Connecting to database with URL: {engine.url}")
+            assert engine.dialect.name == "postgresql", "This script can only be used with PostgreSQL."
+            self.__conn = engine.connect()
             if self.args.work_mem is not None:
                 log.info("Setting work_mem to %s", self.args.work_mem)
-                self.__conn.cursor().execute("SET work_mem TO %s", (self.args.work_mem,))
+                self.__conn.execute(text("SET work_mem TO :work_mem"), {"work_mem": self.args.work_mem})
         return self.__conn
 
     def __parse_args(self):
@@ -1304,15 +1295,12 @@ class Cleanup:
         self.config = galaxy.config.Configuration(**app_properties)
 
     def _dry_run_event(self):
-        cur = self.conn.cursor()
-        sql = "SELECT MAX(id) FROM cleanup_event;"
-        cur.execute(sql)
-        max_id = cur.fetchone()[0]
+        max_id = self.conn.execute(text("SELECT MAX(id) FROM cleanup_event")).fetchone()[0]
         if max_id is None:
             # there has to be at least one event in the table, if there are none just create a fake one.
-            sql = "INSERT INTO cleanup_event (create_time, message) VALUES (NOW(), 'dry_run_event') RETURNING id;"
-            cur.execute(sql)
-            max_id = cur.fetchone()[0]
+            max_id = self.conn.execute(
+                text("INSERT INTO cleanup_event (create_time, message) VALUES (NOW(), 'dry_run_event') RETURNING id")
+            ).fetchone()[0]
             self.conn.commit()
             log.info("An event must exist for the subsequent query to succeed, so a dummy event has been created")
         else:
@@ -1324,13 +1312,15 @@ class Cleanup:
         return max_id
 
     def _execute(self, sql, args):
-        cur = self.conn.cursor()
-        sql_str = cur.mogrify(sql, args).decode("utf-8")
-        log.debug(f"SQL is: {sql_str}")
+        log.debug("SQL is: %s [args: %s]", sql, args)
         log.info("Executing SQL")
-        cur.execute(sql, args)
-        log.info("Database status: %s", cur.statusmessage)
-        return cur
+        stmt = text(sql)
+        for key, val in args.items():
+            if isinstance(val, (list, tuple)):
+                stmt = stmt.bindparams(bindparam(key, expanding=True))
+        result = self.conn.execute(stmt, args)
+        log.info("Database status: rowcount=%s", result.rowcount)
+        return result
 
     def _create_event(self, message=None):
         """
@@ -1342,7 +1332,7 @@ class Cleanup:
         sql = """
             INSERT INTO cleanup_event
                         (create_time, message)
-                 VALUES (NOW() AT TIME ZONE 'utc', %(message)s)
+                 VALUES (NOW() AT TIME ZONE 'utc', :message)
               RETURNING id;
         """
         message = message or self.__current_action

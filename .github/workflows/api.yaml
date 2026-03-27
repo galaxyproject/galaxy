@@ -17,7 +17,7 @@ on:
     - cron: '0 0 * * 2'
 env:
   GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
-  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
   GALAXY_TEST_REQUIRE_ALL_NEEDED_TOOLS: '1'
@@ -35,7 +35,7 @@ jobs:
         chunk: [0, 1]
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

@@ -29,7 +29,7 @@ model.set_datatypes_registry(datatypes_registry)
 
 DB_URI = "sqlite:///:memory:"
 # docker run -e POSTGRES_USER=galaxy -p 5432:5432 -d postgres
-# GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE='postgresql://galaxy@localhost:5432/' pytest test/unit/data/test_galaxy_mapping.py
+# GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE='postgresql+psycopg://galaxy@localhost:5432/' pytest test/unit/data/test_galaxy_mapping.py
 skip_if_not_postgres_base = pytest.mark.skipif(
     not os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE"),
     reason="GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE not set",

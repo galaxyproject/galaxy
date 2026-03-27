@@ -5,9 +5,9 @@ from typing import cast
 from celery import Task
 from sqlalchemy import (
     bindparam,
+    func,
     insert,
     select,
-    text,
     update,
 )
 from sqlalchemy.dialects.postgresql import insert as ps_insert
@@ -87,10 +87,15 @@ class GalaxyTaskBeforeStartUserRateLimitPostgres(GalaxyTaskBeforeStartUserRateLi
         update_stmt = (
             update(CeleryUserRateLimit)
             .where(CeleryUserRateLimit.user_id == user_id)
-            .values(last_scheduled_time=text("greatest(last_scheduled_time + ':interval second', :now)"))
+            .values(
+                last_scheduled_time=func.greatest(
+                    CeleryUserRateLimit.last_scheduled_time + datetime.timedelta(seconds=task_interval_secs),
+                    now,
+                )
+            )
             .returning(CeleryUserRateLimit.last_scheduled_time)
         )
-        result = sa_session.execute(update_stmt, {"interval": task_interval_secs, "now": now}).all()
+        result = sa_session.execute(update_stmt).all()
         if not result:
             sched_time = now + datetime.timedelta(seconds=task_interval_secs)
             upsert_stmt = (

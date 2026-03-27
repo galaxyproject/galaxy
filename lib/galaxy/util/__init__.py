@@ -829,8 +829,8 @@ def mask_password_from_url(url):
     """
     Masks out passwords from connection urls like the database connection in galaxy.ini
 
-    >>> mask_password_from_url( 'sqlite+postgresql://user:password@localhost/' )
-    'sqlite+postgresql://user:********@localhost/'
+    >>> mask_password_from_url( 'postgresql+psycopg://user:password@localhost/' )
+    'postgresql+psycopg://user:********@localhost/'
     >>> mask_password_from_url( 'amqp://user:amqp@localhost' )
     'amqp://user:********@localhost'
     >>> mask_password_from_url( 'amqp://localhost')

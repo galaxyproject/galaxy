@@ -13,7 +13,7 @@ on:
     - cron: '0 0 * * 2'
 env:
   GALAXY_CONFIG_GALAXY_URL_PREFIX: '/galaxypf'
-  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_TEST_SELENIUM_RETRIES: 1
   GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 1
@@ -38,7 +38,7 @@ jobs:
         chunk: [0, 1, 2]
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

@@ -58,6 +58,7 @@ class TestScriptsPgCleanupIntegration(BaseScriptsIntegrationTestCase):
 
     @skip_without_tool("test_data_source")
     def test_purge_errored_hdas(self):
+        self._skip_unless_postgres()
         history_id = self.dataset_populator.new_history()
         error_dataset = self.dataset_populator.new_error_dataset(history_id)
         assert not self.is_purged(history_id, error_dataset)

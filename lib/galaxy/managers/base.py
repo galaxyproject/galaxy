@@ -1253,24 +1253,28 @@ class ModelFilterParser(HasAModelManager):
         int_list = [int(v) for v in int_list_string.split(sep)]
         return int_list
 
-    def parse_date(self, date_string):
+    def parse_date(self, date_string: str) -> datetime.datetime:
         """
-        Reformats a string containing either seconds from epoch or an iso8601 formated
-        date string into a new date string usable within a filter query.
+        Parses a string containing either seconds from epoch or an iso8601 formatted
+        date string into a datetime object usable within a filter query.
 
         Seconds from epoch can be a floating point value as well (i.e containing ms).
+
+        Returns a ``datetime.datetime`` so that SQLAlchemy binds a proper
+        timestamp parameter — required by psycopg3 which does not implicitly
+        cast VARCHAR to TIMESTAMP the way psycopg2 did.
         """
         # assume it's epoch if no date separator is present
         try:
             epoch = float(date_string)
-            datetime_obj = datetime.datetime.fromtimestamp(epoch)
-            return datetime_obj.isoformat(sep=" ")
+            return datetime.datetime.fromtimestamp(epoch)
         except ValueError:
             pass
 
         if match := self.date_string_re.match(date_string):
-            date_string = " ".join(group for group in match.groups() if group)
-            return date_string
+            date_part = match.group(1)
+            time_part = match.group(2) or "00:00:00"
+            return datetime.datetime.fromisoformat(f"{date_part}T{time_part}")
         raise ValueError("datetime strings must be in the ISO 8601 format and in the UTC")
 
     def contains_non_orm_filter(self, filters: list[ParsedFilter]) -> bool:

@@ -1089,7 +1089,7 @@ def resolve_invocation_markdown(trans, workflow_markdown):
     def get_invocation(trans, line):
         workflow_manager = trans.app.workflow_manager
         if invocation_id_match := re.search(INVOCATION_ID_PATTERN, line):
-            invocation_id = invocation_id_match.group(1)
+            invocation_id = int(invocation_id_match.group(1))
             invocation = workflow_manager.get_invocation(
                 trans, invocation_id, check_ownership=False, check_accessible=True
             )

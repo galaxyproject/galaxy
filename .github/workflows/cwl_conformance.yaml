@@ -13,7 +13,7 @@ on:
       - 'lib/galaxy_test/selenium/**'
       - 'packages/**'
 env:
-  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -31,7 +31,7 @@ jobs:
         conformance-version: ['cwl_conformance_v1_0'] #, 'cwl_conformance_v1_1', 'cwl_conformance_v1_2']
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

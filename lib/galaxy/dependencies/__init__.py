@@ -192,7 +192,10 @@ class ConditionalDependencies:
             return False
 
     def check_psycopg2_binary(self):
-        return self.config["database_connection"].startswith("postgres")
+        return self.config["database_connection"].startswith(("postgresql://", "postgresql+psycopg2://"))
+
+    def check_psycopg(self):
+        return self.config["database_connection"].startswith("postgresql+psycopg://")
 
     def check_mysqlclient(self):
         return self.config["database_connection"].startswith("mysql")

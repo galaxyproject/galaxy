@@ -16,7 +16,7 @@ on:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
 env:
-  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_TEST_WORKFLOW_AFTER_RERUN: '1'
 concurrency:
@@ -31,7 +31,7 @@ jobs:
         python-version: ['3.10']
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
