@@ -176,6 +176,9 @@ function isActiveSideBar(menuKey: string) {
  * Checks if an activity that has a panel should have the `is-active` prop
  */
 function panelActivityIsActive(activity: Activity) {
+    if (activity.id === "chatgxy" && !chatStore.isCenterMode && chatStore.chatVisible) {
+        return true;
+    }
     return isActiveSideBar(activity.id) || isActiveRoute(activity.to);
 }
 

@@ -315,43 +315,52 @@ class BaseGalaxyAgent(ABC):
 
         raise last_exception or Exception("Max retries exhausted")
 
+    @staticmethod
+    def _sanitize_context_value(value: Any, max_length: int = 200) -> str:
+        """Sanitize a user-supplied context field value for safe prompt inclusion."""
+        s = str(value).replace("\n", " ").replace("\r", " ").strip()
+        if len(s) > max_length:
+            s = s[:max_length]
+        return s
+
     def _format_interface_context(self, ctx: dict[str, Any]) -> str:
-        """Format active interface context as a natural-language description for the agent."""
         ctx_type = ctx.get("contextType")
         if not ctx_type:
             return ""
 
+        _s = self._sanitize_context_value
+
         if ctx_type == "tool":
-            name = ctx.get("toolName", ctx.get("toolId", "unknown"))
-            tool_id = ctx.get("toolId", "")
+            name = _s(ctx.get("toolName", ctx.get("toolId", "unknown")))
+            tool_id = _s(ctx.get("toolId", ""))
             version = ctx.get("toolVersion")
-            version_str = f", version {version}" if version else ""
+            version_str = f", version {_s(version)}" if version else ""
             return f'The user is viewing the tool form for "{name}" ({tool_id}{version_str}).'
 
         if ctx_type == "dataset":
-            dataset_id = ctx.get("datasetId", "unknown")
-            name = ctx.get("datasetName", dataset_id)
+            dataset_id = _s(ctx.get("datasetId", "unknown"))
+            name = _s(ctx.get("datasetName", dataset_id))
             ext = ctx.get("extension")
-            ext_str = f" ({ext} format)" if ext else ""
+            ext_str = f" ({_s(ext)} format)" if ext else ""
             return f'The user is viewing dataset "{name}"{ext_str}.'
 
         if ctx_type == "workflow_editor":
-            wf_id = ctx.get("workflowId", "unknown")
-            name = ctx.get("workflowName", wf_id)
+            wf_id = _s(ctx.get("workflowId", "unknown"))
+            name = _s(ctx.get("workflowName", wf_id))
             return f'The user is editing workflow "{name}".'
 
         if ctx_type == "workflow_run":
-            wf_id = ctx.get("workflowId", "unknown")
-            name = ctx.get("workflowName", wf_id)
+            wf_id = _s(ctx.get("workflowId", "unknown"))
+            name = _s(ctx.get("workflowName", wf_id))
             return f'The user is running workflow "{name}".'
 
         if ctx_type == "job":
-            job_id = ctx.get("jobId", "unknown")
+            job_id = _s(ctx.get("jobId", "unknown"))
             tool_id = ctx.get("toolId")
-            tool_str = f" (tool: {tool_id})" if tool_id else ""
+            tool_str = f" (tool: {_s(tool_id)})" if tool_id else ""
             return f"The user is viewing job {job_id}{tool_str}."
 
-        return f"The user is viewing: {ctx_type}"
+        return f"The user is viewing: {_s(ctx_type)}"
 
     def _prepare_prompt(self, query: str, context: dict[str, Any]) -> str:
         prompt_parts = [query]
