@@ -357,7 +357,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 try:
                     if source_file != cache_file and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
-                        shutil.copy2(source_file, cache_file)
+shutil.copy(source_file, cache_file)
                         self._refresh_cache_file_timestamp(rel_path)
                     fix_permissions(self.config, cache_file)
                 except OSError:

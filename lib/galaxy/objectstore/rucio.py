@@ -349,8 +349,6 @@ class RucioObjectStore(CachingConcreteObjectStore):
         dest = self._get_cache_path(rel_path)
         auth_token = self._get_token(**kwargs)
         file_ok = self.rucio_broker.download(rel_path, dest, auth_token)
-        if file_ok:
-            self._refresh_cache_file_timestamp(rel_path)
         self._fix_permissions(self._get_cache_path(rel_path_dir))
         return file_ok
 
@@ -570,11 +568,10 @@ class RucioObjectStore(CachingConcreteObjectStore):
             try:
                 if source_file != cache_file and self.cache_updated_data:
                     try:
-                        shutil.copy2(source_file, cache_file)
+                        shutil.copy(source_file, cache_file)
                     except OSError:
                         os.makedirs(os.path.dirname(cache_file))
                         shutil.copy2(source_file, cache_file)
-                    self._refresh_cache_file_timestamp(rel_path)
                 self._fix_file_permissions(cache_file)
                 source_file = cache_file
             except OSError:
