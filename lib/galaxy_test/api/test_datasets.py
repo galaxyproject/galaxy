@@ -896,7 +896,7 @@ class TestDatasetsApi(ApiTestCase):
         self.dataset_populator.wait_for_history_jobs(history_id)
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         # now we can't update the datatype
         response = self._put(f"histories/{history_id}/contents/{hda_id}", data={"datatype": "tabular"}, json=True)

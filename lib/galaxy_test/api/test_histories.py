@@ -601,7 +601,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         assert show_response["name"] == "Immutable Name"
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         # we cannot update the name anymore
         response = self._update(history_id, {"name": "New Name"})
@@ -617,7 +617,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         self.dataset_populator.new_dataset(history_id, content="TestContents")
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         # we cannot add another dataset
         with self.assertRaisesRegex(AssertionError, "History is immutable"):
@@ -631,7 +631,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         self._update(history_id, {"tags": ["FirstTag"]})
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         # we cannot add another tag
         response = self._update(history_id, {"tags": ["SecondTag"]})

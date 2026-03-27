@@ -1052,7 +1052,7 @@ class TestHistoryContentsApi(ApiTestCase):
         }
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         with self.assertRaisesRegex(AssertionError, "History is immutable"):
             self.dataset_populator.run_tool("cat1", inputs=inputs, history_id=history_id)
@@ -1061,7 +1061,7 @@ class TestHistoryContentsApi(ApiTestCase):
         hdca = self._create_pair_collection(history_id)
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         body = dict(name="newnameforpair")
         update_response = self._put(
@@ -1074,7 +1074,7 @@ class TestHistoryContentsApi(ApiTestCase):
         hda1 = self._wait_for_new_hda(history_id)
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         update_response = self._update(history_id, hda1["id"], dict(name="Updated Name"))
         self._assert_status_code_is(update_response, 403)

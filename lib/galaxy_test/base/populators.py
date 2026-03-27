@@ -867,6 +867,14 @@ class BaseDatasetPopulator(BasePopulator):
         delete_response = self._delete(f"histories/{history_id}")
         delete_response.raise_for_status()
 
+    def purge_history(self, history_id: str) -> dict:
+        purge_response = self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        purge_response.raise_for_status()
+        result = purge_response.json()
+        if purge_task := result.get("purge_task"):
+            self.wait_on_task_id(purge_task["id"])
+        return result
+
     def delete_dataset(
         self,
         history_id: str,
