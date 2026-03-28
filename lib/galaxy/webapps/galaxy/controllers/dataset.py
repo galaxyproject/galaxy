@@ -159,17 +159,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             ]
             ldatatypes.sort()
 
-            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
-            role_tuples = []
-            for role in trans.app.security_agent.get_legitimate_roles(trans, data.dataset, "root"):
-                displayed_name = private_role_emails.get(role.id, role.name)
-                role_tuples.append((displayed_name, trans.security.encode_id(role.id)))
-
             data_metadata = list(data.metadata.spec.items())
             converters_collection = [(key, value.name) for key, value in data.get_converter_types().items()]
-            can_manage_dataset = trans.app.security_agent.can_manage_dataset(
-                trans.get_current_user_roles(), data.dataset
-            )
             # attribute editing
             attribute_inputs = [
                 {"name": "name", "type": "text", "label": "Name", "value": data.get_display_name()},
@@ -258,6 +249,18 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         {"name": "not_shareable", "type": "hidden", "label": permission_message, "readonly": True}
                     )
                 elif data.dataset.actions:
+                    can_manage_dataset = trans.app.security_agent.can_manage_dataset(
+                        trans.get_current_user_roles(), data.dataset
+                    )
+                    legitimate_roles = trans.app.security_agent.get_legitimate_roles(trans, data.dataset, "root")
+                    legitimate_role_ids = {role.id for role in legitimate_roles}
+                    private_role_emails = get_private_role_user_emails_dict(
+                        trans.sa_session, role_ids=legitimate_role_ids
+                    )
+                    role_tuples = [
+                        (private_role_emails.get(role.id, role.name), trans.security.encode_id(role.id))
+                        for role in legitimate_roles
+                    ]
                     in_roles = {}
                     for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
                         in_roles[action.action] = [trans.security.encode_id(role.id) for role in roles]

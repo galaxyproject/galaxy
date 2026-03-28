@@ -227,6 +227,7 @@ class ToolsService(ServiceBase):
             request_state=request_state,
             client_secret=file_landing_payload.client_secret,
             public=file_landing_payload.public,
+            origin=file_landing_payload.origin,
         )
 
     def data_landing_to_tool_landing(
@@ -249,6 +250,7 @@ class ToolsService(ServiceBase):
             request_state=request_state,
             client_secret=data_landing_payload.client_secret,
             public=data_landing_payload.public,
+            origin=data_landing_payload.origin,
         )
 
     def inputs(

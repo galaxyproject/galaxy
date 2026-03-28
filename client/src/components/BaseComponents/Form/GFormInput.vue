@@ -10,7 +10,7 @@ const emit = defineEmits<{
     (e: "keydown", event: KeyboardEvent): void;
 }>();
 
-const inputRef = ref<HTMLInputElement | null>(null);
+const inputElement = ref<HTMLInputElement | null>(null);
 
 const inputValue = computed({
     get() {
@@ -21,17 +21,15 @@ const inputValue = computed({
     },
 });
 
-function focus() {
-    inputRef.value?.focus();
-}
-
 defineExpose({
-    focus,
+    focus() {
+        inputElement.value?.focus();
+    },
 });
 </script>
 
 <template>
-    <input ref="inputRef" v-model="inputValue" class="g-form-input" @keydown="(event) => emit('keydown', event)" />
+    <input ref="inputElement" v-model="inputValue" class="g-form-input" @keydown="(event) => emit('keydown', event)" />
 </template>
 
 <style scoped lang="scss">

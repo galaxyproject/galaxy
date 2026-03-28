@@ -296,7 +296,11 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         if self.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import purge_history_datasets
 
-            request = PurgeHistoryDatasetsTaskRequest(history_id=item.id)
+            preserve_owner_update_time = kwargs.get("preserve_owner_update_time", False)
+            request = PurgeHistoryDatasetsTaskRequest(
+                history_id=item.id,
+                preserve_owner_update_time=preserve_owner_update_time,
+            )
             user = item.user
             result = purge_history_datasets.delay(request=request, task_user_id=user.id if user else None)
         else:

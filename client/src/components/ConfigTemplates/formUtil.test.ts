@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import type { TemplateSecret, TemplateVariable } from "@/api/configTemplates";
 
-import { createTemplateForm, templateSecretFormEntry, templateVariableFormEntry, upgradeForm } from "./formUtil";
+import {
+    createTemplateForm,
+    formDataTypedGet,
+    templateSecretFormEntry,
+    templateVariableFormEntry,
+    upgradeForm,
+} from "./formUtil";
 import {
     GENERIC_FTP_FILE_SOURCE_TEMPLATE,
     OBJECT_STORE_INSTANCE,
@@ -98,6 +104,24 @@ describe("formUtils", () => {
             const formEntry = templateVariableFormEntry(hostVariable, "mycoolhost.org");
             expect(formEntry.value).toBe("mycoolhost.org");
         });
+        it("should render optional integer with no default as empty string", () => {
+            const optionalIntVar: TemplateVariable = {
+                name: "timeout",
+                type: "integer",
+                optional: true,
+            };
+            const formEntry = templateVariableFormEntry(optionalIntVar, undefined);
+            expect(formEntry.value).toBe("");
+        });
+        it("should render required integer with no default as 0", () => {
+            const requiredIntVar: TemplateVariable = {
+                name: "timeout",
+                type: "integer",
+                optional: false,
+            };
+            const formEntry = templateVariableFormEntry(requiredIntVar, undefined);
+            expect(formEntry.value).toBe(0);
+        });
     });
 
     describe("templateVariableFormEntry optional field", () => {
@@ -159,6 +183,36 @@ describe("formUtils", () => {
             };
             const formEntry = templateSecretFormEntry(secretWithoutOptional);
             expect(formEntry.optional).toBe(false);
+        });
+    });
+
+    describe("formDataTypedGet", () => {
+        it("should return undefined for an optional integer when the raw value is empty string", () => {
+            const optionalIntVar: TemplateVariable = {
+                name: "timeout",
+                type: "integer",
+                optional: true,
+            };
+            const result = formDataTypedGet(optionalIntVar, { timeout: "" });
+            expect(result).toBeUndefined();
+        });
+
+        it("should return the parsed integer when a valid string value is provided", () => {
+            const intVar: TemplateVariable = {
+                name: "timeout",
+                type: "integer",
+            };
+            const result = formDataTypedGet(intVar, { timeout: "42" });
+            expect(result).toBe(42);
+        });
+
+        it("should return undefined for integer when raw value is null", () => {
+            const intVar: TemplateVariable = {
+                name: "timeout",
+                type: "integer",
+            };
+            const result = formDataTypedGet(intVar, { timeout: null });
+            expect(result).toBeUndefined();
         });
     });
 });

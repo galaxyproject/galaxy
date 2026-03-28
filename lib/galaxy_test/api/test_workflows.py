@@ -7333,6 +7333,20 @@ outer_input:
         request = self.workflow_populator.invocation_to_request(invocation_id)
         assert request["replacement_params"]["replaceme"] == "was replaced"
 
+    @skip_without_tool("cat1")
+    def test_run_with_non_string_replacement_params(self):
+        workflow = self.workflow_populator.load_workflow(name="test_for_pja_run", add_pja=True)
+        workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow, inputs_by="step_index")
+        workflow_request["replacement_params"] = dumps(dict(replaceme={"nested_key": "was replaced"}))
+        run_workflow_response = self.workflow_populator.invoke_workflow_raw(
+            workflow_id, workflow_request, assert_ok=False
+        )
+        self._assert_status_code_is(run_workflow_response, 400)
+        self._assert_error_code_is(
+            run_workflow_response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"]
+        )
+        assert run_workflow_response.json()["err_msg"] == "Replacement parameter 'replaceme' must be a string, got dict"
+
     @skip_without_tool("hidden_param")
     def test_hidden_param_in_workflow(self):
         with self.dataset_populator.test_history() as history_id:

@@ -449,7 +449,7 @@ steps:
             )
             first_update_time = failed_hdca["update_time"]
             assert failed_hdca["visible"]
-            rerun_params = self._get(f"jobs/{job_id}/build_for_rerun").json()
+            rerun_params = self.dataset_populator.build_for_rerun(job_id)
             inputs = rerun_params["state_inputs"]
             inputs["rerun_remap_job_id"] = job_id
             rerun_response = self._run_detect_errors(history_id=history_id, inputs=inputs)
@@ -481,7 +481,7 @@ steps:
                 assert_ok=False,
             )
             assert failed_hdca["visible"]
-            rerun_params = self._get(f"jobs/{job_id}/build_for_rerun").json()
+            rerun_params = self.dataset_populator.build_for_rerun(job_id)
             inputs = rerun_params["state_inputs"]
             inputs["rerun_remap_job_id"] = unrelated_job_id
             before_rerun_items = self.dataset_populator.get_history_contents(history_id)
@@ -944,7 +944,7 @@ steps:
             wait_for_job=True,
             assert_ok=True,
         )
-        rerun_params = self._get(f"jobs/{run_response['jobs'][0]['id']}/build_for_rerun").json()
+        rerun_params = self.dataset_populator.build_for_rerun(run_response["jobs"][0]["id"])
         # Since we call rerun on the first (and only) job we should get the expanded input
         # which is a dataset collection element (and not the list:pair hdca that was used as input to the original
         # job).
@@ -966,12 +966,43 @@ steps:
             assert_ok=True,
         )
 
+    @skip_without_tool("multi_data_param")
+    def test_job_build_for_rerun_hdca_value_in_options(self, history_id):
+        """When rerunning a job whose input was a collection passed to a
+        ``multiple="true"`` data parameter, the collection must appear in
+        ``options.hdca`` (not ``options.hda``) so the client can match it
+        against the value's ``src: "hdca"``.
+
+        Regression test for a bug where hidden HDCAs were misclassified as
+        HDAs in the fallback options, causing the rerun form to show single-
+        dataset mode with nothing pre-selected.
+        """
+        hdca_id = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
+        inputs = {
+            "f1": {"src": "hdca", "id": hdca_id},
+            "f2": {"src": "hdca", "id": hdca_id},
+        }
+        run_response = self._run("multi_data_param", history_id, inputs, wait_for_job=True, assert_ok=True)
+        job_id = run_response["jobs"][0]["id"]
+
+        # Hide the collection so it goes through the job-rerun fallback path
+        # (not found among active visible dataset collections).
+        self.dataset_populator.hide_dataset_collection(hdca_id)
+
+        rerun_params = self.dataset_populator.build_for_rerun(job_id)
+
+        # Find the f1 input definition in the form model
+        f1_input = next(i for i in rerun_params["inputs"] if i["name"] == "f1")
+        assert f1_input["value"]["values"][0]["src"] == "hdca"
+
+        # The HDCA must be in options.hdca (not options.hda)
+        hdca_option = f1_input["options"]["hdca"][0]
+        assert hdca_option["id"] == hdca_id and hdca_option["src"] == "hdca"
+
     @skip_without_tool("multiple_versions")
     def test_job_build_for_rerun_switch_version(self, history_id):
         run_response = self._run("multiple_versions", history_id, {}, tool_version="0.1").json()
-        rerun_params = self._get(
-            f"jobs/{run_response['jobs'][0]['id']}/build_for_rerun", {"tool_version": "0.2"}
-        ).json()
+        rerun_params = self.dataset_populator.build_for_rerun(run_response["jobs"][0]["id"], tool_version="0.2")
         assert rerun_params["version"] == "0.2"
 
     @skip_without_tool("collection_paired_test")
@@ -1012,7 +1043,7 @@ steps:
             assert_ok=True,
         )
         assert len(run_response["jobs"]) == 2
-        rerun_params = self._get(f"jobs/{run_response['jobs'][0]['id']}/build_for_rerun").json()
+        rerun_params = self.dataset_populator.build_for_rerun(run_response["jobs"][0]["id"])
         # Since we call rerun on the first (and only) job we should get the expanded input
         # which is a dataset collection element (and not the list:list hdca that was used as input to the original
         # job).

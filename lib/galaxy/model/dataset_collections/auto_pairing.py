@@ -20,6 +20,7 @@ T = TypeVar("T", bound=HasName)
 COMMON_FILTERS: dict[str, tuple[str, str]] = {
     "illumina": ("_1", "_2"),
     "Rs": ("_R1", "_R2"),
+    "Fs": ("_F", "_R"),
     "dot12s": (".1.fastq", ".2.fastq"),
 }
 
@@ -116,25 +117,32 @@ def guess_initial_filter_type(elements: list[T]) -> Optional[str]:
     illumina = 0
     dot12s = 0
     Rs = 0
+    Fs = 0
 
     # Iterate through elements and count occurrences of filter patterns
+    # Order matters: more specific patterns must be checked before less specific ones
+    # (_R1/_R2 before _F/_R since _R is a substring of _R1)
     for element in elements:
         if ".1.fastq" in element.name or ".2.fastq" in element.name:
             dot12s += 1
         elif "_R1" in element.name or "_R2" in element.name:
             Rs += 1
+        elif "_F" in element.name or "_R" in element.name:
+            Fs += 1
         elif "_1" in element.name or "_2" in element.name:
             illumina += 1
 
     # Determine the most likely filter type
-    if illumina == 0 and dot12s == 0 and Rs == 0:
+    if illumina == 0 and dot12s == 0 and Rs == 0 and Fs == 0:
         return None
-    elif illumina > dot12s and illumina > Rs:
+    elif illumina > dot12s and illumina > Rs and illumina > Fs:
         return "illumina"
-    elif dot12s > illumina and dot12s > Rs:
+    elif dot12s > illumina and dot12s > Rs and dot12s > Fs:
         return "dot12s"
-    elif Rs > illumina and Rs > dot12s:
+    elif Rs > illumina and Rs > dot12s and Rs > Fs:
         return "Rs"
+    elif Fs > illumina and Fs > dot12s and Fs > Rs:
+        return "Fs"
     else:
         return "illumina"
 

@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 from collections.abc import Iterable
@@ -168,6 +169,15 @@ def safe_label_or_none(label: str) -> Optional[str]:
     if len(label) > 63:
         return None
     return label
+
+
+def safe_label(label: str, value_index: int) -> str:
+    if len(label) <= 63:
+        return label
+    # Use a hash of the full label to avoid collisions when different keys
+    # share the same value_index (value_index resets per key).
+    label_hash = hashlib.md5(label.encode()).hexdigest()[:8]
+    return f"_i_{label_hash}_{value_index}"
 
 
 T = TypeVar("T")
@@ -794,7 +804,7 @@ class JobSearch:
         c = aliased(model.HistoryDatasetAssociation)
         d = aliased(model.JobParameter)
         e = aliased(model.HistoryDatasetAssociationHistory)
-        labeled_col = a.dataset_id.label(f"{k}_{value_index}")
+        labeled_col = a.dataset_id.label(safe_label(f"{k}_{value_index}", value_index))
         stmt = stmt.add_columns(labeled_col)
         used_ids.append(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
@@ -855,8 +865,7 @@ class JobSearch:
         value_index: int,
     ) -> "Select[tuple[int]]":
         a = aliased(model.JobToInputLibraryDatasetAssociation)
-        label = safe_label_or_none(f"{k}_{value_index}")
-        labeled_col = a.ldda_id.label(label)
+        labeled_col = a.ldda_id.label(safe_label(f"{k}_{value_index}", value_index))
         stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
         data_conditions.append(and_(a.name == k, a.ldda_id == v))
@@ -1099,7 +1108,7 @@ class JobSearch:
         # Main query `stmt` construction
         # This section joins the base job statement with the associations and then filters
         # by the HDCAs identified as equivalent in the CTEs.
-        labeled_col = a.dataset_collection_id.label(f"{k}_{value_index}")
+        labeled_col = a.dataset_collection_id.label(safe_label(f"{k}_{value_index}", value_index))
         stmt = stmt.add_columns(labeled_col)
         stmt = stmt.join(a, a.job_id == model.Job.id)
 
@@ -1425,7 +1434,7 @@ class JobSearch:
                 model.JobToInputDatasetCollectionElementAssociation,
                 name=f"job_to_input_dce_association_{k}_{value_index}",
             )
-            labeled_col = a.dataset_collection_element_id.label(f"{k}_{value_index}")
+            labeled_col = a.dataset_collection_element_id.label(safe_label(f"{k}_{value_index}", value_index))
             stmt = stmt.add_columns(labeled_col)
             stmt = stmt.join(a, a.job_id == model.Job.id)
 
@@ -1468,7 +1477,7 @@ class JobSearch:
             hda_right = safe_aliased(model.HistoryDatasetAssociation, name=f"hda_right_{k}_{value_index}")
 
             # Start joins from job → input DCE association → first-level DCE (left side)
-            labeled_col = a.dataset_collection_element_id.label(safe_label_or_none(f"{k}_{value_index}"))
+            labeled_col = a.dataset_collection_element_id.label(safe_label(f"{k}_{value_index}", value_index))
             stmt = stmt.add_columns(labeled_col)
             stmt = stmt.join(a, a.job_id == model.Job.id)
             stmt = stmt.join(dce_left, dce_left.id == a.dataset_collection_element_id)
@@ -1699,22 +1708,56 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
         else:
             raise RequestParameterInvalidException(f"Invalid job source type {job_source_type} found.")
 
-    job_summaries = {}
-    implicit_collection_jobs_summaries = {}
+    job_summaries: dict[int, JobsSummary] = {}
+    implicit_collection_jobs_summaries: dict[int, JobsSummary] = {}
 
-    for job_id in job_ids:
-        job_summaries[job_id] = summarize_jobs_to_dict(sa_session, sa_session.get(Job, job_id))
-    for implicit_collection_jobs_id in implicit_collection_job_ids:
-        implicit_collection_jobs_summaries[implicit_collection_jobs_id] = summarize_jobs_to_dict(
-            sa_session, sa_session.get(model.ImplicitCollectionJobs, implicit_collection_jobs_id)
+    if job_ids:
+        stmt = select(Job.id, Job.state).where(Job.id.in_(job_ids))
+        for job_id, job_state in sa_session.execute(stmt):
+            job_summaries[job_id] = {
+                "populated_state": "ok",
+                "states": {job_state: 1},
+                "model": "Job",
+                "id": job_id,
+            }
+    if implicit_collection_job_ids:
+        stmt = select(ImplicitCollectionJobs.id, ImplicitCollectionJobs.populated_state).where(
+            ImplicitCollectionJobs.id.in_(implicit_collection_job_ids)
         )
+        populated_icj_ids = []
+        for icj_id, populated_state in sa_session.execute(stmt):
+            implicit_collection_jobs_summaries[icj_id] = {
+                "id": icj_id,
+                "populated_state": populated_state,
+                "model": "ImplicitCollectionJobs",
+                "states": {},
+            }
+            if populated_state == "ok":
+                populated_icj_ids.append(icj_id)
+        if populated_icj_ids:
+            join = ImplicitCollectionJobsJobAssociation.table.join(Job)
+            stmt = (
+                select(
+                    ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id,
+                    Job.state,
+                    func.count(),
+                )
+                .select_from(join)
+                .where(ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id.in_(populated_icj_ids))
+                .group_by(
+                    ImplicitCollectionJobsJobAssociation.table.c.implicit_collection_jobs_id,
+                    Job.state,
+                )
+            )
+            for icj_id, state, count in sa_session.execute(stmt):
+                implicit_collection_jobs_summaries[icj_id]["states"][state] = count
 
     rval = []
     for job_source_id, job_source_type in zip(job_source_ids, job_source_types):
         if job_source_type == "Job":
-            rval.append(job_summaries[job_source_id])
+            rval.append(job_summaries.get(job_source_id))
         elif job_source_type == "ImplicitCollectionJobs":
-            rval.append(implicit_collection_jobs_summaries[job_source_id])
+            rval.append(implicit_collection_jobs_summaries.get(job_source_id))
         else:
             invocation_state = workflow_invocation_states[job_source_id]
             invocation_job_summaries = []

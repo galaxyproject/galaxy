@@ -2418,14 +2418,19 @@ class DataToolParameter(BaseDataToolParameter):
             )
 
         # add datasets
-        hda_list = util.listify(other_values.get(self.name))
+        # When rerunning a job, other_values contains the original job's input
+        # values which may be HDAs, HDCAs, DCEs, or LDDAs.  We start by
+        # collecting them so we can (a) mark the ones that are still present
+        # among the active visible datasets and (b) carry forward the rest as
+        # "keep" options so the client can pre-select them.
+        job_input_values = util.listify(other_values.get(self.name))
         # Prefetch all at once, big list of visible, non-deleted datasets.
         matches_by_hid: dict[int, list] = {}
         for hda in history.active_visible_datasets_and_roles:
             match = dataset_matcher.hda_match(hda)
             if match:
                 m = match.hda
-                hda_list = [h for h in hda_list if h != m and h != hda]
+                job_input_values = [h for h in job_input_values if h != m and h != hda]
                 if m.hid not in matches_by_hid:
                     matches_by_hid[m.hid] = []
                 matches_by_hid[m.hid].append(match)
@@ -2441,19 +2446,24 @@ class DataToolParameter(BaseDataToolParameter):
             )
             append(d["options"]["hda"], match.hda, m_name, "hda")
 
-        for hda in hda_list:
-            if hasattr(hda, "hid"):
-                if hda.deleted:
-                    hda_state = "deleted"
-                elif not hda.visible:
-                    hda_state = "hidden"
+        # Remaining job_input_values were not found among active visible
+        # datasets (e.g. hidden or deleted inputs from the original job).
+        # Route each to the correct options list by type so the client can
+        # match them by id *and* src.
+        for value in job_input_values:
+            if isinstance(value, (HistoryDatasetCollectionAssociation, HistoryDatasetAssociation)):
+                if value.deleted:
+                    state = "deleted"
+                elif not value.visible:
+                    state = "hidden"
                 else:
-                    hda_state = "unavailable"
-                append(d["options"]["hda"], hda, f"({hda_state}) {hda.name}", "hda", True)
-            elif isinstance(hda, DatasetCollectionElement):
-                append_dce(hda)
-            elif isinstance(hda, LibraryDatasetDatasetAssociation):
-                append_ldda(hda)
+                    state = "not in current history"
+                src = "hdca" if isinstance(value, HistoryDatasetCollectionAssociation) else "hda"
+                append(d["options"][src], value, f"({state}) {value.name}", src, True)
+            elif isinstance(value, DatasetCollectionElement):
+                append_dce(value)
+            elif isinstance(value, LibraryDatasetDatasetAssociation):
+                append_ldda(value)
 
         # add dataset collections
         dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)

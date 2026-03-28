@@ -16,6 +16,7 @@ from typing_extensions import TypedDict
 
 from galaxy.exceptions import (
     InconsistentDatabase,
+    InternalServerError,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException,
@@ -277,6 +278,8 @@ def prepare_environment_from_root(
             secret_value = vault.read_secret(template_secret.vault_key) or template_secret.default
             if secret_value:
                 environment[e_name] = secret_value
+            else:
+                raise InternalServerError(f"Failed to retrieve {template_secret.vault_key} from vault")
         elif e_type == "variable":
             template_variable = cast(TemplateEnvironmentVariable, environment_entry)
             variable_value = os.environ.get(template_variable.variable)
@@ -284,6 +287,10 @@ def prepare_environment_from_root(
                 variable_value = template_variable.default
             if variable_value:
                 environment[e_name] = variable_value
+            else:
+                raise InternalServerError(
+                    f"Environment variable {template_variable.variable} not found and no default provided. Please set this variable in the environment or provide a default value in the template definition."
+                )
         else:
             raise Exception(f"Unknown environment entry type detected [{e_type}]")
 
@@ -296,8 +303,9 @@ def update_template_instance(
     payload: UpdateInstancePayload,
     template: Template,
 ):
-    validate_specified_datatypes_variables(payload.variables or {}, template)
-    validate_no_extra_variables_defined(payload.variables or {}, template)
+    if payload.variables is not None:
+        validate_specified_datatypes_variables(payload.variables, template)
+        validate_no_extra_variables_defined(payload.variables, template)
     if payload.name is not None:
         template_instance.name = payload.name
     if payload.description is not None:
