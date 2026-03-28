@@ -1,5 +1,6 @@
 import logging
 import re
+from urllib.parse import quote
 
 from galaxy import util
 from galaxy.tool_shed.util import repository_util
@@ -149,7 +150,10 @@ def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=
             # We're in the tool shed.
             route_to_images = f"/repository/static/images/{encoded_repository_id}"
         elif tool_shed_repository and tool_id and tool_version:
-            route_to_images = f"shed_tool_static/{tool_shed_repository.tool_shed}/{tool_shed_repository.owner}/{tool_shed_repository.name}/{tool_id}/{tool_version}"
+            route_to_images = quote(
+                f"shed_tool_static/{tool_shed_repository.tool_shed}/{tool_shed_repository.owner}/{tool_shed_repository.name}/{tool_id}/{tool_version}",
+                safe="/",
+            )
         else:
             raise Exception(
                 "encoded_repository_id or tool_shed_repository and tool_id and tool_version must be provided"
