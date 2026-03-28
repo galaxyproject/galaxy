@@ -37,6 +37,7 @@ from galaxy.tool_util_models.tool_outputs import (
     ToolOutputInteger,
     ToolOutputText,
 )
+from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.topsort import topsort
 from ._types import GetToolInfo
 from ._util import step_tool_state
@@ -445,9 +446,6 @@ def _resolve_rules_collection_types(
             continue
 
         try:
-            # TODO: Move this to the top
-            from galaxy.util.rules_dsl import RuleSet
-
             rule_set = RuleSet(rules_dict)
             ct = rule_set.collection_type
             if ct:

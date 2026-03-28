@@ -10,6 +10,11 @@ from typing import (
 
 from pydantic import BaseModel
 
+from .cache import (
+    build_tool_info,
+    populate_cache,
+)
+
 if TYPE_CHECKING:
     from .toolshed_tool_info import ToolShedGetToolInfo
 
@@ -86,6 +91,26 @@ def add_stale_key_args(parser, mode="validate"):
         )
 
 
+def add_report_args(parser):
+    """Add --report-json and --report-markdown to any argparse parser."""
+    parser.add_argument(
+        "--report-json",
+        nargs="?",
+        const="-",
+        default=None,
+        metavar="FILE",
+        help="Output results as JSON (to FILE if given, stdout otherwise)",
+    )
+    parser.add_argument(
+        "--report-markdown",
+        nargs="?",
+        const="-",
+        default=None,
+        metavar="FILE",
+        help="Output results as Markdown (to FILE if given, stdout otherwise)",
+    )
+
+
 def setup_logging(verbose: bool):
     """Configure logging based on --verbose flag."""
     logging.basicConfig(level=logging.DEBUG if verbose else logging.WARNING)
@@ -131,12 +156,6 @@ def cli_main(parser: argparse.ArgumentParser, options_cls, run_fn, argv=None):
 
 def setup_tool_info(options: ToolCacheOptions) -> "ToolShedGetToolInfo":
     """Configure logging, build tool info, optionally populate cache."""
-    # TODO: Move this to the top
-    from .cache import (
-        build_tool_info,
-        populate_cache,
-    )
-
     setup_logging(options.verbose)
     tool_info = build_tool_info(options.tool_source_cache_dir)
 

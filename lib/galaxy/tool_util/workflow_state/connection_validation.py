@@ -4,8 +4,6 @@ Validates each connection's type compatibility, resolves step map-over
 states, and computes output collection types during topological traversal.
 """
 
-# TODO: Give this type a name and reuse Dict[str, Dict[str, CollectionTypeOrSentinel]]
-
 from dataclasses import (
     dataclass,
     field,
@@ -44,6 +42,9 @@ from .connection_types import (
     is_list_like,
     NULL_COLLECTION_TYPE,
 )
+
+# step_id -> output_name -> resolved collection type
+StepOutputTypeMap = Dict[str, Dict[str, CollectionTypeOrSentinel]]
 
 
 @dataclass
@@ -118,8 +119,8 @@ def validate_connections_report(
 
 def validate_connection_graph(
     graph: WorkflowGraph,
-    seed_output_types: Optional[Dict[str, Dict[str, CollectionTypeOrSentinel]]] = None,
-) -> Tuple[WorkflowConnectionResult, Dict[str, Dict[str, CollectionTypeOrSentinel]]]:
+    seed_output_types: Optional[StepOutputTypeMap] = None,
+) -> Tuple[WorkflowConnectionResult, StepOutputTypeMap]:
     """Validate connections on a pre-built workflow graph.
 
     Processes steps in topological order so upstream output types are
@@ -129,7 +130,7 @@ def validate_connection_graph(
     when validating inner subworkflows to propagate outer types inward.
     """
     # Mutable state: step_id → output_name → resolved type
-    resolved_output_types: Dict[str, Dict[str, CollectionTypeOrSentinel]] = {}
+    resolved_output_types: StepOutputTypeMap = {}
 
     # Seed output types from the graph (static types from tool defs / input steps)
     for step_id, step in graph.steps.items():
@@ -200,7 +201,7 @@ def _validate_single_connection(
     target_step: str,
     target_input: str,
     target_resolved_input: Optional[ResolvedInput],
-    resolved_output_types: Dict[str, Dict[str, CollectionTypeOrSentinel]],
+    resolved_output_types: StepOutputTypeMap,
 ) -> ConnectionValidationResult:
     """Validate a single output->input connection."""
     # Resolve source output type
@@ -320,7 +321,7 @@ def _resolve_step_map_over(
 def _resolve_output_types(
     step: ResolvedStep,
     map_over: Optional[CollectionTypeDescription],
-    resolved_output_types: Dict[str, Dict[str, CollectionTypeOrSentinel]],
+    resolved_output_types: StepOutputTypeMap,
 ):
     """Resolve a step's output types accounting for map-over.
 
@@ -351,14 +352,14 @@ def _resolve_output_types(
 
 def _resolve_subworkflow_outputs(
     step: ResolvedStep,
-    resolved_output_types: Dict[str, Dict[str, CollectionTypeOrSentinel]],
+    resolved_output_types: StepOutputTypeMap,
 ) -> None:
     """Recursively validate inner workflow and propagate output types outward."""
     inner_graph = step.inner_graph
     assert inner_graph is not None
 
     # Build seed types: propagate outer resolved types into inner input steps
-    seed: Dict[str, Dict[str, CollectionTypeOrSentinel]] = {}
+    seed: StepOutputTypeMap = {}
     for _input_path, conn_refs in step.connections.items():
         for ref in conn_refs:
             inner_step_id = ref.input_subworkflow_step_id
@@ -382,7 +383,7 @@ def _resolve_subworkflow_outputs(
 def _resolve_collection_output_type(
     step: ResolvedStep,
     output: ResolvedOutput,
-    resolved_output_types: Dict[str, Dict[str, CollectionTypeOrSentinel]],
+    resolved_output_types: StepOutputTypeMap,
     map_over: Optional[CollectionTypeDescription] = None,
 ) -> Optional[str]:
     """Resolve a collection output's base type (before map-over prefix)."""
@@ -400,7 +401,7 @@ def _resolve_collection_output_type(
 def _resolve_collection_type_source(
     step: ResolvedStep,
     source_param: str,
-    resolved_output_types: Dict[str, Dict[str, CollectionTypeOrSentinel]],
+    resolved_output_types: StepOutputTypeMap,
     map_over: Optional[CollectionTypeDescription] = None,
 ) -> Optional[str]:
     """Resolve a collection_type_source/structured_like reference.
@@ -469,7 +470,7 @@ def _sentinel_to_collection_type(t: CollectionTypeOrSentinel) -> Optional[str]:
 
 def to_connection_validation_report(
     result: WorkflowConnectionResult,
-    resolved_output_types: Dict[str, Dict[str, CollectionTypeOrSentinel]],
+    resolved_output_types: StepOutputTypeMap,
 ) -> ConnectionValidationReport:
     """Convert dataclass result + resolved output types to Pydantic report."""
     step_results = []

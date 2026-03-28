@@ -14,15 +14,20 @@ from pydantic import BaseModel
 
 from gxformat2.normalized import ensure_native
 
+from galaxy.tool_util.model_factory import parse_tool
+from galaxy.tool_util.parser.factory import get_tool_source
+
 from .toolshed_tool_info import (
     DEFAULT_TOOLSHED_URL,
     parse_toolshed_tool_id,
     ToolShedGetToolInfo,
 )
+from .workflow_tree import (
+    discover_workflows,
+    load_workflow_safe,
+)
 
 log = logging.getLogger(__name__)
-
-# TODO: move all the imports to the top of the file please.
 # -- Options models --
 
 
@@ -216,11 +221,6 @@ def _populate_cache_for_workflow(tool_info: ToolShedGetToolInfo, workflow_path: 
 
 
 def _populate_cache_for_tree(tool_info: ToolShedGetToolInfo, root: str, source: str = "auto"):
-    from .workflow_tree import (
-        discover_workflows,
-        load_workflow_safe,
-    )
-
     workflows = discover_workflows(root)
     all_tools = set()
     for info in workflows:
@@ -258,9 +258,6 @@ def run_add(options: AddOptions):
 
 
 def run_add_local(options: AddLocalOptions):
-    from galaxy.tool_util.model_factory import parse_tool
-    from galaxy.tool_util.parser.factory import get_tool_source
-
     tool_info = build_tool_info(options.tool_source_cache_dir)
 
     try:

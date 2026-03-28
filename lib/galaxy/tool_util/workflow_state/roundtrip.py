@@ -88,6 +88,8 @@ class StepResult(BaseModel):
     failure_class: FailureClass | None = None
     error: str | None = None
     diffs: list[str] = Field(default_factory=list)
+    format2_state: Optional[dict] = None
+    format2_connections: Optional[dict] = None
 
 
 class RoundTripResult(BaseModel):
@@ -560,8 +562,14 @@ def roundtrip_native_step(
         return StepResult(step_id=step_id, tool_id=tool_id, success=True)
 
     try:
-        convert_state_to_format2(step, get_tool_info)
-        return StepResult(step_id=step_id, tool_id=tool_id, success=True)
+        format2_result = convert_state_to_format2(step, get_tool_info)
+        return StepResult(
+            step_id=step_id,
+            tool_id=tool_id,
+            success=True,
+            format2_state=format2_result.state,
+            format2_connections=dict(format2_result.inputs),
+        )
     except Exception as e:
         return StepResult(
             step_id=step_id,

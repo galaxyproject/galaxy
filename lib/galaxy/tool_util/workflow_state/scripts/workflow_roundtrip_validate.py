@@ -1,6 +1,7 @@
 """Thin CLI entry point for gxwf-roundtrip-validate."""
 
 from .._cli_common import (
+    add_report_args,
     build_base_parser,
     cli_main,
 )
@@ -36,20 +37,7 @@ def build_parser():
         metavar="FILE",
         help="Write the intermediate format2 workflow for inspection",
     )
-    parser.add_argument(
-        "--report-json",
-        nargs="?",
-        const="-",
-        metavar="FILE",
-        help="Write JSON report (- for stdout)",
-    )
-    parser.add_argument(
-        "--report-markdown",
-        nargs="?",
-        const="-",
-        metavar="FILE",
-        help="Write Markdown report (- for stdout)",
-    )
+    add_report_args(parser)
     return parser
 
 

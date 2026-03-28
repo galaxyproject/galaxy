@@ -40,12 +40,17 @@ from .stale_keys import (
 )
 from .validation import _format
 from .validation_format2 import validate_step_format2
+from .connection_validation import validate_connections_report
 from .validation_json_schema import validate_workflow_json_schema
 from .validation_native import (
     get_parsed_tool_for_native_step,
     validate_native_step_against,
 )
 from .workflow_tools import load_workflow
+from .workflow_tree import (
+    discover_workflows,
+    load_workflow_safe,
+)
 
 log = logging.getLogger(__name__)
 
@@ -267,11 +272,6 @@ def validate_tree(
     policy: Optional[StaleKeyPolicy] = None,
 ) -> TreeValidationReport:
     """Validate all workflows under a directory tree."""
-    from .workflow_tree import (
-        discover_workflows,
-        load_workflow_safe,
-    )
-
     workflows = discover_workflows(root)
     report = TreeValidationReport(root=root)
 
@@ -534,17 +534,8 @@ def format_connection_markdown(report: ConnectionValidationReport) -> str:
 
 def _run_connection_validation(options: ValidateOptions, tool_info) -> int:
     """Run connection validation and print results."""
-    # TODO: move this to the top
-    from .connection_validation import validate_connections_report
-
     is_dir = os.path.isdir(options.workflow_path)
     if is_dir:
-        # TODO: Move this to the top
-        from .workflow_tree import (
-            discover_workflows,
-            load_workflow_safe,
-        )
-
         workflows = discover_workflows(options.workflow_path)
         any_invalid = False
         for info in workflows:

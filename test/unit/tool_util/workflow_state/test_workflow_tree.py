@@ -128,7 +128,7 @@ class TestLoadWorkflowSafe:
         wf_dict = {"steps": {"0": {"tool_id": "test"}}}
         path = tmp_path / "test.ga"
         path.write_text(json.dumps(wf_dict))
-        info = WorkflowInfo(str(path), "test.ga", "", "native")
+        info = WorkflowInfo(str(path), "test.ga", "native")
         result = load_workflow_safe(info)
         assert result is not None
         assert "steps" in result
@@ -136,18 +136,18 @@ class TestLoadWorkflowSafe:
     def test_loads_format2(self, tmp_path):
         path = tmp_path / "test.gxwf.yml"
         path.write_text("class: GalaxyWorkflow\ninputs: {}\nsteps: []")
-        info = WorkflowInfo(str(path), "test.gxwf.yml", "", "format2")
+        info = WorkflowInfo(str(path), "test.gxwf.yml", "format2")
         result = load_workflow_safe(info)
         assert result is not None
 
     def test_returns_none_on_bad_json(self, tmp_path):
         path = tmp_path / "bad.ga"
         path.write_text("not json at all {{{")
-        info = WorkflowInfo(str(path), "bad.ga", "", "native")
+        info = WorkflowInfo(str(path), "bad.ga", "native")
         assert load_workflow_safe(info) is None
 
     def test_returns_none_on_missing_file(self):
-        info = WorkflowInfo("/nonexistent/path.ga", "path.ga", "", "native")
+        info = WorkflowInfo("/nonexistent/path.ga", "path.ga", "native")
         assert load_workflow_safe(info) is None
 
 
@@ -155,16 +155,16 @@ class TestGroupByCategory:
 
     def test_groups_correctly(self):
         workflows = [
-            WorkflowInfo("/a/x.ga", "cat1/x.ga", "cat1", "native"),
-            WorkflowInfo("/a/y.ga", "cat1/y.ga", "cat1", "native"),
-            WorkflowInfo("/a/z.ga", "cat2/z.ga", "cat2", "native"),
+            WorkflowInfo("/a/x.ga", "cat1/x.ga", "native"),
+            WorkflowInfo("/a/y.ga", "cat1/y.ga", "native"),
+            WorkflowInfo("/a/z.ga", "cat2/z.ga", "native"),
         ]
         groups = group_by_category(workflows)
         assert len(groups["cat1"]) == 2
         assert len(groups["cat2"]) == 1
 
     def test_root_level_grouped(self):
-        workflows = [WorkflowInfo("/a/x.ga", "x.ga", "", "native")]
+        workflows = [WorkflowInfo("/a/x.ga", "x.ga", "native")]
         groups = group_by_category(workflows)
         assert "(root)" in groups
 

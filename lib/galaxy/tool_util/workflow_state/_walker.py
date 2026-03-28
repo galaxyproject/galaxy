@@ -13,9 +13,12 @@ Two walkers for the two serialization formats:
 
 import json
 from typing import (
+    Any,
+    Callable,
     cast,
     List,
     Optional,
+    Union,
 )
 
 from galaxy.tool_util.parameters import (
@@ -62,6 +65,8 @@ class _SkipValue:
 
 SKIP_VALUE = _SkipValue()
 
+LeafCallback = Callable[[ToolParameterT, Any, str], Union[Any, _SkipValue]]
+
 _NATIVE_BOOKKEEPING_KEYS = frozenset(
     {
         "__current_case__",
@@ -75,12 +80,11 @@ _NATIVE_BOOKKEEPING_KEYS = frozenset(
 )
 
 
-# TODO: Come up with a read type of leaf_callback
 def walk_native_state(
     input_connections: dict,
     tool_inputs: List[ToolParameterT],
     state: dict,
-    leaf_callback,  # (tool_input: ToolParameterT, value: Any, state_path: str) -> Any | _SkipValue
+    leaf_callback: LeafCallback,
     prefix: Optional[str] = None,
     check_unknown_keys: bool = False,
     allow_root_level_duplicates: bool = False,
@@ -287,7 +291,7 @@ def _select_which_when_native(
 def walk_format2_state(
     tool_inputs: List[ToolParameterT],
     state: dict,
-    leaf_callback,  # (tool_input: ToolParameterT, value: Any, state_path: str) -> Any | _SkipValue
+    leaf_callback: LeafCallback,
     prefix: Optional[str] = None,
 ) -> dict:
     """Walk a format2 structured state dict, calling leaf_callback for each leaf parameter.
@@ -317,7 +321,7 @@ def walk_format2_state(
     return output
 
 
-def _walk_format2_value(tool_input: ToolParameterT, value, state_path: str, leaf_callback):
+def _walk_format2_value(tool_input: ToolParameterT, value: Any, state_path: str, leaf_callback: LeafCallback):
     """Recurse into a single format2 value guided by its tool input definition."""
     parameter_type = tool_input.parameter_type
 
@@ -325,9 +329,6 @@ def _walk_format2_value(tool_input: ToolParameterT, value, state_path: str, leaf
         if not isinstance(value, dict):
             return leaf_callback(tool_input, value, state_path)
         conditional = cast(ConditionalParameterModel, tool_input)
-        # TODO: research whether select_which_when_format2 can be unified
-        # with _select_which_when_native — they are nearly identical but the
-        # native version has a default-when fallback pass.
         target_when = select_which_when_format2(conditional, value)
         if target_when is None:
             all_params: List[ToolParameterT] = [conditional.test_parameter]
@@ -361,16 +362,12 @@ def _walk_format2_value(tool_input: ToolParameterT, value, state_path: str, leaf
 
 
 def select_which_when_format2(conditional: ConditionalParameterModel, state: dict) -> Optional[ConditionalWhen]:
-    """Select the matching ConditionalWhen for a format2 conditional state dict."""
-    test_param_name = conditional.test_parameter.name
-    test_value = state.get(test_param_name)
+    """Select the matching ConditionalWhen for a format2 conditional state dict.
+
+    Delegates to _select_which_when_native (same matching logic + default-when
+    fallback), but suppresses validation errors for graceful degradation.
+    """
     try:
-        test_value = validate_explicit_conditional_test_value(test_param_name, test_value)
+        return _select_which_when_native(conditional, state)
     except Exception:
         return None
-    for when in conditional.whens:
-        if test_value is None and when.is_default_when:
-            return when
-        if test_value is not None and _test_value_matches_discriminator(test_value, when.discriminator):
-            return when
-    return None

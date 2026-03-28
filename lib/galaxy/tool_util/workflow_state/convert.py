@@ -253,12 +253,11 @@ def _reverse_leaf(tool_input: ToolParameterT, value: Any, state_path: str) -> An
 # -- Callback factories for gxformat2 protocol --
 
 
-# TODO: update these docs strings against the latest gxformat2 please
 def make_convert_tool_state(get_tool_info: GetToolInfo):
-    """Create a convert_tool_state callback for gxformat2's from_galaxy_native().
+    """Create a ConvertToolStateFn for gxformat2's from_galaxy_native().
 
-    Returns only the state dict — connections are handled by gxformat2's
-    _convert_input_connections.
+    Signature: (native_step: dict) -> Optional[Dict[str, Any]]
+    Returns format2 state dict, or None to fall back to default passthrough.
     """
 
     def _convert(native_step: dict) -> Optional[Dict[str, Any]]:
@@ -272,10 +271,10 @@ def make_convert_tool_state(get_tool_info: GetToolInfo):
 
 
 def make_encode_tool_state(get_tool_info: GetToolInfo):
-    """Create a native_state_encoder callback for gxformat2's ImportOptions.
+    """Create a NativeStateEncoderFn for gxformat2's ImportOptions.state_encode_to_native.
 
-    Performs schema-aware encoding of format2 state back to native tool_state,
-    reversing format2 conversions (multiple select lists → comma strings, etc.).
+    Signature: (step: dict, state: dict) -> Optional[Dict[str, Any]]
+    Returns schema-aware native tool_state, or None to fall back to json.dumps encoding.
     """
 
     def _encode(step: dict, state: dict) -> Optional[Dict[str, Any]]:

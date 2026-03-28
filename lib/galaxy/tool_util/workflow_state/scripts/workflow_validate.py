@@ -1,6 +1,7 @@
 """Thin CLI entry point for gxwf-state-validate."""
 
 from .._cli_common import (
+    add_report_args,
     build_base_parser,
     cli_main,
 )
@@ -30,23 +31,7 @@ def build_parser():
         default=None,
         help="Directory of pre-exported per-tool JSON Schemas (for offline json-schema mode)",
     )
-    # TODO: make --report-json and --report-markdown injectable via something in _cli_common and reuse in other scripts
-    parser.add_argument(
-        "--report-json",
-        nargs="?",
-        const="-",
-        default=None,
-        metavar="FILE",
-        help="Output results as JSON (to FILE if given, stdout otherwise)",
-    )
-    parser.add_argument(
-        "--report-markdown",
-        nargs="?",
-        const="-",
-        default=None,
-        metavar="FILE",
-        help="Output results as Markdown (to FILE if given, stdout otherwise)",
-    )
+    add_report_args(parser)
     return parser
 
 

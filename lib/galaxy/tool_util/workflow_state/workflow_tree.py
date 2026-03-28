@@ -18,6 +18,8 @@ from typing import (
     Optional,
 )
 
+from gxformat2.yaml import ordered_load as ordered_yaml_load
+
 from galaxy.tool_util.loader_directory import EXCLUDE_WALK_DIRS
 
 NATIVE_EXTENSIONS = (".ga",)
@@ -28,13 +30,17 @@ JSON_EXTENSIONS = (".json",)
 WorkflowFormat = Literal["native", "format2"]
 
 
-# TODO: Make category a computed field please.
 @dataclass
 class WorkflowInfo:
     path: str
     relative_path: str
-    category: str  # first parent dir relative to root, or "" for root-level
     format: WorkflowFormat
+
+    @property
+    def category(self) -> str:
+        """First parent dir relative to root, or '' for root-level."""
+        parts = self.relative_path.split(os.sep)
+        return parts[0] if len(parts) > 1 else ""
 
 
 @dataclass
@@ -60,10 +66,8 @@ def _is_workflow_content(path: str, fmt: WorkflowFormat) -> bool:
                 data = json.load(f)
             return isinstance(data, dict) and data.get("a_galaxy_workflow") == "true"
         else:
-            from gxformat2.yaml import ordered_load
-
             with open(path) as f:
-                data = ordered_load(f)
+                data = ordered_yaml_load(f)
             return isinstance(data, dict) and data.get("class") == "GalaxyWorkflow"
     except Exception:
         return False
@@ -102,14 +106,11 @@ def discover_workflows(root: str, include_format2: bool = True) -> List[Workflow
                 continue
 
             relative = os.path.relpath(filepath, root)
-            parts = relative.split(os.sep)
-            category = parts[0] if len(parts) > 1 else ""
 
             workflows.append(
                 WorkflowInfo(
                     path=filepath,
                     relative_path=relative,
-                    category=category,
                     format=fmt,
                 )
             )
@@ -123,15 +124,7 @@ def load_workflow_safe(info: WorkflowInfo) -> Optional[dict]:
     try:
         with open(info.path) as f:
             if info.format == "format2":
-                # TODO: Use the YAML load from gxformat2 please.
-                try:
-                    from galaxy.util.yaml_util import ordered_load
-
-                    return ordered_load(f)
-                except ImportError:
-                    import yaml
-
-                    return yaml.safe_load(f)
+                return ordered_yaml_load(f)
             else:
                 return json.load(f)
     except Exception:
