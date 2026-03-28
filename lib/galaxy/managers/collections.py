@@ -51,6 +51,7 @@ from galaxy.short_term_storage import (
     storage_context,
 )
 from galaxy.util import validation
+from galaxy.util.rules_dsl import RulesDSLError
 
 if TYPE_CHECKING:
     from galaxy.model import (
@@ -740,7 +741,10 @@ class DatasetCollectionManager:
         elements = hdca_collection.elements
         collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
         initial_data, initial_sources = self.__init_rule_data(elements, collection_type_description)
-        data, sources = rule_set.apply(initial_data, initial_sources)
+        try:
+            data, sources = rule_set.apply(initial_data, initial_sources)
+        except RulesDSLError as e:
+            raise MessageException(str(e)) from e
 
         collection_type = rule_set.collection_type
         collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
