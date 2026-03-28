@@ -566,7 +566,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
             try:
                 if source_file != cache_file and self.cache_updated_data:
                     try:
-                        shutil.copy2(source_file, cache_file)
+                        shutil.copy(source_file, cache_file)
                     except OSError:
                         os.makedirs(os.path.dirname(cache_file))
                         shutil.copy2(source_file, cache_file)
