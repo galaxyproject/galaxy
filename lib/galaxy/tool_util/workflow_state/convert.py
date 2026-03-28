@@ -17,7 +17,6 @@ from galaxy.tool_util.parameters import (
     SelectParameterModel,
     ToolParameterT,
 )
-from ._state_merge import inject_connections_into_state
 from ._types import (
     Format2StateDict,
     GetToolInfo,
@@ -108,30 +107,10 @@ def convert_state_to_format2_using(native_step: StepLike, parsed_tool: Optional[
 
 
 def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs):
-    """Validate converted format2 state.
+    """Validate converted format2 state via shared format2 validation."""
+    from .validation_format2 import validate_format2_state
 
-    Uses WorkflowStepLinkedToolState for validation — this allows ConnectedValue
-    markers for parameters that are in the `in` dict.
-    """
-    import copy
-
-    from galaxy.tool_util.parameters import WorkflowStepLinkedToolState
-
-    # Build a state dict with ConnectedValue markers for connected params
-    linked_state = copy.deepcopy(result.state)
-    inject_connections_into_state(list(parsed_tool.inputs), linked_state, dict(result.inputs))
-
-    try:
-        linked_model = WorkflowStepLinkedToolState.parameter_model_for(parsed_tool.inputs)
-        linked_model.model_validate(linked_state)
-    except Exception as e:
-        # TODO: no - remove this and discuss with me (@jmchilton) what breaks please.
-        # If the only errors are ConnectedValue type mismatches, that's a model gap not a conversion error
-        error_str = str(e)
-        if "ConnectedValue" in error_str:
-            pass  # Known model completeness gap — connected values not accepted for all types
-        else:
-            raise
+    validate_format2_state(list(parsed_tool.inputs), result.state, dict(result.inputs))
 
 
 def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInputs) -> Format2State:

@@ -1,4 +1,7 @@
+import copy
 from typing import (
+    Dict,
+    List,
     Optional,
     Union,
 )
@@ -10,6 +13,7 @@ from gxformat2.normalized import (
 )
 
 from galaxy.tool_util.parameters import (
+    ToolParameterT,
     WorkflowStepLinkedToolState,
     WorkflowStepToolState,
 )
@@ -19,6 +23,34 @@ from ._types import (
     GetToolInfo,
     ToolInputs,
 )
+
+
+def validate_format2_state(
+    tool_inputs: List[ToolParameterT],
+    state: dict,
+    connections: Dict[str, object],
+):
+    """Validate format2 state + connections against tool definitions.
+
+    1. Validate *state* against ``WorkflowStepToolState``
+    2. Deep-copy state, inject ConnectedValue markers for *connections*
+    3. Validate merged state against ``WorkflowStepLinkedToolState``
+
+    Raises on validation failure or unmatched connection paths.
+    """
+    source_model = WorkflowStepToolState.parameter_model_for(tool_inputs)
+    if state:
+        assert source_model
+        source_model.model_validate(state)
+
+    linked_state = copy.deepcopy(state)
+    remaining = inject_connections_into_state(tool_inputs, linked_state, dict(connections))
+
+    for key in remaining:
+        raise Exception(f"Failed to find parameter definition matching workflow linked key {key}")
+
+    linked_model = WorkflowStepLinkedToolState.parameter_model_for(tool_inputs)
+    linked_model.model_validate(linked_state)
 
 
 def validate_workflow_format2(workflow: Union[Format2WorkflowDict, NormalizedFormat2], get_tool_info: GetToolInfo):
@@ -44,13 +76,7 @@ def validate_step_format2(step: NormalizedWorkflowStep, get_tool_info: GetToolIn
 
 
 def validate_step_against(step: NormalizedWorkflowStep, parsed_tool: ToolInputs):
-    source_tool_state_model = WorkflowStepToolState.parameter_model_for(parsed_tool.inputs)
-    linked_tool_state_model = WorkflowStepLinkedToolState.parameter_model_for(parsed_tool.inputs)
     state = dict(step.state) if step.state else {}
-
-    if state:
-        assert source_tool_state_model
-        source_tool_state_model.model_validate(state)
 
     # Build connect dict from step.in_ (connections already resolved by normalization)
     connect: dict = {}
@@ -59,10 +85,4 @@ def validate_step_against(step: NormalizedWorkflowStep, parsed_tool: ToolInputs)
             src = step_input.source
             connect[step_input.id] = src if isinstance(src, list) else [src]
 
-    # Merge connections into state for linked validation
-    linked_state = dict(state)
-    remaining = inject_connections_into_state(list(parsed_tool.inputs), linked_state, connect)
-
-    for key in remaining:
-        raise Exception(f"Failed to find parameter definition matching workflow linked key {key}")
-    linked_tool_state_model.model_validate(linked_state)
+    validate_format2_state(list(parsed_tool.inputs), state, connect)
