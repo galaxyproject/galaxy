@@ -44,6 +44,7 @@ from galaxy.datatypes.sniff import (
 from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import (
     compression_utils,
+    iter_start_of_line,
     nice_size,
 )
 from galaxy.util.checkers import is_gzip
@@ -114,7 +115,7 @@ class Sequence(data.Text):
         data_lines = 0
         sequences = 0
         with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
-            for line in fh:
+            for line in iter_start_of_line(fh, 1):
                 line = line.strip()
                 if line and line.startswith("#"):
                     # We don't count comment lines for sequence data types
@@ -376,7 +377,7 @@ class Fasta(Sequence):
         data_lines = 0
         sequences = 0
         with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
-            for line in fh:
+            for line in iter_start_of_line(fh, 1):
                 if not line:
                     continue
                 elif line[0] == ">":
@@ -738,7 +739,7 @@ class BaseFastq(Sequence):
         data_lines = 0
         sequences = 0
         with compression_utils.get_fileobj(dataset.get_file_name()) as in_file:
-            for line in in_file:
+            for line in iter_start_of_line(in_file, 1):
                 if line.startswith("@") and data_lines % 4 == 0:
                     sequences += 1
                 data_lines += 1
@@ -1290,7 +1291,7 @@ class RNADotPlotMatrix(data.Data):
             coor = False
             pairs = False
             with open(filename) as handle:
-                for line in handle:
+                for line in iter_start_of_line(handle, 9):
                     line = line.strip()
                     if line:
                         if line.startswith("/sequence"):
@@ -1327,12 +1328,13 @@ class DotBracket(Sequence):
         data_lines = 0
         sequences = 0
 
-        for line in open(dataset.get_file_name()):
-            line = line.strip()
-            data_lines += 1
+        with open(dataset.get_file_name()) as fh:
+            for line in iter_start_of_line(fh, 1):
+                line = line.strip()
+                data_lines += 1
 
-            if line and line.startswith(">"):
-                sequences += 1
+                if line and line.startswith(">"):
+                    sequences += 1
 
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences

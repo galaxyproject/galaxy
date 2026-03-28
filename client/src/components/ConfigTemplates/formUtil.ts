@@ -65,7 +65,7 @@ export function templateVariableFormEntry(variable: TemplateVariable, variableVa
             ...common_fields,
         };
     } else if (variable.type == "integer") {
-        const defaultValue = variable.default ?? 0;
+        const defaultValue = variable.default ?? (variable.optional ? "" : 0);
         return {
             type: "integer",
             value: variableValue == undefined ? defaultValue : variableValue,
@@ -197,7 +197,7 @@ export function formDataTypedGet(variableDefinition: TemplateVariable, formData:
             return String(rawValue).toLowerCase() == "true";
         }
     } else if (variableType == "integer") {
-        if (rawValue == null || rawValue == undefined || typeof rawValue == "boolean") {
+        if (rawValue == null || rawValue == undefined || rawValue === "" || typeof rawValue == "boolean") {
             return undefined;
         } else {
             if (typeof rawValue == "string") {

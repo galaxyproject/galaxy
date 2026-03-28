@@ -88,6 +88,7 @@ from sqlalchemy import (
     or_,
     PrimaryKeyConstraint,
     select,
+    Select,
     String,
     Table,
     TEXT,
@@ -13015,3 +13016,65 @@ def receive_init(target, args, kwargs):
 
 
 JobStateSummary = NamedTuple("JobStateSummary", [(value, int) for value in enum_values(Job.states)] + [("all_jobs", int)])  # type: ignore[misc]  # Ref https://github.com/python/mypy/issues/848#issuecomment-255237167
+
+_ZERO_JOB_STATE_SUMMARY = JobStateSummary._make([0] * (len(Job.states) + 1))
+
+
+def batch_fetch_job_state_summaries(session, hdca_ids: list[int]) -> dict[int, "JobStateSummary"]:
+    """Batch-fetch job state summaries for multiple HDCAs in a single query.
+
+    Returns a dict mapping hdca_id to JobStateSummary for every requested ID.
+    HDCAs with no associated jobs get a zero-filled summary.
+    """
+    if not hdca_ids:
+        return {}
+
+    hdca_id_label = "hdca_id"
+    state_label = "state"
+
+    # subq1: jobs via ImplicitCollectionJobs
+    subq1 = (
+        select(
+            HistoryDatasetCollectionAssociation.id.label(hdca_id_label),
+            Job.id,
+            Job.state.label(state_label),
+        )
+        .join(ImplicitCollectionJobsJobAssociation, ImplicitCollectionJobsJobAssociation.job_id == Job.id)
+        .join(
+            ImplicitCollectionJobs,
+            ImplicitCollectionJobs.id == ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id,
+        )
+        .join(
+            HistoryDatasetCollectionAssociation,
+            HistoryDatasetCollectionAssociation.implicit_collection_jobs_id == ImplicitCollectionJobs.id,
+        )
+        .where(HistoryDatasetCollectionAssociation.id.in_(hdca_ids))
+    )
+
+    # subq2: jobs directly on HDCA
+    subq2 = (
+        select(
+            HistoryDatasetCollectionAssociation.id.label(hdca_id_label),
+            Job.id,
+            Job.state.label(state_label),
+        )
+        .join(HistoryDatasetCollectionAssociation, HistoryDatasetCollectionAssociation.job_id == Job.id)
+        .where(HistoryDatasetCollectionAssociation.id.in_(hdca_ids))
+    )
+
+    subq = subq1.union(subq2).subquery()
+
+    # Aggregate per HDCA
+    stm: Select = select(subq.c[hdca_id_label]).select_from(subq).group_by(subq.c[hdca_id_label])
+    for state in enum_values(Job.states):
+        stm = stm.add_columns(func.sum(case((subq.c[state_label] == state, 1), else_=0)).label(state))
+    stm = stm.add_columns(func.count().label("all_jobs"))
+
+    result = {int(row[0]): JobStateSummary._make(row[1:]) for row in session.execute(stm)}
+
+    # Fill in zero summaries for HDCAs with no jobs
+    for hdca_id in hdca_ids:
+        if hdca_id not in result:
+            result[hdca_id] = _ZERO_JOB_STATE_SUMMARY
+
+    return result

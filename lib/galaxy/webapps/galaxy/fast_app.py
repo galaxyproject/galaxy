@@ -16,6 +16,7 @@ from slowapi import (
 )
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from starlette.datastructures import MutableHeaders
 from starlette.middleware.cors import CORSMiddleware
 from tuspyserver import create_tus_router
 
@@ -25,6 +26,7 @@ from galaxy.webapps.base.api import (
     add_exception_handler,
     add_raw_context_middlewares,
     add_request_id_middleware,
+    build_route_name_index,
     GalaxyFileResponse,
     include_all_package_routers,
 )
@@ -126,15 +128,31 @@ class GalaxyCORSMiddleware(CORSMiddleware):
         return config_allows_origin(origin, self.config)
 
 
+class XFrameOptionsMiddleware:
+    def __init__(self, app, x_frame_options: str):
+        self.app = app
+        self.x_frame_options = x_frame_options
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        request = Request(scope)
+
+        async def send_with_header(message):
+            if message["type"] == "http.response.start":
+                if not _is_embed_request(request.url.path, str(request.url.query)):
+                    headers = MutableHeaders(scope=message)
+                    headers.append("X-Frame-Options", self.x_frame_options)
+            await send(message)
+
+        await self.app(scope, receive, send_with_header)
+
+
 def add_galaxy_middleware(app: FastAPI, gx_app):
     if x_frame_options := gx_app.config.x_frame_options:
-
-        @app.middleware("http")
-        async def add_x_frame_options(request: Request, call_next):
-            response = await call_next(request)
-            if not _is_embed_request(request.url.path, str(request.url.query)):
-                response.headers["X-Frame-Options"] = x_frame_options
-            return response
+        app.add_middleware(XFrameOptionsMiddleware, x_frame_options=x_frame_options)
 
     GalaxyFileResponse.nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
     GalaxyFileResponse.apache_xsendfile = gx_app.config.apache_xsendfile
@@ -237,6 +255,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
     include_tus(app, gx_app)
+    app.state.route_name_index = build_route_name_index(app)
     app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()

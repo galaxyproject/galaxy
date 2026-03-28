@@ -271,7 +271,7 @@ class WebApplication:
         try:
             body = method(trans, **kwargs)
         except Exception as e:
-            body = self.handle_controller_exception(e, trans, method, **kwargs)
+            body = self.handle_controller_exception(e, trans, method, kwargs)
             if not body:
                 trans.response.headers.pop("content-length", None)
                 raise
@@ -307,7 +307,7 @@ class WebApplication:
             # Worst case scenario
             return [smart_str(body)]
 
-    def handle_controller_exception(self, e, trans, method, **kwargs):
+    def handle_controller_exception(self, e, trans, method, kwargs):
         """
         Allow handling of exceptions raised in controller methods.
         """
