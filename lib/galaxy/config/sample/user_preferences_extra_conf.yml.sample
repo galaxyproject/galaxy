@@ -125,7 +125,7 @@ preferences:
               label: Creator name to associate with new records (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used. You can always change this by editing your record directly.
               type: text
               required: False
-    
+
     dataverse:
         description: Your Dataverse Integration Settings
         inputs:
@@ -166,6 +166,15 @@ preferences:
               required: False
             - name: disable_tls_certificate_validation
               label: Allow connection to Onedata servers that do not present trusted SSL certificates. SHOULD NOT be used unless you really know what you are doing.
+              type: boolean
+              required: False
+              value: False
+
+    sentry_replay:
+        description: Session Replay for error diagnostics
+        inputs:
+            - name: enabled
+              label: Allow session replay recordings to be sent when errors occur. These recordings help administrators diagnose issues but may capture screen content.
               type: boolean
               required: False
               value: False

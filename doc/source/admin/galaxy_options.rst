@@ -3300,6 +3300,19 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``sentry_client_traces_sample_rate``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sample rate for client-side (browser) performance tracing, between
+    0 and 1. Controls what fraction of page loads and navigations
+    generate performance traces sent to Sentry. Independent of
+    sentry_traces_sample_rate, which controls server-side tracing.
+:Default: ``0.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~
 ``sentry_ca_certs``
 ~~~~~~~~~~~~~~~~~~~
