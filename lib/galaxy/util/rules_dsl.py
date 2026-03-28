@@ -8,6 +8,7 @@ from typing import (
 
 import yaml
 
+from galaxy.exceptions import MessageException
 from galaxy.util.resources import resource_string
 
 
@@ -48,11 +49,11 @@ def apply_regex(regex, target, data, replacement=None, group_count=None, allow_u
                         new_columns = ["" for _ in range(group_count)]
                     result = row + new_columns
                 else:
-                    raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
+                    raise MessageException(f"Problem applying regular expression [{regex}] to [{source}].")
             else:
                 if group_count:
                     if len(match.groups()) != group_count:
-                        raise Exception("Problem applying regular expression, wrong number of groups found.")
+                        raise MessageException("Problem applying regular expression, wrong number of groups found.")
 
                     result = row + list(match.groups())
                 else:
@@ -65,7 +66,7 @@ def apply_regex(regex, target, data, replacement=None, group_count=None, allow_u
                 if allow_unmatched:
                     result = row + [""]
                 else:
-                    raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
+                    raise MessageException(f"Problem applying regular expression [{regex}] to [{source}].")
 
         return result
 
