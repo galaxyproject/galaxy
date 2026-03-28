@@ -4036,8 +4036,12 @@ class SplitPairedAndUnpairedTool(DatabaseOperationTool):
 
         def _handle_unpaired(dce):
             element_identifier = dce.element_identifier
-            assert getattr(dce.element_object, "history_content_type", None) == "dataset"
-            copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags, flush=False)
+            element_object = dce.element_object
+            # In list:paired_or_unpaired collections, unpaired elements are
+            # wrapped in a 1-element sub-collection. Unwrap to get the dataset.
+            if getattr(element_object, "history_content_type", None) != "dataset":
+                element_object = element_object.elements[0].element_object
+            copied_value = element_object.copy(copy_tags=element_object.tags, flush=False)
             unpaired_dce_copies[element_identifier] = copied_value
             unpaired_dce_columns[element_identifier] = dce.columns
 
@@ -4057,7 +4061,8 @@ class SplitPairedAndUnpairedTool(DatabaseOperationTool):
                 _handle_paired(element)
         elif collection_type == "list:paired_or_unpaired":
             for element in collection.elements:
-                if getattr(element.element_object, "history_content_type", None) == "dataset":
+                sub_collection = element.element_object
+                if len(sub_collection.elements) == 1:
                     _handle_unpaired(element)
                 else:
                     _handle_paired(element)
