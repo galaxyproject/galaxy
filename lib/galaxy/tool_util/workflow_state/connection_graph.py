@@ -10,6 +10,7 @@ from dataclasses import (
     field,
 )
 from typing import (
+    cast,
     Dict,
     List,
     Optional,
@@ -24,7 +25,10 @@ from gxformat2.normalized import (
 )
 from gxformat2.schema.native import NativeStepType
 
-from galaxy.tool_util.parameters import ToolParameterT
+from galaxy.tool_util.parameters import (
+    ConditionalParameterModel,
+    ToolParameterT,
+)
 from galaxy.tool_util_models.tool_outputs import (
     ToolOutputBoolean,
     ToolOutputCollection,
@@ -36,6 +40,7 @@ from galaxy.tool_util_models.tool_outputs import (
 from galaxy.util.topsort import topsort
 from ._types import GetToolInfo
 from ._util import step_tool_state
+from ._walker import _select_which_when_native
 
 log = logging.getLogger(__name__)
 
@@ -354,25 +359,12 @@ def _collect_inputs(
             if not isinstance(cond_state, dict):
                 cond_state = {}
 
-            # TODO: definitely don't do this - we shouldn't be using __current_case__ anywhere in this code.
-            active_case = cond_state.get("__current_case__")
-            whens = getattr(param, "whens", [])
-
-            if active_case is not None:
-                try:
-                    case_idx = int(active_case)
-                    if 0 <= case_idx < len(whens):
-                        result.update(_collect_inputs(whens[case_idx].parameters, cond_state, prefix=state_path))
-                    else:
-                        # Invalid case index — walk all
-                        for when in whens:
-                            result.update(_collect_inputs(when.parameters, cond_state, prefix=state_path))
-                except (ValueError, IndexError):
-                    for when in whens:
-                        result.update(_collect_inputs(when.parameters, cond_state, prefix=state_path))
+            conditional = cast(ConditionalParameterModel, param)
+            target_when = _select_which_when_native(conditional, cond_state)
+            if target_when is not None:
+                result.update(_collect_inputs(target_when.parameters, cond_state, prefix=state_path))
             else:
-                # No active case info — walk all branches
-                for when in whens:
+                for when in conditional.whens:
                     result.update(_collect_inputs(when.parameters, cond_state, prefix=state_path))
 
         elif param.parameter_type == "gx_repeat":

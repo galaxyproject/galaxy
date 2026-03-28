@@ -30,7 +30,6 @@ from galaxy.tool_util.parameters import (
     ConditionalParameterModel,
     RepeatParameterModel,
     ToolParameterT,
-    validate_explicit_conditional_test_value,
 )
 from galaxy.tool_util_models.parameters import SectionParameterModel
 from ._report_models import (
@@ -49,7 +48,7 @@ from ._types import (
 )
 from ._walker import (
     _NATIVE_BOOKKEEPING_KEYS,
-    _test_value_matches_discriminator,
+    _select_which_when_native,
     as_dict,
     as_list,
 )
@@ -199,21 +198,7 @@ def _strip_recursive(
                 continue
 
             test_param = conditional.test_parameter
-            test_value_raw = cond_state.get(test_param.name)
-            test_value = validate_explicit_conditional_test_value(test_param.name, test_value_raw)
-
-            target_when = None
-            for when in conditional.whens:
-                if test_value is None and when.is_default_when:
-                    target_when = when
-                elif test_value is not None and _test_value_matches_discriminator(test_value, when.discriminator):
-                    target_when = when
-
-            if target_when is None:
-                recorded_case = cond_state.get("__current_case__")
-                if isinstance(recorded_case, int) and 0 <= recorded_case < len(conditional.whens):
-                    target_when = conditional.whens[recorded_case]
-
+            target_when = _select_which_when_native(conditional, cond_state)
             if target_when is None:
                 continue
 

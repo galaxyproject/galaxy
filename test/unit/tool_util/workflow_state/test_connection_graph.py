@@ -177,8 +177,8 @@ class TestCollectDataInputs:
                 ),
             ],
         )
-        # Active case 0 -> only "yes" branch
-        tool_state = {"cond1": {"__current_case__": 0}}
+        # Active case: test_param=yes -> only "yes" branch
+        tool_state = {"cond1": {"test_param": "yes"}}
         result = _collect_inputs([cond], tool_state)
         assert "cond1|data_yes" in result
         assert "cond1|data_no" not in result
