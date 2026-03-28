@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 from typing import (
     Any,
     cast,
@@ -15,12 +14,10 @@ from pydantic import (
 )
 
 from galaxy.tool_util.parameters import (
-    ConditionalParameterModel,
-    RepeatParameterModel,
     SelectParameterModel,
     ToolParameterT,
 )
-from galaxy.tool_util_models.parameters import SectionParameterModel
+from ._state_merge import inject_connections_into_state
 from ._types import (
     Format2StateDict,
     GetToolInfo,
@@ -28,7 +25,6 @@ from ._types import (
 )
 from ._walker import (
     SKIP_VALUE,
-    select_which_when_format2,
     walk_format2_state,
     walk_native_state,
 )
@@ -123,8 +119,7 @@ def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs):
 
     # Build a state dict with ConnectedValue markers for connected params
     linked_state = copy.deepcopy(result.state)
-    for connection_path in result.inputs:
-        _inject_connected_value(parsed_tool.inputs, linked_state, connection_path)
+    inject_connections_into_state(list(parsed_tool.inputs), linked_state, dict(result.inputs))
 
     try:
         linked_model = WorkflowStepLinkedToolState.parameter_model_for(parsed_tool.inputs)
@@ -137,92 +132,6 @@ def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs):
             pass  # Known model completeness gap — connected values not accepted for all types
         else:
             raise
-
-
-def _inject_connected_value(tool_inputs: List[ToolParameterT], state: dict, connection_path: str):
-    """Inject a ConnectedValue marker into a format2 state dict.
-
-    Uses tool_inputs to disambiguate path segments — a segment like
-    ``input_2`` is only treated as repeat index 2 of ``input`` if the
-    tool definition declares ``input`` as a repeat parameter.  Without
-    this, any parameter named ``foo_N`` would be misinterpreted.
-
-    Connection paths use | as separator and _N for repeat indices.
-    E.g., "queries_0|input2" → state["queries"][0]["input2"] = ConnectedValue
-    E.g., "cond|param" → state["cond"]["param"] = ConnectedValue
-    """
-    parts = connection_path.split("|")
-    target = state
-    current_inputs = tool_inputs
-
-    for part in parts[:-1]:
-        tool_input, repeat_idx = _resolve_path_segment(current_inputs, part)
-
-        if tool_input is not None and repeat_idx is not None:
-            # Repeat instance navigation
-            repeat = cast(RepeatParameterModel, tool_input)
-            if repeat.name not in target:
-                target[repeat.name] = []
-            arr = target[repeat.name]
-            while len(arr) <= repeat_idx:
-                arr.append({})
-            target = arr[repeat_idx]
-            current_inputs = repeat.parameters
-        elif tool_input is not None:
-            # Conditional / section / other container navigation
-            if part not in target:
-                target[part] = {}
-            target = target[part]
-            param_type = tool_input.parameter_type
-            if param_type == "gx_conditional":
-                conditional = cast(ConditionalParameterModel, tool_input)
-                when = select_which_when_format2(conditional, target)
-                current_inputs = (
-                    ([conditional.test_parameter] + list(when.parameters)) if when else [conditional.test_parameter]
-                )
-            elif param_type == "gx_section":
-                section = cast(SectionParameterModel, tool_input)
-                current_inputs = section.parameters
-            else:
-                current_inputs = []
-        else:
-            # Unknown segment — navigate structurally as fallback
-            if part not in target:
-                target[part] = {}
-            target = target[part]
-            current_inputs = []
-
-    # Set the leaf
-    leaf = parts[-1]
-    target[leaf] = {"__class__": "ConnectedValue"}
-
-
-def _resolve_path_segment(
-    tool_inputs: List[ToolParameterT], segment: str
-) -> "tuple[Optional[ToolParameterT], Optional[int]]":
-    """Resolve a flat_state_path segment against tool inputs.
-
-    Returns (tool_input, repeat_index).  For repeats, repeat_index is the
-    integer index; for non-repeats it is None.  If no matching input is
-    found, returns (None, None).
-    """
-    input_map = {inp.name: inp for inp in tool_inputs}
-
-    # Exact match takes priority — handles params like input_data_2
-    if segment in input_map:
-        return input_map[segment], None
-
-    # Try repeat decomposition: {name}_{index}
-    match = re.match(r"^(.+)_(\d+)$", segment)
-    if match:
-        repeat_name = match.group(1)
-        repeat_idx = int(match.group(2))
-        tool_input = input_map.get(repeat_name)
-        if tool_input is not None and tool_input.parameter_type == "gx_repeat":
-            return tool_input, repeat_idx
-
-    return None, None
-
 
 
 def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInputs) -> Format2State:

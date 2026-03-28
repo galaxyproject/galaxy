@@ -1,5 +1,4 @@
 from typing import (
-    cast,
     Optional,
     Union,
 )
@@ -11,17 +10,10 @@ from gxformat2.normalized import (
 )
 
 from galaxy.tool_util.parameters import (
-    ConditionalParameterModel,
-    ConditionalWhen,
-    flat_state_path,
-    keys_starting_with,
-    repeat_inputs_to_array,
-    RepeatParameterModel,
-    ToolParameterT,
-    validate_explicit_conditional_test_value,
     WorkflowStepLinkedToolState,
     WorkflowStepToolState,
 )
+from ._state_merge import inject_connections_into_state
 from ._types import (
     Format2WorkflowDict,
     GetToolInfo,
@@ -69,73 +61,8 @@ def validate_step_against(step: NormalizedWorkflowStep, parsed_tool: ToolInputs)
 
     # Merge connections into state for linked validation
     linked_state = dict(state)
-    for tool_input in parsed_tool.inputs:
-        _merge_into_state(connect, tool_input, linked_state)
+    remaining = inject_connections_into_state(list(parsed_tool.inputs), linked_state, connect)
 
-    for key in connect:
+    for key in remaining:
         raise Exception(f"Failed to find parameter definition matching workflow linked key {key}")
     linked_tool_state_model.model_validate(linked_state)
-
-
-def _merge_into_state(
-    connect, tool_input: ToolParameterT, state: dict, prefix: Optional[str] = None, branch_connect=None
-):
-    if branch_connect is None:
-        branch_connect = connect
-
-    name = tool_input.name
-    parameter_type = tool_input.parameter_type
-    state_path = flat_state_path(name, prefix)
-    if parameter_type == "gx_conditional":
-        conditional_state = state.get(name, {})
-        if name not in state:
-            state[name] = conditional_state
-
-        conditional = cast(ConditionalParameterModel, tool_input)
-        when: ConditionalWhen = _select_which_when(conditional, conditional_state)
-        test_parameter = conditional.test_parameter
-        conditional_connect = keys_starting_with(branch_connect, state_path)
-        _merge_into_state(
-            connect, test_parameter, conditional_state, prefix=state_path, branch_connect=conditional_connect
-        )
-        for when_parameter in when.parameters:
-            _merge_into_state(
-                connect, when_parameter, conditional_state, prefix=state_path, branch_connect=conditional_connect
-            )
-    elif parameter_type == "gx_repeat":
-        repeat_state_array = state.get(name, [])
-        repeat = cast(RepeatParameterModel, tool_input)
-        repeat_instance_connects = repeat_inputs_to_array(state_path, connect)
-        for i, repeat_instance_connect in enumerate(repeat_instance_connects):
-            while len(repeat_state_array) <= i:
-                repeat_state_array.append({})
-
-            repeat_instance_prefix = f"{state_path}_{i}"
-            for repeat_parameter in repeat.parameters:
-                _merge_into_state(
-                    connect,
-                    repeat_parameter,
-                    repeat_state_array[i],
-                    prefix=repeat_instance_prefix,
-                    branch_connect=repeat_instance_connect,
-                )
-        if repeat_state_array and name not in state:
-            state[name] = repeat_state_array
-    else:
-        if state_path in branch_connect:
-            state[name] = {"__class__": "ConnectedValue"}
-            del connect[state_path]
-
-
-def _select_which_when(conditional: ConditionalParameterModel, state: dict) -> ConditionalWhen:
-    test_parameter = conditional.test_parameter
-    test_parameter_name = test_parameter.name
-    explicit_test_value = state.get(test_parameter_name)
-    test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
-    for when in conditional.whens:
-        if test_value is None and when.is_default_when:
-            return when
-        elif test_value == when.discriminator:
-            return when
-    else:
-        raise Exception(f"Invalid conditional test value ({explicit_test_value}) for parameter ({test_parameter_name})")
