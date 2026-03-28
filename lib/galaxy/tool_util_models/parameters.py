@@ -450,7 +450,7 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
         requires_value = self.request_requires_value
         if state_representation in ("job_internal", "job_runtime"):
             requires_value = True
-        elif _is_landing_request(state_representation):
+        elif _values_not_required(state_representation):
             requires_value = False
         return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
 
@@ -487,7 +487,7 @@ class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
         requires_value = self.request_requires_value
         if state_representation in ("job_internal", "job_runtime"):
             requires_value = True
-        elif _is_landing_request(state_representation):
+        elif _values_not_required(state_representation):
             requires_value = False
         validators = self.validators[:]
         if self.min is not None or self.max is not None:
@@ -1522,6 +1522,9 @@ class HiddenParameterModel(BaseGalaxyToolParameterModelDefinition):
         py_type = decorate_type_with_validators_if_needed(py_type, self.validators)
         if state_representation == "workflow_step_linked":
             py_type = allow_connected_value(py_type)
+            if not self.optional and self.value is None:
+                py_type = optional(py_type)
+                requires_value = False
         elif state_representation == "workflow_step" and not self.optional:
             # allow it to be linked in so force allow optional...
             py_type = optional(py_type)
@@ -1649,7 +1652,7 @@ class DirectoryUriParameterModel(BaseGalaxyToolParameterModelDefinition):
         if state_representation == "workflow_step_linked":
             py_type = allow_connected_value(py_type)
         requires_value = self.request_requires_value
-        if _is_landing_request(state_representation):
+        if _values_not_required(state_representation):
             requires_value = False
         return dynamic_model_information_from_py_type(
             self,
@@ -1725,7 +1728,9 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
             py_type = StrictStr
         if self.multiple:
             if allow_connections:
-                py_type = list_type(allow_connected_value(py_type))
+                # Allow both individual elements and the whole list to be connected:
+                # Union[List[Union[T, ConnectedValue]], ConnectedValue]
+                py_type = allow_connected_value(list_type(allow_connected_value(py_type)))
             else:
                 py_type = list_type(py_type)
         elif allow_connections:
@@ -2234,7 +2239,7 @@ class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
         requires_value = self.request_requires_value
         if state_representation in ("job_internal", "job_runtime"):
             requires_value = True
-        elif _is_landing_request(state_representation):
+        elif _values_not_required(state_representation):
             requires_value = False
             min_length = 0  # in a landing request - parameters can be partially filled
 
@@ -2278,6 +2283,8 @@ class SectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         requires_value = self.request_requires_value
         if state_representation in ("job_internal", "job_runtime"):
             requires_value = True
+        elif _values_not_required(state_representation):
+            requires_value = False
         if requires_value:
             initialize_section = ...
         else:
@@ -2587,5 +2594,11 @@ def create_field_model(
     return pydantic_model
 
 
-def _is_landing_request(state_representation: StateRepresentationT):
-    return state_representation in ["landing_request", "landing_request_internal"]
+def _values_not_required(state_representation: StateRepresentationT):
+    # Landing requests allow partial fills; workflow_step state is inherently
+    # incomplete because connected parameters are absent (they live in the
+    # connections dict, not the state dict).  In both cases every field must
+    # be optional so that missing keys are tolerated.  The *linked* model
+    # (workflow_step_linked) re-introduces required-ness after ConnectedValue
+    # markers are injected.
+    return state_representation in ["landing_request", "landing_request_internal", "workflow_step"]
