@@ -21,6 +21,8 @@ from galaxy.tool_util.workflow_state.cache import (
     populate_cache,
 )
 from galaxy.tool_util.workflow_state.clean import clean_stale_state
+from gxformat2.normalized import ensure_native
+
 from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
 from galaxy.tool_util.workflow_state.roundtrip import roundtrip_validate
 from galaxy.tool_util.workflow_state.validation_native import validate_workflow_native
@@ -96,7 +98,7 @@ class TestIWCSweepExport:
 
     @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
     def test_export(self, wf_path, tool_info):
-        workflow = load_workflow(wf_path)
+        workflow = ensure_native(wf_path)
         result = export_workflow_to_format2(workflow, tool_info)
         assert result.format2 is not None
         fmt2_dict = result.format2_dict

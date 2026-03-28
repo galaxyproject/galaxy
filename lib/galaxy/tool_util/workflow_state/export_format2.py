@@ -7,7 +7,6 @@ using tool definitions. This module wires that callback with stale key
 policy, strict mode, and per-step status tracking.
 """
 
-import copy
 import logging
 import os
 import sys
@@ -19,30 +18,31 @@ from typing import (
     Any,
 )
 
-from gxformat2.normalized import NormalizedFormat2
+from gxformat2.normalized import (
+    ensure_native,
+    NormalizedFormat2,
+    NormalizedNativeWorkflow,
+    to_format2,
+)
 from gxformat2.options import ConversionOptions
 
 from ._cli_common import (
     setup_tool_info,
     ToolCacheOptions,
 )
-from ._types import (
-    GetToolInfo,
-    NativeWorkflowDict,
-)
+from ._types import GetToolInfo
 from .convert import (
     ConversionValidationFailure,
     convert_state_to_format2,
 )
+from .precheck import precheck_native_workflow
 from .stale_keys import (
     classify_stale_keys,
     ConflictingCategoryError,
     InvalidCategoryError,
     StaleKeyPolicy,
 )
-from .validation import _format
 from .validation_native import get_parsed_tool_for_native_step
-from .workflow_tools import load_workflow
 
 log = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ class ExportResult:
 
 
 def export_workflow_to_format2(
-    workflow_dict: NativeWorkflowDict,
+    workflow: NormalizedNativeWorkflow,
     get_tool_info: GetToolInfo,
     strict: bool = False,
     policy: StaleKeyPolicy | None = None,
@@ -92,17 +92,11 @@ def export_workflow_to_format2(
     callback. Steps where conversion fails keep their tool_state (best-effort)
     unless strict=True.
     """
-    from gxformat2.normalized import to_format2
-
-    if _format(workflow_dict) != "native":
-        raise ValueError("export_workflow_to_format2 requires a native (.ga) workflow")
-
     step_statuses: list[StepExportStatus] = []
     callback = _make_export_callback(get_tool_info, step_statuses, strict=strict, policy=policy)
 
-    native_copy = copy.deepcopy(workflow_dict)
     options = ConversionOptions(state_encode_to_format2=callback)
-    format2_model = to_format2(native_copy, options=options)
+    format2_model = to_format2(workflow, options=options)
 
     return ExportResult(format2=format2_model, steps=step_statuses)
 
@@ -263,13 +257,12 @@ def format_diff(original_format2: dict, converted_format2: dict, workflow_path: 
 
 def run_export(options: ExportOptions) -> int:
     """Run export pipeline. Returns exit code."""
-    from gxformat2.normalized import to_format2
-
     tool_info = setup_tool_info(options)
 
-    workflow = load_workflow(options.workflow_path)
-    if _format(workflow) != "native":
-        print("Error: input must be a native .ga workflow", file=sys.stderr)
+    try:
+        workflow = ensure_native(options.workflow_path)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
         return 1
 
     try:
@@ -277,6 +270,11 @@ def run_export(options: ExportOptions) -> int:
     except (InvalidCategoryError, ConflictingCategoryError) as e:
         print(f"Error: {e}", file=sys.stderr)
         return 2
+
+    precheck = precheck_native_workflow(workflow, tool_info)
+    if not precheck.can_process:
+        print(f"Skipped: {precheck.detail}", file=sys.stderr)
+        return 0
 
     try:
         result = export_workflow_to_format2(workflow, tool_info, strict=options.strict, policy=policy)
@@ -286,8 +284,7 @@ def run_export(options: ExportOptions) -> int:
 
     if options.diff:
         # Generate naive format2 for comparison
-        naive_copy = copy.deepcopy(workflow)
-        naive_model = to_format2(naive_copy)
+        naive_model = to_format2(workflow)
         naive_dict = naive_model.to_dict()
         diff_text = format_diff(naive_dict, result.format2_dict, options.workflow_path)
         if diff_text:

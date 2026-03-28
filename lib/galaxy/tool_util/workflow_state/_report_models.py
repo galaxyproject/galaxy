@@ -20,7 +20,9 @@ from pydantic import (
     Field,
 )
 
-StepStatus = Literal["ok", "fail", "skip"]
+from .precheck import SkipWorkflowReason
+
+StepStatus = Literal["ok", "fail", "skip_tool_not_found"]
 ConnectionStatus = Literal["ok", "invalid", "skip"]
 
 
@@ -56,6 +58,7 @@ class WorkflowResultBase(BaseModel):
     relative_path: str = Field(serialization_alias="path")
     category: str
     error: Optional[str] = None
+    skipped_reason: Optional[SkipWorkflowReason] = None
 
 
 class WorkflowValidationResult(WorkflowResultBase):
@@ -65,12 +68,12 @@ class WorkflowValidationResult(WorkflowResultBase):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def summary(self) -> Optional[Dict[str, int]]:
-        if self.error:
+        if self.error or self.skipped_reason:
             return None
         return {
             "ok": sum(1 for sr in self.step_results if sr.status == "ok"),
             "fail": sum(1 for sr in self.step_results if sr.status == "fail"),
-            "skip": sum(1 for sr in self.step_results if sr.status == "skip"),
+            "skip_tool_not_found": sum(1 for sr in self.step_results if sr.status == "skip_tool_not_found"),
         }
 
 
@@ -152,8 +155,11 @@ class TreeValidationReport(TreeReportBase):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def summary(self) -> Dict[str, int]:
-        ok = fail = skip = error = 0
+        ok = fail = skip_tool_not_found = error = skipped = 0
         for r in self.results:
+            if r.skipped_reason:
+                skipped += 1
+                continue
             if r.error:
                 error += 1
                 continue
@@ -162,9 +168,15 @@ class TreeValidationReport(TreeReportBase):
                     ok += 1
                 elif sr.status == "fail":
                     fail += 1
-                elif sr.status == "skip":
-                    skip += 1
-        return {"ok": ok, "fail": fail, "skip": skip, "error": error}
+                elif sr.status == "skip_tool_not_found":
+                    skip_tool_not_found += 1
+        return {
+            "ok": ok,
+            "fail": fail,
+            "skip_tool_not_found": skip_tool_not_found,
+            "error": error,
+            "skipped": skipped,
+        }
 
 
 class TreeCleanReport(TreeReportBase):
@@ -176,11 +188,12 @@ class TreeCleanReport(TreeReportBase):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def summary(self) -> Dict[str, int]:
-        total_keys = sum(r.total_removed for r in self.results)
-        affected = sum(1 for r in self.results if r.total_removed > 0)
-        errors = sum(1 for r in self.results if r.error)
-        clean = len(self.results) - affected - errors
-        return {"total_keys": total_keys, "affected": affected, "clean": clean, "errors": errors}
+        total_keys = sum(r.total_removed for r in self.results if not r.skipped_reason)
+        skipped = sum(1 for r in self.results if r.skipped_reason)
+        affected = sum(1 for r in self.results if r.total_removed > 0 and not r.skipped_reason)
+        errors = sum(1 for r in self.results if r.error and not r.skipped_reason)
+        clean = len(self.results) - affected - errors - skipped
+        return {"total_keys": total_keys, "affected": affected, "clean": clean, "errors": errors, "skipped": skipped}
 
 
 # -- Single-workflow wrappers (for JSON serialization of single-file runs) --
@@ -198,7 +211,7 @@ class SingleValidationReport(BaseModel):
         return {
             "ok": sum(1 for r in self.results if r.status == "ok"),
             "fail": sum(1 for r in self.results if r.status == "fail"),
-            "skip": sum(1 for r in self.results if r.status == "skip"),
+            "skip_tool_not_found": sum(1 for r in self.results if r.status == "skip_tool_not_found"),
         }
 
 

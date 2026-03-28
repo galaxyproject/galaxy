@@ -359,7 +359,7 @@ class TestValidateTree:
         wf_path = tmp_path / "test.ga"
         wf_path.write_text(json.dumps(_make_native_workflow()))
         workflow = load_workflow(str(wf_path))
-        results = validate_workflow_cli(workflow, GET_TOOL_INFO)
+        results, _precheck = validate_workflow_cli(workflow, GET_TOOL_INFO)
         data = format_json_single(results, str(wf_path))
         assert "workflow" in data
         assert "results" in data

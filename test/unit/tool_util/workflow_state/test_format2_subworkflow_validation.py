@@ -56,7 +56,7 @@ class TestFormat2SubworkflowValidation:
     def test_nested_subworkflow_inner_tool_counted_in_results(self):
         """CLI path should return results for inner tool steps."""
         wf = _load_format2("replacement_parameters_nested.gxwf.yml")
-        results = validate_workflow_cli(wf, GET_TOOL_INFO)
+        results, _precheck = validate_workflow_cli(wf, GET_TOOL_INFO)
         tool_results = [r for r in results if r.tool_id is not None]
         assert len(tool_results) >= 1, f"Expected at least 1 tool result, got {tool_results}"
         create_2_results = [r for r in results if r.tool_id == "create_2"]
@@ -99,7 +99,7 @@ class TestFormat2SubworkflowInvalidState:
                 }
             ]
         )
-        results = validate_workflow_cli(wf, GET_TOOL_INFO)
+        results, _precheck = validate_workflow_cli(wf, GET_TOOL_INFO)
         fails = [r for r in results if r.status == "fail"]
         assert len(fails) >= 1, f"Expected at least 1 failure, got {results}"
 

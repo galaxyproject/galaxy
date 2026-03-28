@@ -10,6 +10,7 @@ import sys
 from typing import (
     List,
     Optional,
+    Tuple,
 )
 
 from ._cli_common import (
@@ -26,6 +27,10 @@ from ._report_models import (
 )
 from ._report_output import emit_reports
 from ._types import GetToolInfo
+from .precheck import (
+    precheck_native_workflow,
+    WorkflowPrecheck,
+)
 from .stale_keys import (
     classify_stale_keys,
     ConflictingCategoryError,
@@ -67,15 +72,22 @@ def validate_workflow_cli(
     workflow_dict: dict,
     get_tool_info: GetToolInfo,
     policy: Optional[StaleKeyPolicy] = None,
-) -> List[ValidationStepResult]:
-    """Validate all steps in a workflow, collecting per-step results."""
+) -> Tuple[List[ValidationStepResult], Optional[WorkflowPrecheck]]:
+    """Validate all steps in a workflow, collecting per-step results.
+
+    Returns (step_results, precheck) — precheck is non-None with
+    can_process=False if the workflow was skipped due to legacy encoding.
+    """
     fmt = _format(workflow_dict)
     if fmt == "native":
-        return _validate_native(workflow_dict, get_tool_info, policy=policy)
+        precheck = precheck_native_workflow(workflow_dict, get_tool_info)
+        if not precheck.can_process:
+            return [], precheck
+        return _validate_native(workflow_dict, get_tool_info, policy=policy), None
     else:
         # Format2 workflows don't have the stale key problem — tool_state is
         # already clean `state` dicts. Policy only applies to native validation.
-        return _validate_format2(workflow_dict, get_tool_info)
+        return _validate_format2(workflow_dict, get_tool_info), None
 
 
 def _validate_native(
@@ -112,7 +124,7 @@ def _validate_native(
                     step=step_label,
                     tool_id=tool_id,
                     version=tool_version,
-                    status="skip",
+                    status="skip_tool_not_found",
                     errors=["No tool_state found"],
                 )
             )
@@ -126,7 +138,7 @@ def _validate_native(
                     step=step_label,
                     tool_id=tool_id,
                     version=tool_version,
-                    status="skip",
+                    status="skip_tool_not_found",
                     errors=[f"No tool definition: {e}"],
                 )
             )
@@ -138,7 +150,7 @@ def _validate_native(
                     step=step_label,
                     tool_id=tool_id,
                     version=tool_version,
-                    status="skip",
+                    status="skip_tool_not_found",
                     errors=["No tool definition"],
                 )
             )
@@ -228,7 +240,7 @@ def _validate_format2(workflow_dict: dict, get_tool_info: GetToolInfo, prefix: s
                         step=step_label,
                         tool_id=tool_id,
                         version=tool_version,
-                        status="skip",
+                        status="skip_tool_not_found",
                         errors=[error_str],
                     )
                 )
@@ -274,7 +286,7 @@ def validate_tree(
             continue
 
         try:
-            step_results = validate_workflow_cli(wf_dict, get_tool_info, policy=policy)
+            step_results, precheck = validate_workflow_cli(wf_dict, get_tool_info, policy=policy)
         except Exception as e:
             report.results.append(
                 WorkflowValidationResult(
@@ -282,6 +294,17 @@ def validate_tree(
                     relative_path=info.relative_path,
                     category=info.category,
                     error=str(e),
+                )
+            )
+            continue
+
+        if precheck and not precheck.can_process:
+            report.results.append(
+                WorkflowValidationResult(
+                    path=info.path,
+                    relative_path=info.relative_path,
+                    category=info.category,
+                    skipped_reason=precheck.skip_reasons[0],
                 )
             )
             continue
@@ -305,7 +328,7 @@ def format_text(results: List[ValidationStepResult], summary_only: bool = False)
     lines = []
     ok = sum(1 for r in results if r.status == "ok")
     fail = sum(1 for r in results if r.status == "fail")
-    skip = sum(1 for r in results if r.status == "skip")
+    skip = sum(1 for r in results if r.status == "skip_tool_not_found")
 
     if not summary_only:
         for r in results:
@@ -319,7 +342,7 @@ def format_text(results: List[ValidationStepResult], summary_only: bool = False)
                 lines.append(f"Step {r.step}: {tool_label} ... FAIL")
                 for err in r.errors:
                     lines.append(f"  {err}")
-            elif r.status == "skip":
+            elif r.status == "skip_tool_not_found":
                 reason = r.errors[0] if r.errors else "skipped"
                 lines.append(f"Step {r.step}: {tool_label} ... SKIP ({reason})")
 
@@ -335,18 +358,25 @@ def format_tree_text(report: TreeValidationReport, summary_only: bool = False) -
     s = report.summary
     total_wf = len(report.results)
     lines.append(f"Root: {report.root}")
-    lines.append(f"Workflows: {total_wf} | Steps: {s['ok']} OK, {s['fail']} FAIL, {s['skip']} SKIP, {s['error']} ERROR")
+    skipped_count = s["skipped"]
+    skipped_suffix = f" | {skipped_count} workflow(s) skipped" if skipped_count else ""
+    lines.append(
+        f"Workflows: {total_wf} | Steps: {s['ok']} OK, {s['fail']} FAIL, {s['skip_tool_not_found']} SKIP, {s['error']} ERROR{skipped_suffix}"
+    )
     lines.append("")
 
     if not summary_only:
         for r in report.results:
             name = r.relative_path
+            if r.skipped_reason:
+                lines.append(f"  {name}: SKIPPED ({r.skipped_reason.value})")
+                continue
             if r.error:
                 lines.append(f"  {name}: ERROR ({r.error})")
                 continue
             n_ok = sum(1 for sr in r.step_results if sr.status == "ok")
             n_fail = sum(1 for sr in r.step_results if sr.status == "fail")
-            n_skip = sum(1 for sr in r.step_results if sr.status == "skip")
+            n_skip = sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
             total = len(r.step_results)
             lines.append(f"  {name}: {total} steps ({n_ok} OK, {n_fail} FAIL, {n_skip} SKIP)")
             for sr in r.step_results:
@@ -355,7 +385,9 @@ def format_tree_text(report: TreeValidationReport, summary_only: bool = False) -
                         lines.append(f"    Step {sr.step} ({sr.tool_id}): {err}")
 
     lines.append("---")
-    lines.append(f"Summary: {s['ok']} OK, {s['fail']} FAIL, {s['skip']} SKIP, {s['error']} ERROR")
+    lines.append(
+        f"Summary: {s['ok']} OK, {s['fail']} FAIL, {s['skip_tool_not_found']} SKIP, {s['error']} ERROR{skipped_suffix}"
+    )
     return "\n".join(lines)
 
 
@@ -367,7 +399,8 @@ def format_tree_markdown(report: TreeValidationReport) -> str:
         "# Workflow Validation Report",
         "",
         f"Root: `{report.root}`",
-        f"Workflows: {total_wf} | Steps: {s['ok']} OK, {s['fail']} FAIL, {s['skip']} SKIP, {s['error']} ERROR",
+        f"Workflows: {total_wf} | Steps: {s['ok']} OK, {s['fail']} FAIL, {s['skip_tool_not_found']} SKIP, {s['error']} ERROR"
+        + (f" | {s['skipped']} workflow(s) skipped" if s["skipped"] else ""),
         "",
     ]
 
@@ -380,13 +413,16 @@ def format_tree_markdown(report: TreeValidationReport) -> str:
 
         for r in wf_results:
             name = os.path.basename(r.relative_path)
+            if r.skipped_reason:
+                lines.append(f"| {name} | - | - | - | - | SKIPPED: {r.skipped_reason.value} |")
+                continue
             if r.error:
                 lines.append(f"| {name} | - | - | - | - | ERROR: {r.error} |")
                 continue
 
             n_ok = sum(1 for sr in r.step_results if sr.status == "ok")
             n_fail = sum(1 for sr in r.step_results if sr.status == "fail")
-            n_skip = sum(1 for sr in r.step_results if sr.status == "skip")
+            n_skip = sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
             total = len(r.step_results)
             fails = [sr for sr in r.step_results if sr.status == "fail"]
             detail = ""
@@ -551,8 +587,12 @@ def run_validate(options: ValidateOptions) -> int:
         exit_code = _emit_tree_results(options, report)
     else:
         workflow = load_workflow(options.workflow_path)
-        results = validate_workflow_cli(workflow, tool_info, policy=policy)
-        exit_code = _emit_single_results(options, results)
+        results, precheck = validate_workflow_cli(workflow, tool_info, policy=policy)
+        if precheck and not precheck.can_process:
+            print(f"Skipped: {precheck.detail}", file=sys.stderr)
+            exit_code = 0
+        else:
+            exit_code = _emit_single_results(options, results)
 
     if options.connections:
 
@@ -576,7 +616,7 @@ def _emit_single_results(options: ValidateOptions, results: List[ValidationStepR
     )
 
     has_failures = any(r.status == "fail" for r in results)
-    has_skips = any(r.status == "skip" for r in results)
+    has_skips = any(r.status == "skip_tool_not_found" for r in results)
 
     if has_failures:
         return 1
@@ -598,6 +638,6 @@ def _emit_tree_results(options: ValidateOptions, report: TreeValidationReport) -
     s = report.summary
     if s["fail"] > 0 or s["error"] > 0:
         return 1
-    elif s["skip"] > 0 and options.strict:
+    elif s["skip_tool_not_found"] > 0 and options.strict:
         return 2
     return 0

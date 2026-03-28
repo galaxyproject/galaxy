@@ -1044,13 +1044,16 @@ class WorkflowContentsManager(UsesAnnotations):
         Uses the toolbox to resolve tool definitions for clean state conversion.
         Falls back to naive from_galaxy_native() if the toolbox is unavailable.
         """
+        from gxformat2.normalized import ensure_native
+
         from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
 
         toolbox = getattr(trans.app, "toolbox", None)
         if toolbox is None:
             return to_format_2_fallback(native_dict, json_wrapper=False)
         get_tool_info = ToolboxGetToolInfo(toolbox)
-        result = export_workflow_to_format2(native_dict, get_tool_info)
+        workflow = ensure_native(native_dict)
+        result = export_workflow_to_format2(workflow, get_tool_info)
         return result.format2_dict
 
     def _clean_native_dict(self, trans, wf_dict, preserve, strip):

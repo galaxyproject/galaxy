@@ -9,6 +9,7 @@ import difflib
 import json
 import logging
 import os
+import sys
 from typing import (
     Any,
     cast,
@@ -58,6 +59,7 @@ from .stale_keys import (
     StaleKeyCategory,
     StaleKeyPolicy,
 )
+from .precheck import precheck_native_workflow
 from .validation_native import get_parsed_tool_for_native_step
 from .workflow_tools import load_workflow
 
@@ -421,6 +423,18 @@ def clean_tree(
             )
             continue
 
+        precheck = precheck_native_workflow(wf_dict, get_tool_info)
+        if not precheck.can_process:
+            report.results.append(
+                WorkflowCleanResult(
+                    path=info.path,
+                    relative_path=info.relative_path,
+                    category=info.category,
+                    skipped_reason=precheck.skip_reasons[0],
+                )
+            )
+            continue
+
         if output_template is None:
             work_copy = copy.deepcopy(wf_dict)
         else:
@@ -493,6 +507,9 @@ def format_tree_clean_text(report: TreeCleanReport) -> str:
     ]
 
     for r in report.results:
+        if r.skipped_reason:
+            lines.append(f"  {r.relative_path}: SKIPPED ({r.skipped_reason.value})")
+            continue
         if r.error:
             lines.append(f"  {r.relative_path}: ERROR ({r.error})")
             continue
@@ -503,8 +520,9 @@ def format_tree_clean_text(report: TreeCleanReport) -> str:
                     lines.append(f"    Step {sr.step} ({sr.tool_id}): {', '.join(sr.removed_keys)}")
 
     lines.append("---")
+    skipped_count = s.get("skipped", 0)
     lines.append(
-        f"Summary: {s['total_keys']} stale key(s), {s['affected']} affected, {s['clean']} clean, {s['errors']} errors"
+        f"Summary: {s['total_keys']} stale key(s), {s['affected']} affected, {s['clean']} clean, {s['errors']} errors, {skipped_count} skipped"
     )
     return "\n".join(lines)
 
@@ -583,8 +601,6 @@ def format_json_tree(report: TreeCleanReport) -> dict:
 
 def run_clean(options: CleanOptions) -> int:
     """Run clean pipeline. Returns exit code."""
-    import sys
-
     tool_info = setup_tool_info(options)
 
     try:
@@ -603,6 +619,12 @@ def run_clean(options: CleanOptions) -> int:
 
 def _run_single(options: CleanOptions, tool_info, policy: StaleKeyPolicy) -> int:
     workflow = load_workflow(options.workflow_path)
+
+    precheck = precheck_native_workflow(workflow, tool_info)
+    if not precheck.can_process:
+        print(f"Skipped: {precheck.detail}", file=sys.stderr)
+        return 0
+
     original_json = json.dumps(workflow, indent=4) + "\n"
 
     dry_run = options.output_template is None
