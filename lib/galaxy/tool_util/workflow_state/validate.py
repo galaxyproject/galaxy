@@ -40,6 +40,7 @@ from .stale_keys import (
 )
 from .validation import _format
 from .validation_format2 import validate_step_format2
+from .validation_json_schema import validate_workflow_json_schema
 from .validation_native import (
     get_parsed_tool_for_native_step,
     validate_native_step_against,
@@ -59,6 +60,8 @@ class ValidateOptions(ToolCacheOptions):
     strict: bool = False
     summary: bool = False
     connections: bool = False
+    mode: str = "pydantic"
+    tool_schema_dir: Optional[str] = None
     report_json: Optional[str] = None
     report_markdown: Optional[str] = None
     allow: List[str] = []
@@ -567,35 +570,152 @@ def _run_connection_validation(options: ValidateOptions, tool_info) -> int:
 # -- Entry point --
 
 
+def _json_schema_validate_single(
+    workflow_dict: dict,
+    tool_info: Optional[GetToolInfo],
+    tool_schema_dir: Optional[str],
+    strict: bool = False,
+) -> List[ValidationStepResult]:
+    """Validate a single workflow via JSON Schema and map to ValidationStepResult."""
+    js_result = validate_workflow_json_schema(
+        workflow_dict,
+        get_tool_info=tool_info,
+        tool_schema_dir=tool_schema_dir,
+        strict=strict,
+    )
+
+    results: List[ValidationStepResult] = []
+
+    if js_result.structural_errors:
+        error_msgs = [
+            f"[structural] {e.message} (at /{e.path})" if e.path else f"[structural] {e.message}"
+            for e in js_result.structural_errors
+        ]
+        results.append(
+            ValidationStepResult(
+                step="structure",
+                tool_id=None,
+                status="fail",
+                errors=error_msgs,
+            )
+        )
+        return results
+
+    for sr in js_result.step_results:
+        if sr.status == "ok":
+            results.append(ValidationStepResult(step=sr.step, tool_id=sr.tool_id, status="ok"))
+        elif sr.status == "fail":
+            error_msgs = [f"{e.message} (at /{e.path})" if e.path else e.message for e in sr.errors]
+            results.append(ValidationStepResult(step=sr.step, tool_id=sr.tool_id, status="fail", errors=error_msgs))
+        elif sr.status == "skip":
+            results.append(
+                ValidationStepResult(
+                    step=sr.step, tool_id=sr.tool_id, status="skip_tool_not_found", errors=["No tool schema available"]
+                )
+            )
+
+    return results
+
+
+def _run_json_schema_validate(options: ValidateOptions, tool_info: GetToolInfo) -> int:
+    """Run JSON Schema-based validation for a single workflow file or directory."""
+    if os.path.isdir(options.workflow_path):
+        return _run_json_schema_validate_tree(options, tool_info)
+    workflow = load_workflow(options.workflow_path)
+    results = _json_schema_validate_single(
+        workflow,
+        tool_info=tool_info,
+        tool_schema_dir=options.tool_schema_dir,
+        strict=options.strict,
+    )
+    return _emit_single_results(options, results)
+
+
+def _run_json_schema_validate_tree(options: ValidateOptions, tool_info: GetToolInfo) -> int:
+    """Run JSON Schema-based validation for a directory of workflows."""
+    from .workflow_tree import (
+        discover_workflows,
+        load_workflow_safe,
+    )
+
+    report = TreeValidationReport(root=options.workflow_path)
+    workflows = discover_workflows(options.workflow_path)
+
+    for info in workflows:
+        wf_dict = load_workflow_safe(info)
+        if wf_dict is None:
+            report.results.append(
+                WorkflowValidationResult(
+                    path=info.path,
+                    relative_path=info.relative_path,
+                    category=info.category,
+                    error="Failed to load workflow",
+                )
+            )
+            continue
+
+        try:
+            step_results = _json_schema_validate_single(
+                wf_dict,
+                tool_info=tool_info,
+                tool_schema_dir=options.tool_schema_dir,
+                strict=options.strict,
+            )
+        except Exception as e:
+            report.results.append(
+                WorkflowValidationResult(
+                    path=info.path,
+                    relative_path=info.relative_path,
+                    category=info.category,
+                    error=str(e),
+                )
+            )
+            continue
+
+        report.results.append(
+            WorkflowValidationResult(
+                path=info.path,
+                relative_path=info.relative_path,
+                category=info.category,
+                step_results=step_results,
+            )
+        )
+
+    return _emit_tree_results(options, report)
+
+
 def run_validate(options: ValidateOptions) -> int:
     """Run validation pipeline. Returns exit code."""
     tool_info = setup_tool_info(options)
-    try:
-        policy = StaleKeyPolicy.for_validate(options.allow, options.deny)
-    except (InvalidCategoryError, ConflictingCategoryError) as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 2
 
-    is_dir = os.path.isdir(options.workflow_path)
-
-    # TODO: This feels like asymetric - we should do the single or multiple dance with
-    # between state and connection validation in some symmetric way. My guess is we should
-    # do the tree walking out here and push the connection check lower into whatever we use
-    # validate each workflow individually.
-    if is_dir:
-        report = validate_tree(options.workflow_path, tool_info, policy=policy)
-        exit_code = _emit_tree_results(options, report)
+    if options.mode == "json-schema":
+        exit_code = _run_json_schema_validate(options, tool_info)
     else:
-        workflow = load_workflow(options.workflow_path)
-        results, precheck = validate_workflow_cli(workflow, tool_info, policy=policy)
-        if precheck and not precheck.can_process:
-            print(f"Skipped: {precheck.detail}", file=sys.stderr)
-            exit_code = 0
+        try:
+            policy = StaleKeyPolicy.for_validate(options.allow, options.deny)
+        except (InvalidCategoryError, ConflictingCategoryError) as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 2
+
+        is_dir = os.path.isdir(options.workflow_path)
+
+        # TODO: This feels like asymetric - we should do the single or multiple dance with
+        # between state and connection validation in some symmetric way. My guess is we should
+        # do the tree walking out here and push the connection check lower into whatever we use
+        # validate each workflow individually.
+        if is_dir:
+            report = validate_tree(options.workflow_path, tool_info, policy=policy)
+            exit_code = _emit_tree_results(options, report)
         else:
-            exit_code = _emit_single_results(options, results)
+            workflow = load_workflow(options.workflow_path)
+            results, precheck = validate_workflow_cli(workflow, tool_info, policy=policy)
+            if precheck and not precheck.can_process:
+                print(f"Skipped: {precheck.detail}", file=sys.stderr)
+                exit_code = 0
+            else:
+                exit_code = _emit_single_results(options, results)
 
     if options.connections:
-
         conn_exit = _run_connection_validation(options, tool_info)
         exit_code = max(exit_code, conn_exit)
 

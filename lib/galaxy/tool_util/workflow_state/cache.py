@@ -104,6 +104,32 @@ class ClearOptions(BaseModel):
         return cls(**{k: v for k, v in vars(args).items() if k in fields})
 
 
+class SchemaOptions(BaseModel):
+    tool_source_cache_dir: Optional[str] = None
+    verbose: bool = False
+    trs_tool_id: str
+    version: Optional[str] = None
+    representation: str = "workflow_step"
+    output: Optional[str] = None
+
+    @classmethod
+    def from_namespace(cls, args: argparse.Namespace) -> "SchemaOptions":
+        fields = set(cls.model_fields)
+        return cls(**{k: v for k, v in vars(args).items() if k in fields})
+
+
+class StructuralSchemaOptions(BaseModel):
+    tool_source_cache_dir: Optional[str] = None
+    verbose: bool = False
+    strict: bool = False
+    output: Optional[str] = None
+
+    @classmethod
+    def from_namespace(cls, args: argparse.Namespace) -> "StructuralSchemaOptions":
+        fields = set(cls.model_fields)
+        return cls(**{k: v for k, v in vars(args).items() if k in fields})
+
+
 # -- Core cache operations --
 
 
@@ -329,3 +355,69 @@ def run_clear(options: ClearOptions):
     else:
         tool_info.clear_cache()
         print("Cache cleared.")
+
+
+def run_schema(options: SchemaOptions):
+    from galaxy.tool_util.parameters.json import to_json_schema_string
+    from galaxy.tool_util_models.parameters import (
+        create_model_factory,
+        StateRepresentationT,
+        ToolParameterBundleModel,
+    )
+
+    tool_info = build_tool_info(options.tool_source_cache_dir)
+
+    # Resolve tool from cache (same substring match as run_info)
+    entries = tool_info.list_cached()
+    matches = []
+    for entry in entries:
+        tid = entry.get("tool_id", "")
+        tver = entry.get("tool_version", "")
+        if options.trs_tool_id in tid:
+            if options.version is None or tver == options.version:
+                matches.append(entry)
+
+    if not matches:
+        print(f"No cached entries matching '{options.trs_tool_id}'", file=sys.stderr)
+        sys.exit(1)
+
+    if len(matches) > 1:
+        print(f"Multiple matches for '{options.trs_tool_id}' — use --version to disambiguate:", file=sys.stderr)
+        for entry in matches:
+            print(f"  {entry.get('tool_id', '?')} {entry.get('tool_version', '?')}", file=sys.stderr)
+        sys.exit(1)
+
+    entry = matches[0]
+    cache_key = entry.get("cache_key")
+    parsed_tool = tool_info.load_cached(cache_key)
+    if parsed_tool is None:
+        print(f"Failed to load cached tool: {cache_key}", file=sys.stderr)
+        sys.exit(1)
+
+    representation: StateRepresentationT = options.representation  # type: ignore[assignment]
+    factory = create_model_factory(representation)
+    bundle = ToolParameterBundleModel(parameters=list(parsed_tool.inputs))
+    model = factory(bundle)
+    schema_str = to_json_schema_string(model)
+
+    if options.output:
+        with open(options.output, "w") as f:
+            f.write(schema_str)
+            f.write("\n")
+        print(f"Schema written to {options.output}")
+    else:
+        print(schema_str)
+
+
+def run_structural_schema(options: StructuralSchemaOptions):
+    from gxformat2.schema.json_schema import workflow_json_schema_string
+
+    schema_str = workflow_json_schema_string(strict=options.strict)
+
+    if options.output:
+        with open(options.output, "w") as f:
+            f.write(schema_str)
+            f.write("\n")
+        print(f"Schema written to {options.output}")
+    else:
+        print(schema_str)

@@ -14,12 +14,16 @@ from ..cache import (
     InfoOptions,
     ListOptions,
     PopulateOptions,
+    SchemaOptions,
+    StructuralSchemaOptions,
     run_add,
     run_add_local,
     run_clear,
     run_info,
     run_list,
     run_populate,
+    run_schema,
+    run_structural_schema,
 )
 
 
@@ -66,6 +70,26 @@ def build_parser():
     p_clear = subparsers.add_parser("clear", help="Clear cache")
     p_clear.add_argument("tool_id_prefix", nargs="?", help="Clear entries matching this prefix (default: clear all)")
 
+    # schema
+    p_schema = subparsers.add_parser("schema", help="Export JSON Schema for a cached tool's state model")
+    p_schema.add_argument("trs_tool_id", help="TRS tool ID or substring to match")
+    p_schema.add_argument("--version", help="Filter by version")
+    p_schema.add_argument(
+        "--representation",
+        default="workflow_step",
+        help="State representation (default: workflow_step). Options: workflow_step, workflow_step_linked, request, etc.",
+    )
+    p_schema.add_argument("-o", "--output", help="Write schema to file instead of stdout")
+
+    # structural-schema
+    p_structural = subparsers.add_parser("structural-schema", help="Export gxformat2 GalaxyWorkflow JSON Schema")
+    p_structural.add_argument(
+        "--strict",
+        action="store_true",
+        help="Use strict model (extra='forbid' — rejects unknown keys)",
+    )
+    p_structural.add_argument("-o", "--output", help="Write schema to file instead of stdout")
+
     return parser
 
 
@@ -85,6 +109,10 @@ def main(argv=None):
         run_info(InfoOptions.from_namespace(args))
     elif args.command == "clear":
         run_clear(ClearOptions.from_namespace(args))
+    elif args.command == "schema":
+        run_schema(SchemaOptions.from_namespace(args))
+    elif args.command == "structural-schema":
+        run_structural_schema(StructuralSchemaOptions.from_namespace(args))
 
 
 if __name__ == "__main__":

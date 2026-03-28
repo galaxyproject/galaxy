@@ -21,12 +21,12 @@ from galaxy.tool_util.workflow_state.cache import (
     populate_cache,
 )
 from galaxy.tool_util.workflow_state.clean import clean_stale_state
-
 from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
 from galaxy.tool_util.workflow_state.lint_stateful import run_structural_lint
 from galaxy.tool_util.workflow_state.roundtrip import roundtrip_validate
 from galaxy.tool_util.workflow_state.to_native_stateful import convert_to_native_stateful
 from galaxy.tool_util.workflow_state.validate import validate_workflow_cli
+from galaxy.tool_util.workflow_state.validation_json_schema import validate_workflow_json_schema
 from galaxy.tool_util.workflow_state.validation_native import validate_workflow_native
 from galaxy.tool_util.workflow_state.workflow_tools import load_workflow
 from galaxy.tool_util_models import ParsedTool
@@ -146,5 +146,24 @@ class TestIWCSweepLintStateful:
         workflow_dict = load_workflow(wf_path)
         lint_ctx = run_structural_lint(workflow_dict)
         assert lint_ctx is not None
-        results, precheck = validate_workflow_cli(workflow_dict, tool_info)
+        results, precheck, _conn_report = validate_workflow_cli(workflow_dict, tool_info)
         assert results is not None
+
+
+@skip_unless_environ(IWC_ENV)
+class TestIWCSweepJsonSchema:
+    """Two-level JSON Schema validation on exported format2 workflows."""
+
+    @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
+    def test_json_schema_validate(self, wf_path, tool_info):
+        workflow = ensure_native(wf_path)
+        export_result = export_workflow_to_format2(workflow, tool_info)
+        fmt2_dict = export_result.format2_dict
+        result = validate_workflow_json_schema(fmt2_dict, get_tool_info=tool_info)
+        errors = []
+        if result.structural_errors:
+            errors.append(f"structural: {[e.message for e in result.structural_errors]}")
+        for sr in result.step_results:
+            if sr.status == "fail":
+                errors.append(f"step {sr.step} ({sr.tool_id}): {[e.message for e in sr.errors]}")
+        assert result.valid, f"JSON Schema validation failed for {wf_path}:\n" + "\n".join(errors)
