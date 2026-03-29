@@ -39,7 +39,7 @@ from .stale_keys import (
     StaleKeyPolicy,
 )
 from .validate import (
-    _run_connection_validation,
+    format_connection_text,
     format_text,
     format_tree_markdown,
     validate_workflow_cli,
@@ -166,7 +166,9 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
     )
 
     # Phase 2: stateful validation
-    results, precheck = validate_workflow_cli(workflow_dict, tool_info, policy=policy)
+    results, precheck, conn_report = validate_workflow_cli(
+        workflow_dict, tool_info, policy=policy, connections=options.connections
+    )
 
     # Precheck failure — show structural results, note stateful was skipped
     if precheck and not precheck.can_process:
@@ -176,11 +178,15 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
 
     # Emit combined results
     text = format_combined_text(lint_context, results, summary_only=options.summary)
+    if conn_report:
+        text = "\n".join([text, format_connection_text(conn_report, summary_only=options.summary)])
 
     has_explicit_report = options.report_json is not None or options.report_markdown is not None
     if has_explicit_report:
-        json_data = SingleValidationReport(workflow=options.workflow_path, results=results)
-        tree_report = wrap_single_validation(options.workflow_path, results)
+        json_data = SingleValidationReport(
+            workflow=options.workflow_path, results=results, connection_report=conn_report
+        )
+        tree_report = wrap_single_validation(options.workflow_path, results, conn_report)
         emit_reports(
             options=options,
             json_data=json_data,
@@ -193,9 +199,8 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
         print(text)
 
     exit_code = _combined_exit_code(lint_context, results, options.strict)
-    if options.connections:
-        conn_exit = _run_connection_validation(options, tool_info)
-        exit_code = max(exit_code, conn_exit)
+    if conn_report and not conn_report.valid:
+        exit_code = max(exit_code, 1)
 
     return exit_code
 
