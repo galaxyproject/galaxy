@@ -94,14 +94,14 @@ class DatasetManager(
         They might not be removed if there are still un-purged associations to the dataset.
         """
         self.error_unless_dataset_purge_allowed()
-        with self.session().begin():
-            for dataset_id in request.dataset_ids:
-                dataset: Optional[Dataset] = self.session().get(Dataset, dataset_id)
-                if dataset and dataset.user_can_purge:
-                    try:
-                        dataset.full_delete()
-                    except Exception:
-                        log.exception(f"Unable to purge dataset ({dataset.id})")
+        for dataset_id in request.dataset_ids:
+            dataset: Optional[Dataset] = self.session().get(Dataset, dataset_id)
+            if dataset and dataset.user_can_purge:
+                try:
+                    dataset.full_delete()
+                except Exception:
+                    log.exception(f"Unable to purge dataset ({dataset.id})")
+        self.session().commit()
 
     # TODO: this may be more conv. somewhere else
     # TODO: how to allow admin bypass?

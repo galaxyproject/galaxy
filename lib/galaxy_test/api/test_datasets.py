@@ -1,5 +1,4 @@
 import textwrap
-import urllib
 import zipfile
 from io import BytesIO
 from urllib.parse import quote
@@ -566,7 +565,7 @@ class TestDatasetsApi(ApiTestCase):
 
     def test_anon_tag_permissions(self):
         with self._different_user(anon=True):
-            history_id = self._get(urllib.parse.urljoin(self.url, "history/current_history_json")).json()["id"]
+            history_id = self._get_current_history_id()
             hda_id = self.dataset_populator.new_dataset(history_id, content="abc", wait=True)["id"]
             payload = {
                 "item_id": hda_id,
@@ -897,7 +896,7 @@ class TestDatasetsApi(ApiTestCase):
         self.dataset_populator.wait_for_history_jobs(history_id)
 
         # once we purge the history, it becomes immutable
-        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+        self.dataset_populator.purge_history(history_id)
 
         # now we can't update the datatype
         response = self._put(f"histories/{history_id}/contents/{hda_id}", data={"datatype": "tabular"}, json=True)

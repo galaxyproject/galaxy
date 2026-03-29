@@ -89,29 +89,26 @@ class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
         assert self._file_exists_on_disk(dataset_file1)
         assert self._file_exists_on_disk(dataset_file2)
 
-        # Purge the entire history
-        purge_response = self._delete(f"histories/{self.test_history_id}", data={"purge": True}, json=True)
-        self._assert_status_code_is_ok(purge_response)
-        purge_result = purge_response.json()
-
-        # Verify history is purged
+        purge_result = self.dataset_populator.purge_history(self.test_history_id)
         assert purge_result["purged"]
         assert purge_result["deleted"]
-
-        # Verify the response contains a purge_task with an id
-        assert "purge_task" in purge_result
-        purge_task = purge_result["purge_task"]
-        assert "id" in purge_task
-        purge_task_id = purge_task["id"]
-
-        # Wait for the celery task to complete via the tasks API
-        self.dataset_populator.wait_on_task_id(purge_task_id)
-
-        # After task completion, HDAs should be purged and files deleted
-        self.dataset_populator.wait_for_purge(self.test_history_id, hda1_id)
-        self.dataset_populator.wait_for_purge(self.test_history_id, hda2_id)
         assert not self._file_exists_on_disk(dataset_file1)
         assert not self._file_exists_on_disk(dataset_file2)
+
+    def test_purge_anonymous_history(self):
+        """Regression test for GALAXY-MAIN-4KSCZZZ00152B."""
+        with self._different_user(anon=True):
+            history_id = self._get_current_history_id()
+            hda = self.dataset_populator.new_dataset(history_id, wait=True)
+            hda_id = hda["id"]
+
+            dataset_file = self._get_underlying_dataset_on_disk(hda_id)
+            assert self._file_exists_on_disk(dataset_file)
+
+            purge_result = self.dataset_populator.purge_history(history_id)
+            assert purge_result["purged"]
+
+        assert not self._file_exists_on_disk(dataset_file)
 
     def _get_underlying_dataset_on_disk(self, hda_id: str) -> Optional[str]:
         detailed_response = self._get(f"datasets/{hda_id}", admin=True).json()
