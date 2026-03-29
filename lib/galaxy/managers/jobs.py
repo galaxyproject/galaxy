@@ -32,6 +32,7 @@ from sqlalchemy import (
     or_,
     true,
 )
+from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
 from typing_extensions import TypedDict
@@ -870,7 +871,7 @@ class JobSearch:
         if self.dialect_name == "sqlite":
             return func.group_concat(column)
         else:
-            return func.array_agg(column, order_by=column)
+            return func.array_agg(aggregate_order_by(column, column.asc()))
 
     def _build_stmt_for_hdca(
         self,
