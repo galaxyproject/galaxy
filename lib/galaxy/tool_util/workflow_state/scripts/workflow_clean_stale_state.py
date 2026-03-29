@@ -16,7 +16,7 @@ def build_parser():
         prog="gxwf-state-clean",
         description="Strip stale tool_state keys from native Galaxy workflows.",
         stale_key_mode="clean",
-        workflow_path_help="Path to native .ga file or directory (auto-detected)",
+        workflow_path_help="Path to a single native .ga workflow file",
     )
     parser.add_argument(
         "--output-template",
