@@ -18,6 +18,12 @@ from typing import (
     Any,
 )
 
+from pydantic import (
+    BaseModel,
+    computed_field,
+    Field,
+)
+
 from gxformat2.normalized import (
     ensure_native,
     NormalizedFormat2,
@@ -200,6 +206,17 @@ class ExportOptions(ToolCacheOptions):
     deny: list[str] = []
 
 
+class ExportTreeOptions(ToolCacheOptions):
+    output_dir: str = ""
+    json_output: bool = False
+    compact: bool = False
+    strict: bool = False
+    report_json: Optional[str] = None
+    report_markdown: Optional[str] = None
+    allow: List[str] = []
+    deny: List[str] = []
+
+
 # -- Formatters --
 
 
@@ -243,7 +260,11 @@ def format_json(format2_dict: dict) -> str:
 
 
 def run_export(options: ExportOptions) -> int:
-    """Run export pipeline. Returns exit code."""
+    """Run single-file export pipeline. Returns exit code."""
+    if os.path.isdir(options.workflow_path):
+        print("Error: got directory, use gxwf-to-format2-stateful-tree for batch export", file=sys.stderr)
+        return 2
+
     tool_info = setup_tool_info(options)
 
     try:
@@ -289,3 +310,137 @@ def run_export(options: ExportOptions) -> int:
         sys.stdout.write(output)
 
     return 1 if result.failed_steps else 0
+
+
+# -- Tree export --
+
+
+@dataclass
+class WorkflowExportResult:
+    """Result of exporting one workflow in a tree run."""
+
+    relative_path: str
+    ok: bool
+    steps_converted: int = 0
+    steps_fallback: int = 0
+    error: Optional[str] = None
+    skipped_reason: Optional[str] = None
+
+
+class ExportTreeReport(BaseModel):
+    """Tree-level report for batch export."""
+
+    root: str
+    output_dir: str
+    results: List[Dict[str, Any]] = Field(default_factory=list)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def summary(self) -> Dict[str, int]:
+        ok = sum(1 for r in self.results if r.get("ok"))
+        fail = sum(1 for r in self.results if r.get("error"))
+        skipped = sum(1 for r in self.results if r.get("skipped_reason"))
+        return {"ok": ok, "fail": fail, "skipped": skipped}
+
+
+def run_export_tree(options: ExportTreeOptions) -> int:
+    """Run tree export pipeline. Returns exit code."""
+    if not os.path.isdir(options.workflow_path):
+        print("Error: expected directory, got file", file=sys.stderr)
+        return 2
+
+    if not options.output_dir:
+        print("Error: --output-dir is required for tree export", file=sys.stderr)
+        return 2
+
+    tool_info = setup_tool_info(options)
+
+    try:
+        policy = StaleKeyPolicy.for_export(options.allow, options.deny)
+    except (InvalidCategoryError, ConflictingCategoryError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 2
+
+    from ._tree_orchestrator import skip_workflow, TreeContext, run_tree
+    from .workflow_tree import WorkflowInfo
+
+    def process_one(info: WorkflowInfo, wf_dict: dict, get_tool_info):
+        workflow = ensure_native(wf_dict)
+        precheck = precheck_native_workflow(workflow, get_tool_info)
+        if not precheck.can_process:
+            skip_workflow(precheck.skip_reasons[0].value)
+
+        result = export_workflow_to_format2(
+            workflow,
+            get_tool_info,
+            strict=options.strict,
+            compact=options.compact,
+            policy=policy,
+        )
+
+        ext = ".json" if options.json_output else ".gxwf.yml"
+        stem = os.path.splitext(info.relative_path)[0]
+        out_path = os.path.join(options.output_dir, stem + ext)
+        os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+
+        if options.json_output:
+            output = format_json(result.format2_dict)
+        else:
+            output = format_yaml(result.format2_dict)
+
+        with open(out_path, "w") as f:
+            f.write(output)
+
+        return WorkflowExportResult(
+            relative_path=info.relative_path,
+            ok=not result.failed_steps,
+            steps_converted=sum(1 for s in result.steps if s.converted),
+            steps_fallback=len(result.failed_steps),
+        )
+
+    def aggregate(tree_result):
+        results = []
+        for outcome in tree_result.outcomes:
+            if outcome.error:
+                results.append({"path": outcome.info.relative_path, "ok": False, "error": outcome.error})
+            elif outcome.skipped:
+                results.append({"path": outcome.info.relative_path, "ok": False, "skipped_reason": outcome.skip_reason})
+            elif outcome.result is not None:
+                r = outcome.result
+                results.append(
+                    {
+                        "path": r.relative_path,
+                        "ok": r.ok,
+                        "steps_converted": r.steps_converted,
+                        "steps_fallback": r.steps_fallback,
+                    }
+                )
+        return ExportTreeReport(root=tree_result.root, output_dir=options.output_dir, results=results)
+
+    def format_text(report):
+        lines = [f"Export: {report.root} → {report.output_dir}"]
+        for r in report.results:
+            path = r["path"]
+            if r.get("error"):
+                lines.append(f"  {path}: ERROR ({r['error']})")
+            elif r.get("skipped_reason"):
+                lines.append(f"  {path}: SKIPPED ({r['skipped_reason']})")
+            elif r.get("ok"):
+                lines.append(f"  {path}: OK ({r.get('steps_converted', 0)} steps)")
+            else:
+                lines.append(f"  {path}: PARTIAL ({r.get('steps_fallback', 0)} fallbacks)")
+        s = report.summary
+        lines.append(f"Summary: {s['ok']} OK, {s['fail']} errors, {s['skipped']} skipped")
+        return "\n".join(lines)
+
+    ctx = TreeContext(root=options.workflow_path, tool_info=tool_info, include_format2=False)
+    return run_tree(
+        ctx=ctx,
+        process_one=process_one,
+        aggregate=aggregate,
+        format_text=format_text,
+        format_summary=lambda r: f"Export: {r.summary['ok']} OK, {r.summary['fail']} errors",
+        format_markdown=lambda r: format_text(r),  # simple for now
+        compute_exit_code=lambda r: 1 if r.summary["fail"] > 0 else 0,
+        report_options=options,
+    )

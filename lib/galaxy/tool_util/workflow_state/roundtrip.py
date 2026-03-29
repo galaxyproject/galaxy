@@ -57,10 +57,7 @@ from .precheck import (
 )
 from .validation import _format
 from .workflow_tools import load_workflow
-from .workflow_tree import (
-    discover_workflows,
-    load_workflow_safe,
-)
+from .workflow_tree import WorkflowInfo
 
 log = logging.getLogger(__name__)
 
@@ -1195,6 +1192,14 @@ class RoundTripValidateOptions(ToolCacheOptions):
     report_markdown: str | None = None
 
 
+class RoundTripValidateTreeOptions(ToolCacheOptions):
+    strip_bookkeeping: bool = False
+    strict: bool = False
+    verbose: bool = False
+    report_json: Optional[str] = None
+    report_markdown: Optional[str] = None
+
+
 def _is_passing(result: RoundTripValidationResult, strict: bool) -> bool:
     if result.skipped_reason:
         return True
@@ -1283,13 +1288,13 @@ def format_roundtrip_markdown(report: RoundTripTreeReport) -> str:
 
 
 def run_roundtrip_validate(options: RoundTripValidateOptions) -> int:
-    """Run round-trip validation pipeline. Returns exit code."""
-    tool_info = setup_tool_info(options)
-
+    """Run single-file round-trip validation. Returns exit code."""
     if os.path.isdir(options.workflow_path):
-        return _run_tree_validation(options, tool_info)
-    else:
-        return _run_single_validation(options, tool_info)
+        print("Error: got directory, use gxwf-roundtrip-validate-tree for batch validation", file=sys.stderr)
+        return 2
+
+    tool_info = setup_tool_info(options)
+    return _run_single_validation(options, tool_info)
 
 
 def _run_single_validation(options: RoundTripValidateOptions, tool_info) -> int:
@@ -1328,50 +1333,59 @@ def _run_single_validation(options: RoundTripValidateOptions, tool_info) -> int:
     return 0 if _is_passing(result, options.strict) else 1
 
 
-def _run_tree_validation(options: RoundTripValidateOptions, tool_info) -> int:
-    workflows = discover_workflows(options.workflow_path, include_format2=False)
-    results: list[RoundTripValidationResult] = []
+def run_roundtrip_validate_tree(options: RoundTripValidateTreeOptions) -> int:
+    """Run tree round-trip validation. Returns exit code."""
+    if not os.path.isdir(options.workflow_path):
+        print("Error: expected directory, got file", file=sys.stderr)
+        return 2
 
-    for info in workflows:
-        wf_dict = load_workflow_safe(info)
-        if wf_dict is None:
-            results.append(
-                RoundTripValidationResult(
-                    workflow_path=info.path,
-                    error="Failed to load workflow",
-                )
-            )
-            continue
+    tool_info = setup_tool_info(options)
 
+    def process_one(info: WorkflowInfo, wf_dict: dict, get_tool_info):
         if _format(wf_dict) != "native":
-            continue
+            from ._tree_orchestrator import skip_workflow
 
-        result = roundtrip_validate(
+            skip_workflow("not native format")
+        return roundtrip_validate(
             wf_dict,
-            tool_info,
+            get_tool_info,
             workflow_path=info.relative_path,
             strip_bookkeeping=options.strip_bookkeeping,
         )
-        results.append(result)
 
-    text = format_validation_text(results, verbose=options.verbose, strict=options.strict)
-    tree_report = RoundTripTreeReport(
-        root=options.workflow_path,
-        options={"strict": options.strict, "strip_bookkeeping": options.strip_bookkeeping},
-        results=results,
+    def aggregate(tree_result):
+        results = []
+        for outcome in tree_result.outcomes:
+            if outcome.error:
+                results.append(
+                    RoundTripValidationResult(
+                        workflow_path=outcome.info.path,
+                        error=outcome.error,
+                    )
+                )
+            elif outcome.skipped:
+                continue  # skip non-native silently
+            elif outcome.result is not None:
+                results.append(outcome.result)
+        return RoundTripTreeReport(
+            root=tree_result.root,
+            options={"strict": options.strict, "strip_bookkeeping": options.strip_bookkeeping},
+            results=results,
+        )
+
+    from ._tree_orchestrator import TreeContext, run_tree
+
+    ctx = TreeContext(root=options.workflow_path, tool_info=tool_info, include_format2=False)
+    return run_tree(
+        ctx=ctx,
+        process_one=process_one,
+        aggregate=aggregate,
+        format_text=lambda r: format_validation_text(r.results, verbose=options.verbose, strict=options.strict),
+        format_summary=lambda r: r.format_summary_line(),
+        format_markdown=format_roundtrip_markdown,
+        compute_exit_code=lambda r: 1 if any(not _is_passing(res, options.strict) for res in r.results) else 0,
+        report_options=options,
     )
-
-    emit_reports(
-        options=options,
-        json_data=tree_report,
-        markdown_formatter=format_roundtrip_markdown,
-        markdown_report=tree_report,
-        text_content=text,
-        stderr_summary=tree_report.format_summary_line(),
-    )
-
-    has_failures = any(not _is_passing(r, options.strict) for r in results)
-    return 1 if has_failures else 0
 
 
 def _write_json(data: dict, path: str):

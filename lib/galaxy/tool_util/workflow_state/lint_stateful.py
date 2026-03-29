@@ -6,10 +6,18 @@ output labels, etc.) with galaxy-tool-util's tool state validation
 """
 
 import logging
+import os
 import sys
 from typing import (
+    Dict,
     List,
     Optional,
+)
+
+from pydantic import (
+    BaseModel,
+    computed_field,
+    Field,
 )
 
 from gxformat2.lint import (
@@ -46,7 +54,6 @@ from .validate import (
     format_text,
     format_tree_markdown,
     validate_workflow_cli,
-    _run_connection_validation,
 )
 
 log = logging.getLogger(__name__)
@@ -55,7 +62,7 @@ log = logging.getLogger(__name__)
 # -- Options model --
 
 
-class LintStatefulOptions(ToolCacheOptions):
+class _LintStatefulCommonOptions(ToolCacheOptions):
     strict: bool = False
     summary: bool = False
     connections: bool = False
@@ -65,6 +72,14 @@ class LintStatefulOptions(ToolCacheOptions):
     report_markdown: Optional[str] = None
     allow: List[str] = []
     deny: List[str] = []
+
+
+class LintStatefulOptions(_LintStatefulCommonOptions):
+    pass
+
+
+class LintStatefulTreeOptions(_LintStatefulCommonOptions):
+    pass
 
 
 # -- Structural lint --
@@ -147,7 +162,11 @@ def format_combined_text(
 
 
 def run_lint_stateful(options: LintStatefulOptions) -> int:
-    """Run combined structural lint + stateful validation. Returns exit code."""
+    """Run single-file combined structural lint + stateful validation. Returns exit code."""
+    if os.path.isdir(options.workflow_path):
+        print("Error: got directory, use gxwf-lint-stateful-tree for batch linting", file=sys.stderr)
+        return 2
+
     tool_info = setup_tool_info(options)
 
     try:
@@ -170,7 +189,12 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
     )
 
     # Phase 2: stateful validation
-    results, precheck = validate_workflow_cli(workflow_dict, tool_info, policy=policy)
+    results, precheck, conn_report = validate_workflow_cli(
+        workflow_dict,
+        tool_info,
+        policy=policy,
+        connections=options.connections,
+    )
 
     # Precheck failure — show structural results, note stateful was skipped
     if precheck and not precheck.can_process:
@@ -197,9 +221,8 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
         print(text)
 
     exit_code = _combined_exit_code(lint_context, results, options.strict)
-    if options.connections:
-        conn_exit = _run_connection_validation(options, tool_info)
-        exit_code = max(exit_code, conn_exit)
+    if conn_report and not conn_report.valid:
+        exit_code = max(exit_code, 1)
 
     return exit_code
 
@@ -230,3 +253,218 @@ def _combined_exit_code(
     if lint_context.warn_messages:
         return EXIT_CODE_LINT_FAILED
     return 0
+
+
+# -- Tree lint --
+
+
+class LintWorkflowResult(BaseModel):
+    """Per-workflow lint result for tree mode."""
+
+    path: str
+    relative_path: str
+    category: str
+    lint_errors: int = 0
+    lint_warnings: int = 0
+    step_results: List[ValidationStepResult] = Field(default_factory=list)
+    error: Optional[str] = None
+    skipped_reason: Optional[str] = None
+
+
+class LintTreeReport(BaseModel):
+    """Tree-level lint report combining structural + stateful results."""
+
+    root: str
+    results: List[LintWorkflowResult] = Field(default_factory=list, serialization_alias="workflows")
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def summary(self) -> Dict[str, int]:
+        lint_errors = sum(r.lint_errors for r in self.results)
+        lint_warnings = sum(r.lint_warnings for r in self.results)
+        state_ok = sum(
+            sum(1 for sr in r.step_results if sr.status == "ok")
+            for r in self.results
+            if not r.error and not r.skipped_reason
+        )
+        state_fail = sum(
+            sum(1 for sr in r.step_results if sr.status == "fail")
+            for r in self.results
+            if not r.error and not r.skipped_reason
+        )
+        state_skip = sum(
+            sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
+            for r in self.results
+            if not r.error and not r.skipped_reason
+        )
+        errors = sum(1 for r in self.results if r.error)
+        skipped = sum(1 for r in self.results if r.skipped_reason)
+        return {
+            "lint_errors": lint_errors,
+            "lint_warnings": lint_warnings,
+            "state_ok": state_ok,
+            "state_fail": state_fail,
+            "state_skip": state_skip,
+            "errors": errors,
+            "skipped": skipped,
+        }
+
+
+def _format_lint_tree_text(report: LintTreeReport, summary_only: bool = False) -> str:
+    """Render LintTreeReport as human-readable text."""
+    s = report.summary
+    lines = [
+        f"Root: {report.root}",
+        f"Workflows: {len(report.results)} | "
+        f"Lint: {s['lint_errors']} errors, {s['lint_warnings']} warnings | "
+        f"State: {s['state_ok']} OK, {s['state_fail']} FAIL, {s['state_skip']} SKIP",
+        "",
+    ]
+    if not summary_only:
+        for r in report.results:
+            if r.error:
+                lines.append(f"  {r.relative_path}: ERROR ({r.error})")
+                continue
+            if r.skipped_reason:
+                lines.append(f"  {r.relative_path}: SKIPPED ({r.skipped_reason})")
+                continue
+            lint_tag = ""
+            if r.lint_errors:
+                lint_tag += f" {r.lint_errors} lint-error(s)"
+            if r.lint_warnings:
+                lint_tag += f" {r.lint_warnings} lint-warning(s)"
+            n_ok = sum(1 for sr in r.step_results if sr.status == "ok")
+            n_fail = sum(1 for sr in r.step_results if sr.status == "fail")
+            n_skip = sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
+            lines.append(f"  {r.relative_path}: steps({n_ok} OK, {n_fail} FAIL, {n_skip} SKIP){lint_tag}")
+    return "\n".join(lines)
+
+
+def _format_lint_tree_markdown(report: LintTreeReport) -> str:
+    """Render LintTreeReport as Markdown."""
+    s = report.summary
+    lines = [
+        "# Lint Report",
+        "",
+        f"Root: `{report.root}`",
+        f"Workflows: {len(report.results)} | "
+        f"Lint: {s['lint_errors']} errors, {s['lint_warnings']} warnings | "
+        f"State: {s['state_ok']} OK, {s['state_fail']} FAIL, {s['state_skip']} SKIP",
+        "",
+        "| Workflow | Lint Errors | Lint Warnings | State OK | State Fail | State Skip |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
+    for r in report.results:
+        name = r.relative_path
+        if r.error:
+            lines.append(f"| {name} | - | - | - | - | ERROR: {r.error} |")
+            continue
+        if r.skipped_reason:
+            lines.append(f"| {name} | - | - | - | - | SKIPPED |")
+            continue
+        n_ok = sum(1 for sr in r.step_results if sr.status == "ok")
+        n_fail = sum(1 for sr in r.step_results if sr.status == "fail")
+        n_skip = sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
+        lines.append(f"| {name} | {r.lint_errors} | {r.lint_warnings} | {n_ok} | {n_fail} | {n_skip} |")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def run_lint_stateful_tree(options: LintStatefulTreeOptions) -> int:
+    """Run tree combined structural lint + stateful validation. Returns exit code."""
+    if not os.path.isdir(options.workflow_path):
+        print("Error: expected directory, got file", file=sys.stderr)
+        return 2
+
+    tool_info = setup_tool_info(options)
+
+    try:
+        policy = StaleKeyPolicy.for_validate(options.allow, options.deny)
+    except (InvalidCategoryError, ConflictingCategoryError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 2
+
+    from ._tree_orchestrator import skip_workflow, TreeContext, run_tree
+    from .workflow_tree import WorkflowInfo
+
+    def process_one(info: WorkflowInfo, wf_dict: dict, get_tool_info):
+        lint_context = run_structural_lint(
+            wf_dict,
+            skip_best_practices=options.skip_best_practices,
+            training_topic=options.training_topic,
+        )
+
+        step_results, precheck, conn_report = validate_workflow_cli(
+            wf_dict,
+            get_tool_info,
+            policy=policy,
+            connections=options.connections,
+        )
+
+        if precheck and not precheck.can_process:
+            skip_workflow(f"state validation skipped: {precheck.detail}")
+
+        return {
+            "lint_errors": len(lint_context.error_messages),
+            "lint_warnings": len(lint_context.warn_messages),
+            "step_results": step_results,
+            "conn_report": conn_report,
+        }
+
+    def aggregate(tree_result):
+        results = []
+        for outcome in tree_result.outcomes:
+            info = outcome.info
+            if outcome.error:
+                results.append(
+                    LintWorkflowResult(
+                        path=info.path,
+                        relative_path=info.relative_path,
+                        category=info.category,
+                        error=outcome.error,
+                    )
+                )
+            elif outcome.skipped:
+                results.append(
+                    LintWorkflowResult(
+                        path=info.path,
+                        relative_path=info.relative_path,
+                        category=info.category,
+                        skipped_reason=outcome.skip_reason,
+                    )
+                )
+            elif outcome.result is not None:
+                r = outcome.result
+                results.append(
+                    LintWorkflowResult(
+                        path=info.path,
+                        relative_path=info.relative_path,
+                        category=info.category,
+                        lint_errors=r["lint_errors"],
+                        lint_warnings=r["lint_warnings"],
+                        step_results=r["step_results"],
+                    )
+                )
+        return LintTreeReport(root=tree_result.root, results=results)
+
+    def compute_exit_code(report: LintTreeReport) -> int:
+        s = report.summary
+        if s["lint_errors"] > 0 or s["state_fail"] > 0 or s["errors"] > 0:
+            return 1
+        if s["state_skip"] > 0 and options.strict:
+            return 2
+        if s["lint_warnings"] > 0:
+            return EXIT_CODE_LINT_FAILED
+        return 0
+
+    ctx = TreeContext(root=options.workflow_path, tool_info=tool_info)
+    return run_tree(
+        ctx=ctx,
+        process_one=process_one,
+        aggregate=aggregate,
+        format_text=lambda r: _format_lint_tree_text(r, summary_only=options.summary),
+        format_summary=lambda r: _format_lint_tree_text(r, summary_only=True),
+        format_markdown=_format_lint_tree_markdown,
+        compute_exit_code=compute_exit_code,
+        report_options=options,
+    )

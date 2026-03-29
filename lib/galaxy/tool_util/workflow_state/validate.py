@@ -26,6 +26,11 @@ from ._report_models import (
     wrap_single_validation,
 )
 from ._report_output import emit_reports
+from ._tree_orchestrator import (
+    skip_workflow,
+    TreeContext,
+    TreeResult,
+)
 from ._types import GetToolInfo
 from .precheck import (
     precheck_native_workflow,
@@ -47,10 +52,7 @@ from .validation_native import (
     validate_native_step_against,
 )
 from .workflow_tools import load_workflow
-from .workflow_tree import (
-    discover_workflows,
-    load_workflow_safe,
-)
+from .workflow_tree import WorkflowInfo
 
 log = logging.getLogger(__name__)
 
@@ -61,7 +63,7 @@ StepResult = ValidationStepResult
 # -- Options model --
 
 
-class ValidateOptions(ToolCacheOptions):
+class _ValidateCommonOptions(ToolCacheOptions):
     strict: bool = False
     summary: bool = False
     connections: bool = False
@@ -71,6 +73,14 @@ class ValidateOptions(ToolCacheOptions):
     report_markdown: Optional[str] = None
     allow: List[str] = []
     deny: List[str] = []
+
+
+class ValidateOptions(_ValidateCommonOptions):
+    pass
+
+
+class ValidateTreeOptions(_ValidateCommonOptions):
+    pass
 
 
 # -- Domain logic --
@@ -273,6 +283,67 @@ def _validate_format2(workflow_dict: dict, get_tool_info: GetToolInfo, prefix: s
     return results
 
 
+def _make_validate_process_one(
+    policy: Optional[StaleKeyPolicy] = None,
+    connections: bool = False,
+):
+    """Build a process_one callback for validation tree runs."""
+
+    def process_one(info: WorkflowInfo, wf_dict: dict, get_tool_info: GetToolInfo):
+        step_results, precheck, conn_report = validate_workflow_cli(
+            wf_dict,
+            get_tool_info,
+            policy=policy,
+            connections=connections,
+        )
+        if precheck and not precheck.can_process:
+            skip_workflow(precheck.skip_reasons[0].value)
+        return step_results, conn_report
+
+    return process_one
+
+
+def _aggregate_validation(
+    tree_result: TreeResult,
+) -> TreeValidationReport:
+    """Build TreeValidationReport from orchestrator outcomes."""
+    report = TreeValidationReport(root=tree_result.root)
+    for outcome in tree_result.outcomes:
+        info = outcome.info
+        if outcome.error:
+            report.results.append(
+                WorkflowValidationResult(
+                    path=info.path,
+                    relative_path=info.relative_path,
+                    category=info.category,
+                    error=outcome.error,
+                )
+            )
+        elif outcome.skipped:
+            from .precheck import SkipWorkflowReason
+
+            report.results.append(
+                WorkflowValidationResult(
+                    path=info.path,
+                    relative_path=info.relative_path,
+                    category=info.category,
+                    skipped_reason=SkipWorkflowReason(outcome.skip_reason),
+                )
+            )
+        elif outcome.result is not None:
+            step_results, conn_report = outcome.result
+            report.results.append(
+                WorkflowValidationResult(
+                    path=info.path,
+                    relative_path=info.relative_path,
+                    category=info.category,
+                    step_results=step_results,
+                    connection_report=conn_report,
+                )
+            )
+    return report
+
+
 def validate_tree(
     root: str,
     get_tool_info: GetToolInfo,
@@ -280,62 +351,12 @@ def validate_tree(
     connections: bool = False,
 ) -> TreeValidationReport:
     """Validate all workflows under a directory tree."""
-    workflows = discover_workflows(root)
-    report = TreeValidationReport(root=root)
+    from ._tree_orchestrator import collect_tree
 
-    for info in workflows:
-        wf_dict = load_workflow_safe(info)
-        if wf_dict is None:
-            report.results.append(
-                WorkflowValidationResult(
-                    path=info.path,
-                    relative_path=info.relative_path,
-                    category=info.category,
-                    error="Failed to load workflow",
-                )
-            )
-            continue
-
-        try:
-            step_results, precheck, conn_report = validate_workflow_cli(
-                wf_dict,
-                get_tool_info,
-                policy=policy,
-                connections=connections,
-            )
-        except Exception as e:
-            report.results.append(
-                WorkflowValidationResult(
-                    path=info.path,
-                    relative_path=info.relative_path,
-                    category=info.category,
-                    error=str(e),
-                )
-            )
-            continue
-
-        if precheck and not precheck.can_process:
-            report.results.append(
-                WorkflowValidationResult(
-                    path=info.path,
-                    relative_path=info.relative_path,
-                    category=info.category,
-                    skipped_reason=precheck.skip_reasons[0],
-                )
-            )
-            continue
-
-        report.results.append(
-            WorkflowValidationResult(
-                path=info.path,
-                relative_path=info.relative_path,
-                category=info.category,
-                step_results=step_results,
-                connection_report=conn_report,
-            )
-        )
-
-    return report
+    ctx = TreeContext(root=root, tool_info=get_tool_info)
+    process_one = _make_validate_process_one(policy=policy, connections=connections)
+    tree_result = collect_tree(ctx, process_one)
+    return _aggregate_validation(tree_result)
 
 
 # -- Formatters --
@@ -605,10 +626,8 @@ def _json_schema_validate_single(
     return results
 
 
-def _run_json_schema_validate(options: ValidateOptions, tool_info: GetToolInfo) -> int:
-    """Run JSON Schema-based validation for a single workflow file or directory."""
-    if os.path.isdir(options.workflow_path):
-        return _run_json_schema_validate_tree(options, tool_info)
+def _run_json_schema_validate_single(options: ValidateOptions, tool_info: GetToolInfo) -> int:
+    """Run JSON Schema-based validation for a single workflow file."""
     workflow = load_workflow(options.workflow_path)
     results = _json_schema_validate_single(
         workflow,
@@ -619,65 +638,35 @@ def _run_json_schema_validate(options: ValidateOptions, tool_info: GetToolInfo) 
     return _emit_single_results(options, results)
 
 
-def _run_json_schema_validate_tree(options: ValidateOptions, tool_info: GetToolInfo) -> int:
-    """Run JSON Schema-based validation for a directory of workflows."""
-    from .workflow_tree import (
-        discover_workflows,
-        load_workflow_safe,
-    )
+def _make_json_schema_process_one(
+    tool_info: GetToolInfo,
+    tool_schema_dir: Optional[str],
+    strict: bool,
+):
+    """Build a process_one callback for JSON Schema validation tree runs."""
 
-    report = TreeValidationReport(root=options.workflow_path)
-    workflows = discover_workflows(options.workflow_path)
-
-    for info in workflows:
-        wf_dict = load_workflow_safe(info)
-        if wf_dict is None:
-            report.results.append(
-                WorkflowValidationResult(
-                    path=info.path,
-                    relative_path=info.relative_path,
-                    category=info.category,
-                    error="Failed to load workflow",
-                )
-            )
-            continue
-
-        try:
-            step_results = _json_schema_validate_single(
-                wf_dict,
-                tool_info=tool_info,
-                tool_schema_dir=options.tool_schema_dir,
-                strict=options.strict,
-            )
-        except Exception as e:
-            report.results.append(
-                WorkflowValidationResult(
-                    path=info.path,
-                    relative_path=info.relative_path,
-                    category=info.category,
-                    error=str(e),
-                )
-            )
-            continue
-
-        report.results.append(
-            WorkflowValidationResult(
-                path=info.path,
-                relative_path=info.relative_path,
-                category=info.category,
-                step_results=step_results,
-            )
+    def process_one(info: WorkflowInfo, wf_dict: dict, get_tool_info: GetToolInfo):
+        results = _json_schema_validate_single(
+            wf_dict,
+            tool_info=tool_info,
+            tool_schema_dir=tool_schema_dir,
+            strict=strict,
         )
+        return results, None  # (step_results, conn_report=None)
 
-    return _emit_tree_results(options, report)
+    return process_one
 
 
 def run_validate(options: ValidateOptions) -> int:
-    """Run validation pipeline. Returns exit code."""
+    """Run single-file validation pipeline. Returns exit code."""
+    if os.path.isdir(options.workflow_path):
+        print("Error: got directory, use gxwf-state-validate-tree for batch validation", file=sys.stderr)
+        return 2
+
     tool_info = setup_tool_info(options)
 
     if options.mode == "json-schema":
-        return _run_json_schema_validate(options, tool_info)
+        return _run_json_schema_validate_single(options, tool_info)
 
     try:
         policy = StaleKeyPolicy.for_validate(options.allow, options.deny)
@@ -685,28 +674,64 @@ def run_validate(options: ValidateOptions) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 2
 
-    is_dir = os.path.isdir(options.workflow_path)
+    workflow = load_workflow(options.workflow_path)
+    results, precheck, conn_report = validate_workflow_cli(
+        workflow,
+        tool_info,
+        policy=policy,
+        connections=options.connections,
+    )
+    if precheck and not precheck.can_process:
+        print(f"Skipped: {precheck.detail}", file=sys.stderr)
+        return 0
+    return _emit_single_results(options, results, conn_report)
 
-    if is_dir:
-        report = validate_tree(
-            options.workflow_path,
-            tool_info,
-            policy=policy,
-            connections=options.connections,
+
+def run_validate_tree(options: ValidateTreeOptions) -> int:
+    """Run tree validation pipeline. Returns exit code."""
+    if not os.path.isdir(options.workflow_path):
+        print("Error: expected directory, got file", file=sys.stderr)
+        return 2
+
+    tool_info = setup_tool_info(options)
+
+    try:
+        policy = StaleKeyPolicy.for_validate(options.allow, options.deny)
+    except (InvalidCategoryError, ConflictingCategoryError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 2
+
+    if options.mode == "json-schema":
+        process_one = _make_json_schema_process_one(
+            tool_info=tool_info,
+            tool_schema_dir=options.tool_schema_dir,
+            strict=options.strict,
         )
-        return _emit_tree_results(options, report)
     else:
-        workflow = load_workflow(options.workflow_path)
-        results, precheck, conn_report = validate_workflow_cli(
-            workflow,
-            tool_info,
-            policy=policy,
-            connections=options.connections,
-        )
-        if precheck and not precheck.can_process:
-            print(f"Skipped: {precheck.detail}", file=sys.stderr)
-            return 0
-        return _emit_single_results(options, results, conn_report)
+        process_one = _make_validate_process_one(policy=policy, connections=options.connections)
+
+    from ._tree_orchestrator import run_tree
+
+    def _format_tree_with_connections(report):
+        parts = [format_tree_text(report, summary_only=options.summary)]
+        if options.connections:
+            for r in report.results:
+                if r.connection_report:
+                    parts.append(f"\n{r.relative_path}:")
+                    parts.append(format_connection_text(r.connection_report, summary_only=options.summary))
+        return "\n".join(parts)
+
+    ctx = TreeContext(root=options.workflow_path, tool_info=tool_info)
+    return run_tree(
+        ctx=ctx,
+        process_one=process_one,
+        aggregate=_aggregate_validation,
+        format_text=_format_tree_with_connections,
+        format_summary=lambda r: format_tree_text(r, summary_only=True),
+        format_markdown=format_tree_markdown,
+        compute_exit_code=lambda r: _compute_tree_exit_code(r, options),
+        report_options=options,
+    )
 
 
 def _emit_single_results(
@@ -752,25 +777,8 @@ def _emit_single_results(
     return exit_code
 
 
-def _emit_tree_results(options: ValidateOptions, report: TreeValidationReport) -> int:
-    text_parts = [format_tree_text(report, summary_only=options.summary)]
-    summary_parts = [format_tree_text(report, summary_only=True)]
-
-    if options.connections:
-        for r in report.results:
-            if r.connection_report:
-                text_parts.append(f"\n{r.relative_path}:")
-                text_parts.append(format_connection_text(r.connection_report, summary_only=options.summary))
-
-    emit_reports(
-        options=options,
-        json_data=report,
-        markdown_formatter=format_tree_markdown,
-        markdown_report=report,
-        text_content="\n".join(text_parts),
-        stderr_summary="\n".join(summary_parts),
-    )
-
+def _compute_tree_exit_code(report: TreeValidationReport, options) -> int:
+    """Derive exit code from tree validation report."""
     s = report.summary
     exit_code = 0
     if s["fail"] > 0 or s["error"] > 0:
