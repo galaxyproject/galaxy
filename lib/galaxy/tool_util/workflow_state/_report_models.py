@@ -204,6 +204,7 @@ class SingleValidationReport(BaseModel):
 
     workflow: str
     results: List[ValidationStepResult]
+    connection_report: Optional["ConnectionValidationReport"] = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -235,7 +236,11 @@ class SingleCleanReport(BaseModel):
 # -- Helpers for wrapping single-file results into tree reports --
 
 
-def wrap_single_validation(workflow_path: str, results: List[ValidationStepResult]) -> TreeValidationReport:
+def wrap_single_validation(
+    workflow_path: str,
+    results: List[ValidationStepResult],
+    connection_report: Optional["ConnectionValidationReport"] = None,
+) -> TreeValidationReport:
     """Wrap single-file results into a TreeValidationReport for Markdown rendering."""
     return TreeValidationReport(
         root=workflow_path,
@@ -245,6 +250,7 @@ def wrap_single_validation(workflow_path: str, results: List[ValidationStepResul
                 relative_path=os.path.basename(workflow_path),
                 category="",
                 step_results=results,
+                connection_report=connection_report,
             )
         ],
     )

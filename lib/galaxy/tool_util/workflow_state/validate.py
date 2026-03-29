@@ -80,22 +80,29 @@ def validate_workflow_cli(
     workflow_dict: dict,
     get_tool_info: GetToolInfo,
     policy: Optional[StaleKeyPolicy] = None,
-) -> Tuple[List[ValidationStepResult], Optional[WorkflowPrecheck]]:
+    connections: bool = False,
+) -> Tuple[List[ValidationStepResult], Optional[WorkflowPrecheck], Optional[ConnectionValidationReport]]:
     """Validate all steps in a workflow, collecting per-step results.
 
-    Returns (step_results, precheck) — precheck is non-None with
-    can_process=False if the workflow was skipped due to legacy encoding.
+    Returns (step_results, precheck, connection_report).
+    precheck is non-None with can_process=False if skipped due to legacy encoding.
+    connection_report is non-None when connections=True.
     """
     fmt = _format(workflow_dict)
     if fmt == "native":
         precheck = precheck_native_workflow(workflow_dict, get_tool_info)
         if not precheck.can_process:
-            return [], precheck
-        return _validate_native(workflow_dict, get_tool_info, policy=policy), None
+            return [], precheck, None
+        step_results = _validate_native(workflow_dict, get_tool_info, policy=policy)
     else:
-        # Format2 workflows don't have the stale key problem — tool_state is
-        # already clean `state` dicts. Policy only applies to native validation.
-        return _validate_format2(workflow_dict, get_tool_info), None
+        step_results = _validate_format2(workflow_dict, get_tool_info)
+        precheck = None
+
+    conn_report = None
+    if connections:
+        conn_report = validate_connections_report(workflow_dict, get_tool_info)
+
+    return step_results, precheck, conn_report
 
 
 def _validate_native(
@@ -270,6 +277,7 @@ def validate_tree(
     root: str,
     get_tool_info: GetToolInfo,
     policy: Optional[StaleKeyPolicy] = None,
+    connections: bool = False,
 ) -> TreeValidationReport:
     """Validate all workflows under a directory tree."""
     workflows = discover_workflows(root)
@@ -289,7 +297,12 @@ def validate_tree(
             continue
 
         try:
-            step_results, precheck = validate_workflow_cli(wf_dict, get_tool_info, policy=policy)
+            step_results, precheck, conn_report = validate_workflow_cli(
+                wf_dict,
+                get_tool_info,
+                policy=policy,
+                connections=connections,
+            )
         except Exception as e:
             report.results.append(
                 WorkflowValidationResult(
@@ -318,6 +331,7 @@ def validate_tree(
                 relative_path=info.relative_path,
                 category=info.category,
                 step_results=step_results,
+                connection_report=conn_report,
             )
         )
 
@@ -444,6 +458,15 @@ def format_tree_markdown(report: TreeValidationReport) -> str:
         lines.extend(failure_details)
         lines.append("")
 
+    # Append connection validation sections
+    conn_reports = [(r.relative_path, r.connection_report) for r in report.results if r.connection_report]
+    if conn_reports:
+        for wf_path, conn_report in conn_reports:
+            lines.append(f"## Connections: {wf_path}")
+            lines.append("")
+            lines.append(format_connection_markdown(conn_report))
+            lines.append("")
+
     return "\n".join(lines)
 
 
@@ -530,32 +553,6 @@ def format_connection_markdown(report: ConnectionValidationReport) -> str:
         lines.append("")
 
     return "\n".join(lines)
-
-
-def _run_connection_validation(options: ValidateOptions, tool_info) -> int:
-    """Run connection validation and print results."""
-    is_dir = os.path.isdir(options.workflow_path)
-    if is_dir:
-        workflows = discover_workflows(options.workflow_path)
-        any_invalid = False
-        for info in workflows:
-            wf_dict = load_workflow_safe(info)
-            if wf_dict is None:
-                continue
-            report = validate_connections_report(wf_dict, tool_info)
-            if not report.valid:
-                any_invalid = True
-            text = format_connection_text(report, summary_only=options.summary)
-            if text.strip():
-                print(f"\n{info.relative_path}:")
-                print(text)
-        return 1 if any_invalid else 0
-    else:
-        workflow = load_workflow(options.workflow_path)
-        report = validate_connections_report(workflow, tool_info)
-        print()
-        print(format_connection_text(report, summary_only=options.summary))
-        return 1 if not report.valid else 0
 
 
 # -- Entry point --
@@ -680,75 +677,109 @@ def run_validate(options: ValidateOptions) -> int:
     tool_info = setup_tool_info(options)
 
     if options.mode == "json-schema":
-        exit_code = _run_json_schema_validate(options, tool_info)
+        return _run_json_schema_validate(options, tool_info)
+
+    try:
+        policy = StaleKeyPolicy.for_validate(options.allow, options.deny)
+    except (InvalidCategoryError, ConflictingCategoryError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 2
+
+    is_dir = os.path.isdir(options.workflow_path)
+
+    if is_dir:
+        report = validate_tree(
+            options.workflow_path,
+            tool_info,
+            policy=policy,
+            connections=options.connections,
+        )
+        return _emit_tree_results(options, report)
     else:
-        try:
-            policy = StaleKeyPolicy.for_validate(options.allow, options.deny)
-        except (InvalidCategoryError, ConflictingCategoryError) as e:
-            print(f"Error: {e}", file=sys.stderr)
-            return 2
-
-        is_dir = os.path.isdir(options.workflow_path)
-
-        # TODO: This feels like asymetric - we should do the single or multiple dance with
-        # between state and connection validation in some symmetric way. My guess is we should
-        # do the tree walking out here and push the connection check lower into whatever we use
-        # validate each workflow individually.
-        if is_dir:
-            report = validate_tree(options.workflow_path, tool_info, policy=policy)
-            exit_code = _emit_tree_results(options, report)
-        else:
-            workflow = load_workflow(options.workflow_path)
-            results, precheck = validate_workflow_cli(workflow, tool_info, policy=policy)
-            if precheck and not precheck.can_process:
-                print(f"Skipped: {precheck.detail}", file=sys.stderr)
-                exit_code = 0
-            else:
-                exit_code = _emit_single_results(options, results)
-
-    if options.connections:
-        conn_exit = _run_connection_validation(options, tool_info)
-        exit_code = max(exit_code, conn_exit)
-
-    return exit_code
+        workflow = load_workflow(options.workflow_path)
+        results, precheck, conn_report = validate_workflow_cli(
+            workflow,
+            tool_info,
+            policy=policy,
+            connections=options.connections,
+        )
+        if precheck and not precheck.can_process:
+            print(f"Skipped: {precheck.detail}", file=sys.stderr)
+            return 0
+        return _emit_single_results(options, results, conn_report)
 
 
-def _emit_single_results(options: ValidateOptions, results: List[ValidationStepResult]) -> int:
-    json_data = SingleValidationReport(workflow=options.workflow_path, results=results)
-    tree_report = wrap_single_validation(options.workflow_path, results)
+def _emit_single_results(
+    options: ValidateOptions,
+    results: List[ValidationStepResult],
+    conn_report: Optional[ConnectionValidationReport] = None,
+) -> int:
+    json_data = SingleValidationReport(
+        workflow=options.workflow_path,
+        results=results,
+        connection_report=conn_report,
+    )
+    tree_report = wrap_single_validation(options.workflow_path, results, conn_report)
+
+    text_parts = [format_text(results, summary_only=options.summary)]
+    if conn_report:
+        text_parts.append(format_connection_text(conn_report, summary_only=options.summary))
+    text_content = "\n".join(text_parts)
+
+    summary_parts = [format_text(results, summary_only=True)]
+    if conn_report:
+        summary_parts.append(format_connection_text(conn_report, summary_only=True))
+    stderr_summary = "\n".join(summary_parts)
 
     emit_reports(
         options=options,
         json_data=json_data,
         markdown_formatter=format_tree_markdown,
         markdown_report=tree_report,
-        text_content=format_text(results, summary_only=options.summary),
-        stderr_summary=format_text(results, summary_only=True),
+        text_content=text_content,
+        stderr_summary=stderr_summary,
     )
 
+    exit_code = 0
     has_failures = any(r.status == "fail" for r in results)
     has_skips = any(r.status == "skip_tool_not_found" for r in results)
-
     if has_failures:
-        return 1
+        exit_code = 1
     elif has_skips and options.strict:
-        return 2
-    return 0
+        exit_code = 2
+    if conn_report and not conn_report.valid:
+        exit_code = max(exit_code, 1)
+    return exit_code
 
 
 def _emit_tree_results(options: ValidateOptions, report: TreeValidationReport) -> int:
+    text_parts = [format_tree_text(report, summary_only=options.summary)]
+    summary_parts = [format_tree_text(report, summary_only=True)]
+
+    if options.connections:
+        for r in report.results:
+            if r.connection_report:
+                text_parts.append(f"\n{r.relative_path}:")
+                text_parts.append(format_connection_text(r.connection_report, summary_only=options.summary))
+
     emit_reports(
         options=options,
         json_data=report,
         markdown_formatter=format_tree_markdown,
         markdown_report=report,
-        text_content=format_tree_text(report, summary_only=options.summary),
-        stderr_summary=format_tree_text(report, summary_only=True),
+        text_content="\n".join(text_parts),
+        stderr_summary="\n".join(summary_parts),
     )
 
     s = report.summary
+    exit_code = 0
     if s["fail"] > 0 or s["error"] > 0:
-        return 1
+        exit_code = 1
     elif s["skip_tool_not_found"] > 0 and options.strict:
-        return 2
-    return 0
+        exit_code = 2
+    if options.connections:
+        for r in report.results:
+            if r.connection_report and not r.connection_report.valid:
+                exit_code = max(exit_code, 1)
+                break
+    return exit_code
