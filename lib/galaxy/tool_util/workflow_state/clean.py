@@ -38,6 +38,7 @@ from ._report_models import (
     wrap_single_clean,
 )
 from ._report_output import emit_reports
+from ._tree_orchestrator import skip_workflow
 from ._types import (
     GetToolInfo,
     NativeStepDict,
@@ -127,6 +128,14 @@ def strip_bookkeeping_from_workflow(workflow_dict: NativeWorkflowDict) -> None:
 class CleanOptions(ToolCacheOptions):
     output_template: str | None = None
     diff: bool = False
+    report_json: str | None = None
+    report_markdown: str | None = None
+    preserve: list[str] = []
+    strip: list[str] = []
+
+
+class CleanTreeOptions(ToolCacheOptions):
+    output_template: str | None = None
     report_json: str | None = None
     report_markdown: str | None = None
     preserve: list[str] = []
@@ -389,6 +398,77 @@ def expand_output_path(template: str, original_path: str) -> str:
     )
 
 
+def _make_clean_process_one(
+    policy: StaleKeyPolicy | None = None,
+    output_template: str | None = None,
+):
+    """Build a process_one callback for clean tree runs."""
+    from .workflow_tree import WorkflowInfo
+
+    def process_one(info: WorkflowInfo, wf_dict: dict, get_tool_info: GetToolInfo):
+        precheck = precheck_native_workflow(wf_dict, get_tool_info)
+        if not precheck.can_process:
+            skip_workflow(precheck.skip_reasons[0].value)
+
+        if output_template is None:
+            work_copy = copy.deepcopy(wf_dict)
+        else:
+            work_copy = wf_dict
+
+        normalized = ensure_native(work_copy)
+        result = clean_stale_state(normalized, work_copy, get_tool_info, policy=policy)
+
+        if result.total_removed > 0 and output_template is not None:
+            output_json = json.dumps(work_copy, indent=4) + "\n"
+            output_path = expand_output_path(output_template, info.path)
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            with open(output_path, "w") as f:
+                f.write(output_json)
+
+        return result
+
+    return process_one
+
+
+def _aggregate_clean(tree_result) -> TreeCleanReport:
+    """Build TreeCleanReport from orchestrator outcomes."""
+    from .precheck import SkipWorkflowReason
+
+    report = TreeCleanReport(root=tree_result.root)
+    for outcome in tree_result.outcomes:
+        info = outcome.info
+        if outcome.error:
+            report.results.append(
+                WorkflowCleanResult(
+                    path=info.path,
+                    relative_path=info.relative_path,
+                    category=info.category,
+                    error=outcome.error,
+                )
+            )
+        elif outcome.skipped:
+            report.results.append(
+                WorkflowCleanResult(
+                    path=info.path,
+                    relative_path=info.relative_path,
+                    category=info.category,
+                    skipped_reason=SkipWorkflowReason(outcome.skip_reason),
+                )
+            )
+        elif outcome.result is not None:
+            result = outcome.result
+            report.results.append(
+                WorkflowCleanResult(
+                    path=info.path,
+                    relative_path=info.relative_path,
+                    category=info.category,
+                    step_results=result.step_results,
+                    total_removed=result.total_removed,
+                )
+            )
+    return report
+
+
 def clean_tree(
     root: str,
     get_tool_info: "GetToolInfo",
@@ -399,75 +479,15 @@ def clean_tree(
 
     If output_template is None, operates in dry-run mode (no writes).
     """
-    from .workflow_tree import (
-        discover_workflows,
-        load_workflow_safe,
+    from ._tree_orchestrator import (
+        collect_tree,
+        TreeContext,
     )
 
-    workflows = discover_workflows(root, include_format2=False)
-    report = TreeCleanReport(root=root)
-
-    for info in workflows:
-        wf_dict = load_workflow_safe(info)
-        if wf_dict is None:
-            report.results.append(
-                WorkflowCleanResult(
-                    path=info.path,
-                    relative_path=info.relative_path,
-                    category=info.category,
-                    error="Failed to load workflow",
-                )
-            )
-            continue
-
-        precheck = precheck_native_workflow(wf_dict, get_tool_info)
-        if not precheck.can_process:
-            report.results.append(
-                WorkflowCleanResult(
-                    path=info.path,
-                    relative_path=info.relative_path,
-                    category=info.category,
-                    skipped_reason=precheck.skip_reasons[0],
-                )
-            )
-            continue
-
-        if output_template is None:
-            work_copy = copy.deepcopy(wf_dict)
-        else:
-            work_copy = wf_dict
-
-        try:
-            normalized = ensure_native(work_copy)
-            result = clean_stale_state(normalized, work_copy, get_tool_info, policy=policy)
-        except Exception as e:
-            report.results.append(
-                WorkflowCleanResult(
-                    path=info.path,
-                    relative_path=info.relative_path,
-                    category=info.category,
-                    error=str(e),
-                )
-            )
-            continue
-
-        wf_result = WorkflowCleanResult(
-            path=info.path,
-            relative_path=info.relative_path,
-            category=info.category,
-            step_results=result.step_results,
-            total_removed=result.total_removed,
-        )
-        report.results.append(wf_result)
-
-        if result.total_removed > 0 and output_template is not None:
-            output_json = json.dumps(work_copy, indent=4) + "\n"
-            output_path = expand_output_path(output_template, info.path)
-            os.makedirs(os.path.dirname(output_path), exist_ok=True)
-            with open(output_path, "w") as f:
-                f.write(output_json)
-
-    return report
+    ctx = TreeContext(root=root, tool_info=get_tool_info, include_format2=False)
+    process_one = _make_clean_process_one(policy=policy, output_template=output_template)
+    tree_result = collect_tree(ctx, process_one)
+    return _aggregate_clean(tree_result)
 
 
 # -- Formatters --
@@ -597,7 +617,11 @@ def format_json_tree(report: TreeCleanReport) -> dict:
 
 
 def run_clean(options: CleanOptions) -> int:
-    """Run clean pipeline. Returns exit code."""
+    """Run single-file clean pipeline. Returns exit code."""
+    if os.path.isdir(options.workflow_path):
+        print("Error: got directory, use gxwf-state-clean-tree for batch cleaning", file=sys.stderr)
+        return 2
+
     tool_info = setup_tool_info(options)
 
     try:
@@ -606,12 +630,41 @@ def run_clean(options: CleanOptions) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 2
 
-    is_dir = os.path.isdir(options.workflow_path)
+    return _run_single(options, tool_info, policy)
 
-    if is_dir:
-        return _run_tree(options, tool_info, policy)
-    else:
-        return _run_single(options, tool_info, policy)
+
+def run_clean_tree(options: CleanTreeOptions) -> int:
+    """Run tree clean pipeline. Returns exit code."""
+    if not os.path.isdir(options.workflow_path):
+        print("Error: expected directory, got file", file=sys.stderr)
+        return 2
+
+    tool_info = setup_tool_info(options)
+
+    try:
+        policy = StaleKeyPolicy.for_clean(options.preserve, options.strip)
+    except (InvalidCategoryError, ConflictingCategoryError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 2
+
+    from ._tree_orchestrator import (
+        run_tree,
+        TreeContext,
+    )
+
+    ctx = TreeContext(root=options.workflow_path, tool_info=tool_info, include_format2=False)
+    process_one = _make_clean_process_one(policy=policy, output_template=options.output_template)
+
+    return run_tree(
+        ctx=ctx,
+        process_one=process_one,
+        aggregate=_aggregate_clean,
+        format_text=format_tree_clean_text,
+        format_summary=lambda r: f"Summary: {r.summary['total_keys']} stale key(s), {r.summary['affected']} affected",
+        format_markdown=format_tree_clean_markdown,
+        compute_exit_code=lambda r: 1 if r.summary["total_keys"] > 0 or r.summary["errors"] > 0 else 0,
+        report_options=options,
+    )
 
 
 def _run_single(options: CleanOptions, tool_info, policy: StaleKeyPolicy) -> int:
@@ -682,26 +735,3 @@ def _run_single(options: CleanOptions, tool_info, policy: StaleKeyPolicy) -> int
             f.write(output_json)
 
     return 1 if result.total_removed else 0
-
-
-def _run_tree(options: CleanOptions, tool_info, policy: StaleKeyPolicy) -> int:
-    report = clean_tree(
-        options.workflow_path,
-        tool_info,
-        output_template=options.output_template,
-        policy=policy,
-    )
-
-    s = report.summary
-    emit_reports(
-        options=options,
-        json_data=report,
-        markdown_formatter=format_tree_clean_markdown,
-        markdown_report=report,
-        text_content=format_tree_clean_text(report),
-        stderr_summary=f"Summary: {s['total_keys']} stale key(s), {s['affected']} affected",
-    )
-
-    if s["total_keys"] > 0 or s["errors"] > 0:
-        return 1
-    return 0
