@@ -1,0 +1,2199 @@
+{
+  "id": "multiqc",
+  "version": "1.11+galaxy1",
+  "name": "MultiQC",
+  "description": "aggregate results from bioinformatics analyses into a single report",
+  "inputs": [
+    {
+      "name": "results",
+      "parameter_type": "gx_repeat",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "repeat",
+      "parameters": [
+        {
+          "name": "software_cond",
+          "parameter_type": "gx_conditional",
+          "hidden": false,
+          "label": null,
+          "help": null,
+          "argument": null,
+          "is_dynamic": false,
+          "optional": false,
+          "type": "conditional",
+          "test_parameter": {
+            "name": "software",
+            "parameter_type": "gx_select",
+            "hidden": false,
+            "label": null,
+            "help": null,
+            "argument": null,
+            "is_dynamic": false,
+            "optional": false,
+            "type": "select",
+            "options": [
+              {
+                "label": "Bamtools",
+                "value": "bamtools",
+                "selected": false
+              },
+              {
+                "label": "Bcftools",
+                "value": "bcftools",
+                "selected": false
+              },
+              {
+                "label": "Bismark",
+                "value": "bismark",
+                "selected": false
+              },
+              {
+                "label": "Bowtie 2",
+                "value": "bowtie2",
+                "selected": false
+              },
+              {
+                "label": "BUSCO",
+                "value": "busco",
+                "selected": false
+              },
+              {
+                "label": "Cutadapt/Trim Galore!",
+                "value": "cutadapt",
+                "selected": false
+              },
+              {
+                "label": "deepTools",
+                "value": "deeptools",
+                "selected": false
+              },
+              {
+                "label": "fastp",
+                "value": "fastp",
+                "selected": false
+              },
+              {
+                "label": "FastQC",
+                "value": "fastqc",
+                "selected": false
+              },
+              {
+                "label": "featureCounts",
+                "value": "featureCounts",
+                "selected": false
+              },
+              {
+                "label": "Flexbar",
+                "value": "flexbar",
+                "selected": false
+              },
+              {
+                "label": "GATK",
+                "value": "gatk",
+                "selected": false
+              },
+              {
+                "label": "HiCExplorer",
+                "value": "hicexplorer",
+                "selected": false
+              },
+              {
+                "label": "HISAT2",
+                "value": "hisat2",
+                "selected": false
+              },
+              {
+                "label": "HTSeq",
+                "value": "htseq",
+                "selected": false
+              },
+              {
+                "label": "Kallisto",
+                "value": "kallisto",
+                "selected": false
+              },
+              {
+                "label": "MACS2",
+                "value": "macs2",
+                "selected": false
+              },
+              {
+                "label": "Picard",
+                "value": "picard",
+                "selected": false
+              },
+              {
+                "label": "Prokka",
+                "value": "prokka",
+                "selected": false
+              },
+              {
+                "label": "PycoQC",
+                "value": "pycoqc",
+                "selected": false
+              },
+              {
+                "label": "Qualimap (BamQC or RNASeq output)",
+                "value": "qualimap",
+                "selected": false
+              },
+              {
+                "label": "QUAST",
+                "value": "quast",
+                "selected": false
+              },
+              {
+                "label": "RSeQC",
+                "value": "rseqc",
+                "selected": false
+              },
+              {
+                "label": "Samblaster",
+                "value": "samblaster",
+                "selected": false
+              },
+              {
+                "label": "Samtools",
+                "value": "samtools",
+                "selected": false
+              },
+              {
+                "label": "Slamdunk",
+                "value": "slamdunk",
+                "selected": false
+              },
+              {
+                "label": "SnpEff",
+                "value": "snpeff",
+                "selected": false
+              },
+              {
+                "label": "SortMeRNA",
+                "value": "sortmerna",
+                "selected": false
+              },
+              {
+                "label": "STAR",
+                "value": "star",
+                "selected": false
+              },
+              {
+                "label": "TopHat2",
+                "value": "tophat",
+                "selected": false
+              },
+              {
+                "label": "Trimmomatic",
+                "value": "trimmomatic",
+                "selected": false
+              },
+              {
+                "label": "VCFTools",
+                "value": "vcftools",
+                "selected": false
+              },
+              {
+                "label": "Custom Content",
+                "value": "custom_content",
+                "selected": false
+              }
+            ],
+            "multiple": false,
+            "validators": []
+          },
+          "whens": [
+            {
+              "discriminator": "bamtools",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": true
+            },
+            {
+              "discriminator": "bcftools",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "bismark",
+              "parameters": [
+                {
+                  "name": "output",
+                  "parameter_type": "gx_repeat",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "repeat",
+                  "parameters": [
+                    {
+                      "name": "type",
+                      "parameter_type": "gx_select",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "select",
+                      "options": [
+                        {
+                          "label": "Alignment file",
+                          "value": "align",
+                          "selected": false
+                        },
+                        {
+                          "label": "Deduplication file",
+                          "value": "dedup",
+                          "selected": false
+                        },
+                        {
+                          "label": "Methylation file",
+                          "value": "meth_extract",
+                          "selected": false
+                        },
+                        {
+                          "label": "m_bias file",
+                          "value": "m_bias",
+                          "selected": false
+                        },
+                        {
+                          "label": "bam2nuc file",
+                          "value": "bam2nuc",
+                          "selected": false
+                        }
+                      ],
+                      "multiple": false,
+                      "validators": []
+                    },
+                    {
+                      "name": "input",
+                      "parameter_type": "gx_data",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "data",
+                      "extensions": [
+                        "data"
+                      ],
+                      "multiple": true,
+                      "min": null,
+                      "max": null
+                    }
+                  ],
+                  "min": 1,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "bowtie2",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "busco",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "cutadapt",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "deeptools",
+              "parameters": [
+                {
+                  "name": "output",
+                  "parameter_type": "gx_repeat",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "repeat",
+                  "parameters": [
+                    {
+                      "name": "type",
+                      "parameter_type": "gx_select",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "select",
+                      "options": [
+                        {
+                          "label": "bamPEFragmentSize",
+                          "value": "bamPEFragmentSize",
+                          "selected": false
+                        },
+                        {
+                          "label": "estimateReadFiltering",
+                          "value": "estimateReadFiltering",
+                          "selected": false
+                        },
+                        {
+                          "label": "plotCoverageStdout",
+                          "value": "plotCoverageStdout",
+                          "selected": false
+                        },
+                        {
+                          "label": "plotCoverageOutRawCounts",
+                          "value": "plotCoverageOutRawCounts",
+                          "selected": false
+                        },
+                        {
+                          "label": "plotEnrichment",
+                          "value": "plotEnrichment",
+                          "selected": false
+                        },
+                        {
+                          "label": "plotFingerprintOutRawCounts",
+                          "value": "plotFingerprintOutRawCounts",
+                          "selected": false
+                        },
+                        {
+                          "label": "plotFingerprintOutQualityMetrics",
+                          "value": "plotFingerprintOutQualityMetrics",
+                          "selected": false
+                        }
+                      ],
+                      "multiple": false,
+                      "validators": []
+                    },
+                    {
+                      "name": "input",
+                      "parameter_type": "gx_data",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "data",
+                      "extensions": [
+                        "data"
+                      ],
+                      "multiple": true,
+                      "min": null,
+                      "max": null
+                    }
+                  ],
+                  "min": 1,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "fastp",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "fastqc",
+              "parameters": [
+                {
+                  "name": "output",
+                  "parameter_type": "gx_repeat",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "repeat",
+                  "parameters": [
+                    {
+                      "name": "type",
+                      "parameter_type": "gx_select",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "select",
+                      "options": [
+                        {
+                          "label": "Raw data",
+                          "value": "data",
+                          "selected": false
+                        },
+                        {
+                          "label": "Theorectical GC",
+                          "value": "theoretical_gc",
+                          "selected": false
+                        }
+                      ],
+                      "multiple": false,
+                      "validators": []
+                    },
+                    {
+                      "name": "input",
+                      "parameter_type": "gx_data",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "data",
+                      "extensions": [
+                        "data"
+                      ],
+                      "multiple": true,
+                      "min": null,
+                      "max": null
+                    }
+                  ],
+                  "min": 1,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "featureCounts",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "flexbar",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "gatk",
+              "parameters": [
+                {
+                  "name": "output",
+                  "parameter_type": "gx_repeat",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "repeat",
+                  "parameters": [
+                    {
+                      "name": "type",
+                      "parameter_type": "gx_select",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "select",
+                      "options": [
+                        {
+                          "label": "Variant eval file",
+                          "value": "varianteval",
+                          "selected": false
+                        },
+                        {
+                          "label": "Base recalibrator file",
+                          "value": "base_recalibrator",
+                          "selected": false
+                        }
+                      ],
+                      "multiple": false,
+                      "validators": []
+                    },
+                    {
+                      "name": "input",
+                      "parameter_type": "gx_data",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "data",
+                      "extensions": [
+                        "data"
+                      ],
+                      "multiple": true,
+                      "min": null,
+                      "max": null
+                    }
+                  ],
+                  "min": 1,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "hicexplorer",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "hisat2",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "htseq",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "kallisto",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "macs2",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "picard",
+              "parameters": [
+                {
+                  "name": "output",
+                  "parameter_type": "gx_repeat",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "repeat",
+                  "parameters": [
+                    {
+                      "name": "type",
+                      "parameter_type": "gx_select",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "select",
+                      "options": [
+                        {
+                          "label": "Alignment metrics",
+                          "value": "alignment_metrics",
+                          "selected": false
+                        },
+                        {
+                          "label": "Base distribution by cycle",
+                          "value": "basedistributionbycycle",
+                          "selected": false
+                        },
+                        {
+                          "label": "GC bias",
+                          "value": "gcbias",
+                          "selected": false
+                        },
+                        {
+                          "label": "HS Metrics",
+                          "value": "hsmetrics",
+                          "selected": false
+                        },
+                        {
+                          "label": "Insert size",
+                          "value": "insertsize",
+                          "selected": false
+                        },
+                        {
+                          "label": "Markdups",
+                          "value": "markdups",
+                          "selected": false
+                        },
+                        {
+                          "label": "Oxog metrics",
+                          "value": "oxogmetrics",
+                          "selected": false
+                        },
+                        {
+                          "label": "PCR metrics",
+                          "value": "pcr_metrics",
+                          "selected": false
+                        },
+                        {
+                          "label": "RNA Seq metrics",
+                          "value": "rnaseqmetrics",
+                          "selected": false
+                        },
+                        {
+                          "label": "RRBS metrics",
+                          "value": "rrbs_metrics",
+                          "selected": false
+                        },
+                        {
+                          "label": "WGS metrics",
+                          "value": "wgs_metrics",
+                          "selected": false
+                        }
+                      ],
+                      "multiple": false,
+                      "validators": []
+                    },
+                    {
+                      "name": "input",
+                      "parameter_type": "gx_data",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "data",
+                      "extensions": [
+                        "data"
+                      ],
+                      "multiple": true,
+                      "min": null,
+                      "max": null
+                    }
+                  ],
+                  "min": 1,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "prokka",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "pycoqc",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "qualimap",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "quast",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "rseqc",
+              "parameters": [
+                {
+                  "name": "output",
+                  "parameter_type": "gx_repeat",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "repeat",
+                  "parameters": [
+                    {
+                      "name": "type",
+                      "parameter_type": "gx_conditional",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "conditional",
+                      "test_parameter": {
+                        "name": "type",
+                        "parameter_type": "gx_select",
+                        "hidden": false,
+                        "label": null,
+                        "help": null,
+                        "argument": null,
+                        "is_dynamic": false,
+                        "optional": false,
+                        "type": "select",
+                        "options": [
+                          {
+                            "label": "BAM/SAM mapping stats",
+                            "value": "bam_stat",
+                            "selected": false
+                          },
+                          {
+                            "label": "Gene body coverage",
+                            "value": "gene_body_coverage",
+                            "selected": false
+                          },
+                          {
+                            "label": "Infer experiment",
+                            "value": "infer_experiment",
+                            "selected": false
+                          },
+                          {
+                            "label": "Inner distance",
+                            "value": "inner_distance",
+                            "selected": false
+                          },
+                          {
+                            "label": "Junction annotation",
+                            "value": "junction_annotation",
+                            "selected": false
+                          },
+                          {
+                            "label": "Junction saturation",
+                            "value": "junction_saturation",
+                            "selected": false
+                          },
+                          {
+                            "label": "Read distribution",
+                            "value": "read_distribution",
+                            "selected": false
+                          },
+                          {
+                            "label": "Read duplication",
+                            "value": "read_duplication_pos",
+                            "selected": false
+                          },
+                          {
+                            "label": "Read GC",
+                            "value": "read_gc",
+                            "selected": false
+                          }
+                        ],
+                        "multiple": false,
+                        "validators": []
+                      },
+                      "whens": [
+                        {
+                          "discriminator": "bam_stat",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": true
+                        },
+                        {
+                          "discriminator": "gene_body_coverage",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        },
+                        {
+                          "discriminator": "infer_experiment",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        },
+                        {
+                          "discriminator": "inner_distance",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        },
+                        {
+                          "discriminator": "junction_annotation",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        },
+                        {
+                          "discriminator": "junction_saturation",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        },
+                        {
+                          "discriminator": "read_distribution",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        },
+                        {
+                          "discriminator": "read_duplication_pos",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        },
+                        {
+                          "discriminator": "read_gc",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        }
+                      ]
+                    }
+                  ],
+                  "min": 1,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "samblaster",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "samtools",
+              "parameters": [
+                {
+                  "name": "output",
+                  "parameter_type": "gx_repeat",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "repeat",
+                  "parameters": [
+                    {
+                      "name": "type",
+                      "parameter_type": "gx_conditional",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "conditional",
+                      "test_parameter": {
+                        "name": "type",
+                        "parameter_type": "gx_select",
+                        "hidden": false,
+                        "label": null,
+                        "help": null,
+                        "argument": null,
+                        "is_dynamic": false,
+                        "optional": false,
+                        "type": "select",
+                        "options": [
+                          {
+                            "label": "stats",
+                            "value": "stats",
+                            "selected": false
+                          },
+                          {
+                            "label": "flagstat",
+                            "value": "flagstat",
+                            "selected": false
+                          },
+                          {
+                            "label": "idxstats",
+                            "value": "idxstats",
+                            "selected": false
+                          },
+                          {
+                            "label": "rmdup",
+                            "value": "rmdup",
+                            "selected": false
+                          }
+                        ],
+                        "multiple": false,
+                        "validators": []
+                      },
+                      "whens": [
+                        {
+                          "discriminator": "stats",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": true
+                        },
+                        {
+                          "discriminator": "flagstat",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        },
+                        {
+                          "discriminator": "idxstats",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        },
+                        {
+                          "discriminator": "rmdup",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        }
+                      ]
+                    }
+                  ],
+                  "min": 1,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "slamdunk",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "snpeff",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "sortmerna",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "star",
+              "parameters": [
+                {
+                  "name": "output",
+                  "parameter_type": "gx_repeat",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "repeat",
+                  "parameters": [
+                    {
+                      "name": "type",
+                      "parameter_type": "gx_conditional",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "conditional",
+                      "test_parameter": {
+                        "name": "type",
+                        "parameter_type": "gx_select",
+                        "hidden": false,
+                        "label": null,
+                        "help": null,
+                        "argument": null,
+                        "is_dynamic": false,
+                        "optional": false,
+                        "type": "select",
+                        "options": [
+                          {
+                            "label": "Log",
+                            "value": "log",
+                            "selected": false
+                          },
+                          {
+                            "label": "Gene counts",
+                            "value": "genecounts",
+                            "selected": false
+                          }
+                        ],
+                        "multiple": false,
+                        "validators": []
+                      },
+                      "whens": [
+                        {
+                          "discriminator": "log",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": true
+                        },
+                        {
+                          "discriminator": "genecounts",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        }
+                      ]
+                    }
+                  ],
+                  "min": 1,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "tophat",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "trimmomatic",
+              "parameters": [
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "vcftools",
+              "parameters": [
+                {
+                  "name": "output",
+                  "parameter_type": "gx_repeat",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "repeat",
+                  "parameters": [
+                    {
+                      "name": "type",
+                      "parameter_type": "gx_conditional",
+                      "hidden": false,
+                      "label": null,
+                      "help": null,
+                      "argument": null,
+                      "is_dynamic": false,
+                      "optional": false,
+                      "type": "conditional",
+                      "test_parameter": {
+                        "name": "type",
+                        "parameter_type": "gx_select",
+                        "hidden": false,
+                        "label": null,
+                        "help": null,
+                        "argument": null,
+                        "is_dynamic": false,
+                        "optional": false,
+                        "type": "select",
+                        "options": [
+                          {
+                            "label": "relatedness2",
+                            "value": "relatedness2",
+                            "selected": false
+                          },
+                          {
+                            "label": "tstv_by_count",
+                            "value": "tstv_by_count",
+                            "selected": false
+                          },
+                          {
+                            "label": "tstv_by_qual",
+                            "value": "tstv_by_qual",
+                            "selected": false
+                          },
+                          {
+                            "label": "tstv_summary",
+                            "value": "tstv_summary",
+                            "selected": false
+                          }
+                        ],
+                        "multiple": false,
+                        "validators": []
+                      },
+                      "whens": [
+                        {
+                          "discriminator": "relatedness2",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": true
+                        },
+                        {
+                          "discriminator": "tstv_by_count",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        },
+                        {
+                          "discriminator": "tstv_by_qual",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        },
+                        {
+                          "discriminator": "tstv_summary",
+                          "parameters": [
+                            {
+                              "name": "input",
+                              "parameter_type": "gx_data",
+                              "hidden": false,
+                              "label": null,
+                              "help": null,
+                              "argument": null,
+                              "is_dynamic": false,
+                              "optional": false,
+                              "type": "data",
+                              "extensions": [
+                                "data"
+                              ],
+                              "multiple": true,
+                              "min": null,
+                              "max": null
+                            }
+                          ],
+                          "is_default_when": false
+                        }
+                      ]
+                    }
+                  ],
+                  "min": 1,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            },
+            {
+              "discriminator": "custom_content",
+              "parameters": [
+                {
+                  "name": "plot_type",
+                  "parameter_type": "gx_select",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "select",
+                  "options": [
+                    {
+                      "label": "linegraph",
+                      "value": "linegraph",
+                      "selected": false
+                    },
+                    {
+                      "label": "bargraph",
+                      "value": "bargraph",
+                      "selected": false
+                    },
+                    {
+                      "label": "scatter",
+                      "value": "scatter",
+                      "selected": false
+                    },
+                    {
+                      "label": "generalstats",
+                      "value": "generalstats",
+                      "selected": false
+                    },
+                    {
+                      "label": "table",
+                      "value": "table",
+                      "selected": false
+                    }
+                  ],
+                  "multiple": false,
+                  "validators": []
+                },
+                {
+                  "name": "section_name",
+                  "parameter_type": "gx_text",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": true,
+                  "type": "text",
+                  "area": false,
+                  "default_value": null,
+                  "default_options": [],
+                  "validators": []
+                },
+                {
+                  "name": "title",
+                  "parameter_type": "gx_text",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": true,
+                  "type": "text",
+                  "area": false,
+                  "default_value": null,
+                  "default_options": [],
+                  "validators": []
+                },
+                {
+                  "name": "description",
+                  "parameter_type": "gx_text",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": true,
+                  "type": "text",
+                  "area": false,
+                  "default_value": null,
+                  "default_options": [],
+                  "validators": []
+                },
+                {
+                  "name": "xlab",
+                  "parameter_type": "gx_text",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": true,
+                  "type": "text",
+                  "area": false,
+                  "default_value": null,
+                  "default_options": [],
+                  "validators": []
+                },
+                {
+                  "name": "ylab",
+                  "parameter_type": "gx_text",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": true,
+                  "type": "text",
+                  "area": false,
+                  "default_value": null,
+                  "default_options": [],
+                  "validators": []
+                },
+                {
+                  "name": "input",
+                  "parameter_type": "gx_data",
+                  "hidden": false,
+                  "label": null,
+                  "help": null,
+                  "argument": null,
+                  "is_dynamic": false,
+                  "optional": false,
+                  "type": "data",
+                  "extensions": [
+                    "data"
+                  ],
+                  "multiple": true,
+                  "min": null,
+                  "max": null
+                }
+              ],
+              "is_default_when": false
+            }
+          ]
+        }
+      ],
+      "min": 1,
+      "max": null
+    },
+    {
+      "name": "title",
+      "parameter_type": "gx_text",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": true,
+      "type": "text",
+      "area": false,
+      "default_value": null,
+      "default_options": [],
+      "validators": [
+        {
+          "type": "regex",
+          "message": "Value '%s' does not match regular expression '[0-9a-zA-Z,: _.-]+'",
+          "implicit": false,
+          "negate": false,
+          "expression": "[0-9a-zA-Z,: _.-]+"
+        }
+      ]
+    },
+    {
+      "name": "comment",
+      "parameter_type": "gx_text",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": true,
+      "type": "text",
+      "area": false,
+      "default_value": null,
+      "default_options": [],
+      "validators": [
+        {
+          "type": "regex",
+          "message": "Value '%s' does not match regular expression '[0-9a-zA-Z,: _.-]+'",
+          "implicit": false,
+          "negate": false,
+          "expression": "[0-9a-zA-Z,: _.-]+"
+        }
+      ]
+    },
+    {
+      "name": "flat",
+      "parameter_type": "gx_boolean",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "boolean",
+      "value": false,
+      "truevalue": null,
+      "falsevalue": null
+    },
+    {
+      "name": "export",
+      "parameter_type": "gx_boolean",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "boolean",
+      "value": false,
+      "truevalue": null,
+      "falsevalue": null
+    },
+    {
+      "name": "saveLog",
+      "parameter_type": "gx_boolean",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "boolean",
+      "value": false,
+      "truevalue": null,
+      "falsevalue": null
+    }
+  ],
+  "outputs": [
+    {
+      "name": "stats",
+      "label": "${tool.name} on ${on_string}: Stats",
+      "hidden": false,
+      "type": "collection",
+      "structure": {
+        "collection_type": "list",
+        "collection_type_source": null,
+        "collection_type_from_rules": null,
+        "structured_like": null,
+        "discover_datasets": [
+          {
+            "discover_via": "pattern",
+            "format": "tabular",
+            "visible": false,
+            "assign_primary_output": false,
+            "directory": "report_data",
+            "recurse": false,
+            "match_relative_path": false,
+            "sort_key": "filename",
+            "sort_comp": "lexical",
+            "sort_reverse": false,
+            "pattern": "multiqc_(?P<designation>.+)\\.txt"
+          }
+        ]
+      }
+    },
+    {
+      "name": "plots",
+      "label": "${tool.name} on ${on_string}: Plots",
+      "hidden": false,
+      "type": "collection",
+      "structure": {
+        "collection_type": "list",
+        "collection_type_source": null,
+        "collection_type_from_rules": null,
+        "structured_like": null,
+        "discover_datasets": [
+          {
+            "discover_via": "pattern",
+            "format": "tabular",
+            "visible": false,
+            "assign_primary_output": false,
+            "directory": "report_data",
+            "recurse": false,
+            "match_relative_path": false,
+            "sort_key": "filename",
+            "sort_comp": "lexical",
+            "sort_reverse": false,
+            "pattern": "mqc_(?P<designation>.+)\\.txt"
+          }
+        ]
+      }
+    },
+    {
+      "name": "html_report",
+      "label": "${tool.name} on ${on_string}: Webpage",
+      "hidden": false,
+      "type": "data",
+      "format": "html",
+      "format_source": null,
+      "metadata_source": null,
+      "discover_datasets": [],
+      "from_work_dir": "report.html",
+      "precreate_directory": false
+    },
+    {
+      "name": "log",
+      "label": "${tool.name} on ${on_string}: Log",
+      "hidden": false,
+      "type": "data",
+      "format": "txt",
+      "format_source": null,
+      "metadata_source": null,
+      "discover_datasets": [],
+      "from_work_dir": "report_data/multiqc.log",
+      "precreate_directory": false
+    }
+  ],
+  "citations": [
+    {
+      "type": "doi",
+      "content": "10.1093/bioinformatics/btw354"
+    }
+  ],
+  "license": null,
+  "profile": "20.01",
+  "edam_operations": [],
+  "edam_topics": [],
+  "xrefs": [
+    {
+      "value": "multiqc",
+      "type": "bio.tools"
+    }
+  ],
+  "help": {
+    "format": "restructuredtext",
+    "content": "\n**What it does**\n\n`MultiQC <http://multiqc.info/>`_ aggregates results from bioinformatics analyses across many samples into a single report. It takes results of multiple analyses and creates a report that can be viewed as a single beautiful web-page. It's a general use tool, perfect for summarizing the output from numerous bioinformatics tools.\n\n**Inputs**\n\nMultiQC takes software output summaries/logs and creates a single report from them. You need to tell the tool which software was used to generate the report. This is done using the **Software name** dropdown. At present only the Galaxy tools found in the ToolShed produce logs that can used with MultiQC\n\n----\n\nThe first integration of this tool was made by\n`@cmonjeau <https://github.com/cmonjeau>`_ and `@yvanlebras <https://github.com/yvanlebras>`_.\nIt is now maintained by the `Intergalactic Utilities Commission <https://galaxyproject.org/iuc>`_.\n    "
+  }
+}
