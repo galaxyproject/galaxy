@@ -9491,7 +9491,7 @@ outer_input:
     def test_cannot_run_workflow_on_immutable_history(self) -> None:
         with self.dataset_populator.test_history() as history_id:
             # once we purge the history, it becomes immutable
-            self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+            self.dataset_populator.purge_history(history_id)
 
             with self.assertRaisesRegex(AssertionError, "History is immutable"):
                 self.workflow_populator.run_workflow(

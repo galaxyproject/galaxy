@@ -220,7 +220,7 @@ class WebApplication:
         else:
             environ["is_api_request"] = False
             controllers = self.controllers
-        if map_match is None:
+        if not map_match:
             raise webob.exc.HTTPNotFound(f"No route for {path_info}")
         self.trace(path_info=path_info, map_match=map_match)
         # Setup routes
@@ -264,7 +264,10 @@ class WebApplication:
             f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action_tag}"
         )
         # Combine mapper args and query string / form args and call
-        kwargs = trans.request.params.mixed()
+        try:
+            kwargs = trans.request.params.mixed()
+        except UnicodeDecodeError:
+            raise webob.exc.HTTPBadRequest("Unable to decode request parameters.")
         kwargs.update(map_match)
         # Special key for AJAX debugging, remove to avoid confusing methods
         kwargs.pop("_", None)
