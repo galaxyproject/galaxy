@@ -47,8 +47,7 @@ function toggleAdvanced() {
                     <b>List of Paired Datasets</b>
                 </BCardTitle>
                 <div>
-                    This option creates a uniform list of paired datasets, use this option if all of your data should be
-                    paired off.
+                    This option creates a list of paired datasets (e.g., paired-end data from Illumina and ElementBio), use this option if all of your data should be paired off.
                 </div>
             </BCard>
             <BCard

@@ -88,6 +88,13 @@ function onApply() {
                 :forward-filter="currentForwardFilter"
                 :reverse-filter="currentReverseFilter"
                 @on-update="onUpdate" />
+            <div class="help-text mt-2">
+                Use the text boxes above to enter parts of file names that differentiate forward and reverse pairs.
+                These could be things like <code>_F</code> and <code>_R</code>, <code>_1</code> and <code>_2</code>, or
+                <code>.1</code> and <code>.2</code>. For example, if your files are named
+                <code>reads_F.fq.gz</code> and <code>reads_R.fq.gz</code>, then enter <code>_F</code> and
+                <code>_R</code>.
+            </div>
             <div class="summary-text mt-2">
                 {{ summaryText }}
             </div>
@@ -119,9 +126,8 @@ function onApply() {
                         Any of these datasets will be included in the final list if they are not discarded.
                     </span>
                 </div>
-                <ol class="summary-list">
+                <ul class="unmatched-list">
                     <li v-for="(unpairedDataset, index) of currentSummary?.unpaired" :key="`unpaired_${index}`">
-                        <span v-if="index > 0">,</span>
                         <span v-if="showHid" class="dataset-hid">{{ getHid(unpairedDataset) }}: </span>
                         <span class="unpaired-dataset-name dataset-name">{{ unpairedDataset.name }}</span>
                         <span
@@ -136,7 +142,7 @@ function onApply() {
                             )</span
                         >
                     </li>
-                </ol>
+                </ul>
             </span>
             <span v-else>
                 <div class="summary-list-header mt-2">No Un-matched Datasets</div>
@@ -161,6 +167,11 @@ function onApply() {
 </template>
 
 <style lang="scss" scoped>
+.help-text {
+    font-size: 0.9rem;
+    color: gray;
+}
+
 .summary-text {
     font-size: 1rem;
 }
@@ -191,6 +202,15 @@ function onApply() {
 .summary-list-description {
     font-size: 0.9rem;
     font-style: italic;
+}
+
+.unmatched-list {
+    margin-left: 20px;
+
+    li {
+        list-style-type: disc;
+        font-size: 0.9rem;
+    }
 }
 
 .pair-name {
