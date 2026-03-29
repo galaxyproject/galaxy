@@ -584,8 +584,6 @@ gx_text_length_validation_negate:
   - parameter: "mytext123mocowdowees"
   request_invalid:
   - parameter: "goldilocks"
-  json_schema_skip:
-    request_invalid: "length validator with negate uses AfterValidator"
 
 gx_select:
   request_valid:
@@ -1255,10 +1253,6 @@ gx_color:
     - parameter: 'foobar'
     - parameter: 5
     - parameter: {__class__: 'ConnectedValue2'}
-  json_schema_skip:
-    request_invalid: "color regex validator uses AfterValidator"
-    workflow_step_invalid: "color regex validator uses AfterValidator"
-    workflow_step_linked_invalid: "color regex validator uses AfterValidator"
 
 gx_data:
   request_valid:

@@ -307,6 +307,8 @@ def _json_schema_extra_for_validators(validators: Sequence[VT]) -> Dict[str, Any
 
     Regex pattern is emitted here rather than as a type annotation because
     StringConstraints is incompatible with non-string types like AnyUrl.
+    Negated length uses ``not: {minLength, maxLength}`` since the non-negated
+    form is handled by annotated_types.
     """
     extra: Dict[str, Any] = {}
     for v in validators:
@@ -316,6 +318,16 @@ def _json_schema_extra_for_validators(validators: Sequence[VT]) -> Dict[str, Any
             if not pattern.startswith("^"):
                 pattern = "^" + pattern
             extra["pattern"] = pattern
+            break
+    for v in validators:
+        if isinstance(v, LengthParameterValidatorModel) and v.negate:
+            not_constraint: Dict[str, Any] = {}
+            if v.min is not None:
+                not_constraint["minLength"] = v.min
+            if v.max is not None:
+                not_constraint["maxLength"] = v.max
+            if not_constraint:
+                extra["not"] = not_constraint
             break
     return extra
 
@@ -1500,6 +1512,11 @@ class ColorParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_color"] = "gx_color"
     type: Literal["color"]
     value: Optional[str] = None
+
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        kwargs["json_schema_extra"]["pattern"] = "^#[0-9a-f]{6}$"
+        return kwargs
 
     @property
     def py_type(self) -> Type:
