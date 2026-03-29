@@ -286,6 +286,26 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert "hg18_value" in option_values
             assert "mm10_value" in option_values
 
+    @skip_without_tool("dbkey_filter_collection_input")
+    def test_run_dbkey_filter_nested_collection_dce(self):
+        with self.dataset_populator.test_history() as history_id:
+            list_list = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json()
+            # Set dbkey on the datasets in the inner list
+            for outer_element in list_list["elements"]:
+                for inner_element in outer_element["object"]["elements"]:
+                    hda_id = inner_element["object"]["id"]
+                    self.dataset_populator._put(
+                        f"histories/{history_id}/contents/{hda_id}", {"genome_build": "hg19"}, json=True
+                    )
+            # Get DCE ID of the inner list element - this is a DatasetCollectionElement
+            # wrapping a child collection (not an HDA)
+            dce_id = list_list["elements"][0]["id"]
+            inputs = {
+                "inputs": {"src": "dce", "id": dce_id},
+                "index": "hg19_value",
+            }
+            self._run("dbkey_filter_collection_input", history_id, inputs, assert_ok=True)
+
     @skip_without_tool("cheetah_problem_unbound_var_input")
     def test_legacy_biotools_xref_injection(self):
         url = self._api_url("tools/cheetah_problem_unbound_var_input")

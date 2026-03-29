@@ -1079,10 +1079,10 @@ def _get_ref_data(other_values, ref_name):
         if is_runtime_value(ref):
             return []
         raise ValueError
-    if isinstance(ref, DatasetCollectionElement) and ref.hda:
-        ref = ref.hda
+    if isinstance(ref, DatasetCollectionElement):
+        return ref.dataset_instances
     if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)):
-        ref = [ref]
+        return [ref]
     elif isinstance(ref, HistoryDatasetCollectionAssociation):
-        ref = ref.to_hda_representative(multiple=True)
+        return ref.to_hda_representative(multiple=True)
     return ref
