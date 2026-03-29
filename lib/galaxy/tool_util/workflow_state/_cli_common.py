@@ -135,7 +135,7 @@ def build_base_parser(
     prog: str,
     description: str,
     stale_key_mode: Optional[str] = None,
-    workflow_path_help: str = "Path to .ga/.gxwf.yml file or directory",
+    workflow_path_help: str = "Path to a single .ga or .gxwf.yml workflow file",
 ) -> argparse.ArgumentParser:
     """Build an argparse parser with the common workflow_state CLI args."""
     parser = argparse.ArgumentParser(prog=prog, description=description)

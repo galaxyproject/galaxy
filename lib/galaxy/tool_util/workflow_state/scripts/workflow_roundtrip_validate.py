@@ -15,7 +15,7 @@ def build_parser():
     parser = build_base_parser(
         prog="gxwf-roundtrip-validate",
         description="Validate native→format2→native round-trip for Galaxy workflows.",
-        workflow_path_help="Path to native .ga file or directory (auto-detected)",
+        workflow_path_help="Path to a single native .ga workflow file",
     )
     parser.add_argument(
         "--strip-bookkeeping",
