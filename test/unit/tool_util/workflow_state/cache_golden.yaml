@@ -1,0 +1,99 @@
+# Cross-language interop contract for the tool cache pipeline.
+#
+# Each entry declares inputs to the pipeline and expected outputs at each stage.
+# An implementation in any language must produce the same results for each entry.
+#
+# Cache key algorithm: sha256("{toolshed_url}/{trs_tool_id}/{tool_version}")
+#
+# Golden cache files contain real ParsedTool responses from the ToolShed API.
+# To regenerate: PYTHONPATH=lib python generate_golden_cache.py
+# Node tests read the same manifest and golden files, must produce identical cache keys.
+
+toolshed_tools:
+  # Full pipeline: tool_id -> parse -> (url, trs_id, version) -> cache_key -> ParsedTool
+
+  - tool_id: "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0"
+    expected_url: "https://toolshed.g2.bx.psu.edu"
+    expected_trs_id: "devteam~fastqc~fastqc"
+    expected_version: "0.74+galaxy0"
+    expected_cache_key: "4442926e78fe6e6574ffb9110be50f9b72cc3eb3b133e5435cf7b8658cd0a0f5"
+    expected_tool:
+      name: "FastQC"
+      id: "fastqc"
+      description: "Read Quality reports"
+      input_count: 7
+      input_names: ["input_file", "contaminants", "adapters", "limits", "nogroup", "min_length", "kmers"]
+      input_types: ["gx_data", "gx_data", "gx_data", "gx_data", "gx_boolean", "gx_integer", "gx_integer"]
+      output_count: 2
+      output_names: ["html_file", "text_file"]
+      citation_count: 1
+
+  - tool_id: "https://toolshed.g2.bx.psu.edu/repos/iuc/multiqc/multiqc/1.11+galaxy1"
+    expected_url: "https://toolshed.g2.bx.psu.edu"
+    expected_trs_id: "iuc~multiqc~multiqc"
+    expected_version: "1.11+galaxy1"
+    expected_cache_key: "37fb932a513aedd35009403f007a9ba35cc011e80e7cdb30722bac1d2bdc8510"
+    expected_tool:
+      name: "MultiQC"
+      id: "multiqc"
+      description: "aggregate results from bioinformatics analyses into a single report"
+      input_count: 6
+      input_names: ["results", "title", "comment", "flat", "export", "saveLog"]
+      input_types: ["gx_repeat", "gx_text", "gx_text", "gx_boolean", "gx_boolean", "gx_boolean"]
+      output_count: 4
+      output_names: ["stats", "plots", "html_report", "log"]
+      citation_count: 1
+
+  - tool_id: "toolshed.g2.bx.psu.edu/repos/pjbriggs/trimmomatic/trimmomatic/0.39+galaxy2"
+    expected_url: "https://toolshed.g2.bx.psu.edu"
+    expected_trs_id: "pjbriggs~trimmomatic~trimmomatic"
+    expected_version: "0.39+galaxy2"
+    expected_cache_key: "8216213a63af9c900ccccd871df8a722b616b8b0b2c7c653834941bac448a472"
+    expected_tool:
+      name: "Trimmomatic"
+      id: "trimmomatic"
+      description: "flexible read trimming tool for Illumina NGS data"
+      input_count: 6
+      input_names: ["readtype", "illuminaclip", "operations", "quality_score", "output_logs", "output_err"]
+      input_types: ["gx_conditional", "gx_conditional", "gx_repeat", "gx_select", "gx_boolean", "gx_boolean"]
+      output_count: 9
+      output_names: ["fastq_out_paired", "fastq_out_unpaired", "fastq_out_r1_paired", "fastq_out_r2_paired", "fastq_out_r1_unpaired", "fastq_out_r2_unpaired", "fastq_out", "log_file", "err_file"]
+      citation_count: 1
+
+stock_tools:
+  # Stock tools use default_toolshed_url and tool_id as trs_id
+  - tool_id: "cat1"
+    tool_version: "1.0.0"
+    default_toolshed_url: "https://toolshed.g2.bx.psu.edu"
+    expected_trs_id: "cat1"
+    expected_version: "1.0.0"
+    expected_cache_key: "2d433bc1156aa8e5774724b24280cf7ffccc0a563f9a2541adb2712347e15900"
+    expected_tool:
+      name: "Concatenate multiple datasets or collections"
+      id: "cat1"
+      input_count: 2
+      input_names: ["input1", "queries"]
+      input_types: ["gx_data", "gx_repeat"]
+      output_count: 1
+      output_names: ["out_file1"]
+      edam_operations: ["operation_3436"]
+
+unparseable_tool_ids:
+  # parse_toolshed_tool_id returns None for these
+  - tool_id: "cat1"
+  - tool_id: "__DATA_FETCH__"
+  - tool_id: "upload1"
+  - tool_id: "toolshed.g2.bx.psu.edu/repos/owner/repo"  # too few segments
+
+version_from_separate_arg:
+  # tool_id has no embedded version, version comes from tool_version param
+  - tool_id: "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc"
+    tool_version: "0.74+galaxy0"
+    expected_url: "https://toolshed.g2.bx.psu.edu"
+    expected_trs_id: "devteam~fastqc~fastqc"
+    expected_version: "0.74+galaxy0"
+    # same cache key as toolshed_tools[0] — same resolved coordinates
+    expected_cache_key: "4442926e78fe6e6574ffb9110be50f9b72cc3eb3b133e5435cf7b8658cd0a0f5"
+    expected_tool:
+      name: "FastQC"
+      id: "fastqc"

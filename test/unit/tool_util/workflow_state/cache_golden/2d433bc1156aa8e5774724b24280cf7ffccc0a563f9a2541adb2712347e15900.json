@@ -1,0 +1,83 @@
+{
+  "id": "cat1",
+  "version": "1.0.0",
+  "name": "Concatenate multiple datasets or collections",
+  "description": "",
+  "inputs": [
+    {
+      "name": "input1",
+      "parameter_type": "gx_data",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "data",
+      "extensions": [
+        "data"
+      ],
+      "multiple": false,
+      "min": null,
+      "max": null
+    },
+    {
+      "name": "queries",
+      "parameter_type": "gx_repeat",
+      "hidden": false,
+      "label": null,
+      "help": null,
+      "argument": null,
+      "is_dynamic": false,
+      "optional": false,
+      "type": "repeat",
+      "parameters": [
+        {
+          "name": "input2",
+          "parameter_type": "gx_data",
+          "hidden": false,
+          "label": null,
+          "help": null,
+          "argument": null,
+          "is_dynamic": false,
+          "optional": false,
+          "type": "data",
+          "extensions": [
+            "data"
+          ],
+          "multiple": false,
+          "min": null,
+          "max": null
+        }
+      ],
+      "min": null,
+      "max": null
+    }
+  ],
+  "outputs": [
+    {
+      "name": "out_file1",
+      "label": null,
+      "hidden": false,
+      "type": "data",
+      "format": "data",
+      "format_source": "input1",
+      "metadata_source": "input1",
+      "discover_datasets": [],
+      "from_work_dir": null,
+      "precreate_directory": false
+    }
+  ],
+  "citations": [],
+  "license": null,
+  "profile": "24.2",
+  "edam_operations": [
+    "operation_3436"
+  ],
+  "edam_topics": [],
+  "xrefs": [],
+  "help": {
+    "format": "restructuredtext",
+    "content": "\n.. class:: warningmark\n\n**WARNING:** Be careful not to concatenate datasets of different kinds (e.g., sequences with intervals). This tool does not check if the datasets being concatenated are in the same format.\n\n-----\n\n**What it does**\n\nConcatenates datasets\n\n-----\n\n**Example**\n\nConcatenating Dataset::\n\n    chrX  151087187  151087355  A  0  -\n    chrX  151572400  151572481  B  0  +\n\nwith Dataset1::\n\n    chr1  151242630  151242955  X  0  +\n    chr1  151271715  151271999  Y  0  +\n    chr1  151278832  151279227  Z  0  -\n\nand with Dataset2::\n\n    chr2  100000030  200000955  P  0  +\n    chr2  100000015  200000999  Q  0  +\n\nwill result in the following::\n\n    chrX  151087187  151087355  A  0  -\n    chrX  151572400  151572481  B  0  +\n    chr1  151242630  151242955  X  0  +\n    chr1  151271715  151271999  Y  0  +\n    chr1  151278832  151279227  Z  0  -\n    chr2  100000030  200000955  P  0  +\n    chr2  100000015  200000999  Q  0  +\n    "
+  }
+}
