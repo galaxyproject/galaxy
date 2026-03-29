@@ -16,8 +16,7 @@ from dataclasses import (
     field,
 )
 from typing import (
-    List,
-    Optional,
+    Any,
 )
 
 from gxformat2.normalized import (
@@ -26,6 +25,11 @@ from gxformat2.normalized import (
 )
 from gxformat2.options import ConversionOptions
 from gxformat2.yaml import ordered_load_path
+from pydantic import (
+    BaseModel,
+    computed_field,
+    Field,
+)
 
 from ._cli_common import (
     setup_tool_info,
@@ -40,16 +44,16 @@ log = logging.getLogger(__name__)
 @dataclass
 class StepEncodeStatus:
     step_id: str
-    step_label: Optional[str] = None
-    tool_id: Optional[str] = None
+    step_label: str | None = None
+    tool_id: str | None = None
     encoded: bool = False
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @dataclass
 class ToNativeResult:
     native: NormalizedNativeWorkflow
-    steps: List[StepEncodeStatus] = field(default_factory=list)
+    steps: list[StepEncodeStatus] = field(default_factory=list)
 
     @property
     def native_dict(self) -> dict:
@@ -60,7 +64,7 @@ class ToNativeResult:
         return all(s.encoded for s in self.steps)
 
     @property
-    def failed_steps(self) -> List[StepEncodeStatus]:
+    def failed_steps(self) -> list[StepEncodeStatus]:
         return [s for s in self.steps if not s.encoded]
 
     @property
@@ -92,7 +96,7 @@ def convert_to_native_stateful(
             "or gxwf-roundtrip-validate for native→format2→native validation."
         )
 
-    step_statuses: List[StepEncodeStatus] = []
+    step_statuses: list[StepEncodeStatus] = []
     callback = _make_encode_callback(get_tool_info, step_statuses, strict=strict)
 
     options = ConversionOptions(
@@ -106,7 +110,7 @@ def convert_to_native_stateful(
 
 def _make_encode_callback(
     get_tool_info: GetToolInfo,
-    step_statuses: List[StepEncodeStatus],
+    step_statuses: list[StepEncodeStatus],
     strict: bool = False,
 ):
     """Build a state_encode_to_native callback with status tracking."""
@@ -150,8 +154,31 @@ class EncodeError(Exception):
 
 
 class ToNativeOptions(ToolCacheOptions):
-    output: Optional[str] = None
+    output: str | None = None
     strict: bool = False
+
+
+class ToNativeTreeOptions(ToolCacheOptions):
+    output_dir: str = ""
+    strict: bool = False
+    report_json: str | None = None
+    report_markdown: str | None = None
+
+
+class ToNativeTreeReport(BaseModel):
+    """Tree-level report for batch format2→native conversion."""
+
+    root: str
+    output_dir: str
+    results: list[dict[str, Any]] = Field(default_factory=list)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def summary(self) -> dict[str, int]:
+        ok = sum(1 for r in self.results if r.get("ok"))
+        fail = sum(1 for r in self.results if r.get("error"))
+        skipped = sum(1 for r in self.results if r.get("skipped_reason"))
+        return {"ok": ok, "fail": fail, "skipped": skipped}
 
 
 # -- Formatters --
@@ -178,7 +205,11 @@ def format_native_json(native_dict: dict) -> str:
 
 
 def run_to_native(options: ToNativeOptions) -> int:
-    """Run format2→native conversion pipeline. Returns exit code."""
+    """Run single-file format2→native conversion. Returns exit code."""
+    if os.path.isdir(options.workflow_path):
+        print("Error: got directory, use gxwf-to-native-stateful-tree for batch conversion", file=sys.stderr)
+        return 2
+
     tool_info = setup_tool_info(options)
 
     try:
@@ -203,3 +234,115 @@ def run_to_native(options: ToNativeOptions) -> int:
         sys.stdout.write(output)
 
     return 1 if result.failed_steps else 0
+
+
+def _convert_dict_to_native(
+    wf_dict: dict,
+    get_tool_info: GetToolInfo,
+    strict: bool = False,
+    workflow_dir: str = "",
+) -> ToNativeResult:
+    """Convert a format2 dict to native (for tree mode)."""
+    if isinstance(wf_dict, dict) and wf_dict.get("a_galaxy_workflow") == "true":
+        raise EncodeError("Already native format")
+
+    step_statuses: list[StepEncodeStatus] = []
+    callback = _make_encode_callback(get_tool_info, step_statuses, strict=strict)
+
+    options = ConversionOptions(
+        state_encode_to_native=callback,
+        workflow_directory=workflow_dir,
+    )
+    native = to_native(wf_dict, options=options)
+    return ToNativeResult(native=native, steps=step_statuses)
+
+
+def run_to_native_tree(options: ToNativeTreeOptions) -> int:
+    """Run tree format2→native conversion. Returns exit code."""
+    if not os.path.isdir(options.workflow_path):
+        print("Error: expected directory, got file", file=sys.stderr)
+        return 2
+
+    if not options.output_dir:
+        print("Error: --output-dir is required for tree conversion", file=sys.stderr)
+        return 2
+
+    tool_info = setup_tool_info(options)
+
+    from ._tree_orchestrator import (
+        run_tree,
+        skip_workflow,
+        TreeContext,
+    )
+    from .workflow_tree import WorkflowInfo
+
+    def process_one(info: WorkflowInfo, wf_dict: dict, get_tool_info):
+        if isinstance(wf_dict, dict) and wf_dict.get("a_galaxy_workflow") == "true":
+            skip_workflow("native format (not format2)")
+
+        result = _convert_dict_to_native(
+            wf_dict,
+            get_tool_info,
+            strict=options.strict,
+            workflow_dir=os.path.dirname(info.path),
+        )
+
+        stem = os.path.splitext(info.relative_path)[0]
+        out_path = os.path.join(options.output_dir, stem + ".ga")
+        os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+        with open(out_path, "w") as f:
+            f.write(format_native_json(result.native_dict))
+
+        return {
+            "relative_path": info.relative_path,
+            "ok": not result.failed_steps,
+            "steps_encoded": sum(1 for s in result.steps if s.encoded),
+            "steps_fallback": len(result.failed_steps),
+        }
+
+    def aggregate(tree_result):
+        results = []
+        for outcome in tree_result.outcomes:
+            if outcome.error:
+                results.append({"path": outcome.info.relative_path, "ok": False, "error": outcome.error})
+            elif outcome.skipped:
+                results.append({"path": outcome.info.relative_path, "ok": False, "skipped_reason": outcome.skip_reason})
+            elif outcome.result is not None:
+                r = outcome.result
+                results.append(
+                    {
+                        "path": r["relative_path"],
+                        "ok": r["ok"],
+                        "steps_encoded": r["steps_encoded"],
+                        "steps_fallback": r["steps_fallback"],
+                    }
+                )
+        return ToNativeTreeReport(root=tree_result.root, output_dir=options.output_dir, results=results)
+
+    def _format_text(report):
+        lines = [f"Convert: {report.root} → {report.output_dir}"]
+        for r in report.results:
+            path = r["path"]
+            if r.get("error"):
+                lines.append(f"  {path}: ERROR ({r['error']})")
+            elif r.get("skipped_reason"):
+                lines.append(f"  {path}: SKIPPED ({r['skipped_reason']})")
+            elif r.get("ok"):
+                lines.append(f"  {path}: OK ({r.get('steps_encoded', 0)} steps)")
+            else:
+                lines.append(f"  {path}: PARTIAL ({r.get('steps_fallback', 0)} fallbacks)")
+        s = report.summary
+        lines.append(f"Summary: {s['ok']} OK, {s['fail']} errors, {s['skipped']} skipped")
+        return "\n".join(lines)
+
+    ctx = TreeContext(root=options.workflow_path, tool_info=tool_info, include_format2=True)
+    return run_tree(
+        ctx=ctx,
+        process_one=process_one,
+        aggregate=aggregate,
+        format_text=_format_text,
+        format_summary=lambda r: f"Convert: {r.summary['ok']} OK, {r.summary['fail']} errors",
+        format_markdown=lambda r: _format_text(r),
+        compute_exit_code=lambda r: 1 if r.summary["fail"] > 0 else 0,
+        report_options=options,
+    )
