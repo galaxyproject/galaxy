@@ -481,7 +481,7 @@ class FileHash(StrictModel):
 
 
 class BaseDataRequest(StrictModel):
-    url: StrictStr = Field(..., alias="location")
+    url: StrictStr = Field(..., alias="location", validation_alias=AliasChoices("url", "location"))
     name: Optional[StrictStr] = None
     ext: StrictStr
     dbkey: StrictStr = "?"
@@ -1634,6 +1634,7 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
             py_type = self.py_type_if_required(allow_connections=False)
             if self.multiple:
                 validators = {"from_string": field_validator(self.name, mode="before")(SelectParameterModel.split_str)}
+                py_type = union_type([StrictStr, py_type])
             py_type = optional_if_needed(py_type, self.optional)
         elif state_representation == "test_case_json":
             # in JSON test case representation, lists are already validated as lists (no string splitting)
@@ -1876,11 +1877,13 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
                 validators = {
                     "from_string": field_validator(self.name, mode="before")(DataColumnParameterModel.split_str)
                 }
+                py_type = union_type([StrictStr, self.py_type])
             else:
                 validators = {}
+                py_type = self.py_type
             requires_value = self.request_requires_value
             return dynamic_model_information_from_py_type(
-                self, self.py_type, validators=validators, requires_value=requires_value
+                self, py_type, validators=validators, requires_value=requires_value
             )
         elif state_representation == "test_case_json":
             # JSON test cases accept lists directly (no string splitting)

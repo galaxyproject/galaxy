@@ -308,6 +308,8 @@ gx_int_validation_range:
   - parameter: 10
   workflow_step_linked_valid:
    - parameter: {__class__: 'ConnectedValue'}
+  json_schema_skip:
+    request_invalid: "in_range validator uses AfterValidator, not representable in JSON Schema"
 
 gx_int_min_max:
   request_valid:
@@ -321,6 +323,9 @@ gx_int_min_max:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - parameter: -1
+  json_schema_skip:
+    request_invalid: "in_range validator uses AfterValidator"
+    workflow_step_linked_invalid: "in_range validator uses AfterValidator"
 
 gx_text_regex_validation:
   request_valid:
@@ -332,6 +337,8 @@ gx_text_regex_validation:
   - parameter: nucleic
   workflow_step_linked_valid:
    - parameter: {__class__: 'ConnectedValue'}
+  json_schema_skip:
+    request_invalid: "regex validator uses AfterValidator"
 
 gx_text_expression_validation:
   request_valid:
@@ -344,6 +351,9 @@ gx_text_expression_validation:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - parameter: ''
+  json_schema_skip:
+    request_invalid: "expression validator uses AfterValidator"
+    workflow_step_linked_invalid: "expression validator uses AfterValidator"
 
 gx_text_empty_validation:
   request_valid:
@@ -365,6 +375,11 @@ gx_text_empty_validation:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - parameter: ''
+  json_schema_skip:
+    request_invalid: "empty_field validator uses AfterValidator"
+    job_internal_invalid: "empty_field validator uses AfterValidator"
+    job_runtime_invalid: "empty_field validator uses AfterValidator"
+    workflow_step_linked_invalid: "empty_field validator uses AfterValidator"
 
 gx_text:
   request_valid: &gx_text_request_valid
@@ -569,6 +584,8 @@ gx_text_length_validation:
   request_invalid:
   - parameter: "s"  # too short
   - parameter: "mytext1231231231sd"  # too long
+  json_schema_skip:
+    request_invalid: "length validator uses AfterValidator"
 
 gx_text_length_validation_negate:
   request_valid:
@@ -576,6 +593,8 @@ gx_text_length_validation_negate:
   - parameter: "mytext123mocowdowees"
   request_invalid:
   - parameter: "goldilocks"
+  json_schema_skip:
+    request_invalid: "length validator with negate uses AfterValidator"
 
 gx_select:
   request_valid:
@@ -928,6 +947,10 @@ gx_directory_uri:
   - parameter: "justsomestring"
   - parameter: true
   - parameter: null
+  json_schema_skip:
+    request_invalid: "regex validator uses AfterValidator"
+    job_internal_invalid: "regex validator uses AfterValidator"
+    job_runtime_invalid: "regex validator uses AfterValidator"
 
 gx_directory_uri_validation:
   request_valid:
@@ -944,6 +967,9 @@ gx_directory_uri_validation:
   - parameter: "gxfiles://tooshort/index.json"
   - parameter: "gxfiles://mycoolsource/api/wrongex.js"
   - parameter: "gxfiles://mycoolsource/badexp.json"
+  json_schema_skip:
+    request_invalid: "regex/length/expression validators use AfterValidator"
+    workflow_step_linked_invalid: "regex/length/expression validators use AfterValidator"
 
 gx_hidden:
   request_valid:
@@ -1051,6 +1077,9 @@ gx_hidden_validation:
   - parameter: "http://mycoolservice.com/index.json"
   - parameter: "http://mycoolservice.com/api/wrongex.js"
   - parameter: "http://mycoolservice.com/badexp.json"
+  json_schema_skip:
+    request_invalid: "regex/length/expression validators use AfterValidator"
+    workflow_step_linked_invalid: "regex/length/expression validators use AfterValidator"
 
 gx_float:
   request_valid:
@@ -1200,6 +1229,8 @@ gx_float_validation_range:
   - parameter: 10
   - parameter: 0
   - parameter: 9.8  # endpoint not included because specified in validator
+  json_schema_skip:
+    request_invalid: "in_range validator uses AfterValidator"
 
 gx_float_min_max:
   request_valid:
@@ -1210,6 +1241,8 @@ gx_float_min_max:
   request_invalid:
   - parameter: 10
   - parameter: 0
+  json_schema_skip:
+    request_invalid: "in_range validator uses AfterValidator"
 
 gx_color:
   request_valid:
@@ -1235,6 +1268,10 @@ gx_color:
     - parameter: 'foobar'
     - parameter: 5
     - parameter: {__class__: 'ConnectedValue2'}
+  json_schema_skip:
+    request_invalid: "color regex validator uses AfterValidator"
+    workflow_step_invalid: "color regex validator uses AfterValidator"
+    workflow_step_linked_invalid: "color regex validator uses AfterValidator"
 
 gx_data:
   request_valid:
