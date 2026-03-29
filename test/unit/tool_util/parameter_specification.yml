@@ -308,8 +308,6 @@ gx_int_validation_range:
   - parameter: 10
   workflow_step_linked_valid:
    - parameter: {__class__: 'ConnectedValue'}
-  json_schema_skip:
-    request_invalid: "in_range validator uses AfterValidator, not representable in JSON Schema"
 
 gx_int_min_max:
   request_valid:
@@ -323,9 +321,6 @@ gx_int_min_max:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - parameter: -1
-  json_schema_skip:
-    request_invalid: "in_range validator uses AfterValidator"
-    workflow_step_linked_invalid: "in_range validator uses AfterValidator"
 
 gx_text_regex_validation:
   request_valid:
@@ -337,8 +332,6 @@ gx_text_regex_validation:
   - parameter: nucleic
   workflow_step_linked_valid:
    - parameter: {__class__: 'ConnectedValue'}
-  json_schema_skip:
-    request_invalid: "regex validator uses AfterValidator"
 
 gx_text_expression_validation:
   request_valid:
@@ -584,8 +577,6 @@ gx_text_length_validation:
   request_invalid:
   - parameter: "s"  # too short
   - parameter: "mytext1231231231sd"  # too long
-  json_schema_skip:
-    request_invalid: "length validator uses AfterValidator"
 
 gx_text_length_validation_negate:
   request_valid:
@@ -1229,8 +1220,6 @@ gx_float_validation_range:
   - parameter: 10
   - parameter: 0
   - parameter: 9.8  # endpoint not included because specified in validator
-  json_schema_skip:
-    request_invalid: "in_range validator uses AfterValidator"
 
 gx_float_min_max:
   request_valid:
@@ -1241,8 +1230,6 @@ gx_float_min_max:
   request_invalid:
   - parameter: 10
   - parameter: 0
-  json_schema_skip:
-    request_invalid: "in_range validator uses AfterValidator"
 
 gx_color:
   request_valid:

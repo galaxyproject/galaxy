@@ -107,10 +107,44 @@ def _is_collection_runtime_oneof(branches: List[Any]) -> bool:
     return False
 
 
+_ANNOTATED_TYPES_TO_JSON_SCHEMA = {
+    "ge": "minimum",
+    "gt": "exclusiveMinimum",
+    "le": "maximum",
+    "lt": "exclusiveMaximum",
+}
+
+
+def _normalize_annotated_types_keywords(schema: Dict[str, Any]) -> None:
+    """Convert annotated_types constraint keys to standard JSON Schema keywords.
+
+    When annotated_types constraints (Ge, Gt, Le, Lt) are applied to Union types,
+    Pydantic emits them as raw keys (ge, gt, le, lt) instead of the standard
+    JSON Schema keywords (minimum, exclusiveMinimum, etc.). Normalize these.
+    """
+    _walk_and_normalize(schema)
+
+
+def _walk_and_normalize(node: Any) -> None:
+    if not isinstance(node, dict):
+        if isinstance(node, list):
+            for item in node:
+                _walk_and_normalize(item)
+        return
+
+    for at_key, js_key in _ANNOTATED_TYPES_TO_JSON_SCHEMA.items():
+        if at_key in node and js_key not in node:
+            node[js_key] = node.pop(at_key)
+
+    for value in node.values():
+        _walk_and_normalize(value)
+
+
 def to_json_schema(model, mode: MODE = DEFAULT_JSON_SCHEMA_MODE) -> Dict[str, Any]:
     schema = model.model_json_schema(schema_generator=CustomGenerateJsonSchema, mode=mode)
     _fix_conditional_oneofs(schema)
     _fix_collection_runtime_oneofs(schema)
+    _normalize_annotated_types_keywords(schema)
     return schema
 
 
