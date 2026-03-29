@@ -14,12 +14,12 @@ import os
 import pytest
 import yaml
 
-from galaxy.tool_util_models import ParsedTool
 from galaxy.tool_util.workflow_state.toolshed_tool_info import (
     _cache_key,
     parse_toolshed_tool_id,
     ToolShedGetToolInfo,
 )
+from galaxy.tool_util_models import ParsedTool
 
 FIXTURES_DIR = os.path.dirname(__file__)
 MANIFEST_PATH = os.path.join(FIXTURES_DIR, "cache_golden.yaml")

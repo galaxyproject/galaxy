@@ -12,7 +12,6 @@ from galaxy.tool_util.parameters.json import to_json_schema
 from galaxy.tool_util.parameters.state import WorkflowStepToolState
 from galaxy.tool_util.workflow_state.validation_json_schema import validate_workflow_json_schema
 from galaxy.tool_util_models.parameters import ToolParameterBundleModel
-
 from .json_schema_helpers import (
     FakeGetToolInfo,
     make_parsed_tool_rich as _make_parsed_tool,

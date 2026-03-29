@@ -3,6 +3,8 @@
 import os
 
 import pytest
+from gxformat2.normalized import ensure_native
+from gxformat2.normalized._native import NormalizedNativeWorkflow
 
 from galaxy.tool_util.workflow_state.scripts.tool_cache import build_parser
 from galaxy.tool_util.workflow_state.scripts.workflow_lint_stateful import (
@@ -18,8 +20,6 @@ from galaxy.tool_util.workflow_state.toolshed_tool_info import (
     parse_toolshed_tool_id,
     ToolShedGetToolInfo,
 )
-from gxformat2.normalized import ensure_native
-from gxformat2.normalized._native import NormalizedNativeWorkflow
 
 # --- parse_toolshed_tool_id ---
 

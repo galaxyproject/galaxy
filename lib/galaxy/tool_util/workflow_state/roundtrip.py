@@ -1373,7 +1373,10 @@ def run_roundtrip_validate_tree(options: RoundTripValidateTreeOptions) -> int:
             results=results,
         )
 
-    from ._tree_orchestrator import TreeContext, run_tree
+    from ._tree_orchestrator import (
+        run_tree,
+        TreeContext,
+    )
 
     ctx = TreeContext(root=options.workflow_path, tool_info=tool_info, include_format2=False)
     return run_tree(

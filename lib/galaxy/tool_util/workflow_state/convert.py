@@ -22,18 +22,18 @@ from ._types import (
     GetToolInfo,
     ToolInputs,
 )
-from ._walker import (
-    SKIP_VALUE,
-    walk_format2_state,
-    walk_native_state,
-)
 from ._util import (
-    StepLike,
     coerce_select_value,
     is_connected_or_runtime,
     step_connected_paths,
     step_input_connections,
     step_tool_state,
+    StepLike,
+)
+from ._walker import (
+    SKIP_VALUE,
+    walk_format2_state,
+    walk_native_state,
 )
 from .legacy_parameters import (
     ReplacementClassification,

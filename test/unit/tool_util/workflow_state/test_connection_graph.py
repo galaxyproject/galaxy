@@ -5,6 +5,7 @@ data input/output extraction, and topological sort.
 """
 
 import pytest
+from gxformat2.normalized import NormalizedNativeStep
 
 from galaxy.tool_util.parameters import (
     ConditionalParameterModel,
@@ -24,7 +25,6 @@ from galaxy.tool_util_models.parameters import (
     LabelValue,
     SectionParameterModel,
 )
-from gxformat2.normalized import NormalizedNativeStep
 from galaxy.util.topsort import CycleError
 from .connection_test_fixtures import (
     make_collection_input,

@@ -3,12 +3,12 @@
 from galaxy.tool_util.parameters import input_models_for_tool_source
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.unittest_utils.parameters import parameter_bundle_for_file
-from galaxy.util import galaxy_directory
 from galaxy.tool_util.workflow_state.legacy_parameters import (
     ReplacementClassification,
     scan_format2_state,
     scan_native_state,
 )
+from galaxy.util import galaxy_directory
 
 
 def _random_lines_inputs():

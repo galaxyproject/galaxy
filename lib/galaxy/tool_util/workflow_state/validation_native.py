@@ -18,7 +18,6 @@ from ._types import (
     ToolInputs,
 )
 from ._util import (
-    StepLike,
     coerce_select_value,
     is_connected_or_runtime,
     step_connected_paths,
@@ -26,6 +25,7 @@ from ._util import (
     step_tool_id,
     step_tool_state,
     step_tool_version,
+    StepLike,
 )
 from ._walker import (
     SKIP_VALUE,

@@ -19,21 +19,20 @@ from typing import (
 )
 
 from gxformat2.normalized import (
-    NormalizedNativeWorkflow,
     ensure_native,
+    NormalizedNativeWorkflow,
 )
 
-from ._cli_common import (
-    setup_tool_info,
-    ToolCacheOptions,
-)
 from galaxy.tool_util.parameters import (
     ConditionalParameterModel,
     RepeatParameterModel,
     ToolParameterT,
 )
 from galaxy.tool_util_models.parameters import SectionParameterModel
-from ._tree_orchestrator import skip_workflow
+from ._cli_common import (
+    setup_tool_info,
+    ToolCacheOptions,
+)
 from ._report_models import (
     CleanStepResult,
     SingleCleanReport,
@@ -42,6 +41,7 @@ from ._report_models import (
     wrap_single_clean,
 )
 from ._report_output import emit_reports
+from ._tree_orchestrator import skip_workflow
 from ._types import (
     GetToolInfo,
     NativeStepDict,
@@ -54,13 +54,13 @@ from ._walker import (
     as_dict,
     as_list,
 )
+from .precheck import precheck_native_workflow
 from .stale_keys import (
     ConflictingCategoryError,
     InvalidCategoryError,
     StaleKeyCategory,
     StaleKeyPolicy,
 )
-from .precheck import precheck_native_workflow
 from .validation_native import get_parsed_tool_for_native_step
 from .workflow_tools import load_workflow
 
@@ -482,7 +482,10 @@ def clean_tree(
 
     If output_template is None, operates in dry-run mode (no writes).
     """
-    from ._tree_orchestrator import TreeContext, collect_tree
+    from ._tree_orchestrator import (
+        collect_tree,
+        TreeContext,
+    )
 
     ctx = TreeContext(root=root, tool_info=get_tool_info, include_format2=False)
     process_one = _make_clean_process_one(policy=policy, output_template=output_template)
@@ -647,7 +650,10 @@ def run_clean_tree(options: CleanTreeOptions) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 2
 
-    from ._tree_orchestrator import TreeContext, run_tree
+    from ._tree_orchestrator import (
+        run_tree,
+        TreeContext,
+    )
 
     ctx = TreeContext(root=options.workflow_path, tool_info=tool_info, include_format2=False)
     process_one = _make_clean_process_one(policy=policy, output_template=options.output_template)

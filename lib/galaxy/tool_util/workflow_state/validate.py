@@ -32,6 +32,7 @@ from ._tree_orchestrator import (
     TreeResult,
 )
 from ._types import GetToolInfo
+from .connection_validation import validate_connections_report
 from .precheck import (
     precheck_native_workflow,
     WorkflowPrecheck,
@@ -45,7 +46,6 @@ from .stale_keys import (
 )
 from .validation import _format
 from .validation_format2 import validate_step_format2
-from .connection_validation import validate_connections_report
 from .validation_json_schema import validate_workflow_json_schema
 from .validation_native import (
     get_parsed_tool_for_native_step,
@@ -225,7 +225,10 @@ def _validate_native(
 
 
 def _validate_format2(workflow_dict: dict, get_tool_info: GetToolInfo, prefix: str = "") -> List[ValidationStepResult]:
-    from gxformat2.normalized import ensure_format2, NormalizedFormat2
+    from gxformat2.normalized import (
+        ensure_format2,
+        NormalizedFormat2,
+    )
 
     results: List[ValidationStepResult] = []
     nf2 = ensure_format2(workflow_dict, expand=True)

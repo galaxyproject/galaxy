@@ -14,13 +14,9 @@ from typing import (
     Optional,
 )
 
-from pydantic import (
-    BaseModel,
-    computed_field,
-    Field,
-)
-
 from gxformat2.lint import (
+    _try_build_nf2,
+    _try_build_nnw,
     EXIT_CODE_FILE_PARSE_FAILED,
     EXIT_CODE_FORMAT_ERROR,
     EXIT_CODE_LINT_FAILED,
@@ -29,11 +25,14 @@ from gxformat2.lint import (
     lint_format2,
     lint_ga,
     lint_pydantic_validation,
-    _try_build_nf2,
-    _try_build_nnw,
 )
 from gxformat2.linting import LintContext
 from gxformat2.yaml import ordered_load_path
+from pydantic import (
+    BaseModel,
+    computed_field,
+    Field,
+)
 
 from ._cli_common import (
     setup_tool_info,
@@ -384,7 +383,11 @@ def run_lint_stateful_tree(options: LintStatefulTreeOptions) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 2
 
-    from ._tree_orchestrator import skip_workflow, TreeContext, run_tree
+    from ._tree_orchestrator import (
+        run_tree,
+        skip_workflow,
+        TreeContext,
+    )
     from .workflow_tree import WorkflowInfo
 
     def process_one(info: WorkflowInfo, wf_dict: dict, get_tool_info):

@@ -10,13 +10,11 @@ import os
 import sys
 from typing import Optional
 
-from pydantic import BaseModel
-
 from gxformat2.normalized import ensure_native
+from pydantic import BaseModel
 
 from galaxy.tool_util.model_factory import parse_tool
 from galaxy.tool_util.parser.factory import get_tool_source
-
 from .toolshed_tool_info import (
     DEFAULT_TOOLSHED_URL,
     parse_toolshed_tool_id,

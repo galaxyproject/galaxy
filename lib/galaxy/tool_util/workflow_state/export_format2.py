@@ -18,12 +18,6 @@ from typing import (
     Any,
 )
 
-from pydantic import (
-    BaseModel,
-    computed_field,
-    Field,
-)
-
 from gxformat2.normalized import (
     ensure_native,
     NormalizedFormat2,
@@ -31,6 +25,11 @@ from gxformat2.normalized import (
     to_format2,
 )
 from gxformat2.options import ConversionOptions
+from pydantic import (
+    BaseModel,
+    computed_field,
+    Field,
+)
 
 from ._cli_common import (
     setup_tool_info,
@@ -361,7 +360,11 @@ def run_export_tree(options: ExportTreeOptions) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 2
 
-    from ._tree_orchestrator import skip_workflow, TreeContext, run_tree
+    from ._tree_orchestrator import (
+        run_tree,
+        skip_workflow,
+        TreeContext,
+    )
     from .workflow_tree import WorkflowInfo
 
     def process_one(info: WorkflowInfo, wf_dict: dict, get_tool_info):

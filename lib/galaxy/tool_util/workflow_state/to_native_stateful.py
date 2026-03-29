@@ -22,18 +22,17 @@ from typing import (
     Optional,
 )
 
-from pydantic import (
-    BaseModel,
-    computed_field,
-    Field,
-)
-
 from gxformat2.normalized import (
     NormalizedNativeWorkflow,
     to_native,
 )
 from gxformat2.options import ConversionOptions
 from gxformat2.yaml import ordered_load_path
+from pydantic import (
+    BaseModel,
+    computed_field,
+    Field,
+)
 
 from ._cli_common import (
     setup_tool_info,
@@ -273,7 +272,11 @@ def run_to_native_tree(options: ToNativeTreeOptions) -> int:
 
     tool_info = setup_tool_info(options)
 
-    from ._tree_orchestrator import skip_workflow, TreeContext, run_tree
+    from ._tree_orchestrator import (
+        run_tree,
+        skip_workflow,
+        TreeContext,
+    )
     from .workflow_tree import WorkflowInfo
 
     def process_one(info: WorkflowInfo, wf_dict: dict, get_tool_info):

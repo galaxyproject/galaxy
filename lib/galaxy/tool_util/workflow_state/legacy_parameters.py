@@ -13,7 +13,6 @@ from typing import List
 from pydantic import BaseModel
 
 from galaxy.tool_util.parameters import ToolParameterT
-
 from ._walker import (
     SKIP_VALUE,
     walk_format2_state,

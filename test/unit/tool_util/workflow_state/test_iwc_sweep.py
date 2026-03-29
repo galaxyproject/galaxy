@@ -13,7 +13,6 @@ from typing import (
 )
 
 import pytest
-
 from gxformat2.normalized import ensure_native
 
 from galaxy.tool_util.workflow_state.cache import (

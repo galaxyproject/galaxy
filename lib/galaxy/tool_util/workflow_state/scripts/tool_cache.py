@@ -14,8 +14,6 @@ from ..cache import (
     InfoOptions,
     ListOptions,
     PopulateOptions,
-    SchemaOptions,
-    StructuralSchemaOptions,
     run_add,
     run_add_local,
     run_clear,
@@ -24,6 +22,8 @@ from ..cache import (
     run_populate,
     run_schema,
     run_structural_schema,
+    SchemaOptions,
+    StructuralSchemaOptions,
 )
 
 

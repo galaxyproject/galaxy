@@ -22,7 +22,6 @@ from galaxy.tool_util.parameters import (
     ToolParameterT,
 )
 from galaxy.tool_util_models.parameters import SectionParameterModel
-
 from ._walker import select_which_when_format2
 
 

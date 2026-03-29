@@ -7,6 +7,7 @@ have expected properties.
 
 import json
 
+from gxformat2.schema.json_schema import workflow_json_schema
 from jsonschema import Draft202012Validator
 
 from galaxy.tool_util.parameters.json import to_json_schema
@@ -27,7 +28,6 @@ from galaxy.tool_util_models.parameters import (
     TextParameterModel,
     ToolParameterBundleModel,
 )
-from gxformat2.schema.json_schema import workflow_json_schema
 
 
 def _make_test_bundle():
