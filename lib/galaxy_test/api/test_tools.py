@@ -384,31 +384,31 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert "ex2" in option_values
 
     @skip_without_tool("gx_int")
-    def test_parsed_tool(self):
-        """GET /api/tools/{tool_id}/parsed returns ParsedTool JSON."""
-        response = self._get("tools/gx_int/parsed")
+    def test_tool_interop(self):
+        """GET /api/tools/{tool_id}/interop returns ParsedTool JSON."""
+        response = self._get("tools/gx_int/interop")
         self._assert_status_code_is(response, 200)
-        parsed = response.json()
-        assert parsed["id"] == "gx_int"
-        assert "inputs" in parsed
-        assert "outputs" in parsed
-        assert len(parsed["inputs"]) > 0
+        interop = response.json()
+        assert interop["id"] == "gx_int"
+        assert "inputs" in interop
+        assert "outputs" in interop
+        assert len(interop["inputs"]) > 0
 
     @skip_without_tool("gx_int")
-    def test_parsed_tool_versioned(self):
-        """GET /api/tools/{tool_id}/versions/{version}/parsed returns same result."""
+    def test_tool_interop_versioned(self):
+        """GET /api/tools/{tool_id}/versions/{version}/interop returns same result."""
         # Get version from the unversioned endpoint first
-        response = self._get("tools/gx_int/parsed")
+        response = self._get("tools/gx_int/interop")
         self._assert_status_code_is(response, 200)
-        parsed = response.json()
-        version = parsed["version"]
+        interop = response.json()
+        version = interop["version"]
 
-        versioned_response = self._get(f"tools/gx_int/versions/{version}/parsed")
+        versioned_response = self._get(f"tools/gx_int/versions/{version}/interop")
         self._assert_status_code_is(versioned_response, 200)
-        versioned_parsed = versioned_response.json()
-        assert versioned_parsed["id"] == parsed["id"]
-        assert versioned_parsed["version"] == version
-        assert len(versioned_parsed["inputs"]) == len(parsed["inputs"])
+        versioned_interop = versioned_response.json()
+        assert versioned_interop["id"] == interop["id"]
+        assert versioned_interop["version"] == version
+        assert len(versioned_interop["inputs"]) == len(interop["inputs"])
 
     @skip_without_tool("gx_int")
     def test_versioned_schema_endpoints(self):

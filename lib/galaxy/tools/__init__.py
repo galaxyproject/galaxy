@@ -1149,7 +1149,6 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     def history_manager(self):
         return self.app.history_manager
 
-    @property
     def parsed_tool(self) -> ParsedTool:
         """Return a ParsedTool model for this tool.
 

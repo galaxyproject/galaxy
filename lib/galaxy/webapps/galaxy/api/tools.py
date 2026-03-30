@@ -434,9 +434,9 @@ class FetchTools:
         )
 
     @router.get(
-        "/api/tools/{tool_id}/parsed",
-        operation_id="tools__parsed",
-        summary="Return Galaxy's meta model description of the tool's inputs and outputs.",
+        "/api/tools/{tool_id}/interop",
+        operation_id="tools__interop",
+        summary="Return Galaxy's meta model description of the tool's metadata, inputs, and outputs.",
     )
     def parsed_tool(
         self,
@@ -447,9 +447,9 @@ class FetchTools:
         return self._parsed_tool(trans, tool_id, tool_version)
 
     @router.get(
-        "/api/tools/{tool_id}/versions/{tool_version}/parsed",
-        operation_id="tools__versioned_parsed",
-        summary="Return Galaxy's meta model description of the tool's inputs and outputs.",
+        "/api/tools/{tool_id}/versions/{tool_version}/interop",
+        operation_id="tools__versioned_interop",
+        summary="Return Galaxy's meta model description of the tool's metadata, inputs, and outputs.",
     )
     def parsed_tool_versioned(
         self,
@@ -512,7 +512,7 @@ class FetchTools:
     ) -> ParsedTool:
         tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
         tool = get_tool(trans, tool_run_ref)
-        return tool.parsed_tool
+        return tool.parsed_tool()
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
