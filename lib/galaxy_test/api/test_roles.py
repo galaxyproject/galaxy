@@ -131,6 +131,36 @@ class TestRolesApi(ApiTestCase):
         assert_status_code_is(response, 404)
 
     @requires_admin
+    def test_list_with_pagination(self):
+        self._create_role()
+        self._create_role()
+        # Test limit
+        response = self._get("roles", data={"limit": 1}, admin=True)
+        assert_status_code_is(response, 200)
+        data = response.json()
+        assert len(data) == 1
+        # Test limit + offset returns different result
+        response_offset = self._get("roles", data={"limit": 1, "offset": 1}, admin=True)
+        assert_status_code_is(response_offset, 200)
+        data_offset = response_offset.json()
+        assert len(data_offset) == 1
+        assert data[0]["id"] != data_offset[0]["id"]
+
+    @requires_admin
+    def test_list_with_search(self):
+        unique = self.dataset_populator.get_random_name()
+        role = self._create_role(name=f"searchable-{unique}")
+        response = self._get("roles", data={"search": unique}, admin=True)
+        assert_status_code_is(response, 200)
+        data = response.json()
+        assert any(r["id"] == role["id"] for r in data)
+        # Search for non-existing returns empty
+        response = self._get("roles", data={"search": "nonexistent-xyz-99999"}, admin=True)
+        assert_status_code_is(response, 200)
+        data = response.json()
+        assert len(data) == 0
+
+    @requires_admin
     def test_create_only_admin(self):
         response = self._post("roles", json=True)
         assert_status_code_is(response, 403)

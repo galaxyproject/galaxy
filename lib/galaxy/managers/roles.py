@@ -66,8 +66,21 @@ class RoleManager(base.ModelManager[model.Role]):
 
         return role
 
-    def list_displayable_roles(self, trans: ProvidesUserContext) -> list[Role]:
-        return get_displayable_roles(trans.sa_session, trans.user, trans.user_is_admin, trans.app.security_agent)
+    def list_displayable_roles(
+        self,
+        trans: ProvidesUserContext,
+        search: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[Role]:
+        return get_displayable_roles(
+            trans.sa_session,
+            trans.user,
+            trans.user_is_admin,
+            search=search,
+            limit=limit,
+            offset=offset,
+        )
 
     def create_role(self, trans: ProvidesUserContext, role_definition_model: RoleDefinitionModel) -> model.Role:
         name = role_definition_model.name
