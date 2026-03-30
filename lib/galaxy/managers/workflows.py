@@ -246,17 +246,19 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
                                 raise exceptions.RequestParameterInvalidException(message)
                             if user is None:
-                                stmt = stmt.where(false())
-                            else:
-                                stmt = stmt.where(StoredWorkflowUserShareAssociation.user == user)
+                                raise exceptions.RequestParameterInvalidException(
+                                    "Can only use search filter is:shared_with_me when logged in."
+                                )
+                            stmt = stmt.where(StoredWorkflowUserShareAssociation.user == user)
                         elif q == "bookmarked":
                             if user is None:
-                                stmt = stmt.where(false())
-                            else:
-                                stmt = stmt.join(
-                                    model.StoredWorkflowMenuEntry,
-                                    model.StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id,
-                                ).where(model.StoredWorkflowMenuEntry.user_id == user.id)
+                                raise exceptions.RequestParameterInvalidException(
+                                    "Can only use search filter is:bookmarked when logged in."
+                                )
+                            stmt = stmt.join(
+                                model.StoredWorkflowMenuEntry,
+                                model.StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id,
+                            ).where(model.StoredWorkflowMenuEntry.user_id == user.id)
                 elif isinstance(term, RawTextTerm):
                     tf = w_tag_filter(term.text, False)
                     alias = aliased(User)
