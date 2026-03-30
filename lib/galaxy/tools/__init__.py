@@ -62,6 +62,7 @@ from galaxy.model import (
     ToolRequest,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.model.dataset_collections.types.paired_or_unpaired import SINGLETON_IDENTIFIER
 from galaxy.model.dataset_collections.types.sample_sheet_workbook import _sample_sheet_to_list_collection_type
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
@@ -4039,8 +4040,11 @@ class SplitPairedAndUnpairedTool(DatabaseOperationTool):
             element_object = dce.element_object
             # In list:paired_or_unpaired collections, unpaired elements are
             # wrapped in a 1-element sub-collection. Unwrap to get the dataset.
-            if getattr(element_object, "history_content_type", None) != "dataset":
-                element_object = element_object.elements[0].element_object
+            if getattr(element_object, "elements", None):
+                inner_element = element_object.elements[0]
+                assert inner_element.element_identifier == SINGLETON_IDENTIFIER
+                element_object = inner_element.element_object
+            assert element_object.history_content_type == "dataset"
             copied_value = element_object.copy(copy_tags=element_object.tags, flush=False)
             unpaired_dce_copies[element_identifier] = copied_value
             unpaired_dce_columns[element_identifier] = dce.columns
