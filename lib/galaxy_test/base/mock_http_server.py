@@ -141,6 +141,7 @@ class MockHttpServer:
         request_method: str = "GET",
         support_head: bool = False,
         support_ranges: bool = False,
+        redirect_to_self: bool = False,
     ) -> str:
         """Register a mock endpoint and return its URL, or return remote_url with skip-if-down.
 
@@ -155,6 +156,7 @@ class MockHttpServer:
             request_method: HTTP method to match (GET, POST, etc.).
             support_head: Whether to also respond to HEAD requests.
             support_ranges: Whether to support Range request headers (HTTP 206).
+            redirect_to_self: Whether to add a Location header pointing to this route's own URL.
         """
         if self.is_remote:
             if not is_site_up(remote_url):
@@ -194,7 +196,10 @@ class MockHttpServer:
             support_head=support_head,
             support_ranges=support_ranges,
         )
-        return f"{self.base_url}{path}"
+        url = f"{self.base_url}{path}"
+        if redirect_to_self:
+            headers["Location"] = url
+        return url
 
 
 def start_mock_http_server(host: str = "127.0.0.1", port: int = 0) -> tuple[HTTPServer, str]:
