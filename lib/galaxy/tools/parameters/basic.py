@@ -2451,15 +2451,25 @@ class DataToolParameter(BaseDataToolParameter):
         # Route each to the correct options list by type so the client can
         # match them by id *and* src.
         for value in job_input_values:
-            if isinstance(value, (HistoryDatasetCollectionAssociation, HistoryDatasetAssociation)):
+            if isinstance(value, HistoryDatasetCollectionAssociation):
+                # HDCAs are handled by the dataset collections section below;
+                # only add here if not visible in the current history.
+                if value.deleted or not value.visible or value.history != history:
+                    if value.deleted:
+                        state = "deleted"
+                    elif not value.visible:
+                        state = "hidden"
+                    else:
+                        state = "not in current history"
+                    append(d["options"]["hdca"], value, f"({state}) {value.name}", "hdca", True)
+            elif isinstance(value, HistoryDatasetAssociation):
                 if value.deleted:
                     state = "deleted"
                 elif not value.visible:
                     state = "hidden"
                 else:
                     state = "not in current history"
-                src = "hdca" if isinstance(value, HistoryDatasetCollectionAssociation) else "hda"
-                append(d["options"][src], value, f"({state}) {value.name}", src, True)
+                append(d["options"]["hda"], value, f"({state}) {value.name}", "hda", True)
             elif isinstance(value, DatasetCollectionElement):
                 append_dce(value)
             elif isinstance(value, LibraryDatasetDatasetAssociation):
