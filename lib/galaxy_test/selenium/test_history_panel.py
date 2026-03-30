@@ -156,7 +156,6 @@ class TestHistoryPanel(SeleniumTestCase):
             close_btn.click()
             self.sleep_for(self.wait_types.UX_RENDER)
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_refresh_preserves_state(self):
         self.perform_upload(self.get_filename("1.txt"))
@@ -175,7 +174,7 @@ class TestHistoryPanel(SeleniumTestCase):
         assert self.history_panel_item_showing_details(hid=1)
 
         # Close the detailed display, refresh, and ensure they are still closed.
-        self.history_panel_click_item_title(hid=1, wait=False)
+        self.history_panel_click_item_title(hid=1, wait=True)
         assert not self.history_panel_item_showing_details(hid=1)
 
         self._refresh()
