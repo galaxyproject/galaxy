@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+from contextlib import contextmanager
 from datetime import datetime
 from typing import (
     Any,
@@ -390,6 +391,24 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
 
     def _exists_remotely(self, rel_path: str) -> bool:
         raise NotImplementedError()
+
+    @contextmanager
+    def _atomic_download(self, cache_path):
+        """Download to a temp file then atomically rename to prevent serving partial files.
+
+        Usage::
+
+            with self._atomic_download(local_destination) as tmp_path:
+                do_download(tmp_path)
+        """
+        tmp_path = cache_path + ".tmp"
+        try:
+            yield tmp_path
+            os.rename(tmp_path, cache_path)
+        except BaseException:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            raise
 
     def _download(self, rel_path: str) -> bool:
         raise NotImplementedError()

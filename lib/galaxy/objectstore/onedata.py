@@ -201,11 +201,12 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             if not self._caching_allowed(rel_path, file_size):
                 return False
 
-            with open(dst_path, "wb") as dst:
-                for chunk in self._client.iter_file_content(
-                    self.space_name, chunk_size=STREAM_CHUNK_SIZE, file_path=remote_path
-                ):
-                    dst.write(chunk)
+            with self._atomic_download(dst_path) as tmp:
+                with open(tmp, "wb") as dst:
+                    for chunk in self._client.iter_file_content(
+                        self.space_name, chunk_size=STREAM_CHUNK_SIZE, file_path=remote_path
+                    ):
+                        dst.write(chunk)
 
             log.debug("Pulled '%s' into cache to %s", rel_path, dst_path)
 

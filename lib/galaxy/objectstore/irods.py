@@ -432,7 +432,8 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         options = {kw.FORCE_FLAG_KW: "", kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
-            self.session.data_objects.get(data_object_path, cache_path, **options)
+            with self._atomic_download(cache_path) as tmp:
+                self.session.data_objects.get(data_object_path, tmp, **options)
             log.debug("Pulled data object '%s' into cache to %s", rel_path, cache_path)
             return True
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
