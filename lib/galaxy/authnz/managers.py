@@ -1,6 +1,13 @@
 import builtins
 import logging
 
+import jwt as pyjwt
+from social_core.exceptions import (
+    AuthAlreadyAssociated,
+    AuthCanceled,
+    AuthTokenError,
+)
+
 from galaxy import (
     exceptions,
     model,
@@ -321,6 +328,26 @@ class AuthnzManager:
             return success, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
         except exceptions.AuthenticationFailed:
             raise
+        except AuthCanceled:
+            msg = f"Authentication with `{provider}` was canceled or the authorization code has expired. Please try logging in again."
+            log.warning(msg)
+            return False, msg, (None, None)
+        except AuthAlreadyAssociated:
+            msg = (
+                f"The account from `{provider}` is already linked to a different Galaxy user. "
+                "Please log in to the Galaxy account that is already linked to this identity, "
+                "or use a different identity provider account."
+            )
+            log.warning(msg)
+            return False, msg, (None, None)
+        except AuthTokenError:
+            msg = (
+                f"Authentication session with `{provider}` has expired or is invalid. "
+                "This can happen when using multiple browser tabs during login. "
+                "Please close other login tabs and try again."
+            )
+            log.warning(msg)
+            return False, msg, (None, None)
         except Exception:
             msg = f"An error occurred when handling callback from `{provider}` identity provider.  Please contact an administrator for assistance."
             log.exception(msg)
@@ -365,6 +392,9 @@ class AuthnzManager:
             user, jwt = None, None
             try:
                 user, jwt = backend.decode_user_access_token(sa_session, access_token)
+            except pyjwt.exceptions.InvalidTokenError as e:
+                log.warning("Could not decode access token: %s", e)
+                raise exceptions.AuthenticationFailed(err_msg="Invalid access token.")
             except Exception:
                 log.exception("Could not decode access token")
                 raise exceptions.AuthenticationFailed(err_msg="Invalid access token or an unexpected error occurred.")
