@@ -91,9 +91,8 @@ function onApply() {
             <div class="help-text mt-2">
                 Use the text boxes above to enter parts of file names that differentiate forward and reverse pairs.
                 These could be things like <code>_F</code> and <code>_R</code>, <code>_1</code> and <code>_2</code>, or
-                <code>.1</code> and <code>.2</code>. For example, if your files are named
-                <code>reads_F.fq.gz</code> and <code>reads_R.fq.gz</code>, then enter <code>_F</code> and
-                <code>_R</code>.
+                <code>.1</code> and <code>.2</code>. For example, if your files are named <code>reads_F.fq.gz</code> and
+                <code>reads_R.fq.gz</code>, then enter <code>_F</code> and <code>_R</code>.
             </div>
             <div class="summary-text mt-2">
                 {{ summaryText }}
@@ -106,12 +105,14 @@ function onApply() {
             <ol class="summary-list">
                 <li v-for="(pair, index) of currentSummary?.pairs" :key="`paired_${index}`">
                     <span v-if="index > 0">,</span>
-                    <span class="pair-name">{{ pair.name }}</span> (<span class="direction">FORWARD</span
-                    ><span v-if="showHid" class="dataset-hid">{{ getHid(pair.forward) }}: </span
-                    ><span class="dataset-name">{{ pair.forward.name }}</span> | <span class="direction">REVERSE</span
-                    ><span v-if="showHid" class="dataset-hid">{{ getHid(pair.reverse) }}: </span
-                    ><span class="dataset-name">{{ pair.reverse.name }}</span
-                    >)
+                    <span class="pair-name">{{ pair.name }}</span>
+                    (
+                    <span class="direction">FORWARD</span>
+                    <span v-if="showHid" class="dataset-hid">{{ getHid(pair.forward) }}: </span>
+                    <span class="dataset-name">{{ pair.forward.name }}</span> | <span class="direction">REVERSE</span>
+                    <span v-if="showHid" class="dataset-hid">{{ getHid(pair.reverse) }}: </span>
+                    <span class="dataset-name">{{ pair.reverse.name }}</span>
+                    )
                 </li>
             </ol>
             <span v-if="hasUnmatchedDatasets">
@@ -136,11 +137,9 @@ function onApply() {
                                 'extension' in unpairedDataset &&
                                 showElementExtension(unpairedDataset)
                             "
-                            class="dataset-extension-wrapper"
-                            >(
-                            <span class="dataset-extension">{{ unpairedDataset.extension }}</span>
-                            )</span
-                        >
+                            class="dataset-extension-wrapper">
+                            <span class="dataset-extension">({{ unpairedDataset.extension }})</span>
+                        </span>
                     </li>
                 </ul>
             </span>
