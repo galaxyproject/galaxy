@@ -2,7 +2,7 @@
   "id": "cat1",
   "version": "1.0.0",
   "name": "Concatenate multiple datasets or collections",
-  "description": "",
+  "description": null,
   "inputs": [
     {
       "name": "input1",

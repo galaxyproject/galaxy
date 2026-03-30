@@ -8,6 +8,7 @@ This manifest + golden directory is the cross-language contract for the
 Node.js tool cache proxy package.
 """
 
+import hashlib
 import json
 import os
 
@@ -24,6 +25,66 @@ from galaxy.tool_util_models import ParsedTool
 FIXTURES_DIR = os.path.dirname(__file__)
 MANIFEST_PATH = os.path.join(FIXTURES_DIR, "cache_golden.yaml")
 GOLDEN_CACHE_DIR = os.path.join(FIXTURES_DIR, "cache_golden")
+
+SUPPORTED_FORMAT_VERSION = 1
+
+
+def _resolve_path(inputs, path):
+    """Walk a ParsedTool input tree to resolve a dotted path to a parameter type.
+
+    Path segments are interpreted based on the current node type:
+    - gx_repeat/gx_section: segment is a child parameter name
+    - gx_conditional: first segment after the conditional is the test param name
+      OR a when-branch discriminator value, then remaining segments resolve within that branch
+    """
+    parts = path.split(".")
+    current_inputs = inputs
+
+    i = 0
+    while i < len(parts):
+        segment = parts[i]
+        # Find matching parameter in current_inputs
+        param = None
+        for p in current_inputs:
+            if p.name == segment:
+                param = p
+                break
+        if param is None:
+            return None
+
+        # Last segment — return its type
+        if i == len(parts) - 1:
+            return param.parameter_type
+
+        ptype = param.parameter_type
+        if ptype == "gx_conditional":
+            # Next segment could be the test parameter name or a when-branch discriminator
+            next_seg = parts[i + 1]
+            if param.test_parameter and param.test_parameter.name == next_seg:
+                # Resolving the test parameter itself
+                if i + 1 == len(parts) - 1:
+                    return param.test_parameter.parameter_type
+                # Can't go deeper into a test parameter
+                return None
+            # Otherwise next_seg is a when-branch discriminator
+            when_branch = None
+            for w in param.whens:
+                if w.discriminator == next_seg:
+                    when_branch = w
+                    break
+            if when_branch is None:
+                return None
+            current_inputs = when_branch.parameters
+            i += 2  # skip conditional name + discriminator
+            continue
+        elif ptype in ("gx_repeat", "gx_section"):
+            current_inputs = param.parameters
+            i += 1
+            continue
+        else:
+            return None
+
+    return None
 
 
 def _assert_tool_matches(result, expected):
@@ -51,7 +112,12 @@ def _assert_tool_matches(result, expected):
 @pytest.fixture(scope="module")
 def manifest():
     with open(MANIFEST_PATH) as f:
-        return yaml.safe_load(f)
+        data = yaml.safe_load(f)
+    assert "format_version" in data, "cache_golden.yaml missing format_version field"
+    assert (
+        data["format_version"] == SUPPORTED_FORMAT_VERSION
+    ), f"Unsupported manifest format_version {data['format_version']}, expected {SUPPORTED_FORMAT_VERSION}"
+    return data
 
 
 @pytest.fixture(scope="module")
@@ -149,6 +215,39 @@ class TestVersionFromSeparateArg:
             assert result.id == expected["id"]
 
 
+# --- Nested structure assertions ---
+
+
+class TestNestedStructure:
+    """Verify deep parameter nesting matches manifest expected_nested_structure."""
+
+    def test_nested_paths(self, manifest, tool_info):
+        for section in ("toolshed_tools", "stock_tools"):
+            for entry in manifest.get(section, []):
+                nested = entry.get("expected_nested_structure")
+                if not nested:
+                    continue
+                version = entry.get("expected_version") or entry.get("tool_version")
+                result = tool_info.get_tool_info(entry["tool_id"], version)
+                assert result is not None, f"Cache miss: {entry['tool_id']}"
+                for path, expected_type in nested.items():
+                    actual_type = _resolve_path(result.inputs, path)
+                    assert actual_type is not None, f"Path {path!r} not found in {entry['tool_id']}"
+                    assert actual_type == expected_type, (
+                        f"Type mismatch at {path!r} in {entry['tool_id']}: "
+                        f"expected {expected_type}, got {actual_type}"
+                    )
+
+    def test_bogus_paths_return_none(self, manifest, tool_info):
+        """Invalid paths resolve to None rather than raising."""
+        entry = manifest["toolshed_tools"][0]
+        version = entry["expected_version"]
+        result = tool_info.get_tool_info(entry["tool_id"], version)
+        assert result is not None
+        for bogus in ("nonexistent", "results.nonexistent", "results.software_cond.fake_when.x"):
+            assert _resolve_path(result.inputs, bogus) is None, f"Expected None for {bogus!r}"
+
+
 # --- Round-trip integrity ---
 
 
@@ -156,9 +255,9 @@ class TestGoldenIntegrity:
     """Verify golden cache files are valid and consistent with manifest."""
 
     def test_all_json_files_are_valid_parsed_tools(self):
-        """Every .json in cache_golden/ (except index.json) validates as ParsedTool."""
+        """Every .json in cache_golden/ (except index.json/checksums.json) validates as ParsedTool."""
         for fname in os.listdir(GOLDEN_CACHE_DIR):
-            if fname == "index.json" or not fname.endswith(".json"):
+            if fname in ("index.json", "checksums.json") or not fname.endswith(".json"):
                 continue
             path = os.path.join(GOLDEN_CACHE_DIR, fname)
             with open(path) as f:
@@ -174,7 +273,9 @@ class TestGoldenIntegrity:
             expected_keys.add(entry["expected_cache_key"])
 
         actual_files = {
-            f.replace(".json", "") for f in os.listdir(GOLDEN_CACHE_DIR) if f.endswith(".json") and f != "index.json"
+            f.replace(".json", "")
+            for f in os.listdir(GOLDEN_CACHE_DIR)
+            if f.endswith(".json") and f not in ("index.json", "checksums.json")
         }
         assert expected_keys == actual_files, (
             f"Manifest/golden mismatch.\n"
@@ -190,6 +291,32 @@ class TestGoldenIntegrity:
         index_keys = set(index_data.get("entries", {}).keys())
 
         actual_files = {
-            f.replace(".json", "") for f in os.listdir(GOLDEN_CACHE_DIR) if f.endswith(".json") and f != "index.json"
+            f.replace(".json", "")
+            for f in os.listdir(GOLDEN_CACHE_DIR)
+            if f.endswith(".json") and f not in ("index.json", "checksums.json")
         }
         assert index_keys == actual_files
+
+    def test_checksums_valid(self):
+        """checksums.json matches actual file hashes."""
+        checksums_path = os.path.join(GOLDEN_CACHE_DIR, "checksums.json")
+        with open(checksums_path) as f:
+            checksums = json.load(f)
+
+        # Verify manifest hash
+        with open(MANIFEST_PATH, "rb") as f:
+            manifest_hash = hashlib.sha256(f.read()).hexdigest()
+        assert checksums["manifest_sha256"] == manifest_hash, (
+            f"Manifest checksum stale: expected {manifest_hash}, got {checksums['manifest_sha256']}. "
+            "Regenerate with: PYTHONPATH=lib python generate_golden_cache.py"
+        )
+
+        # Verify each golden file hash
+        for fname, expected_hash in checksums["files"].items():
+            fpath = os.path.join(GOLDEN_CACHE_DIR, fname)
+            assert os.path.exists(fpath), f"checksums.json references missing file: {fname}"
+            with open(fpath, "rb") as f:
+                actual_hash = hashlib.sha256(f.read()).hexdigest()
+            assert (
+                actual_hash == expected_hash
+            ), f"Checksum mismatch for {fname}. Regenerate with: PYTHONPATH=lib python generate_golden_cache.py"

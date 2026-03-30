@@ -513,6 +513,13 @@ class ParsedTool(ToolSourceBaseModel):
     xrefs: list[XrefDict]
     help: HelpContent | None
 
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_description(cls, values):
+        if isinstance(values, dict) and values.get("description") == "":
+            values["description"] = None
+        return values
+
 
 class BaseTestOutputModel(StrictModel):
     model_config = ConfigDict(extra="forbid", title="BaseTestOutputModel")

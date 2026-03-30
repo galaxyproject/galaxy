@@ -9,6 +9,8 @@
 # To regenerate: PYTHONPATH=lib python generate_golden_cache.py
 # Node tests read the same manifest and golden files, must produce identical cache keys.
 
+format_version: 1
+
 toolshed_tools:
   # Full pipeline: tool_id -> parse -> (url, trs_id, version) -> cache_key -> ParsedTool
 
@@ -43,6 +45,21 @@ toolshed_tools:
       output_count: 4
       output_names: ["stats", "plots", "html_report", "log"]
       citation_count: 1
+    # Path format: container.child for repeats/sections,
+    #              conditional.test_value.child for when-branches
+    expected_nested_structure:
+      "results": "gx_repeat"
+      "results.software_cond": "gx_conditional"
+      "results.software_cond.software": "gx_select"
+      "results.software_cond.bamtools.input": "gx_data"
+      "results.software_cond.bismark.output": "gx_repeat"
+      "results.software_cond.bismark.output.type": "gx_select"
+      "results.software_cond.bismark.output.input": "gx_data"
+      # conditional inside repeat inside conditional — deepest nesting
+      "results.software_cond.rseqc.output": "gx_repeat"
+      "results.software_cond.rseqc.output.type": "gx_conditional"
+      "results.software_cond.rseqc.output.type.type": "gx_select"
+      "results.software_cond.rseqc.output.type.bam_stat.input": "gx_data"
 
   - tool_id: "toolshed.g2.bx.psu.edu/repos/pjbriggs/trimmomatic/trimmomatic/0.39+galaxy2"
     expected_url: "https://toolshed.g2.bx.psu.edu"
@@ -59,6 +76,27 @@ toolshed_tools:
       output_count: 9
       output_names: ["fastq_out_paired", "fastq_out_unpaired", "fastq_out_r1_paired", "fastq_out_r2_paired", "fastq_out_r1_unpaired", "fastq_out_r2_unpaired", "fastq_out", "log_file", "err_file"]
       citation_count: 1
+    expected_nested_structure:
+      "readtype": "gx_conditional"
+      "readtype.single_or_paired": "gx_select"
+      "readtype.se.fastq_in": "gx_data"
+      "readtype.pair_of_files.fastq_r1_in": "gx_data"
+      "readtype.collection.fastq_pair": "gx_data_collection"
+      # conditional inside conditional
+      "illuminaclip": "gx_conditional"
+      "illuminaclip.do_illuminaclip": "gx_select"
+      "illuminaclip.yes.adapter_type": "gx_conditional"
+      "illuminaclip.yes.adapter_type.standard_or_custom": "gx_select"
+      "illuminaclip.yes.adapter_type.standard.adapter_fasta": "gx_select"
+      "illuminaclip.yes.adapter_type.custom.adapter_text": "gx_text"
+      "illuminaclip.yes.seed_mismatches": "gx_integer"
+      # conditional inside repeat
+      "operations": "gx_repeat"
+      "operations.operation": "gx_conditional"
+      "operations.operation.name": "gx_select"
+      "operations.operation.SLIDINGWINDOW.window_size": "gx_integer"
+      "operations.operation.MINLEN.minlen": "gx_integer"
+      "operations.operation.MAXINFO.strictness": "gx_float"
 
 stock_tools:
   # Stock tools use default_toolshed_url and tool_id as trs_id
@@ -71,6 +109,7 @@ stock_tools:
     expected_tool:
       name: "Concatenate multiple datasets or collections"
       id: "cat1"
+      description: null
       input_count: 2
       input_names: ["input1", "queries"]
       input_types: ["gx_data", "gx_repeat"]
