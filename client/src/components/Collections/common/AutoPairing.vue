@@ -166,13 +166,15 @@ function onApply() {
 </template>
 
 <style lang="scss" scoped>
+@import "@/style/scss/custom_theme_variables.scss";
+
 .help-text {
-    font-size: 0.9rem;
-    color: gray;
+    font-size: var(--font-size-medium);
+    color: var(--color-grey-400);
 }
 
 .summary-text {
-    font-size: 1rem;
+    font-size: var(--font-size-large);
 }
 
 .summary-list {
@@ -186,7 +188,7 @@ function onApply() {
             font-variant: small-caps;
             font-weight: normal;
             color: gray;
-            font-size: 0.8rem;
+            font-size: var(--font-size-small);
             padding-right: 5px;
             display: none;
         }
@@ -194,12 +196,12 @@ function onApply() {
 }
 
 .summary-list-header {
-    font-size: 1rem;
+    font-size: var(--font-size-large);
     font-weight: bold;
 }
 
 .summary-list-description {
-    font-size: 0.9rem;
+    font-size: var(--font-size-medium);
     font-style: italic;
 }
 
@@ -208,17 +210,17 @@ function onApply() {
 
     li {
         list-style-type: disc;
-        font-size: 0.9rem;
+        font-size: var(--font-size-medium);
     }
 }
 
 .pair-name {
     font-weight: bold;
-    font-size: 0.9rem;
+    font-size: var(--font-size-medium);
 }
 .unpaired-dataset-name {
     font-weight: bold;
-    font-size: 0.9rem;
+    font-size: var(--font-size-medium);
 }
 
 .dataset-extension-wrapper {
