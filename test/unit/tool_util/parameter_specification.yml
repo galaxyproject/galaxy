@@ -89,6 +89,16 @@ gx_int:
     - parameter: null
     - parameter: 'foobar'
     - parameter: {__class__: 'ConnectedValue2'}
+  workflow_step_native_valid:
+    - parameter: 5
+    - parameter: "5"
+    - {}
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+    - parameterx: 5
+    - parameter: "foobar"
+    - parameter: {__class__: 'ConnectedValue2'}
 
 
 gx_boolean:
@@ -143,6 +153,16 @@ gx_boolean:
   workflow_step_linked_invalid:
     - parameter: "true"
     - parameter: {__class__: 'ConnectedValue3'}
+  workflow_step_native_valid:
+    - parameter: True
+    - parameter: "true"
+    - parameter: "false"
+    - {}
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+    - parameter: mytrue
+    - parameter: "yes"
 
 gx_boolean_user:
   request_valid:
@@ -443,6 +463,19 @@ gx_text:
     - parameter: {}
     - parameter: { "moo": "cow" }
     - parameter: {"class": 'ConnectedValue'}
+  workflow_step_native_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - {}
+    - parameter: null
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+    - parameter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+    - parameter: {"class": 'ConnectedValue'}
 
 gx_text_optional:
   request_valid:
@@ -658,6 +691,13 @@ gx_select:
   workflow_step_linked_invalid:
   - parameter: 'foobar'
   - parameter: null
+  workflow_step_native_valid:
+  - parameter: "--ex1"
+  - {}
+  - parameter: {__class__: 'ConnectedValue'}
+  - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+  - parameter: 'foobar'
 
 gx_select_optional:
   request_valid:
@@ -1392,6 +1432,15 @@ gx_data:
    - {src: hda, id: 7}
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {__class__: 'ConnectedValueX'}
+  workflow_step_native_valid:
+   - parameter: {__class__: 'ConnectedValue'}
+   - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+   - {}
+   - parameter: null
+   - {src: hda, id: abcdabcd}
+   - {src: hda, id: 7}
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
 
 
 gx_data_optional:

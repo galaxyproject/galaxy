@@ -24,6 +24,7 @@ from galaxy.tool_util.parameters import (
     validate_test_case_json,
     validate_workflow_step,
     validate_workflow_step_linked,
+    validate_workflow_step_native,
     ValidationFunctionT,
 )
 from galaxy.tool_util.parameters.json import (
@@ -121,6 +122,8 @@ def _test_file(file: str, specification=None, parameter_bundle: ToolParameterBun
         "workflow_step_invalid": _assert_workflow_steps_invalid,
         "workflow_step_linked_valid": _assert_workflow_steps_linked_validate,
         "workflow_step_linked_invalid": _assert_workflow_steps_linked_invalid,
+        "workflow_step_native_valid": _assert_workflow_steps_native_validate,
+        "workflow_step_native_invalid": _assert_workflow_steps_native_invalid,
     }
 
     for valid_or_invalid, tests in combos.items():
@@ -192,6 +195,9 @@ _assert_workflow_step_validates, _assert_workflow_step_invalid = model_assertion
 _assert_workflow_step_linked_validates, _assert_workflow_step_linked_invalid = model_assertion_function_factory(
     validate_workflow_step_linked, "linked workflow step tool state"
 )
+_assert_workflow_step_native_validates, _assert_workflow_step_native_invalid = model_assertion_function_factory(
+    validate_workflow_step_native, "native workflow step tool state"
+)
 _assert_landing_request_validates, _assert_landing_request_invalid = model_assertion_function_factory(
     validate_landing_request, "landing request"
 )
@@ -219,6 +225,8 @@ _assert_workflow_steps_validate = partial(_for_each, _assert_workflow_step_valid
 _assert_workflow_steps_invalid = partial(_for_each, _assert_workflow_step_invalid)
 _assert_workflow_steps_linked_validate = partial(_for_each, _assert_workflow_step_linked_validates)
 _assert_workflow_steps_linked_invalid = partial(_for_each, _assert_workflow_step_linked_invalid)
+_assert_workflow_steps_native_validate = partial(_for_each, _assert_workflow_step_native_validates)
+_assert_workflow_steps_native_invalid = partial(_for_each, _assert_workflow_step_native_invalid)
 _assert_landing_requests_validate = partial(_for_each, _assert_landing_request_validates)
 _assert_landing_requests_invalid = partial(_for_each, _assert_landing_request_invalid)
 _assert_internal_landing_requests_validate = partial(_for_each, _assert_internal_landing_request_validates)

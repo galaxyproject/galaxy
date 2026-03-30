@@ -78,6 +78,7 @@ from .model_validation import (
     validate_test_case_json,
     validate_workflow_step,
     validate_workflow_step_linked,
+    validate_workflow_step_native,
     ValidationFunctionT,
 )
 from .state import (
@@ -93,6 +94,7 @@ from .state import (
     TestCaseToolState,
     ToolState,
     WorkflowStepLinkedToolState,
+    WorkflowStepNativeToolState,
     WorkflowStepToolState,
 )
 from .visitor import (
@@ -163,6 +165,7 @@ __all__ = (
     "validate_test_case_json",
     "validate_workflow_step",
     "validate_workflow_step_linked",
+    "validate_workflow_step_native",
     "validate_explicit_conditional_test_value",
     "is_optional",
     "ToolState",
@@ -201,4 +204,5 @@ __all__ = (
     "CROSS_PRODUCT_MAP_OVER_ERROR_MESSAGE",
     "WorkflowStepToolState",
     "WorkflowStepLinkedToolState",
+    "WorkflowStepNativeToolState",
 )
