@@ -1,5 +1,6 @@
 import os
 
+from galaxy.util.unittest_utils import skip_if_workflowhub_down
 from .framework import SeleniumIntegrationTestCase
 
 TRS_API_URL_DOCKSTORE = "https://dockstore.org/api"
@@ -57,6 +58,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         import_url = f"workflows/trs_import?trs_server=dockstore.org&trs_version={TRS_VERSION_DOCKSTORE}&trs_id=%23{TRS_ID_DOCKSTORE}"
         self._import_workflow_by_url(import_url)
 
+    @skip_if_workflowhub_down
     def test_import_workflow_by_url_workflowhub(self):
         import_url = f"workflows/trs_import?trs_server=workflowhub&trs_version={TRS_VERSION_WORKFLOWHUB}&trs_id={TRS_ID_WORKFLOWHUB}"
         self._import_workflow_by_url(import_url)
@@ -89,6 +91,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         self.components.workflows.trs_icon.wait_for_visible()
         self.screenshot("workflow_imported_via_dockstore_search")
 
+    @skip_if_workflowhub_down
     def test_import_by_search_workflowhub(self):
         self.go_to_trs_search()
         self.components.trs_search.select_server_button.wait_for_and_click()
@@ -103,12 +106,14 @@ class TestTrsImport(SeleniumIntegrationTestCase):
     def test_import_by_id_dockstore(self):
         self._import_by_id(f"#{TRS_ID_DOCKSTORE}", server="dockstore")
 
+    @skip_if_workflowhub_down
     def test_import_by_id_workflowhub(self):
         self._import_by_id(TRS_ID_WORKFLOWHUB, server="workflowhub")
 
     def test_import_by_trs_url_dockstore(self):
         self._import_by_trs_url(TRS_URL_DOCKSTORE)
 
+    @skip_if_workflowhub_down
     def test_import_by_trs_url_workflowhub(self):
         self._import_by_trs_url(TRS_URL_WORKFLOWHUB)
 
@@ -116,6 +121,7 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         import_url = f"workflows/trs_import?trs_url={TRS_URL_DOCKSTORE}"
         self._import_workflow_by_url(import_url)
 
+    @skip_if_workflowhub_down
     def test_auto_import_by_trs_url_workflowhub(self):
         import_url = f"workflows/trs_import?trs_url={TRS_URL_WORKFLOWHUB}"
         self._import_workflow_by_url(import_url)
