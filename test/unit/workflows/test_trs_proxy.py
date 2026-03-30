@@ -6,6 +6,7 @@ import yaml
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ConfigDoesNotAllowException
+from galaxy.util.unittest_utils import skip_if_workflowhub_down
 from galaxy.workflow.trs_proxy import (
     GA4GH_GALAXY_DESCRIPTOR,
     parse_search_kwds,
@@ -119,6 +120,7 @@ def test_match_url():
     assert expected_exception, "matching url against localhost should fail"
 
 
+@skip_if_workflowhub_down
 def test_server_from_url():
     proxy = get_trs_proxy()
     server = proxy.server_from_url("https://workflowhub.eu")
