@@ -190,7 +190,6 @@ function onApply() {
             color: gray;
             font-size: var(--font-size-small);
             padding-right: 5px;
-            display: none;
         }
     }
 }
