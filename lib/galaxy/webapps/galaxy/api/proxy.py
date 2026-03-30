@@ -3,6 +3,7 @@ API Controller to proxy remote files.
 """
 
 import logging
+import time
 from functools import partial
 from urllib.parse import (
     urljoin,
@@ -21,7 +22,9 @@ from starlette.responses import (
 )
 
 from galaxy.exceptions import (
+    GatewayTimeoutException,
     RequestParameterInvalidException,
+    UpstreamProxyError,
     UserRequiredException,
 )
 from galaxy.files.uris import validate_uri_access
@@ -42,6 +45,8 @@ URLQueryParam: str = Query(
 
 ALLOWED_SCHEMES = ("https", "http")
 MAX_REDIRECTS = 5
+MAX_STREAM_BYTES = 1 * 1024 * 1024  # 1 MB
+MAX_STREAM_SECONDS = 10
 
 
 def is_valid_url(url: str) -> bool:
@@ -83,7 +88,9 @@ class FastAPIProxy:
         # This is to prevent the server from hanging indefinitely
         timeout = httpx.Timeout(10.0, connect=60.0)
 
+        response = None
         client = httpx.AsyncClient(timeout=timeout)
+        streaming = False
         try:
             response = await self._handle_redirects_validation(request, url, trans, headers, client)
 
@@ -93,13 +100,32 @@ class FastAPIProxy:
 
                 async def stream_with_cleanup():
                     """Stream response chunks and ensure cleanup on completion or error."""
+                    total_bytes = 0
+                    start_time = time.monotonic()
                     try:
                         async for chunk in response.aiter_bytes():
+                            total_bytes += len(chunk)
+                            if total_bytes > MAX_STREAM_BYTES:
+                                log.warning(
+                                    "Proxy stream to %s exceeded max size of %d bytes",
+                                    url,
+                                    MAX_STREAM_BYTES,
+                                )
+                                break
+                            elapsed = time.monotonic() - start_time
+                            if elapsed > MAX_STREAM_SECONDS:
+                                log.warning(
+                                    "Proxy stream to %s exceeded max time of %d seconds",
+                                    url,
+                                    MAX_STREAM_SECONDS,
+                                )
+                                break
                             yield chunk
                     finally:
                         await response.aclose()
                         await client.aclose()
 
+                streaming = True
                 # StreamingResponse will handle chunked transfer encoding automatically
                 return StreamingResponse(
                     stream_with_cleanup(),
@@ -116,11 +142,13 @@ class FastAPIProxy:
         except httpx.InvalidURL as e:
             # Catch any URL validation errors that slip through our pre-validation
             raise RequestParameterInvalidException(f"Invalid URL format: {e}")
+        except httpx.TimeoutException as e:
+            raise GatewayTimeoutException(f"Timeout proxying request to {url}: {type(e).__name__}")
         except httpx.RequestError as e:
-            raise Exception(f"Request error: {e}")
+            raise UpstreamProxyError(f"Error proxying request to {url}: {type(e).__name__}: {e}")
         finally:
-            # Only cleanup for non-GET requests (GET cleanup happens in the stream generator)
-            if request.method != "GET":
+            # Only cleanup if we're NOT handing off to the stream generator
+            if not streaming:
                 if response is not None:
                     await response.aclose()
                 await client.aclose()
@@ -139,9 +167,12 @@ class FastAPIProxy:
         redirect_count = 0
 
         while redirect_count <= MAX_REDIRECTS:
-            response = await client.request(
-                method=request.method, url=current_url, headers=headers, follow_redirects=False
+            req = client.build_request(
+                method=request.method,
+                url=current_url,
+                headers=headers,
             )
+            response = await client.send(req, follow_redirects=False, stream=True)
 
             if self._is_redirect_response(response):
                 redirect_count += 1

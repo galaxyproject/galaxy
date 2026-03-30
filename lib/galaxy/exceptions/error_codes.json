@@ -218,5 +218,15 @@
         "name": "SERVER_NOT_CONFIGURED_FOR_REQUEST",
         "code": 501002,
         "message": "Server not configured for the request. The Galaxy admin may be able to resolve the problem by installing additional dependencies or setting up new infrastructure."
+    },
+    {
+        "name": "UPSTREAM_PROXY_ERROR",
+        "code": 502001,
+        "message": "An error occurred while proxying a request to an upstream server."
+    },
+    {
+        "name": "UPSTREAM_PROXY_TIMEOUT",
+        "code": 504001,
+        "message": "The upstream server did not respond in time."
     }
 ]
