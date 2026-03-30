@@ -64,7 +64,7 @@ jobs:
       - name: Run tests
         run: GALAXY_TEST_USE_LEGACY_TOOL_API="${{ matrix.use-legacy-api }}" ./run_tests.sh --coverage --framework-tools
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6
         with:
           flags: framework
           working-directory: 'galaxy root'

@@ -76,7 +76,7 @@ jobs:
       - name: Run tests
         run: ./run_tests.sh --coverage -playwright lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6
         with:
           flags: playwright
           working-directory: 'galaxy root'
