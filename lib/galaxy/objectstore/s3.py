@@ -35,18 +35,19 @@ logging.getLogger("boto").setLevel(logging.INFO)  # Otherwise boto is quite nois
 
 
 def download_directory(bucket, remote_folder, local_path):
-    # List objects in the specified S3 folder
     objects = bucket.list(prefix=remote_folder)
-
     for obj in objects:
         remote_file_path = obj.key
         local_file_path = os.path.join(local_path, os.path.relpath(remote_file_path, remote_folder))
-
-        # Create directories if they don't exist
         os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-
-        # Download the file
-        obj.get_contents_to_filename(local_file_path)
+        tmp_file_path = local_file_path + ".tmp"
+        try:
+            obj.get_contents_to_filename(tmp_file_path)
+            os.rename(tmp_file_path, local_file_path)
+        except Exception:
+            if os.path.exists(tmp_file_path):
+                os.remove(tmp_file_path)
+            raise
 
 
 def parse_config_xml(config_xml):
@@ -320,7 +321,8 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
             else:
                 log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
                 self.transfer_progress = 0  # Reset transfer progress counter
-                key.get_contents_to_filename(local_destination, cb=self._transfer_cb, num_cb=10)
+                with self._atomic_download(local_destination) as tmp:
+                    key.get_contents_to_filename(tmp, cb=self._transfer_cb, num_cb=10)
                 return True
         except S3ResponseError:
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self._bucket.name)

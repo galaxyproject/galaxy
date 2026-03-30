@@ -1893,6 +1893,16 @@ steps:
             ids = [w["id"] for w in workflow_index]
             assert workflow_id in ids
 
+    def test_anonymous_search_bookmarked(self):
+        with self._different_user(anon=True):
+            response = self._get("workflows?show_published=true&search=is:bookmarked")
+            self._assert_status_code_is(response, 400)
+
+    def test_anonymous_search_shared_with_me(self):
+        with self._different_user(anon=True):
+            response = self._get("workflows?show_shared=true&search=is:shared_with_me")
+            self._assert_status_code_is(response, 400)
+
     def test_import_published(self):
         workflow_id = self.workflow_populator.simple_workflow("test_import_published", publish=True)
         with self._different_user():

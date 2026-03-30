@@ -88,7 +88,7 @@ const bookmarkButtonTitle = computed(() =>
     showBookmarked.value ? "Hide bookmarked workflows" : "Show bookmarked workflows",
 );
 
-const workflowFilters = computed(() => getWorkflowFilters(props.activeList));
+const workflowFilters = computed(() => getWorkflowFilters(props.activeList, userStore.isAnonymous));
 const rawFilters = computed(() =>
     Object.fromEntries(workflowFilters.value.getFiltersForText(filterText.value, true, false)),
 );
@@ -428,7 +428,7 @@ onMounted(() => {
                 :show-advanced.sync="showAdvanced">
                 <template v-slot:menu-help-text>
                     <!-- eslint-disable-next-line vue/no-v-html -->
-                    <div v-html="helpHtml(activeList)"></div>
+                    <div v-html="helpHtml(activeList, userStore.isAnonymous)"></div>
                 </template>
             </FilterMenu>
 

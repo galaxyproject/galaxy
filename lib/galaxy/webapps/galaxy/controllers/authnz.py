@@ -111,7 +111,7 @@ class OIDC(BaseUIController):
             # Fallback to default redirect if no login_next cookie is found.
             login_next = url_for("/")
         if not bool(kwargs):
-            log.error(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
+            log.warning(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
             return trans.show_error_message(
                 f"Did not receive any information from the `{provider}` identity provider to complete user `{user}` authentication "
                 "flow. Please try again, and if the problem persists, contact the Galaxy instance admin. Also note "
@@ -119,7 +119,7 @@ class OIDC(BaseUIController):
                 "a user."
             )
         if "error" in kwargs:
-            log.error(
+            log.warning(
                 "Error handling authentication callback from `{}` identity provider for user `{}` login request."
                 " Error message: {}".format(provider, user, kwargs.get("error", "None"))
             )
