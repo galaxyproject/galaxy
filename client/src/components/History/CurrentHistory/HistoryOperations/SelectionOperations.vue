@@ -330,7 +330,7 @@ export default {
         listWizard(advanced) {
             const { setSelectedItems } = useCollectionBuilderItemSelection();
             const selection = Array.from(this.contentSelection.values());
-            setSelectedItems(selection);
+            setSelectedItems(this.history.id, selection);
 
             if (this.$route.path === "/collection/new_list") {
                 // vue-router 4 supports a native force push with clean URLs, but we're using a __vkey__
