@@ -31,6 +31,31 @@ class TestGroupsApi(ApiTestCase):
         response = self._post("groups", payload, admin=True, json=True)
         self._assert_status_code_is(response, 400)
 
+    def test_create_with_auto_create_role(self):
+        name = f"auto-role-group-{self.dataset_populator.get_random_name()}"
+        payload = self._build_valid_group_payload(name)
+        payload["auto_create_role"] = True
+        response = self._post("groups", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+        group = response.json()[0]
+        self._assert_valid_group(group)
+        # Verify role with same name was created and associated with the group
+        roles = self._get(f"groups/{group['id']}/roles", admin=True).json()
+        role_names = [r["name"] for r in roles]
+        assert name in role_names
+
+    def test_create_with_auto_create_role_conflict(self):
+        """Auto-create role should fail if a role with the same name already exists."""
+        name = f"auto-role-conflict-{self.dataset_populator.get_random_name()}"
+        # First create a role with this name
+        role_payload = {"name": name, "description": "A test role.", "user_ids": [self.dataset_populator.user_id()]}
+        self._post("roles", role_payload, admin=True, json=True)
+        # Now try to create a group with auto_create_role - should conflict
+        payload = self._build_valid_group_payload(name)
+        payload["auto_create_role"] = True
+        response = self._post("groups", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 409)
+
     def test_create_duplicated_name_raises_409(self):
         payload = self._build_valid_group_payload()
         response = self._post("groups", payload, admin=True, json=True)

@@ -69,6 +69,11 @@ class GroupCreatePayload(Model):
         [],
         title="role IDs",
     )
+    auto_create_role: bool = Field(
+        False,
+        title="auto-create role",
+        description="If true, create a new role with the same name as the group and associate it.",
+    )
 
 
 @partial_model()

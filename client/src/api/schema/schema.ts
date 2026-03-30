@@ -13294,6 +13294,12 @@ export interface components {
          * @description Payload schema for creating a group.
          */
         GroupCreatePayload: {
+            /**
+             * auto-create role
+             * @description If true, create a new role with the same name as the group and associate it.
+             * @default false
+             */
+            auto_create_role: boolean;
             /** name of the group */
             name: string;
             /**
@@ -40586,7 +40592,14 @@ export interface operations {
     };
     index_api_roles_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Search by role name or user email (for private roles). */
+                search?: string | null;
+                /** @description The maximum number of roles to return. */
+                limit?: number | null;
+                /** @description Number of roles to skip. */
+                offset?: number | null;
+            };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -43021,6 +43034,10 @@ export interface operations {
                 f_name?: string | null;
                 /** @description Filter on username OR email */
                 f_any?: string | null;
+                /** @description Maximum number of users to return. */
+                limit?: number | null;
+                /** @description Number of users to skip. */
+                offset?: number | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */

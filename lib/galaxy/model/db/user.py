@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Optional
 
 from sqlalchemy import (
@@ -46,7 +47,9 @@ def get_users_for_index(
     is_admin: bool = False,
     expose_user_email: bool = False,
     expose_user_name: bool = False,
-):
+    limit: int | None = None,
+    offset: int = 0,
+) -> Sequence[User]:
     stmt = select(User)
     if f_email and (is_admin or expose_user_email):
         stmt = stmt.where(User.email.like(f"%{f_email}%"))
@@ -66,6 +69,11 @@ def get_users_for_index(
         stmt = stmt.where(User.deleted == true())
     else:
         stmt = stmt.where(User.deleted == false())
+    stmt = stmt.order_by(User.email)
+    if offset:
+        stmt = stmt.offset(offset)
+    if limit is not None:
+        stmt = stmt.limit(limit)
     return session.scalars(stmt).all()
 
 

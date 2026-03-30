@@ -184,7 +184,6 @@ class TestAdminApp(SeleniumTestCase):
         assert title_element.text == "Local Data"
         self.screenshot("admin_local_data")
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @requires_admin
     def test_admin_user_display(self):

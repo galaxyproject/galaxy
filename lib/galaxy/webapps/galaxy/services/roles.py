@@ -38,14 +38,17 @@ class RolesService(ServiceBase):
         super().__init__(security)
         self.role_manager = role_manager
 
-    def get_index(self, trans: ProvidesUserContext) -> RoleListResponse:
-        roles = self.role_manager.list_displayable_roles(trans)
+    def get_index(
+        self,
+        trans: ProvidesUserContext,
+        search: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = 0,
+    ) -> RoleListResponse:
+        roles = self.role_manager.list_displayable_roles(trans, search=search, limit=limit, offset=offset or 0)
         role_ids = {r.id for r in roles}
         private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=role_ids)
-        data = []
-        for role in roles:
-            displayed_name = private_role_emails.get(role.id, role.name)
-            data.append(role_to_model(role, displayed_name))
+        data = [role_to_model(role, private_role_emails.get(role.id, role.name)) for role in roles]
         return RoleListResponse(root=data)
 
     def show(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> RoleModelResponse:
