@@ -209,7 +209,7 @@ pydicom==3.0.2
 pydot==4.0.1
 pyeventsystem==0.1.0
 pyfaidx==0.9.0.3
-pygments==2.19.2
+pygments==2.20.0
 pyjwt==2.12.1
 pykwalify==1.8.0
 pylibmagic==0.5.0

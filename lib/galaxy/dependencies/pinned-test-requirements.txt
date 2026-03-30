@@ -103,7 +103,7 @@ pyasn1==0.6.3
 pyasn1-modules==0.4.2
 pycparser==3.0 ; (implementation_name != 'PyPy' and implementation_name != 'pypy' and os_name == 'nt') or (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy')
 pyee==13.0.1
-pygments==2.19.2
+pygments==2.20.0
 pyparsing==3.3.2
 pyshacl==0.31.0
 pysocks==1.7.1
