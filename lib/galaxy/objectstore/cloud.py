@@ -257,25 +257,21 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             if not self._caching_allowed(rel_path, remote_size):
                 return False
             log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
-            self._download_to(key, local_destination)
+            with self._atomic_download(local_destination) as tmp:
+                self._download_to(key, tmp)
             return True
         except Exception:
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self.bucket.name)
         return False
 
     def _download_directory_into_cache(self, rel_path, cache_path):
-        # List objects in the specified cloud folder
         objects = self.bucket.objects.list(prefix=rel_path)
-
         for obj in objects:
             remote_file_path = obj.name
             local_file_path = os.path.join(cache_path, os.path.relpath(remote_file_path, rel_path))
-
-            # Create directories if they don't exist
             os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-
-            # Download the file
-            self._download_to(obj, local_file_path)
+            with self._atomic_download(local_file_path) as tmp:
+                self._download_to(obj, tmp)
 
     def _download_to(self, key, local_destination):
         if self.use_axel:

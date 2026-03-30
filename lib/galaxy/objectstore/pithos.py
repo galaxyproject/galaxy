@@ -145,7 +145,8 @@ class PithosObjectStore(CachingConcreteObjectStore):
 
     def _download(self, rel_path):
         local_destination = self._get_cache_path(rel_path)
-        self.pithos.download_object(rel_path, local_destination)
+        with self._atomic_download(local_destination) as tmp:
+            self.pithos.download_object(rel_path, tmp)
 
     # No need to overwrite "shutdown"
 

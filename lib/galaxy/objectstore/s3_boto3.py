@@ -320,7 +320,8 @@ class S3ObjectStore(CachingConcreteObjectStore):
             if not self._caching_allowed(rel_path):
                 return False
             config = self._transfer_config("download")
-            self._client.download_file(self.bucket, rel_path, local_destination, Config=config)
+            with self._atomic_download(local_destination) as tmp:
+                self._client.download_file(self.bucket, rel_path, tmp, Config=config)
             return True
         except ClientError:
             log.exception("Failed to download file from S3")
@@ -372,12 +373,9 @@ class S3ObjectStore(CachingConcreteObjectStore):
     def _download_directory_into_cache(self, rel_path, cache_path):
         for key in self._keys(rel_path):
             local_file_path = os.path.join(cache_path, os.path.relpath(key, rel_path))
-
-            # Create directories if they don't exist
             os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-
-            # Download the file
-            self._client.download_file(self.bucket, key, local_file_path)
+            with self._atomic_download(local_file_path) as tmp:
+                self._client.download_file(self.bucket, key, tmp)
 
     def _get_object_url(self, obj, **kwargs):
         try:
