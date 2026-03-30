@@ -28,6 +28,14 @@ describe("test filtering helpers to convert filters to filter text", () => {
         expect(HistoryFilters.containsDefaults(filters)).toBe(true);
     });
 
+    it("published filters exclude shared_with_me for anonymous users", async () => {
+        const loggedInFilters = getWorkflowFilters("published", false);
+        const anonFilters = getWorkflowFilters("published", true);
+        const filters = { shared_with_me: true };
+        expect(Object.keys(loggedInFilters.getValidFilters(filters).validFilters)).toContain("shared_with_me");
+        expect(Object.keys(anonFilters.getValidFilters(filters).validFilters)).not.toContain("shared_with_me");
+    });
+
     it("verify correct conversion of filters", async () => {
         const filters = {
             deleted: HistoryFilters.defaultFilters.deleted,

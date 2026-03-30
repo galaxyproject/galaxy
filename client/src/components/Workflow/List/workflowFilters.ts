@@ -1,6 +1,6 @@
 import Filtering, { contains, equals, expandNameTag, toBool } from "@/utils/filtering";
 
-export function helpHtml(activeList = "my") {
+export function helpHtml(activeList = "my", isAnonymous = false) {
     let extra = "";
     if (activeList === "my") {
         extra = `<dt><code>is:published</code></dt>
@@ -30,11 +30,13 @@ export function helpHtml(activeList = "my") {
         extra = `<dt><code>user:____</code></dt>
         <dd>
             Shows workflows owned by the given user.
-        </dd>
-        <dt><code>is:shared_with_me</code></dt>
+        </dd>`;
+        if (!isAnonymous) {
+            extra += `<dt><code>is:shared_with_me</code></dt>
         <dd>
             Shows workflows shared by another user directly with you.
         </dd>`;
+        }
     }
 
     const conditionalHelpHtml = `<div>
@@ -71,7 +73,7 @@ export function helpHtml(activeList = "my") {
     return conditionalHelpHtml;
 }
 
-export function getWorkflowFilters(activeList = "my") {
+export function getWorkflowFilters(activeList = "my", isAnonymous = false) {
     const commonFilters = {
         name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
         n: { handler: contains("n"), menuItem: false },
@@ -152,27 +154,25 @@ export function getWorkflowFilters(activeList = "my") {
             false,
         );
     } else {
-        return new Filtering(
-            {
-                ...commonFilters,
-                user: {
-                    placeholder: "owner",
-                    type: String,
-                    handler: contains("user"),
-                    menuItem: true,
-                },
-                u: { handler: contains("u"), menuItem: false },
-                shared_with_me: {
-                    placeholder: "Shared with me",
-                    type: Boolean,
-                    boolType: "is",
-                    handler: equals("shared_with_me", "shared_with_me", toBool),
-                    menuItem: true,
-                },
+        const publishedFilters: Record<string, any> = {
+            ...commonFilters,
+            user: {
+                placeholder: "owner",
+                type: String,
+                handler: contains("user"),
+                menuItem: true,
             },
-            undefined,
-            false,
-            false,
-        );
+            u: { handler: contains("u"), menuItem: false },
+        };
+        if (!isAnonymous) {
+            publishedFilters.shared_with_me = {
+                placeholder: "Shared with me",
+                type: Boolean,
+                boolType: "is",
+                handler: equals("shared_with_me", "shared_with_me", toBool),
+                menuItem: true,
+            };
+        }
+        return new Filtering(publishedFilters, undefined, false, false);
     }
 }
