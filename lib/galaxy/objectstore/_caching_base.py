@@ -285,14 +285,18 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             return cache_path
 
         # Check if the file exists in the cache first, always pull if file size in cache is zero
-        # For dir_only - the cache cleaning may have left empty directories so I think we need to
-        # always resync the cache. Gotta make sure we're being judicious in out data.extra_files_path
-        # calls I think.
         if not dir_only and self._in_cache(rel_path) and os.path.getsize(self._get_cache_path(rel_path)) > 0:
             return cache_path
 
+        # For directories: trust cache if it has files. Individual file accesses
+        # handle cache misses via _pull_into_cache, so a full re-download is only
+        # needed when the directory is empty (e.g. after cache cleaning removed
+        # all files but left the empty directory).
+        if dir_only and os.path.isdir(cache_path) and any(files for _, _, files in os.walk(cache_path)):
+            return cache_path
+
         # Check if the file exists in persistent storage and, if it does, pull it into cache
-        elif self._exists(obj, **kwargs):
+        if self._exists(obj, **kwargs):
             if dir_only:
                 self._download_directory_into_cache(rel_path, cache_path)
                 return cache_path
@@ -406,6 +410,10 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             yield tmp_path
             os.rename(tmp_path, cache_path)
         except BaseException:
+            # Catch BaseException (not just Exception) so that KeyboardInterrupt
+            # and SystemExit also trigger cleanup — we re-raise immediately, so
+            # propagation is not blocked. Without this, interrupted downloads
+            # leave .tmp files that poison the cache on next startup.
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
             raise
