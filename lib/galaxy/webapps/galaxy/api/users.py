@@ -1094,9 +1094,11 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         user = self._get_user(trans, id)
 
         def get_role_tuples():
-            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+            roles = user.all_roles()
+            role_ids = {r.id for r in roles}
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=role_ids)
             role_tuples = set()
-            for role in user.all_roles():
+            for role in roles:
                 displayed_name = private_role_emails.get(role.id, role.name)
                 role_tuples.add((displayed_name, role.id))
             return list(role_tuples)

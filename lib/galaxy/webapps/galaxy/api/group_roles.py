@@ -52,7 +52,8 @@ class FastAPIGroupRoles:
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> GroupRoleListResponse:
         group_roles = self.manager.index(trans, group_id)
-        private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+        role_ids = {gr.role.id for gr in group_roles}
+        private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=role_ids)
         data = []
         for group in group_roles:
             role = group.role
