@@ -640,8 +640,14 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
+        limit: Optional[int] = Query(
+            default=None, ge=1, title="Limit", description="Maximum number of users to return."
+        ),
+        offset: Optional[int] = Query(default=0, ge=0, title="Offset", description="Number of users to skip."),
     ) -> list[MaybeLimitedUserModel]:
-        return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
+        return self.service.get_index(
+            trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any, limit=limit, offset=offset
+        )
 
     @router.get(
         "/api/users/{user_id}",

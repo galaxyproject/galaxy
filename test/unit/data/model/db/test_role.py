@@ -151,8 +151,8 @@ def test_get_displayable_roles(session, make_role, make_user_and_role):
     admin_role1 = make_role(type="admin", name="admin-role-1", description="Description of admin-role1")
     make_role(type="admin", description="Description of admin-role1", deleted=True)
 
-    user_is_admin, security_agent = True, None
-    roles = get_displayable_roles(session, user1, user_is_admin, security_agent)
+    user_is_admin = True
+    roles = get_displayable_roles(session, user1, user_is_admin)
     assert len(roles) == 3
     assert roles[0].id == private_role1.id
     assert roles[1].id == private_role2.id

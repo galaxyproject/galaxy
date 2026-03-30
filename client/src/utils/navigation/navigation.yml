@@ -1218,7 +1218,7 @@ admin:
     registration_form: 'form#registration'
     groups_grid: '#groups-grid'
     roles_grid: '#roles-grid'
-    groups_create_view: '#submit:not([aria-disabled])'
+    groups_create_view: '#admin-group-submit'
 
 libraries:
 
