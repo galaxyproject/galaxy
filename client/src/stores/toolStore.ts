@@ -95,7 +95,7 @@ export const useToolStore = defineStore("toolStore", () => {
     const toolsById = shallowRef<Record<string, Tool>>({});
     const toolResults = ref<Record<string, string[]>>({});
     const toolSections = ref<Record<string, Record<string, Tool | ToolSection>>>({});
-    const fetchedHelpIds = ref<Set<string>>(new Set());
+    const fetchedHelpIds = ref<Map<string, Promise<void>>>(new Map());
     const helpDataCached = ref<Record<string, ToolHelpData>>({});
 
     const currentToolSections = computed(() => {
@@ -245,10 +245,15 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     async function fetchHelpForId(toolId: string) {
-        try {
-            if (!helpDataCached.value[toolId] && !fetchedHelpIds.value.has(toolId)) {
-                fetchedHelpIds.value.add(toolId);
-
+        if (helpDataCached.value[toolId]) {
+            return;
+        }
+        const existing = fetchedHelpIds.value.get(toolId);
+        if (existing) {
+            return existing;
+        }
+        const promise = (async () => {
+            try {
                 const toolHelpData: ToolHelpData = {};
 
                 const { data } = (await axios.get(
@@ -264,11 +269,13 @@ export const useToolStore = defineStore("toolStore", () => {
                 }
 
                 Vue.set(helpDataCached.value, toolId, toolHelpData);
+            } catch (error) {
+                console.error("Error fetching help:", error);
+                fetchedHelpIds.value.delete(toolId); // Allow retrying on next request
             }
-        } catch (error) {
-            console.error("Error fetching help:", error);
-            fetchedHelpIds.value.delete(toolId); // Allow retrying on next request
-        }
+        })();
+        fetchedHelpIds.value.set(toolId, promise);
+        return promise;
     }
 
     async function initializePanel() {
