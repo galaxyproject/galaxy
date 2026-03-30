@@ -1,6 +1,15 @@
 """Integration tests for workflow syncing."""
 
+import time
+
+from sqlalchemy import select
+
+from galaxy.model import (
+    Dataset,
+    HistoryDatasetAssociation,
+)
 from galaxy_test.base.populators import (
+    DatasetCollectionPopulator,
     DatasetPopulator,
     WorkflowPopulator,
 )
@@ -49,6 +58,19 @@ outputs:
     outputSource: cat1/out_file1
 """
 
+WORKFLOW_COLLECTION_CREATES_LIST = """
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: list
+steps:
+  create_list:
+    tool_id: collection_creates_list
+    in:
+      input1: input_collection
+"""
+
 
 class TestWorkflowInvocation(integration_util.IntegrationTestCase, UsesShedApi):
     dataset_populator: DatasetPopulator
@@ -58,7 +80,12 @@ class TestWorkflowInvocation(integration_util.IntegrationTestCase, UsesShedApi):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+
+    @property
+    def sa_session(self):
+        return self._app.model.session
 
     def test_run_workflow_optional_data_skips_step(self) -> None:
         self.install_repository("iuc", "map_param_value", "5ac8a4bf7a8d")
@@ -170,3 +197,42 @@ steps:
                 invocation_response.json().get("err_msg")
                 == "Workflow was not invoked; the following required tools are not installed: nonexistent_tool"
             )
+
+    def test_workflow_run_collection_with_auto_extension(self):
+        """Workflow with collection input whose datasets have ext='auto' should delay and succeed."""
+        with self.dataset_populator.test_history() as history_id:
+            # Upload a collection with resolved extension and wait for it
+            fetch_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["1 2 3\n"], wait=True
+            ).json()
+            hdca = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+
+            # Force extension to 'auto' and dataset state to non-terminal via direct DB access
+            element_hda_id = hdca["elements"][0]["object"]["id"]
+            database_id = self._app.security.decode_id(element_hda_id)
+            hda = self.sa_session.scalar(
+                select(HistoryDatasetAssociation).where(HistoryDatasetAssociation.id == database_id)
+            )
+            assert hda
+            hda.extension = "auto"
+            hda.dataset.state = Dataset.states.RUNNING
+            self.sa_session.commit()
+
+            # Upload workflow and invoke it with the collection
+            workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_COLLECTION_CREATES_LIST)
+            inputs = {"input_collection": {"src": "hdca", "id": hdca["id"]}}
+            invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
+                workflow_id, inputs=inputs, history_id=history_id, inputs_by="name"
+            )
+
+            # Give scheduler a moment to encounter 'auto', then fix extension and state
+            time.sleep(2)
+            sa_session = self.sa_session
+            sa_session.refresh(hda)
+            hda.extension = "txt"
+            hda.dataset.state = Dataset.states.OK
+            sa_session.commit()
+
+            # Wait for workflow to complete — should delay then succeed
+            invocation = self.workflow_populator.wait_for_invocation_and_completion(invocation_id)
+            assert invocation["state"] == "completed", invocation
