@@ -308,6 +308,16 @@ class ServerNotConfiguredForRequest(MessageException):
     err_code = error_codes_by_name["SERVER_NOT_CONFIGURED_FOR_REQUEST"]
 
 
+class UpstreamProxyError(MessageException):
+    status_code = 502
+    err_code = error_codes_by_name["UPSTREAM_PROXY_ERROR"]
+
+
+class GatewayTimeoutException(MessageException):
+    status_code = 504
+    err_code = error_codes_by_name["UPSTREAM_PROXY_TIMEOUT"]
+
+
 class HandlerAssignmentError(Exception):
     def __init__(self, msg=None, obj=None, **kwargs):
         super().__init__(msg)
