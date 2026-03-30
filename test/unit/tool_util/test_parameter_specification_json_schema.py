@@ -4,9 +4,11 @@ This mirrors test_parameter_specification.py but validates against JSON Schema (
 instead of Pydantic models directly. The goal is to prove the exported JSON Schemas are usable
 from non-Python toolkits.
 
-AfterValidator-based Galaxy validators (regex, expression, in_range, length, empty_field) do not
-emit JSON Schema keywords, so some *_invalid entries are expected to pass JSON Schema validation.
-These are annotated with json_schema_skip in parameter_specification.yml.
+Many Galaxy validators now emit native JSON Schema keywords (pattern, minimum/maximum,
+minLength/maxLength, exclusiveMinimum/exclusiveMaximum, and negated length via not:{}).
+Remaining AfterValidator-only constraints (expression, empty_field) that cannot be represented
+in JSON Schema are annotated with _json_schema_skip in parameter_specification.yml so the test
+knows to tolerate those *_invalid entries passing validation.
 """
 
 from typing import (
@@ -80,15 +82,15 @@ def _test_file_json_schema(
         parameter_bundle = parameter_bundle_for_file(file)
     assert parameter_bundle
 
-    json_schema_skip: Dict[str, str] = combos.get("json_schema_skip", {}) or {}
-    json_schema_valid_skip: Dict[str, str] = combos.get("json_schema_valid_skip", {}) or {}
+    json_schema_skip: Dict[str, str] = combos.get("_json_schema_skip", {}) or {}
+    json_schema_valid_skip: Dict[str, str] = combos.get("_json_schema_valid_skip", {}) or {}
     skipped_invalid_keys: Set[str] = set(json_schema_skip.keys())
     skipped_valid_keys: Set[str] = set(json_schema_valid_skip.keys())
 
     failures: List[str] = []
 
     for combo_key, test_cases in combos.items():
-        if combo_key in ("json_schema_skip", "json_schema_valid_skip"):
+        if combo_key in ("_json_schema_skip", "_json_schema_valid_skip"):
             continue
         if not isinstance(test_cases, list):
             continue
