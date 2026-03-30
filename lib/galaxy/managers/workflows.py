@@ -245,8 +245,16 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                             if not show_shared:
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
                                 raise exceptions.RequestParameterInvalidException(message)
+                            if user is None:
+                                raise exceptions.RequestParameterInvalidException(
+                                    "Can only use search filter is:shared_with_me when logged in."
+                                )
                             stmt = stmt.where(StoredWorkflowUserShareAssociation.user == user)
                         elif q == "bookmarked":
+                            if user is None:
+                                raise exceptions.RequestParameterInvalidException(
+                                    "Can only use search filter is:bookmarked when logged in."
+                                )
                             stmt = stmt.join(
                                 model.StoredWorkflowMenuEntry,
                                 model.StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id,
