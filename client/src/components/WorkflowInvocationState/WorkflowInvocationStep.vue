@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { faTimesCircle } from "@fortawesome/free-regular-svg-icons";
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faInfoCircle, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
 import { BAlert } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import type { WorkflowStepTyped } from "@/api/workflows";
+import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import type { GraphStep } from "@/composables/useInvocationGraph";
+import { getAppRoot } from "@/onload/loadConfig";
 import { useInvocationStore } from "@/stores/invocationStore";
 
 import Heading from "../Common/Heading.vue";
@@ -20,6 +23,8 @@ import GTab from "@/components/BaseComponents/GTab.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
+import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
 const TERMINAL_JOB_STATES = ["ok", "error", "deleted", "paused"];
 
@@ -41,8 +46,11 @@ const emit = defineEmits<{
 }>();
 
 const invocationStore = useInvocationStore();
+const { datatypes } = useDatatypesMapper();
 
 const localExpanded = ref(Boolean(props.expanded));
+const stepConfigData = ref<Record<string, any> | null>(null);
+const loadingStepConfig = ref(false);
 const stepFetchInterval = ref<any>(undefined);
 
 const computedExpanded = computed({
@@ -142,6 +150,37 @@ const jobsTabTitle = computed(() => {
     }
     return "No jobs";
 });
+
+const activeStepWithConfig = computed(() => {
+    if (!stepConfigData.value) {
+        return null;
+    }
+    const step = props.workflowStep as any;
+    return {
+        ...step,
+        config_form: stepConfigData.value.config_form,
+        inputs: stepConfigData.value.inputs ?? step.inputs,
+        outputs: stepConfigData.value.outputs ?? step.outputs,
+    } as any;
+});
+
+async function fetchStepConfig() {
+    if (stepConfigData.value || loadingStepConfig.value) {
+        return;
+    }
+    loadingStepConfig.value = true;
+    try {
+        const step = props.workflowStep as any;
+        const { data } = await axios.post(`${getAppRoot()}api/workflows/build_module`, {
+            type: step.type,
+            content_id: step.content_id ?? step.tool_id,
+            tool_state: step.tool_state ?? "{}",
+        });
+        stepConfigData.value = data;
+    } finally {
+        loadingStepConfig.value = false;
+    }
+}
 
 function toggleStep() {
     computedExpanded.value = !computedExpanded.value;
@@ -278,6 +317,27 @@ onUnmounted(() => {
                                             </div>
                                         </div>
                                     </GTab>
+
+                                    <GTab
+                                        :class="{ 'invocation-view-step-config': props.inGraphView }"
+                                        lazy
+                                        @click="fetchStepConfig">
+                                        <template v-slot:title>
+                                            <FontAwesomeIcon :icon="faWrench" />
+                                            <span v-localize>Step Config</span>
+                                        </template>
+                                        <BAlert v-if="loadingStepConfig" show>
+                                            <LoadingSpan message="Loading step configuration" />
+                                        </BAlert>
+                                        <FormTool
+                                            v-else-if="workflowStepType === 'tool' && activeStepWithConfig"
+                                            :step="activeStepWithConfig"
+                                            :datatypes="datatypes" />
+                                        <FormDefault
+                                            v-else-if="workflowStepType !== 'tool' && activeStepWithConfig"
+                                            :step="activeStepWithConfig"
+                                            :datatypes="datatypes" />
+                                    </GTab>
                                 </GTabs>
                             </div>
                         </div>
@@ -300,6 +360,15 @@ onUnmounted(() => {
 .portlet-header {
     &:hover {
         opacity: 0.8;
+    }
+}
+
+.invocation-view-step-config {
+    :deep(.tool-header) {
+        position: unset;
+    }
+    :deep(.ui-form-header-underlay) {
+        display: none;
     }
 }
 </style>
