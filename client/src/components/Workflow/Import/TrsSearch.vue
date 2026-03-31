@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { BAlert, BFormInput, BInputGroup, BInputGroupAppend, BTable } from "bootstrap-vue";
@@ -14,6 +14,7 @@ import { withPrefix } from "@/utils/redirect";
 import type { TrsSelection } from "./types";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import HelpText from "@/components/Help/HelpText.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import TrsServerSelection from "@/components/Workflow/Import/TrsServerSelection.vue";
 import TrsTool from "@/components/Workflow/Import/TrsTool.vue";
@@ -62,10 +63,6 @@ watch(isValid, (newValue) => {
 
 const itemsComputed = computed(() => {
     return computeItems(results.value);
-});
-
-const searchHelp = computed(() => {
-    return "Search by workflow description. Tags (key:value) can be used to also search by metadata - for instance name:example. Available tags include organization and name.";
 });
 
 const services = new Services();
@@ -173,7 +170,7 @@ defineExpose({ triggerImport });
 </script>
 
 <template>
-    <div class="container workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
+    <div class="container workflow-import-trs-search">
         <BAlert :show="hasErrorMessage" variant="danger">
             {{ errorMessage }}
         </BAlert>
@@ -187,8 +184,8 @@ defineExpose({ triggerImport });
                 @onError="onTrsSelectionError" />
         </div>
 
-        <div>
-            <BInputGroup class="mb-3">
+        <div class="trs-search-field">
+            <BInputGroup>
                 <BFormInput
                     id="trs-search-query"
                     v-model="query"
@@ -198,15 +195,12 @@ defineExpose({ triggerImport });
                     @keyup.esc="query = ''" />
 
                 <BInputGroupAppend>
-                    <GButton tooltip size="small" data-description="show help toggle" :title="searchHelp">
-                        <FontAwesomeIcon :icon="faQuestion" />
-                    </GButton>
-
                     <GButton size="small" title="clear search" @click="query = ''">
                         <FontAwesomeIcon :icon="faTimes" />
                     </GButton>
                 </BInputGroupAppend>
             </BInputGroup>
+            <HelpText uri="galaxy.workflows.import.searchHelp" info-icon />
         </div>
 
         <div class="vertical-scroll">
@@ -247,7 +241,7 @@ defineExpose({ triggerImport });
     </div>
 </template>
 
-<style>
+<style scoped lang="scss">
 .trs-description {
     position: relative;
     overflow: hidden;
@@ -256,6 +250,18 @@ defineExpose({ triggerImport });
     -webkit-line-clamp: 3;
     line-clamp: 3;
 }
+
+.trs-search-field {
+    display: flex;
+    gap: var(--spacing);
+    align-items: center;
+    margin-bottom: var(--spacing-4);
+
+    :deep(.popper-element) {
+        max-width: 30vw;
+    }
+}
+
 .vertical-scroll {
     max-height: 600px;
     overflow-y: auto;

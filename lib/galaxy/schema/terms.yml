@@ -280,6 +280,11 @@ galaxy:
       exportOnComplete:
         Enabling this option will automatically export the workflow results to a remote file source when the
         invocation completes. You can configure the destination and format in the export wizard.
+    import:
+      searchHelp: |
+        Search by workflow description. Tags (key:value) can be used to also search by metadata.
+
+        For instance `name:example`. Available tags include `organization` and `name`.
 
   tools:
     ontologies:
