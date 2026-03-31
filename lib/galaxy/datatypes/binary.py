@@ -1139,7 +1139,7 @@ class CRAM(Binary):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "CRAM binary alignment file"
-            dataset.blurb = "binary data"
+            dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
