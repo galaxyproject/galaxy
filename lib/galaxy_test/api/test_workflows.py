@@ -1399,44 +1399,6 @@ steps:
             self._assert_status_code_is(other_import_response, 200)
             self._assert_user_has_workflow_with_name("imported: test_import_published_deprecated")
 
-    def test_import_export_dynamic(self):
-        workflow_id = self._upload_yaml_workflow("""
-class: GalaxyWorkflow
-steps:
-  - type: input
-    label: input1
-  - tool_id: cat1
-    label: first_cat
-    state:
-      input1:
-        $link: 0
-  - label: embed1
-    run:
-      class: GalaxyTool
-      version: "0.1"
-      command: echo 'hello world 2' > $output1
-      outputs:
-        output1:
-          format: txt
-          type: data
-  - tool_id: cat1
-    state:
-      input1:
-        $link: first_cat/out_file1
-      queries:
-        input2:
-          $link: embed1/output1
-test_data:
-  input1: "hello world"
-""")
-        downloaded_workflow = self._download_workflow(workflow_id)
-        # The _upload_yaml_workflow entry point uses an admin key, but if we try to
-        # do the raw re-import as a regular user we expect a 403 error.
-        response = self.workflow_populator.create_workflow_response(downloaded_workflow)
-        self._assert_status_code_is(response, 403)
-        response_dict = response.json()
-        assert response_dict["err_msg"] == "Only admin users can create tools dynamically."
-
     def test_import_annotations(self):
         workflow_id = self.workflow_populator.simple_workflow("test_import_annotations", publish=True)
         with self._different_user():
@@ -9853,47 +9815,6 @@ steps:
 
 class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):
     require_admin_user = True
-
-    def test_import_export_dynamic_tools(self, history_id):
-        workflow_id = self._upload_yaml_workflow("""
-class: GalaxyWorkflow
-steps:
-  - type: input
-    label: input1
-  - tool_id: cat1
-    label: first_cat
-    state:
-      input1:
-        $link: 0
-  - label: embed1
-    run:
-      class: GalaxyTool
-      version: "0.1"
-      command: echo 'hello world 2' > $output1
-      outputs:
-        output1:
-          format: txt
-          type: data
-  - tool_id: cat1
-    state:
-      input1:
-        $link: first_cat/out_file1
-      queries:
-      - input2:
-          $link: embed1/output1
-test_data:
-  input1: "hello world"
-""")
-        downloaded_workflow = self._download_workflow(workflow_id)
-        response = self.workflow_populator.create_workflow_response(downloaded_workflow)
-        workflow_id = response.json()["id"]
-        hda1 = self.dataset_populator.new_dataset(history_id, content="Hello World Second!")
-        workflow_request = dict(
-            inputs_by="name",
-            inputs=json.dumps({"input1": self._ds_entry(hda1)}),
-        )
-        self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id=history_id, request=workflow_request)
-        assert self.dataset_populator.get_history_dataset_content(history_id) == "Hello World Second!\nhello world 2\n"
 
 
 class TestCachedWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):

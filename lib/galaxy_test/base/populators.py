@@ -73,10 +73,7 @@ import cwltest.compare
 import requests
 import yaml
 from bioblend.galaxyclient import GalaxyClient
-from gxformat2 import (
-    convert_and_import_workflow,
-    ImporterGalaxyInterface,
-)
+from gxformat2 import python_to_workflow
 from gxformat2.yaml import ordered_load
 from pydantic import (
     BaseModel,
@@ -2335,6 +2332,9 @@ class BaseWorkflowPopulator(BasePopulator):
     dataset_populator: BaseDatasetPopulator
     dataset_collection_populator: "BaseDatasetCollectionPopulator"
 
+    @abstractmethod
+    def import_workflow(self, workflow, **kwds) -> dict[str, Any]: ...
+
     def load_workflow(self, name: str, content: str = workflow_str, add_pja=False) -> dict:
         workflow = json.loads(content)
         workflow["name"] = name
@@ -2387,9 +2387,33 @@ class BaseWorkflowPopulator(BasePopulator):
     def upload_yaml_workflow(self, yaml_content: YamlContentT, **kwds) -> str:
         round_trip_conversion = kwds.get("round_trip_format_conversion", False)
         client_convert = kwds.pop("client_convert", not round_trip_conversion)
-        kwds["convert"] = client_convert
-        workflow = convert_and_import_workflow(yaml_content, galaxy_interface=self, **kwds)
-        workflow_id = workflow["id"]
+        source_type = kwds.get("source_type", None)
+        workflow_directory = None
+
+        if source_type == "path":
+            assert isinstance(yaml_content, (str, os.PathLike))
+            workflow_directory = os.path.abspath(os.path.dirname(yaml_content))
+            with open(yaml_content) as f:
+                yaml_content = ordered_load(f)
+
+        if client_convert:
+            as_python = ordered_load(yaml_content) if not isinstance(yaml_content, dict) else yaml_content
+            workflow = python_to_workflow(as_python, galaxy_interface=None, workflow_directory=workflow_directory)
+        else:
+            workflow = {"yaml_content": yaml_content} if not isinstance(yaml_content, dict) else yaml_content
+
+        name = kwds.get("name")
+        if name is not None:
+            workflow["name"] = name
+        import_kwds = {"fill_defaults": kwds.get("fill_defaults", True)}
+        if kwds.get("publish"):
+            import_kwds["publish"] = True
+        if kwds.get("exact_tools"):
+            import_kwds["exact_tools"] = True
+
+        result = self.import_workflow(workflow, **import_kwds)
+        workflow_id = result["id"]
+
         if round_trip_conversion:
             workflow_yaml_wrapped = self.download_workflow(workflow_id, style="format2_wrapped_yaml")
             assert "yaml_content" in workflow_yaml_wrapped, workflow_yaml_wrapped
@@ -2698,7 +2722,6 @@ class BaseWorkflowPopulator(BasePopulator):
         extra_invocation_kwds: Optional[dict[str, Any]] = None,
         round_trip_format_conversion: bool = False,
         invocations: int = 1,
-        raw_yaml: bool = False,
         use_cached_job: bool = False,
         copy_inputs_to_history: bool = False,
         job_dir: Optional[str] = None,
@@ -2713,7 +2736,6 @@ class BaseWorkflowPopulator(BasePopulator):
             source_type=source_type,
             client_convert=client_convert,
             round_trip_format_conversion=round_trip_format_conversion,
-            raw_yaml=raw_yaml,
         )
 
         if test_data is None:
@@ -3072,14 +3094,12 @@ class RunJobsSummary(NamedTuple):
         return [j for j in self.jobs if j["tool_id"] == tool_id]
 
 
-class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, ImporterGalaxyInterface):
+class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator):
     def __init__(self, galaxy_interactor):
         self.galaxy_interactor = galaxy_interactor
         self.dataset_populator = DatasetPopulator(galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(galaxy_interactor)
 
-    # Required for ImporterGalaxyInterface interface - so we can recursively import
-    # nested workflows.
     def import_workflow(self, workflow, **kwds) -> dict[str, Any]:
         workflow_str = json.dumps(workflow, indent=4)
         data = {
@@ -3089,13 +3109,6 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         upload_response = self._post("workflows", data=data)
         assert upload_response.status_code == 200, upload_response.text
         return upload_response.json()
-
-    def import_tool(self, tool) -> dict[str, Any]:
-        """Import a new dynamically defined tool
-
-        Required to implement ImporterGalaxyInterface.
-        """
-        return self.dataset_populator.create_tool(tool)
 
     def build_module(self, step_type: str, content_id: Optional[str] = None, inputs: Optional[dict[str, Any]] = None):
         payload = {"inputs": inputs or {}, "type": step_type, "content_id": content_id}

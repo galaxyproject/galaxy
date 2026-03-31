@@ -16,7 +16,6 @@ from typing import (
 import yaml
 from gxformat2 import (
     from_galaxy_native,
-    ImporterGalaxyInterface,
     ImportOptions,
     python_to_workflow,
 )
@@ -626,7 +625,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow_class, as_dict, object_id = artifact_class(trans, as_dict, allow_in_directory=allow_in_directory)
         assert workflow_class == "GalaxyWorkflow"
         # Format 2 Galaxy workflow.
-        galaxy_interface = Format2ConverterGalaxyInterface()
+        galaxy_interface = None
         import_options = ImportOptions()
         import_options.deduplicate_subworkflows = True
         as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None, import_options=import_options)
@@ -656,7 +655,7 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow_class, as_dict, object_id = artifact_class(trans, as_dict)
         if workflow_class == "GalaxyWorkflow" or "yaml_content" in as_dict:
             # Format 2 Galaxy workflow.
-            galaxy_interface = Format2ConverterGalaxyInterface()
+            galaxy_interface = None
             import_options = ImportOptions()
             import_options.deduplicate_subworkflows = True
             try:
@@ -2476,13 +2475,6 @@ class RawWorkflowDescription:
     def __init__(self, as_dict, workflow_path=None):
         self.as_dict = as_dict
         self.workflow_path = workflow_path
-
-
-class Format2ConverterGalaxyInterface(ImporterGalaxyInterface):
-    def import_workflow(self, workflow, **kwds):
-        raise NotImplementedError(
-            "Direct format 2 import of nested workflows is not yet implemented, use bioblend client."
-        )
 
 
 def _get_stored_workflow(session, workflow_uuid, workflow_id, by_stored_id):
