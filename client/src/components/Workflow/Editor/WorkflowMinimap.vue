@@ -385,6 +385,7 @@ useDraggable(canvas, {
         --state-color-skipped: #{$state-default-bg};
         --state-color-upload: #{$state-info-bg};
         --state-color-hidden: #{$state-default-bg};
+        --state-color-undefined: #{$gray-200};
     }
 }
 </style>

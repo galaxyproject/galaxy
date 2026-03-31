@@ -24,6 +24,7 @@ const stateNames = [
     "skipped",
     "upload",
     "hidden",
+    "undefined",
 ] as const;
 
 const stateColors: Record<string, string> = {};
@@ -49,6 +50,7 @@ export function getStepColor(step: Step, nodeColor: string, errorColor: string):
                 }
             }
         }
+        return stateColors["undefined"] ?? nodeColor;
     }
     return step.errors ? errorColor : nodeColor;
 }
