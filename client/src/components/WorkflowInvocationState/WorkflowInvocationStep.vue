@@ -152,10 +152,15 @@ const jobsTabTitle = computed(() => {
 });
 
 const activeStepWithConfig = computed(() => {
+    // graphStep is the full editor-format step (already has config_form with correct values)
+    if (props.graphStep?.config_form) {
+        return props.graphStep as any;
+    }
+    // If the graphStep doesn't have config_form, we may be able to get it from stepConfigData (fetched when user clicks on Step Config tab)
     if (!stepConfigData.value) {
         return null;
     }
-    const step = props.workflowStep as any;
+    const step = props.graphStep ?? (props.workflowStep as any);
     return {
         ...step,
         config_form: stepConfigData.value.config_form,
@@ -165,16 +170,17 @@ const activeStepWithConfig = computed(() => {
 });
 
 async function fetchStepConfig() {
-    if (stepConfigData.value || loadingStepConfig.value) {
+    // graphStep already has config_form — no fetch needed
+    if (props.graphStep?.config_form || stepConfigData.value || loadingStepConfig.value) {
         return;
     }
     loadingStepConfig.value = true;
     try {
-        const step = props.workflowStep as any;
+        const step = props.graphStep ?? props.workflowStep;
         const { data } = await axios.post(`${getAppRoot()}api/workflows/build_module`, {
             type: step.type,
-            content_id: step.content_id ?? step.tool_id,
-            tool_state: step.tool_state ?? "{}",
+            content_id: "content_id" in step ? step.content_id : step.tool_id,
+            tool_state: "tool_state" in step ? step.tool_state : {},
         });
         stepConfigData.value = data;
     } finally {
