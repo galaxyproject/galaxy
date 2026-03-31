@@ -241,8 +241,10 @@ def pydantic_to_galaxy_type(value: Any) -> Any:
 VT = TypeVar("VT", bound=StaticValidatorModel)
 
 
-def decorate_type_with_validators_if_needed(py_type: Type, static_validator_models: Sequence[VT]) -> Type:
-    pydantic_validator = pydantic_validator_for(static_validator_models)
+def decorate_type_with_validators_if_needed(
+    py_type: Type, static_validator_models: Sequence[VT], optional: bool = False
+) -> Type:
+    pydantic_validator = pydantic_validator_for(static_validator_models, optional=optional)
     if pydantic_validator:
         return expand_annotation(py_type, [pydantic_validator])
     else:
@@ -251,11 +253,14 @@ def decorate_type_with_validators_if_needed(py_type: Type, static_validator_mode
 
 # Looks like Annotated only work with one PlainValidator so condensing all static validators
 # into a single PlainValidator for pydantic.
-def pydantic_validator_for(static_validator_models: Sequence[VT]) -> Optional[AfterValidator]:
+def pydantic_validator_for(static_validator_models: Sequence[VT], optional: bool = False) -> Optional[AfterValidator]:
 
     if static_validator_models:
 
         def validator(v: Any) -> Any:
+            if optional and (v is None or v == ""):
+                return v
+
             gx_val = pydantic_to_galaxy_type(v)
 
             for static_validator_model in static_validator_models:
@@ -289,7 +294,7 @@ class TextParameterModel(BaseGalaxyToolParameterModelDefinition):
         py_type = self.py_type
         if state_representation == "relaxed_request":
             py_type = self.py_type_relaxed_request
-        py_type = decorate_type_with_validators_if_needed(py_type, self.validators)
+        py_type = decorate_type_with_validators_if_needed(py_type, self.validators, optional=self.optional)
         if state_representation == "workflow_step_linked":
             py_type = allow_connected_value(py_type)
         requires_value = self.request_requires_value
