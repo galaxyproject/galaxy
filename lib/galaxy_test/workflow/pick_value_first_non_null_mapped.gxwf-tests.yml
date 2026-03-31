@@ -1,0 +1,73 @@
+- doc: |
+    Map over pick_value(first_non_null) with both branches active.
+    Each input element picks from branch_a, output is a list with same
+    element count as the input collection.
+  job:
+    input_collection:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "line1"
+          filetype: bed
+        - identifier: el2
+          class: File
+          contents: "line2"
+          filetype: bed
+    when_a:
+      type: raw
+      value: true
+    when_b:
+      type: raw
+      value: true
+  outputs:
+    picked:
+      class: Collection
+      collection_type: list
+      element_count: 2
+      elements:
+        el1:
+          asserts:
+            - that: has_text
+              text: "line1"
+        el2:
+          asserts:
+            - that: has_text
+              text: "line2"
+- doc: |
+    Map over pick_value(first_non_null) with only branch_b active.
+    Each element should pick from branch_b (branch_a is skipped).
+  job:
+    input_collection:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "line1"
+          filetype: bed
+        - identifier: el2
+          class: File
+          contents: "line2"
+          filetype: bed
+    when_a:
+      type: raw
+      value: false
+    when_b:
+      type: raw
+      value: true
+  outputs:
+    picked:
+      class: Collection
+      collection_type: list
+      element_count: 2
+      elements:
+        el1:
+          asserts:
+            - that: has_text
+              text: "line1"
+        el2:
+          asserts:
+            - that: has_text
+              text: "line2"

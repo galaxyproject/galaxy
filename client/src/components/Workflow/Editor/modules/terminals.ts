@@ -22,6 +22,7 @@ import {
     type CollectionTypeDescriptor,
     NULL_COLLECTION_TYPE_DESCRIPTION,
 } from "./collectionTypeDescription";
+import { applyCompaction, computePickValueCompaction, reverseCompaction } from "./pickValueCompact";
 
 export const NO_COLLECTION_TYPE_INFORMATION_MESSAGE =
     "No collection type or collection type source defined - this is fine but may lead to less intuitive connection logic.";
@@ -106,12 +107,35 @@ class Terminal extends EventEmitter {
         this.stores.connectionStore.addConnection(connection);
     }
     disconnect(other: Terminal | Connection) {
-        this.stores.undoRedoStore
-            .action()
-            .onRun(() => this.dropConnection(other))
-            .onUndo(() => this.makeConnection(other))
-            .setName("disconnect steps")
-            .apply();
+        const connection = this.buildConnection(other);
+        const step = this.stores.stepStore.getStep(connection.input.stepId);
+
+        if (step?.type === "pick_value") {
+            const compaction = computePickValueCompaction(step.input_connections, connection.input.name);
+            this.stores.undoRedoStore
+                .action()
+                .onRun(() => {
+                    this.dropConnection(other);
+                    if (compaction.renames.length > 0) {
+                        applyCompaction(step.id, compaction.renames, this.stores.connectionStore);
+                    }
+                })
+                .onUndo(() => {
+                    if (compaction.renames.length > 0) {
+                        reverseCompaction(step.id, compaction.renames, this.stores.connectionStore);
+                    }
+                    this.makeConnection(other);
+                })
+                .setName("disconnect steps")
+                .apply();
+        } else {
+            this.stores.undoRedoStore
+                .action()
+                .onRun(() => this.dropConnection(other))
+                .onUndo(() => this.makeConnection(other))
+                .setName("disconnect steps")
+                .apply();
+        }
     }
     dropConnection(other: Terminal | Connection) {
         const connection = this.buildConnection(other);

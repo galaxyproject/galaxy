@@ -1,0 +1,55 @@
+- doc: |
+    Map over pick_value(all_non_null) with both branches active.
+    Each input element produces a 2-element inner list.
+    Output is list:list with 2 outer elements.
+  job:
+    input_collection:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "line1"
+          filetype: bed
+        - identifier: el2
+          class: File
+          contents: "line2"
+          filetype: bed
+    when_a:
+      type: raw
+      value: true
+    when_b:
+      type: raw
+      value: true
+  outputs:
+    picked:
+      class: Collection
+      collection_type: list:list
+      element_count: 2
+- doc: |
+    Map over pick_value(all_non_null) with one null branch.
+    Each element produces a 1-element inner list.
+  job:
+    input_collection:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: el1
+          class: File
+          contents: "line1"
+          filetype: bed
+        - identifier: el2
+          class: File
+          contents: "line2"
+          filetype: bed
+    when_a:
+      type: raw
+      value: true
+    when_b:
+      type: raw
+      value: false
+  outputs:
+    picked:
+      class: Collection
+      collection_type: list:list
+      element_count: 2

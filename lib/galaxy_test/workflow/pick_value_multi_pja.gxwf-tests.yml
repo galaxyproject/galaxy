@@ -1,0 +1,17 @@
+- doc: |
+    Test multiple PJAs on pick_value: change datatype, rename, and add tag.
+  job:
+    input_data:
+      type: File
+      value: 1.bed
+      file_type: bed
+    when:
+      type: raw
+      value: true
+  outputs:
+    picked:
+      class: File
+      ftype: txt
+      metadata:
+        name: "picked_and_typed"
+        tags: "pv_tag"

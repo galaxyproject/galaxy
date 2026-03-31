@@ -948,6 +948,328 @@ steps:
         workflow = self.workflow_populator.download_workflow(workflow_id)
         return workflow
 
+    def _pick_value_select_mode(self, label):
+        mode_selector = "div.ui-form-element[id='form-element-mode']"
+        container = self.wait_for_selector(mode_selector)
+        trigger = container.find_element(By.CSS_SELECTOR, ".multiselect__select")
+        trigger.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        js = """
+            var label = arguments[0];
+            var container = document.querySelector('#form-element-mode');
+            var items = container.querySelectorAll('.multiselect__element');
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].textContent.trim() === label) {
+                    items[i].querySelector('.multiselect__option').click();
+                    return true;
+                }
+            }
+            return false;
+        """
+        result = self.execute_script(js, label)
+        assert result, f"Mode option '{label}' not found"
+
+    @selenium_test
+    def test_pick_value_add_from_palette(self):
+        self.workflow_create_new(annotation="pick value test")
+        self.workflow_editor_add_input(item_name="pick_value")
+        editor = self.components.workflow_editor
+        editor.node._(label="Pick Value").wait_for_present()
+
+    @selenium_test
+    def test_pick_value_mode_selection(self):
+        self.workflow_create_new(annotation="pick value mode test")
+        self.workflow_editor_add_input(item_name="pick_value")
+        editor = self.components.workflow_editor
+        node = editor.node._(label="Pick Value")
+        node.wait_for_and_click()
+        self._pick_value_select_mode("All non-null (as collection)")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        pick_step = [s for s in workflow["steps"].values() if s["type"] == "pick_value"][0]
+        tool_state = json.loads(pick_step["tool_state"])
+        assert tool_state["mode"] == "all_non_null"
+
+    @selenium_test
+    def test_pick_value_terminals(self):
+        self.workflow_create_new(annotation="pick value terminals test")
+        self.workflow_editor_add_input(item_name="pick_value")
+        editor = self.components.workflow_editor
+        node = editor.node._(label="Pick Value")
+        node.input_terminal(name="input_0").wait_for_present()
+        node.input_terminal(name="input_1").wait_for_present()
+        node.output_terminal(name="output").wait_for_present()
+
+    @selenium_test
+    def test_pick_value_connect_inputs(self):
+        self.workflow_create_new(annotation="pick value connections test")
+        self.workflow_editor_add_input(item_name="data_input")
+        editor = self.components.workflow_editor
+        editor.label_input.wait_for_and_send_keys("input_data")
+        self.tool_open("cat1")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.label_input.wait_for_and_send_keys("branch_a")
+        self.workflow_editor_add_input(item_name="pick_value")
+        editor.label_input.wait_for_and_send_keys("pick")
+        self.components.workflow_editor.tool_bar.auto_layout.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_editor_connect("input_data#output", "branch_a#input1")
+        self.workflow_editor_connect("branch_a#out_file1", "pick#input_0")
+        self.assert_connected("branch_a#out_file1", "pick#input_0")
+
+    @selenium_test
+    def test_pick_value_grow_on_connect(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input_data: data
+steps:
+  branch_a:
+    tool_id: cat
+    in:
+      input1: input_data
+  branch_b:
+    tool_id: cat
+    in:
+      input1: input_data
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+""")
+        editor = self.components.workflow_editor
+        pick_node = editor.node._(label="pick")
+        pick_node.input_terminal(name="input_0").wait_for_present()
+        pick_node.input_terminal(name="input_1").wait_for_present()
+        # With 2 connections, grow-on-connect should have created a 3rd empty terminal
+        pick_node.input_terminal(name="input_2").wait_for_present()
+
+    @selenium_test
+    def test_pick_value_conditional_workflow_roundtrip(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input_data: data
+steps:
+  branch_a:
+    tool_id: cat
+    in:
+      input1: input_data
+    when: $(true)
+  branch_b:
+    tool_id: cat
+    in:
+      input1: input_data
+    when: $(false)
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+""")
+        editor = self.components.workflow_editor
+        pick_node = editor.node._(label="pick")
+        pick_node.wait_for_present()
+        self.assert_connected("branch_a#out_file1", "pick#input_0")
+        self.assert_connected("branch_b#out_file1", "pick#input_1")
+        pick_node.output_terminal(name="output").wait_for_present()
+        workflow = self._download_current_workflow()
+        pick_step = [s for s in workflow["steps"].values() if s["type"] == "pick_value"][0]
+        tool_state = json.loads(pick_step["tool_state"])
+        assert tool_state["mode"] == "first_non_null"
+        assert len(pick_step["input_connections"]) == 2
+
+    @selenium_test
+    def test_pick_value_output_type_changes_with_mode(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input_data: data
+steps:
+  branch_a:
+    tool_id: cat
+    in:
+      input1: input_data
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+""")
+        editor = self.components.workflow_editor
+        pick_node = editor.node._(label="pick")
+        pick_node.wait_for_and_click()
+        self._pick_value_select_mode("All non-null (as collection)")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        pick_step = [s for s in workflow["steps"].values() if s["type"] == "pick_value"][0]
+        tool_state = json.loads(pick_step["tool_state"])
+        assert tool_state["mode"] == "all_non_null"
+
+    @selenium_test
+    def test_pick_value_change_datatype_pja(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input_data: data
+steps:
+  branch_a:
+    tool_id: cat
+    in:
+      input1: input_data
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+""")
+        editor = self.components.workflow_editor
+        pick_node = editor.node._(label="pick")
+        pick_node.wait_for_and_click()
+        # Expand the output card — PJA controls are inside a collapsed FormCard
+        editor.configure_output(output="output").wait_for_and_click()
+        editor.change_datatype.wait_for_and_click()
+        editor.select_datatype_text_search.wait_for_and_send_keys("bam")
+        editor.select_datatype(datatype="bam").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        pick_step = [s for s in workflow["steps"].values() if s["type"] == "pick_value"][0]
+        pjas = pick_step["post_job_actions"]
+        assert "ChangeDatatypeActionoutput" in pjas
+        assert pjas["ChangeDatatypeActionoutput"]["action_arguments"]["newtype"] == "bam"
+
+    @selenium_test
+    def test_pick_value_rename_pja(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input_data: data
+steps:
+  branch_a:
+    tool_id: cat
+    in:
+      input1: input_data
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+""")
+        editor = self.components.workflow_editor
+        pick_node = editor.node._(label="pick")
+        pick_node.wait_for_and_click()
+        editor.configure_output(output="output").wait_for_and_click()
+        editor.rename_output.wait_for_and_clear_and_send_keys("my_picked_output")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        pick_step = [s for s in workflow["steps"].values() if s["type"] == "pick_value"][0]
+        pjas = pick_step["post_job_actions"]
+        assert "RenameDatasetActionoutput" in pjas
+        assert pjas["RenameDatasetActionoutput"]["action_arguments"]["newname"] == "my_picked_output"
+
+    @selenium_test
+    def test_pick_value_add_tags_pja(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input_data: data
+steps:
+  branch_a:
+    tool_id: cat
+    in:
+      input1: input_data
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+""")
+        editor = self.components.workflow_editor
+        pick_node = editor.node._(label="pick")
+        pick_node.wait_for_and_click()
+        editor.configure_output(output="output").wait_for_and_click()
+        editor.add_tags_button.wait_for_and_click()
+        tag_input = editor.add_tags_input.wait_for_visible()
+        tag_input.send_keys("#picktag")
+        self.send_enter(tag_input)
+        self.send_escape(tag_input)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        pick_step = [s for s in workflow["steps"].values() if s["type"] == "pick_value"][0]
+        pjas = pick_step["post_job_actions"]
+        assert "TagDatasetActionoutput" in pjas
+        assert "picktag" in pjas["TagDatasetActionoutput"]["action_arguments"]["tags"]
+
+    @selenium_test
+    def test_pick_value_compact_on_disconnect(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input_data: data
+steps:
+  branch_a:
+    tool_id: cat
+    in:
+      input1: input_data
+  branch_b:
+    tool_id: cat
+    in:
+      input1: input_data
+  branch_c:
+    tool_id: cat
+    in:
+      input1: input_data
+  pick:
+    type: pick_value
+    state:
+      mode: first_non_null
+    in:
+      input_0: branch_a/out_file1
+      input_1: branch_b/out_file1
+      input_2: branch_c/out_file1
+""")
+        editor = self.components.workflow_editor
+        pick_node = editor.node._(label="pick")
+        # Verify initial state: 3 connected + 1 empty from grow-on-connect
+        self.assert_connected("branch_a#out_file1", "pick#input_0")
+        self.assert_connected("branch_b#out_file1", "pick#input_1")
+        self.assert_connected("branch_c#out_file1", "pick#input_2")
+        pick_node.input_terminal(name="input_3").wait_for_present()
+        # Disconnect middle input
+        self.workflow_editor_destroy_connection("pick#input_1")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # branch_b should no longer be connected
+        self.assert_not_connected("branch_b#out_file1", "pick#input_1")
+        # branch_c should have been compacted from input_2 to input_1
+        self.assert_connected("branch_a#out_file1", "pick#input_0")
+        self.assert_connected("branch_c#out_file1", "pick#input_1")
+        # Click pick node to mount FormPickValue watcher (triggers num_inputs shrink)
+        pick_node.wait_for_and_click()
+        pick_node.input_terminal(name="input_3").wait_for_absent_or_hidden()
+        # Save and verify connections and num_inputs were compacted
+        self.assert_workflow_has_changes_and_save()
+        workflow = self._download_current_workflow()
+        pick_step = [s for s in workflow["steps"].values() if s["type"] == "pick_value"][0]
+        tool_state = json.loads(pick_step["tool_state"])
+        assert tool_state["num_inputs"] == 2
+        assert len(pick_step["input_connections"]) == 2
+        assert "input_0" in pick_step["input_connections"]
+        assert "input_1" in pick_step["input_connections"]
+
     @selenium_test
     def test_editor_create_conditional_step(self):
         editor = self.components.workflow_editor

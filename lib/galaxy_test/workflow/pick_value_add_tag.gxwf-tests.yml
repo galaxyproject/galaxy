@@ -1,0 +1,15 @@
+- doc: |
+    Test that TagDatasetAction on pick_value adds a tag to the output.
+  job:
+    input_data:
+      type: File
+      value: 1.bed
+      file_type: bed
+    when:
+      type: raw
+      value: true
+  outputs:
+    picked:
+      class: File
+      metadata:
+        tags: "picktag"

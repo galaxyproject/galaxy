@@ -112,6 +112,7 @@ from galaxy.util.search import (
 from galaxy.work.context import WorkRequestContext
 from galaxy.workflow.modules import (
     module_factory,
+    PickValueModule,
     ToolModule,
     WorkflowModule,
     WorkflowModuleInjector,
@@ -604,6 +605,15 @@ class WorkflowSerializer(sharable.SharableModelSerializer):
     def add_serializers(self):
         super().add_serializers()
         self.serializers.update({})
+
+
+def _step_pja_dict(step):
+    pja_dict = {}
+    for pja in step.post_job_actions:
+        pja_dict[pja.action_type + pja.output_name] = dict(
+            action_type=pja.action_type, output_name=pja.output_name, action_arguments=pja.action_arguments
+        )
+    return pja_dict
 
 
 class WorkflowContentsManager(UsesAnnotations):
@@ -1379,12 +1389,10 @@ class WorkflowContentsManager(UsesAnnotations):
 
                 visit_input_values(module.tool.inputs, module.state.inputs, callback)
                 # post_job_actions
-                pja_dict = {}
-                for pja in step.post_job_actions:
-                    pja_dict[pja.action_type + pja.output_name] = dict(
-                        action_type=pja.action_type, output_name=pja.output_name, action_arguments=pja.action_arguments
-                    )
-                step_dict["post_job_actions"] = pja_dict
+                step_dict["post_job_actions"] = _step_pja_dict(step)
+
+            if isinstance(module, PickValueModule):
+                step_dict["post_job_actions"] = _step_pja_dict(step)
 
             # workflow outputs
             outputs = []
@@ -1647,12 +1655,10 @@ class WorkflowContentsManager(UsesAnnotations):
                         step_dict["tool_id"] = None
                         step_dict["tool_uuid"] = None
 
-                pja_dict = {}
-                for pja in step.post_job_actions:
-                    pja_dict[pja.action_type + pja.output_name] = dict(
-                        action_type=pja.action_type, output_name=pja.output_name, action_arguments=pja.action_arguments
-                    )
-                step_dict["post_job_actions"] = pja_dict
+                step_dict["post_job_actions"] = _step_pja_dict(step)
+
+            if isinstance(module, PickValueModule):
+                step_dict["post_job_actions"] = _step_pja_dict(step)
 
             if module.type == "subworkflow" and not internal:
                 del step_dict["errors"]

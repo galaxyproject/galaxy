@@ -43,8 +43,16 @@
                 v-if="isSubworkflow"
                 :step="step"
                 @onUpdateStep="(id, step) => emit('onUpdateStep', id, step)" />
+            <FormPickValue
+                v-if="type == 'pick_value'"
+                :step="step"
+                :datatypes="datatypes"
+                :node-inputs="stepInputs"
+                :post-job-actions="postJobActions"
+                @onChange="onChange"
+                @onChangePostJobActions="onChangePostJobActions" />
             <FormInputCollection
-                v-if="type == 'data_collection_input'"
+                v-else-if="type == 'data_collection_input'"
                 :step="step"
                 :datatypes="datatypes"
                 :inputs="configForm?.inputs"
@@ -87,6 +95,7 @@ import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import FormInputCollection from "@/components/Workflow/Editor/Forms/FormInputCollection.vue";
 import FormOutputLabel from "@/components/Workflow/Editor/Forms/FormOutputLabel.vue";
+import FormPickValue from "@/components/Workflow/Editor/Forms/FormPickValue.vue";
 
 const props = defineProps<{
     step: Step;
@@ -99,9 +108,11 @@ const emit = defineEmits([
     "onEditSubworkflow",
     "onSetData",
     "onUpdateStep",
+    "onChangePostJobActions",
 ]);
 const stepRef = toRef(props, "step");
-const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
+const { stepId, contentId, annotation, label, name, type, configForm, stepInputs, postJobActions } =
+    useStepProps(stepRef);
 const { stepStore } = useWorkflowStores();
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
@@ -126,6 +137,9 @@ function onEditSubworkflow() {
 }
 function onUpgradeSubworkflow() {
     emit("onAttemptRefactor", [{ action_type: "upgrade_subworkflow", step: { order_index: stepId.value } }]);
+}
+function onChangePostJobActions(postJobActions: unknown) {
+    emit("onChangePostJobActions", stepId.value, postJobActions);
 }
 
 // keeps the component from emitting the onCreate change event

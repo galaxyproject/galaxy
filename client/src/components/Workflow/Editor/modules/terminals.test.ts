@@ -435,7 +435,7 @@ describe("canAccept", () => {
         expect(step.input_connections["f1"]).toStrictEqual([{ id: dataOutOne.stepId, output_name: dataOutOne.name }]);
         multiDataIn.disconnect(dataOutOne);
         step = stepStore.getStep(multiDataIn.stepId)!;
-        expect(step.input_connections["f1"]).toStrictEqual([]);
+        expect(step.input_connections["f1"]).toBeUndefined();
         multiDataIn.connect(dataOutOne);
         multiDataIn.connect(dataOutTwo);
         step = stepStore.getStep(multiDataIn.stepId)!;

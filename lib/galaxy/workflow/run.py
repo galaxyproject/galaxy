@@ -724,7 +724,13 @@ class WorkflowProgress:
         # Determine output value from inputs_by_step_id or default
         outputs = {}
         if step.id not in self.inputs_by_step_id:
-            outputs["output"] = step.get_input_default_value(NO_REPLACEMENT)
+            default_value = step.get_input_default_value(NO_REPLACEMENT)
+            # For parameter_input steps, unwrap {"src": "json", "value": X}
+            # dicts to just X — matching the unwrap logic in
+            # InputParameterModule.get_input_value().
+            if step.type == "parameter_input" and isinstance(default_value, dict):
+                default_value = default_value.get("value", default_value)
+            outputs["output"] = default_value
         else:
             outputs["output"] = self.inputs_by_step_id[step.id]
 
