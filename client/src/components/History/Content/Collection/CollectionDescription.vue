@@ -38,7 +38,7 @@ const datasetStateSummary = computed(() => {
 });
 
 const collectionLabel = computed(() => {
-    const collectionType = props.hdca.collection_type;
+    const collectionType = props.hdca.collection_type ?? "";
     const isList = collectionType.startsWith("list");
     if (labels.get(collectionType)) {
         return labels.get(collectionType);
