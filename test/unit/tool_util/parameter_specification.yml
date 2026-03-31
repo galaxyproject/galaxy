@@ -840,6 +840,18 @@ gx_select_multiple:
   - parameter: ["Ex1"]
   - parameter: {}
   - parameter: 5
+  workflow_step_native_valid:
+  - parameter: ["--ex1"]
+  - parameter: ["ex2"]
+  - parameter: "--ex1,ex2"
+  - {}
+  - parameter: null
+  - parameter: {__class__: 'ConnectedValue'}
+  - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+  - parameter: ["Ex1"]
+  - parameter: {}
+  - parameter: 5
 
 gx_select_multiple_optional:
   request_valid:
@@ -1049,6 +1061,14 @@ gx_hidden:
   workflow_step_linked_invalid:
     - parameter: 5
     - parameter: null
+  workflow_step_native_valid:
+    - parameter: moocow
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: {__class__: 'RuntimeValue'}
+    - parameter: null
+    - {}
+  workflow_step_native_invalid:
+    - parameter: 5
 
 gx_hidden_optional:
   request_valid:
@@ -1179,6 +1199,18 @@ gx_float:
     - parameter: {__class__: 'ConnectedValue2'}
   _json_schema_valid_skip:
     test_case_xml_valid: "Galaxy infinity sentinels (__Infinity__, __-Infinity__) are strings not expressible as JSON Schema numbers"
+  workflow_step_native_valid:
+    - parameter: 5
+    - parameter: 5.4
+    - parameter: "5"
+    - parameter: "3.14"
+    - {}
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+    - parameterx: 5
+    - parameter: "foobar"
+    - parameter: {__class__: 'ConnectedValue2'}
 
 
 gx_float_optional:
@@ -1713,6 +1745,13 @@ gx_data_collection:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - {}
+  workflow_step_native_valid:
+  - parameter: {__class__: 'ConnectedValue'}
+  - parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+  - {}
+  - parameter: null
+  - parameter: {src: hdca, id: abcdabcd}
   test_case_xml_valid:
   - parameter: {class: Collection, collection_type: list, elements: []}
   - parameter:
@@ -1972,6 +2011,33 @@ gx_conditional_boolean:
         test_parameter: true
     - conditional_parameter:
         boolean_parameter: true
+  workflow_step_native_valid:
+    - conditional_parameter:
+        test_parameter: true
+        integer_parameter: 5
+    - conditional_parameter:
+        test_parameter: "true"
+        integer_parameter: "5"
+    - conditional_parameter:
+        test_parameter: false
+        boolean_parameter: true
+    - conditional_parameter:
+        test_parameter: "false"
+        boolean_parameter: "true"
+    - {}
+    - conditional_parameter: {}
+    - conditional_parameter:
+        test_parameter: true
+        integer_parameter: {__class__: 'ConnectedValue'}
+    - conditional_parameter:
+        test_parameter: true
+        integer_parameter: {__class__: 'RuntimeValue'}
+  workflow_step_native_invalid:
+    - conditional_parameter:
+        test_parameter: false
+        integer_parameter: 1
+    - conditional_parameter:
+        test_parameter: "yes"
 
 gx_conditional_boolean_checked:
   request_valid:
