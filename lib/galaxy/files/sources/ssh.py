@@ -64,9 +64,25 @@ class SshFilesSource(PyFilesystem2FilesSource[SshFileSourceTemplateConfiguration
             compress=config.compress,
             config_path=config.config_path,
         )
-        if config.path:
-            return handle.opendir(config.path)
         return handle
+
+    def _to_filesystem_path(self, path: str, config: SshFileSourceConfiguration) -> str:
+        base = config.path.rstrip("/")
+        relative = path.lstrip("/")
+        if not relative:
+            return base or "/"
+        return f"{base}/{relative}"
+
+    def _adapt_entry_path(self, filesystem_path: str, config: SshFileSourceConfiguration) -> str:
+        base = config.path.rstrip("/")
+        if base and filesystem_path.startswith(base):
+            virtual_path = filesystem_path[len(base) :]
+            if not virtual_path:
+                return "/"
+            if not virtual_path.startswith("/"):
+                virtual_path = f"/{virtual_path}"
+            return virtual_path
+        return filesystem_path
 
 
 __all__ = ("SshFilesSource",)
