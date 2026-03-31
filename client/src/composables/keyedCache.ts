@@ -16,7 +16,7 @@ export interface FetchParams {
 /**
  * A function that fetches an item from the server.
  */
-type FetchHandler<T> = (params: FetchParams) => Promise<T>;
+type FetchHandler<T> = (params: FetchParams, signal?: AbortSignal) => Promise<T>;
 
 /**
  * A function that returns true if the item should be fetched.

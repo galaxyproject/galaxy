@@ -25,14 +25,15 @@ export async function fetchDatasetTextContentDetails(params: { id: string }): Pr
     return data;
 }
 
-export async function fetchDatasetDetails(params: { id: string }, view: string = "detailed"): Promise<HDADetailed> {
+export async function fetchDatasetDetails(params: { id: string }, signal?: AbortSignal): Promise<HDADetailed> {
     const { data, error, response } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {
         params: {
             path: {
                 dataset_id: params.id,
             },
-            query: { view },
+            query: { view: "detailed" },
         },
+        signal,
     });
 
     if (error) {
