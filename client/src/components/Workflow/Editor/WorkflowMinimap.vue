@@ -16,7 +16,14 @@ import type {
 import type { Step, Steps } from "@/stores/workflowStepStore";
 
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
-import { drawBoxComments, drawFreehandComments, drawSteps } from "./modules/canvasDraw";
+import {
+    drawBoxComments,
+    drawFreehandComments,
+    drawStepBorders,
+    drawSteps,
+    getStepColor,
+    initStateColors,
+} from "./modules/canvasDraw";
 import { type AxisAlignedBoundingBox, Transform } from "./modules/geometry";
 
 const props = defineProps<{
@@ -108,6 +115,8 @@ onMounted(async () => {
     colors.view = style.getPropertyValue("--view-color");
     colors.viewOutline = style.getPropertyValue("--view-outline-color");
 
+    initStateColors(style);
+
     size.default = parseInt(style.getPropertyValue("--workflow-overview-size"));
     size.min = parseInt(style.getPropertyValue("--workflow-overview-min-size"));
     size.max = parseInt(style.getPropertyValue("--workflow-overview-max-size"));
@@ -162,22 +171,20 @@ function renderMinimap() {
         }
     });
 
-    // sort steps by error state
+    // group steps by their display color
     const allSteps = Object.values(props.steps);
-    const okSteps: Step[] = [];
-    const errorSteps: Step[] = [];
+    const stepsByColor = new Map<string, Step[]>();
     let selectedStep: Step | undefined;
 
     allSteps.forEach((step) => {
         if (stateStore.activeNodeId === step.id) {
             selectedStep = step;
         }
-
-        if (step.errors) {
-            errorSteps.push(step);
-        } else {
-            okSteps.push(step);
+        const color = getStepColor(step, colors.node, colors.error);
+        if (!stepsByColor.has(color)) {
+            stepsByColor.set(color, []);
         }
+        stepsByColor.get(color)?.push(step);
     });
 
     // draw rects
@@ -186,8 +193,10 @@ function renderMinimap() {
     drawBoxComments(ctx, markdownComments, 2 / canvasTransform.scaleX, colors.node);
     ctx.fillStyle = "rgba(0, 0, 0, 0)";
     drawBoxComments(ctx, textComments, 1 / canvasTransform.scaleX, colors.node);
-    drawSteps(ctx, okSteps, colors.node, stateStore);
-    drawSteps(ctx, errorSteps, colors.error, stateStore);
+    stepsByColor.forEach((stepsForColor, color) => {
+        drawSteps(ctx, stepsForColor, color, stateStore);
+    });
+    drawStepBorders(ctx, allSteps, colors.node, stateStore);
 
     drawFreehandComments(ctx, freehandComments, colors.node);
 
@@ -362,6 +371,20 @@ useDraggable(canvas, {
         --selected-outline-color: #{$brand-primary};
         --view-color: #{fade-out($brand-dark, 0.8)};
         --view-outline-color: #{$brand-info};
+
+        // Invocation state colors
+        --state-color-new: #{$state-default-bg};
+        --state-color-waiting: #{$state-default-bg};
+        --state-color-queued: #{$state-default-bg};
+        --state-color-running: #{$state-running-bg};
+        --state-color-ok: #{$state-success-bg};
+        --state-color-error: #{$state-danger-bg};
+        --state-color-deleted: #{darken($state-default-bg, 30%)};
+        --state-color-setting-metadata: #{$state-warning-bg};
+        --state-color-paused: #{$state-info-bg};
+        --state-color-skipped: #{$state-default-bg};
+        --state-color-upload: #{$state-info-bg};
+        --state-color-hidden: #{$state-default-bg};
     }
 }
 </style>
