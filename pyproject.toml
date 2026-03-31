@@ -128,6 +128,7 @@ test = [
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
     "fluent-logger",
     "gcsfs",
+    "hvac",
     "lxml!=4.2.2",
     "onedatafilerestclient==21.2.5.2",
     "pkce",

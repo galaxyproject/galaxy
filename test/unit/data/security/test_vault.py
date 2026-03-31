@@ -10,7 +10,10 @@ from galaxy.model.unittest_utils.data_app import (
     GalaxyDataTestConfig,
 )
 from galaxy.security.vault import (
+    _unwrap_vault,
+    HashicorpVault,
     InvalidVaultKeyException,
+    renew_vault_token_if_needed,
     Vault,
     VaultFactory,
 )
@@ -72,6 +75,16 @@ class TestHashicorpVault(AbstractTestCases.VaultTestBase):
         config = GalaxyDataTestConfig(vault_config_file=self.vault_temp_conf)
         app = GalaxyDataTestApp(config=config)
         self.vault = VaultFactory.from_app(app)
+
+    def test_renew_token(self):
+        """Test that vault token renewal works against a real Hashicorp Vault."""
+        inner = _unwrap_vault(self.vault)
+        assert isinstance(inner, HashicorpVault), f"Expected HashicorpVault, got {type(inner)}"
+        inner.renew_token()
+
+    def test_renew_vault_token_if_needed(self):
+        """Test the full renewal path through renew_vault_token_if_needed with a real Vault."""
+        renew_vault_token_if_needed(self.vault)
 
     def tearDown(self) -> None:
         os.remove(self.vault_temp_conf)

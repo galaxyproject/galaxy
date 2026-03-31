@@ -62,6 +62,7 @@ grpcio==1.78.0
 grpcio-status==1.78.0
 h11==0.16.0
 html5rdf==1.2.1
+hvac==2.4.0
 id==1.6.1
 idna==3.11
 imagesize==2.0.0

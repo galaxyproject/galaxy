@@ -4179,6 +4179,18 @@ mapping:
         desc: |
           Vault config file.
 
+      vault_token_renewal_interval:
+        type: int
+        default: 0
+        required: false
+        desc: |
+          Time (in seconds) between Hashicorp Vault token renewal attempts.
+          Set to 0 to disable automatic token renewal (the default).
+          When enabled, a Celery Beat periodic task will call Vault's
+          renew-self endpoint at this interval. Recommended value: half the
+          token TTL (e.g. 1800 for a 1-hour TTL token). Requires Celery
+          Beat to be running.
+
       url_headers_config_file:
         type: str
         default: url_headers_conf.yml

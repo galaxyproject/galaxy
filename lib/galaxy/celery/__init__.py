@@ -248,6 +248,9 @@ def setup_periodic_tasks(config, celery_app):
     if config.enable_failed_jobs_working_directory_cleanup:
         schedule_task("cleanup_jwds", config.failed_jobs_working_directory_cleanup_interval)
 
+    if config.vault_token_renewal_interval:
+        schedule_task("renew_vault_token", config.vault_token_renewal_interval)
+
     if beat_schedule:
         celery_app.conf.beat_schedule = beat_schedule
 
