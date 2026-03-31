@@ -20,7 +20,7 @@ const stateIcon = computed(() => iconClasses[props.job.state] || null);
 </script>
 
 <template>
-    <span class="rounded px-2 py-1" :class="badgeClass">
+    <span class="rounded px-2 py-1 text-nowrap" :class="badgeClass">
         <FontAwesomeIcon v-if="stateIcon" :icon="stateIcon.icon" :spin="stateIcon.spin" />
         {{ props.job.state }}
     </span>
