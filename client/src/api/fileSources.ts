@@ -74,6 +74,11 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faHubspot,
         message: "This is a file repository plugin that connects with the Hugging Face Hub.",
     },
+    iiif: {
+        icon: faNetworkWired,
+        message:
+            "This is a read-only file repository plugin that connects to IIIF (International Image Interoperability Framework) sources. IIIF is a framework widely used by museums, libraries, and archives for delivering high-resolution image-based cultural heritage materials.",
+    },
     omero: {
         icon: faNetworkWired,
         message: "This is a file repository plugin that connects with an OMERO server.",

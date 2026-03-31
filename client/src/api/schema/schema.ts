@@ -12845,6 +12845,7 @@ export interface components {
                 | "rspace"
                 | "dataverse"
                 | "huggingface"
+                | "iiif"
                 | "omero";
             /** Variables */
             variables?:
@@ -24483,6 +24484,7 @@ export interface components {
                 | "rspace"
                 | "dataverse"
                 | "huggingface"
+                | "iiif"
                 | "omero";
             /** Uri Root */
             uri_root: string;
