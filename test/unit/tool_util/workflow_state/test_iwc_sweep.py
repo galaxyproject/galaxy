@@ -25,7 +25,10 @@ from galaxy.tool_util.workflow_state.lint_stateful import run_structural_lint
 from galaxy.tool_util.workflow_state.roundtrip import roundtrip_validate
 from galaxy.tool_util.workflow_state.to_native_stateful import convert_to_native_stateful
 from galaxy.tool_util.workflow_state.validate import validate_workflow_cli
-from galaxy.tool_util.workflow_state.validation_json_schema import validate_workflow_json_schema
+from galaxy.tool_util.workflow_state.validation_json_schema import (
+    validate_native_workflow_json_schema,
+    validate_workflow_json_schema,
+)
 from galaxy.tool_util.workflow_state.validation_native import validate_workflow_native
 from galaxy.tool_util.workflow_state.workflow_tools import load_workflow
 from galaxy.tool_util_models import ParsedTool
@@ -166,3 +169,18 @@ class TestIWCSweepJsonSchema:
             if sr.status == "fail":
                 errors.append(f"step {sr.step} ({sr.tool_id}): {[e.message for e in sr.errors]}")
         assert result.valid, f"JSON Schema validation failed for {wf_path}:\n" + "\n".join(errors)
+
+
+@skip_unless_environ(IWC_ENV)
+class TestIWCSweepNativeJsonSchema:
+    """JSON Schema validation of native .ga workflows using WorkflowStepNativeToolState schemas."""
+
+    @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
+    def test_native_json_schema_validate(self, wf_path, tool_info):
+        workflow = load_workflow(wf_path)
+        result = validate_native_workflow_json_schema(workflow, tool_info, strip=True)
+        errors = []
+        for sr in result.step_results:
+            if sr.status == "fail":
+                errors.append(f"step {sr.step} ({sr.tool_id}): {[e.message for e in sr.errors]}")
+        assert result.valid, f"Native JSON Schema validation failed for {wf_path}:\n" + "\n".join(errors)

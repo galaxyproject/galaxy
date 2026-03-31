@@ -2246,10 +2246,13 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
             test_parameter_requires_value = self.test_parameter.request_requires_value
         when_types: list[type[BaseModel]] = []
         default_type = None
+        # When an __absent__ branch will exist, the test parameter must be required in
+        # explicit branches so JSON Schema oneOf can disambiguate {} from {test_param: val}
+        has_absent_branch = not test_parameter_requires_value and any(w.is_default_when for w in self.whens)
         for when in self.whens:
             discriminator = when.discriminator
             parameters = when.parameters
-            if test_parameter_requires_value:
+            if test_parameter_requires_value or has_absent_branch:
                 initialize_test = ...
             else:
                 initialize_test = None
@@ -2312,7 +2315,7 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
                 disc_value: Any = tag == "true"
             else:
                 disc_value = tag
-            if test_parameter_requires_value:
+            if test_parameter_requires_value or has_absent_branch:
                 initialize_test = ...
             else:
                 initialize_test = None

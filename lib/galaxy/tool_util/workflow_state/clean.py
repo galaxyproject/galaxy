@@ -211,9 +211,9 @@ def _strip_recursive(
             test_param = conditional.test_parameter
             target_when = _select_which_when_native(conditional, cond_state)
             if target_when is None:
-                continue
-
-            branch_inputs: List[ToolParameterT] = [test_param] + list(target_when.parameters)
+                branch_inputs: List[ToolParameterT] = [test_param]
+            else:
+                branch_inputs = [test_param] + list(target_when.parameters)
             _strip_recursive(
                 cond_state, branch_inputs, removed_keys, prefix=child_prefix, strip_bookkeeping=strip_bookkeeping
             )

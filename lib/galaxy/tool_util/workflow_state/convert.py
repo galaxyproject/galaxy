@@ -91,7 +91,7 @@ def convert_state_to_format2_using(native_step: StepLike, parsed_tool: Optional[
         raise ConversionValidationFailure("Step uses legacy replacement parameters — cannot convert to format2")
 
     try:
-        validate_native_step_against(native_step, parsed_tool)
+        validate_native_step_against(native_step, parsed_tool, strip=True)
     except Exception:
         raise ConversionValidationFailure(
             "Failed to validate native step - not going to convert a tool state that isn't understood"

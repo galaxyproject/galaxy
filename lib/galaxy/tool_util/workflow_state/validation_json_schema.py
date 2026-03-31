@@ -7,6 +7,7 @@ Level 1 (structural): validates workflow dict against gxformat2 GalaxyWorkflow s
 Level 2 (per-step tool state): validates each step's state against WorkflowStepToolState schema.
 """
 
+import copy
 import json
 import logging
 import os
@@ -24,7 +25,18 @@ from typing import (
 from jsonschema import Draft202012Validator
 from typing_extensions import Literal
 
+from ._state_merge import inject_connections_into_state
 from ._types import GetToolInfo
+from ._util import (
+    step_input_connections,
+    step_tool_state,
+)
+from .stale_keys import (
+    ALL_CATEGORIES,
+    StaleKeyPolicy,
+)
+
+_STRIP_ALL_POLICY = StaleKeyPolicy(denied=set(ALL_CATEGORIES))
 
 log = logging.getLogger(__name__)
 
@@ -104,6 +116,7 @@ def _build_tool_state_validator(
     from galaxy.tool_util.parameters.json import to_json_schema
     from galaxy.tool_util.parameters.state import (
         WorkflowStepLinkedToolState,
+        WorkflowStepNativeToolState,
         WorkflowStepToolState,
     )
 
@@ -111,7 +124,12 @@ def _build_tool_state_validator(
     if parsed_tool is None:
         return None
 
-    state_cls = WorkflowStepLinkedToolState if representation == "workflow_step_linked" else WorkflowStepToolState
+    _state_cls_map = {
+        "workflow_step": WorkflowStepToolState,
+        "workflow_step_linked": WorkflowStepLinkedToolState,
+        "workflow_step_native": WorkflowStepNativeToolState,
+    }
+    state_cls = _state_cls_map.get(representation, WorkflowStepToolState)
     model = state_cls.parameter_model_for(list(parsed_tool.inputs))
     schema = to_json_schema(model)
     return Draft202012Validator(schema)
@@ -225,6 +243,117 @@ def validate_workflow_json_schema(
                     status="skip",
                 )
             )
+            continue
+
+        errors = sorted(validator.iter_errors(state), key=lambda e: list(e.absolute_path))
+        step_errors = _convert_errors(errors)
+        result.step_results.append(
+            JsonSchemaStepResult(
+                step=step_key,
+                tool_id=tool_id,
+                errors=step_errors,
+                status="fail" if step_errors else "ok",
+            )
+        )
+
+    return result
+
+
+def validate_native_workflow_json_schema(
+    workflow_dict: Dict[str, Any],
+    get_tool_info: GetToolInfo,
+    tool_schema_dir: Optional[str] = None,
+    *,
+    strip: bool = False,
+) -> JsonSchemaValidationResult:
+    """JSON Schema validation of a native .ga workflow's per-step tool state.
+
+    No structural validation (no native structural schema exists).
+    Per-step: optionally strip bookkeeping/stale keys, inject connections,
+    then validate against WorkflowStepNativeToolState JSON Schema.
+    """
+    from .legacy_parameters import (
+        ReplacementClassification,
+        scan_native_state,
+    )
+
+    result = JsonSchemaValidationResult()
+
+    steps = workflow_dict.get("steps", {})
+    if not isinstance(steps, dict):
+        return result
+
+    _validator_cache: Dict[str, Optional[Draft202012Validator]] = {}
+    _parsed_tool_cache: Dict[str, Any] = {}
+
+    for step_key, step_def in sorted(steps.items(), key=lambda x: int(x[0])):
+        if not isinstance(step_def, dict):
+            continue
+
+        if step_def.get("type") == "subworkflow" and "subworkflow" in step_def:
+            sub_result = validate_native_workflow_json_schema(
+                step_def["subworkflow"],
+                get_tool_info,
+                tool_schema_dir=tool_schema_dir,
+                strip=strip,
+            )
+            result.step_results.extend(sub_result.step_results)
+            continue
+
+        tool_id = step_def.get("tool_id")
+        if not tool_id:
+            continue
+
+        tool_version = step_def.get("tool_version")
+        cache_key = f"{tool_id}@{tool_version}"
+
+        # Resolve parsed tool (needed for strip + connection injection)
+        if cache_key not in _parsed_tool_cache:
+            _parsed_tool_cache[cache_key] = get_tool_info.get_tool_info(tool_id, tool_version)
+        parsed_tool = _parsed_tool_cache[cache_key]
+
+        if parsed_tool is None:
+            result.step_results.append(JsonSchemaStepResult(step=step_key, tool_id=tool_id, errors=[], status="skip"))
+            continue
+
+        # Prepare state: strip → decode → inject connections
+        tool_state = step_tool_state(step_def)
+        input_connections = step_input_connections(step_def)
+
+        scan = scan_native_state(list(parsed_tool.inputs), tool_state, input_connections)
+        if scan.classification == ReplacementClassification.YES:
+            result.step_results.append(JsonSchemaStepResult(step=step_key, tool_id=tool_id, errors=[], status="skip"))
+            continue
+
+        if strip:
+            from .clean import strip_stale_keys
+
+            step_copy = copy.deepcopy(step_def)
+            strip_stale_keys(step_copy, parsed_tool, policy=_STRIP_ALL_POLICY)
+            state = step_tool_state(step_copy)
+        else:
+            state = copy.deepcopy(tool_state)
+
+        connections = {key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()}
+        inject_connections_into_state(list(parsed_tool.inputs), state, connections)
+
+        # Build/cache validator
+        if cache_key not in _validator_cache:
+            validator = None
+            if tool_schema_dir:
+                validator = _load_tool_state_validator_from_dir(tool_id, tool_version, tool_schema_dir)
+            if validator is None:
+                try:
+                    validator = _build_tool_state_validator(
+                        tool_id, tool_version, get_tool_info, representation="workflow_step_native"
+                    )
+                except Exception:
+                    log.debug(f"Failed to build native validator for {tool_id}", exc_info=True)
+            _validator_cache[cache_key] = validator
+
+        validator = _validator_cache.get(cache_key)
+        if validator is None:
+            result.step_results.append(JsonSchemaStepResult(step=step_key, tool_id=tool_id, errors=[], status="skip"))
             continue
 
         errors = sorted(validator.iter_errors(state), key=lambda e: list(e.absolute_path))

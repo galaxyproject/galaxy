@@ -46,7 +46,10 @@ from .stale_keys import (
 )
 from .validation import _format
 from .validation_format2 import validate_step_format2
-from .validation_json_schema import validate_workflow_json_schema
+from .validation_json_schema import (
+    validate_native_workflow_json_schema,
+    validate_workflow_json_schema,
+)
 from .validation_native import (
     get_parsed_tool_for_native_step,
     validate_native_step_against,
@@ -68,6 +71,7 @@ class _ValidateCommonOptions(ToolCacheOptions):
     summary: bool = False
     connections: bool = False
     mode: str = "pydantic"
+    strip: bool = False
     tool_schema_dir: Optional[str] = None
     report_json: Optional[str] = None
     report_markdown: Optional[str] = None
@@ -91,6 +95,7 @@ def validate_workflow_cli(
     get_tool_info: GetToolInfo,
     policy: Optional[StaleKeyPolicy] = None,
     connections: bool = False,
+    strip: bool = False,
 ) -> Tuple[List[ValidationStepResult], Optional[WorkflowPrecheck], Optional[ConnectionValidationReport]]:
     """Validate all steps in a workflow, collecting per-step results.
 
@@ -103,7 +108,7 @@ def validate_workflow_cli(
         precheck = precheck_native_workflow(workflow_dict, get_tool_info)
         if not precheck.can_process:
             return [], precheck, None
-        step_results = _validate_native(workflow_dict, get_tool_info, policy=policy)
+        step_results = _validate_native(workflow_dict, get_tool_info, policy=policy, strip=strip)
     else:
         step_results = _validate_format2(workflow_dict, get_tool_info)
         precheck = None
@@ -120,6 +125,7 @@ def _validate_native(
     get_tool_info: GetToolInfo,
     prefix: str = "",
     policy: Optional[StaleKeyPolicy] = None,
+    strip: bool = False,
 ) -> List[ValidationStepResult]:
     if policy is None:
         policy = StaleKeyPolicy.for_validate([], [])
@@ -131,7 +137,7 @@ def _validate_native(
 
         if step_def.get("type") == "subworkflow" and "subworkflow" in step_def:
             sub_results = _validate_native(
-                step_def["subworkflow"], get_tool_info, prefix=f"{step_label}.", policy=policy
+                step_def["subworkflow"], get_tool_info, prefix=f"{step_label}.", policy=policy, strip=strip
             )
             results.extend(sub_results)
             continue
@@ -181,9 +187,8 @@ def _validate_native(
             )
             continue
 
-        # Validate types (walker without unknown key checking)
         try:
-            validate_native_step_against(step_def, parsed_tool)
+            validate_native_step_against(step_def, parsed_tool, strip=strip)
         except Exception as e:
             results.append(
                 ValidationStepResult(
@@ -289,6 +294,7 @@ def _validate_format2(workflow_dict: dict, get_tool_info: GetToolInfo, prefix: s
 def _make_validate_process_one(
     policy: Optional[StaleKeyPolicy] = None,
     connections: bool = False,
+    strip: bool = False,
 ):
     """Build a process_one callback for validation tree runs."""
 
@@ -298,6 +304,7 @@ def _make_validate_process_one(
             get_tool_info,
             policy=policy,
             connections=connections,
+            strip=strip,
         )
         if precheck and not precheck.can_process:
             skip_workflow(precheck.skip_reasons[0].value)
@@ -352,12 +359,13 @@ def validate_tree(
     get_tool_info: GetToolInfo,
     policy: Optional[StaleKeyPolicy] = None,
     connections: bool = False,
+    strip: bool = False,
 ) -> TreeValidationReport:
     """Validate all workflows under a directory tree."""
     from ._tree_orchestrator import collect_tree
 
     ctx = TreeContext(root=root, tool_info=get_tool_info)
-    process_one = _make_validate_process_one(policy=policy, connections=connections)
+    process_one = _make_validate_process_one(policy=policy, connections=connections, strip=strip)
     tree_result = collect_tree(ctx, process_one)
     return _aggregate_validation(tree_result)
 
@@ -587,14 +595,26 @@ def _json_schema_validate_single(
     tool_info: Optional[GetToolInfo],
     tool_schema_dir: Optional[str],
     strict: bool = False,
+    strip: bool = False,
 ) -> List[ValidationStepResult]:
     """Validate a single workflow via JSON Schema and map to ValidationStepResult."""
-    js_result = validate_workflow_json_schema(
-        workflow_dict,
-        get_tool_info=tool_info,
-        tool_schema_dir=tool_schema_dir,
-        strict=strict,
-    )
+    fmt = _format(workflow_dict)
+    if fmt == "native":
+        if tool_info is None:
+            return []
+        js_result = validate_native_workflow_json_schema(
+            workflow_dict,
+            tool_info,
+            tool_schema_dir=tool_schema_dir,
+            strip=strip,
+        )
+    else:
+        js_result = validate_workflow_json_schema(
+            workflow_dict,
+            get_tool_info=tool_info,
+            tool_schema_dir=tool_schema_dir,
+            strict=strict,
+        )
 
     results: List[ValidationStepResult] = []
 
@@ -637,6 +657,7 @@ def _run_json_schema_validate_single(options: ValidateOptions, tool_info: GetToo
         tool_info=tool_info,
         tool_schema_dir=options.tool_schema_dir,
         strict=options.strict,
+        strip=options.strip,
     )
     return _emit_single_results(options, results)
 
@@ -645,6 +666,7 @@ def _make_json_schema_process_one(
     tool_info: GetToolInfo,
     tool_schema_dir: Optional[str],
     strict: bool,
+    strip: bool = False,
 ):
     """Build a process_one callback for JSON Schema validation tree runs."""
 
@@ -654,6 +676,7 @@ def _make_json_schema_process_one(
             tool_info=tool_info,
             tool_schema_dir=tool_schema_dir,
             strict=strict,
+            strip=strip,
         )
         return results, None  # (step_results, conn_report=None)
 
@@ -683,6 +706,7 @@ def run_validate(options: ValidateOptions) -> int:
         tool_info,
         policy=policy,
         connections=options.connections,
+        strip=options.strip,
     )
     if precheck and not precheck.can_process:
         print(f"Skipped: {precheck.detail}", file=sys.stderr)
@@ -709,9 +733,10 @@ def run_validate_tree(options: ValidateTreeOptions) -> int:
             tool_info=tool_info,
             tool_schema_dir=options.tool_schema_dir,
             strict=options.strict,
+            strip=options.strip,
         )
     else:
-        process_one = _make_validate_process_one(policy=policy, connections=options.connections)
+        process_one = _make_validate_process_one(policy=policy, connections=options.connections, strip=options.strip)
 
     from ._tree_orchestrator import run_tree
 
