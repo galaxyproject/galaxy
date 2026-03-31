@@ -155,6 +155,9 @@ Datatypes Updates
 ===========================================================
 
 .. datatypes
+* Sequence datatypes: only read first character per line for setting metadata
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 22276`_
 * Merge 25 1 into dev
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 21067`_
