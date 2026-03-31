@@ -213,6 +213,13 @@ onUnmounted(() => {
             </div>
 
             <div v-if="computedExpanded" class="portlet-content">
+                <div
+                    v-if="props.workflowStep.annotation"
+                    class="mb-2 bg-light rounded p-2"
+                    :class="{ 'mt-2': !props.inGraphView }">
+                    {{ props.workflowStep.annotation }}
+                </div>
+
                 <div v-if="isReady && invocationStepId !== undefined">
                     <div style="min-width: 1">
                         <BAlert v-if="loading" variant="info" show>
@@ -330,10 +337,10 @@ onUnmounted(() => {
                                             <LoadingSpan message="Loading step configuration" />
                                         </BAlert>
                                         <fieldset v-else-if="activeStepWithConfig" disabled>
-                                        <FormTool
+                                            <FormTool
                                                 v-if="workflowStepType === 'tool'"
-                                            :step="activeStepWithConfig"
-                                            :datatypes="datatypes" />
+                                                :step="activeStepWithConfig"
+                                                :datatypes="datatypes" />
                                             <FormDefault v-else :step="activeStepWithConfig" :datatypes="datatypes" />
                                         </fieldset>
                                     </GTab>
