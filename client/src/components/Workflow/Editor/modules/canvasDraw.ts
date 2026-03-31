@@ -50,7 +50,7 @@ export function getStepColor(step: Step, nodeColor: string, errorColor: string):
                 }
             }
         }
-        return stateColors["undefined"] ?? nodeColor;
+        return stateColors["undefined"] || nodeColor;
     }
     return step.errors ? errorColor : nodeColor;
 }
