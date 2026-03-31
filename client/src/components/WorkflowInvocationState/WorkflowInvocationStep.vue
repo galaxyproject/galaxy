@@ -329,14 +329,13 @@ onUnmounted(() => {
                                         <BAlert v-if="loadingStepConfig" show>
                                             <LoadingSpan message="Loading step configuration" />
                                         </BAlert>
+                                        <fieldset v-else-if="activeStepWithConfig" disabled>
                                         <FormTool
-                                            v-else-if="workflowStepType === 'tool' && activeStepWithConfig"
+                                                v-if="workflowStepType === 'tool'"
                                             :step="activeStepWithConfig"
                                             :datatypes="datatypes" />
-                                        <FormDefault
-                                            v-else-if="workflowStepType !== 'tool' && activeStepWithConfig"
-                                            :step="activeStepWithConfig"
-                                            :datatypes="datatypes" />
+                                            <FormDefault v-else :step="activeStepWithConfig" :datatypes="datatypes" />
+                                        </fieldset>
                                     </GTab>
                                 </GTabs>
                             </div>
