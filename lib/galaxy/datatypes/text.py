@@ -1669,3 +1669,33 @@ class SourmashSignature(Json):
         except Exception:
             pass
         return False
+
+
+@build_sniff_from_prefix
+class Taf(Text):
+    """
+    TAF: a Transposed Alignment Format
+
+    https://github.com/ComparativeGenomicsToolkit/taffy/blob/main/docs/taf_format.md
+    """
+
+    file_ext = "taf"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines wether the file is in taf format
+
+        The first line of a .taf file begins with #taf. This word is followed
+        by white-space-separated 'variable:value' pairs. There should be no white
+        space surrounding the ':'.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.taf')
+        >>> Taf().sniff(fname)
+        True
+        """
+        try:
+            first_line = next(file_prefix.line_iterator(), "")
+        except Exception:
+            return False
+        return re.search(r"^#taf([ \t]+\S+:\S+)+$", first_line) is not None
