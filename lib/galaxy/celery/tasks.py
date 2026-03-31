@@ -139,6 +139,17 @@ def purge_history_datasets(
     if not history:
         log.error(f"Purge history datasets task failed, history {request.history_id} not found")
         return
+    # Bulk mark all non-deleted HDCAs as deleted
+    sa_session.execute(
+        update(model.HistoryDatasetCollectionAssociation)
+        .where(
+            and_(
+                model.HistoryDatasetCollectionAssociation.history_id == request.history_id,
+                model.HistoryDatasetCollectionAssociation.deleted == false(),
+            )
+        )
+        .values(deleted=True)
+    )
     # Collect dataset IDs before the bulk update
     dataset_id_stmt = (
         select(model.HistoryDatasetAssociation.dataset_id)
@@ -152,6 +163,7 @@ def purge_history_datasets(
     )
     dataset_ids = list(sa_session.scalars(dataset_id_stmt))
     if not dataset_ids:
+        sa_session.commit()
         return
     # Bulk mark all unpurged HDAs as deleted and purged
     sa_session.execute(
