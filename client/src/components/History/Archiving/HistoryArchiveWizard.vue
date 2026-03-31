@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { BAlert, BCard, BTab, BTabs } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 
 import type { HistorySummary } from "@/api";
@@ -9,7 +9,9 @@ import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
+import Alert from "@/components/Alert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
@@ -28,17 +30,26 @@ interface ArchiveHistoryWizardProps {
 const props = defineProps<ArchiveHistoryWizardProps>();
 
 const isArchiving = ref(false);
+const loadError = ref<string | null>(null);
 
 const history = computed<HistorySummary | null>(() => {
-    const history = historyStore.getHistoryById(props.historyId);
-    if (history === null) {
-        // It could be already an archived history, so we won't find it in the store
-        // as it's not in the active histories anymore.
-        historyStore.loadHistoryById(props.historyId);
-        return historyStore.getHistoryById(props.historyId);
-    }
-    return history;
+    return historyStore.getHistoryById(props.historyId, false);
 });
+
+watch(
+    () => props.historyId,
+    async (historyId) => {
+        loadError.value = null;
+        if (!historyStore.getHistoryById(historyId, false)) {
+            try {
+                await historyStore.loadHistoryById(historyId);
+            } catch (error) {
+                loadError.value = errorMessageAsString(error);
+            }
+        }
+    },
+    { immediate: true },
+);
 
 const isHistoryAlreadyArchived = computed(() => {
     return history.value?.archived;
@@ -78,7 +89,8 @@ const breadcrumbItems = computed(() => [
     <div class="history-archive-wizard">
         <BreadcrumbHeading :items="breadcrumbItems" />
 
-        <BAlert v-if="!history" show>
+        <Alert v-if="loadError" :message="loadError" variant="error" />
+        <BAlert v-else-if="!history" show>
             <LoadingSpan spinner-only />
         </BAlert>
 

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BForm, BFormGroup, BFormSelect, BInputGroup } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useSelectableObjectStores } from "@/composables/useObjectStores";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { DataValuePoint } from "./Charts";
 import { fetchHistoryContentsSizeSummary, type ItemSizeSummary } from "./service";
@@ -23,17 +24,37 @@ import OverviewPage from "./OverviewPage.vue";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
 import WarnDeletedDatasets from "./WarnDeletedDatasets.vue";
+import Alert from "@/components/Alert.vue";
 import FilterObjectStoreLink from "@/components/Common/FilterObjectStoreLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
-const { getHistoryNameById, getHistoryById } = useHistoryStore();
+const historyStore = useHistoryStore();
 
 interface Props {
     historyId: string;
 }
 
 const props = defineProps<Props>();
+
+const loadError = ref<string | null>(null);
+
+const history = computed(() => historyStore.getHistoryById(props.historyId, false));
+
+watch(
+    () => props.historyId,
+    async (historyId) => {
+        loadError.value = null;
+        if (!historyStore.getHistoryById(historyId, false)) {
+            try {
+                await historyStore.loadHistoryById(historyId);
+            } catch (error) {
+                loadError.value = errorMessageAsString(error);
+            }
+        }
+    },
+    { immediate: true },
+);
 
 const activeVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
 const {
@@ -54,8 +75,7 @@ const { selectableObjectStores, hasSelectableObjectStores } = useSelectableObjec
 const objectStore = ref<string>();
 
 const canEditHistory = computed(() => {
-    const history = getHistoryById(props.historyId);
-    return (history && !history.purged && !history.archived) ?? false;
+    return (history.value && !history.value.purged && !history.value.archived) ?? false;
 });
 
 function onChangeObjectStore(value?: string) {
@@ -127,119 +147,122 @@ function onUndelete(datasetId: string) {
 </script>
 <template>
     <OverviewPage class="history-storage-overview" title="History Storage Overview">
-        <p class="text-justify">
-            Here you will find some Graphs displaying the storage taken by datasets in your history:
-            <b>{{ getHistoryNameById(props.historyId) }}</b
-            >. You can use these graphs to identify the datasets that take the most space in your history. You can also
-            go to the
-            <router-link :to="{ name: 'HistoriesOverview' }"><b>Histories Storage Overview</b></router-link> page to see
-            the storage taken by <b>all your histories</b>.
-        </p>
-        <WarnDeletedDatasets />
-        <div v-if="isLoading" class="text-center">
-            <LoadingSpan class="mt-5" :message="localize('Loading your storage data. This may take a while...')" />
-        </div>
-        <div v-else>
-            <BarChart
-                v-if="topNDatasetsBySizeData"
-                data-description="chart history top datasets by size"
-                :description="
-                    localize(
-                        `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`,
-                    )
-                "
-                :data="topNDatasetsBySizeData"
-                :enable-selection="true"
-                v-bind="byteFormattingForChart">
-                <template v-slot:title>
-                    <b>{{ localize(`Top ${numberOfDatasetsToDisplay} Datasets by Size`) }}</b>
-                    <BInputGroup size="sm" :class="inputGroupClasses">
-                        <BFormSelect
-                            v-if="!isAdvanced"
-                            v-model="numberOfDatasetsToDisplay"
-                            :options="numberOfDatasetsToDisplayOptions"
-                            :disabled="isLoading"
-                            title="Number of histories to show"
-                            size="sm"
-                            @change="buildGraphsData()">
-                        </BFormSelect>
-                        <BButton
-                            v-b-tooltip.hover.bottom.noninteractive
-                            aria-haspopup="true"
-                            size="sm"
-                            title="Toggle Advanced Filtering"
-                            data-description="wide toggle advanced filter"
-                            @click="toggleAdvanced">
-                            <FontAwesomeIcon :icon="isAdvanced ? faAngleDoubleUp : faAngleDoubleDown" />
-                        </BButton>
-                    </BInputGroup>
-                </template>
-                <template v-slot:options>
-                    <div v-if="isAdvanced" class="clear-fix">
-                        <BForm>
-                            <BFormGroup
-                                id="input-group-num-histories"
-                                label="Number of histories:"
-                                label-for="input-num-histories"
-                                description="This is the maximum number of histories that will be displayed.">
-                                <BFormSelect
-                                    v-model="numberOfDatasetsToDisplay"
-                                    :options="numberOfDatasetsToDisplayOptions"
-                                    :disabled="isLoading"
-                                    title="Number of histories to show"
-                                    @change="buildGraphsData()">
-                                </BFormSelect>
-                            </BFormGroup>
-                            <BFormGroup
-                                v-if="selectableObjectStores && hasSelectableObjectStores"
-                                id="input-group-object-store"
-                                label="Galaxy Storage:"
-                                label-for="input-object-store"
-                                description="This will constrain history size calculations to a particular Galaxy storage.">
-                                <FilterObjectStoreLink
-                                    :object-stores="selectableObjectStores"
-                                    :value="objectStore"
-                                    @change="onChangeObjectStore" />
-                            </BFormGroup>
-                        </BForm>
-                    </div>
-                </template>
-                <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip
-                        v-if="data"
-                        :data="data"
-                        :is-recoverable="isRecoverableDataPoint(data)" />
-                </template>
-                <template v-slot:selection="{ data }">
-                    <SelectedItemActions
-                        :data="data"
-                        item-type="dataset"
-                        :is-recoverable="isRecoverableDataPoint(data)"
-                        :can-edit="canEditHistory"
-                        @view-item="onViewDataset"
-                        @undelete-item="onUndelete"
-                        @permanently-delete-item="onPermDelete" />
-                </template>
-            </BarChart>
+        <Alert v-if="loadError" :message="loadError" variant="error" />
+        <template v-else>
+            <p class="text-justify">
+                Here you will find some Graphs displaying the storage taken by datasets in your history:
+                <b>{{ history?.name ?? "..." }}</b
+                >. You can use these graphs to identify the datasets that take the most space in your history. You can
+                also go to the
+                <router-link :to="{ name: 'HistoriesOverview' }"><b>Histories Storage Overview</b></router-link> page to
+                see the storage taken by <b>all your histories</b>.
+            </p>
+            <WarnDeletedDatasets />
+            <div v-if="isLoading" class="text-center">
+                <LoadingSpan class="mt-5" :message="localize('Loading your storage data. This may take a while...')" />
+            </div>
+            <div v-else>
+                <BarChart
+                    v-if="topNDatasetsBySizeData"
+                    data-description="chart history top datasets by size"
+                    :description="
+                        localize(
+                            `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`,
+                        )
+                    "
+                    :data="topNDatasetsBySizeData"
+                    :enable-selection="true"
+                    v-bind="byteFormattingForChart">
+                    <template v-slot:title>
+                        <b>{{ localize(`Top ${numberOfDatasetsToDisplay} Datasets by Size`) }}</b>
+                        <BInputGroup size="sm" :class="inputGroupClasses">
+                            <BFormSelect
+                                v-if="!isAdvanced"
+                                v-model="numberOfDatasetsToDisplay"
+                                :options="numberOfDatasetsToDisplayOptions"
+                                :disabled="isLoading"
+                                title="Number of histories to show"
+                                size="sm"
+                                @change="buildGraphsData()">
+                            </BFormSelect>
+                            <BButton
+                                v-b-tooltip.hover.bottom.noninteractive
+                                aria-haspopup="true"
+                                size="sm"
+                                title="Toggle Advanced Filtering"
+                                data-description="wide toggle advanced filter"
+                                @click="toggleAdvanced">
+                                <FontAwesomeIcon :icon="isAdvanced ? faAngleDoubleUp : faAngleDoubleDown" />
+                            </BButton>
+                        </BInputGroup>
+                    </template>
+                    <template v-slot:options>
+                        <div v-if="isAdvanced" class="clear-fix">
+                            <BForm>
+                                <BFormGroup
+                                    id="input-group-num-histories"
+                                    label="Number of histories:"
+                                    label-for="input-num-histories"
+                                    description="This is the maximum number of histories that will be displayed.">
+                                    <BFormSelect
+                                        v-model="numberOfDatasetsToDisplay"
+                                        :options="numberOfDatasetsToDisplayOptions"
+                                        :disabled="isLoading"
+                                        title="Number of histories to show"
+                                        @change="buildGraphsData()">
+                                    </BFormSelect>
+                                </BFormGroup>
+                                <BFormGroup
+                                    v-if="selectableObjectStores && hasSelectableObjectStores"
+                                    id="input-group-object-store"
+                                    label="Galaxy Storage:"
+                                    label-for="input-object-store"
+                                    description="This will constrain history size calculations to a particular Galaxy storage.">
+                                    <FilterObjectStoreLink
+                                        :object-stores="selectableObjectStores"
+                                        :value="objectStore"
+                                        @change="onChangeObjectStore" />
+                                </BFormGroup>
+                            </BForm>
+                        </div>
+                    </template>
+                    <template v-slot:tooltip="{ data }">
+                        <RecoverableItemSizeTooltip
+                            v-if="data"
+                            :data="data"
+                            :is-recoverable="isRecoverableDataPoint(data)" />
+                    </template>
+                    <template v-slot:selection="{ data }">
+                        <SelectedItemActions
+                            :data="data"
+                            item-type="dataset"
+                            :is-recoverable="isRecoverableDataPoint(data)"
+                            :can-edit="canEditHistory"
+                            @view-item="onViewDataset"
+                            @undelete-item="onUndelete"
+                            @permanently-delete-item="onPermDelete" />
+                    </template>
+                </BarChart>
 
-            <BarChart
-                v-if="activeVsDeletedTotalSizeData"
-                data-description="chart history datasets by active"
-                :title="localize('Active vs Deleted Total Size')"
-                :description="
-                    localize(
-                        'This graph shows the total size of your datasets in this history, split between active and deleted datasets.',
-                    )
-                "
-                :data="activeVsDeletedTotalSizeData"
-                v-bind="byteFormattingForChart">
-                <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip
-                        v-if="data"
-                        :data="data"
-                        :is-recoverable="isRecoverableDataPoint(data)" />
-                </template>
-            </BarChart>
-        </div>
+                <BarChart
+                    v-if="activeVsDeletedTotalSizeData"
+                    data-description="chart history datasets by active"
+                    :title="localize('Active vs Deleted Total Size')"
+                    :description="
+                        localize(
+                            'This graph shows the total size of your datasets in this history, split between active and deleted datasets.',
+                        )
+                    "
+                    :data="activeVsDeletedTotalSizeData"
+                    v-bind="byteFormattingForChart">
+                    <template v-slot:tooltip="{ data }">
+                        <RecoverableItemSizeTooltip
+                            v-if="data"
+                            :data="data"
+                            :is-recoverable="isRecoverableDataPoint(data)" />
+                    </template>
+                </BarChart>
+            </div>
+        </template>
     </OverviewPage>
 </template>
