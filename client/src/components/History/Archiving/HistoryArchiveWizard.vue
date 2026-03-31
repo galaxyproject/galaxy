@@ -9,6 +9,7 @@ import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import Alert from "@/components/Alert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
@@ -43,7 +44,7 @@ watch(
             try {
                 await historyStore.loadHistoryById(historyId);
             } catch (error) {
-                loadError.value = String(error);
+                loadError.value = errorMessageAsString(error);
             }
         }
     },

@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 
 import { useHistoryStore } from "@/stores/historyStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import Alert from "@/components/Alert.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
@@ -27,7 +28,7 @@ watch(
             try {
                 await historyStore.loadHistoryById(historyId);
             } catch (error) {
-                loadError.value = String(error);
+                loadError.value = errorMessageAsString(error);
             }
         }
     },

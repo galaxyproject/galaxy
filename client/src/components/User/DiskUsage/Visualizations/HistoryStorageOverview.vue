@@ -7,6 +7,7 @@ import { useRouter } from "vue-router/composables";
 import { useSelectableObjectStores } from "@/composables/useObjectStores";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { DataValuePoint } from "./Charts";
 import { fetchHistoryContentsSizeSummary, type ItemSizeSummary } from "./service";
@@ -48,7 +49,7 @@ watch(
             try {
                 await historyStore.loadHistoryById(historyId);
             } catch (error) {
-                loadError.value = String(error);
+                loadError.value = errorMessageAsString(error);
             }
         }
     },
