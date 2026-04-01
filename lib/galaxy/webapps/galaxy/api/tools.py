@@ -891,7 +891,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return global_tool_errors.error_stack
 
     @expose_api_anonymous
-    def create(self, trans: GalaxyWebTransaction, payload, **kwd):
+    def create(self, trans: GalaxyWebTransaction, payload=None, **kwd):
+        if payload is None:
+            raise exceptions.RequestParameterMissingException("A payload is required for tool execution.")
         """
         POST /api/tools
         Execute tool with a given parameter payload
