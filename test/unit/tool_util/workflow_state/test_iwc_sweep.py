@@ -178,7 +178,9 @@ class TestIWCSweepNativeJsonSchema:
     @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
     def test_native_json_schema_validate(self, wf_path, tool_info):
         workflow = load_workflow(wf_path)
-        result = validate_native_workflow_json_schema(workflow, tool_info, strip=True)
+        normalized = ensure_native(workflow)
+        clean_stale_state(normalized, workflow, tool_info)
+        result = validate_native_workflow_json_schema(workflow, tool_info)
         errors = []
         for sr in result.step_results:
             if sr.status == "fail":

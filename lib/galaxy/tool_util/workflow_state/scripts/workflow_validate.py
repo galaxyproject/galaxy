@@ -21,9 +21,9 @@ def build_parser():
     parser.add_argument("--summary", action="store_true", help="Show only summary counts")
     parser.add_argument("--connections", action="store_true", help="Validate inter-step connection type compatibility")
     parser.add_argument(
-        "--strip",
+        "--clean",
         action="store_true",
-        help="Strip bookkeeping and stale keys before validating (for uncleaned workflows)",
+        help="Run full stale-key cleaning before validating (for uncleaned workflows)",
     )
     parser.add_argument(
         "--mode",

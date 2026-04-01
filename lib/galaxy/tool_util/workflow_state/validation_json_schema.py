@@ -31,12 +31,6 @@ from ._util import (
     step_input_connections,
     step_tool_state,
 )
-from .stale_keys import (
-    ALL_CATEGORIES,
-    StaleKeyPolicy,
-)
-
-_STRIP_ALL_POLICY = StaleKeyPolicy(denied=set(ALL_CATEGORIES))
 
 log = logging.getLogger(__name__)
 
@@ -263,14 +257,12 @@ def validate_native_workflow_json_schema(
     workflow_dict: Dict[str, Any],
     get_tool_info: GetToolInfo,
     tool_schema_dir: Optional[str] = None,
-    *,
-    strip: bool = False,
 ) -> JsonSchemaValidationResult:
     """JSON Schema validation of a native .ga workflow's per-step tool state.
 
     No structural validation (no native structural schema exists).
-    Per-step: optionally strip bookkeeping/stale keys, inject connections,
-    then validate against WorkflowStepNativeToolState JSON Schema.
+    Per-step: inject connections, then validate against
+    WorkflowStepNativeToolState JSON Schema.
     """
     from .legacy_parameters import (
         ReplacementClassification,
@@ -295,7 +287,6 @@ def validate_native_workflow_json_schema(
                 step_def["subworkflow"],
                 get_tool_info,
                 tool_schema_dir=tool_schema_dir,
-                strip=strip,
             )
             result.step_results.extend(sub_result.step_results)
             continue
@@ -307,7 +298,7 @@ def validate_native_workflow_json_schema(
         tool_version = step_def.get("tool_version")
         cache_key = f"{tool_id}@{tool_version}"
 
-        # Resolve parsed tool (needed for strip + connection injection)
+        # Resolve parsed tool (needed for connection injection)
         if cache_key not in _parsed_tool_cache:
             _parsed_tool_cache[cache_key] = get_tool_info.get_tool_info(tool_id, tool_version)
         parsed_tool = _parsed_tool_cache[cache_key]
@@ -316,7 +307,7 @@ def validate_native_workflow_json_schema(
             result.step_results.append(JsonSchemaStepResult(step=step_key, tool_id=tool_id, errors=[], status="skip"))
             continue
 
-        # Prepare state: strip → decode → inject connections
+        # Prepare state: decode → inject connections
         tool_state = step_tool_state(step_def)
         input_connections = step_input_connections(step_def)
 
@@ -325,14 +316,7 @@ def validate_native_workflow_json_schema(
             result.step_results.append(JsonSchemaStepResult(step=step_key, tool_id=tool_id, errors=[], status="skip"))
             continue
 
-        if strip:
-            from .clean import strip_stale_keys
-
-            step_copy = copy.deepcopy(step_def)
-            strip_stale_keys(step_copy, parsed_tool, policy=_STRIP_ALL_POLICY)
-            state = step_tool_state(step_copy)
-        else:
-            state = copy.deepcopy(tool_state)
+        state = copy.deepcopy(tool_state)
 
         connections = {key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()}
         inject_connections_into_state(list(parsed_tool.inputs), state, connections)

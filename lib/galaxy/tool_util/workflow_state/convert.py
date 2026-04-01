@@ -91,7 +91,17 @@ def convert_state_to_format2_using(native_step: StepLike, parsed_tool: Optional[
         raise ConversionValidationFailure("Step uses legacy replacement parameters — cannot convert to format2")
 
     try:
-        validate_native_step_against(native_step, parsed_tool, strip=True)
+        import copy as _copy
+
+        from ._util import step_as_dict
+        from .clean import strip_stale_keys
+        from .stale_keys import ALL_CATEGORIES, StaleKeyPolicy
+
+        step_copy = _copy.deepcopy(step_as_dict(native_step))
+        strip_stale_keys(step_copy, parsed_tool, policy=StaleKeyPolicy(denied=set(ALL_CATEGORIES)))
+        validate_native_step_against(step_copy, parsed_tool)
+    except ConversionValidationFailure:
+        raise
     except Exception:
         raise ConversionValidationFailure(
             "Failed to validate native step - not going to convert a tool state that isn't understood"
