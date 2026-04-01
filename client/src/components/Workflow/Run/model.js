@@ -1,4 +1,4 @@
-import _ from "underscore";
+import { escape } from "lodash";
 
 import { visitInputs } from "@/components/Form/utilities";
 import { isEmpty } from "@/utils/utils";
@@ -8,12 +8,12 @@ export class WorkflowRunModel {
         this.runData = runData;
         this.name = runData.name;
         this.workflowResourceParameters = runData.workflow_resource_parameters;
-        this.hasWorkflowResourceParameters = !_.isEmpty(this.workflowResourceParameters);
+        this.hasWorkflowResourceParameters = Object.keys(this.workflowResourceParameters || {}).length > 0;
         this.historyId = runData.history_id;
         this.workflowId = runData.id;
 
         this.hasUpgradeMessages = runData.has_upgrade_messages;
-        this.hasStepVersionChanges = !_.isEmpty(runData.step_version_changes);
+        this.hasStepVersionChanges = Object.keys(runData.step_version_changes || {}).length > 0;
 
         this.steps = [];
         this.links = [];
@@ -24,61 +24,61 @@ export class WorkflowRunModel {
         let hasOpenToolSteps = false;
         let hasReplacementParametersInToolForm = false;
 
-        _.each(runData.steps, (step, i) => {
+        for (const [i, step] of Object.entries(runData.steps)) {
             const isParameterStep = step.step_type == "parameter_input";
-            var title = `${parseInt(i + 1)}: ${step.step_label || step.step_name}`;
+            var title = `${parseInt(i) + 1}: ${step.step_label || step.step_name}`;
             if (step.annotation) {
                 title += ` - ${step.annotation}`;
             }
             if (step.step_version) {
                 title += ` (Galaxy Version ${step.step_version})`;
             }
-            step = Object.assign(
+            const merged = Object.assign(
                 {
                     index: i,
-                    fixed_title: _.escape(title),
+                    fixed_title: escape(title),
                     expanded: i == 0 || isDataStep(step) || isParameterStep,
                     errors: step.messages,
                 },
                 step,
             );
-            this.steps[i] = step;
+            this.steps[i] = merged;
             this.links[i] = [];
             this.parms[i] = {};
             if (isParameterStep && step.step_label) {
                 this.parameterInputLabels.push(step.step_label);
             }
-        });
+        }
 
         // build linear index of step input pairs
-        _.each(this.steps, (step, i) => {
+        for (const [i, step] of Object.entries(this.steps)) {
             visitInputs(step.inputs, (input, name) => {
                 this.parms[i][name] = input;
             });
-        });
+        }
 
         // iterate through data input modules and collect linked sub steps
-        _.each(this.steps, (step, i) => {
-            _.each(step.output_connections, (output_connection) => {
-                _.each(this.steps, (sub_step, j) => {
+        for (const [i, step] of Object.entries(this.steps)) {
+            for (const output_connection of step.output_connections || []) {
+                for (const sub_step of Object.values(this.steps)) {
                     if (sub_step.step_index === output_connection.input_step_index) {
                         this.links[i].push(sub_step);
                     }
-                });
-            });
-        });
+                }
+            }
+        }
 
         // convert all connected data inputs to hidden fields with proper labels,
         // and track the linked source step
-        _.each(this.steps, (step, i) => {
-            _.each(this.steps, (sub_step, j) => {
+        for (const [i, step] of Object.entries(this.steps)) {
+            for (const [j] of Object.entries(this.steps)) {
                 var connections_by_name = {};
-                _.each(step.output_connections, (connection) => {
-                    if (sub_step.step_index === connection.input_step_index) {
+                for (const connection of step.output_connections || []) {
+                    if (this.steps[j].step_index === connection.input_step_index) {
                         connections_by_name[connection.input_name] = connection;
                     }
-                });
-                _.each(this.parms[j], (input, name) => {
+                }
+                for (const [name, input] of Object.entries(this.parms[j])) {
                     var connection = connections_by_name[name];
                     if (connection) {
                         input.connected = true;
@@ -88,9 +88,9 @@ export class WorkflowRunModel {
                         input.step_linked = input.step_linked || [];
                         input.step_linked.push({ index: step.index, step_type: step.step_type });
                     }
-                });
-            });
-        });
+                }
+            }
+        }
 
         // identify and configure workflow parameters
         var wp_count = 0;
@@ -116,8 +116,8 @@ export class WorkflowRunModel {
             }
         }
 
-        _.each(this.steps, (step, i) => {
-            _.each(this.parms[i], (input, name) => {
+        for (const [i, step] of Object.entries(this.steps)) {
+            for (const input of Object.values(this.parms[i])) {
                 _handleWorkflowParameter(input.value, (wp_input) => {
                     hasReplacementParametersInToolForm = true;
                     wp_input.links.push(step);
@@ -125,17 +125,17 @@ export class WorkflowRunModel {
                     input.type = "text";
                     input.cls = "ui-input-linked";
                 });
-            });
-            _.each(step.replacement_parameters, (wp_name) => {
+            }
+            for (const wp_name of step.replacement_parameters || []) {
                 if (this.parameterInputLabels.indexOf(wp_name) == -1) {
                     _ensureWorkflowParameter(wp_name);
                 }
-            });
-        });
+            }
+        }
 
         // select fields are shown for dynamic fields if all putative data inputs are available,
         // or if an explicit reference is specified as data_ref and available
-        _.each(this.steps, (step) => {
+        for (const step of Object.values(this.steps)) {
             if (step.step_type == "tool") {
                 let dataResolved = true;
                 visitInputs(step.inputs, (input, name, context) => {
@@ -168,7 +168,7 @@ export class WorkflowRunModel {
                     }
                 });
             }
-        });
+        }
         this.hasOpenToolSteps = hasOpenToolSteps;
         this.hasReplacementParametersInToolForm = hasReplacementParametersInToolForm;
     }
@@ -197,22 +197,22 @@ export function getReplacements(inputs, stepData, wpData) {
         params[name] = input;
     });
     const replaceParams = {};
-    _.each(params, (input, name) => {
+    for (const [name, input] of Object.entries(params)) {
         if (input.wp_linked || input.step_linked) {
             let newValue = null;
             if (input.step_linked) {
-                _.each(input.step_linked, (sourceStep) => {
+                for (const sourceStep of input.step_linked) {
                     if (isDataStep(sourceStep)) {
                         const sourceData = stepData[sourceStep.index];
                         const value = sourceData && sourceData.input;
                         if (value) {
                             newValue = { values: [] };
-                            _.each(value.values, (v) => {
+                            for (const v of value.values) {
                                 newValue.values.push(v);
-                            });
+                            }
                         }
                     }
-                });
+                }
                 if (!input.multiple && newValue && newValue.values.length > 0) {
                     newValue = {
                         values: [newValue.values[0]],
@@ -234,6 +234,6 @@ export function getReplacements(inputs, stepData, wpData) {
                 replaceParams[name] = newValue;
             }
         }
-    });
+    }
     return replaceParams;
 }

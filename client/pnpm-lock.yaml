@@ -268,9 +268,6 @@ importers:
       tus-js-client:
         specifier: ^3.1.1
         version: 3.1.1
-      underscore:
-        specifier: ^1.13.6
-        version: 1.13.8
       util:
         specifier: ^0.12.5
         version: 0.12.5
@@ -374,9 +371,6 @@ importers:
       '@types/markdown-it':
         specifier: ^13.0.4
         version: 13.0.4
-      '@types/underscore':
-        specifier: ^1.11.12
-        version: 1.11.12
       '@typescript-eslint/eslint-plugin':
         specifier: ^6.8.0
         version: 6.8.0(@typescript-eslint/parser@6.8.0(eslint@8.52.0)(typescript@5.8.3))(eslint@8.52.0)(typescript@5.8.3)
@@ -1401,9 +1395,6 @@ packages:
 
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
-
-  '@types/underscore@1.11.12':
-    resolution: {integrity: sha512-beX81q12OQo809WJ/UYCvUDvJR3YQ4wtehYYQ6eNw5VLyd+KUNBRV4FgzZCHBmACbdPulH9F9ifhxzFFU9TWvQ==}
 
   '@types/web-bluetooth@0.0.18':
     resolution: {integrity: sha512-v/ZHEj9xh82usl8LMR3GarzFY1IrbXJw5L4QfQhokjRV91q+SelFqxQWSep1ucXEZ22+dSTwLFkXeur25sPIbw==}
@@ -3098,9 +3089,6 @@ packages:
 
   lodash@4.17.21:
     resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
-
-  lodash@4.17.23:
-    resolution: {integrity: sha512-LgVTMpQtIopCi79SJeDiP0TfWi5CNEc/L/aRdTh3yIvmZXTnheWpKjSZhnvMl8iXbC1tFg9gdHHDMLoV7CnG+w==}
 
   log4js@6.9.1:
     resolution: {integrity: sha512-1somDdy9sChrr9/f4UlzhdaGfDR2c/SaD2a4T7qEkG4jTS57/B3qmnjLYePwQ8cqWnUHZI0iAKxMBpCZICiZ2g==}
@@ -5427,8 +5415,6 @@ snapshots:
 
   '@types/trusted-types@2.0.7': {}
 
-  '@types/underscore@1.11.12': {}
-
   '@types/web-bluetooth@0.0.18': {}
 
   '@types/whatwg-mimetype@3.0.2': {}
@@ -7312,7 +7298,7 @@ snapshots:
       graceful-fs: 4.2.11
       http-proxy: 1.18.1
       isbinaryfile: 4.0.10
-      lodash: 4.17.23
+      lodash: 4.17.21
       log4js: 6.9.1
       mime: 2.6.0
       minimatch: 3.1.5
@@ -7397,8 +7383,6 @@ snapshots:
       lodash._baseuniq: 4.6.0
 
   lodash@4.17.21: {}
-
-  lodash@4.17.23: {}
 
   log4js@6.9.1:
     dependencies:

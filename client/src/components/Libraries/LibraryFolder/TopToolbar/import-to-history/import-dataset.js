@@ -1,6 +1,6 @@
 import Backbone from "backbone";
 import $ from "jquery";
-import _ from "underscore";
+import { escape } from "lodash";
 
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -188,41 +188,42 @@ var ImportDatasetModal = Backbone.View.extend({
     },
 
     templateImportIntoHistoryProgressBar: function () {
-        return _.template(
-            `<div class="import_text">
-                Importing selected items to history <b><%= _.escape(history_name) %></b>
+        return function ({ history_name }) {
+            return `<div class="import_text">
+                Importing selected items to history <b>${escape(history_name)}</b>
             </div>
             <div class="progress">
                 <div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0"
                     aria-valuemax="100" style="width: 00%;">
                     <span class="completion_span">0% Complete</span>
                 </div>
-            </div>`,
-        );
+            </div>`;
+        };
     },
     templateDeletingItemsProgressBar: function () {
-        return _.template(
-            `<div class="import_text">
+        return function () {
+            return `<div class="import_text">
             </div>
             <div class="progress">
                 <div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0"
                     aria-valuemax="100" style="width: 00%;">
                     <span class="completion_span">0% Complete</span>
                 </div>
-            </div>`,
-        );
+            </div>`;
+        };
     },
     templateImportIntoHistoryModal: function () {
-        return _.template(
-            `<div>
+        return function ({ histories }) {
+            const historyOptions = histories
+                .map(
+                    (history) => `<option value="${escape(history.get("id"))}">${escape(history.get("name"))}</option>`,
+                )
+                .join("\n");
+            return `<div>
                 <div class="library-modal-item">
                     Select history:
                     <select name="import_to_history" style="width:50%; margin-bottom: 1em; " autofocus>
-                        <% _.each(histories, function(history) { %>
-                            <option value="<%= _.escape(history.get("id")) %>">
-                                <%= _.escape(history.get("name")) %>
-                            </option>
-                        <% }); %>
+                        ${historyOptions}
                     </select>
                 </div>
                 <div class="library-modal-item">
@@ -230,8 +231,8 @@ var ImportDatasetModal = Backbone.View.extend({
                     <input type="text" name="history_name" value=""
                         placeholder="name of the new history" style="width:50%;" />
                 </div>
-            </div>`,
-        );
+            </div>`;
+        };
     },
 });
 
