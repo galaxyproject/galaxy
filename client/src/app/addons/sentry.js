@@ -24,7 +24,7 @@ export async function initSentry(Galaxy, router) {
             release: release,
             beforeSend(event, hint) {
                 const error = hint.originalException;
-                if (["AdminRequired", "RegisteredUserRequired"].includes(error?.name)) {
+                if (["AdminRequired", "RegisteredUserRequired", "RequestAbortedError"].includes(error?.name)) {
                     // ignore these error events
                     return null;
                 }
