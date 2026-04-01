@@ -46,7 +46,7 @@ class ImportCollectionModal {
                 modal.show({
                     closing_events: true,
                     title: "Create History Collection from Datasets",
-                    body: this.templateCollectionSelectModal()({
+                    body: this.templateCollectionSelectModal({
                         selected_datasets: checked_items.dataset_ids.length,
                         histories: this.histories,
                     }),
@@ -103,13 +103,7 @@ class ImportCollectionModal {
 
     collectionImport(collectionElements, historyId) {
         const collectionType = modal.el.querySelector("#library-collection-type-select").value;
-        let selection = {};
-        if (collectionType == "rules") {
-            selection.selectionType = "library_datasets";
-        }
-        selection = {
-            models: collectionElements,
-        };
+        const selection = { models: collectionElements };
         if (collectionType === "rules") {
             buildCollectionFromRules(selection, historyId);
         } else if (this.options.onCollectionImport) {
@@ -117,12 +111,11 @@ class ImportCollectionModal {
         }
     }
 
-    templateCollectionSelectModal() {
-        return function ({ histories }) {
-            const historyOptions = histories
-                .map((history) => `<option value="${escape(history.id)}">${escape(history.name)}</option>`)
-                .join("\n");
-            return `<div>
+    templateCollectionSelectModal({ histories }) {
+        const historyOptions = histories
+            .map((history) => `<option value="${escape(history.id)}">${escape(history.name)}</option>`)
+            .join("\n");
+        return `<div>
                 <div class="library-modal-item">
                     <h4>Select history</h4>
                     <div class="form-group">
@@ -156,7 +149,6 @@ class ImportCollectionModal {
                     </dl>
                 </div>
             </div>`;
-        };
     }
 }
 

@@ -6,18 +6,9 @@ import { getAppRoot } from "@/onload/loadConfig";
 import _l from "@/utils/localization";
 import Modal from "@/utils/modal";
 
-var modal = new Modal();
+import { updateProgressBar } from "../delete-selected";
 
-function updateProgressBar(progress) {
-    const progressBar = document.querySelector(".progress-bar-import");
-    if (progressBar) {
-        progressBar.style.width = `${Math.round(progress)}%`;
-    }
-    const span = document.querySelector(".completion_span");
-    if (span) {
-        span.textContent = `${Math.round(progress)}% Complete`;
-    }
-}
+var modal = new Modal();
 
 class ImportDatasetModal {
     constructor(options) {
@@ -47,9 +38,7 @@ class ImportDatasetModal {
             modal.show({
                 closing_events: true,
                 title: _l("Import into History"),
-                body: this.templateImportIntoHistoryModal()({
-                    histories: this.histories,
-                }),
+                body: this.templateImportIntoHistoryModal({ histories: this.histories }),
                 buttons: {
                     Import: () => {
                         this.importAllIntoHistory();
@@ -122,13 +111,12 @@ class ImportDatasetModal {
             history_name: history_name,
         });
 
-        axios.get(`${getAppRoot()}history/set_as_current?id=${history_id}`);
+        axios.get(`${getAppRoot()}history/set_as_current?id=${history_id}`).catch(() => {});
         this.chainCallImportingIntoHistory(items_to_import, history_name, history_id);
     }
 
     initChainCallControlToHistory(options) {
-        var template = this.templateImportIntoHistoryProgressBar();
-        modal.$body.innerHTML = template({ history_name: options.history_name });
+        modal.$body.innerHTML = this.templateImportIntoHistoryProgressBar({ history_name: options.history_name });
         this.progress = 0;
         this.progressStep = 100 / options.length;
         this.options.chain_call_control.total_number = options.length;
@@ -169,9 +157,8 @@ class ImportDatasetModal {
         modal.hide();
     }
 
-    templateImportIntoHistoryProgressBar() {
-        return function ({ history_name }) {
-            return `<div class="import_text">
+    templateImportIntoHistoryProgressBar({ history_name }) {
+        return `<div class="import_text">
                 Importing selected items to history <b>${escape(history_name)}</b>
             </div>
             <div class="progress">
@@ -180,15 +167,13 @@ class ImportDatasetModal {
                     <span class="completion_span">0% Complete</span>
                 </div>
             </div>`;
-        };
     }
 
-    templateImportIntoHistoryModal() {
-        return function ({ histories }) {
-            const historyOptions = histories
-                .map((history) => `<option value="${escape(history.id)}">${escape(history.name)}</option>`)
-                .join("\n");
-            return `<div>
+    templateImportIntoHistoryModal({ histories }) {
+        const historyOptions = histories
+            .map((history) => `<option value="${escape(history.id)}">${escape(history.name)}</option>`)
+            .join("\n");
+        return `<div>
                 <div class="library-modal-item">
                     Select history:
                     <select name="import_to_history" style="width:50%; margin-bottom: 1em; " autofocus>
@@ -201,7 +186,6 @@ class ImportDatasetModal {
                         placeholder="name of the new history" style="width:50%;" />
                 </div>
             </div>`;
-        };
     }
 }
 

@@ -9,6 +9,17 @@ let progress = 0;
 let progressStep = 0;
 const chain_call_control = {};
 
+export function updateProgressBar(currentProgress) {
+    const progressBar = document.querySelector(".progress-bar-import");
+    if (progressBar) {
+        progressBar.style.width = `${Math.round(currentProgress)}%`;
+    }
+    const span = document.querySelector(".completion_span");
+    if (span) {
+        span.textContent = `${Math.round(currentProgress)}% Complete`;
+    }
+}
+
 const modal = new Modal();
 
 /**
@@ -108,12 +119,5 @@ function chainCallDeletingItems(items_to_delete, onRemove, refreshTable, refresh
 
 function updateProgress() {
     progress += progressStep;
-    const progressBar = document.querySelector(".progress-bar-import");
-    if (progressBar) {
-        progressBar.style.width = `${Math.round(progress)}%`;
-    }
-    const span = document.querySelector(".completion_span");
-    if (span) {
-        span.textContent = `${Math.round(progress)}% Complete`;
-    }
+    updateProgressBar(progress);
 }
