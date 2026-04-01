@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { watchEffect } from "vue";
+import { computed } from "vue";
 
 import { type Tool, useToolStore } from "@/stores/toolStore";
 
@@ -42,18 +42,15 @@ async function loadTools(offset: number, limit: number): Promise<{ items: Tool[]
     return { items, total: props.tools.length };
 }
 
-// Watch for changes in tools array to preload initial help data
-watchEffect(() => {
-    if (props.tools.length > 0) {
-        const initialItems = props.tools.slice(0, FETCH_LIMIT + PREFETCH_AHEAD);
-        Promise.all(initialItems.map((tool) => toolStore.fetchHelpForId(tool.id)));
-    }
-});
+// Force ScrollList remount when tools change (e.g. after search),
+// ensuring loadTools is called again to await help data for new results.
+const toolsKey = computed(() => `${props.tools.length}-${props.tools[0]?.id}`);
 </script>
 
 <template>
     <ScrollList
         ref="root"
+        :key="toolsKey"
         :loader="loadTools"
         :limit="FETCH_LIMIT"
         :item-key="(tool) => tool.id"
