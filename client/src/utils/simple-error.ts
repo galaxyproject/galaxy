@@ -18,7 +18,25 @@ export function errorMessageAsString(e: any, defaultMessage = "Request failed.")
     return message;
 }
 
+function isRequestAborted(e: any): boolean {
+    // Only match genuine aborts (e.g. page navigation), not timeouts.
+    // ECONNABORTED is also used for timeouts when clarifyTimeoutError is false
+    // (the axios default), so check the message to distinguish.
+    if (e?.code === "ERR_CANCELED" && !e?.message?.includes("timeout")) {
+        return true;
+    }
+    if (e?.code === "ECONNABORTED" && e?.message === "Request aborted") {
+        return true;
+    }
+    return false;
+}
+
 export function rethrowSimple(e: any): never {
+    if (isRequestAborted(e)) {
+        // Browser aborted the request (e.g. page navigation); swallow silently
+        // since no downstream consumer will handle the result anyway.
+        return undefined as never;
+    }
     if (process.env.NODE_ENV != "test") {
         console.debug(e);
     }
