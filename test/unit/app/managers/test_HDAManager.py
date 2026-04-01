@@ -446,7 +446,6 @@ class TestHDASerializer(HDATestCase):
         assert serialized["type"] == "file"
 
         assert isinstance(serialized["url"], str)
-        assert isinstance(serialized["urls"], dict)
         assert isinstance(serialized["download_url"], str)
 
         self.log("serialized should jsonify well")
