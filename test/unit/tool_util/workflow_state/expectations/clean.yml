@@ -1,0 +1,157 @@
+# Declarative tests for the clean operation.
+# Operations return the cleaned workflow dict directly;
+# assertions navigate its structure.
+
+clean_cat1_bookkeeping_stripped:
+  fixture: test_workflow_1.ga
+  operation: clean
+  assertions:
+    - path: [steps, "2", tool_state, __page__]
+      value_absent: true
+    - path: [steps, "2", tool_state, __rerun_remap_job_id__]
+      value_absent: true
+
+clean_cat1_valid_inputs_survive:
+  fixture: test_workflow_1.ga
+  operation: clean
+  assertions:
+    - path: [steps, "2", tool_state, input1]
+      value: "null"  # string "null" from legacy JSON-encoded tool_state (not None)
+    - path: [steps, "2", tool_state, queries]
+      value_type: list
+
+clean_cat1_step_structure_intact:
+  fixture: test_workflow_1.ga
+  operation: clean
+  assertions:
+    - path: [steps, "0", type]
+      value: data_input
+    - path: [steps, "2", tool_id]
+      value: cat1
+    - path: [steps, "2", tool_version]
+      value: "1.0.0"
+
+clean_random_lines_bookkeeping_stripped:
+  fixture: test_workflow_2.ga
+  operation: clean
+  assertions:
+    - path: [steps, "1", tool_state, __page__]
+      value_absent: true
+    - path: [steps, "1", tool_state, __rerun_remap_job_id__]
+      value_absent: true
+    - path: [steps, "2", tool_state, __page__]
+      value_absent: true
+    - path: [steps, "2", tool_state, __rerun_remap_job_id__]
+      value_absent: true
+
+clean_random_lines_stale_chrominfo_stripped:
+  fixture: test_workflow_2.ga
+  operation: clean
+  assertions:
+    - path: [steps, "1", tool_state, chromInfo]
+      value_absent: true
+    - path: [steps, "2", tool_state, chromInfo]
+      value_absent: true
+
+clean_random_lines_valid_inputs_survive:
+  fixture: test_workflow_2.ga
+  operation: clean
+  assertions:
+    - path: [steps, "1", tool_state, num_lines]
+      value: '"8"'  # JSON-decoded string literal from legacy encoding
+    - path: [steps, "1", tool_state, seed_source]
+      value_type: dict
+    - path: [steps, "1", tool_state, seed_source, seed_source_selector]
+      value: no_seed
+
+clean_synthetic_cat1_bookkeeping_stripped:
+  fixture: synthetic-cat1-stale.ga
+  operation: clean
+  assertions:
+    - path: [steps, "1", tool_state, __page__]
+      value_absent: true
+    - path: [steps, "1", tool_state, __rerun_remap_job_id__]
+      value_absent: true
+    - path: [steps, "1", tool_state, chromInfo]
+      value_absent: true
+
+clean_synthetic_cat1_valid_inputs_survive:
+  fixture: synthetic-cat1-stale.ga
+  operation: clean
+  assertions:
+    - path: [steps, "1", tool_state, input1]
+      value_type: dict
+    - path: [steps, "1", tool_state, queries]
+      value_type: list
+    - path: [steps, "1", tool_id]
+      value: cat1
+
+# --- Format2 input ---
+
+clean_format2_noop:
+  fixture: synthetic-cat1.gxwf.yml
+  operation: clean
+  assertions:
+    - path: [steps, concat, tool_id]
+      value: cat1
+    - path: [steps, concat, state, queries]
+      value_type: list
+
+# --- IWC workflows ---
+
+clean_iwc_repeatmasking_bookkeeping_stripped:
+  fixture: RepeatMasking-Workflow.ga
+  operation: clean
+  assertions:
+    - path: [steps, "1", tool_state, __page__]
+      value_absent: true
+    - path: [steps, "1", tool_state, __rerun_remap_job_id__]
+      value_absent: true
+    - path: [steps, "1", tool_state, chromInfo]
+      value_absent: true
+    - path: [steps, "1", tool_state, __input_ext]
+      value_absent: true
+
+clean_iwc_repeatmasking_valid_inputs_survive:
+  fixture: RepeatMasking-Workflow.ga
+  operation: clean
+  assertions:
+    # connection-only inputs are null after cleaning
+    - path: [steps, "1", tool_state, input_file]
+      value: null
+    - path: [steps, "2", tool_state, repeat_source]
+      value_type: dict
+    - path: [steps, "2", tool_state, input_fasta]
+      value: null
+
+clean_iwc_rnaseq_subworkflow_bookkeeping_stripped:
+  fixture: rnaseq-sr.ga
+  operation: clean
+  assertions:
+    # tool step in main workflow
+    - path: [steps, "10", tool_state, __page__]
+      value_absent: true
+    - path: [steps, "10", tool_state, __rerun_remap_job_id__]
+      value_absent: true
+    # tool step inside subworkflow (step 17, sub-step 2)
+    - path: [steps, "17", subworkflow, steps, "2", tool_state, __page__]
+      value_absent: true
+    - path: [steps, "17", subworkflow, steps, "2", tool_state, __rerun_remap_job_id__]
+      value_absent: true
+
+clean_iwc_rnaseq_subworkflow_valid_inputs_survive:
+  fixture: rnaseq-sr.ga
+  operation: clean
+  assertions:
+    # tp_awk_tool inside "Generate Unstranded Coverage" subworkflow
+    - path: [steps, "17", subworkflow, steps, "2", tool_state, code]
+      value_type: str
+    - path: [steps, "17", subworkflow, steps, "2", tool_state, infile, __class__]
+      value: ConnectedValue
+    - path: [steps, "17", subworkflow, steps, "2", tool_state, variables]
+      value_type: list
+    # subworkflow structure preserved
+    - path: [steps, "17", type]
+      value: subworkflow
+    - path: [steps, "17", label]
+      value: Generate Unstranded Coverage

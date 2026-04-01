@@ -1,0 +1,67 @@
+# Declarative tests for the clean_then_validate composite operation.
+# Cleans stale state first, then validates — the real-world pipeline.
+# Returns the cleaned workflow dict on success.
+
+clean_then_validate_synthetic_cat1_stale:
+  fixture: synthetic-cat1-stale.ga
+  operation: clean_then_validate
+  assertions:
+    - path: [steps, "1", tool_id]
+      value: cat1
+    - path: [steps, "1", tool_state, __page__]
+      value_absent: true
+    - path: [steps, "1", tool_state, input1]
+      value_type: dict
+
+clean_then_validate_synthetic_cat1_clean:
+  fixture: synthetic-cat1-clean.ga
+  operation: clean_then_validate
+  assertions:
+    - path: [steps, "1", tool_id]
+      value: cat1
+
+clean_then_validate_format2:
+  fixture: synthetic-cat1.gxwf.yml
+  operation: clean_then_validate
+  assertions:
+    - path: [steps, concat, tool_id]
+      value: cat1
+
+# Legacy-encoded workflows: clean decodes JSON-string tool_state to dict,
+# so validation precheck passes and the cleaned workflow validates.
+clean_then_validate_legacy_cat1:
+  fixture: test_workflow_1.ga
+  operation: clean_then_validate
+  assertions:
+    - path: [steps, "2", tool_id]
+      value: cat1
+    - path: [steps, "2", tool_state]
+      value_type: dict
+    - path: [steps, "2", tool_state, __page__]
+      value_absent: true
+
+# --- IWC workflows: clean removes stale keys, validation then passes ---
+
+clean_then_validate_iwc_repeatmasking:
+  fixture: RepeatMasking-Workflow.ga
+  operation: clean_then_validate
+  assertions:
+    - path: [steps, "1", tool_state, __page__]
+      value_absent: true
+    - path: [steps, "2", tool_state, repeat_source]
+      value_type: dict
+
+clean_then_validate_iwc_rnaseq_subworkflow:
+  fixture: rnaseq-sr.ga
+  operation: clean_then_validate
+  assertions:
+    # main workflow step cleaned and valid
+    - path: [steps, "10", tool_state, __page__]
+      value_absent: true
+    # subworkflow step cleaned and valid
+    - path: [steps, "17", type]
+      value: subworkflow
+    - path: [steps, "17", subworkflow, steps, "2", tool_state, __page__]
+      value_absent: true
+    - path: [steps, "17", subworkflow, steps, "2", tool_state, code]
+      value_type: str
