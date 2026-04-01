@@ -1,5 +1,4 @@
 import axios from "axios";
-import Backbone from "backbone";
 import { escape } from "lodash";
 
 import { buildCollectionFromRules } from "@/components/Collections/common/buildCollectionModal";
@@ -8,89 +7,88 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
 import Modal from "@/utils/modal";
 
-import mod_library_model from "../library-model";
-
 var modal = new Modal();
 
-var ImportCollectionModal = Backbone.View.extend({
-    options: null,
+function getDatasetSelectionCount(selected) {
+    if (Array.isArray(selected)) {
+        return selected.length;
+    }
+    return selected?.dataset_ids?.length || 0;
+}
 
-    initialize: function (options) {
+class ImportCollectionModal {
+    constructor(options) {
         this.options = options;
         this.options.chain_call_control = {
             total_number: 0,
             failed_number: 0,
         };
+        this.histories = [];
         this.showCollectionSelect();
-    },
+    }
 
-    findCheckedItems: function () {
+    findCheckedItems() {
         return this.options.selected;
-    },
-    // TODO find a way to import this part from another component.... or just vuefy this module!
-    fetchUserHistories: function () {
-        this.histories = new mod_library_model.GalaxyHistories();
-        return this.histories.fetch();
-    },
+    }
+
+    async fetchUserHistories() {
+        const { data } = await axios.get(`${getAppRoot()}api/histories`);
+        this.histories = data;
+    }
+
     async createNewHistory(new_history_name) {
         const { data } = await axios.post(`${getAppRoot()}api/histories`, { name: new_history_name });
         const { setCurrentHistory } = useHistoryStore();
         await setCurrentHistory(data.id);
         return data;
-    },
-    showCollectionSelect: function (e) {
+    }
+
+    async showCollectionSelect() {
         var checked_items = this.findCheckedItems();
-        if (checked_items.length === 0) {
+        if (getDatasetSelectionCount(checked_items) === 0) {
             Toast.info("You must select some datasets first.");
         } else {
-            var template = this.templateCollectionSelectModal();
-
-            var promise = this.fetchUserHistories();
-            promise
-                .done(() => {
-                    modal.show({
-                        closing_events: true,
-                        title: "Create History Collection from Datasets",
-                        body: template({
-                            selected_datasets: checked_items.dataset_ids.length,
-                            histories: this.histories.models,
-                        }),
-                        buttons: {
-                            Continue: () => {
-                                modal.hide();
-                                this.showCollectionBuilder(checked_items.dataset_ids);
-                            },
-                            Close: () => {
-                                modal.hide();
-                            },
+            try {
+                await this.fetchUserHistories();
+                modal.show({
+                    closing_events: true,
+                    title: "Create History Collection from Datasets",
+                    body: this.templateCollectionSelectModal({
+                        selected_datasets: checked_items.dataset_ids.length,
+                        histories: this.histories,
+                    }),
+                    buttons: {
+                        Continue: () => {
+                            modal.hide();
+                            this.showCollectionBuilder(checked_items.dataset_ids);
                         },
-                    });
-                })
-                .fail((model, response) => {
-                    if (typeof response.responseJSON !== "undefined") {
-                        Toast.error(response.responseJSON.err_msg);
-                    } else {
-                        Toast.error("An error occurred.");
-                    }
+                        Close: () => {
+                            modal.hide();
+                        },
+                    },
                 });
+            } catch (error) {
+                const response = error.response;
+                if (response?.data?.err_msg) {
+                    Toast.error(response.data.err_msg);
+                } else {
+                    Toast.error("An error occurred.");
+                }
+            }
         }
-    },
-    /**
-     * Note: The collection creation process expects ldda_ids as ids
-     * in the collection_elements array but we operate on ld_ids in libraries.
-     * The code below overwrites the id with ldda_id for this reason.
-     */
-    showCollectionBuilder: function (checked_items) {
+    }
+
+    showCollectionBuilder(checked_items) {
         const collection_elements = [];
         for (let i = checked_items.length - 1; i >= 0; i--) {
-            const collection_item = {};
             const dataset = checked_items[i];
-            collection_item.id = dataset.ldda_id;
-            collection_item.name = dataset.name;
-            collection_item.deleted = dataset.deleted;
-            collection_item.state = dataset.state;
-            collection_item.src = "ldda";
-            collection_elements.push(collection_item);
+            collection_elements.push({
+                id: dataset.ldda_id,
+                name: dataset.name,
+                deleted: dataset.deleted,
+                state: dataset.state,
+                src: "ldda",
+            });
         }
         const new_history_name = modal.el.querySelector('input[name="history_name"]').value;
         if (new_history_name !== "") {
@@ -108,30 +106,23 @@ var ImportCollectionModal = Backbone.View.extend({
             const selected_history_id = this.select_collection_history.value;
             this.collectionImport(collection_elements, selected_history_id);
         }
-    },
-    collectionImport: function (collectionElements, historyId) {
+    }
+
+    collectionImport(collectionElements, historyId) {
         const collectionType = modal.el.querySelector("#library-collection-type-select").value;
-        let selection = {};
-        if (collectionType == "rules") {
-            selection.selectionType = "library_datasets";
-        }
-        selection = {
-            models: collectionElements,
-        };
+        const selection = { models: collectionElements };
         if (collectionType === "rules") {
             buildCollectionFromRules(selection, historyId);
         } else if (this.options.onCollectionImport) {
             this.options.onCollectionImport(collectionType, selection, historyId);
         }
-    },
-    templateCollectionSelectModal: function () {
-        return function ({ histories }) {
-            const historyOptions = histories
-                .map(
-                    (history) => `<option value="${escape(history.get("id"))}">${escape(history.get("name"))}</option>`,
-                )
-                .join("\n");
-            return `<div>
+    }
+
+    templateCollectionSelectModal({ histories }) {
+        const historyOptions = histories
+            .map((history) => `<option value="${escape(history.id)}">${escape(history.name)}</option>`)
+            .join("\n");
+        return `<div>
                 <div class="library-modal-item">
                     <h4>Select history</h4>
                     <div class="form-group">
@@ -165,9 +156,8 @@ var ImportCollectionModal = Backbone.View.extend({
                     </dl>
                 </div>
             </div>`;
-        };
-    },
-});
+    }
+}
 
 export default {
     ImportCollectionModal: ImportCollectionModal,

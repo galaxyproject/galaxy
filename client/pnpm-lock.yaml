@@ -91,9 +91,6 @@ importers:
       axios:
         specifier: ^1.6.2
         version: 1.12.0
-      backbone:
-        specifier: 1.5.0
-        version: 1.5.0
       bootstrap:
         specifier: '4.6'
         version: 4.6.2(jquery@2.2.4)(popper.js@1.16.1)
@@ -1710,9 +1707,6 @@ packages:
 
   axios@1.12.0:
     resolution: {integrity: sha512-oXTDccv8PcfjZmPGlWsPSwtOJCZ/b6W5jAMCNcfwJbCzDckwG0jrYJFaWH1yvivfCXjVzV/SPDEhMB3Q+DSurg==}
-
-  backbone@1.5.0:
-    resolution: {integrity: sha512-RPKlstw5NW+rD2X4PnEnvgLhslRnXOugXw2iBloHkPMgOxvakP1/A+tZIGM3qCm8uvZeEf8zMm0uvcK1JwL+IA==}
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -4086,9 +4080,6 @@ packages:
   unbox-primitive@1.0.2:
     resolution: {integrity: sha512-61pPlCD9h51VoreyJ0BReideM3MDKMKnh6+V9L08331ipq6Q8OFXZYiqP6n/tbHx4s5I9uRhcye6BrbkizkBDw==}
 
-  underscore@1.13.8:
-    resolution: {integrity: sha512-DXtD3ZtEQzc7M8m4cXotyHR+FAS18C64asBYY5vqZexfYryNNnDc02W4hKg3rdQuqOYas1jkseX0+nZXjTXnvQ==}
-
   undici-types@6.11.1:
     resolution: {integrity: sha512-mIDEX2ek50x0OlRgxryxsenE5XaQD4on5U2inY7RApK3SOJpofyw7uW2AyfMKkhAxXIceo2DeWGVGwyvng1GNQ==}
 
@@ -5838,10 +5829,6 @@ snapshots:
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
       - debug
-
-  backbone@1.5.0:
-    dependencies:
-      underscore: 1.13.8
 
   balanced-match@1.0.2: {}
 
@@ -8403,8 +8390,6 @@ snapshots:
       has-bigints: 1.0.2
       has-symbols: 1.1.0
       which-boxed-primitive: 1.0.2
-
-  underscore@1.13.8: {}
 
   undici-types@6.11.1: {}
 
