@@ -275,7 +275,7 @@ export function appendScriptStyle(data: Readonly<{ script?: string; styles?: str
     if (data.script && data.script !== "") {
         const tag = document.createElement("script");
         tag.type = "text/javascript";
-        tag.textContent = `(function(){${data.script}})();`;
+        tag.textContent = `(function(){\n${data.script}\n})();`;
         document.head.appendChild(tag);
     }
     // create a style tag inside head tag
