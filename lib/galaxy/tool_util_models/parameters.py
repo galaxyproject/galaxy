@@ -1,6 +1,7 @@
 # attempt to model requires_value...
 # conditional can descend...
 import builtins
+import re
 from abc import abstractmethod
 from collections.abc import (
     Callable,
@@ -1684,13 +1685,159 @@ class DirectoryUriParameterModel(BaseGalaxyToolParameterModelDefinition):
         return True
 
 
-class RulesMapping(StrictModel):
-    type: str
+def _validate_regex_expression(v: str) -> str:
+    try:
+        re.compile(v)
+    except re.error as e:
+        raise ValueError(f"Invalid regular expression: {e}") from e
+    return v
+
+
+ValidRegex = Annotated[str, AfterValidator(_validate_regex_expression)]
+
+
+class AddColumnMetadataRule(BaseModel):
+    type: Literal["add_column_metadata"]
+    value: str
+
+
+class AddColumnGroupTagValueRule(BaseModel):
+    type: Literal["add_column_group_tag_value"]
+    value: str
+    default_value: str | None = None
+
+
+class AddColumnConcatenateRule(BaseModel):
+    type: Literal["add_column_concatenate"]
+    target_column_0: StrictInt
+    target_column_1: StrictInt
+
+
+class AddColumnBasenameRule(BaseModel):
+    type: Literal["add_column_basename"]
+    target_column: StrictInt
+
+
+class AddColumnRegexRule(BaseModel):
+    type: Literal["add_column_regex"]
+    target_column: StrictInt
+    expression: ValidRegex
+    replacement: str | None = None
+    group_count: StrictInt | None = None
+    allow_unmatched: StrictBool | None = None
+
+
+class AddColumnRownumRule(BaseModel):
+    type: Literal["add_column_rownum"]
+    start: StrictInt
+
+
+class AddColumnValueRule(BaseModel):
+    type: Literal["add_column_value"]
+    value: str
+
+
+class AddColumnSubstrRule(BaseModel):
+    type: Literal["add_column_substr"]
+    target_column: StrictInt
+    length: StrictInt
+    substr_type: Literal["keep_prefix", "drop_prefix", "keep_suffix", "drop_suffix"]
+
+
+class AddColumnFromSampleSheetIndexRule(BaseModel):
+    type: Literal["add_column_from_sample_sheet_index"]
+    value: StrictInt
+
+
+class RemoveColumnsRule(BaseModel):
+    type: Literal["remove_columns"]
+    target_columns: list[StrictInt]
+
+
+class AddFilterRegexRule(BaseModel):
+    type: Literal["add_filter_regex"]
+    target_column: StrictInt
+    invert: StrictBool
+    expression: ValidRegex
+
+
+class AddFilterCountRule(BaseModel):
+    type: Literal["add_filter_count"]
+    count: StrictInt
+    invert: StrictBool
+    which: Literal["first", "last"]
+
+
+class AddFilterEmptyRule(BaseModel):
+    type: Literal["add_filter_empty"]
+    target_column: StrictInt
+    invert: StrictBool
+
+
+class AddFilterMatchesRule(BaseModel):
+    type: Literal["add_filter_matches"]
+    target_column: StrictInt
+    invert: StrictBool
+    value: str
+
+
+class AddFilterCompareRule(BaseModel):
+    type: Literal["add_filter_compare"]
+    target_column: StrictInt
+    value: float
+    compare_type: Literal["less_than", "less_than_equal", "greater_than", "greater_than_equal"]
+
+
+class SortRule(BaseModel):
+    type: Literal["sort"]
+    target_column: StrictInt
+    numeric: StrictBool
+
+
+class SwapColumnsRule(BaseModel):
+    type: Literal["swap_columns"]
+    target_column_0: StrictInt
+    target_column_1: StrictInt
+
+
+class SplitColumnsRule(BaseModel):
+    type: Literal["split_columns"]
+    target_columns_0: list[StrictInt]
+    target_columns_1: list[StrictInt]
+
+
+RuleDefinition = Annotated[
+    AddColumnMetadataRule
+    | AddColumnGroupTagValueRule
+    | AddColumnConcatenateRule
+    | AddColumnBasenameRule
+    | AddColumnRegexRule
+    | AddColumnRownumRule
+    | AddColumnValueRule
+    | AddColumnSubstrRule
+    | AddColumnFromSampleSheetIndexRule
+    | RemoveColumnsRule
+    | AddFilterRegexRule
+    | AddFilterCountRule
+    | AddFilterEmptyRule
+    | AddFilterMatchesRule
+    | AddFilterCompareRule
+    | SortRule
+    | SwapColumnsRule
+    | SplitColumnsRule,
+    Discriminator("type"),
+]
+
+MAPPING_TYPES = Literal["list_identifiers", "paired_identifier", "paired_or_unpaired_identifier"]
+
+
+class RulesMapping(BaseModel):
+    type: MAPPING_TYPES
     columns: list[StrictInt]
 
 
-class RulesModel(StrictModel):
-    rules: list[dict[str, Any]]
+class RulesModel(BaseModel):
+    rules: list[RuleDefinition]
     mapping: list[RulesMapping]
 
 
@@ -1703,7 +1850,17 @@ class RulesParameterModel(BaseGalaxyToolParameterModelDefinition):
         return RulesModel
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        return dynamic_model_information_from_py_type(self, self.py_type)
+        py_type = self.py_type
+        requires_value = self.request_requires_value
+        if state_representation == "workflow_step_linked":
+            py_type = allow_connected_value(py_type)
+        elif state_representation == "workflow_step":
+            # allow it to be linked in so force allow optional...
+            py_type = optional(py_type)
+            requires_value = False
+        if state_representation in ("job_internal", "job_runtime"):
+            requires_value = True
+        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
 
     @property
     def request_requires_value(self) -> bool:
