@@ -930,5 +930,8 @@ def validate_not_protected(tool_id: Optional[str]):
 
 def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:
     if "payload" in kwd:
-        kwd = cast(dict[str, Any], kwd.get("payload"))
+        payload = kwd.get("payload")
+        if not isinstance(payload, dict):
+            raise exceptions.RequestParameterInvalidException("Request payload must be a JSON object.")
+        kwd = payload
     return kwd
