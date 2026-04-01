@@ -47,7 +47,7 @@ log = logging.getLogger(__name__)
 router = Router(tags=["object_stores"])
 
 ConcreteObjectStoreIdPathParam: str = Path(
-    ..., title="Concrete Object Store ID", description="The concrete object store ID."
+    ..., title="Concrete Object Store ID", description="The concrete object store ID.", pattern=r"^[\w-]+$"
 )
 
 UserObjectStoreIdPathParam: UUID4 = Path(
