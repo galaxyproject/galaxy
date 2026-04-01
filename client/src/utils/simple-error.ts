@@ -1,3 +1,11 @@
+/** Thrown when the browser aborts a request (e.g. page navigation, component unmount). */
+export class RequestAbortedError extends Error {
+    constructor() {
+        super("Request aborted");
+        this.name = "RequestAbortedError";
+    }
+}
+
 export function errorMessageAsString(e: any, defaultMessage = "Request failed.") {
     // Note that despite the name, this can actually currently return an object,
     // depending on what data.err_msg is (e.g. an object)
@@ -33,9 +41,7 @@ function isRequestAborted(e: any): boolean {
 
 export function rethrowSimple(e: any): never {
     if (isRequestAborted(e)) {
-        // Browser aborted the request (e.g. page navigation); swallow silently
-        // since no downstream consumer will handle the result anyway.
-        return undefined as never;
+        throw new RequestAbortedError();
     }
     if (process.env.NODE_ENV != "test") {
         console.debug(e);
@@ -52,6 +58,9 @@ export class ApiError extends Error {
 }
 
 export function rethrowSimpleWithStatus(e: any, response?: { status: number }): never {
+    if (isRequestAborted(e)) {
+        throw new RequestAbortedError();
+    }
     if (process.env.NODE_ENV != "test") {
         console.debug(e);
     }
