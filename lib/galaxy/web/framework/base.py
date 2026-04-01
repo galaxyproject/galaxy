@@ -442,7 +442,10 @@ class Request(webob.Request):
         cookies = SimpleCookie()
         if cookie_header := self.environ.get("HTTP_COOKIE"):
             all_cookies = webob.cookies.parse_cookie(cookie_header)
-            galaxy_cookies = {k.decode(): v.decode() for k, v in all_cookies if k.startswith(b"galaxy")}
+            try:
+                galaxy_cookies = {k.decode(): v.decode() for k, v in all_cookies if k.startswith(b"galaxy")}
+            except UnicodeDecodeError:
+                galaxy_cookies = {}
             if galaxy_cookies:
                 try:
                     cookies.load(galaxy_cookies)
