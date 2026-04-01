@@ -2761,7 +2761,13 @@ class BaseWorkflowPopulator(BasePopulator):
             expected_response=expected_response,
         )
 
-    def rerun(self, run_jobs_summary: "RunJobsSummary", wait: bool = True, assert_ok: bool = True) -> "RunJobsSummary":
+    def rerun(
+        self,
+        run_jobs_summary: "RunJobsSummary",
+        wait: bool = True,
+        assert_ok: bool = True,
+        use_cached_job: bool = False,
+    ) -> "RunJobsSummary":
         history_id = run_jobs_summary.history_id
         invocation_id = run_jobs_summary.invocation_id
         inputs = run_jobs_summary.inputs
@@ -2769,6 +2775,8 @@ class BaseWorkflowPopulator(BasePopulator):
         workflow_id = workflow_request["workflow_id"]
         assert workflow_request["history_id"] == history_id
         assert workflow_request["instance"] is True
+        if use_cached_job:
+            workflow_request["use_cached_job"] = True
         return self._request_to_summary(
             history_id,
             workflow_id,
