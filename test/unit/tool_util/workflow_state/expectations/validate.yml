@@ -1,0 +1,50 @@
+# Declarative tests for the validate operation.
+# validate raises on precheck skip (legacy encoding) or validation
+# failures; on success returns the workflow dict.
+
+validate_legacy_encoding_skipped:
+  fixture: test_workflow_1.ga
+  operation: validate
+  expect_error: true
+
+validate_legacy_encoding_skipped_2:
+  fixture: test_workflow_2.ga
+  operation: validate
+  expect_error: true
+
+validate_stale_keys_rejected:
+  fixture: synthetic-cat1-stale.ga
+  operation: validate
+  expect_error: true
+
+validate_clean_cat1_passes:
+  fixture: synthetic-cat1-clean.ga
+  operation: validate
+  assertions:
+    - path: [steps, "1", tool_id]
+      value: cat1
+    - path: [steps, "1", tool_state]
+      value_type: dict
+    - path: [steps, "0", type]
+      value: data_input
+
+# --- Format2 input ---
+
+validate_format2_cat1_passes:
+  fixture: synthetic-cat1.gxwf.yml
+  operation: validate
+  assertions:
+    - path: [steps, concat, tool_id]
+      value: cat1
+
+# --- IWC workflows (stale keys cause validation failures) ---
+
+validate_iwc_repeatmasking_stale_rejected:
+  fixture: RepeatMasking-Workflow.ga
+  operation: validate
+  expect_error: true
+
+validate_iwc_rnaseq_subworkflow_stale_rejected:
+  fixture: rnaseq-sr.ga
+  operation: validate
+  expect_error: true
