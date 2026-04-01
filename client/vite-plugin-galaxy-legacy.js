@@ -18,7 +18,7 @@ export function galaxyLegacyPlugin() {
 
                 optimizeDeps: {
                     // Pre-bundle problematic CommonJS dependencies
-                    include: ["store", "jquery-migrate", "backbone"],
+                    include: ["store", "jquery-migrate"],
 
                     // Fix CommonJS global references
                     esbuildOptions: {
