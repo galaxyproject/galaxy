@@ -9,6 +9,13 @@ import Modal from "@/utils/modal";
 
 var modal = new Modal();
 
+function getDatasetSelectionCount(selected) {
+    if (Array.isArray(selected)) {
+        return selected.length;
+    }
+    return selected?.dataset_ids?.length || 0;
+}
+
 class ImportCollectionModal {
     constructor(options) {
         this.options = options;
@@ -38,7 +45,7 @@ class ImportCollectionModal {
 
     async showCollectionSelect() {
         var checked_items = this.findCheckedItems();
-        if (checked_items.length === 0) {
+        if (getDatasetSelectionCount(checked_items) === 0) {
             Toast.info("You must select some datasets first.");
         } else {
             try {

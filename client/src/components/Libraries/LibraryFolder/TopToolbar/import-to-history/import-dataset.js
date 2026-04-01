@@ -10,6 +10,13 @@ import { updateProgressBar } from "../delete-selected";
 
 var modal = new Modal();
 
+function getSelectionCount(selected) {
+    if (Array.isArray(selected)) {
+        return selected.length;
+    }
+    return (selected?.dataset_ids?.length || 0) + (selected?.folder_ids?.length || 0);
+}
+
 class ImportDatasetModal {
     constructor(options) {
         this.options = options;
@@ -29,7 +36,7 @@ class ImportDatasetModal {
 
     async importToHistoryModal() {
         var checkedValues = this.findCheckedItems();
-        if (checkedValues.length === 0) {
+        if (getSelectionCount(checkedValues) === 0) {
             Toast.info("You must select some datasets first.");
             return;
         }
