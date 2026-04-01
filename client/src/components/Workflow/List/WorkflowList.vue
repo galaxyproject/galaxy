@@ -3,7 +3,6 @@ import { faStar, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
 import { faTrashRestore } from "font-awesome-6";
-import { filter } from "underscore";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -201,7 +200,7 @@ async function load(overlayLoading = false, silent = false) {
         let filteredWorkflows = data;
 
         if (props.activeList === "my") {
-            filteredWorkflows = filter(filteredWorkflows, (w: any) => userStore.matchesCurrentUsername(w.owner));
+            filteredWorkflows = filteredWorkflows.filter((w: any) => userStore.matchesCurrentUsername(w.owner));
         }
 
         workflowsLoaded.value = filteredWorkflows;

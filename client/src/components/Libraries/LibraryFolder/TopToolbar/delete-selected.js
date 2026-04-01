@@ -1,5 +1,4 @@
 import $ from "jquery";
-import _ from "underscore";
 
 import { Toast } from "@/composables/toast";
 import _l from "@/utils/localization";
@@ -23,11 +22,10 @@ export function deleteSelectedItems(checkedRows, onRemove, refreshTable, refresh
     if (checkedRows.length === 0) {
         Toast.info("You must select at least one item for deletion.");
     } else {
-        var template = templateDeletingItemsProgressBar();
         modal.show({
             closing_events: true,
             title: _l("Deleting selected items"),
-            body: template({}),
+            body: templateDeletingItemsProgressBar(),
             buttons: {
                 Close: () => {
                     modal.hide();
@@ -75,16 +73,14 @@ export function deleteSelectedItems(checkedRows, onRemove, refreshTable, refresh
 }
 
 function templateDeletingItemsProgressBar() {
-    return _.template(
-        `<div class="import_text">
+    return `<div class="import_text">
             </div>
             <div class="progress">
                 <div class="progress-bar progress-bar-import" role="progressbar" aria-valuenow="0" aria-valuemin="0"
                     aria-valuemax="100" style="width: 00%;">
                     <span class="completion_span">0% Complete</span>
                 </div>
-            </div>`,
-    );
+            </div>`;
 }
 
 /**

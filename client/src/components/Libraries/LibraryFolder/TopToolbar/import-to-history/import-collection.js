@@ -1,6 +1,6 @@
 import axios from "axios";
 import Backbone from "backbone";
-import _ from "underscore";
+import { escape } from "lodash";
 
 import { buildCollectionFromRules } from "@/components/Collections/common/buildCollectionModal";
 import { Toast } from "@/composables/toast";
@@ -125,24 +125,23 @@ var ImportCollectionModal = Backbone.View.extend({
         }
     },
     templateCollectionSelectModal: function () {
-        return _.template(
-            `<div> <!-- elements selection -->
-                <!-- history selection/creation -->
+        return function ({ histories }) {
+            const historyOptions = histories
+                .map(
+                    (history) => `<option value="${escape(history.get("id"))}">${escape(history.get("name"))}</option>`,
+                )
+                .join("\n");
+            return `<div>
                 <div class="library-modal-item">
                     <h4>Select history</h4>
                     <div class="form-group">
                         <select id="library-collection-history-select" name="library-collection-history-select" class="form-control">
-                            <% _.each(histories, function(history) { %> <!-- history select box -->
-                                <option value="<%= _.escape(history.get("id")) %>">
-                                    <%= _.escape(history.get("name")) %>
-                                </option>
-                            <% }); %>
+                            ${historyOptions}
                         </select>
                         <label>or create new:</label>
                         <input class="form-control" type="text" name="history_name" value="" placeholder="name of the new history" />
                     </div>
                 </div>
-                <!-- type selection -->
                 <div class="library-modal-item">
                     <h4>Collection type</h4>
                     <div class="form-group">
@@ -157,19 +156,16 @@ var ImportCollectionModal = Backbone.View.extend({
                     <dl class="row">
                         <dt class="col-sm-3">List</dt>
                         <dd class="col-sm-9">Generic collection which groups any number of datasets into a set; similar to file system folder.</dd>
-
                         <dt class="col-sm-3">Paired</dt>
                         <dd class="col-sm-9">Simple collection containing exactly two sequence datasets; one reverse and the other forward.</dd>
-
                         <dt class="col-sm-3">List of Pairs</dt>
                         <dd class="col-sm-9">Advanced collection containing any number of Pairs; imagine as Pair-type collections inside of a List-type collection.</dd>
-
                         <dt class="col-sm-3">From Rules</dt>
                         <dd class="col-sm-9">Use Galaxy's rule builder to describe collections. This is more of an advanced feature that allows building any number of collections or any type.</dd>
                     </dl>
                 </div>
-            </div>`,
-        );
+            </div>`;
+        };
     },
 });
 

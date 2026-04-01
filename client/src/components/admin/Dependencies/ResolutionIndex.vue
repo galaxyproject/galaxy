@@ -97,7 +97,6 @@
 import { faChevronDown, faChevronUp, faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BForm, BFormCheckbox, BFormSelect, BRow } from "bootstrap-vue";
-import _ from "underscore";
 
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
@@ -118,7 +117,7 @@ export const RESOLVER_DESCRIPTIONS = {
     lmod: "",
     module: "",
 };
-const RESOLVER_TYPE_OPTIONS = _.keys(RESOLVER_DESCRIPTIONS).map((resolverType) => ({
+const RESOLVER_TYPE_OPTIONS = Object.keys(RESOLVER_DESCRIPTIONS).map((resolverType) => ({
     value: resolverType,
     text: resolverType,
 }));

@@ -1,5 +1,3 @@
-import _ from "underscore";
-
 import { isDefined, isValidNumber } from "@/utils/validation";
 
 /** Visits tool inputs.
@@ -8,20 +6,23 @@ import { isDefined, isValidNumber } from "@/utils/validation";
  */
 export function visitInputs(inputs, callback, prefix = "", context = undefined) {
     context = Object.assign({}, context);
-    _.each(inputs, (input) => {
+    for (const key in inputs) {
+        const input = inputs[key];
         if (input && input.type && input.name) {
             context[input.name] = input;
         }
-    });
+    }
     for (var key in inputs) {
         var node = inputs[key];
         node.name = node.name || key;
         var name = prefix ? `${prefix}|${node.name}` : node.name;
         switch (node.type) {
             case "repeat":
-                _.each(node.cache, (cache, j) => {
-                    visitInputs(cache, callback, `${name}_${j}`, context);
-                });
+                if (node.cache) {
+                    for (const [j, cache] of Object.entries(node.cache)) {
+                        visitInputs(cache, callback, `${name}_${j}`, context);
+                    }
+                }
                 break;
             case "conditional":
                 if (node.test_param) {
@@ -58,9 +59,11 @@ export function visitAllInputs(inputs, callback, prefix = "") {
         var name = prefix ? `${prefix}|${nodeName}` : nodeName;
         switch (node.type) {
             case "repeat":
-                _.each(node.cache, (cache, j) => {
-                    visitAllInputs(cache, callback, `${name}_${j}`);
-                });
+                if (node.cache) {
+                    for (const [j, cache] of Object.entries(node.cache)) {
+                        visitAllInputs(cache, callback, `${name}_${j}`);
+                    }
+                }
                 break;
             case "conditional":
                 if (node.test_param) {
@@ -156,9 +159,9 @@ function _buildLevel(inputs, formData, prefix) {
             case "repeat": {
                 const items = [];
                 if (node.cache) {
-                    _.each(node.cache, (cache, j) => {
+                    for (const [j, cache] of Object.entries(node.cache)) {
                         items.push(_buildLevel(cache, formData, `${flatKey}_${j}`));
-                    });
+                    }
                 }
                 result[nodeName] = items;
                 break;

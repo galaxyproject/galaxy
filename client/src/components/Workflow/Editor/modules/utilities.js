@@ -1,18 +1,15 @@
-import _ from "underscore";
-
 import WorkflowIcons from "@/components/Workflow/icons";
 
 export function getStateUpgradeMessages(data) {
-    // Determine if any parameters were 'upgraded' and provide message
     const messages = [];
-    _.each(data.steps, (step, step_id) => {
+    for (const [step_id, step] of Object.entries(data.steps)) {
         const details = [];
         if (step.errors) {
             details.push(step.errors);
         }
-        _.each(data.upgrade_messages[step_id], (m) => {
+        for (const m of Object.values(data.upgrade_messages[step_id] || {})) {
             details.push(m);
-        });
+        }
         if (details.length) {
             const iconType = WorkflowIcons[step.type];
             const message = {
@@ -24,7 +21,7 @@ export function getStateUpgradeMessages(data) {
             };
             messages.push(message);
         }
-    });
+    }
     return messages;
 }
 

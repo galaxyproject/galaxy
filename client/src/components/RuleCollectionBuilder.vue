@@ -608,8 +608,8 @@
 import HotTable from "@handsontable/vue";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import { escape } from "lodash";
 import { mapActions } from "pinia";
-import _ from "underscore";
 import Vue from "vue";
 
 import { ERROR_STATES, NON_TERMINAL_STATES } from "@/api/jobs";
@@ -933,7 +933,7 @@ export default {
             }
         },
         hasActiveMappingEdit() {
-            const has = _.any(_.values(this.mapping), (mapping) => mapping.editing);
+            const has = Object.values(this.mapping).some((mapping) => mapping.editing);
             return has;
         },
         activeRule() {
@@ -1000,12 +1000,12 @@ export default {
             const formattedHeaders = [];
             for (const colIndex in this.colHeaders) {
                 const colHeader = this.colHeaders[colIndex];
-                formattedHeaders[colIndex] = `<b>${_.escape(colHeader)}</b>`;
+                formattedHeaders[colIndex] = `<b>${escape(colHeader)}</b>`;
                 const mappingDisplay = [];
                 for (const mapping of this.mapping) {
                     if (mapping.columns.indexOf(parseInt(colIndex)) !== -1) {
                         const mappingDef = MAPPING_TARGETS[mapping.type];
-                        mappingDisplay.push(`<i>${_.escape(mappingDef.columnHeader || mappingDef.label)}</i>`);
+                        mappingDisplay.push(`<i>${escape(mappingDef.columnHeader || mappingDef.label)}</i>`);
                     }
                 }
                 if (mappingDisplay.length == 1) {

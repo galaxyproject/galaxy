@@ -1,5 +1,4 @@
 import Backbone from "backbone";
-import _ from "underscore";
 
 import Utils from "@/utils/utils";
 /**
@@ -193,8 +192,7 @@ var View = Backbone.View.extend({
 
     // get index
     _getIndex: function (value) {
-        // returns the index of the searched value
-        _.findIndex(this.select_data, { id: value });
+        return this.select_data.findIndex((item) => item.id === value);
     },
 
     // get value
