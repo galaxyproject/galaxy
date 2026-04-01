@@ -272,11 +272,12 @@ class LibraryManager:
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
         access_roles = self.get_access_roles(trans, library)
         modify_roles = self.get_modify_roles(trans, library)
         manage_roles = self.get_manage_roles(trans, library)
         add_roles = self.get_add_roles(trans, library)
+        all_role_ids = {r.id for r in access_roles | modify_roles | manage_roles | add_roles}
+        private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=all_role_ids)
 
         def make_tuples(roles: set):
             tuples = []

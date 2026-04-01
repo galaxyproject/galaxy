@@ -151,7 +151,8 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 page_limit = 10
             query = kwd.get("q", None)
             roles, total_roles = trans.app.security_agent.get_valid_roles(trans, dataset, query, page, page_limit)
-            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+            role_ids = {r.id for r in roles}
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=role_ids)
             return_roles = []
             for role in roles:
                 role_id = trans.security.encode_id(role.id)

@@ -306,8 +306,6 @@ class FolderManager:
         :returns:   dict of current roles for all available permission types
         :rtype:     dictionary
         """
-        private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
-
         # Omit duplicated roles by converting to set
         modify_roles = set(
             trans.app.security_agent.get_roles_for_action(
@@ -324,6 +322,8 @@ class FolderManager:
                 folder, trans.app.security_agent.permitted_actions.LIBRARY_ADD
             )
         )
+        all_role_ids = {r.id for r in modify_roles | manage_roles | add_roles}
+        private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=all_role_ids)
 
         def make_tuples(roles: set):
             tuples = []
