@@ -1,0 +1,52 @@
+# Declarative tests for validate with --clean (validate_clean operation).
+# Runs full stale-key cleaning on an internal copy before validating.
+# Workflows that fail raw validation due to stale keys should pass here.
+
+validate_clean_synthetic_cat1_stale_passes:
+  fixture: synthetic-cat1-stale.ga
+  operation: validate_clean
+  assertions:
+    - path: [steps, "1", tool_id]
+      value: cat1
+    - path: [steps, "1", tool_state]
+      value_type: dict
+
+validate_clean_synthetic_cat1_clean_passes:
+  fixture: synthetic-cat1-clean.ga
+  operation: validate_clean
+  assertions:
+    - path: [steps, "1", tool_id]
+      value: cat1
+
+validate_clean_format2_passes:
+  fixture: synthetic-cat1.gxwf.yml
+  operation: validate_clean
+  assertions:
+    - path: [steps, concat, tool_id]
+      value: cat1
+
+# Legacy-encoded workflows pass because cleaning decodes JSON-string
+# tool_state to dict on the internal copy, so precheck passes.
+# The returned workflow is the original (unmutated).
+validate_clean_legacy_cat1_passes:
+  fixture: test_workflow_1.ga
+  operation: validate_clean
+  assertions:
+    - path: [steps, "2", tool_id]
+      value: cat1
+
+# --- IWC workflows: stale keys don't block validation when --clean is used ---
+
+validate_clean_iwc_repeatmasking_passes:
+  fixture: RepeatMasking-Workflow.ga
+  operation: validate_clean
+  assertions:
+    - path: [steps, "1", tool_id]
+      value_type: str
+
+validate_clean_iwc_rnaseq_subworkflow_passes:
+  fixture: rnaseq-sr.ga
+  operation: validate_clean
+  assertions:
+    - path: [steps, "17", type]
+      value: subworkflow

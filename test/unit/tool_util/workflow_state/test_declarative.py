@@ -94,7 +94,7 @@ def _validate_op(wf_dict: dict) -> dict:
         raise RuntimeError(f"Validation skipped: {precheck.reason}")
     failures = [r for r in results if r.status == "fail"]
     if failures:
-        msgs = [f"step {r.step} ({r.tool_id}): {[e.message for e in r.errors]}" for r in failures]
+        msgs = [f"step {r.step} ({r.tool_id}): {r.errors}" for r in failures]
         raise RuntimeError("Validation failed:\n" + "\n".join(msgs))
     return workflow
 
@@ -125,14 +125,33 @@ def _clean_then_validate_op(wf_dict: dict) -> dict:
         raise RuntimeError(f"Validation skipped after clean: {precheck.reason}")
     failures = [r for r in results if r.status == "fail"]
     if failures:
-        msgs = [f"step {r.step} ({r.tool_id}): {[e.message for e in r.errors]}" for r in failures]
+        msgs = [f"step {r.step} ({r.tool_id}): {r.errors}" for r in failures]
         raise RuntimeError("Validation failed after clean:\n" + "\n".join(msgs))
+    return workflow
+
+
+def _validate_clean_op(wf_dict: dict) -> dict:
+    """Validate with --clean: full stale-key cleaning before validation.
+
+    Exercises the validate_workflow_cli(clean=True) codepath.
+    Returns the (uncleaned) workflow dict on success — cleaning
+    happens on an internal copy, the input is not mutated.
+    """
+    workflow = copy.deepcopy(wf_dict)
+    results, precheck, _conn = validate_workflow_cli(workflow, _tool_info, clean=True)
+    if precheck is not None and not precheck.can_process:
+        raise RuntimeError(f"Validation skipped: {precheck.reason}")
+    failures = [r for r in results if r.status == "fail"]
+    if failures:
+        msgs = [f"step {r.step} ({r.tool_id}): {r.errors}" for r in failures]
+        raise RuntimeError("Validation failed:\n" + "\n".join(msgs))
     return workflow
 
 
 OPERATIONS = {
     "clean": _clean_op,
     "validate": _validate_op,
+    "validate_clean": _validate_clean_op,
     "export_format2": _export_op,
     "clean_then_validate": _clean_then_validate_op,
 }
