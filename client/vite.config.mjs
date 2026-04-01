@@ -77,13 +77,12 @@ export default defineConfig({
         galaxyLegacyPlugin(), // Handle legacy module resolution
         buildMetadataPlugin(), // Generate build metadata (replaces DumpMetaPlugin)
         d3v3CompatPlugin(), // Fix D3 v3 ES module compatibility
-        // Inject imports for underscore and Buffer
+        // Inject imports for Buffer
         // jQuery is set up as window.$ and window.jQuery by libs.bundled.js
         // Note: We don't inject jQuery here to avoid circular dependencies with code splitting
         inject({
             include: ["**/*.js", "**/*.ts", "**/*.vue"],
             exclude: ["**/node_modules/**"],
-            _: "underscore",
             Buffer: ["buffer", "Buffer"],
         }),
         galaxyDevServerPlugin(), // Transform proxied Galaxy HTML for HMR support
