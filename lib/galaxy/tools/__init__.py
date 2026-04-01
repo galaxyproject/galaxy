@@ -3227,7 +3227,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         # Map dataset or collection to current history
         def map_to_history(value):
             if isinstance(value, HistoryDatasetAssociation):
-                id: int = value.dataset.id
+                assert value.dataset is not None
+                id = value.dataset.id
                 source: Union[
                     dict[Union[int, str], HistoryDatasetAssociation],
                     dict[Union[int, str], HistoryDatasetCollectionAssociation],
@@ -3378,6 +3379,7 @@ class OutputParameterJSONTool(Tool):
             # allow multiple files to be created
             file_name = str(wrapped_data)
             extra_files_path = str(wrapped_data.files_path)
+            assert data.dataset is not None
             data_dict = dict(
                 out_data_name=out_name,
                 ext=data.ext,
@@ -3592,6 +3594,7 @@ class DataSourceTool(OutputParameterJSONTool):
                 data.extension = cur_data_type
             file_name = str(wrapped_data)
             extra_files_path = str(wrapped_data.files_path)
+            assert data.dataset is not None
             data_dict = dict(
                 out_data_name=out_name,
                 ext=data.ext,
@@ -3766,6 +3769,8 @@ class DataManagerTool(OutputParameterJSONTool):
         elif data_manager_mode == "bundle":
             for bundle_path, dataset in data_manager.write_bundle(out_data).items():
                 hda = cast(HistoryDatasetAssociation, dataset)
+                assert hda.dataset is not None
+                assert hda.dataset.object_store is not None
                 hda.dataset.object_store.update_from_file(
                     hda.dataset,
                     extra_dir=hda.dataset.extra_files_path_name,

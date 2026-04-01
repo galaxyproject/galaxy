@@ -1224,7 +1224,7 @@ def get_repository_metadata(session, repository_id):
     stmt = (
         select(RepositoryMetadata)
         .where(RepositoryMetadata.repository_id == repository_id)
-        .order_by(RepositoryMetadata.changeset_revision, RepositoryMetadata.update_time.desc())  # type: ignore[attr-defined]  # mapped attribute
+        .order_by(RepositoryMetadata.changeset_revision, RepositoryMetadata.update_time.desc())
     )
     return session.scalars(stmt)
 

@@ -47,10 +47,12 @@ def test_deferred_hdas_basic_attached():
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
     _assert_2_bed_metadata(deferred_hda)
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.state == "ok"
     # only detached datasets would be created with an external_filename
     assert not materialized_dataset.external_filename
@@ -68,10 +70,12 @@ def test_hash_validate():
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
     _assert_2_bed_metadata(deferred_hda)
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.state == "ok"
 
 
@@ -83,10 +87,12 @@ def test_hash_invalid():
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
     _assert_2_bed_metadata(deferred_hda)
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.state == "error"
 
 
@@ -101,6 +107,7 @@ def test_legacy_transform_actions_on_deferred_hdas_become_requested_actions():
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     deferred_dataset = deferred_hda.dataset
+    assert deferred_dataset is not None
     assert deferred_dataset.sources[0].transform is None
     assert deferred_dataset.sources[0].requested_transform == [{"action": "spaces_to_tabs"}]
 
@@ -114,6 +121,7 @@ def test_requested_transform_actions_on_deferred_hdas_preserved():
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     deferred_dataset = deferred_hda.dataset
+    assert deferred_dataset is not None
     assert deferred_dataset.sources[0].transform is None
     assert deferred_dataset.sources[0].requested_transform == [{"action": "spaces_to_tabs"}]
 
@@ -128,10 +136,12 @@ def test_hash_validate_source_of_download():
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
     _assert_2_bed_metadata(deferred_hda)
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.state == "ok", materialized_hda.info
 
 
@@ -145,10 +155,12 @@ def test_hash_invalid_source_of_download():
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
     _assert_2_bed_metadata(deferred_hda)
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.state == "error", materialized_hda.info
 
 
@@ -160,10 +172,12 @@ def test_deferred_hdas_basic_attached_store_by_uuid():
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
     _assert_2_bed_metadata(deferred_hda)
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.state == "ok"
     # only detached datasets would be created with an external_filename
     assert not materialized_dataset.external_filename
@@ -180,10 +194,12 @@ def test_deferred_hdas_basic_detached(tmpdir):
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
     _assert_2_bed_metadata(deferred_hda)
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(False, transient_directory=tmpdir)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.state == "ok"
     external_filename = materialized_dataset.external_filename
     assert external_filename
@@ -198,12 +214,14 @@ def test_deferred_datasets_with_legacy_transforms_respect_transform(tmpdir):
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     assert deferred_hda.dataset.sources[0].transform is None
     assert deferred_hda.dataset.sources[0].requested_transform == [{"action": "spaces_to_tabs"}]
     materializer = materializer_factory(False, transient_directory=tmpdir)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.sources[0].transform == [{"action": "spaces_to_tabs"}]
     assert materialized_dataset.sources[0].requested_transform == [{"action": "spaces_to_tabs"}]
     assert materialized_dataset.state == "ok"
@@ -219,6 +237,7 @@ def test_deferred_datasets_with_requested_transforms_respect_transform(tmpdir):
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     assert deferred_hda.dataset.sources[0].transform is None
     assert deferred_hda.dataset.sources[0].requested_transform == [
@@ -228,6 +247,7 @@ def test_deferred_datasets_with_requested_transforms_respect_transform(tmpdir):
     materializer = materializer_factory(False, transient_directory=tmpdir)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.sources[0].transform == [{"action": "spaces_to_tabs"}]
     assert materialized_dataset.sources[0].requested_transform == [
         {"action": "datatype_groom"},
@@ -246,12 +266,14 @@ def test_deferred_datasets_do_not_apply_unspecified_transforms_legacy(tmpdir):
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     assert deferred_hda.dataset.sources[0].transform is None
     assert deferred_hda.dataset.sources[0].requested_transform == []
     materializer = materializer_factory(False, transient_directory=tmpdir)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.sources[0].transform == []
     assert materialized_dataset.sources[0].requested_transform == []
     assert materialized_dataset.state == "ok"
@@ -267,12 +289,14 @@ def test_deferred_datasets_do_not_apply_unspecified_transforms(tmpdir):
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     assert deferred_hda.dataset.sources[0].transform is None
     assert deferred_hda.dataset.sources[0].requested_transform == [{"action": "datatype_groom"}]
     materializer = materializer_factory(False, transient_directory=tmpdir)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.sources[0].transform == []
     assert materialized_dataset.sources[0].requested_transform == [{"action": "datatype_groom"}]
     assert materialized_dataset.state == "ok"
@@ -291,10 +315,12 @@ def test_deferred_hdas_basic_detached_from_detached_hda(tmpdir):
 
     _ensure_relations_attached_and_expunge(deferred_hda, fixture_context)
 
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(False, transient_directory=tmpdir)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.state == "ok"
     external_filename = materialized_dataset.external_filename
     assert external_filename
@@ -312,12 +338,14 @@ def test_deferred_hdas_basic_attached_from_detached_hda():
 
     _ensure_relations_attached_and_expunge(deferred_hda, fixture_context)
 
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(
         True, object_store=fixture_context.app.object_store, sa_session=fixture_context.sa_session()
     )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.state == "ok"
     # only detached datasets would be created with an external_filename
     assert not materialized_dataset.external_filename
@@ -337,12 +365,14 @@ def test_deferred_ldda_basic_attached():
     perform_import_from_store_dict(fixture_context, store_dict, import_options=import_options)
     deferred_ldda = fixture_context.sa_session.scalars(select(LibraryDatasetDatasetAssociation)).all()[0]
     assert deferred_ldda
+    assert deferred_ldda.dataset is not None
     assert deferred_ldda.dataset.state == "deferred"
 
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
     materialized_hda = materializer.ensure_materialized(deferred_ldda)
     assert materialized_hda.history is None
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.state == "ok"
     # only detached datasets would be created with an external_filename
     assert not materialized_dataset.external_filename
@@ -365,10 +395,12 @@ def test_deferred_hdas_basic_attached_file_sources(tmpdir):
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store, file_sources=file_sources)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert materialized_dataset.state == "ok"
     # only detached datasets would be created with an external_filename
     assert not materialized_dataset.external_filename
@@ -385,10 +417,12 @@ def test_deferred_hdas_with_deferred_metadata():
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     assert deferred_hda
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(True, object_store=fixture_context.app.object_store)
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
+    assert materialized_dataset is not None
     assert not materialized_hda.metadata_deferred
     assert materialized_dataset.state == "ok"
     # only detached datasets would be created with an external_filename
@@ -448,6 +482,7 @@ def _test_hdca(
     perform_import_from_store_dict(fixture_context, store_dict)
     deferred_hda = fixture_context.history.datasets[0]
     sa_session.add(deferred_hda)
+    assert deferred_hda.dataset is not None
     assert deferred_hda.dataset.state == "deferred"
     hda_fh = tmpdir.join("file.txt")
     hda_fh.write("Moo Cow")
@@ -503,6 +538,7 @@ def _deferred_element_count(dataset_collection: DatasetCollection) -> int:
 def _ensure_relations_attached_and_expunge(deferred_hda: HistoryDatasetAssociation, fixture_context) -> None:
     # make sure everything needed is in session (sources, hashes, and metadata)...
     # point here is exercise deferred_hda.history throws a detached error.
+    assert deferred_hda.dataset is not None
     [s.hashes for s in deferred_hda.dataset.sources]
     deferred_hda.dataset.hashes  # noqa: B018
     deferred_hda._metadata  # noqa: B018

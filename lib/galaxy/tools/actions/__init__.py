@@ -591,6 +591,7 @@ class DefaultToolAction(ToolAction):
                 data = HistoryDatasetAssociation(
                     extension=ext, dataset=dataset, create_dataset=create_datasets, flush=False
                 )
+                assert data.dataset is not None
                 if create_datasets:
                     from_work_dir = output.from_work_dir
                     if from_work_dir is not None:

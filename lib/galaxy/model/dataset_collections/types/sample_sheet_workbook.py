@@ -601,7 +601,7 @@ def _list_to_sample_sheet_collection_type(input_collection_type: str) -> SampleS
     """
     # Pass through existing sample_sheet types unchanged
     if input_collection_type in SAMPLE_SHEET_COLLECTION_TYPES:
-        return cast(SampleSheetCollectionType, input_collection_type)
+        return input_collection_type
 
     # Convert list types to sample_sheet types
     if input_collection_type == "list":

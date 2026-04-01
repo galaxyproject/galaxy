@@ -6,6 +6,7 @@ import operator
 import os
 import re
 from collections.abc import Callable
+from decimal import Decimal
 from tempfile import NamedTemporaryFile
 from typing import (
     Any,
@@ -388,6 +389,7 @@ def collect_primary_datasets(job_context: BaseJobContext, output: dict[str, Data
         ):
             job_context.increment_discovered_file_count()
             filenames[discovered_file.path] = discovered_file
+        assert outdata.dataset is not None
         for filename_index, (filename, discovered_file) in enumerate(filenames.items()):
             extra_file_collector = discovered_file.collector
             fields_match = discovered_file.match
@@ -450,8 +452,9 @@ def collect_primary_datasets(job_context: BaseJobContext, output: dict[str, Data
                 # Associate new dataset with job
                 job_context.add_output_dataset_association(f"__new_primary_file_{name}|{designation}__", primary_data)
             except JobOutputNameTooLongError:
+                assert primary_data.dataset is not None
                 primary_data.dataset.state = Dataset.states.DISCARDED
-                primary_data.dataset.file_size = 0
+                primary_data.dataset.file_size = Decimal(0)
                 job_context.add_datasets_to_history([primary_data], for_output_dataset=outdata)
                 raise
             job_context.add_datasets_to_history([primary_data], for_output_dataset=outdata)

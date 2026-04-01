@@ -736,7 +736,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         if metadata_spec is None:
             raise galaxy_exceptions.RequestParameterInvalidException(f"Unknown metadata file: {metadata_file}")
         file_ext = metadata_spec.get("file_ext", metadata_file)
-        fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in hda.name)[0:150]
+        hda_name = hda.name or "Unnamed dataset"
+        fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in hda_name)[0:150]
         headers = {}
         headers["Content-Type"] = "application/octet-stream"
         headers["Content-Disposition"] = f'attachment; filename="Galaxy{hda.hid}-[{fname}].{file_ext}"'

@@ -172,6 +172,7 @@ def to_cwl(
         element_identifier = value.element_identifier
         value = value.element_object
     if isinstance(value, model.HistoryDatasetAssociation):
+        assert value.dataset is not None
         # I think the following two checks are needed but they may
         # not be needed.
         if step:

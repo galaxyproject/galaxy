@@ -13,6 +13,7 @@ from collections.abc import (
     Callable,
     Iterable,
 )
+from decimal import Decimal
 from typing import (
     Any,
     NamedTuple,
@@ -172,6 +173,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 if metadata_element and metadata_element.set_in_upload:
                     setattr(primary_data.metadata, key, value)
 
+        assert primary_data.dataset is not None
         for source_dict in sources:
             source = galaxy.model.DatasetSource()
             source.source_uri = source_dict["source_uri"]
@@ -250,10 +252,11 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         output_name,
         init_from,
     ):
+        assert primary_data.dataset is not None
         if primary_data.dataset.purged:
             # metadata won't be set, maybe we should do that, then purge ?
-            primary_data.dataset.file_size = 0
-            primary_data.dataset.total_size = 0
+            primary_data.dataset.file_size = Decimal(0)
+            primary_data.dataset.total_size = Decimal(0)
             return
         # Move data from temp location to dataset location
         if not link_data:

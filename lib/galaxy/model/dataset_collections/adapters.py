@@ -158,6 +158,7 @@ class PromoteDatasetToCollection(CollectionAdapter):
     @property
     def dataset_action_tuples(self):
         hda = self._hda
+        assert hda.dataset is not None
         return [(permission.action, permission.role_id) for permission in hda.dataset.actions]
 
     @property
@@ -165,6 +166,7 @@ class PromoteDatasetToCollection(CollectionAdapter):
         hda = self._hda
         dbkeys = [hda.dbkey] if hda.dbkey else []
         extensions = [hda.extension] if hda.extension else []
+        assert hda.dataset is not None
         states = {hda.dataset.state: 1} if hda.dataset.state else {}
         deleted = 1 if hda.deleted or (hda.dataset and hda.dataset.deleted) else 0
         return CollectionStateSummary(dbkeys=dbkeys, extensions=extensions, states=states, deleted=deleted)

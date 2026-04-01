@@ -245,6 +245,7 @@ class JobIO(UsesDictVisibleKeys):
     def get_input_path(self, dataset: DatasetInstance) -> DatasetPath:
         real_path = dataset.get_file_name()
         false_path = self.dataset_path_rewriter.rewrite_dataset_path(dataset, "input")
+        assert dataset.dataset is not None
         return DatasetPath(
             dataset.dataset.id,
             real_path=real_path,
@@ -290,6 +291,7 @@ class JobIO(UsesDictVisibleKeys):
                 with open(da_false_path, "ab"):
                     pass
             real_path = da.dataset.get_file_name(sync_cache=False)
+            assert da.dataset.dataset is not None
             false_extra_files_path = os.path.join(
                 os.path.dirname(da_false_path or real_path), da.dataset.dataset.extra_files_path_name
             )

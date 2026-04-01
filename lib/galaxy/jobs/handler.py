@@ -580,6 +580,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                     log.info("(%d) User (%s) is over total walltime limit: job paused", job.id, job.user_id)
                     job.set_state(model.Job.states.PAUSED)
                     for dataset_assoc in job.output_datasets + job.output_library_datasets:
+                        assert dataset_assoc.dataset.dataset is not None
                         dataset_assoc.dataset.dataset.state = model.Dataset.states.PAUSED
                         dataset_assoc.dataset.info = "Execution of this dataset's job is paused because you were over your total job runtime at the time it was ready to run"
                         self.sa_session.add(dataset_assoc.dataset.dataset)

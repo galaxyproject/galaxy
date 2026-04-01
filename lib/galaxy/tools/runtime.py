@@ -99,7 +99,7 @@ def setup_for_runtimeify(
         hda_entry, index = hdas_by_id[hda_id]
         if not hda_entry:
             raise ValueError(f"Could not find HDA for dataset id {hda_id}")
-        size = hda_entry.dataset.get_size() if hda_entry and hda_entry.dataset else 0
+        assert hda_entry.dataset is not None
         properties: dict[str, Any] = {
             "class": "File",
             "location": f"step_input://{index}",
@@ -107,7 +107,7 @@ def setup_for_runtimeify(
             "path": (
                 compute_environment.input_path_rewrite(hda_entry) if compute_environment else hda_entry.get_file_name()
             ),
-            "size": int(size),
+            "size": hda_entry.dataset.get_size(),
             "listing": [],
         }
         set_basename_and_derived_properties(properties, hda_entry.dataset.created_from_basename or hda_entry.name)

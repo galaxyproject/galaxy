@@ -171,7 +171,7 @@ class DataManagerHandler:
                     if data_manager:
                         rval.append(data_manager)
                 elif elem.tag is etree.Comment:  # type: ignore[comparison-overlap]
-                    pass
+                    pass  # type: ignore[unreachable]
                 else:
                     log.warning(f"Encountered unexpected element '{elem.tag}':\n{xml_to_string(elem)}")
                 config_elems.append(elem)

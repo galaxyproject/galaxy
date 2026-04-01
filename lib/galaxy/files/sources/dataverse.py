@@ -530,7 +530,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             if hash_value and hash_type in supported_hashes:
                 return [
                     RemoteFileHash(
-                        hash_function=cast(HashFunctionNames, hash_type),
+                        hash_function=hash_type,
                         hash_value=str(hash_value),
                     )
                 ]

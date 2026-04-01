@@ -870,14 +870,13 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 permissions[action] = [dhp.role]
         return permissions
 
-    def set_all_dataset_permissions(self, dataset, permissions=None, new=False, flush=True):
+    def set_all_dataset_permissions(self, dataset: Dataset, permissions: dict, new: bool = False, flush: bool = True):
         """
         Set new full permissions on a dataset, eliminating all current permissions.
         Permission looks like: { Action : [ Role, Role ] }
         """
         # Make sure that DATASET_MANAGE_PERMISSIONS is associated with at least 1 role
         has_dataset_manage_permissions = False
-        permissions = permissions or {}
         for _ in _walk_action_roles(permissions, self.permitted_actions.DATASET_MANAGE_PERMISSIONS):
             has_dataset_manage_permissions = True
             break

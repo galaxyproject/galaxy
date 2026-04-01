@@ -82,6 +82,7 @@ from galaxy.model import (
     Dataset,
     Job,
     JobOutputNameTooLongError,
+    LibraryDatasetDatasetAssociation,
     store,
     Task,
 )
@@ -121,7 +122,7 @@ from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
     from galaxy.jobs.handler import BaseJobHandlerQueue
-    from galaxy.model import DatasetInstance
+    from galaxy.model import HistoryDatasetAssociation
     from galaxy.tools import Tool
     from galaxy.util import (
         Element,
@@ -1499,9 +1500,9 @@ class MinimalJobWrapper(HasResourceParameters):
                 except Exception:
                     # Failure to update the output of a failed job should not prevent completion of the failure method
                     log.exception(
-                        "(%s) fail(): Failed to update job output dataset with id: %s",
+                        "(%s) fail(): Failed to update job output dataset instance with id: %s",
                         self.get_id_tag(),
-                        dataset.dataset.id,
+                        dataset.id,
                     )
                 # Pause any dependent jobs (and those jobs' outputs)
                 for dep_job_assoc in dataset.dependent_jobs:
@@ -1930,9 +1931,16 @@ class MinimalJobWrapper(HasResourceParameters):
             self._setup_working_directory(job=job)
 
     def _finish_dataset(
-        self, output_name, dataset: "DatasetInstance", job: Job, context, final_job_state, remote_metadata_directory
+        self,
+        output_name: str,
+        dataset: "HistoryDatasetAssociation | LibraryDatasetDatasetAssociation",
+        job: Job,
+        context,
+        final_job_state,
+        remote_metadata_directory,
     ):
         implicit_collection_jobs = job.implicit_collection_jobs_association
+        assert dataset.dataset is not None
         purged = dataset.dataset.purged
         if not purged and dataset.dataset.external_filename is None:
             trynum = 0
@@ -2692,7 +2700,9 @@ class MinimalJobWrapper(HasResourceParameters):
         else:
             return "anonymous@unknown"
 
-    def __update_output(self, job, hda, clean_only=False):
+    def __update_output(
+        self, job: Job, hda: "HistoryDatasetAssociation | LibraryDatasetDatasetAssociation", clean_only: bool = False
+    ):
         """Handle writing outputs to the object store.
 
         This should be called regardless of whether the job was failed or not so
@@ -2700,8 +2710,9 @@ class MinimalJobWrapper(HasResourceParameters):
         cleaned up if the dataset has been purged.
         """
         dataset = hda.dataset
+        assert dataset is not None
         dataset.set_total_size()
-        if dataset not in job.output_library_datasets:
+        if not isinstance(hda, LibraryDatasetDatasetAssociation):
             purged = dataset.purged
             if not purged and not clean_only:
                 self.object_store.update_from_file(dataset, create=True)

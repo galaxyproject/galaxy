@@ -51,7 +51,7 @@ class HasMetadata(Protocol):
 
 
 class HasName(Protocol):
-    name: str
+    name: str | None
 
 
 class HasExtraFilesAndMetadata(HasExtraFilesPath, HasMetadata, Protocol): ...

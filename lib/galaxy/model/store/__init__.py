@@ -435,13 +435,15 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         dataset_or_file_attrs: dict[str, Any],
         dataset_instance: model.DatasetInstance,
     ) -> None:
+        dataset = dataset_instance.dataset
+        assert dataset is not None
         if "hashes" in dataset_or_file_attrs:
             for hash_attrs in dataset_or_file_attrs["hashes"]:
                 hash_obj = model.DatasetHash()
                 hash_obj.hash_value = hash_attrs["hash_value"]
                 hash_obj.hash_function = hash_attrs["hash_function"]
                 hash_obj.extra_files_path = hash_attrs["extra_files_path"]
-                dataset_instance.dataset.hashes.append(hash_obj)
+                dataset.hashes.append(hash_obj)
 
     def _attach_dataset_sources(
         self,
@@ -472,6 +474,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     hash_obj.hash_function = hash_attrs["hash_function"]
                     source_obj.hashes.append(hash_obj)
 
+                assert dataset_instance.dataset is not None
                 dataset_instance.dataset.sources.append(source_obj)
 
     def _import_datasets(
@@ -611,6 +614,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     dataset_instance.metadata = metadata
                 self._attach_raw_id_if_editing(dataset_instance, dataset_attrs)
 
+                assert dataset_instance.dataset is not None
                 # Older style...
                 if self.import_options.allow_edit:
                     if "uuid" in dataset_attrs:
@@ -671,7 +675,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dataset_instance.deleted = False
                         if isinstance(dataset_instance, model.HistoryDatasetAssociation):
                             dataset_instance.purged = False
-                        assert dataset_instance.dataset
                         dataset_instance.dataset.deleted = False
                         dataset_instance.dataset.purged = False
                     elif (
@@ -688,7 +691,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dataset_instance.deleted = deleted
                         if isinstance(dataset_instance, model.HistoryDatasetAssociation):
                             dataset_instance.purged = deleted
-                        assert dataset_instance.dataset
                         dataset_instance.dataset.state = target_state
                         dataset_instance.dataset.deleted = deleted
                         dataset_instance.dataset.purged = deleted
@@ -2062,6 +2064,7 @@ class DirectoryModelExportStore(ModelExportStore):
         dir_name = "datasets"
         dir_path = os.path.join(export_directory, dir_name)
 
+        assert dataset.dataset is not None
         if dataset.dataset.id in self.dataset_id_to_path:
             file_name, extra_files_path = self.dataset_id_to_path[dataset.dataset.id]
             if file_name is not None:
@@ -2432,6 +2435,7 @@ class DirectoryModelExportStore(ModelExportStore):
         self.included_datasets[dataset] = (dataset, include_files)
 
     def _ensure_dataset_file_exists(self, dataset: model.DatasetInstance) -> None:
+        assert dataset.dataset is not None
         state = dataset.dataset.state
         if state in [model.Dataset.states.OK] and not dataset.get_file_name():
             log.error(
@@ -2644,7 +2648,7 @@ class WriteCrates:
         with open(markdown_path, "w") as f:
             f.write(self._generate_markdown_readme())
 
-        properties = {
+        properties: dict[str, Any] = {
             "name": "README.md",
             "encodingFormat": "text/markdown",
             "about": {"@id": "./"},
@@ -2656,6 +2660,7 @@ class WriteCrates:
         )
 
         for dataset, _ in self.included_datasets.values():
+            assert dataset.dataset is not None
             if dataset.dataset.id in self.dataset_id_to_path:
                 file_name, _ = self.dataset_id_to_path[dataset.dataset.id]
                 if file_name is None:

@@ -2104,6 +2104,7 @@ class ObjectStorePopulator:
         self.user = user
 
     def set_object_store_id(self, data: "DatasetInstance", require_shareable: bool = False) -> None:
+        assert data.dataset is not None
         self.set_dataset_object_store_id(data.dataset, require_shareable=require_shareable)
 
     def set_dataset_object_store_id(self, dataset: "Dataset", require_shareable: bool = True) -> None:
@@ -2126,8 +2127,8 @@ def persist_extra_files(
     primary_data: "DatasetInstance",
     extra_files_path_name: Optional[str] = None,
 ) -> None:
+    assert primary_data.dataset is not None
     if not primary_data.dataset.purged and os.path.exists(src_extra_files_path):
-        assert primary_data.dataset
         if not extra_files_path_name:
             extra_files_path_name = primary_data.dataset.extra_files_path_name_from(object_store)
         assert extra_files_path_name

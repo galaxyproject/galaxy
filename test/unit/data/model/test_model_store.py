@@ -212,6 +212,7 @@ def test_import_export_history_with_implicit_conversion_and_extra_files():
     app.object_store.update_from_file(implicit_hda.dataset, file_name=TEST_PATH_2_CONVERTED, create=True)
 
     d2.dataset.create_extra_files_path()
+    assert implicit_hda.dataset is not None
     implicit_hda.dataset.create_extra_files_path()
 
     app.write_primary_file(d2, "cool primary file 1")
@@ -296,6 +297,7 @@ def test_import_from_dict():
     assert imported_hda.state == "deferred"
     assert not imported_hda.deleted
 
+    assert imported_hda.dataset is not None
     assert len(imported_hda.dataset.hashes) == 1
     assert len(imported_hda.dataset.sources) == 1
     assert imported_hda.dataset.created_from_basename == "dataset.txt"
