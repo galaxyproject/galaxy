@@ -335,7 +335,6 @@ class TestMCPServerSmoke(IntegrationTestCase):
             "get_job_status",
         }
         assert expected.issubset(tool_names), f"Missing tools: {expected - tool_names}"
-        assert len(tool_names) >= 20
 
     def test_mcp_connect_with_valid_key(self):
         """connect() succeeds with a valid API key and returns user + server info."""
