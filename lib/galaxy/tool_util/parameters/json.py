@@ -23,6 +23,27 @@ class CustomGenerateJsonSchema(GenerateJsonSchema):
         return json_schema
 
 
+def _absent_test_params(defs: Dict[str, Any]) -> Dict[str, str]:
+    """Map test parameter names to their absent branch def names, longest name first."""
+    result: Dict[str, str] = {}
+    for def_name in defs:
+        m = WHEN_ABSENT_RE.match(def_name)
+        if m:
+            result[m.group(1)] = def_name
+    return dict(sorted(result.items(), key=lambda item: len(item[0]), reverse=True))
+
+
+def _match_when_branch(def_name: str, absent_test_params: Dict[str, str]) -> Any:
+    """Return (test_param_name, value_suffix) for an explicit When branch, or None."""
+    if not def_name.startswith("When_") or "___absent" in def_name:
+        return None
+    for test_param_name in absent_test_params:
+        prefix = f"When_{test_param_name}_"
+        if def_name.startswith(prefix):
+            return test_param_name, def_name[len(prefix) :]
+    return None
+
+
 def _fix_conditional_oneofs(schema: Dict[str, Any]) -> None:
     """Make conditional discriminated unions unambiguous for JSON Schema validators.
 
@@ -38,22 +59,14 @@ def _fix_conditional_oneofs(schema: Dict[str, Any]) -> None:
     if not defs:
         return
 
-    absent_test_params: Dict[str, str] = {}
-    for def_name in defs:
-        m = WHEN_ABSENT_RE.match(def_name)
-        if m:
-            absent_test_params[m.group(1)] = def_name
-
-    if not absent_test_params:
+    atp = _absent_test_params(defs)
+    if not atp:
         return
 
     for def_name, def_schema in defs.items():
-        if def_name.startswith("When_") and "___absent" not in def_name:
-            for test_param_name in absent_test_params:
-                prefix = f"When_{test_param_name}_"
-                if def_name.startswith(prefix):
-                    _make_field_required(def_schema, test_param_name)
-                    break
+        match = _match_when_branch(def_name, atp)
+        if match:
+            _make_field_required(def_schema, match[0])
 
 
 def _make_field_required(def_schema: Dict[str, Any], field_name: str) -> None:
@@ -65,6 +78,78 @@ def _make_field_required(def_schema: Dict[str, Any], field_name: str) -> None:
         required.append(field_name)
         def_schema["required"] = required
     props[field_name].pop("default", None)
+
+
+def _discriminator_key(def_schema: Dict[str, Any], test_param_name: str, value_suffix: str) -> str:
+    """Derive the discriminator mapping key from the branch's const value.
+
+    Uses the actual ``const`` value from the schema property so boolean branches
+    map to ``"true"``/``"false"`` (JSON style) rather than ``"True"``/``"False"``.
+    """
+    props = def_schema.get("properties", {})
+    test_prop = props.get(test_param_name, {})
+    const = test_prop.get("const")
+    if const is not None:
+        return json.dumps(const) if isinstance(const, bool) else str(const)
+    return value_suffix
+
+
+def _add_conditional_discriminators(schema: Dict[str, Any]) -> None:
+    """Add OpenAPI 3.1 discriminator objects and human-readable titles to conditional oneOfs."""
+    defs = schema.get("$defs", {})
+    if not defs:
+        return
+
+    atp = _absent_test_params(defs)
+    if not atp:
+        return
+
+    for def_name, def_schema in defs.items():
+        if def_name in atp.values():
+            for param_name, absent_name in atp.items():
+                if def_name == absent_name:
+                    def_schema["title"] = f"When {param_name} is absent"
+                    break
+        else:
+            match = _match_when_branch(def_name, atp)
+            if match:
+                def_schema["title"] = f"When {match[0]} = {match[1]}"
+
+    for def_schema in defs.values():
+        one_of = def_schema.get("oneOf")
+        if not isinstance(one_of, list):
+            continue
+
+        test_param_name = _conditional_test_param_for_oneof(one_of, atp)
+        if test_param_name is None:
+            continue
+
+        mapping: Dict[str, str] = {}
+        for branch in one_of:
+            ref = branch.get("$ref", "")
+            branch_def_name = ref.rsplit("/", 1)[-1] if "/" in ref else ""
+            match = _match_when_branch(branch_def_name, atp)
+            if match and match[0] == test_param_name:
+                branch_def = defs.get(branch_def_name, {})
+                key = _discriminator_key(branch_def, test_param_name, match[1])
+                mapping[key] = ref
+
+        if mapping:
+            def_schema["discriminator"] = {
+                "propertyName": test_param_name,
+                "mapping": mapping,
+            }
+
+
+def _conditional_test_param_for_oneof(one_of: List[Any], absent_test_params: Dict[str, str]) -> Any:
+    """Return the test parameter name if this oneOf is a conditional discriminated union."""
+    for branch in one_of:
+        ref = branch.get("$ref", "")
+        branch_def_name = ref.rsplit("/", 1)[-1] if "/" in ref else ""
+        for param_name, absent_name in absent_test_params.items():
+            if branch_def_name == absent_name:
+                return param_name
+    return None
 
 
 COLLECTION_RUNTIME_NESTED_DEFS = frozenset(["DataCollectionNestedListRuntime", "DataCollectionNestedRecordRuntime"])
@@ -143,6 +228,7 @@ def _walk_and_normalize(node: Any) -> None:
 def to_json_schema(model, mode: MODE = DEFAULT_JSON_SCHEMA_MODE) -> Dict[str, Any]:
     schema = model.model_json_schema(schema_generator=CustomGenerateJsonSchema, mode=mode)
     _fix_conditional_oneofs(schema)
+    _add_conditional_discriminators(schema)
     _fix_collection_runtime_oneofs(schema)
     _normalize_annotated_types_keywords(schema)
     return schema

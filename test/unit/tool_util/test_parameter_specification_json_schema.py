@@ -130,3 +130,47 @@ def test_specification_json_schema():
     parameter_spec = specification_object()
     for file in parameter_spec.keys():
         _test_file_json_schema(file, parameter_spec)
+
+
+def _conditional_type_def(file: str, state_representation: StateRepresentationT = "request") -> Dict[str, Any]:
+    bundle = parameter_bundle_for_file(file)
+    schema = _json_schema_for(bundle, state_representation)
+    defs = schema.get("$defs", {})
+    matches = {k: v for k, v in defs.items() if "oneOf" in v}
+    assert len(matches) == 1, f"Expected exactly one oneOf def, got {list(matches.keys())}"
+    return next(iter(matches.values())), defs
+
+
+def test_boolean_conditional_discriminator():
+    cond_def, defs = _conditional_type_def("gx_conditional_boolean")
+    disc = cond_def.get("discriminator")
+    assert disc is not None
+    assert disc["propertyName"] == "test_parameter"
+    mapping = disc["mapping"]
+    assert "true" in mapping
+    assert "false" in mapping
+    assert len(mapping) == 2
+
+    assert defs["When_test_parameter_True"]["title"] == "When test_parameter = True"
+    assert defs["When_test_parameter_False"]["title"] == "When test_parameter = False"
+    assert defs["When_test_parameter___absent"]["title"] == "When test_parameter is absent"
+
+
+def test_select_conditional_discriminator():
+    cond_def, defs = _conditional_type_def("gx_conditional_select")
+    disc = cond_def.get("discriminator")
+    assert disc is not None
+    assert disc["propertyName"] == "test_parameter"
+    mapping = disc["mapping"]
+    assert set(mapping.keys()) == {"a", "b", "c"}
+
+    assert defs["When_test_parameter_a"]["title"] == "When test_parameter = a"
+    assert defs["When_test_parameter___absent"]["title"] == "When test_parameter is absent"
+
+
+def test_job_internal_no_discriminator():
+    bundle = parameter_bundle_for_file("gx_conditional_boolean")
+    schema = _json_schema_for(bundle, "job_internal")
+    defs = schema.get("$defs", {})
+    for def_schema in defs.values():
+        assert "discriminator" not in def_schema
